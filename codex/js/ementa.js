@@ -30,7 +30,8 @@ export function normalizeEmenta(input) {
       for (const tp of m.topics) {
         if (!tp || typeof tp !== 'object') continue;
         const subtopics = Array.isArray(tp.subtopics)
-          ? tp.subtopics.filter((s) => s != null).map((s) => String(s))
+          ? tp.subtopics.filter((s) => s != null).map((s) =>
+              typeof s === 'object' ? String(s.title || s.text || s.name || s.label || '') : String(s))
           : [];
         topics.push({ title: String(tp.title || ''), subtopics });
       }

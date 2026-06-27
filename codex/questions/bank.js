@@ -15,6 +15,7 @@
 import { questions as api, ai, audiences as audiencesApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
 import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
 
@@ -759,7 +760,7 @@ async function _applyOrder() {
   try { await api.reorder({ list_name: _currentSet, ordered_ids: _orderProposed }); } catch (e) { notice.internal(e); }
   if (!_viewEl) return;
   btn.disabled = false; btn.textContent = orig;
-  notice.ok(t('questions.bank_order_applied'));
+  toast.ok(t('questions.bank_order_applied'));
   _closeOrder();
   await _loadQuestions();
 }
@@ -1134,7 +1135,7 @@ async function _aiCreateAudience() {
   const desc = inp ? inp.value.trim() : '';
   const err = _q('.cdx-bank-aud-err');
   if (err) err.textContent = '';
-  if (!desc) { notice.info(t('questions.aud_ai_empty')); return; }
+  if (!desc) { toast.info(t('questions.aud_ai_empty')); return; }
   const btn = _q('[data-act="aud-ai"]');
   let orig = '';
   if (btn) { btn.disabled = true; orig = btn.textContent; btn.textContent = t('questions.aud_ai_generating'); }
@@ -1154,7 +1155,7 @@ async function _aiCreateAudience() {
   _audienceConfig.audiences[draft.key] = { label: draft.label, values: draft.values };
   _audTab = 'variables';
   _renderAudContent();
-  notice.ok(t('questions.aud_ai_done'));
+  toast.ok(t('questions.aud_ai_done'));
 }
 
 function _addAudience() {
@@ -1194,7 +1195,7 @@ async function _saveAudiences() {
   if (btn) btn.disabled = false;
   if (!res || res.error) { if (err) err.textContent = t('questions.aud_save_error'); return; }
   setAudienceConfig(_audienceConfig);
-  notice.ok(t('questions.aud_saved'));
+  toast.ok(t('questions.aud_saved'));
   if (_currentSet && !_searching) _renderConjunto();
 }
 

@@ -167,7 +167,7 @@
 .cdx-cert-page .back .bhead .hc .code { font-size:10px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; }
 .cdx-cert-page .back .bhead .hc .code b { display:block; font-size:13px; letter-spacing:.08em; color:var(--ink2); margin-top:2px; }
 .cdx-cert-page .back .rule { width:56px; height:3px; background:var(--accent); margin:12px 0 0; }
-.cdx-cert-page .back .bcols { flex:1; display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:18mm; margin-top:7mm; }
+.cdx-cert-page .back .bcols { flex:1; display:grid; grid-template-columns:minmax(0,1.55fr) minmax(0,1fr); gap:18mm; margin-top:7mm; overflow:hidden; }
 .cdx-cert-page .back .curriculum { display:flex; flex-direction:column; min-width:0; }
 .cdx-cert-page .back .ci { display:grid; grid-template-columns:40px 1fr; gap:14px; padding:6.5px 0; border-bottom:1px solid var(--rule); align-items:baseline; }
 .cdx-cert-page .back .ci:last-child { border-bottom:none; }

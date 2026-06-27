@@ -112,6 +112,17 @@ export default {
   'alunos.filter_pending':    'Pendentes',
   'alunos.filter_approved':   'Aprovados',
   'alunos.filter_denied':     'Bloqueados',
+  // Alunos B+C2 redesign (sticky adaptive toolbar + status sections + inline edit)
+  'alunos.toolbar_select_all':   'Selecionar todos',
+  'alunos.sel_suffix':           'selecionados',
+  'alunos.select_section':       'selecionar seção',
+  'alunos.revoke_token':         'Revogar token',
+  'alunos.edit_title':           'Editar participante',
+  'alunos.edit_name_ph':         'Nome completo',
+  'alunos.edit_email_ph':        'email@exemplo.com',
+  'alunos.cancel':               'Cancelar',
+  'alunos.remove_selected_confirm': 'Remover os alunos selecionados? Eles perdem o acesso e precisam entrar de novo.',
+  'alunos.revoke_confirm':       'Revogar o token dos alunos selecionados? Eles precisarão entrar de novo.',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Conexão perdida.',
@@ -386,6 +397,9 @@ export default {
   'cohorts.participant_name_ph':          'Nome completo',
   'cohorts.participant_email_ph':         'email@exemplo.com',
   'cohorts.participant_cpf_ph':           '000.000.000-00',
+  'cohorts.email_required':              'E-mail obrigatório.',
+  'cohorts.email_invalid':               'E-mail inválido.',
+  'cohorts.cpf_invalid':                 'CPF inválido.',
   'cohorts.participant_added':            'Participante adicionado.',
   'cohorts.participant_updated':          'Participante atualizado.',
   'cohorts.participant_deleted':          'Participante removido.',

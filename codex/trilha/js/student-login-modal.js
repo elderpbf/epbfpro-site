@@ -38,6 +38,10 @@ export function openLoginModal(opts = {}) {
   // the student is in the room, so the first screen registers + grants access on the spot
   // (email + name + consent), no code round-trip. Gated server-side by the turma's flag.
   const enroll = !!opts.enrollToken;
+  // Simple-enroll turma: the "Entrar" pill opens the SAME e-mail-only step as the wall
+  // (name + e-mail -> instant access), not the código flow. page.js passes this from
+  // access.simple_enroll, so every entry surface on a simple turma is e-mail-only.
+  const simple = !!opts.simple;
 
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-login-backdrop';
@@ -71,6 +75,7 @@ export function openLoginModal(opts = {}) {
   function render() {
     const s = flow.state;
     if (enroll && (s === 'anonymous' || s === 'email')) return renderEnroll();
+    if (simple && (s === 'anonymous' || s === 'email')) return renderSimple();
     if (s === 'code') return renderCode();
     if (s === 'verifying') return renderVerifying();
     if (s === 'profile') return renderProfile();
@@ -78,8 +83,11 @@ export function openLoginModal(opts = {}) {
     return renderEmail();
   }
 
-  // Direct-access single step: email + name + consent -> join (approved on the spot).
-  function renderEnroll() {
+  // Single-step instant entry: email + name + consent -> join (approved on the spot). The
+  // surface is identical for both modes; only the join action differs, so it is built once
+  // here and the caller passes its join: enrollJoin (in-class QR/código) or simpleEnroll
+  // (a simple_enroll turma). Reuse, never a second copy of this form.
+  function renderInstant(joinFn) {
     bodyEl.innerHTML =
       '<h2 class="tr-modal-title">' + esc(t('login.enroll_title')) + '</h2>' +
       '<p class="tr-login-subtitle">' + esc(t('login.enroll_subtitle')) + '</p>' +
@@ -105,11 +113,40 @@ export function openLoginModal(opts = {}) {
     join.addEventListener('click', async () => {
       if (!consentEl.checked) { flow.error = 'consent_required'; render(); return; }
       join.disabled = true;
-      await flow.enrollJoin(emailEl.value, nameEl.value);
+      await joinFn(emailEl.value, nameEl.value);
       if (flow.state === 'profile') await flow.saveProfile(nameEl.value, true); // consent already given
       settle();
     });
     setTimeout(() => { try { emailEl.focus(); } catch (_) {} }, 60);
+  }
+  function renderEnroll() { return renderInstant((email, name) => flow.enrollJoin(email, name)); }
+
+  // Simple-enroll LOGIN: an already-registered student enters with their e-mail ONLY — no
+  // código, no name, no re-asking consent. It is the simple turma's version of the normal
+  // login (the only difference is instant access instead of a code), so the surface reads as
+  // "Entrar", not a sign-up. A brand-new address still works (simpleEnroll creates it) and is
+  // routed to the profile step for name + consent; a returning one goes straight in.
+  function renderSimple() {
+    bodyEl.innerHTML =
+      '<h2 class="tr-modal-title">' + esc(t('login.title')) + '</h2>' +
+      '<p class="tr-login-subtitle">' + esc(t('login.simple_login_sub')) + '</p>' +
+      '<label class="tr-tarefa-field-label" for="tr-login-email">' + esc(t('login.email_label')) + '</label>' +
+      '<input id="tr-login-email" type="email" class="tr-tarefa-name tr-login-email" placeholder="' + esc(t('login.email_placeholder')) + '" autocomplete="email" inputmode="email">' +
+      '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<div class="tr-tarefa-actions">' +
+        '<button type="button" class="cdx-btn cdx-btn-primary tr-login-enter">' + esc(t('login.enroll_cta')) + '</button>' +
+      '</div>';
+    const input = bodyEl.querySelector('.tr-login-email');
+    const enter = bodyEl.querySelector('.tr-login-enter');
+    const doEnter = async () => {
+      enter.disabled = true;
+      enter.textContent = t('simplewall.submitting');
+      await flow.simpleEnroll(input.value);
+      settle();
+    };
+    enter.addEventListener('click', doEnter);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doEnter(); });
+    setTimeout(() => { try { input.focus(); } catch (_) {} }, 60);
   }
 
   function renderEmail() {
@@ -150,6 +187,7 @@ export function openLoginModal(opts = {}) {
       '<input id="tr-login-code" type="text" class="tr-tarefa-name tr-login-code" placeholder="' + esc(t('login.code_ph')) + '" autocomplete="one-time-code" inputmode="text" maxlength="4" autocapitalize="characters">' +
       dev +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<p class="tr-tarefa-hint tr-login-hint">' + esc(t('login.not_received')) + '</p>' +
       '<div class="tr-tarefa-actions">' +
         '<button type="button" class="cdx-btn cdx-btn-primary tr-login-verify">' + esc(t('login.verify')) + '</button>' +
         '<button type="button" class="cdx-btn cdx-btn-vazado tr-login-resend">' + esc(t('login.resend')) + '</button>' +

@@ -120,6 +120,10 @@ export function createLoginFlow(opts = {}) {
       // sending a code — the "no turma" check happens at e-mail submit, not after verify.
       const reqParams = { email };
       if (opts.resend) reqParams.resend = true;
+      // Carry the typed name so the worker's save-on-submit persists the REAL name (not the
+      // e-mail as a placeholder) the instant the code is requested. Only meaningful on the
+      // bound/wall path (it needs the turma); the agnostic entry has no slugs and ignores it.
+      if (opts.name) reqParams.name = String(opts.name).trim();
       if (client && turma) { reqParams.client_slug = client; reqParams.turma_slug = turma; }
       else { reqParams.require_enrolled = true; }
       const res = await safeCall(api.otpRequest(reqParams));
@@ -177,6 +181,25 @@ export function createLoginFlow(opts = {}) {
       const cleanName = (name || '').trim();
       if (cleanName) payload.name = cleanName;
       const res = await safeCall(api.enrollJoin(payload));
+      if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
+      sess.setToken(client, turma, res.session_token);
+      this.participantId = res.participant_id != null ? res.participant_id : null;
+      this.state = res.needs_profile ? 'profile' : 'authenticated';
+      return this;
+    },
+
+    // Simple-enroll login (turma flag `simple_enroll` ON): name + e-mail register + grant
+    // access ON THE SPOT (8h session), no code round-trip. Mirrors enrollJoin's tail but uses
+    // the student_simple_enroll action and needs no QR/código token. So when the turma runs
+    // in simple mode, EVERY entry surface (wall AND the "Entrar" pill modal) is e-mail-only.
+    async simpleEnroll(rawEmail, name) {
+      this.error = null;
+      const email = validateEmail(rawEmail);
+      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
+      const payload = { client_slug: client, turma_slug: turma, email };
+      const cleanName = (name || '').trim();
+      if (cleanName) payload.name = cleanName;
+      const res = await safeCall(api.simpleEnroll(payload));
       if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
       sess.setToken(client, turma, res.session_token);
       this.participantId = res.participant_id != null ? res.participant_id : null;

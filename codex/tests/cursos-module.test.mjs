@@ -71,18 +71,28 @@ test('courses builds the ementa with the pure ementa model', () => {
   }
 });
 
-test('turma form gains the course picker + instance fields (feed the certificate)', () => {
+test('turma form has the course picker + the typed-only instance fields', () => {
   assert.match(cohorts, /import \{ cohorts as api, cp as cpApi, courses as coursesApi/, 'imports the courses facade');
-  // Modalidade field removed (delivery mode lives in Formato; location in Local/place).
-  for (const id of ['cdx-tf-course', 'cdx-tf-hours', 'cdx-tf-date-start', 'cdx-tf-date-end', 'cdx-tf-format', 'cdx-tf-place', 'cdx-tf-meetings']) {
+  // The form carries only the fields the admin actually types: the course picker
+  // (seeds the certificate) plus date_start/format/place.
+  for (const id of ['cdx-tf-course', 'cdx-tf-date-start', 'cdx-tf-format', 'cdx-tf-place']) {
     assert.ok(cohorts.includes(id), `turma form has #${id}`);
   }
-  assert.ok(!cohorts.includes('cdx-tf-modality'), 'modalidade field removed');
+  // Computed fields are NOT entered: hours (carga_horaria = Σ aula hours),
+  // meetings (aula_count) and date_end (max aula date) are derived from the aulas
+  // and shown in the dossier — never typed in the form. Modalidade also removed.
+  for (const id of ['cdx-tf-hours', 'cdx-tf-date-end', 'cdx-tf-meetings', 'cdx-tf-modality']) {
+    assert.ok(!cohorts.includes(id), `turma form no longer has #${id} (computed/removed)`);
+  }
 });
 
-test('turma save sends the course-instance fields to updateTurma', () => {
-  for (const f of ['course_id:', 'date_start:', 'date_end:', 'format:', 'place:', 'meetings:']) {
+test('turma save sends only the typed course-instance fields to updateTurma', () => {
+  for (const f of ['course_id:', 'date_start:', 'format:', 'place:']) {
     assert.ok(cohorts.includes(f), `save payload includes ${f}`);
+  }
+  // The computed fields are never sent from the form (the backend derives them).
+  for (const f of ['date_end:', 'meetings:']) {
+    assert.ok(!cohorts.includes(f), `save payload omits computed ${f}`);
   }
 });
 

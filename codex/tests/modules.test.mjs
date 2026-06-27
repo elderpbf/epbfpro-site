@@ -215,3 +215,33 @@ test('no un-allowlisted cross-tab import', () => {
     }
   }
 });
+
+// ── Test 6: no orphaned tab-entry module (tests the REAL thing: is it mounted) ─
+// A "tab-entry module" is a file "<dir>/<dir>.js" directly under the codex root
+// (the admin-tab convention: cohorts/cohorts.js, content/content.js, ...). The
+// boot — index.html — MUST import each one, or it is DEAD CODE the running app
+// never mounts. This is the guard that would have caught a "participants tab"
+// being redesigned in an UNMOUNTED file (alunos/alunos.js) with zero on-screen
+// effect while its unit tests still "passed". The lesson it encodes: pure-logic
+// tests on an unmounted module are FALSE CONFIDENCE — a module is only real once
+// the boot wires it in. trilha/ + content/slides/ are sealed contexts with their
+// own entry points, never admin shell tabs, so they are excluded.
+const ENTRY_EXEMPT = new Set([
+  // (none today) Add a "<dir>/<dir>.js" here ONLY if it is intentionally not an
+  // admin shell tab AND has its own real entry point.
+]);
+test('no orphaned tab-entry module (every <dir>/<dir>.js is mounted by index.html)', () => {
+  const adminIndex = read('../index.html');
+  const entryModules = allJs.filter((f) => {
+    if (f.startsWith(TRILHA_PREFIX) || f.startsWith(SLIDES_PREFIX)) return false;
+    const parts = f.split('/');
+    return parts.length === 2 && parts[1] === parts[0] + '.js'; // "<dir>/<dir>.js"
+  });
+  for (const f of entryModules) {
+    if (ENTRY_EXEMPT.has(f)) continue;
+    assert.ok(
+      adminIndex.includes('./' + f),
+      `tab-entry module "${f}" is NOT imported by index.html. Either wire it into the boot TABS, or delete it as dead code. Building on (or unit-testing) an unmounted module has ZERO effect in the running app.`,
+    );
+  }
+});

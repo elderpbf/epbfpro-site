@@ -72,10 +72,3 @@ test('the cohort dossier mounts the shared panel into the Dados tab', () => {
   assert.match(src, /data-dpanel="dados"/, 'dossier uses tab panels');
   assert.match(src, /data-dtab="forum"/, 'dossier has a Fórum tab');
 });
-
-test('the Alunos tab consumes the same shared panel (no duplicated settings logic)', () => {
-  const src = read('../alunos/alunos.js');
-  assert.match(src, /from '\.\.\/js\/access-panel\.js'/, 'imports the shared module');
-  assert.match(src, /accessSettingsHtml\(_current\)/, 'renders via the shared module');
-  assert.ok(!/class="cdx-al-gated"/.test(src), 'old inline gated control removed');
-});

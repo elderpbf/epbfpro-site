@@ -3,14 +3,16 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../backstage/js/api-client.js)
-//   window.BSToast      (../backstage/js/bs-toast.js)  — optional, graceful fallback
 import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
+import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
-import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
+import { initials } from '../js/initials.js';
+import { isApprovalGated, groupParticipantsByStatus, sortByName, toolbarActions, actionEnabled, actionTargetStatus } from './participant-view.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
@@ -56,7 +58,6 @@ let _turmaCourses = [];   // course list cached for the turma form's course pick
 let _dossierTurma = null; // the turma currently shown in the dossier (#27 inline edit)
 let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
-let _dossierPFilter = 'all';   // active filter in the dossier participant list
 let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
 
@@ -76,16 +77,6 @@ function _maybeHideNav() { if (!_overNav) _closeNav(); }
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
 // _esc and _slugify are imported from ../js/dom.js
-
-function _toast(msg) {
-  if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
-}
-
-function _toastError(msg) {
-  // Codex toast (js/toast.js sets window.BSToast); the legacy utils.js
-  // showToastError global is no longer loaded.
-  _toast(msg);
-}
 
 function _baseUrl() {
   return location.protocol + '//' + location.host;
@@ -495,9 +486,9 @@ function _archiveClient(slug) {
     message: t('cohorts.archive_client_msg'),
     onConfirm() {
       api.archiveClient({ slug }).then(() => {
-        _toast(t('cohorts.client_archived'));
+        toast.ok(t('cohorts.client_archived'));
         _loadAll();
-      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
 }
@@ -619,11 +610,11 @@ function _openClientForm(client) {
         confirmName: client.name,
         onConfirm() {
           api.deleteClient({ slug: client.slug }).then(() => {
-            _toast(t('cohorts.client_deleted'));
+            toast.ok(t('cohorts.client_deleted'));
             if (_relClientSlug === client.slug) { _relClientSlug = null; _relTurmaSlug = null; }
             if (_selectedClientSlug === client.slug) _selectedClientSlug = null;
             _loadAll();
-          }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+          }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
         }
       });
     });
@@ -633,9 +624,9 @@ function _openClientForm(client) {
   bd.querySelector('#cdx-cf-save').addEventListener('click', () => {
     const name    = bd.querySelector('#cdx-cf-name').value.trim();
     const display = bd.querySelector('#cdx-cf-display').value.trim();
-    if (!name) { _toast(t('cohorts.name_required')); return; }
+    if (!name) { toast.err(t('cohorts.name_required')); return; }
     const slug = isEdit ? client.slug : _slugify(name);
-    if (!slug) { _toast(t('cohorts.slug_invalid')); return; }
+    if (!slug) { toast.err(t('cohorts.slug_invalid')); return; }
 
     const iconMode = bd.querySelector('input[name="cdx-cf-icon-mode"]:checked').value;
     const iconUrl  = bd.querySelector('#cdx-cf-icon-url').value.trim();
@@ -655,9 +646,9 @@ function _openClientForm(client) {
       return Promise.resolve();
     }).then(() => {
       _closeModal(bd);
-      _toast(isEdit ? t('cohorts.client_updated') : t('cohorts.client_created'));
+      toast.ok(isEdit ? t('cohorts.client_updated') : t('cohorts.client_created'));
       _loadAll();
-    }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
   });
 }
 
@@ -712,20 +703,20 @@ function _archiveTurma(clientSlug, turmaSlug) {
     message: t('cohorts.archive_turma_msg'),
     onConfirm() {
       api.archiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
-        _toast(t('cohorts.turma_archived'));
+        toast.ok(t('cohorts.turma_archived'));
         const tm = _findTurma(clientSlug, turmaSlug);
         if (tm) { tm.status = 'archived'; _renderList(); _refreshDossierHeader(tm); }
-      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
 }
 
 function _unarchiveTurma(clientSlug, turmaSlug) {
   api.unarchiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
-    _toast(t('cohorts.turma_unarchived'));
+    toast.ok(t('cohorts.turma_unarchived'));
     const tm = _findTurma(clientSlug, turmaSlug);
     if (tm) { tm.status = 'active'; _renderList(); _refreshDossierHeader(tm); }
-  }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+  }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
 // Permanent, irreversible delete, gated by the typed-name confirm modal. The
@@ -738,7 +729,7 @@ function _deleteTurma(turma) {
     confirmName: turma.name,
     onConfirm() {
       api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
-        _toast(t('cohorts.turma_deleted'));
+        toast.ok(t('cohorts.turma_deleted'));
         const wasSelected = _relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug;
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
         _renderList();
@@ -750,7 +741,7 @@ function _deleteTurma(turma) {
           const dEl = _q('cdx-turma-dossier');
           if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
         }
-      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
 }
@@ -761,18 +752,18 @@ function _regenToken(clientSlug, turmaSlug) {
     message: t('cohorts.regen_token_msg'),
     onConfirm() {
       api.regenTurmaToken({ client_slug: clientSlug, slug: turmaSlug }).then((res) => {
-        _toast(t('cohorts.token_regenerated'));
+        toast.ok(t('cohorts.token_regenerated'));
         const tm = _findTurma(clientSlug, turmaSlug);
         if (tm && res && res.token) { tm.token = res.token; _refreshDossierTrail(tm); }
-      }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     }
   });
 }
 
 function _copyUrl(url) {
   navigator.clipboard.writeText(url)
-    .then(() => _toast(t('cohorts.link_copied')))
-    .catch(() => _toast(t('cohorts.copy_failed') + ': ' + url));
+    .then(() => toast.info(t('cohorts.link_copied')))
+    .catch(() => toast.err(t('cohorts.copy_failed') + ': ' + url));
 }
 
 // ── Turma form ────────────────────────────────────────────────────────────────
@@ -828,14 +819,8 @@ function _openTurmaForm(turma) {
           '<small class="cdx-field-hint">' + t('cohorts.tf_course_hint') + '</small>' +
         '</div>' +
         '<div class="cdx-tf-grid">' +
-          '<div class="cdx-field"><label>' + t('cohorts.course_hours_label') + '</label>' +
-            '<input type="text" id="cdx-tf-hours" value="' + v('hours') + '" placeholder="' + t('cohorts.course_hours_ph') + '"></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_meetings') + '</label>' +
-            '<input type="text" id="cdx-tf-meetings" value="' + v('meetings') + '" placeholder="' + t('cohorts.tf_meetings_ph') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_date_start') + '</label>' +
             '<input type="date" id="cdx-tf-date-start" value="' + v('date_start') + '"></div>' +
-          '<div class="cdx-field"><label>' + t('cohorts.tf_date_end') + '</label>' +
-            '<input type="date" id="cdx-tf-date-end" value="' + v('date_end') + '"></div>' +
           '<div class="cdx-field"><label>' + t('cohorts.tf_format') + '</label>' +
             '<select id="cdx-tf-format">' + formatOptions + '</select></div>' +
         '</div>' +
@@ -858,21 +843,14 @@ function _openTurmaForm(turma) {
     const bd = _openModal(html);
     bd.querySelector('#cdx-tf-cancel').addEventListener('click', () => _closeModal(bd));
 
-    // Course picker pre-fill (decision 1d): selecting a course seeds the turma's
-    // hours from the course, without clobbering a value already typed. The full
-    // course (with its ementa) is fetched so save can copy it into the turma.
+    // Course picker: fetch the full course (with ementa) when selected so save
+    // can copy it into the turma.
     const courseEl = bd.querySelector('#cdx-tf-course');
-    const hoursEl = bd.querySelector('#cdx-tf-hours');
     courseEl.addEventListener('change', () => {
       _pickedCourse = null;
       const cid = courseEl.value ? Number(courseEl.value) : null;
       if (!cid) return;
-      const fromList = _turmaCourses.find(c => c.id === cid);
-      if (fromList && fromList.hours && !hoursEl.value.trim()) hoursEl.value = fromList.hours;
-      coursesApi.get({ id: cid }).then(d => {
-        _pickedCourse = (d && d.course) || null;
-        if (_pickedCourse && _pickedCourse.hours && !hoursEl.value.trim()) hoursEl.value = _pickedCourse.hours;
-      }).catch(() => {});
+      coursesApi.get({ id: cid }).then(d => { _pickedCourse = (d && d.course) || null; }).catch(() => {});
     });
 
     bd.querySelector('#cdx-tf-save').addEventListener('click', () => {
@@ -880,18 +858,15 @@ function _openTurmaForm(turma) {
       const display   = bd.querySelector('#cdx-tf-display').value.trim();
       const whatsapp  = bd.querySelector('#cdx-tf-whatsapp').value.trim();
       const cpSession = bd.querySelector('#cdx-tf-classpulse').value;
-      if (!name) { _toast(t('cohorts.name_required')); return; }
+      if (!name) { toast.err(t('cohorts.name_required')); return; }
 
       const slug = isEdit ? turma.slug : _slugify(name);
-      if (!slug) { _toast(t('cohorts.slug_invalid')); return; }
+      if (!slug) { toast.err(t('cohorts.slug_invalid')); return; }
 
       const courseId = courseEl.value ? Number(courseEl.value) : null;
       const instance = {
         course_id: courseId,
-        hours: hoursEl.value.trim() || null,
-        meetings: bd.querySelector('#cdx-tf-meetings').value.trim() || null,
         date_start: bd.querySelector('#cdx-tf-date-start').value || null,
-        date_end: bd.querySelector('#cdx-tf-date-end').value || null,
         format: bd.querySelector('#cdx-tf-format').value || null,
         place: bd.querySelector('#cdx-tf-place').value.trim() || null,
       };
@@ -928,52 +903,44 @@ function _openTurmaForm(turma) {
           return Promise.resolve();
         }).then(() => {
           _closeModal(bd);
-          _toast(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
+          toast.ok(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
           // Keep the dossier pointed at the just-saved turma after the reload.
           _relClientSlug = _selectedClientSlug;
           _relTurmaSlug = isEdit ? turma.slug : slug;
           _loadAll();
-        }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+        }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });
 }
 
-// ── Roster (Participantes) ────────────────────────────────────────────────────
+// ── CPF utilities ─────────────────────────────────────────────────────────────
 
-function _renderRosterTable(participants) {
-  if (!participants.length) {
-    return '<p class="cdx-roster-empty">' + t('cohorts.participants_empty') + '</p>';
-  }
-  return (
-    '<table class="cdx-roster-table">' +
-      '<thead>' +
-        '<tr>' +
-          '<th>' + t('cohorts.participant_name') + '</th>' +
-          '<th>' + t('cohorts.participant_email') + '</th>' +
-          '<th>' + t('cohorts.participant_cpf') + '</th>' +
-          '<th></th>' +
-        '</tr>' +
-      '</thead>' +
-      '<tbody>' +
-        participants.map((p) => {
-          const tier = participantTier(p);
-          const badge = '<span class="' + _esc(tierBadgeClass(tier)) + '" title="' + _esc(t(tierTitleKey(tier))) + '">' + _esc(t(tierLabelKey(tier))) + '</span>';
-          return (
-          '<tr data-pid="' + _esc(String(p.id)) + '">' +
-            '<td class="cdx-roster-cell-name">' + _esc(p.name) + ' ' + badge + '</td>' +
-            '<td class="cdx-roster-cell-email">' + _esc(p.email || '') + '</td>' +
-            '<td class="cdx-roster-cell-cpf">' + _esc(p.cpf || '') + '</td>' +
-            '<td class="cdx-roster-cell-actions">' +
-              '<button type="button" class="cdx-btn cdx-btn-sm cdx-roster-edit-btn" data-action="roster-edit" data-pid="' + _esc(String(p.id)) + '">' + t('cohorts.edit') + '</button>' +
-              '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-roster-del-btn" data-action="roster-delete" data-pid="' + _esc(String(p.id)) + '">' + t('cohorts.delete') + '</button>' +
-            '</td>' +
-          '</tr>'
-          );
-        }).join('') +
-      '</tbody>' +
-    '</table>'
-  );
+function _formatCpf(raw) {
+  const v = String(raw || '').replace(/\D/g, '').slice(0, 11);
+  if (v.length > 9) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
+  if (v.length > 6) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
+  if (v.length > 3) return v.slice(0,3)+'.'+v.slice(3);
+  return v;
 }
+function _emailValid(email) {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
+}
+function _cpfValid(cpf) {
+  const s = String(cpf || '').replace(/\D/g, '');
+  if (s.length !== 11 || /^(.)\1+$/.test(s)) return false;
+  let sum = 0; for (let i = 0; i < 9; i++) sum += Number(s[i]) * (10 - i);
+  let r = (sum * 10) % 11; if (r >= 10) r = 0;
+  if (r !== Number(s[9])) return false;
+  sum = 0; for (let i = 0; i < 10; i++) sum += Number(s[i]) * (11 - i);
+  r = (sum * 10) % 11; if (r >= 10) r = 0;
+  return r === Number(s[10]);
+}
+function _wireCpfMask(el) {
+  if (el && el.value) el.value = _formatCpf(el.value);
+  if (el) el.addEventListener('input', () => { el.value = _formatCpf(el.value); });
+}
+
+// ── Participantes: add + import (the unified list itself lives in the dossier panel) ──
 
 // A plain-language legend for the participant list: what each tag, status, and
 // connection mark means. Opened from the "?" glyph next to "Participantes" so the
@@ -1011,160 +978,89 @@ function _openParticipantsHelp() {
   bd.querySelector('#cdx-phelp-close').addEventListener('click', () => _closeModal(bd));
 }
 
-function _openRosterModal(turma) {
-  // Build the modal shell. The participant list will be filled after the API call.
-  const modalHtml =
-    '<div class="cdx-modal cdx-roster-modal" style="max-width:680px;max-height:88vh;overflow-y:auto">' +
-      '<div class="cdx-modal-title">' +
-        _esc(t('cohorts.participants_title') + ': ' + (turma.display_name || turma.name)) +
+// Add a single participant (name + e-mail + optional CPF). A focused form, NOT a
+// second copy of the list — the unified list lives in the dossier panel and is
+// refreshed on save. (Mock B+C2: the "+ Adicionar" header button.)
+function _openAddParticipant(turma) {
+  const html =
+    '<div class="cdx-modal" style="max-width:480px">' +
+      '<div class="cdx-modal-title">' + _esc(t('cohorts.participants_add')) + '</div>' +
+      '<div class="cdx-field">' +
+        '<label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
+        '<input type="text" id="cdx-padd-name" autocomplete="off" placeholder="' + t('cohorts.participant_name_ph') + '">' +
       '</div>' +
-
-      // List area
-      '<div id="cdx-roster-list">' +
-        '<p class="cdx-roster-empty">' + t('cohorts.loading') + '</p>' +
+      '<div class="cdx-roster-two-col">' +
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.participant_email') + '</label>' +
+          '<input type="text" id="cdx-padd-email" autocomplete="off" placeholder="' + t('cohorts.participant_email_ph') + '">' +
+        '</div>' +
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.participant_cpf') + '</label>' +
+          '<input type="text" id="cdx-padd-cpf" autocomplete="off" maxlength="14" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+        '</div>' +
       '</div>' +
-
-      // Add participant form
-      '<details class="cdx-roster-section" id="cdx-roster-add-section">' +
-        '<summary class="cdx-roster-section-title">' + t('cohorts.participants_add') + '</summary>' +
-        '<div class="cdx-roster-add-form">' +
-          '<div class="cdx-field">' +
-            '<label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
-            '<input type="text" id="cdx-roster-add-name" autocomplete="off" placeholder="' + t('cohorts.participant_name_ph') + '">' +
-          '</div>' +
-          '<div class="cdx-roster-two-col">' +
-            '<div class="cdx-field">' +
-              '<label>' + t('cohorts.participant_email') + '</label>' +
-              '<input type="text" id="cdx-roster-add-email" autocomplete="off" placeholder="' + t('cohorts.participant_email_ph') + '">' +
-            '</div>' +
-            '<div class="cdx-field">' +
-              '<label>' + t('cohorts.participant_cpf') + '</label>' +
-              '<input type="text" id="cdx-roster-add-cpf" autocomplete="off" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
-            '</div>' +
-          '</div>' +
-          '<div class="cdx-modal-actions cdx-roster-add-actions">' +
-            '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-roster-add-btn">' + t('cohorts.participants_add_btn') + '</button>' +
-          '</div>' +
-        '</div>' +
-      '</details>' +
-
-      // Bulk import form
-      '<details class="cdx-roster-section" id="cdx-roster-import-section">' +
-        '<summary class="cdx-roster-section-title">' + t('cohorts.participants_import') + '</summary>' +
-        '<div class="cdx-roster-import-form">' +
-          '<p class="cdx-helper-text">' + t('cohorts.participants_import_hint') + '</p>' +
-          '<textarea id="cdx-roster-import-text" class="cdx-roster-import-textarea" placeholder="' + t('cohorts.participants_import_ph') + '" rows="6"></textarea>' +
-          '<div class="cdx-modal-actions cdx-roster-import-actions">' +
-            '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-roster-import-btn">' + t('cohorts.participants_import_btn') + '</button>' +
-          '</div>' +
-        '</div>' +
-      '</details>' +
-
-      '<div class="cdx-modal-actions" style="margin-top:1rem">' +
-        '<button type="button" class="cdx-btn" id="cdx-roster-close">' + t('cohorts.close') + '</button>' +
+      '<div class="cdx-modal-actions">' +
+        '<button type="button" class="cdx-btn" id="cdx-padd-cancel">' + t('cohorts.cancel') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-padd-save">' + t('cohorts.participants_add_btn') + '</button>' +
       '</div>' +
     '</div>';
-
-  const bd = _openModal(modalHtml, { disableBackdropClose: false });
-
-  // Wire close button
-  bd.querySelector('#cdx-roster-close').addEventListener('click', () => _closeModal(bd));
-
-  // State for the in-modal edit form
-  let _participants = [];
-
-  // Refresh participant list
-  function _loadRoster() {
-    const listEl = bd.querySelector('#cdx-roster-list');
-    if (listEl) listEl.innerHTML = '<p class="cdx-roster-empty">' + t('cohorts.loading') + '</p>';
-    api.listParticipants({ turma_id: turma.id }).then((data) => {
-      _participants = (data && data.participants) || [];
-      const listEl2 = bd.querySelector('#cdx-roster-list');
-      if (listEl2) listEl2.innerHTML = _renderRosterTable(_participants);
-      _wireRosterTableEvents();
-    }).catch((err) => {
-      const listEl2 = bd.querySelector('#cdx-roster-list');
-      if (listEl2) listEl2.innerHTML = '<p class="cdx-roster-empty">' + _esc(t('cohorts.error_loading')) + '</p>';
-      if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (err && err.message || err), 'error');
-    });
-  }
-
-  function _wireRosterTableEvents() {
-    const listEl = bd.querySelector('#cdx-roster-list');
-    if (!listEl) return;
-
-    listEl.querySelectorAll('[data-action="roster-delete"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const pid = btn.dataset.pid;
-        const participant = _participants.find((p) => String(p.id) === String(pid));
-        if (!participant) return;
-        _openArchiveConfirm({
-          title: t('cohorts.participants_delete_title'),
-          message: t('cohorts.participants_delete_msg') + ' "' + participant.name + '"?',
-          onConfirm() {
-            api.deleteParticipant({ id: pid }).then(() => {
-              _toast(t('cohorts.participant_deleted'));
-              _loadRoster();
-            }).catch((err) => {
-              _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
-              if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
-            });
-          }
-        });
-      });
-    });
-
-    listEl.querySelectorAll('[data-action="roster-edit"]').forEach((btn) => {
-      btn.addEventListener('click', () => {
-        const pid = btn.dataset.pid;
-        const participant = _participants.find((p) => String(p.id) === String(pid));
-        if (!participant) return;
-        _openParticipantEditModal(participant, () => _loadRoster());
-      });
-    });
-  }
-
-  // Wire add form
-  bd.querySelector('#cdx-roster-add-btn').addEventListener('click', () => {
-    const nameEl  = bd.querySelector('#cdx-roster-add-name');
-    const emailEl = bd.querySelector('#cdx-roster-add-email');
-    const cpfEl   = bd.querySelector('#cdx-roster-add-cpf');
+  const bd = _openModal(html);
+  _wireCpfMask(bd.querySelector('#cdx-padd-cpf'));
+  bd.querySelector('#cdx-padd-cancel').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('#cdx-padd-save').addEventListener('click', () => {
+    const nameEl  = bd.querySelector('#cdx-padd-name');
+    const emailEl = bd.querySelector('#cdx-padd-email');
+    const cpfEl   = bd.querySelector('#cdx-padd-cpf');
     const name  = nameEl.value.trim();
-    const email = emailEl.value.trim() || null;
-    const cpf   = cpfEl.value.trim() || null;
-    if (!name) { _toast(t('cohorts.name_required')); nameEl.focus(); return; }
+    const email = emailEl.value.trim();
+    const cpf   = cpfEl.value.replace(/\D/g, '') ? cpfEl.value.trim() : null;
+    if (!name)  { toast.err(t('cohorts.name_required'));  nameEl.focus();  return; }
+    if (!email) { toast.err(t('cohorts.email_required')); emailEl.focus(); return; }
+    if (!_emailValid(email)) { toast.err(t('cohorts.email_invalid')); emailEl.focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { toast.err(t('cohorts.cpf_invalid')); cpfEl.focus(); return; }
     api.addParticipant({ turma_id: turma.id, name, email, cpf }).then(() => {
-      _toast(t('cohorts.participant_added'));
-      nameEl.value  = '';
-      emailEl.value = '';
-      cpfEl.value   = '';
-      _loadRoster();
+      toast.ok(t('cohorts.participant_added'));
+      _closeModal(bd);
+      _loadDossierParticipants(turma);
     }).catch((err) => {
-      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
-      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
     });
   });
+}
 
-  // Wire bulk import
-  bd.querySelector('#cdx-roster-import-btn').addEventListener('click', () => {
-    const textEl = bd.querySelector('#cdx-roster-import-text');
-    const text = textEl.value;
-    const rows = parseRosterLines(text);
-    if (!rows.length) { _toast(t('cohorts.participants_import_empty')); return; }
+// Bulk import (paste name / e-mail / CPF lines). Focused form; refreshes the panel
+// list on success. (Mock B+C2: the "⇪ Importar" header button.)
+function _openImportParticipants(turma) {
+  const html =
+    '<div class="cdx-modal" style="max-width:560px;max-height:88vh;overflow-y:auto">' +
+      '<div class="cdx-modal-title">' + _esc(t('cohorts.participants_import')) + '</div>' +
+      '<p class="cdx-helper-text">' + t('cohorts.participants_import_hint') + '</p>' +
+      '<textarea id="cdx-pimport-text" class="cdx-roster-import-textarea" placeholder="' + t('cohorts.participants_import_ph') + '" rows="8"></textarea>' +
+      '<div class="cdx-modal-actions">' +
+        '<button type="button" class="cdx-btn" id="cdx-pimport-cancel">' + t('cohorts.cancel') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" id="cdx-pimport-save">' + t('cohorts.participants_import_btn') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = _openModal(html);
+  bd.querySelector('#cdx-pimport-cancel').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('#cdx-pimport-save').addEventListener('click', () => {
+    const textEl = bd.querySelector('#cdx-pimport-text');
+    const rows = parseRosterLines(textEl.value);
+    if (!rows.length) { toast.err(t('cohorts.participants_import_empty')); return; }
+    const noEmail = rows.find((r) => !r.email);
+    if (noEmail) { toast.err(t('cohorts.email_required') + ' (' + noEmail.name + ')'); return; }
+    const badEmail = rows.find((r) => !_emailValid(r.email));
+    if (badEmail) { toast.err(t('cohorts.email_invalid') + ' (' + badEmail.name + ')'); return; }
+    const badCpf = rows.find((r) => r.cpf && !_cpfValid(r.cpf));
+    if (badCpf) { toast.err(t('cohorts.cpf_invalid') + ' (' + badCpf.name + ')'); return; }
     api.importParticipants({ turma_id: turma.id, rows }).then(() => {
-      _toast(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
-      textEl.value = '';
-      const section = bd.querySelector('#cdx-roster-import-section');
-      if (section) section.removeAttribute('open');
-      _loadRoster();
+      toast.ok(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
+      _closeModal(bd);
+      _loadDossierParticipants(turma);
     }).catch((err) => {
-      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
-      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
     });
   });
-
-  // Initial load
-  _loadRoster();
 }
 
 function _openParticipantEditModal(participant, onSaved) {
@@ -1178,7 +1074,7 @@ function _openParticipantEditModal(participant, onSaved) {
         '<input type="text" id="cdx-pe-email" value="' + _esc(participant.email || '') + '" placeholder="' + t('cohorts.participant_email_ph') + '">' +
       '</div>' +
       '<div class="cdx-field"><label>' + t('cohorts.participant_cpf') + '</label>' +
-        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
+        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" maxlength="14" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
       '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-pe-cancel">' + t('cohorts.cancel') + '</button>' +
@@ -1187,19 +1083,23 @@ function _openParticipantEditModal(participant, onSaved) {
     '</div>';
 
   const bd = _openModal(html);
+  _wireCpfMask(bd.querySelector('#cdx-pe-cpf'));
   bd.querySelector('#cdx-pe-cancel').addEventListener('click', () => _closeModal(bd));
   bd.querySelector('#cdx-pe-save').addEventListener('click', () => {
-    const name  = bd.querySelector('#cdx-pe-name').value.trim();
-    const email = bd.querySelector('#cdx-pe-email').value.trim() || null;
-    const cpf   = bd.querySelector('#cdx-pe-cpf').value.trim() || null;
-    if (!name) { _toast(t('cohorts.name_required')); bd.querySelector('#cdx-pe-name').focus(); return; }
+    const name   = bd.querySelector('#cdx-pe-name').value.trim();
+    const email  = bd.querySelector('#cdx-pe-email').value.trim();
+    const cpfEl2 = bd.querySelector('#cdx-pe-cpf');
+    const cpf    = cpfEl2.value.replace(/\D/g, '') ? cpfEl2.value.trim() : null;
+    if (!name)  { toast.err(t('cohorts.name_required'));  bd.querySelector('#cdx-pe-name').focus();  return; }
+    if (!email) { toast.err(t('cohorts.email_required')); bd.querySelector('#cdx-pe-email').focus(); return; }
+    if (!_emailValid(email)) { toast.err(t('cohorts.email_invalid')); bd.querySelector('#cdx-pe-email').focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { toast.err(t('cohorts.cpf_invalid')); cpfEl2.focus(); return; }
     api.updateParticipant({ id: participant.id, name, email, cpf }).then(() => {
       _closeModal(bd);
-      _toast(t('cohorts.participant_updated'));
+      toast.ok(t('cohorts.participant_updated'));
       if (onSaved) onSaved();
     }).catch((err) => {
-      _toastError(t('cohorts.error') + ': ' + (err && err.message || err));
-      if (window.bsLog) window.bsLog(t('cohorts.error') + ': ' + (err && err.message || err), 'error');
+      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
     });
   });
 }
@@ -1234,7 +1134,6 @@ function _renderDossier(turma) {
   if (!el) return;
   if (!turma) { el.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
-  _dossierPFilter = 'all';
   _dossierParticipants = [];
 
   const client = _clients.find((c) => c.slug === turma.client_slug) || {};
@@ -1338,7 +1237,10 @@ function _renderDossier(turma) {
       '<div class="cdx-doss-panel" data-dpanel="participantes" hidden>' +
         '<div class="cdx-doss-panel-bar">' +
           '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button>' +
-          '<span class="cdx-doss-sec-acts"><button class="cdx-btn cdx-btn-sm" data-doss="roster">' + _esc(t('cohorts.participants_btn')) + '</button></span>' +
+          '<span class="cdx-doss-sec-acts">' +
+            '<button class="cdx-btn cdx-btn-sm" data-doss="padd">+ ' + _esc(t('cohorts.participants_add_btn')) + '</button>' +
+            '<button class="cdx-btn cdx-btn-sm" data-doss="pimport">⇪ ' + _esc(t('cohorts.participants_import_btn')) + '</button>' +
+          '</span>' +
         '</div>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
@@ -1367,9 +1269,10 @@ function _renderDossier(turma) {
 
   el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', (e) => {
     const a = b.dataset.doss;
-    // roster/phelp live inside a <summary>; stop the click so it doesn't toggle the section.
-    if (a === 'roster' || a === 'phelp') e.stopPropagation();
-    if (a === 'roster') _openRosterModal(turma);
+    // padd/pimport/phelp live inside the panel bar; stop the click so it doesn't toggle.
+    if (a === 'padd' || a === 'pimport' || a === 'phelp') e.stopPropagation();
+    if (a === 'padd') _openAddParticipant(turma);
+    else if (a === 'pimport') _openImportParticipants(turma);
     else if (a === 'phelp') _openParticipantsHelp();
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'unarchive') _unarchiveTurma(turma.client_slug, turma.slug);
@@ -1468,15 +1371,15 @@ function _wireDossierInlineEdit(el, turma) {
           } else turma[field] = payload[field];
         });
       }
-      call.then(() => _toast(t('cohorts.turma_updated')))
-        .catch((err) => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+      call.then(() => toast.ok(t('cohorts.turma_updated')))
+        .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });
 }
 
-// ── Dossier participant list: inline filterable rows with entry-type tags ──
-
-const _P_STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
+// ── Dossier participant list (B+C2): status separators + adaptive bulk toolbar ──
+// The pure rules (gating, grouping, action predicates) live in participant-view.js
+// and are unit-tested there; this section is the render + DOM wiring only.
 
 function _pTag(p) {
   const st = p.access_status || 'pending';
@@ -1494,90 +1397,157 @@ function _pTag(p) {
   return '<span class="cdx-badge cdx-badge-primary">' + _esc(t('cohorts.ptag_lista')) + '</span>';
 }
 
-function _pRow(p) {
+// 2-letter initials avatar (shared rule, matches the Trail). Tinted by status when
+// approval is gated; a single neutral tint otherwise (status carries no meaning).
+function _pAvatar(p, st, gated) {
+  const tint = !gated ? 'cdx-pav--neutral'
+    : st === 'denied' ? 'cdx-pav--denied'
+    : st === 'pending' ? 'cdx-pav--pending'
+    : 'cdx-pav--approved';
+  return '<span class="cdx-pav ' + tint + '">' + _esc(initials(p.display_name || p.name || p.email || '')) + '</span>';
+}
+
+// One selectable row. No per-row action buttons (B+C2): the whole row toggles its
+// checkbox; the only per-row control is the discreet edit ✎. The status badge shows
+// only when gated; the online dot only for an approved + connected person.
+function _pRow(p, gated) {
   const st = p.access_status || 'pending';
   const online = (p.active_sessions || 0) > 0;
   const unv = (p.email && !p.email_verified)
     ? ' <span class="cdx-prow-warn" title="' + _esc(t('alunos.unverified')) + '">⚠</span>' : '';
-  const conn = st === 'approved'
-    ? (online
-        ? '<span class="cdx-prow-conn ok">✓ ' + _esc(t('cohorts.conn_online')) + '</span>'
-        : '<span class="cdx-prow-conn">• ' + _esc(t('cohorts.conn_waiting')) + '</span>')
-    : '';
-  let acts = '';
-  if (st === 'pending') acts += '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-dp-approve">' + _esc(t('alunos.approve')) + '</button>';
-  // Block toggle (Élder): pending/approved -> Bloquear (denied, sticks); denied -> Desbloquear.
-  if (st === 'denied')  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-unblock">' + _esc(t('alunos.unblock')) + '</button>';
-  else                  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-block">'  + _esc(t('alunos.block'))   + '</button>';
-  acts += '<button class="cdx-btn cdx-btn-sm cdx-dp-remove">' + _esc(t('alunos.remove')) + '</button>';
-  return '<div class="cdx-prow" data-pid="' + p.id + '">' +
+  const onlineDot = (gated && st === 'approved' && online)
+    ? ' <span class="cdx-prow-online" title="' + _esc(t('cohorts.conn_online')) + '">●</span>' : '';
+  const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
+  const name = p.display_name || p.name || ('#' + p.id);
+  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '">' +
+    '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
+    _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(p.display_name || p.name || ('#' + p.id)) + unv + '</div>' +
-      '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
+      '<div class="cdx-prow-name">' + _esc(name) + onlineDot + '</div>' +
+      '<div class="cdx-prow-mail">' + _esc(p.email || '') + unv + '</div>' +
     '</div>' +
-    '<div class="cdx-prow-meta">' + _pTag(p) + conn + '</div>' +
-    '<div class="cdx-prow-acts">' + acts + '</div>' +
+    badge +
+    '<button type="button" class="cdx-prow-edit" data-edit title="' + _esc(t('cohorts.participant_edit_title')) + '">✎</button>' +
   '</div>';
 }
 
-function _paintDossierParticipants(el) {
+// A status separator: dot + "Pendentes · N" + a "selecionar seção" link that checks
+// every row in that section at once.
+function _pSep(status, count) {
+  return '<div class="cdx-psec" data-section="' + status + '">' +
+    '<span class="cdx-psec-dot cdx-psec-dot--' + status + '"></span>' +
+    '<span class="cdx-psec-t">' + _esc(t('alunos.filter_' + status)) + ' · ' + count + '</span>' +
+    '<span class="cdx-psec-sp"></span>' +
+    '<button type="button" class="cdx-psec-sel" data-secsel="' + status + '">' + _esc(t('alunos.select_section')) + '</button>' +
+  '</div>';
+}
+
+function _paintDossierParticipants(el, turma) {
   const ps = _dossierParticipants;
-  const pendCount = ps.filter((p) => (p.access_status || 'pending') === 'pending').length;
+  const gated = isApprovalGated(turma);
   const countEl = _q('cdx-doss-p-count');
   if (countEl) countEl.textContent = ps.length || '';
-  const chips = ['all', 'pending', 'approved', 'denied'].map((f) =>
-    '<button class="cdx-pchip' + (f === _dossierPFilter ? ' on' : '') + '" data-pfilter="' + f + '">' +
-      _esc(t('alunos.filter_' + f)) + (f === 'pending' && pendCount ? ' (' + pendCount + ')' : '') +
-    '</button>').join('');
-  const approveAll = pendCount
-    ? '<button class="cdx-btn cdx-btn-sm cdx-dp-approve-all" style="margin-left:auto">' + _esc(t('alunos.approve_all')) + '</button>'
-    : '';
-  let list = ps.slice();
-  if (_dossierPFilter !== 'all') list = list.filter((p) => (p.access_status || 'pending') === _dossierPFilter);
-  list.sort((a, b) => {
-    const ra = _P_STATUS_RANK[a.access_status || 'pending'] ?? 9;
-    const rb = _P_STATUS_RANK[b.access_status || 'pending'] ?? 9;
-    return ra !== rb ? ra - rb
-      : String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
-  });
-  el.innerHTML =
-    '<div class="cdx-pfilter">' + chips + approveAll + '</div>' +
-    (list.length ? list.map(_pRow).join('') : '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>');
+
+  if (!ps.length) {
+    el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>';
+    return;
+  }
+
+  // Adaptive toolbar: master "Todos" + live count + the wired bulk actions. Each
+  // action button greys out unless EVERY selected row's status permits it (B+C2).
+  // Only backend-wired actions are offered (see toolbarActions / participant-view).
+  const toolbar =
+    '<div class="cdx-ptb">' +
+      '<label class="cdx-ptb-all"><input type="checkbox" class="cdx-pall">' + _esc(t('alunos.filter_all')) + '</label>' +
+      '<span class="cdx-ptb-count">0 ' + _esc(t('alunos.sel_suffix')) + '</span>' +
+      toolbarActions(gated).map((act) =>
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-ptb-act" data-act="' + act + '" disabled>' +
+          _esc(t('alunos.' + act)) + '</button>').join('') +
+    '</div>';
+
+  // Gated -> one list broken into status sections (pending first). Not gated ->
+  // a flat name-sorted roster (no status, since approval makes no difference).
+  const body = gated
+    ? groupParticipantsByStatus(ps)
+        .map((g) => _pSep(g.status, g.rows.length) + g.rows.map((p) => _pRow(p, true)).join(''))
+        .join('')
+    : sortByName(ps).map((p) => _pRow(p, false)).join('');
+
+  el.innerHTML = toolbar + '<div class="cdx-plist">' + body + '</div>';
 }
 
 function _wireDossierParticipants(el, turma) {
-  el.querySelectorAll('[data-pfilter]').forEach((b) => {
-    b.addEventListener('click', () => {
-      _dossierPFilter = b.dataset.pfilter;
-      _paintDossierParticipants(el);
-      _wireDossierParticipants(el, turma);
+  const rows = Array.prototype.slice.call(el.querySelectorAll('.cdx-prow'));
+  const acts = Array.prototype.slice.call(el.querySelectorAll('.cdx-ptb-act'));
+  const allChk = el.querySelector('.cdx-pall');
+  const countEl = el.querySelector('.cdx-ptb-count');
+  const chkOf = (r) => r.querySelector('.cdx-pchk');
+  const selected = () => rows.filter((r) => { const c = chkOf(r); return c && c.checked; });
+
+  // Recompute the selection highlight, the count, the master checkbox, and which
+  // toolbar actions are live (greyed unless they fit every selected row).
+  function refresh() {
+    const sel = selected();
+    rows.forEach((r) => { const c = chkOf(r); r.classList.toggle('is-on', !!(c && c.checked)); });
+    if (countEl) countEl.textContent = sel.length + ' ' + t('alunos.sel_suffix');
+    const sts = sel.map((r) => r.dataset.status);
+    acts.forEach((b) => { b.disabled = !actionEnabled(b.dataset.act, sts); });
+    if (allChk) allChk.checked = rows.length > 0 && sel.length === rows.length;
+  }
+
+  rows.forEach((r) => {
+    const c = chkOf(r);
+    // Clicking anywhere on the row toggles its checkbox (except the edit ✎).
+    r.addEventListener('click', (e) => {
+      if (e.target.closest('[data-edit]')) return;
+      if (e.target !== c && c) c.checked = !c.checked;
+      refresh();
+    });
+    const ed = r.querySelector('[data-edit]');
+    if (ed) ed.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = Number(r.dataset.pid);
+      const p = _dossierParticipants.find((x) => Number(x.id) === id);
+      if (p) _openParticipantEditModal(p, () => _loadDossierParticipants(turma));
     });
   });
-  const allBtn = el.querySelector('.cdx-dp-approve-all');
-  if (allBtn) allBtn.addEventListener('click', async () => {
-    const ids = _dossierParticipants.filter((p) => (p.access_status || 'pending') === 'pending').map((p) => p.id);
+
+  if (allChk) allChk.addEventListener('change', () => {
+    rows.forEach((r) => { const c = chkOf(r); if (c) c.checked = allChk.checked; });
+    refresh();
+  });
+
+  el.querySelectorAll('[data-secsel]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const sec = btn.dataset.secsel;
+      rows.forEach((r) => { if (r.dataset.status === sec) { const c = chkOf(r); if (c) c.checked = true; } });
+      refresh();
+    });
+  });
+
+  acts.forEach((b) => b.addEventListener('click', async () => {
+    if (b.disabled) return;
+    const ids = selected().map((r) => Number(r.dataset.pid));
     if (!ids.length) return;
-    allBtn.disabled = true;
-    await api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: location.origin }).catch(() => {});
-    _loadDossierParticipants(turma);
-  });
-  el.querySelectorAll('.cdx-prow').forEach((row) => {
-    const id = Number(row.dataset.pid);
-    const reload = () => _loadDossierParticipants(turma);
-    const ap = row.querySelector('.cdx-dp-approve');
-    const block = row.querySelector('.cdx-dp-block');
-    const unblock = row.querySelector('.cdx-dp-unblock');
-    const rm = row.querySelector('.cdx-dp-remove');
-    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'approved', origin: location.origin }).catch(() => {}); reload(); });
-    if (block) block.addEventListener('click', async () => { block.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'denied' }).catch(() => {}); reload(); });
-    if (unblock) unblock.addEventListener('click', async () => { unblock.disabled = true; await api.setParticipantAccess({ participant_id: id, status: 'pending' }).catch(() => {}); reload(); });
-    if (rm) rm.addEventListener('click', async () => {
-      if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
-      rm.disabled = true;
-      await api.deleteParticipant({ id }).catch(() => {});
-      reload();
-    });
-  });
+    const act = b.dataset.act;
+    if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
+    acts.forEach((x) => { x.disabled = true; });
+    try {
+      if (act === 'remove') {
+        for (const id of ids) { await api.deleteParticipant({ id }).catch(() => {}); }
+      } else {
+        const status = actionTargetStatus(act);
+        const payload = { participant_ids: ids, status };
+        if (status === 'approved') payload.origin = location.origin;
+        await api.setParticipantAccess(payload).catch(() => {});
+      }
+    } finally {
+      _loadDossierParticipants(turma);
+    }
+  }));
+
+  refresh();
 }
 
 function _loadDossierParticipants(turma) {
@@ -1585,7 +1555,7 @@ function _loadDossierParticipants(turma) {
     _dossierParticipants = (d && d.participants) || [];
     const el = _q('cdx-doss-participants');
     if (!el) return;
-    _paintDossierParticipants(el);
+    _paintDossierParticipants(el, turma);
     _wireDossierParticipants(el, turma);
   }).catch(() => {});
 }
@@ -1790,10 +1760,10 @@ function _reorderAulas(fromId, tgtId) {
     turma_slug: _relTurmaSlug,
     ordered_ids: _turmaAulas.map((a) => a.id),
   }).then(() => {
-    _toast(t('cohorts.aulas_reordered'));
+    toast.ok(t('cohorts.aulas_reordered'));
   }).catch((err) => {
     if (window.bsLog) window.bsLog('cohorts: reorder aulas failed: ' + (err && err.message || err), 'error');
-    _toastError(t('cohorts.error') + ': ' + (err.message || err));
+    notice.internal(t('cohorts.error') + ': ' + (err.message || err));
     _loadTurmaAulas(_relClientSlug, _relTurmaSlug);
   });
 }
@@ -1893,10 +1863,10 @@ function _wireAulaEditorEvents(row, aula, idx) {
       aula.happened_on      = payload.happened_on;
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
-      _toast(t('cohorts.aula_saved'));
+      toast.ok(t('cohorts.aula_saved'));
       _renderTurmaAulas();
       _refreshDerivedFacts();
-    }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+    }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
   });
 
   cancelBtn.addEventListener('click', () => {
@@ -1921,10 +1891,10 @@ function _wireAulaEditorEvents(row, aula, idx) {
       onConfirm() {
         api.deleteAula({ id: aula.id }).then(() => {
           _turmaAulas.splice(idx, 1);
-          _toast(t('cohorts.aula_deleted'));
+          toast.ok(t('cohorts.aula_deleted'));
           _renderTurmaAulas();
           _refreshDerivedFacts();
-        }).catch(err => _toastError(t('cohorts.error') + ': ' + (err.message || err)));
+        }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
       }
     });
   });

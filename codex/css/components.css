@@ -169,8 +169,9 @@
 .cdx-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-primary); }
 .cdx-table tr:hover td { background: var(--surface-hover); }
 
-/* ── TOASTS ──────────────────────────────────────────────────────────────────*/
-.cdx-toast { display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; border: 1px solid transparent; }
+/* ── TOAST (transient status surface, bottom-right; pairs with js/toast.js) ───*/
+.cdx-toast { position: fixed; bottom: 3.5rem; right: 1rem; z-index: 99998; display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; border: 1px solid transparent; max-width: 320px; opacity: 0; transform: translateY(10px); transition: opacity .3s, transform .3s; pointer-events: none; }
+.cdx-toast.show { opacity: 1; transform: translateY(0); }
 .cdx-toast-success { background: var(--tint-success); color: var(--tint-success-tx); border-color: var(--cdx-success-border); }
 .cdx-toast-danger  { background: var(--tint-danger);  color: var(--tint-danger-tx); }
 .cdx-toast-info    { background: var(--tint-info);    color: var(--tint-info-tx); }

@@ -8,6 +8,7 @@ import { state } from './state.js';
 import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
+import { initials } from '../../js/initials.js';
 import { t } from '../i18n.js';
 import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
@@ -128,8 +129,8 @@ function renderHero(root) {
     avatarEl.style.background = 'var(--background)';
   } else if (avatarEl) {
     const name = client.display_name || '';
-    const initials = name.split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-    avatarEl.innerHTML = initials ? '<span class="cdx-tr-avatar-initials">' + esc(initials) + '</span>' : '';
+    const ini = initials(name);
+    avatarEl.innerHTML = ini ? '<span class="cdx-tr-avatar-initials">' + esc(ini) + '</span>' : '';
   }
 
   const titleBase = turma.display_name || turma.name;
@@ -160,6 +161,8 @@ function buildLoginPill() {
       openLoginModal({
         client: state.clientSlug, turma: state.turmaSlug, k: state.token,
         presence: getPresence(state.clientSlug, state.turmaSlug),
+        // Simple-enroll turma: the pill opens the e-mail-only step, not the código flow.
+        simple: !!(((state.data || {}).access || {}).simple_enroll),
         onAuthenticated: afterAuth,
       });
     }
@@ -285,8 +288,9 @@ function renderHeaderActions() {
 }
 
 // Two-letter avatar initials from a display name (header settings button).
+// Delegates to the shared rule so the Trail and the Alunos roster always match.
 function avatarInitials(name) {
-  return String(name || '').split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
+  return initials(name);
 }
 
 // QR enrollment return: the in-class QR carries ?et=<token>. It ALWAYS claims a

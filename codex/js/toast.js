@@ -1,31 +1,36 @@
-// Codex-owned transient toast.
+// js/toast.js
+// THE transient status surface for all of Codex. Ephemeral, bottom-right, auto-
+// dismiss. It reports the STATUS of an operation the user just did — saved,
+// created, deleted, or a quick validation that failed. It is NOT a notification
+// surface: alerts the admin must act on (and that Trilha can reuse for users)
+// live in the persistent top-right notice surface (js/notice.js). Two surfaces,
+// two roles, both shared modules so behavior never drifts from one page to
+// another — import and call directly, no per-page wrapper.
 //
-// cdx- port of the backstage BSToast global. Mount-free: a .cdx-toast div is
-// appended to <body> and removed after the dwell. The .cdx-toast / .cdx-toast.show
-// CSS lives in Codex's own css/toast.css, so the toast looks identical without
-// loading the legacy shared-components.css.
+//   toast.ok(msg)    success / confirmation — green  ("Turma salva")
+//   toast.err(msg)   operation / validation failed — red ("CPF inválido")
+//   toast.info(msg)  neutral status — blue ("Link copiado")
 //
-// Used by the admin tab modules (cohorts/content/lessons) which call it through
-// the window.BSToast seam (guarded). This module provides that global from Codex,
-// replacing the backstage/js/bs-toast.js dependency, and also exports toast() for
-// any module that prefers a direct import.
+// Look (bg/color) + layout (bottom-right, animation) live in the .cdx-toast*
+// rules in css/components.css. The bottom offset clears the debug pill.
 
-export function toast(msg, duration) {
+// Errors dwell longer than confirmations so a validation message stays readable
+// (the original complaint), without becoming a persistent banner.
+var DWELL = { success: 2500, info: 2500, danger: 4000 };
+
+function _show(msg, type) {
   if (typeof document === 'undefined') return;
-  const el = document.createElement('div');
-  el.className = 'cdx-toast';
+  var el = document.createElement('div');
+  el.className = 'cdx-toast cdx-toast-' + type;
   el.textContent = msg;
   document.body.appendChild(el);
-  setTimeout(() => el.classList.add('show'), 10);
-  const dwell = duration || 2500;
-  setTimeout(() => {
+  setTimeout(function () { el.classList.add('show'); }, 10);
+  setTimeout(function () {
     el.classList.remove('show');
-    setTimeout(() => { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
-  }, dwell);
+    setTimeout(function () { if (el.parentNode) el.parentNode.removeChild(el); }, 300);
+  }, DWELL[type] || 2500);
 }
 
-// Provide the window.BSToast seam the admin modules reach (same shape as the
-// legacy global: { show(msg, duration) }).
-if (typeof window !== 'undefined') {
-  window.BSToast = window.BSToast || { show: (m, d) => toast(m, d) };
-}
+export function ok(msg)   { _show(msg, 'success'); }
+export function err(msg)  { _show(msg, 'danger'); }
+export function info(msg) { _show(msg, 'info'); }

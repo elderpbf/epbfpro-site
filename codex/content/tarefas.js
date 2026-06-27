@@ -8,13 +8,13 @@
 // one step.
 //
 // The tarefa field registry is now a Codex module (js/tarefa-fields.js),
-// imported below. Remaining shared global:
-//   window.BSToast         (../backstage/js/bs-toast.js)          optional toast
+// imported below.
 import { content as api, releases as relApi, cohorts as cohortsApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { getField, listFields } from '../js/tarefa-fields.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
 
@@ -56,7 +56,6 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast.show(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _fields() { return listFields(); }
@@ -310,12 +309,12 @@ function _saveTarefa(container, item) {
   const anon = container.querySelector('.cdx-tf-anon').checked;
   const activeChip = container.querySelector('.cdx-field-chip-btn.is-active');
   const fieldType = activeChip ? activeChip.dataset.slug : 'text';
-  if (!title) { _toast(t('editor.title_required')); return; }
+  if (!title) { toast.err(t('editor.title_required')); return; }
   const meta = parseMeta(item.meta_json);
   meta.allow_anonymous = anon;
   meta.field_type = fieldType;
   api.updateItem({ id: item.id, title, body_md: body, meta_json: JSON.stringify(meta) }).then(() => {
-    _toast(t('tarefas.updated'));
+    toast.ok(t('tarefas.updated'));
     item.title = title; item.body_md = body; item.meta_json = JSON.stringify(meta);
     const lib = _items.find((i) => i.id === item.id);
     if (lib) { lib.title = title; lib.meta_json = item.meta_json; }
@@ -344,7 +343,7 @@ function _deleteTarefa(item) {
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     relApi.unrelease({ item_id: item.id, client_slug: _client, turma_slug: _turma }).then(() => {
       _closeModal(bd);
-      _toast(t('tarefas.removed'));
+      toast.ok(t('tarefas.removed'));
       if (Number(_selectedId) === Number(item.id)) _selectedId = null;
       _loadTarefas(_client, _turma);
     }).catch((err) => notice.internal(_err(err)));
@@ -436,7 +435,7 @@ function _submissionCardHtml(s) {
 function _deleteSubmission(sid, itemId) {
   _openConfirmSimple(t('tarefas.confirm_delete_answer'), () => {
     api.deleteSubmission({ id: sid }).then(() => {
-      _toast(t('tarefas.answer_deleted'));
+      toast.ok(t('tarefas.answer_deleted'));
       _loadSubmissions(itemId);
     }).catch((err) => notice.internal(_err(err)));
   });
@@ -504,7 +503,7 @@ function _copyFallback(text, flash) {
 
 // ── New tarefa ──────────────────────────────────────────────────────────────
 function _openNew() {
-  if (!_client || !_turma) { _toast(t('tarefas.select_turma_first')); return; }
+  if (!_client || !_turma) { toast.err(t('tarefas.select_turma_first')); return; }
   const html =
     '<div class="cdx-modal" style="max-width:520px">' +
       '<div class="cdx-modal-title">' + t('tarefas.new_title') + '</div>' +
@@ -529,7 +528,7 @@ function _openNew() {
     const body = bd.querySelector('[data-fld="body"]').value;
     const aula = bd.querySelector('[data-fld="aula"]').value.trim();
     const anon = bd.querySelector('[data-fld="anon"]').checked;
-    if (!title) { _toast(t('editor.title_required')); return; }
+    if (!title) { toast.err(t('editor.title_required')); return; }
     const meta = { allow_anonymous: anon, field_type: 'text' };
     const base = { client_slug: _client, turma_slug: _turma };
     api.createItem({ type: 'tarefa', title, body_md: body, meta_json: JSON.stringify(meta) }).then((res) => {
@@ -539,7 +538,7 @@ function _openNew() {
       });
     }).then(() => {
       _closeModal(bd);
-      _toast(t('tarefas.created'));
+      toast.ok(t('tarefas.created'));
       _loadTarefas(_client, _turma);
     }).catch((err) => notice.internal(_err(err)));
   });

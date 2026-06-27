@@ -15,6 +15,7 @@ import { lessons as api, content as contentApi, cohorts as cohortsApi, presets a
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
 import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
@@ -679,7 +680,7 @@ function _openPopup(url) {
 
 function _copyText(text) {
   if (!text) return;
-  const done = () => notice.ok(t('lessons.copied'));
+  const done = () => toast.ok(t('lessons.copied'));
   if (navigator.clipboard && navigator.clipboard.writeText) {
     navigator.clipboard.writeText(text).then(done).catch(() => _fallbackCopy(text, done));
   } else { _fallbackCopy(text, done); }
@@ -709,9 +710,9 @@ async function _copyDriveText(item) {
   try {
     const text = await BS_GOOGLE.drive.getText(fileId, meta.mimeType || '');
     await navigator.clipboard.writeText(text);
-    notice.ok(t('lessons.copy_drive_done'));
+    toast.ok(t('lessons.copy_drive_done'));
   } catch (err) {
-    notice.error(t('lessons.copy_drive_error') + ': ' + ((err && err.message) || err));
+    toast.err(t('lessons.copy_drive_error') + ': ' + ((err && err.message) || err));
   }
 }
 

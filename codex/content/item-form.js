@@ -18,13 +18,14 @@
 // Returns: { isDirty(), getState(), destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast         (Codex toast seam, js/toast.js)    optional toast
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import * as aiSpec from '../js/ai-spec.js';
+import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -35,9 +36,6 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function _toast(msg) {
-  if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
-}
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 // Surface AI failures to the debug pill (client-side parse failures never reach
 // callWorker's logging, so log them here with a response snippet).
@@ -353,7 +351,7 @@ function _renderTagPicker(container, tags, selectedTagIds, onChange) {
           }
           render();
           if (onChange) onChange();
-        }).catch((err) => { _toast(_err(err)); render(); });
+        }).catch((err) => { notice.internal(_err(err)); render(); });
       }
       input.addEventListener('keydown', (e) => {
         if (e.key === 'Enter') { e.preventDefault(); e.stopPropagation(); commit(); }
@@ -560,9 +558,9 @@ export function mount(container, opts) {
           temperature: 0.3,
           max_tokens: aiSpec.MAX_TOKENS
         });
-        if (!res || !res.text) { _logAi('no content', res); _toast(t('editor.ai_no_content')); return; }
+        if (!res || !res.text) { _logAi('no content', res); notice.internal(t('editor.ai_no_content')); return; }
         let parsed = aiSpec.parseModelJson(res.text);
-        if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('editor.ai_bad_format')); return; }
+        if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('editor.ai_bad_format')); return; }
         parsed = aiSpec.enforcePromptVerbatim(parsed, aiContext.rawInput);
 
         aiContext.firstOutput = parsed;
@@ -577,10 +575,10 @@ export function mount(container, opts) {
         const pre = root.querySelector('#ie-preview');
         if (pre && pre.style.display !== 'none') _renderMarkdown(parsed.body_md || '', pre);
         markDirty();
-        _toast(t('editor.item_redone'));
+        toast.ok(t('editor.item_redone'));
       } catch (e) {
         _logAi('exception', null);
-        _toast(_err(e));
+        notice.internal(_err(e));
       } finally {
         btn.disabled = false;
         btn.innerHTML = prev;
@@ -603,8 +601,8 @@ export function mount(container, opts) {
 
   root.querySelector('#ie-save').addEventListener('click', async function () {
     const state = getState();
-    if (state.type === '__new__') { _toast(t('editor.select_type')); return; }
-    if (!state.title) { _toast(t('editor.title_required')); return; }
+    if (state.type === '__new__') { toast.err(t('editor.select_type')); return; }
+    if (!state.title) { toast.err(t('editor.title_required')); return; }
 
     const params = {
       type: state.type,
@@ -649,7 +647,7 @@ export function mount(container, opts) {
       clearDirty();
       onSave(savedItem || { id: savedId });
     } catch (err) {
-      _toast(_err(err));
+      notice.internal(_err(err));
       saveBtn.disabled = false;
     }
   });

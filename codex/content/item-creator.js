@@ -13,12 +13,12 @@
 // Returns: { destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast         (Codex toast seam, js/toast.js)    optional toast
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as aiSpec from '../js/ai-spec.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
@@ -28,9 +28,6 @@ function _esc(s) {
   if (s == null) return '';
   return String(s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-function _toast(msg) {
-  if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
 }
 // Surface AI failures to the debug pill (a client-side parse failure never
 // reaches callWorker's logging, so log it here with a response snippet).
@@ -105,7 +102,7 @@ export function mount(container, opts) {
   // GDoc single-item loader: fetches body_md and pastes it into the raw textarea.
   container.querySelector('#cf-gdoc-load').addEventListener('click', function () {
     const url = container.querySelector('#cf-gdoc-url').value.trim();
-    if (!url) { _toast(t('creator.gdoc_url_required')); return; }
+    if (!url) { toast.err(t('creator.gdoc_url_required')); return; }
     const btn = container.querySelector('#cf-gdoc-load');
     btn.disabled = true;
     btn.textContent = t('creator.loading');
@@ -115,9 +112,9 @@ export function mount(container, opts) {
       if (res && res.preview && res.preview.body_md) {
         rawEl.value = res.preview.body_md;
         rawEl.focus();
-        _toast(t('creator.gdoc_imported'));
+        toast.ok(t('creator.gdoc_imported'));
       } else {
-        _toast(t('creator.gdoc_empty'));
+        toast.err(t('creator.gdoc_empty'));
       }
     }).catch((err) => {
       btn.disabled = false;
@@ -134,7 +131,7 @@ export function mount(container, opts) {
 
   container.querySelector('#cf-ai').addEventListener('click', async function () {
     const raw = rawEl.value.trim();
-    if (!raw) { _toast(t('creator.raw_required')); return; }
+    if (!raw) { toast.err(t('creator.raw_required')); return; }
     const addEmojis = container.querySelector('#cf-emoji-toggle').checked;
     const btn = this;
     const prev = btn.innerHTML;
@@ -148,9 +145,9 @@ export function mount(container, opts) {
         temperature: 0.3,
         max_tokens: aiSpec.MAX_TOKENS
       });
-      if (!res || !res.text) { _logAi('no content', res); _toast(t('creator.ai_no_content')); return; }
+      if (!res || !res.text) { _logAi('no content', res); notice.internal(t('creator.ai_no_content')); return; }
       let parsed = aiSpec.parseModelJson(res.text);
-      if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); _toast(t('creator.ai_bad_format')); return; }
+      if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('creator.ai_bad_format')); return; }
       parsed = aiSpec.enforcePromptVerbatim(parsed, raw);
       // Truncation guard. Deferred cleanup: convert to a cdx confirm modal.
       if (parsed.type !== 'prompt' && aiSpec.looksTruncated(raw, parsed.body_md)) {
@@ -166,7 +163,7 @@ export function mount(container, opts) {
       onAIComplete({ prefill, aiContext, tagLabels: parsed.tag_labels || [] });
     } catch (e) {
       _logAi('exception', null);
-      _toast(t('content.error') + ': ' + ((e && e.message) || e));
+      notice.internal(t('content.error') + ': ' + ((e && e.message) || e));
     } finally {
       btn.disabled = false;
       btn.innerHTML = prev;

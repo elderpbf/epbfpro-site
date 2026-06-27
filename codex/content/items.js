@@ -8,8 +8,7 @@
 // it too).
 //
 // The item renderer + type-filter are now Codex modules (js/item-render.js,
-// js/type-filter.js), imported below. Remaining shared global:
-//   window.BSToast         (../backstage/js/bs-toast.js)         optional toast
+// js/type-filter.js), imported below.
 // Type icons now come from the Codex glyph library (js/glyphs.js), not BSTypeIcon.
 // The item editor and content-first creator are now Codex-native modules
 // (item-form.js / item-creator.js), no longer the legacy window globals.
@@ -21,6 +20,7 @@ import { renderItem } from '../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -86,12 +86,11 @@ function _slugify(s) {
     .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
 }
 
-function _toast(msg) {
-  if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
-}
-// Internal/dev errors go to the debug pill only, never a user toast (Elder's
-// rule). Actionable cases call notice.warn/error directly instead.
-function _toastError(msg) { notice.internal(msg); }
+// Two shared notification surfaces, called directly (no per-page wrapper):
+//   toast.ok / toast.err   transient status (bottom): success + validation
+//   notice.warn            persistent actionable guidance (top), e.g. type_in_use
+//   notice.internal        admin/technical error → debug pill; visible as a notice
+//                          only when the pill is ON (users see only what they act on)
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 
 function _typeMeta(slug) {
@@ -387,7 +386,7 @@ function _showPreview(id) {
     const full = (d && d.item) || light;
     if (full && full.id != null) _detailCache.set(Number(full.id), full);
     if (full && Number(full.id) === Number(_selectedId)) _renderPreview(full);
-  }).catch((e) => { if (reqId === _previewReq) _toastError(_err(e)); });
+  }).catch((e) => { if (reqId === _previewReq) notice.internal(_err(e)); });
 }
 
 function _renderPreview(item, opts) {
@@ -513,7 +512,7 @@ function _updateBulkBar() {
 
 function _bulkDelete() {
   const ids = Array.from(_selectedIds);
-  if (!ids.length) { _toast(t('content.no_selection')); return; }
+  if (!ids.length) { toast.err(t('content.no_selection')); return; }
   _openConfirm({
     title: t('content.delete_items_title'),
     message: t('content.confirm_bulk_delete'),
@@ -530,8 +529,8 @@ function _bulkDelete() {
       _renderItems();
       _updateBulkBar();
       api.bulkDeleteItems({ ids, _silent: true }).then(() => {
-        _toast(ids.length + ' ' + t('content.items_deleted_suffix'));
-      }).catch((e) => { _toastError(_err(e)); _loadItems(); });
+        toast.ok(ids.length + ' ' + t('content.items_deleted_suffix'));
+      }).catch((e) => { notice.internal(_err(e)); _loadItems(); });
     },
   });
 }
@@ -551,10 +550,10 @@ function _deleteItem(id) {
       if (Number(_selectedId) === Number(id)) _selectedId = nextId;
       _renderItems();
       api.deleteItem({ id, _silent: true }).then(() => {
-        _toast(t('content.item_deleted'));
+        toast.ok(t('content.item_deleted'));
       }).catch((e) => {
         // The item still exists server-side; resync truth rather than guess the slot.
-        _toastError(_err(e));
+        notice.internal(_err(e));
         _selectedId = Number(id);
         _loadItems();
       });
@@ -571,15 +570,15 @@ function _duplicateItem(id) {
         _selectedId = Number(d.item.id);   // jump the preview to the new copy
       }
       _renderItems();
-      _toast(t('content.item_duplicated'));
+      toast.ok(t('content.item_duplicated'));
     }
-  }).catch((e) => _toastError(_err(e)));
+  }).catch((e) => notice.internal(_err(e)));
 }
 
 function _openItem(id) {
   api.getItem({ id }).then((d) => {
     _openItemEditorFull((d && d.item) || null, null, null);
-  }).catch((e) => _toastError(_err(e)));
+  }).catch((e) => notice.internal(_err(e)));
 }
 
 // New item: content-first creator (step 1) → full editor (step 2).
@@ -618,7 +617,7 @@ function _openItemEditorFull(item, prefill, aiContext) {
     onCreateType: _openTypeCreateForm,
     onSave: () => {
       _closeModal(bd);
-      _toast(isEdit ? t('content.item_updated') : t('content.item_created'));
+      toast.ok(isEdit ? t('content.item_updated') : t('content.item_created'));
       _detailCache.clear();   // edited content is stale; preview re-fetches
       _loadItems({ silent: true });
       _loadTags();
@@ -681,11 +680,11 @@ function _openTypeCreateForm(callback) {
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     const label = bd.querySelector('[data-fld="label"]').value.trim();
     const slug = bd.querySelector('[data-fld="slug"]').value.trim() || _slugify(label);
-    if (!label || !slug) { _toast(t('content.name_required')); return; }
+    if (!label || !slug) { toast.err(t('content.name_required')); return; }
     api.createType({ slug, label, icon: chosenIcon }).then(() => _loadTypes()).then(() => {
-      _toast(t('content.type_created'));
+      toast.ok(t('content.type_created'));
       done(slug);
-    }).catch((e) => _toastError(_err(e)));
+    }).catch((e) => notice.internal(_err(e)));
   });
 }
 
@@ -763,8 +762,8 @@ function _openTypeManager() {
     if (action === 'glyph') {
       _openGlyphPicker(ty.icon, (iconVal) => {
         api.updateType({ slug, icon: iconVal }).then(() => _loadTypes()).then(() => {
-          render(); _renderItems(); _toast(t('content.type_updated'));
-        }).catch((er) => _toastError(_err(er)));
+          render(); _renderItems(); toast.ok(t('content.type_updated'));
+        }).catch((er) => notice.internal(_err(er)));
       });
     } else if (action === 'rename') {
       _openPrompt({
@@ -772,8 +771,8 @@ function _openTypeManager() {
         onSubmit(n) {
           if (!n || n === ty.label) return;
           api.updateType({ slug, label: n }).then(() => _loadTypes()).then(() => {
-            render(); _renderItems(); _toast(t('content.type_updated'));
-          }).catch((er) => _toastError(_err(er)));
+            render(); _renderItems(); toast.ok(t('content.type_updated'));
+          }).catch((er) => notice.internal(_err(er)));
         },
       });
     } else if (action === 'delete') {
@@ -783,7 +782,7 @@ function _openTypeManager() {
           // Not _silent: let api-client log the failure to the pill. type_in_use
           // is user-actionable, so it surfaces as a persistent warn notice.
           api.deleteType({ slug }).then(() => _loadTypes()).then(() => {
-            render(); _renderItems(); _toast(t('content.type_deleted'));
+            render(); _renderItems(); toast.ok(t('content.type_deleted'));
           }).catch((er) => {
             if (er && er.data && er.data.error === 'type_in_use') {
               notice.warn(t('content.type_in_use').replace('{n}', er.data.count));
@@ -823,8 +822,8 @@ function _openTagManager() {
     api.createTag({ label }).then(() => _loadTags()).then(() => {
       newInput.value = '';
       render();
-      _toast(t('content.tag_added'));
-    }).catch((e) => _toastError(_err(e)));
+      toast.ok(t('content.tag_added'));
+    }).catch((e) => notice.internal(_err(e)));
   };
 
   function render() {
@@ -858,8 +857,8 @@ function _openTagManager() {
         onSubmit(n) {
           if (!n || n === tag.label) return;
           api.renameTag({ id, label: n }).then(() => _loadTags()).then(() => {
-            render(); _toast(t('content.tag_renamed')); _loadItems({ silent: true });
-          }).catch((er) => _toastError(_err(er)));
+            render(); toast.ok(t('content.tag_renamed')); _loadItems({ silent: true });
+          }).catch((er) => notice.internal(_err(er)));
         },
       });
     } else if (action === 'delete') {
@@ -867,8 +866,8 @@ function _openTagManager() {
         title: t('content.delete_tag_title'), message: t('content.confirm_delete_tag'), danger: true,
         onConfirm() {
           api.deleteTag({ id }).then(() => _loadTags()).then(() => {
-            render(); _toast(t('content.tag_deleted')); _loadItems({ silent: true });
-          }).catch((er) => _toastError(_err(er)));
+            render(); toast.ok(t('content.tag_deleted')); _loadItems({ silent: true });
+          }).catch((er) => notice.internal(_err(er)));
         },
       });
     }

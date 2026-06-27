@@ -14,18 +14,14 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { registerRenderer } from './page.js';
 import { relTime } from '../../js/rel-time.js';
+import { initials } from '../../js/initials.js';
 
 // ── Pure helpers (tested) ────────────────────────────────────────────────────
 
-// Coarse relative time, shared with the Codex moderation pane (js/rel-time.js).
-// Re-exported so this module's tests and consumers keep one import surface.
-export { relTime };
-
-// Up-to-two-letter initials from a display name (avatar fallback).
-export function initials(name) {
-  return String(name || '')
-    .split(/\s+/).filter(Boolean).slice(0, 2).map((w) => w[0]).join('').toUpperCase();
-}
+// Coarse relative time + avatar initials, both shared with the rest of Codex
+// (js/rel-time.js, js/initials.js — ONE initials rule app-wide). Re-exported so
+// this module's tests and consumers keep one import surface.
+export { relTime, initials };
 
 // The thread meta line: author · opened · N replies.
 export function threadMeta(th, now) {

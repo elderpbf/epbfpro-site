@@ -11,14 +11,13 @@
 // in the right pane (no modal); only the delete confirmation stays a small modal.
 // The embedded picker is the same primitive Lessons (Phase 3) will reuse.
 //
-// Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast   (codex toast seam, js/toast.js)   optional transient toast
 // The lab registry is the Codex-owned js/labs-registry.js module: its labs are
 // merged into the picker so a preset can include lab demos.
 import { presets as api, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { getAllItems as labItems } from '../js/labs-registry.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
@@ -64,9 +63,6 @@ function _esc(s) {
   return String(s == null ? '' : s)
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-function _toast(msg) {
-  if (window.BSToast && window.BSToast.show) window.BSToast.show(msg);
 }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
@@ -329,7 +325,7 @@ function _openRename() {
     _closeModal(bd);
     if (editing) {
       api.update({ id: _selectedId, name }).then(() => {
-        _toast(t('presets.updated'));
+        toast.ok(t('presets.updated'));
         return _reload();
       }).then(() => _renderList()).catch((err) => notice.internal(_err(err)));
     }
@@ -384,7 +380,7 @@ function _save() {
     ? api.update({ id: _selectedId, name, item_ids })
     : api.create({ name, item_ids });
   saver.then((res) => {
-    _toast(editing ? t('presets.updated') : t('presets.created'));
+    toast.ok(editing ? t('presets.updated') : t('presets.created'));
     const createdId = (res && res.preset && res.preset.id != null) ? res.preset.id
       : ((res && res.id != null) ? res.id : null);
     _creating = false;
@@ -411,7 +407,7 @@ function _confirmDelete(preset) {
     danger: true,
     onConfirm() {
       api.remove({ id: preset.id }).then(() => {
-        _toast(t('presets.deleted'));
+        toast.ok(t('presets.deleted'));
         if (Number(_selectedId) === Number(preset.id)) { _selectedId = null; _creating = false; }
         return _reload().then(() => _renderPreview());
       }).catch((err) => notice.internal(_err(err)));

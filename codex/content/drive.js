@@ -19,6 +19,7 @@
 import { drive as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { openModal as openDriveModal } from '../js/drive-viewer.js';
 
 let _viewEl = null;
@@ -242,7 +243,7 @@ function _gatherFolder(bs, folder) {
 function _runSync(opts) {
   opts = opts || {};
   const bs = _bs();
-  if (!bs) { notice.error(t('drive.err_unavailable')); return Promise.resolve(false); }
+  if (!bs) { toast.err(t('drive.err_unavailable')); return Promise.resolve(false); }
   _syncing = true; _setSyncBtn(true);
   const authP = (bs.isAuthed && bs.isAuthed()) ? Promise.resolve() : bs.requestToken({ prompt: opts.silent ? '' : 'consent' });
   return authP
@@ -251,7 +252,7 @@ function _runSync(opts) {
     .then((all) => { const flat = []; all.forEach((arr) => arr.forEach((it) => flat.push(it))); return api.syncItems({ items: flat }); })
     .then(() => _loadFiles())
     .then(() => { _syncing = false; _setSyncBtn(false); _renderStatus(); _renderList(); _renderPreview(); return true; })
-    .catch((e) => { _syncing = false; _setSyncBtn(false); notice.error(t('drive.err_sync')); notice.internal(e); return false; });
+    .catch((e) => { _syncing = false; _setSyncBtn(false); toast.err(t('drive.err_sync')); notice.internal(e); return false; });
 }
 // Quiet post-CRUD refresh; skips if there is no Google session (no surprise popup).
 function _autoSync() {
