@@ -22,7 +22,7 @@ test('relTime: future/zero clamps to agora', () => assert.equal(relTime(NOW + 10
 
 // ── initials ────────────────────────────────────────────────────────────────
 test('initials: two words -> two letters', () => assert.equal(initials('Ana Beatriz'), 'AB'));
-test('initials: single word -> one letter', () => assert.equal(initials('Carlos'), 'C'));
+test('initials: single word -> first two letters', () => assert.equal(initials('Carlos'), 'CA'));
 test('initials: empty -> empty', () => assert.equal(initials(''), ''));
 
 // ── threadMeta ──────────────────────────────────────────────────────────────
