@@ -114,7 +114,7 @@ function startEmail(emailEl, root) {
       '<p class="cdx-entrar-card-p">' + esc(t('entrar.email_lead')) + '</p>' +
       '<div class="cdx-entrar-error cdx-entrar-email-error" aria-live="polite"></div>' +
       '<input class="cdx-entrar-field cdx-entrar-email-input" type="email" inputmode="email" autocomplete="email" placeholder="' + esc(t('login.email_placeholder')) + '" aria-label="' + esc(t('login.email_label')) + '">' +
-      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-email-send" type="button">' + esc(t('login.send_code')) + '</button>';
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-email-send" type="button">' + esc(t('login.enroll_cta')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-email-input');
     const send = emailEl.querySelector('.cdx-entrar-email-send');
     const err = emailEl.querySelector('.cdx-entrar-email-error');
@@ -138,14 +138,14 @@ function startEmail(emailEl, root) {
       // Not enrolled, or a hard error: surface it and stop (no código for an unknown e-mail).
       if (!entry || (!entry.ok && entry.error)) {
         err.textContent = entryErrorText((entry && entry.error) || 'error');
-        send.disabled = false; send.textContent = t('login.send_code'); return;
+        send.disabled = false; send.textContent = t('login.enroll_cta'); return;
       }
       // Enrolled but NOT a simple turma: fall back to the normal OTP código flow.
       await flow.requestCode(email);
       if (flow.state === 'code') { if (!flow.codeStillValid) startCooldown(60); renderCode(); return; }
       err.textContent = entryErrorText(flow.error, flow.retryAfter);
       send.disabled = false;
-      send.textContent = t('login.send_code');
+      send.textContent = t('login.enroll_cta');
     };
     send.addEventListener('click', doSend);
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSend(); });
