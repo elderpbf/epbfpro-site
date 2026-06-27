@@ -20,6 +20,7 @@ import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import {
   emptyEmenta, normalizeEmenta, ementaStats, parseEmenta,
   buildEmentaAIPrompt, parseEmentaAIResponse,
@@ -117,7 +118,7 @@ function _selectCourse(id) {
 
 function _onNewCourse() {
   api.create({ title: t('cohorts.cursos_new_default') }).then((d) => {
-    notice.ok(t('cohorts.course_created'));
+    toast.ok(t('cohorts.course_created'));
     const c = d && d.course;
     if (c) { _courses.unshift(c); _selectCourse(c.id); }
   }).catch((err) => {
@@ -249,7 +250,7 @@ function _askAI(text, displayText) {
     const reply = parsed.reply || (parsed.ementa ? t('cohorts.cursos_ia_applied') : t('cohorts.cursos_ia_error'));
     _aiMsgs.push({ role: 'assistant', content: reply });
     _appendMsg('ai', reply);
-    if (parsed.ementa) { _ementa = parsed.ementa; _rerenderEmenta(); notice.ok(t('cohorts.cursos_ia_applied')); }
+    if (parsed.ementa) { _ementa = parsed.ementa; _rerenderEmenta(); toast.ok(t('cohorts.cursos_ia_applied')); }
   }).catch((err) => {
     if (loading && loading.parentNode) loading.parentNode.removeChild(loading);
     _appendMsg('ai', t('cohorts.cursos_ia_error'));
@@ -291,14 +292,14 @@ function _fillApostilaSelect(sel) {
 function _genFromApostila() {
   const sel = _q('cdx-cur-apostila');
   const id = sel && sel.value;
-  if (!id) { notice.error(t('cohorts.cursos_ia_apostila_pick')); return; }
+  if (!id) { toast.err(t('cohorts.cursos_ia_apostila_pick')); return; }
   const set = _apostilas.find((s) => String(s.id) === String(id));
   const name = (set && (set.title || set.name)) || t('cohorts.cursos_ia_apostila_unnamed');
   const gen = _q('cdx-cur-apostila-gen');
   if (gen) gen.disabled = true;
   contentApi.getSet({ id }).then((d) => {
     const items = (d && d.items) || [];
-    if (!items.length) { notice.error(t('cohorts.cursos_ia_apostila_empty')); return; }
+    if (!items.length) { toast.err(t('cohorts.cursos_ia_apostila_empty')); return; }
     const material = items.slice()
       .sort((a, b) => (a.set_position || 0) - (b.set_position || 0))
       .map((i) => '- ' + (i.title || '') + (i.summary ? ': ' + i.summary : ''))
@@ -438,7 +439,7 @@ function _saveCourseMeta() {
     const c = _courses.find((x) => x.id === _selectedId);
     if (c) { c.title = title || c.title; c.hours = hours || null; }
     _renderRail();
-    notice.ok(t('cohorts.course_saved'));
+    toast.ok(t('cohorts.course_saved'));
   }).catch((err) => {
     notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
   });
@@ -448,7 +449,7 @@ function _saveEmenta() {
   if (!_course) return;
   api.update({ id: _course.id, ementa_json: JSON.stringify(normalizeEmenta(_ementa)) }).then((d) => {
     if (d && d.course) { _course = d.course; _ementa = normalizeEmenta(_course.ementa_json); }
-    notice.ok(t('cohorts.ementa_saved'));
+    toast.ok(t('cohorts.ementa_saved'));
   }).catch((err) => {
     notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
   });
@@ -470,7 +471,7 @@ function _onArchiveCourse() {
   bd.querySelector('#cdx-cur-arc-ok').addEventListener('click', () => {
     closeModal(bd);
     api.archive({ id: _course.id }).then(() => {
-      notice.ok(t('cohorts.course_archived'));
+      toast.ok(t('cohorts.course_archived'));
       _courses = _courses.filter((x) => x.id !== _course.id);
       _selectedId = null; _course = null; _ementa = emptyEmenta();
       _renderRail();
@@ -499,12 +500,12 @@ function _openPasteModal() {
   bd.querySelector('#cdx-cur-paste-ok').addEventListener('click', () => {
     const text = bd.querySelector('#cdx-cur-paste-text').value;
     const parsed = parseEmenta(text);
-    if (!parsed.modules.length) { notice.error(t('cohorts.ementa_paste_empty')); return; }
+    if (!parsed.modules.length) { toast.err(t('cohorts.ementa_paste_empty')); return; }
     const append = bd.querySelector('#cdx-cur-paste-append').checked;
     _ementa = append ? { modules: _ementa.modules.concat(parsed.modules) } : parsed;
     closeModal(bd);
     _rerenderEmenta();
-    notice.ok(t('cohorts.ementa_structured'));
+    toast.ok(t('cohorts.ementa_structured'));
   });
 }
 

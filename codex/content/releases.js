@@ -10,6 +10,7 @@ import { t } from '../js/i18n.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
 
@@ -379,7 +380,7 @@ function _markAulaHappened(aulaId) {
   cohortsApi.updateAula(payload).then((r) => {
     if (r && r.error) throw new Error(r.error);
     aula.happened_on = aula.scheduled_for;
-    notice.ok(t('releases.mark_happened_done'));
+    toast.ok(t('releases.mark_happened_done'));
     _renderList();
   }).catch((err) => notice.internal(_err(err)));
 }
@@ -394,7 +395,7 @@ function _toggleFresh(aulaNum, makeFresh) {
       if (r && r.error) throw new Error(r.error);
       const ts = Math.floor(Date.now() / 1000) - (makeFresh ? 0 : 6 * 24 * 60 * 60);
       _aulaReleasedIds(aulaNum).forEach((id) => { (_releasedMeta[id] || (_releasedMeta[id] = {})).released_at = ts; });
-      notice.ok(t(makeFresh ? 'releases.show_fresh_done' : 'releases.clear_fresh_done'));
+      toast.ok(t(makeFresh ? 'releases.show_fresh_done' : 'releases.clear_fresh_done'));
       _renderList();
     })
     .catch((err) => notice.internal(_err(err)));
@@ -623,7 +624,7 @@ function _saveAula(container, aulaNum, pools) {
         m.aula_numbers = u.aulaNumbers;
         m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
       });
-      notice.ok(t('releases.saved'));
+      toast.ok(t('releases.saved'));
       _renderList();
       _renderPreview();
     }).catch((err) => {
@@ -654,7 +655,7 @@ function _saveOutros(container, pools) {
       if (idx !== -1) _released.splice(idx, 1);
       delete _releasedMeta[id];
     });
-    notice.ok(t('releases.saved'));
+    toast.ok(t('releases.saved'));
     _renderList();
     _renderPreview();
   }).catch((err) => {

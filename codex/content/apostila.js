@@ -9,6 +9,7 @@ import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { renderItem } from '../js/item-render.js';
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
@@ -227,7 +228,7 @@ function _editSection(id) {
       saveLabel: t('content.save'),
       closeLabel: t('content.close'),
       // No onCreateType: editing imported course sections does not invent types.
-      onSave: () => { _closeModal(bd); notice.ok(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
+      onSave: () => { _closeModal(bd); toast.ok(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
       onCancel: () => _closeModal(bd),
     });
   }).catch((e) => notice.internal(_err(e)));
@@ -245,7 +246,7 @@ function _deleteSection(id) {
       const snapshot = idx >= 0 ? _items[idx] : null;
       if (idx >= 0) { _items.splice(idx, 1); _render(); }
       api.deleteItem({ id, _silent: true }).then(() => {
-        notice.ok(t('apostila.section_deleted'));
+        toast.ok(t('apostila.section_deleted'));
       }).catch((err) => {
         if (snapshot && idx >= 0) { _items.splice(idx, 0, snapshot); _render(); }
         notice.internal(_err(err));
@@ -268,7 +269,7 @@ function _deleteSet() {
         _selectedId = null;
         _detailCache.clear();
         _render();
-        notice.ok(t('apostila.set_deleted'));
+        toast.ok(t('apostila.set_deleted'));
       }).catch((err) => notice.internal(_err(err)));
     },
   });
@@ -300,7 +301,7 @@ function _openImport() {
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
   bd.querySelector('[data-act="import"]').addEventListener('click', function () {
     const url = bd.querySelector('[data-fld="url"]').value.trim();
-    if (!url) { notice.error(t('creator.gdoc_url_required')); return; }
+    if (!url) { toast.err(t('creator.gdoc_url_required')); return; }
     const marker = bd.querySelector('[data-fld="marker"]').value;
     const btn = this;
     btn.disabled = true;
@@ -310,7 +311,7 @@ function _openImport() {
       const n = (res && res.items_created) ? res.items_created
         : (res && res.count) ? res.count
         : (res && res.items) ? res.items.length : '?';
-      notice.ok(t('apostila.imported').replace('{n}', n));
+      toast.ok(t('apostila.imported').replace('{n}', n));
       _load();
     }).catch((err) => {
       btn.disabled = false;

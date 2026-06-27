@@ -18,6 +18,7 @@ import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as aiSpec from '../js/ai-spec.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
@@ -101,7 +102,7 @@ export function mount(container, opts) {
   // GDoc single-item loader: fetches body_md and pastes it into the raw textarea.
   container.querySelector('#cf-gdoc-load').addEventListener('click', function () {
     const url = container.querySelector('#cf-gdoc-url').value.trim();
-    if (!url) { notice.error(t('creator.gdoc_url_required')); return; }
+    if (!url) { toast.err(t('creator.gdoc_url_required')); return; }
     const btn = container.querySelector('#cf-gdoc-load');
     btn.disabled = true;
     btn.textContent = t('creator.loading');
@@ -111,9 +112,9 @@ export function mount(container, opts) {
       if (res && res.preview && res.preview.body_md) {
         rawEl.value = res.preview.body_md;
         rawEl.focus();
-        notice.ok(t('creator.gdoc_imported'));
+        toast.ok(t('creator.gdoc_imported'));
       } else {
-        notice.error(t('creator.gdoc_empty'));
+        toast.err(t('creator.gdoc_empty'));
       }
     }).catch((err) => {
       btn.disabled = false;
@@ -130,7 +131,7 @@ export function mount(container, opts) {
 
   container.querySelector('#cf-ai').addEventListener('click', async function () {
     const raw = rawEl.value.trim();
-    if (!raw) { notice.error(t('creator.raw_required')); return; }
+    if (!raw) { toast.err(t('creator.raw_required')); return; }
     const addEmojis = container.querySelector('#cf-emoji-toggle').checked;
     const btn = this;
     const prev = btn.innerHTML;

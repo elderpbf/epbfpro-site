@@ -17,6 +17,7 @@ import { presets as api, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { getAllItems as labItems } from '../js/labs-registry.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
@@ -324,7 +325,7 @@ function _openRename() {
     _closeModal(bd);
     if (editing) {
       api.update({ id: _selectedId, name }).then(() => {
-        notice.ok(t('presets.updated'));
+        toast.ok(t('presets.updated'));
         return _reload();
       }).then(() => _renderList()).catch((err) => notice.internal(_err(err)));
     }
@@ -379,7 +380,7 @@ function _save() {
     ? api.update({ id: _selectedId, name, item_ids })
     : api.create({ name, item_ids });
   saver.then((res) => {
-    notice.ok(editing ? t('presets.updated') : t('presets.created'));
+    toast.ok(editing ? t('presets.updated') : t('presets.created'));
     const createdId = (res && res.preset && res.preset.id != null) ? res.preset.id
       : ((res && res.id != null) ? res.id : null);
     _creating = false;
@@ -406,7 +407,7 @@ function _confirmDelete(preset) {
     danger: true,
     onConfirm() {
       api.remove({ id: preset.id }).then(() => {
-        notice.ok(t('presets.deleted'));
+        toast.ok(t('presets.deleted'));
         if (Number(_selectedId) === Number(preset.id)) { _selectedId = null; _creating = false; }
         return _reload().then(() => _renderPreview());
       }).catch((err) => notice.internal(_err(err)));

@@ -1,31 +1,30 @@
 // js/notice.js
-// THE single notification module for all of Codex. Every page/tab (cohorts,
-// content, items, courses, certificates, questions, lessons, ...) calls these
-// functions directly — there is no per-page _toast/_toastError wrapper, so the
-// behavior cannot drift from one page to another. Renders top-right as a
-// .cdx-notice (CSS in css/codex.css). The legacy BSToast/js/toast.js seam was
-// retired once every caller moved here.
+// The NOTIFICATION surface for Codex — the persistent, top-right alert layer for
+// things the admin must act on (and that Trilha can reuse to notify users). It is
+// one of TWO shared notification modules; the other is js/toast.js, the transient
+// bottom-right surface for operation STATUS (saved/created/validation). Two roles:
+//   - toast (js/toast.js): "did it work?" — ephemeral, auto-dismiss, bottom.
+//   - notice (this file):  "you need to act / be alerted" — persistent, top.
+// Both are shared and called directly (no per-page wrapper) so behavior can't
+// drift from page to page. Renders top-right as a .cdx-notice (CSS in css/codex.css).
 //
 // The rule (Elder): the USER only sees a notice when it is actionable by them;
-// admin/technical errors go to the debug pill, not in their face. Pick the
-// function by message category, NOT by where you are:
+// admin/technical errors go to the debug pill, not in their face. Pick by category:
 //
-//   notice.ok(msg)        SUCCESS / confirmation — green, transient ("Turma salva")
-//   notice.info(msg)      NEUTRAL info — blue, transient ("Link copiado")
-//   notice.error(msg)     USER-ACTIONABLE error / validation — red, PERSISTENT
-//                         (close with ×). CPF/e-mail/required field, "nada
-//                         selecionado", a failed copy that shows the URL, etc.
-//   notice.warn(msg)      USER-ACTIONABLE guidance — amber, PERSISTENT (share
-//                         the doc, type in use, fix the title)
+//   notice.warn(msg)      USER-ACTIONABLE guidance — amber, PERSISTENT (close with
+//                         ×): share the doc, type in use, fix the title.
+//   notice.error(msg)     USER-ACTIONABLE error — red, PERSISTENT. For alerts the
+//                         user must resolve (NOT quick validation — that's toast.err).
 //   notice.internal(err)  ADMIN/technical failure (caught exceptions, API/AI
-//                         errors). ALWAYS logged to the debug pill. ALSO shown
-//                         as a transient red notice ONLY when the pill is ON
-//                         (localStorage.bs_debug === '1', toggled from the
-//                         topbar dev switch). Pill OFF → user sees nothing,
-//                         because they can't act on it.
+//                         errors). ALWAYS logged to the debug pill. ALSO shown as a
+//                         transient red notice ONLY when the pill is ON
+//                         (localStorage.bs_debug === '1', toggled from the topbar
+//                         dev switch). Pill OFF → user sees nothing (can't act on it).
+//   notice.ok / notice.info  transient green/blue (legacy primitives). Prefer
+//                         toast.ok / toast.info for routine status confirmations.
 //
 // So: pill ON  → every error is visible (admin work / debugging).
-//     pill OFF → only confirmations + user-actionable notices appear.
+//     pill OFF → only confirmations (toast) + user-actionable notices appear.
 //
 // Globals (optional, shared Backstage debug pill): window.bsLog, window.dbg
 import { glyphSvg } from './glyphs.js';

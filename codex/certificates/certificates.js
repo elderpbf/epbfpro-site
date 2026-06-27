@@ -21,6 +21,7 @@ import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { ementaToCertModules } from '../js/ementa.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
@@ -814,12 +815,12 @@ async function _bulkAction(kind) {
     for (const code of codes) {
       if (kind === 'revoke') await api.revoke({ code });
     }
-    notice.ok(t('certificates.bulk_done').replace('{n}', String(codes.length)));
+    toast.ok(t('certificates.bulk_done').replace('{n}', String(codes.length)));
     _selectedCodes.clear();
     await _loadCertList();
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: bulk ' + kind + ': ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.error_loading'));
+    toast.err(t('certificates.error_loading'));
   }
 }
 
@@ -832,7 +833,7 @@ async function _loadCertList() {
     _refreshEmissao();
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: list: ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.error_loading'));
+    toast.err(t('certificates.error_loading'));
     if (_q('#cdx-certs-list')) _q('#cdx-certs-list').innerHTML = '<div class="cdx-empty">' + esc(t('certificates.error_loading')) + '</div>';
   }
 }
@@ -971,7 +972,7 @@ function _copyValidarUrl(code) {
   );
   if (typeof navigator !== 'undefined' && navigator.clipboard) {
     navigator.clipboard.writeText(url)
-      .then(() => notice.ok(t('certificates.copied_url')))
+      .then(() => toast.ok(t('certificates.copied_url')))
       .catch(() => notice.warn(url));
   }
 }
@@ -992,11 +993,11 @@ function _revokeConfirm(code) {
     closeModal(bd);
     try {
       await api.revoke({ code });
-      notice.ok(t('certificates.revoked_ok'));
+      toast.ok(t('certificates.revoked_ok'));
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: revoke: ' + (e && e.message || e), 'error');
-      notice.error(t('certificates.error_loading'));
+      toast.err(t('certificates.error_loading'));
     }
   });
 }
@@ -1030,13 +1031,13 @@ function _bulkDeleteConfirm(codes) {
     let done = 0;
     try {
       for (const code of deletable) { await api.remove({ code }); done++; }
-      notice.ok(t('certificates.bulk_deleted_ok').replace('{n}', String(done)));
+      toast.ok(t('certificates.bulk_deleted_ok').replace('{n}', String(done)));
       if (blocked > 0) notice.warn(t('certificates.bulk_delete_blocked').replace('{n}', String(blocked)));
       _selectedCodes.clear();
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: bulk delete: ' + (e && e.message || e), 'error');
-      notice.error(t('certificates.error_loading'));
+      toast.err(t('certificates.error_loading'));
     }
   });
 }
@@ -1051,7 +1052,7 @@ function _bulkDeleteConfirm(codes) {
 // the local signer (tools/sign-certs): once it runs, it uploads the signed PDF
 // and flips the status to 'signed' on its own. No false status flip here.
 async function _markSigned(code) {
-  notice.info(t('certificates.sign_local'));
+  toast.info(t('certificates.sign_local'));
 }
 
 // Send the certificate by e-mail through the shared Codex e-mail module. The
@@ -1064,9 +1065,9 @@ async function _sendCert(code) {
   // Re-send allowed for already-'sent' certs too; only a revoked cert can't be sent.
   if (cert.status === 'revoked') { notice.warn(t('certificates.send_only_issued_signed')); return; }
   if (!cert.email) { notice.warn(t('certificates.send_no_email')); return; }
-  notice.ok(t('certificates.send_sending'));
+  toast.ok(t('certificates.send_sending'));
   if (await _sendOne(cert)) {
-    notice.ok(t('certificates.send_ok').replace('{name}', cert.holder_name || ''));
+    toast.ok(t('certificates.send_ok').replace('{name}', cert.holder_name || ''));
     await _loadCertList();
   }
 }
@@ -1089,7 +1090,7 @@ async function _sendOne(cert) {
       alreadyStored = !!b64;
     }
     if (!b64) b64 = await renderCertsPdfBase64([{ html: renderCertHtml(cert, origin), qrUrl: validarUrl }]);
-    if (!b64) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    if (!b64) { toast.err(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
     const filename = 'certificado-' + (cert.code || 'pensoia') + '.pdf';
     // Persist the freshly-rendered PDF to R2 (skip when we just pulled the stored
     // signed one). Non-fatal: the e-mail still carries the attachment.
@@ -1110,12 +1111,12 @@ async function _sendOne(cert) {
       html: _certEmailHtml(cert, validarUrl, logoAtt ? LOGO_CID : null),
       attachments,
     });
-    if (!res.ok) { notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
+    if (!res.ok) { toast.err(t('certificates.send_error').replace('{name}', cert.holder_name || '')); return false; }
     await api.markSent({ code: cert.code });
     return true;
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: send ' + cert.code + ': ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.send_error').replace('{name}', cert.holder_name || ''));
+    toast.err(t('certificates.send_error').replace('{name}', cert.holder_name || ''));
     return false;
   }
 }
@@ -1144,7 +1145,7 @@ async function _fetchStoredPdfBase64(pdfPath, cacheBust) {
 // so fetch the bytes into a blob and click an object-URL anchor instead.
 async function _downloadStoredPdf(cert) {
   if (!cert || !cert.pdf_path) return;
-  notice.ok(t('certificates.pdf_generating'));
+  toast.ok(t('certificates.pdf_generating'));
   try {
     const url = assetUrl('/r2/' + cert.pdf_path) + '?v=' + encodeURIComponent(cert.status || '');
     const resp = await fetch(url);
@@ -1160,7 +1161,7 @@ async function _downloadStoredPdf(cert) {
     setTimeout(() => URL.revokeObjectURL(objectUrl), 4000);
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: download stored pdf: ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.pdf_error'));
+    toast.err(t('certificates.pdf_error'));
   }
 }
 
@@ -1179,10 +1180,10 @@ async function _bulkSend(codes) {
   // was the cert being already 'sent' and filtered out).
   if (!certs.length) { notice.warn(t('certificates.send_none_sendable')); return; }
   if (!sendable.length) { notice.warn(t('certificates.send_no_email')); return; }
-  notice.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
+  toast.ok(t('certificates.send_sending_bulk').replace('{n}', String(sendable.length)));
   let done = 0;
   for (const cert of sendable) { if (await _sendOne(cert)) done++; }
-  notice.ok(t('certificates.send_bulk_ok').replace('{n}', String(done)));
+  toast.ok(t('certificates.send_bulk_ok').replace('{n}', String(done)));
   if (noEmail > 0) notice.warn(t('certificates.send_bulk_no_email').replace('{n}', String(noEmail)));
   _selectedCodes.clear();
   await _loadCertList();
@@ -1291,12 +1292,12 @@ async function _downloadCerts(certs, filename) {
     qrUrl: buildValidarUrl(origin, cert.code),
   }));
   if (!items.length) return;
-  notice.ok(t('certificates.pdf_generating'));
+  toast.ok(t('certificates.pdf_generating'));
   try {
     await downloadCertsPdf(items, { filename: (filename || 'certificados') + '.pdf' });
   } catch (e) {
     if (window.bsLog) window.bsLog('certs: pdf: ' + (e && e.message || e), 'error');
-    notice.error(t('certificates.pdf_error'));
+    toast.err(t('certificates.pdf_error'));
   }
 }
 
@@ -1556,9 +1557,9 @@ function _openIssueFlow() {
     const template    = bd.querySelector('#cdx-issue-template').value;
     const theme       = bd.querySelector('#cdx-issue-theme').value;
 
-    if (!turmaId) { notice.warn(t('certificates.issue_select_turma')); return; }
-    if (!courseTitle) { notice.warn(t('certificates.issue_course_required')); return; }
-    if (_issueSelectedIds.size === 0) { notice.warn(t('certificates.issue_no_selection')); return; }
+    if (!turmaId) { toast.err(t('certificates.issue_select_turma')); return; }
+    if (!courseTitle) { toast.err(t('certificates.issue_course_required')); return; }
+    if (_issueSelectedIds.size === 0) { toast.err(t('certificates.issue_no_selection')); return; }
 
     // Warn before issuing with blank fields — they render empty on the certificate
     // (e.g. an empty Encontros leaves a blank cell on the back). User can proceed.
@@ -1611,12 +1612,12 @@ function _openIssueFlow() {
               : '') +
           '</div>';
       }
-      notice.ok(t('certificates.issued_ok').replace('{n}', String(codes.length)));
+      toast.ok(t('certificates.issued_ok').replace('{n}', String(codes.length)));
       if (skipped.length) notice.warn(t('certificates.issue_skipped_toast').replace('{n}', String(skipped.length)));
       await _loadCertList();
     } catch (e) {
       if (window.bsLog) window.bsLog('certs: issue: ' + (e && e.message || e), 'error');
-      notice.error(t('certificates.error_loading'));
+      toast.err(t('certificates.error_loading'));
     } finally {
       if (submitBtn) { submitBtn.disabled = false; submitBtn.textContent = prevLabel; }
     }

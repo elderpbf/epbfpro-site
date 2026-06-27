@@ -25,6 +25,7 @@ import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import * as aiSpec from '../js/ai-spec.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -574,7 +575,7 @@ export function mount(container, opts) {
         const pre = root.querySelector('#ie-preview');
         if (pre && pre.style.display !== 'none') _renderMarkdown(parsed.body_md || '', pre);
         markDirty();
-        notice.ok(t('editor.item_redone'));
+        toast.ok(t('editor.item_redone'));
       } catch (e) {
         _logAi('exception', null);
         notice.internal(_err(e));
@@ -600,8 +601,8 @@ export function mount(container, opts) {
 
   root.querySelector('#ie-save').addEventListener('click', async function () {
     const state = getState();
-    if (state.type === '__new__') { notice.error(t('editor.select_type')); return; }
-    if (!state.title) { notice.error(t('editor.title_required')); return; }
+    if (state.type === '__new__') { toast.err(t('editor.select_type')); return; }
+    if (!state.title) { toast.err(t('editor.title_required')); return; }
 
     const params = {
       type: state.type,

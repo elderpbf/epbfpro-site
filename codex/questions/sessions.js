@@ -14,6 +14,7 @@
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import * as liveHost from './live-host.js';
 
 let _viewEl = null;
@@ -147,7 +148,7 @@ function _renderMain() {
 async function _renameSession(code, title) {
   let res;
   try { res = await api.renameSession({ code, title }); } catch (e) { notice.internal(e); res = null; }
-  if (!res || res.error) { notice.error(t('questions.sessions_rename_error')); return; }
+  if (!res || res.error) { toast.err(t('questions.sessions_rename_error')); return; }
   _load();
 }
 
@@ -221,7 +222,7 @@ async function _openStats(code) {
 async function _confirmDelete(code) {
   let res;
   try { res = await api.deleteSession({ code }); } catch (e) { notice.internal(e); res = null; }
-  if (!res || res.error) { notice.error(t('questions.sessions_delete_error')); _renderList(); return; }
+  if (!res || res.error) { toast.err(t('questions.sessions_delete_error')); _renderList(); return; }
   if (_selectedCode === code) {
     _selectedCode = null;
     _sidebarPinned = true;        // back to the pinned picker once nothing is selected
@@ -278,7 +279,7 @@ export function mount(viewEl, ctx) {
     if (!title) return;
     let res;
     try { res = await api.createSession({ title }); } catch (err) { notice.internal(err); res = null; }
-    if (!res || res.error || !res.code) { notice.error(t('questions.sessions_create_error')); return; }
+    if (!res || res.error || !res.code) { toast.err(t('questions.sessions_create_error')); return; }
     titleInput.value = '';
     // Like the legacy create flow, jump straight into hosting the new session.
     _selectedCode = res.code;

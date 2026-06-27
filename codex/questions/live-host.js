@@ -21,6 +21,7 @@ import { t } from '../js/i18n.js';
 import { clockOffset, remainingSec, fmtRemain } from '../js/enroll-clock.js';
 import { isProjecting, toggleProjection } from '../js/enroll-control.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
 import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
@@ -449,7 +450,7 @@ function _loadEnrollState() {
 // countdown keeps running on this button). Not projecting -> open (mints a window only
 // if none is live; otherwise reuses it, no reset, no new link) and project the QR.
 async function _toggleEnroll() {
-  if (!_trailTurma) { notice.info(t('questions.host_qr_no_turma')); return; }
+  if (!_trailTurma) { toast.info(t('questions.host_qr_no_turma')); return; }
   const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
   try { await toggleProjection(cohorts, ids, _enrollState); }
   catch (e) { notice.internal(e); return; }
@@ -810,7 +811,7 @@ async function _revealNow() {
   if (!_activeQId) return;
   try { await api.setVisibility({ id: _activeQId, session_code: _session.code, show_results: true }); }
   catch (e) { notice.internal(e); return; }
-  notice.info(t('questions.host_shown'));
+  toast.info(t('questions.host_shown'));
 }
 
 // Persist the close-options checkboxes across questions AND sessions, so a host
@@ -1062,7 +1063,7 @@ async function _launchFromBank(q) {
   // Never launch an unresolved template to students: a leftover {{...}} means no
   // audience was picked, or the audience is missing a value for this variable.
   if (isVariable(r.question) || (Array.isArray(r.options) && r.options.some((o) => isVariable(o)))) {
-    notice.error(t('questions.host_audience_unresolved'));
+    toast.err(t('questions.host_audience_unresolved'));
     return;
   }
   const opts = Array.isArray(r.options) ? r.options
@@ -1166,7 +1167,7 @@ export function mount(containerEl, ctx) {
   if (renderHost) renderHost.appendChild(_qEl);
   _qEl.start(_session.code);
 
-  _qa = createQaFeed({ sessionCode: _session.code, feedEl: _q('#cdx-qa-feed'), badgeEl: _q('#cdx-qa-badge'), onError: (msg) => notice.error(msg) });
+  _qa = createQaFeed({ sessionCode: _session.code, feedEl: _q('#cdx-qa-feed'), badgeEl: _q('#cdx-qa-badge'), onError: (msg) => toast.err(msg) });
 
   _applyHostedUI(_isOpen());
   _loadTrail();

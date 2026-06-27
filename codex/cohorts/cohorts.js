@@ -9,6 +9,7 @@ import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
 import { isApprovalGated, groupParticipantsByStatus, sortByName, toolbarActions, actionEnabled, actionTargetStatus } from './participant-view.js';
@@ -485,7 +486,7 @@ function _archiveClient(slug) {
     message: t('cohorts.archive_client_msg'),
     onConfirm() {
       api.archiveClient({ slug }).then(() => {
-        notice.ok(t('cohorts.client_archived'));
+        toast.ok(t('cohorts.client_archived'));
         _loadAll();
       }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     }
@@ -609,7 +610,7 @@ function _openClientForm(client) {
         confirmName: client.name,
         onConfirm() {
           api.deleteClient({ slug: client.slug }).then(() => {
-            notice.ok(t('cohorts.client_deleted'));
+            toast.ok(t('cohorts.client_deleted'));
             if (_relClientSlug === client.slug) { _relClientSlug = null; _relTurmaSlug = null; }
             if (_selectedClientSlug === client.slug) _selectedClientSlug = null;
             _loadAll();
@@ -623,9 +624,9 @@ function _openClientForm(client) {
   bd.querySelector('#cdx-cf-save').addEventListener('click', () => {
     const name    = bd.querySelector('#cdx-cf-name').value.trim();
     const display = bd.querySelector('#cdx-cf-display').value.trim();
-    if (!name) { notice.error(t('cohorts.name_required')); return; }
+    if (!name) { toast.err(t('cohorts.name_required')); return; }
     const slug = isEdit ? client.slug : _slugify(name);
-    if (!slug) { notice.error(t('cohorts.slug_invalid')); return; }
+    if (!slug) { toast.err(t('cohorts.slug_invalid')); return; }
 
     const iconMode = bd.querySelector('input[name="cdx-cf-icon-mode"]:checked').value;
     const iconUrl  = bd.querySelector('#cdx-cf-icon-url').value.trim();
@@ -645,7 +646,7 @@ function _openClientForm(client) {
       return Promise.resolve();
     }).then(() => {
       _closeModal(bd);
-      notice.ok(isEdit ? t('cohorts.client_updated') : t('cohorts.client_created'));
+      toast.ok(isEdit ? t('cohorts.client_updated') : t('cohorts.client_created'));
       _loadAll();
     }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
   });
@@ -702,7 +703,7 @@ function _archiveTurma(clientSlug, turmaSlug) {
     message: t('cohorts.archive_turma_msg'),
     onConfirm() {
       api.archiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
-        notice.ok(t('cohorts.turma_archived'));
+        toast.ok(t('cohorts.turma_archived'));
         const tm = _findTurma(clientSlug, turmaSlug);
         if (tm) { tm.status = 'archived'; _renderList(); _refreshDossierHeader(tm); }
       }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
@@ -712,7 +713,7 @@ function _archiveTurma(clientSlug, turmaSlug) {
 
 function _unarchiveTurma(clientSlug, turmaSlug) {
   api.unarchiveTurma({ client_slug: clientSlug, slug: turmaSlug }).then(() => {
-    notice.ok(t('cohorts.turma_unarchived'));
+    toast.ok(t('cohorts.turma_unarchived'));
     const tm = _findTurma(clientSlug, turmaSlug);
     if (tm) { tm.status = 'active'; _renderList(); _refreshDossierHeader(tm); }
   }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
@@ -728,7 +729,7 @@ function _deleteTurma(turma) {
     confirmName: turma.name,
     onConfirm() {
       api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
-        notice.ok(t('cohorts.turma_deleted'));
+        toast.ok(t('cohorts.turma_deleted'));
         const wasSelected = _relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug;
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
         _renderList();
@@ -751,7 +752,7 @@ function _regenToken(clientSlug, turmaSlug) {
     message: t('cohorts.regen_token_msg'),
     onConfirm() {
       api.regenTurmaToken({ client_slug: clientSlug, slug: turmaSlug }).then((res) => {
-        notice.ok(t('cohorts.token_regenerated'));
+        toast.ok(t('cohorts.token_regenerated'));
         const tm = _findTurma(clientSlug, turmaSlug);
         if (tm && res && res.token) { tm.token = res.token; _refreshDossierTrail(tm); }
       }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
@@ -761,8 +762,8 @@ function _regenToken(clientSlug, turmaSlug) {
 
 function _copyUrl(url) {
   navigator.clipboard.writeText(url)
-    .then(() => notice.info(t('cohorts.link_copied')))
-    .catch(() => notice.error(t('cohorts.copy_failed') + ': ' + url));
+    .then(() => toast.info(t('cohorts.link_copied')))
+    .catch(() => toast.err(t('cohorts.copy_failed') + ': ' + url));
 }
 
 // ── Turma form ────────────────────────────────────────────────────────────────
@@ -857,10 +858,10 @@ function _openTurmaForm(turma) {
       const display   = bd.querySelector('#cdx-tf-display').value.trim();
       const whatsapp  = bd.querySelector('#cdx-tf-whatsapp').value.trim();
       const cpSession = bd.querySelector('#cdx-tf-classpulse').value;
-      if (!name) { notice.error(t('cohorts.name_required')); return; }
+      if (!name) { toast.err(t('cohorts.name_required')); return; }
 
       const slug = isEdit ? turma.slug : _slugify(name);
-      if (!slug) { notice.error(t('cohorts.slug_invalid')); return; }
+      if (!slug) { toast.err(t('cohorts.slug_invalid')); return; }
 
       const courseId = courseEl.value ? Number(courseEl.value) : null;
       const instance = {
@@ -902,7 +903,7 @@ function _openTurmaForm(turma) {
           return Promise.resolve();
         }).then(() => {
           _closeModal(bd);
-          notice.ok(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
+          toast.ok(isEdit ? t('cohorts.turma_updated') : t('cohorts.turma_created'));
           // Keep the dossier pointed at the just-saved turma after the reload.
           _relClientSlug = _selectedClientSlug;
           _relTurmaSlug = isEdit ? turma.slug : slug;
@@ -1013,12 +1014,12 @@ function _openAddParticipant(turma) {
     const name  = nameEl.value.trim();
     const email = emailEl.value.trim();
     const cpf   = cpfEl.value.replace(/\D/g, '') ? cpfEl.value.trim() : null;
-    if (!name)  { notice.error(t('cohorts.name_required'));  nameEl.focus();  return; }
-    if (!email) { notice.error(t('cohorts.email_required')); emailEl.focus(); return; }
-    if (!_emailValid(email)) { notice.error(t('cohorts.email_invalid')); emailEl.focus(); return; }
-    if (cpf && !_cpfValid(cpf)) { notice.error(t('cohorts.cpf_invalid')); cpfEl.focus(); return; }
+    if (!name)  { toast.err(t('cohorts.name_required'));  nameEl.focus();  return; }
+    if (!email) { toast.err(t('cohorts.email_required')); emailEl.focus(); return; }
+    if (!_emailValid(email)) { toast.err(t('cohorts.email_invalid')); emailEl.focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { toast.err(t('cohorts.cpf_invalid')); cpfEl.focus(); return; }
     api.addParticipant({ turma_id: turma.id, name, email, cpf }).then(() => {
-      notice.ok(t('cohorts.participant_added'));
+      toast.ok(t('cohorts.participant_added'));
       _closeModal(bd);
       _loadDossierParticipants(turma);
     }).catch((err) => {
@@ -1045,15 +1046,15 @@ function _openImportParticipants(turma) {
   bd.querySelector('#cdx-pimport-save').addEventListener('click', () => {
     const textEl = bd.querySelector('#cdx-pimport-text');
     const rows = parseRosterLines(textEl.value);
-    if (!rows.length) { notice.error(t('cohorts.participants_import_empty')); return; }
+    if (!rows.length) { toast.err(t('cohorts.participants_import_empty')); return; }
     const noEmail = rows.find((r) => !r.email);
-    if (noEmail) { notice.error(t('cohorts.email_required') + ' (' + noEmail.name + ')'); return; }
+    if (noEmail) { toast.err(t('cohorts.email_required') + ' (' + noEmail.name + ')'); return; }
     const badEmail = rows.find((r) => !_emailValid(r.email));
-    if (badEmail) { notice.error(t('cohorts.email_invalid') + ' (' + badEmail.name + ')'); return; }
+    if (badEmail) { toast.err(t('cohorts.email_invalid') + ' (' + badEmail.name + ')'); return; }
     const badCpf = rows.find((r) => r.cpf && !_cpfValid(r.cpf));
-    if (badCpf) { notice.error(t('cohorts.cpf_invalid') + ' (' + badCpf.name + ')'); return; }
+    if (badCpf) { toast.err(t('cohorts.cpf_invalid') + ' (' + badCpf.name + ')'); return; }
     api.importParticipants({ turma_id: turma.id, rows }).then(() => {
-      notice.ok(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
+      toast.ok(t('cohorts.participants_imported').replace('{n}', String(rows.length)));
       _closeModal(bd);
       _loadDossierParticipants(turma);
     }).catch((err) => {
@@ -1089,13 +1090,13 @@ function _openParticipantEditModal(participant, onSaved) {
     const email  = bd.querySelector('#cdx-pe-email').value.trim();
     const cpfEl2 = bd.querySelector('#cdx-pe-cpf');
     const cpf    = cpfEl2.value.replace(/\D/g, '') ? cpfEl2.value.trim() : null;
-    if (!name)  { notice.error(t('cohorts.name_required'));  bd.querySelector('#cdx-pe-name').focus();  return; }
-    if (!email) { notice.error(t('cohorts.email_required')); bd.querySelector('#cdx-pe-email').focus(); return; }
-    if (!_emailValid(email)) { notice.error(t('cohorts.email_invalid')); bd.querySelector('#cdx-pe-email').focus(); return; }
-    if (cpf && !_cpfValid(cpf)) { notice.error(t('cohorts.cpf_invalid')); cpfEl2.focus(); return; }
+    if (!name)  { toast.err(t('cohorts.name_required'));  bd.querySelector('#cdx-pe-name').focus();  return; }
+    if (!email) { toast.err(t('cohorts.email_required')); bd.querySelector('#cdx-pe-email').focus(); return; }
+    if (!_emailValid(email)) { toast.err(t('cohorts.email_invalid')); bd.querySelector('#cdx-pe-email').focus(); return; }
+    if (cpf && !_cpfValid(cpf)) { toast.err(t('cohorts.cpf_invalid')); cpfEl2.focus(); return; }
     api.updateParticipant({ id: participant.id, name, email, cpf }).then(() => {
       _closeModal(bd);
-      notice.ok(t('cohorts.participant_updated'));
+      toast.ok(t('cohorts.participant_updated'));
       if (onSaved) onSaved();
     }).catch((err) => {
       notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
@@ -1370,7 +1371,7 @@ function _wireDossierInlineEdit(el, turma) {
           } else turma[field] = payload[field];
         });
       }
-      call.then(() => notice.ok(t('cohorts.turma_updated')))
+      call.then(() => toast.ok(t('cohorts.turma_updated')))
         .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });
@@ -1759,7 +1760,7 @@ function _reorderAulas(fromId, tgtId) {
     turma_slug: _relTurmaSlug,
     ordered_ids: _turmaAulas.map((a) => a.id),
   }).then(() => {
-    notice.ok(t('cohorts.aulas_reordered'));
+    toast.ok(t('cohorts.aulas_reordered'));
   }).catch((err) => {
     if (window.bsLog) window.bsLog('cohorts: reorder aulas failed: ' + (err && err.message || err), 'error');
     notice.internal(t('cohorts.error') + ': ' + (err.message || err));
@@ -1862,7 +1863,7 @@ function _wireAulaEditorEvents(row, aula, idx) {
       aula.happened_on      = payload.happened_on;
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
-      notice.ok(t('cohorts.aula_saved'));
+      toast.ok(t('cohorts.aula_saved'));
       _renderTurmaAulas();
       _refreshDerivedFacts();
     }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
@@ -1890,7 +1891,7 @@ function _wireAulaEditorEvents(row, aula, idx) {
       onConfirm() {
         api.deleteAula({ id: aula.id }).then(() => {
           _turmaAulas.splice(idx, 1);
-          notice.ok(t('cohorts.aula_deleted'));
+          toast.ok(t('cohorts.aula_deleted'));
           _renderTurmaAulas();
           _refreshDerivedFacts();
         }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));

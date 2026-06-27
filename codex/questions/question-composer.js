@@ -8,6 +8,7 @@
 import { t } from '../js/i18n.js';
 import { ai } from '../js/codex-api.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { resolve, isVariable, usedVars } from '../js/audiences.js';
 
 export const TYPES = ['mc', 'tf', 'poll', 'open', 'wordcloud', 'rating', 'numeric'];
@@ -260,7 +261,7 @@ export function mountComposer(container, initial) {
   }
   function _applyAi(res, maxSel) {
     const out = (res && res.ai) || res;
-    if (!out || !out.question) { notice.error(t('questions.bank_ai_error')); return; }
+    if (!out || !out.question) { toast.err(t('questions.bank_ai_error')); return; }
     textEl.value = out.question;
     const correct = Array.isArray(out.correct) ? out.correct.map(Number)
       : (out.correct !== undefined && out.correct !== null && out.correct !== '' ? [Number(out.correct)] : []);
@@ -274,8 +275,8 @@ export function mountComposer(container, initial) {
     const cls = classSel.value;
     const audienceKey = (extraEl.querySelector('.cdx-comp-audience') || {}).value || '';
     const topic = String(textEl.value || '').trim();
-    if (!topic) { notice.info(t(kind === 'improve' ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty')); return; }
-    if (cls === 'unique' && !audienceKey) { notice.info(t('questions.comp_class_warn_no_audience')); return; }
+    if (!topic) { toast.info(t(kind === 'improve' ? 'questions.bank_ai_improve_empty' : 'questions.bank_ai_empty')); return; }
+    if (cls === 'unique' && !audienceKey) { toast.info(t('questions.comp_class_warn_no_audience')); return; }
     const maxSel = _curMaxSel();
     const aug = _augment(cls, audienceKey);
     const params = { type: typeSel.value, max_select: maxSel };
@@ -284,7 +285,7 @@ export function mountComposer(container, initial) {
     btns.forEach((b) => { b.disabled = true; });
     let res; try { res = await ai.question(params); } catch (e) { notice.internal(e); res = null; }
     btns.forEach((b) => { b.disabled = false; });
-    if (!res || res.error) { notice.error(t('questions.bank_ai_error')); return; }
+    if (!res || res.error) { toast.err(t('questions.bank_ai_error')); return; }
     _applyAi(res, maxSel);
   }
   const aiRow = container.querySelector('.cdx-comp-ai-row');
