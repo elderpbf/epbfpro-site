@@ -35,10 +35,13 @@ test('notice.internal is a no-op when no pill is present (no throw)', () => {
 });
 
 // The rule, asserted by source: internal errors route to the pill, actionable
-// cases use a user notice.
+// cases use a user notice. Modules call the shared notice module directly — no
+// per-page _toast/_toastError wrapper (the consolidation that keeps behavior
+// uniform across all pages).
 test('items.js routes internal errors to the pill and type_in_use to a warn notice', () => {
   const items = read('../content/items.js');
-  assert.match(items, /function _toastError\(msg\)\s*\{\s*notice\.internal/, '_toastError -> notice.internal (pill only)');
+  assert.doesNotMatch(items, /function _toast(Error)?\b/, 'no per-page toast wrapper (uses the shared notice module)');
+  assert.match(items, /notice\.internal\(/, 'caught errors -> notice.internal (pill only)');
   assert.match(items, /notice\.warn\(t\('content\.type_in_use'\)/, 'type_in_use -> notice.warn (actionable)');
 });
 

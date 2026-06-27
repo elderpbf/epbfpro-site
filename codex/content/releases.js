@@ -5,9 +5,6 @@
 // every string via t(). A turma is chosen in the shared pill picker; each lesson
 // is an accordion whose composer toggles which items are released to it, plus an
 // "Outros" bucket for items released without a lesson.
-//
-// Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast   (../backstage/js/bs-toast.js)   optional transient toast
 import { content as contentApi, releases as api, cohorts as cohortsApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { aulaStatus } from '../js/aula-status.js';
@@ -113,7 +110,6 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast.show(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _today() { return new Date().toISOString().slice(0, 10); }
@@ -383,7 +379,7 @@ function _markAulaHappened(aulaId) {
   cohortsApi.updateAula(payload).then((r) => {
     if (r && r.error) throw new Error(r.error);
     aula.happened_on = aula.scheduled_for;
-    _toast(t('releases.mark_happened_done'));
+    notice.ok(t('releases.mark_happened_done'));
     _renderList();
   }).catch((err) => notice.internal(_err(err)));
 }
@@ -398,7 +394,7 @@ function _toggleFresh(aulaNum, makeFresh) {
       if (r && r.error) throw new Error(r.error);
       const ts = Math.floor(Date.now() / 1000) - (makeFresh ? 0 : 6 * 24 * 60 * 60);
       _aulaReleasedIds(aulaNum).forEach((id) => { (_releasedMeta[id] || (_releasedMeta[id] = {})).released_at = ts; });
-      _toast(t(makeFresh ? 'releases.show_fresh_done' : 'releases.clear_fresh_done'));
+      notice.ok(t(makeFresh ? 'releases.show_fresh_done' : 'releases.clear_fresh_done'));
       _renderList();
     })
     .catch((err) => notice.internal(_err(err)));
@@ -627,7 +623,7 @@ function _saveAula(container, aulaNum, pools) {
         m.aula_numbers = u.aulaNumbers;
         m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
       });
-      _toast(t('releases.saved'));
+      notice.ok(t('releases.saved'));
       _renderList();
       _renderPreview();
     }).catch((err) => {
@@ -658,7 +654,7 @@ function _saveOutros(container, pools) {
       if (idx !== -1) _released.splice(idx, 1);
       delete _releasedMeta[id];
     });
-    _toast(t('releases.saved'));
+    notice.ok(t('releases.saved'));
     _renderList();
     _renderPreview();
   }).catch((err) => {

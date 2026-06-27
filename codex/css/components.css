@@ -169,12 +169,6 @@
 .cdx-table td { padding: 0.6rem 0.75rem; border-bottom: 1px solid var(--border); color: var(--text-primary); }
 .cdx-table tr:hover td { background: var(--surface-hover); }
 
-/* ── TOASTS ──────────────────────────────────────────────────────────────────*/
-.cdx-toast { display: flex; align-items: center; gap: 8px; padding: 0.6rem 0.9rem; border-radius: 10px; font-size: 0.82rem; font-weight: 600; border: 1px solid transparent; }
-.cdx-toast-success { background: var(--tint-success); color: var(--tint-success-tx); border-color: var(--cdx-success-border); }
-.cdx-toast-danger  { background: var(--tint-danger);  color: var(--tint-danger-tx); }
-.cdx-toast-info    { background: var(--tint-info);    color: var(--tint-info-tx); }
-
 /* ── MODAL + BACKDROP ────────────────────────────────────────────────────────*/
 .cdx-ds-backdrop { position: absolute; inset: 0; background: var(--cdx-backdrop); border-radius: inherit; }
 .cdx-ds-modal { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.25rem; box-shadow: 0 20px 60px -20px var(--shadow); max-width: 360px; }

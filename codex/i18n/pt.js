@@ -397,6 +397,8 @@ export default {
   'cohorts.participant_name_ph':          'Nome completo',
   'cohorts.participant_email_ph':         'email@exemplo.com',
   'cohorts.participant_cpf_ph':           '000.000.000-00',
+  'cohorts.email_required':              'E-mail obrigatório.',
+  'cohorts.email_invalid':               'E-mail inválido.',
   'cohorts.cpf_invalid':                 'CPF inválido.',
   'cohorts.participant_added':            'Participante adicionado.',
   'cohorts.participant_updated':          'Participante atualizado.',

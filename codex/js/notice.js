@@ -1,14 +1,31 @@
 // js/notice.js
-// Shared Codex notice system. The rule (Elder): every caught error is logged to
-// the debug pill; the USER only sees a notice when it is actionable by them.
-// Internal/dev errors go to the pill ONLY (notice.internal), never a user toast.
+// THE single notification module for all of Codex. Every page/tab (cohorts,
+// content, items, courses, certificates, questions, lessons, ...) calls these
+// functions directly — there is no per-page _toast/_toastError wrapper, so the
+// behavior cannot drift from one page to another. Renders top-right as a
+// .cdx-notice (CSS in css/codex.css). The legacy BSToast/js/toast.js seam was
+// retired once every caller moved here.
 //
-//   notice.ok(msg)        transient green confirmation ("Item salvo")
-//   notice.info(msg)      transient neutral info
-//   notice.warn(msg)      PERSISTENT amber, user must close it; for actionable
-//                         guidance (share the doc, type in use, fix the title)
-//   notice.error(msg)     PERSISTENT red, user must close it; for actionable errors
-//   notice.internal(err)  pill ONLY, no user UI; for internal/dev failures
+// The rule (Elder): the USER only sees a notice when it is actionable by them;
+// admin/technical errors go to the debug pill, not in their face. Pick the
+// function by message category, NOT by where you are:
+//
+//   notice.ok(msg)        SUCCESS / confirmation — green, transient ("Turma salva")
+//   notice.info(msg)      NEUTRAL info — blue, transient ("Link copiado")
+//   notice.error(msg)     USER-ACTIONABLE error / validation — red, PERSISTENT
+//                         (close with ×). CPF/e-mail/required field, "nada
+//                         selecionado", a failed copy that shows the URL, etc.
+//   notice.warn(msg)      USER-ACTIONABLE guidance — amber, PERSISTENT (share
+//                         the doc, type in use, fix the title)
+//   notice.internal(err)  ADMIN/technical failure (caught exceptions, API/AI
+//                         errors). ALWAYS logged to the debug pill. ALSO shown
+//                         as a transient red notice ONLY when the pill is ON
+//                         (localStorage.bs_debug === '1', toggled from the
+//                         topbar dev switch). Pill OFF → user sees nothing,
+//                         because they can't act on it.
+//
+// So: pill ON  → every error is visible (admin work / debugging).
+//     pill OFF → only confirmations + user-actionable notices appear.
 //
 // Globals (optional, shared Backstage debug pill): window.bsLog, window.dbg
 import { glyphSvg } from './glyphs.js';
@@ -58,5 +75,22 @@ export function ok(message) { return _show('ok', message, {}); }
 export function info(message) { return _show('info', message, {}); }
 export function warn(message) { return _show('warn', message, { persistent: true }); }
 export function error(message) { return _show('error', message, { persistent: true }); }
-// Internal/dev error: pill only, no user-facing notice.
-export function internal(detail) { _pill(detail); }
+
+// Is the debug pill ON? (the topbar dev toggle persists localStorage.bs_debug)
+function _debugOn() {
+  try { return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1'; }
+  catch (_) { return false; }
+}
+
+// Internal/admin error: ALWAYS goes to the debug pill. When the pill is ON
+// (bs_debug==='1'), ALSO surface a transient visible notice so admin/technical
+// errors aren't missed while debugging. In normal mode it stays pill-only — the
+// user sees only what they can act on (Elder's rule). Transient (not persistent)
+// so frequent internal errors don't pile up over the pill.
+export function internal(detail) {
+  _pill(detail);
+  if (_debugOn()) {
+    const msg = (detail && detail.message) ? detail.message : String(detail);
+    _show('error', msg, { duration: 6000 });
+  }
+}

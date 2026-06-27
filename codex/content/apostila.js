@@ -5,9 +5,6 @@
 // Google Doc split into sections (one ct_item per section); this tab lists the
 // newest non-empty set, lets you import a new one, edit/delete a section (reusing
 // the native item editor), or delete the whole set.
-//
-// Globals (shared Backstage scripts, loaded before the module boot):
-//   window.BSToast   (../backstage/js/bs-toast.js)   optional transient toast
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
@@ -38,7 +35,6 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function _toast(msg) { if (window.BSToast && window.BSToast.show) window.BSToast.show(msg); }
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
@@ -231,7 +227,7 @@ function _editSection(id) {
       saveLabel: t('content.save'),
       closeLabel: t('content.close'),
       // No onCreateType: editing imported course sections does not invent types.
-      onSave: () => { _closeModal(bd); _toast(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
+      onSave: () => { _closeModal(bd); notice.ok(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
       onCancel: () => _closeModal(bd),
     });
   }).catch((e) => notice.internal(_err(e)));
@@ -249,7 +245,7 @@ function _deleteSection(id) {
       const snapshot = idx >= 0 ? _items[idx] : null;
       if (idx >= 0) { _items.splice(idx, 1); _render(); }
       api.deleteItem({ id, _silent: true }).then(() => {
-        _toast(t('apostila.section_deleted'));
+        notice.ok(t('apostila.section_deleted'));
       }).catch((err) => {
         if (snapshot && idx >= 0) { _items.splice(idx, 0, snapshot); _render(); }
         notice.internal(_err(err));
@@ -272,7 +268,7 @@ function _deleteSet() {
         _selectedId = null;
         _detailCache.clear();
         _render();
-        _toast(t('apostila.set_deleted'));
+        notice.ok(t('apostila.set_deleted'));
       }).catch((err) => notice.internal(_err(err)));
     },
   });
@@ -304,7 +300,7 @@ function _openImport() {
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
   bd.querySelector('[data-act="import"]').addEventListener('click', function () {
     const url = bd.querySelector('[data-fld="url"]').value.trim();
-    if (!url) { _toast(t('creator.gdoc_url_required')); return; }
+    if (!url) { notice.error(t('creator.gdoc_url_required')); return; }
     const marker = bd.querySelector('[data-fld="marker"]').value;
     const btn = this;
     btn.disabled = true;
@@ -314,7 +310,7 @@ function _openImport() {
       const n = (res && res.items_created) ? res.items_created
         : (res && res.count) ? res.count
         : (res && res.items) ? res.items.length : '?';
-      _toast(t('apostila.imported').replace('{n}', n));
+      notice.ok(t('apostila.imported').replace('{n}', n));
       _load();
     }).catch((err) => {
       btn.disabled = false;
