@@ -112,6 +112,17 @@ export default {
   'alunos.filter_pending':    'Pending',
   'alunos.filter_approved':   'Approved',
   'alunos.filter_denied':     'Blocked',
+  // Alunos B+C2 redesign (sticky adaptive toolbar + status sections + inline edit)
+  'alunos.toolbar_select_all':   'Select all',
+  'alunos.sel_suffix':           'selected',
+  'alunos.select_section':       'select section',
+  'alunos.revoke_token':         'Revoke token',
+  'alunos.edit_title':           'Edit participant',
+  'alunos.edit_name_ph':         'Full name',
+  'alunos.edit_email_ph':        'email@example.com',
+  'alunos.cancel':               'Cancel',
+  'alunos.remove_selected_confirm': 'Remove the selected students? They lose access and must sign in again.',
+  'alunos.revoke_confirm':       'Revoke the selected students\' token? They will need to sign in again.',
 
   // Connection watchdog (js/reconnect.js)
   'net.lost':         'Connection lost.',
@@ -386,6 +397,7 @@ export default {
   'cohorts.participant_name_ph':          'Full name',
   'cohorts.participant_email_ph':         'email@example.com',
   'cohorts.participant_cpf_ph':           '000.000.000-00',
+  'cohorts.cpf_invalid':                 'Invalid CPF.',
   'cohorts.participant_added':            'Participant added.',
   'cohorts.participant_updated':          'Participant updated.',
   'cohorts.participant_deleted':          'Participant removed.',

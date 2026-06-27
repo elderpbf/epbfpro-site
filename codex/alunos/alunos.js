@@ -11,13 +11,13 @@ import { cohorts as api } from '../js/codex-api.js';
 import { clockOffset, remainingSec, fmtRemain, enrollUrl } from '../js/enroll-clock.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import * as qr from '../js/qr-share-modal.js';
+import { sectionParticipants, toolbarState, avatarFor } from './alunos-logic.js';
 
 let _viewEl = null;
 let _turmas = [];
 let _current = null; // the selected turma row (from ct_list_all_turmas)
 let _enrollTimer = null; // the live-countdown interval for the open enrollment window
-let _participants = [];  // the loaded roster for the selected turma (one list, filtered client-side)
-let _filter = 'all';     // students-list filter: all | pending | approved | denied
+let _participants = [];  // the loaded roster for the selected turma (one sectioned list)
 
 function clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
 
@@ -49,7 +49,15 @@ export function unmount() {
 }
 
 function body() { return _viewEl.querySelector('.cdx-alunos-body'); }
-async function safe(fn) { try { return await fn(); } catch (_) { return null; } }
+// Swallow + null on failure, but the caught error STILL reaches the debug pill
+// with real detail (never a silent catch).
+async function safe(fn) {
+  try { return await fn(); }
+  catch (e) {
+    if (typeof window !== 'undefined' && window.bsLog) window.bsLog('alunos: ' + ((e && e.message) || e), 'error');
+    return null;
+  }
+}
 // The admin's deployment, so the access-liberado email links back to staging/prod (not always prod).
 function _origin() { return (typeof location !== 'undefined' && location.origin) ? location.origin : undefined; }
 
@@ -178,11 +186,13 @@ function renderEnrollBox(box, res) {
   _enrollTimer = setInterval(tick, 1000);
 }
 
-// ── Students (one list: pending on top, status filters, inline approve/deny/revoke) ──
-// Elder's call: no separate approval queue. A single roster, pending sorted first, with a
-// filter bar on top and per-row actions by status, so the instructor manages everyone in
-// one place. The list filters client-side (no refetch); actions reload the turma.
-const _STATUS_RANK = { pending: 0, approved: 1, denied: 2 };
+// ── Students (B+C2: one sectioned list + sticky adaptive toolbar) ─────────────
+// Elder's call: no separate approval queue. A single roster split into status
+// sections (Pendentes / Aprovados / Bloqueados, pending first), each row with an
+// always-visible checkbox and a deterministic avatar. The batch actions live in
+// a sticky toolbar that GREYS OUT each button when it does not apply to the WHOLE
+// current selection (predicate map in alunos-logic.js, ported from the mock). A
+// per-row pencil opens an inline name/email editor. Actions reload the turma.
 
 function statusBadge(p) {
   const s = p.access_status || 'pending';
@@ -190,99 +200,216 @@ function statusBadge(p) {
 }
 
 function studentsCard() {
-  const pendingCount = _participants.filter((p) => (p.access_status || 'pending') === 'pending').length;
-  const filters = ['all', 'pending', 'approved', 'denied'].map((f) =>
-    '<button type="button" class="cdx-al-filter' + (f === _filter ? ' is-active' : '') + '" data-filter="' + f + '">' +
-      esc(t('alunos.filter_' + f)) + (f === 'pending' && pendingCount ? ' (' + pendingCount + ')' : '') + '</button>').join('');
-  return '<section class="cdx-alunos-card"><h2>' + esc(t('alunos.students')) + ' (' + _participants.length + ')</h2>' +
-    '<div class="cdx-al-filters">' + filters +
-      (pendingCount ? '<button type="button" class="cdx-btn cdx-al-approve-all">' + esc(t('alunos.approve_all')) + '</button>' : '') +
+  return '<section class="cdx-alunos-card cdx-al-listcard"><h2>' + esc(t('alunos.students')) + ' (' + _participants.length + ')</h2>' +
+    '<div class="cdx-al-toolbar" id="cdx-al-toolbar" role="toolbar" aria-label="' + esc(t('alunos.students')) + '">' +
+      '<label class="cdx-al-master-lbl"><input type="checkbox" class="cdx-al-master" id="cdx-al-master"> ' + esc(t('alunos.toolbar_select_all')) + '</label>' +
+      '<span class="cdx-al-count" id="cdx-al-count">0 ' + esc(t('alunos.sel_suffix')) + '</span>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="aprovar" disabled>' + esc(t('alunos.approve')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="revogar" disabled>' + esc(t('alunos.revoke_token')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="bloquear" disabled>' + esc(t('alunos.block')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="desbloquear" disabled>' + esc(t('alunos.unblock')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-act="remover" disabled>' + esc(t('alunos.remove')) + '</button>' +
     '</div>' +
     '<ul class="cdx-al-list cdx-al-students" id="cdx-al-students-list"></ul></section>';
 }
 
-function _sortedFiltered() {
-  let list = _participants.slice();
-  if (_filter !== 'all') list = list.filter((p) => (p.access_status || 'pending') === _filter);
-  list.sort((a, b) => {
-    const ra = _STATUS_RANK[a.access_status || 'pending'] ?? 9;
-    const rb = _STATUS_RANK[b.access_status || 'pending'] ?? 9;
-    if (ra !== rb) return ra - rb; // pending first
-    return String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
-  });
-  return list;
+const _SEP_DOT = { pending: '◐', approved: '●', denied: '✕' };
+const _SEP_LBL = { pending: 'alunos.filter_pending', approved: 'alunos.filter_approved', denied: 'alunos.filter_denied' };
+
+function sepRow(status, count) {
+  return '<li class="cdx-al-sep" data-sep="' + status + '">' +
+    '<span class="cdx-al-dot--' + status + '" aria-hidden="true">' + (_SEP_DOT[status] || '●') + '</span>' +
+    '<span class="cdx-al-sep-t">' + esc(t(_SEP_LBL[status])) + ' · ' + count + '</span>' +
+    '<span class="cdx-al-sep-sp"></span>' +
+    '<button type="button" class="cdx-al-secsel" data-section="' + status + '">' + esc(t('alunos.select_section')) + '</button>' +
+  '</li>';
+}
+
+function avatarHtml(p) {
+  const av = avatarFor(p.id != null ? p.id : (p.email || p.name || ''), p.display_name || p.name || '');
+  return '<span class="cdx-al-av" style="background:' + av.bg + ';color:' + av.fg + '" aria-hidden="true">' + esc(av.initials) + '</span>';
+}
+
+// Row inner (no <li> wrapper) so the same markup serves a fresh paint AND the
+// in-place swap back from edit mode.
+function studentRowInner(p) {
+  const online = (p.active_sessions || 0) > 0;
+  const via = p.approved_via ? esc(t('alunos.via_' + p.approved_via)) : '';
+  // An email taken on trust (QR join / self-registration) is flagged until the
+  // student clicks a magic link; the instructor can spot and fix typos in the room.
+  const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
+  const dot = online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '';
+  const label = esc(p.display_name || p.name || ('#' + p.id));
+  return '<input type="checkbox" class="cdx-al-chk" aria-label="' + label + '">' +
+    avatarHtml(p) +
+    '<span class="cdx-al-id">' +
+      '<span class="cdx-al-name">' + label + dot + '</span>' +
+      '<span class="cdx-al-email">' + esc(p.email || '') + unv + '</span>' +
+    '</span>' +
+    statusBadge(p) +
+    '<span class="cdx-al-via">' + via + '</span>' +
+    '<button type="button" class="cdx-al-edit" data-edit title="' + esc(t('alunos.edit_title')) + '">✎</button>';
 }
 
 function studentRow(p) {
   const st = p.access_status || 'pending';
-  const online = (p.active_sessions || 0) > 0;
-  const via = p.approved_via ? '<span class="cdx-al-via">' + esc(t('alunos.via_' + p.approved_via)) + '</span>' : '<span class="cdx-al-via"></span>';
-  // An email taken on trust (QR join / self-registration) is flagged until the student
-  // clicks a magic link; the instructor can spot and fix typos in the room.
-  const unv = (p.email && !p.email_verified) ? ' <span class="cdx-al-unverified" title="' + esc(t('alunos.unverified')) + '">⚠</span>' : '';
-  let actions = '';
-  if (st === 'pending') actions += '<button type="button" class="cdx-btn cdx-al-approve">' + esc(t('alunos.approve')) + '</button>';
-  // Block toggle (Élder): pending/approved -> Bloquear (denied, sticks everywhere until
-  // unblocked); a blocked student -> Desbloquear (back to pending, can try again). REMOVE
-  // is the separate "tirar da lista" (delete) below — block ≠ remove.
-  if (st === 'denied') actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-unblock">' + esc(t('alunos.unblock')) + '</button>';
-  else actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-block">' + esc(t('alunos.block')) + '</button>';
-  actions += '<button type="button" class="cdx-btn cdx-btn-vazado cdx-al-remove">' + esc(t('alunos.remove')) + '</button>';
-  return '<li class="cdx-al-srow" data-id="' + p.id + '">' +
-    '<span class="cdx-al-name">' + esc(p.display_name || p.name || ('#' + p.id)) +
-      (online ? ' <span class="cdx-al-online" title="' + esc(t('alunos.online')) + '">●</span>' : '') + '</span>' +
-    '<span class="cdx-al-email">' + esc(p.email || '') + unv + '</span>' +
-    statusBadge(p) + via +
-    '<span class="cdx-al-sact">' + actions + '</span>' +
-  '</li>';
+  return '<li class="cdx-al-srow" data-id="' + p.id + '" data-status="' + st + '">' + studentRowInner(p) + '</li>';
+}
+
+// Inline name/email editor swapped into a single row by the pencil.
+function editRowInner(p) {
+  return '<input type="checkbox" class="cdx-al-chk" disabled>' +
+    avatarHtml(p) +
+    '<span class="cdx-al-editbox">' +
+      '<input type="text" class="cdx-al-edit-name" value="' + esc(p.display_name || p.name || '') + '" placeholder="' + esc(t('alunos.edit_name_ph')) + '">' +
+      '<input type="email" class="cdx-al-edit-email" value="' + esc(p.email || '') + '" placeholder="' + esc(t('alunos.edit_email_ph')) + '">' +
+    '</span>' +
+    '<span class="cdx-al-edit-actions">' +
+      '<button type="button" class="cdx-btn cdx-btn-primary cdx-btn-sm cdx-al-edit-save">' + esc(t('alunos.save')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-al-edit-cancel">' + esc(t('alunos.cancel')) + '</button>' +
+    '</span>';
 }
 
 function paintStudents() {
   const ul = body() && body().querySelector('#cdx-al-students-list');
   if (!ul) return;
-  const list = _sortedFiltered();
-  ul.innerHTML = list.length
-    ? list.map(studentRow).join('')
-    : '<li class="cdx-alunos-empty">' + esc(t('alunos.students_empty')) + '</li>';
-  wireStudentRows();
+  const sections = sectionParticipants(_participants);
+  if (!_participants.length) {
+    ul.innerHTML = '<li class="cdx-alunos-empty">' + esc(t('alunos.students_empty')) + '</li>';
+    return;
+  }
+  let html = '';
+  for (const sec of sections) {
+    if (!sec.items.length) continue;
+    html += sepRow(sec.status, sec.items.length) + sec.items.map(studentRow).join('');
+  }
+  ul.innerHTML = html;
+}
+
+// ── Selection helpers ─────────────────────────────────────────────────────────
+function _rows(ul) { return Array.prototype.slice.call(ul.querySelectorAll('.cdx-al-srow')); }
+function _chk(li) { return li.querySelector('.cdx-al-chk'); }
+function _selected(ul) { return _rows(ul).filter((r) => { const c = _chk(r); return c && c.checked; }); }
+
+function refreshToolbar() {
+  const ul = body() && body().querySelector('#cdx-al-students-list');
+  const tb = body() && body().querySelector('#cdx-al-toolbar');
+  if (!ul || !tb) return;
+  const rows = _rows(ul);
+  rows.forEach((r) => { const c = _chk(r); r.classList.toggle('is-on', !!(c && c.checked)); });
+  const sel = rows.filter((r) => { const c = _chk(r); return c && c.checked; });
+  const count = tb.querySelector('#cdx-al-count');
+  if (count) count.textContent = sel.length + ' ' + t('alunos.sel_suffix');
+  const state = toolbarState(sel.map((r) => r.dataset.status));
+  tb.querySelectorAll('button[data-act]').forEach((b) => { b.disabled = !state[b.dataset.act]; });
+  const master = tb.querySelector('.cdx-al-master');
+  if (master) {
+    const selectable = rows.filter((r) => { const c = _chk(r); return c && !c.disabled; });
+    master.checked = selectable.length > 0 && sel.length >= selectable.length;
+    master.indeterminate = sel.length > 0 && sel.length < selectable.length;
+  }
+}
+
+function setToolbarBusy(on) {
+  const tb = body() && body().querySelector('#cdx-al-toolbar');
+  if (tb) tb.querySelectorAll('button[data-act]').forEach((b) => { b.disabled = on; });
 }
 
 function wireStudents() {
-  body().querySelectorAll('.cdx-al-filter').forEach((b) => {
-    b.addEventListener('click', () => {
-      _filter = b.dataset.filter;
-      body().querySelectorAll('.cdx-al-filter').forEach((x) => x.classList.toggle('is-active', x === b));
-      paintStudents();
-    });
-  });
-  const all = body().querySelector('.cdx-al-approve-all');
-  if (all) all.addEventListener('click', async () => {
-    const ids = _participants.filter((p) => (p.access_status || 'pending') === 'pending').map((p) => p.id);
-    if (!ids.length) return;
-    all.disabled = true;
-    await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: _origin() }));
-    loadTurma();
-  });
   paintStudents();
+  const tb = body().querySelector('#cdx-al-toolbar');
+  const ul = body().querySelector('#cdx-al-students-list');
+  if (!ul) return;
+  if (tb) {
+    tb.querySelectorAll('button[data-act]').forEach((b) => b.addEventListener('click', () => runBatch(b.dataset.act)));
+    const master = tb.querySelector('.cdx-al-master');
+    if (master) master.addEventListener('change', () => {
+      _rows(ul).forEach((r) => { const c = _chk(r); if (c && !c.disabled) c.checked = master.checked; });
+      refreshToolbar();
+    });
+  }
+  // Delegated list handlers: a checkbox change, a section "selecionar seção", a
+  // row click (toggles its checkbox), and the edit pencil / inline editor.
+  ul.addEventListener('change', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('cdx-al-chk')) refreshToolbar();
+  });
+  ul.addEventListener('click', (e) => onListClick(e, ul));
+  refreshToolbar();
 }
 
-function wireStudentRows() {
-  body().querySelectorAll('.cdx-al-srow').forEach((li) => {
-    const id = Number(li.dataset.id);
-    const ap = li.querySelector('.cdx-al-approve');
-    const block = li.querySelector('.cdx-al-block');
-    const unblock = li.querySelector('.cdx-al-unblock');
-    const rm = li.querySelector('.cdx-al-remove');
-    if (ap) ap.addEventListener('click', async () => { ap.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'approved', origin: _origin() })); loadTurma(); });
-    // Bloquear -> denied: the worker cuts live sessions AND the block sticks across every
-    // entry path (resolveApproval/enrollJoin/gate) until Desbloquear flips it back to pending.
-    if (block) block.addEventListener('click', async () => { block.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'denied' })); loadTurma(); });
-    if (unblock) unblock.addEventListener('click', async () => { unblock.disabled = true; await safe(() => api.setParticipantAccess({ participant_id: id, status: 'pending' })); loadTurma(); });
-    if (rm) rm.addEventListener('click', async () => {
-      if (typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
-      rm.disabled = true; await safe(() => api.deleteParticipant({ id })); loadTurma();
-    });
-  });
+function onListClick(e, ul) {
+  const tgt = e.target;
+  if (!tgt || !tgt.closest) return;
+  const secBtn = tgt.closest('.cdx-al-secsel');
+  if (secBtn) {
+    const sec = secBtn.dataset.section;
+    _rows(ul).forEach((r) => { if (r.dataset.status === sec) { const c = _chk(r); if (c && !c.disabled) c.checked = true; } });
+    refreshToolbar();
+    return;
+  }
+  const li = tgt.closest('.cdx-al-srow');
+  if (!li) return;
+  if (tgt.closest('[data-edit]')) { e.stopPropagation(); enterEdit(li); return; }
+  if (li.classList.contains('is-editing')) {
+    if (tgt.closest('.cdx-al-edit-save')) saveEdit(li);
+    else if (tgt.closest('.cdx-al-edit-cancel')) exitEdit(li);
+    return; // clicks inside the editor never toggle selection
+  }
+  if (tgt.classList && tgt.classList.contains('cdx-al-chk')) return; // native toggle + change event
+  const c = _chk(li);
+  if (c && !c.disabled) { c.checked = !c.checked; refreshToolbar(); }
+}
+
+function _find(id) { return _participants.find((x) => x.id === id); }
+
+function enterEdit(li) {
+  const p = _find(Number(li.dataset.id));
+  if (!p) return;
+  li.classList.add('is-editing');
+  li.innerHTML = editRowInner(p);
+  const nameEl = li.querySelector('.cdx-al-edit-name');
+  if (nameEl && nameEl.focus) nameEl.focus();
+  refreshToolbar();
+}
+
+function exitEdit(li) {
+  const p = _find(Number(li.dataset.id));
+  li.classList.remove('is-editing');
+  if (p) li.innerHTML = studentRowInner(p);
+  refreshToolbar();
+}
+
+async function saveEdit(li) {
+  const id = Number(li.dataset.id);
+  const nameEl = li.querySelector('.cdx-al-edit-name');
+  const emailEl = li.querySelector('.cdx-al-edit-email');
+  const name = ((nameEl && nameEl.value) || '').trim();
+  const email = ((emailEl && emailEl.value) || '').trim();
+  if (!name) { if (nameEl && nameEl.focus) nameEl.focus(); return; }
+  const save = li.querySelector('.cdx-al-edit-save');
+  if (save) save.disabled = true;
+  const res = await safe(() => api.updateParticipant({ id, name, email: email || null }));
+  if (res) loadTurma();
+  else if (save) save.disabled = false;
+}
+
+// Batch action driven by the toolbar. Status flips (aprovar/bloquear/desbloquear)
+// go through setParticipantAccess with the participant_ids array; remover and
+// revogar have no array form on the facade, so they loop per id.
+async function runBatch(act) {
+  const ul = body() && body().querySelector('#cdx-al-students-list');
+  if (!ul) return;
+  const ids = _selected(ul).map((r) => Number(r.dataset.id));
+  if (!ids.length) return;
+  if (act === 'remover' && typeof confirm === 'function' && !confirm(t('alunos.remove_selected_confirm'))) return;
+  if (act === 'revogar' && typeof confirm === 'function' && !confirm(t('alunos.revoke_confirm'))) return;
+  setToolbarBusy(true);
+  if (act === 'aprovar') await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'approved', origin: _origin() }));
+  else if (act === 'bloquear') await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'denied' }));
+  else if (act === 'desbloquear') await safe(() => api.setParticipantAccess({ participant_ids: ids, status: 'pending' }));
+  else if (act === 'remover') { for (const id of ids) await safe(() => api.deleteParticipant({ id })); }
+  else if (act === 'revogar') { for (const id of ids) await safe(() => api.revokeStudentSessions({ participant_id: id })); }
+  loadTurma();
 }
 
 // ── Roster pre-approval (signal c) ───────────────────────────────────────────

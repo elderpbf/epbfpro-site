@@ -23,18 +23,42 @@
 .cdx-al-msg { font-size: 0.9rem; color: var(--muted, #777); }
 
 .cdx-al-list { list-style: none; margin: 0.75rem 0 0; padding: 0; }
-.cdx-al-qrow, .cdx-al-srow {
+.cdx-al-qrow {
   display: grid; align-items: center; gap: 0.5rem 0.75rem;
   grid-template-columns: minmax(8rem, 1fr) minmax(8rem, 1.4fr) auto;
   padding: 0.5rem 0; border-top: 1px solid var(--border);
 }
-.cdx-al-srow { grid-template-columns: minmax(7rem, 1fr) minmax(7rem, 1.2fr) auto auto auto; }
+/* Sectioned roster rows (B+C2): checkbox · avatar · name+email · badge · via · edit */
+.cdx-al-srow {
+  display: grid; align-items: center; gap: 0.6rem;
+  grid-template-columns: auto auto minmax(0, 2fr) auto auto auto;
+  padding: 0.5rem 0.2rem; border-top: 1px solid var(--border); cursor: pointer;
+}
+.cdx-al-srow.is-on { background: var(--cdx-card-sel-bg); }
+.cdx-al-srow.is-editing { grid-template-columns: auto auto 1fr auto; cursor: default; }
+.cdx-al-chk, .cdx-al-master { width: 16px; height: 16px; accent-color: var(--primary); cursor: pointer; }
+.cdx-al-av {
+  width: 26px; height: 26px; border-radius: 50%; flex-shrink: 0;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.66rem; font-weight: 700; letter-spacing: 0.02em;
+}
+.cdx-al-id { display: flex; flex-direction: column; min-width: 0; }
 .cdx-al-name { font-weight: 600; }
-.cdx-al-email { color: var(--muted, #777); font-size: 0.9rem; word-break: break-all; }
-.cdx-al-online { color: var(--ok, #2ecc71); }
-.cdx-al-via { color: var(--muted, #999); font-size: 0.8rem; }
-.cdx-al-qact { display: flex; gap: 0.4rem; }
-.cdx-al-sact { display: flex; gap: 0.4rem; justify-content: flex-end; }
+.cdx-al-email { color: var(--text-muted); font-size: 0.9rem; word-break: break-all; }
+.cdx-al-online { color: var(--success); }
+.cdx-al-via { color: var(--text-muted); font-size: 0.78rem; white-space: nowrap; }
+.cdx-al-edit {
+  background: none; border: none; color: var(--text-secondary); font-size: 0.95rem;
+  cursor: pointer; padding: 0.2rem 0.35rem; border-radius: 7px; line-height: 1;
+}
+.cdx-al-edit:hover { background: var(--surface-hover); color: var(--text-primary); }
+/* Inline name/email editor (the pencil swap) */
+.cdx-al-editbox { display: flex; flex-direction: column; gap: 0.3rem; min-width: 0; }
+.cdx-al-editbox input {
+  padding: 0.35rem 0.5rem; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--background); color: var(--text-primary); font: inherit; font-size: 0.85rem;
+}
+.cdx-al-edit-actions { display: flex; gap: 0.4rem; justify-content: flex-end; }
 
 /* QR enrollment window */
 .cdx-al-enroll-on { display: flex; align-items: center; gap: 0.4rem; font-weight: 600; margin: 0 0 0.6rem; }
@@ -46,15 +70,32 @@
 .cdx-al-enroll-rem { font-variant-numeric: tabular-nums; }
 .cdx-al-unverified { color: var(--warn, #e0a800); cursor: help; }
 
-/* Students filter bar */
-.cdx-al-filters { display: flex; flex-wrap: wrap; gap: 0.4rem; align-items: center; margin: 0.5rem 0 0.25rem; }
-.cdx-al-filter {
-  background: none; border: 1px solid var(--border); color: var(--text-secondary);
-  border-radius: 999px; padding: 0.28rem 0.8rem; font: inherit; font-size: 0.82rem; cursor: pointer;
+/* Sticky adaptive toolbar, batch actions grey out when they don't apply to the
+   whole current selection (the .cdx-btn[disabled] rule in components.css). */
+.cdx-al-toolbar {
+  position: sticky; top: 0; z-index: 5;
+  display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 10px;
+  padding: 0.55rem 0.7rem; margin: 0.25rem 0 0.75rem;
 }
-.cdx-al-filter:hover { color: var(--text-primary); }
-.cdx-al-filter.is-active { background: var(--primary); border-color: var(--primary); color: var(--on-primary); }
-.cdx-al-approve-all { margin-left: auto; }
+.cdx-al-master-lbl { display: flex; align-items: center; gap: 0.4rem; font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.cdx-al-count { font-weight: 700; font-size: 0.82rem; color: var(--text-secondary); margin-right: 0.3rem; }
+
+/* Status section separators (Pendentes / Aprovados / Bloqueados) */
+.cdx-al-sep {
+  display: flex; align-items: center; gap: 0.55rem; flex-wrap: wrap; list-style: none;
+  padding: 0.6rem 0.2rem 0.45rem; border-bottom: 2px solid var(--border); margin-top: 0.35rem;
+}
+.cdx-al-sep-sp { flex: 1; }
+.cdx-al-sep-t { font-size: 0.72rem; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase; color: var(--text-secondary); }
+.cdx-al-secsel {
+  font-size: 0.72rem; color: var(--primary-dark); background: none; border: none; cursor: pointer;
+  font-weight: 700; text-decoration: underline; text-underline-offset: 2px; font-family: inherit; padding: 0;
+}
+.cdx-al-secsel:hover { color: var(--primary); }
+.cdx-al-dot--pending  { color: var(--task-fill); }
+.cdx-al-dot--approved { color: var(--primary-dark); }
+.cdx-al-dot--denied   { color: var(--danger-fill); }
 
 /* Status badges — look from system role tokens; layout (padding/radius/type) owned here. */
 .cdx-al-badge {
