@@ -143,6 +143,7 @@ function startEmail(emailEl, root) {
       '<div class="cdx-entrar-error cdx-entrar-email-error" aria-live="polite"></div>' +
       '<input class="cdx-entrar-otp cdx-entrar-code-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
       dev +
+      '<p class="cdx-entrar-card-p cdx-entrar-hint">' + esc(t('login.not_received')) + '</p>' +
       '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-code-verify" type="button">' + esc(t('login.verify')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-resend" type="button">' + esc(t('login.resend')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';

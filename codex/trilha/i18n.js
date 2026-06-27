@@ -79,6 +79,7 @@ const pt = {
   'login.resend_sent':      'Enviamos um novo código para o seu e-mail.',
   'login.resend_in':        'Reenviar em {s}s',
   'login.code_still_valid': 'Já enviamos um código. Confira seu e-mail (e a caixa de spam).',
+  'login.not_received':     'Não recebeu o e-mail? Confira o spam ou toque em reenviar.',
   // Registration wall (the approved a1 entry mock)
   'wall.lead_title':        'Faça seu registro para entrar na trilha',
   'wall.lead_sub':          'Um cadastro rápido com seu nome e e-mail libera tudo o que esta turma oferece. Sem senha.',
@@ -239,6 +240,7 @@ const en = {
   'login.resend_sent':      'We sent a new code to your e-mail.',
   'login.resend_in':        'Resend in {s}s',
   'login.code_still_valid': 'We already sent a code. Check your e-mail (and spam).',
+  'login.not_received':     "Didn't get the e-mail? Check spam or tap resend.",
   // Registration wall (the approved a1 entry mock)
   'wall.lead_title':        'Register to enter the trail',
   'wall.lead_sub':          'A quick sign-up with your name and e-mail unlocks everything this class offers. No password.',

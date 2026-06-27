@@ -225,7 +225,8 @@ function renderRegister(wall) {
       name = (nameEl.value || '').trim();
       cta.disabled = true;
       cta.textContent = t('login.sending');
-      await flow.requestCode(emailEl.value);
+      // Pass the name so save-on-submit persists the real name (not the e-mail placeholder).
+      await flow.requestCode(emailEl.value, { name });
       if (flow.state === 'code' && !flow.codeStillValid) startCooldown(60); // a new code was just sent
       settle();
     };
@@ -249,6 +250,7 @@ function renderRegister(wall) {
         dev +
         '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
         '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
+        '<p class="cdx-en-nopass cdx-en-hint">' + esc(t('login.not_received')) + '</p>' +
         '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const codeEl = cardEl.querySelector('#cdx-en-code');

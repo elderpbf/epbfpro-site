@@ -160,6 +160,8 @@ function buildLoginPill() {
       openLoginModal({
         client: state.clientSlug, turma: state.turmaSlug, k: state.token,
         presence: getPresence(state.clientSlug, state.turmaSlug),
+        // Simple-enroll turma: the pill opens the e-mail-only step, not the código flow.
+        simple: !!(((state.data || {}).access || {}).simple_enroll),
         onAuthenticated: afterAuth,
       });
     }

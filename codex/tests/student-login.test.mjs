@@ -44,6 +44,7 @@ function fakeApi(responses) {
     profileSave: make('profileSave'),
     sessionCheck: make('sessionCheck'),
     enrollJoin: make('enrollJoin'),
+    simpleEnroll: make('simpleEnroll'),
   };
 }
 
@@ -172,6 +173,44 @@ test('requestCode surfaces a worker error and stays on email', async () => {
   await flow.requestCode('aluno@exemplo.com');
   assert.equal(flow.state, 'email');
   assert.equal(flow.error, 'email_required');
+});
+
+// Save-on-submit: the wall passes the typed name so the worker persists the REAL name (not
+// the e-mail placeholder) the instant the code is requested.
+test('requestCode (bound/wall) forwards the typed name when given', async () => {
+  api = fakeApi({ otpRequest: { ok: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.requestCode('aluno@exemplo.com', { name: '  Ana Maria  ' });
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', name: 'Ana Maria', client_slug: 'jfse', turma_slug: 'geral' });
+});
+
+// Simple-enroll login (turma flag ON): name + e-mail register + grant access on the spot,
+// no code round-trip. Same surface as the wall, so the "Entrar" pill modal reuses it.
+test('simpleEnroll registers + stores the session and goes authenticated', async () => {
+  api = fakeApi({ simpleEnroll: { ok: true, session_token: 'SS', participant_id: 9, needs_profile: false } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.simpleEnroll('aluno@exemplo.com', 'Ana');
+  assert.equal(api.calls[0].name, 'simpleEnroll');
+  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'aluno@exemplo.com', name: 'Ana' });
+  assert.equal(sess.getToken('jfse', 'geral'), 'SS');
+  assert.equal(flow.participantId, 9);
+  assert.equal(flow.state, 'authenticated');
+});
+
+test('simpleEnroll needing profile routes to the profile step', async () => {
+  api = fakeApi({ simpleEnroll: { ok: true, session_token: 'SS', participant_id: 9, needs_profile: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.simpleEnroll('aluno@exemplo.com', 'Ana');
+  assert.equal(flow.state, 'profile');
+});
+
+test('simpleEnroll rejects an invalid e-mail without calling the facade', async () => {
+  api = fakeApi({ simpleEnroll: { ok: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.simpleEnroll('nope', 'Ana');
+  assert.equal(flow.state, 'email');
+  assert.equal(flow.error, 'email_invalid');
+  assert.equal(api.calls.length, 0);
 });
 
 test('verifyCode (bound turma) needing profile stores the session and shows profile', async () => {
