@@ -22,6 +22,10 @@ function logErr(msg) {
 }
 
 // Is the admin already authed on this device? Reads the same slot the transport sends.
+// Globals (shared Backstage scripts, loaded before the module boot):
+//   window.callWorker (transport, js/worker-call.js); window.bsLog/window.dbg
+//   (debug pill, backstage/js/debug.js); window.BS_GOOGLE (Google auth context)
+
 export function isAuthed() {
   try { return !!localStorage.getItem(PW_KEY); } catch (_) { return false; }
 }

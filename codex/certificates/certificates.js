@@ -14,7 +14,7 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (set by Codex's ../js/worker-call.js; was backstage/js/api-client.js)
 //   window.bsLog        (../backstage/js/debug.js)
-//   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
+// (brand-logos is a Codex ES import in cert-render.js, not a window global.)
 
 import { certificates as api, cohorts as cohortsApi, courses as coursesApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';

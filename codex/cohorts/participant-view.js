@@ -12,7 +12,7 @@ export function isApprovalGated(turma) {
   return !!(turma.certificates_enabled || turma.access_gated);
 }
 
-export function statusOf(p) {
+function statusOf(p) {
   return (p && p.access_status) || 'pending';
 }
 

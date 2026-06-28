@@ -59,7 +59,7 @@ async function loadThreads(ctx) {
   const box = ctx.el.querySelector('.cdx-fa-threads');
   let res;
   try { res = await api.forumListThreads({ client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug }); }
-  catch (_) { box.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error')) + '</div>'; return; }
+  catch (e) { if (window.bsLog) window.bsLog('forum-admin loadThreads: ' + (e && e.message || e), 'error'); box.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error')) + '</div>'; return; }
   ctx.threads = (res && res.threads) || [];
   if (!ctx.threads.length) { box.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.doss_forum_empty')) + '</div>'; return; }
   const now = Math.floor(Date.now() / 1000);
@@ -88,7 +88,7 @@ async function openThread(ctx, id) {
   pane.innerHTML = '<div class="cdx-empty">…</div>';
   let data;
   try { data = await api.forumGetThread({ thread_id: id }); }
-  catch (_) { pane.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error')) + '</div>'; return; }
+  catch (e) { if (window.bsLog) window.bsLog('forum-admin openThread: ' + (e && e.message || e), 'error'); pane.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error')) + '</div>'; return; }
   ctx.detail = data;
   paintDetail(ctx);
 }

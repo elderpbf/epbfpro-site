@@ -7,10 +7,10 @@
 // `host.html`. The lifecycle (Iniciar/Encerrar) lives on the host's own session
 // bar, exactly like the legacy.
 //
-// The per-session Stats overlay and the protected session Delete are implemented
-// below but NOT wired to any trigger; their placement is pending a post-port
-// decision. They must NOT be put back on the sidebar cards (that was reviewed and
-// rejected). Data through the facade; strings via t(); errors via notice.
+// The per-session Stats overlay and the protected session Delete are wired via the
+// host's onStats/onDelete callbacks (live-host mount), NOT the sidebar cards (that
+// placement was reviewed and rejected). Data through the facade; strings via t();
+// errors via notice.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';

@@ -9,9 +9,10 @@
 // editor. Reuses the Items split classes (cdx-items-split / cdx-items-list /
 // cdx-item-row / cdx-item-preview), so there is one master-detail layout.
 //
-// What stays a shared global (deliberately, not debt):
+// Globals (shared, deliberately not debt):
 //   window.BS_GOOGLE     auth + the client-side Google Drive read (auth-bound,
 //                        Backstage-owned; the actual Drive listing happens here)
+//   window.confirm       native browser dialog (_deleteFolder only)
 // The file-preview modal is the Codex-owned js/drive-viewer.js module (also used
 // by Lessons). Everything else (folder CRUD, the synced-item index, the editor,
 // the sync orchestration) is native, and every Worker call goes through the

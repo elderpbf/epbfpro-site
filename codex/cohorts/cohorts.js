@@ -2,7 +2,7 @@
 // Codex — Cohorts tab: Clients | Turmas | Aulas (three-column layout).
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
-//   window.callWorker   (../backstage/js/api-client.js)
+//   window.callWorker   (../js/worker-call.js, Codex-owned; was backstage/js/api-client.js)
 import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
@@ -782,7 +782,7 @@ function _openTurmaForm(turma) {
     _cpSessions.length
       ? Promise.resolve()
       : cpApi.listSessions().then(d => { _cpSessions = (d && d.sessions) || []; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: list sessions failed: ' + (e && e.message || e), 'error'); }),
-    coursesApi.list().then(d => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}),
+    coursesApi.list().then(d => { _turmaCourses = (d && d.courses) || []; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: list courses failed: ' + (e && e.message || e), 'error'); }),
   ]);
 
   load.then(() => {
@@ -850,7 +850,7 @@ function _openTurmaForm(turma) {
       _pickedCourse = null;
       const cid = courseEl.value ? Number(courseEl.value) : null;
       if (!cid) return;
-      coursesApi.get({ id: cid }).then(d => { _pickedCourse = (d && d.course) || null; }).catch(() => {});
+      coursesApi.get({ id: cid }).then(d => { _pickedCourse = (d && d.course) || null; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: get course failed: ' + (e && e.message || e), 'error'); });
     });
 
     bd.querySelector('#cdx-tf-save').addEventListener('click', () => {
@@ -1331,8 +1331,8 @@ function _ensureDossierDeps(cb) {
   if ((!needCourses && !needCp) || _dossierDepsTried) { if (cb) cb(); return; }
   _dossierDepsTried = true;
   Promise.all([
-    needCourses ? coursesApi.list().then((d) => { _turmaCourses = (d && d.courses) || []; }).catch(() => {}) : Promise.resolve(),
-    needCp ? cpApi.listSessions().then((d) => { _cpSessions = (d && d.sessions) || []; }).catch(() => {}) : Promise.resolve(),
+    needCourses ? coursesApi.list().then((d) => { _turmaCourses = (d && d.courses) || []; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: deps list courses failed: ' + (e && e.message || e), 'error'); }) : Promise.resolve(),
+    needCp ? cpApi.listSessions().then((d) => { _cpSessions = (d && d.sessions) || []; }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: deps list sessions failed: ' + (e && e.message || e), 'error'); }) : Promise.resolve(),
   ]).then(() => { if (cb) cb(); });
 }
 
@@ -1535,12 +1535,12 @@ function _wireDossierParticipants(el, turma) {
     acts.forEach((x) => { x.disabled = true; });
     try {
       if (act === 'remove') {
-        for (const id of ids) { await api.deleteParticipant({ id }).catch(() => {}); }
+        for (const id of ids) { await api.deleteParticipant({ id }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk delete participant failed: ' + (e && e.message || e), 'error'); }); }
       } else {
         const status = actionTargetStatus(act);
         const payload = { participant_ids: ids, status };
         if (status === 'approved') payload.origin = location.origin;
-        await api.setParticipantAccess(payload).catch(() => {});
+        await api.setParticipantAccess(payload).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk set access failed: ' + (e && e.message || e), 'error'); });
       }
     } finally {
       _loadDossierParticipants(turma);
@@ -1557,7 +1557,7 @@ function _loadDossierParticipants(turma) {
     if (!el) return;
     _paintDossierParticipants(el, turma);
     _wireDossierParticipants(el, turma);
-  }).catch(() => {});
+  }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: load participants failed: ' + (e && e.message || e), 'error'); });
 }
 
 const _DOSS_CERT_STATUSES = [
@@ -1579,7 +1579,7 @@ function _loadDossierCerts(turma) {
       .filter((st) => counts[st.s])
       .map((st) => '<span class="cdx-doss-cstat cdx-doss-cstat--' + st.c + '"><i></i>' + counts[st.s] + ' ' + _esc(t(st.k)) + '</span>')
       .join('') + '</div>';
-  }).catch(() => {});
+  }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: load certs failed: ' + (e && e.message || e), 'error'); });
 }
 
 function _loadTurmaAulas(clientSlug, turmaSlug) {

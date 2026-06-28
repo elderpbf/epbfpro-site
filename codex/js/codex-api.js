@@ -20,6 +20,8 @@
 //   to codex-api, auth-free public path). On the admin it is still
 //   backstage/js/api-client.js until that page's auth is ported. The facade is
 //   identical either way; tests stub this global to read back the action.
+//   Also reads window.WORKER_URL (boot-set base URL, index.html) in assetUrl(),
+//   falling back to '' — the single place R2/asset URLs resolve.
 
 export function call(action, params) {
   const p = Object.assign({}, params || {});

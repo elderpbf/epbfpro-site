@@ -13,6 +13,8 @@
 // Slides embed (`slide` type) is untouched and renders in Lessons, not here.
 // Backend is reached ONLY through the codex-api slides facade. Every string goes
 // through t(). No inline JS in markup; events are delegated.
+// Globals (shared Backstage scripts, loaded before the module boot):
+//   window.bsLog (debug pill, backstage/js/debug.js), window.BS_GOOGLE (Google Picker bridge)
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';

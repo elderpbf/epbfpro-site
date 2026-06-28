@@ -356,7 +356,8 @@ function _loadSubmissions(itemId) {
     _submissions[itemId] = (res && res.submissions) || [];
     _renderSubmissions(itemId);
     _updateSubmissionCount(itemId);
-  }).catch(() => {
+  }).catch((e) => {
+    if (window.bsLog) window.bsLog('tarefas _loadSubmissions: ' + (e && e.message || e), 'error');
     if (Number(itemId) !== Number(_selectedId)) return;
     const pane = _viewEl && _viewEl.querySelector('#cdx-tarefas-preview [data-pane="resp"]');
     if (pane) pane.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_answers') + '</div>';

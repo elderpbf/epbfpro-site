@@ -8,6 +8,9 @@
 //
 // Opened in a normal browser (no pywebview bridge) it still lists certs but can't
 // sign — it shows a "open in the app" notice instead.
+// Globals injected by the pywebview host / boot:
+//   window.callWorker (Worker transport, set by the import below); window.pywebview.api
+//   (desktop bridge); window.WORKER_URL (set on boot); window.bsLog (debug pill)
 import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
 import { certificates as api } from '../js/codex-api.js';
 import { renderCertsPdfBase64 } from './cert-pdf.js';
