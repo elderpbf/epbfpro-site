@@ -28,6 +28,7 @@ let _turma = null;
 let _items = [];
 let _itemTurmas = {};    // item_id -> [{ client_slug, turma_slug, ... }]
 let _submissions = {};   // item_id -> [submission]
+let _flags = {};         // item_id -> { reply_enabled, grade_enabled } (per-instance toggles)
 let _selectedId = null;  // selected tarefa id (master-detail)
 let _picker = null;
 let _cleanup = [];
@@ -354,6 +355,7 @@ function _deleteTarefa(item) {
 function _loadSubmissions(itemId) {
   api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
     _submissions[itemId] = (res && res.submissions) || [];
+    _flags[itemId] = (res && res.flags) || { reply_enabled: false, grade_enabled: false };
     _renderSubmissions(itemId);
     _updateSubmissionCount(itemId);
   }).catch((e) => {
@@ -369,9 +371,15 @@ function _renderSubmissions(itemId) {
   const pane = _viewEl && _viewEl.querySelector('#cdx-tarefas-preview [data-pane="resp"]');
   if (!pane) return;
   const subs = _submissions[itemId] || [];
+  const flags = _flags[itemId] || { reply_enabled: false, grade_enabled: false };
   const count = subs.length;
   pane.innerHTML =
     '<h4 class="cdx-tarefa-pane-title">' + t('tarefas.answers_title') + ' (' + count + ')</h4>' +
+    '<div class="cdx-resp-flags">' +
+      '<span class="cdx-resp-flags-label">' + t('tarefas.flags_label') + '</span>' +
+      _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
+      _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
+    '</div>' +
     '<div class="cdx-resp-toolbar">' +
       '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-resp-export"' + (count === 0 ? ' disabled' : '') + '>' + t('tarefas.export_csv') + '</button>' +
@@ -379,8 +387,24 @@ function _renderSubmissions(itemId) {
     '<div class="cdx-resp-list">' +
       (count === 0
         ? '<div class="cdx-resp-empty">' + t('tarefas.answers_empty') + '</div>'
-        : subs.map(_submissionCardHtml).join('')) +
+        : subs.map((s) => _submissionCardHtml(s, flags)).join('')) +
     '</div>';
+
+  pane.querySelectorAll('.cdx-resp-flag').forEach((btn) => {
+    btn.addEventListener('click', () => _toggleFlag(itemId, btn.dataset.flag));
+  });
+  pane.querySelectorAll('.cdx-resp-reply-send').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const inp = btn.parentElement.querySelector('.cdx-resp-reply-input');
+      _saveReply(Number(btn.dataset.sid), inp ? inp.value.trim() : '', itemId);
+    });
+  });
+  pane.querySelectorAll('.cdx-resp-grade-save').forEach((btn) => {
+    btn.addEventListener('click', () => {
+      const inp = btn.parentElement.querySelector('.cdx-resp-grade-input');
+      _saveGrade(Number(btn.dataset.sid), inp ? inp.value.trim() : '', itemId);
+    });
+  });
 
   pane.querySelectorAll('.cdx-resp-card-delete').forEach((btn) => {
     btn.addEventListener('click', () => _deleteSubmission(Number(btn.dataset.sid), itemId));
@@ -412,16 +436,19 @@ function _renderSubmissions(itemId) {
   if (exportBtn) exportBtn.addEventListener('click', () => _exportCsv(_items.find((i) => i.id === itemId), subs));
 }
 
-function _submissionCardHtml(s) {
+function _submissionCardHtml(s, flags) {
+  flags = flags || {};
   const field = _field(s.answer_type || 'text');
   const who = s.student_name ? _esc(s.student_name) : '<em>' + t('tarefas.anonymous') + '</em>';
   const whoCls = s.student_name ? 'cdx-resp-who' : 'cdx-resp-who is-anon';
   const content = field.renderStored(s.answer_json);
   const rawText = field.toCsvValue(s.answer_json);
   const hay = (s.student_name || '') + ' ' + rawText;
+  const gradeBadge = (flags.grade_enabled && s.grade != null && s.grade !== '')
+    ? '<span class="cdx-resp-grade-badge">' + t('tarefas.grade_toggle') + ' ' + _esc(s.grade) + '</span>' : '';
   return '<div class="cdx-resp-card" data-search="' + _esc(hay) + '">' +
     '<div class="cdx-resp-meta">' +
-      '<span class="' + whoCls + '">' + who + '</span>' +
+      '<span class="' + whoCls + '">' + who + '</span>' + gradeBadge +
       '<span class="cdx-resp-when">' + _esc(_formatTs(s.submitted_at)) + '</span>' +
     '</div>' +
     '<div class="cdx-resp-content">' + content + '</div>' +
@@ -430,7 +457,59 @@ function _submissionCardHtml(s) {
       '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm cdx-resp-card-copy" data-sid="' + _esc(s.id) + '">' + t('tarefas.copy') + '</button>' +
       '<button class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-resp-card-delete" data-sid="' + _esc(s.id) + '">' + t('tarefas.answer_delete') + '</button>' +
     '</div>' +
+    (flags.reply_enabled ? _replyBlockHtml(s) : '') +
+    (flags.grade_enabled ? _gradeBlockHtml(s) : '') +
   '</div>';
+}
+
+// ── Per-tarefa instructor reply + grade (t1b): toggles ride on the release; the
+// reply/grade ride on the submission. One reusable input row per capability. ──────
+function _flagToggleHtml(flag, on, label) {
+  return '<button class="cdx-btn cdx-btn-sm cdx-resp-flag' + (on ? ' is-on' : '') + '" data-flag="' + flag + '">' +
+    (on ? '☑ ' : '☐ ') + _esc(label) + '</button>';
+}
+function _replyBlockHtml(s) {
+  return '<div class="cdx-resp-reply">' +
+    '<label class="cdx-resp-sublabel">' + t('tarefas.reply_label') + '</label>' +
+    '<div class="cdx-resp-reply-row">' +
+      '<input type="text" class="cdx-input cdx-resp-reply-input" placeholder="' + _esc(t('tarefas.reply_ph')) + '" value="' + (s.instructor_reply ? _esc(s.instructor_reply) : '') + '">' +
+      '<button class="cdx-btn cdx-btn-sm cdx-resp-reply-send" data-sid="' + _esc(s.id) + '">' + t('tarefas.reply_send') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+function _gradeBlockHtml(s) {
+  return '<div class="cdx-resp-grade">' +
+    '<label class="cdx-resp-sublabel">' + t('tarefas.grade_toggle') + '</label>' +
+    '<div class="cdx-resp-grade-row">' +
+      '<input type="text" class="cdx-input cdx-resp-grade-input" placeholder="' + _esc(t('tarefas.grade_ph')) + '" value="' + (s.grade != null ? _esc(s.grade) : '') + '">' +
+      '<button class="cdx-btn cdx-btn-sm cdx-resp-grade-save" data-sid="' + _esc(s.id) + '">' + t('tarefas.grade_save') + '</button>' +
+    '</div>' +
+  '</div>';
+}
+function _toggleFlag(itemId, flag) {
+  const cur = _flags[itemId] || { reply_enabled: false, grade_enabled: false };
+  const key = flag === 'reply' ? 'reply_enabled' : 'grade_enabled';
+  const next = !cur[key];
+  const payload = { client_slug: _client, turma_slug: _turma, item_id: itemId };
+  payload[key] = next ? 1 : 0;
+  api.setTarefaFlags(payload).then(() => {
+    cur[key] = next; _flags[itemId] = cur; _renderSubmissions(itemId);
+  }).catch((err) => notice.internal(_err(err)));
+}
+function _saveReply(sid, reply, itemId) {
+  api.replySubmission({ id: sid, reply: reply }).then(() => {
+    toast.ok(t('tarefas.saved'));
+    const s = (_submissions[itemId] || []).find((x) => x.id === sid);
+    if (s) s.instructor_reply = reply;
+  }).catch((err) => notice.internal(_err(err)));
+}
+function _saveGrade(sid, grade, itemId) {
+  api.gradeSubmission({ id: sid, grade: grade }).then(() => {
+    toast.ok(t('tarefas.saved'));
+    const s = (_submissions[itemId] || []).find((x) => x.id === sid);
+    if (s) s.grade = grade;
+    _renderSubmissions(itemId);
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 function _deleteSubmission(sid, itemId) {
