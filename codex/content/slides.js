@@ -230,6 +230,7 @@ async function _loadDecks() {
     _decks = ourDecks(res && res.presentations);
     _renderList();
   } catch (e) {
+    notice.internal(e);
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
 }
@@ -244,6 +245,7 @@ async function _deleteDeck(slug) {
     await _loadDecks();
     if (_openSlug === slug) _showPlaceholder();  // deleted the open deck -> back to placeholder
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
@@ -274,6 +276,7 @@ async function _renameDeck(slug) {
     await api.register({ slug, title, engine: DECK_ENGINE });
     await _loadDecks();                              // re-renders the sidebar; the open deck stays open
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
@@ -287,6 +290,7 @@ async function _createDeck() {
     await _loadDecks();
     _openDeck(slug, /* fresh */ true);
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }

@@ -1751,6 +1751,8 @@ export function mount(viewEl, ctx) {
   _filterTurmaId = '';
   _filterStatus  = '';
   _filterQ       = '';
+  _filterDateFrom = '';
+  _filterDateTo   = '';
   _clients       = [];
   _turmaIndex    = {};
   _turmasByClient = {};

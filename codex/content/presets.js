@@ -463,8 +463,8 @@ export function mount(viewEl, ctx) {
   // Presets list paints first; types + items load in parallel for the editor's
   // picker (icons need ct_types, rows need the full item list).
   Promise.all([
-    contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch(() => {}),
-    contentApi.listItems().then((d) => { _items = (d && d.items) || []; }).catch(() => {}),
+    contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { if (window.bsLog) window.bsLog('presets listTypes: ' + (e && e.message || e), 'error'); }),
+    contentApi.listItems().then((d) => { _items = (d && d.items) || []; }).catch((e) => { if (window.bsLog) window.bsLog('presets listItems: ' + (e && e.message || e), 'error'); }),
   ]);
   _reload();
 }
