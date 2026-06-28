@@ -4,7 +4,7 @@
 // independently of LOGIN_ENABLED (access.js takes no view of the master switch).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { accessState, isContentGated, isWall, gateAction } from '../trilha/js/access.js';
+import { accessState, isWall, gateAction } from '../trilha/js/access.js';
 
 test('non-gated (or absent) -> open', () => {
   assert.equal(accessState(null), 'open');
@@ -23,14 +23,6 @@ test('gated + unapproved -> upfront-gated, regardless of the now-inert mode', ()
   assert.equal(accessState({ gated: true, mode: 'upfront', status: 'anonymous' }), 'upfront-gated');
   assert.equal(accessState({ gated: true, mode: 'upfront', status: 'pending' }), 'upfront-gated');
   assert.equal(accessState({ gated: true, status: 'anonymous' }), 'upfront-gated'); // no mode field at all
-});
-
-test('isContentGated: true while gated+unapproved, false once open/approved', () => {
-  assert.equal(isContentGated({ gated: true, mode: 'inline', status: 'anonymous' }), true);
-  assert.equal(isContentGated({ gated: true, mode: 'upfront', status: 'pending' }), true);
-  assert.equal(isContentGated({ gated: true, mode: 'inline', status: 'approved' }), false);
-  assert.equal(isContentGated({ gated: false, mode: 'inline', status: 'approved' }), false);
-  assert.equal(isContentGated(null), false);
 });
 
 test('isWall: any unapproved gated turma (mode is inert)', () => {

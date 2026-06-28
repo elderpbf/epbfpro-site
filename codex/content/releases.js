@@ -45,27 +45,6 @@ export function aulaDateStatusKey(aula, today) {
   return { key: 'tbd', date: null };
 }
 
-// Diff a lesson composer's checked set against current release state. Returns the
-// three id lists the save needs: newly released (not released anywhere yet), move
-// into this lesson (already released elsewhere), and drop out of this lesson.
-export function diffAulaSelection({ released, releasedMeta, aulaNum, poolIds, selectedIds }) {
-  const rel = new Set((released || []).map(Number));
-  const sel = new Set((selectedIds || []).map(Number));
-  const toRelease = [], toSetAula = [], toDropAula = [];
-  for (const raw of (poolIds || [])) {
-    const id = Number(raw);
-    const wasReleased = rel.has(id);
-    const wasInAula = wasReleased && String((releasedMeta[id] || {}).aula_number) === String(aulaNum);
-    const isChecked = sel.has(id);
-    if (isChecked && !wasInAula) {
-      if (!wasReleased) toRelease.push(id); else toSetAula.push(id);
-    } else if (!isChecked && wasInAula) {
-      toDropAula.push(id);
-    }
-  }
-  return { toRelease, toSetAula, toDropAula };
-}
-
 // #23: additive multi-aula diff for one aula's composer. Checking an item ADDS this
 // aula to its bindings (instead of moving it); unchecking REMOVES this aula. Returns
 // the ids needing a first ct_release and the per-item new aula_numbers list to save.

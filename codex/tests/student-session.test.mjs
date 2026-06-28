@@ -49,20 +49,6 @@ test('clearToken logs the student out', () => {
   assert.equal(ss.isLoggedIn('jfse', 'geral'), false);
 });
 
-test('extractMagicToken reads lt from a bare query string', () => {
-  assert.equal(ss.extractMagicToken('?lt=abc123'), 'abc123');
-});
-
-test('extractMagicToken reads lt from a full entrar URL', () => {
-  assert.equal(ss.extractMagicToken('https://pensoia.com/trilha/jfse/geral/entrar?lt=xyz789&x=1'), 'xyz789');
-});
-
-test('extractMagicToken returns null when lt is absent or the input is empty', () => {
-  assert.equal(ss.extractMagicToken('?foo=1'), null);
-  assert.equal(ss.extractMagicToken(''), null);
-  assert.equal(ss.extractMagicToken(null), null);
-});
-
 test('extractEnrollToken reads et from a query string and a full URL, null when absent', () => {
   assert.equal(ss.extractEnrollToken('?et=QR123'), 'QR123');
   assert.equal(ss.extractEnrollToken('https://pensoia.com/trilha/jfse/geral?k=abc&et=QR9'), 'QR9');

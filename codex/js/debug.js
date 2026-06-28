@@ -267,12 +267,6 @@
     });
   }
 
-  function openPanel() {
-    var panel = document.getElementById('cdx-dbg-panel');
-    if (panel) panel.classList.add('open');
-  }
-
-
   // ── Render ─────────────────────────────────────────────────────────────────
 
   function renderTab(tab) {

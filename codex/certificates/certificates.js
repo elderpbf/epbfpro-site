@@ -174,27 +174,6 @@ export function batchActionsFor(statuses) {
 }
 
 /**
- * Build the token-values object from a certificate row (legacy slide tokens +
- * a QR data URL). Kept as a pure mapping helper used by external consumers.
- * PURE — no side effects; tested in isolation.
- * @param {object} cert  { holder_name, course_title, hours, issued_on, code }
- * @param {string} origin  e.g. location.origin
- * @returns {object}  { nome, curso, carga, data, codigo, qr }
- */
-export function buildTokenValues(cert, origin) {
-  const url = buildValidarUrl(origin, cert.code);
-  const qr  = generateQrDataUrl(url);
-  return {
-    nome:   cert.holder_name  || '',
-    curso:  cert.course_title || '',
-    carga:  cert.hours        || '',
-    data:   formatIssuedOn(cert.issued_on),
-    codigo: cert.code         || '',
-    qr,
-  };
-}
-
-/**
  * Assemble the issue-API payload from form fields. The chosen front template key
  * rides in `template_slug` (the existing column, repurposed for the fixed set);
  * `theme` and the verso `meta` snapshot are additive and only included when set.

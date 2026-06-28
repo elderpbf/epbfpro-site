@@ -67,14 +67,6 @@ let _topChromeTimer = null;   // focus-mode hide timer for the Codex topbar reve
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ─────────────────────────────────────────
-// Selection by slug: keep the current one if it survives the list, else the
-// first, else nothing.
-export function resolveDeckSelection(list, currentSlug) {
-  if (!list || !list.length) return null;
-  if (currentSlug != null && list.some((d) => d.slug === currentSlug)) return currentSlug;
-  return list[0].slug;
-}
-
 // Keep only our authored decks. list_presentations returns every row; we show
 // the ones tagged with our engine.
 export function ourDecks(presentations) {

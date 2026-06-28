@@ -19,14 +19,6 @@ export function accessState(access) {
   return 'upfront-gated';
 }
 
-// Should opening an item route through the login/approval gate? True whenever the
-// turma is gated and this session is not yet approved (both modes — upfront only
-// reaches here defensively, its timeline is already withheld server-side).
-export function isContentGated(access) {
-  const s = accessState(access);
-  return s === 'inline-gated' || s === 'upfront-gated';
-}
-
 // Is the whole turma behind an upfront wall (no timeline until approved)?
 export function isWall(access) {
   return accessState(access) === 'upfront-gated';
@@ -39,6 +31,6 @@ export function isWall(access) {
 //             (NOT the login form — the student is already authenticated)
 export function gateAction(access) {
   const s = accessState(access);
-  if (s !== 'inline-gated' && s !== 'upfront-gated') return 'none';
+  if (s !== 'upfront-gated') return 'none';
   return (access && access.status === 'pending') ? 'pending' : 'login';
 }
