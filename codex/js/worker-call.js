@@ -17,6 +17,10 @@
 // module provides that global. The pure request/response helpers below are the
 // unit-tested core (see codex/tests/worker-call.test.mjs).
 
+// Globals (optional; this module itself installs window.callWorker):
+//   window.WORKER_URL (boot-set base-URL override, else DEFAULT_WORKER_URL),
+//   window.BS_GOOGLE (Google Bearer token, admin only), window.bsLog/window.dbg
+//   (debug pill), window.cdxNet (reconnect hook installed by js/reconnect.js)
 export const DEFAULT_WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
 // Max URL length before switching GET -> POST. Cloudflare's hard limit is ~16KB;

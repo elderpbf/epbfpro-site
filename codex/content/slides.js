@@ -13,6 +13,8 @@
 // Slides embed (`slide` type) is untouched and renders in Lessons, not here.
 // Backend is reached ONLY through the codex-api slides facade. Every string goes
 // through t(). No inline JS in markup; events are delegated.
+// Globals (shared Backstage scripts, loaded before the module boot):
+//   window.bsLog (debug pill, backstage/js/debug.js), window.BS_GOOGLE (Google Picker bridge)
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
@@ -67,14 +69,6 @@ let _topChromeTimer = null;   // focus-mode hide timer for the Codex topbar reve
 let _cleanup = [];
 
 // ── Pure rules (exported for tests) ─────────────────────────────────────────
-// Selection by slug: keep the current one if it survives the list, else the
-// first, else nothing.
-export function resolveDeckSelection(list, currentSlug) {
-  if (!list || !list.length) return null;
-  if (currentSlug != null && list.some((d) => d.slug === currentSlug)) return currentSlug;
-  return list[0].slug;
-}
-
 // Keep only our authored decks. list_presentations returns every row; we show
 // the ones tagged with our engine.
 export function ourDecks(presentations) {
@@ -238,6 +232,7 @@ async function _loadDecks() {
     _decks = ourDecks(res && res.presentations);
     _renderList();
   } catch (e) {
+    notice.internal(e);
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
 }
@@ -252,6 +247,7 @@ async function _deleteDeck(slug) {
     await _loadDecks();
     if (_openSlug === slug) _showPlaceholder();  // deleted the open deck -> back to placeholder
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
@@ -282,6 +278,7 @@ async function _renameDeck(slug) {
     await api.register({ slug, title, engine: DECK_ENGINE });
     await _loadDecks();                              // re-renders the sidebar; the open deck stays open
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }
@@ -295,6 +292,7 @@ async function _createDeck() {
     await _loadDecks();
     _openDeck(slug, /* fresh */ true);
   } catch (e) {
+    notice.internal(e);
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
   }

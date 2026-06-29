@@ -66,30 +66,6 @@ function _renderMarkdown(md, container) {
   document.head.appendChild(s);
 }
 
-// Type dropdown options. Exported for tests: covers the exclude filter and the
-// edit-mode "unregistered" fallback (a saved type not in the visible list).
-export function renderTypeOptions(types, selectedSlug, includeNewOption, excludeTypes) {
-  const excluded = excludeTypes && excludeTypes.length ? excludeTypes : null;
-  const visible = excluded
-    ? types.filter((ty) => excluded.indexOf(ty.slug) < 0)
-    : types;
-  let opts = visible.map((ty) => {
-    const sel = ty.slug === selectedSlug ? ' selected' : '';
-    // <option> can't hold an SVG, so show a legacy emoji icon but not a glyph key.
-    const icon = (ty.icon && ty.icon.indexOf('glyph:') !== 0) ? ty.icon + ' ' : '';
-    return '<option value="' + _esc(ty.slug) + '"' + sel + '>' + _esc(icon + ty.label) + '</option>';
-  }).join('');
-  const isExcludedSlug = excluded && excluded.indexOf(selectedSlug) >= 0;
-  if (selectedSlug && !isExcludedSlug && !visible.find((ty) => ty.slug === selectedSlug)) {
-    opts = '<option value="' + _esc(selectedSlug) + '" selected>' +
-      _esc(selectedSlug + t('editor.unregistered_suffix')) + '</option>' + opts;
-  }
-  if (includeNewOption) {
-    opts += '<option value="__new__">' + _esc(t('editor.new_type_option')) + '</option>';
-  }
-  return opts;
-}
-
 function _buildTypeOptsHtml(types, selectedSlug, includeNewOption, excludeTypes) {
   const excluded = excludeTypes && excludeTypes.length ? excludeTypes : null;
   const visible = excluded ? types.filter((ty) => excluded.indexOf(ty.slug) < 0) : types;

@@ -58,7 +58,7 @@ export function createQaFeed(opts) {
       if (!res || !res.ok) return;
       _questions = res.questions || [];
       render();
-    }).catch((err) => { onError(err && err.message ? err.message : String(err)); });
+    }).catch((err) => { if (window.bsLog) window.bsLog('live-qa poll: ' + (err && err.message || err), 'error'); onError(err && err.message ? err.message : String(err)); });
   }
 
   function updateBadge(count) {
@@ -194,7 +194,7 @@ export function createQaFeed(opts) {
       if (!res || !res.ok) onError((res && res.error) || t('questions.qa_err_delete'));
       else delete _drafts[id];
       poll();
-    }).catch((err) => onError(err && err.message ? err.message : String(err)))
+    }).catch((err) => { if (window.bsLog) window.bsLog('live-qa: ' + (err && err.message || err), 'error'); onError(err && err.message ? err.message : String(err)); })
       .finally(() => { _busy = false; });
   }
 
@@ -203,7 +203,7 @@ export function createQaFeed(opts) {
     api.updateStudentQuestion({ id, status, answer }).then((res) => {
       if (!res || !res.ok) onError((res && res.error) || t('questions.qa_err_update'));
       poll();
-    }).catch((err) => onError(err && err.message ? err.message : String(err)))
+    }).catch((err) => { if (window.bsLog) window.bsLog('live-qa: ' + (err && err.message || err), 'error'); onError(err && err.message ? err.message : String(err)); })
       .finally(() => { _busy = false; });
   }
 
@@ -218,7 +218,7 @@ export function createQaFeed(opts) {
       if (!res || !res.ok) onError((res && res.error) || t('questions.qa_err_promote'));
       poll();
       if (typeof opts.onPromoted === 'function') opts.onPromoted();
-    }).catch((err) => onError(err && err.message ? err.message : String(err)))
+    }).catch((err) => { if (window.bsLog) window.bsLog('live-qa: ' + (err && err.message || err), 'error'); onError(err && err.message ? err.message : String(err)); })
       .finally(() => { _busy = false; });
   }
 
@@ -229,7 +229,7 @@ export function createQaFeed(opts) {
       if (!res || !res.ok) onError((res && res.error) || t('questions.qa_err_close'));
       poll();
       if (typeof opts.onClosedActive === 'function') opts.onClosedActive();
-    }).catch((err) => onError(err && err.message ? err.message : String(err)))
+    }).catch((err) => { if (window.bsLog) window.bsLog('live-qa: ' + (err && err.message || err), 'error'); onError(err && err.message ? err.message : String(err)); })
       .finally(() => { _busy = false; });
   }
 

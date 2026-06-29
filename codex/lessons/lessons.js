@@ -596,7 +596,10 @@ function _renderPopupCard(host, item, meta) {
 
 function _renderContent(host, item) {
   try { renderItem(item, host, {}); }
-  catch (_) { host.textContent = item.body_md || ''; }
+  catch (e) {
+    if (window.bsLog) window.bsLog('lessons _renderContent: ' + (e && e.message || e), 'error');
+    host.textContent = item.body_md || '';
+  }
 }
 
 // ── Bottom bar: crumb + actions + resize ──────────────────────────────────────

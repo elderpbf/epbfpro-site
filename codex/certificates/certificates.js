@@ -14,7 +14,7 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (set by Codex's ../js/worker-call.js; was backstage/js/api-client.js)
 //   window.bsLog        (../backstage/js/debug.js)
-//   brand-logos helpers (../backstage/js/brand-logos.js) — used by hydrate()
+// (brand-logos is a Codex ES import in cert-render.js, not a window global.)
 
 import { certificates as api, cohorts as cohortsApi, courses as coursesApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
@@ -171,27 +171,6 @@ export function rowActionsFor(status) {
 export function batchActionsFor(statuses) {
   const set = Array.from(new Set(statuses || []));
   return CERT_ACTIONS.filter((a) => a.batch && set.some((s) => a.applies(s)));
-}
-
-/**
- * Build the token-values object from a certificate row (legacy slide tokens +
- * a QR data URL). Kept as a pure mapping helper used by external consumers.
- * PURE — no side effects; tested in isolation.
- * @param {object} cert  { holder_name, course_title, hours, issued_on, code }
- * @param {string} origin  e.g. location.origin
- * @returns {object}  { nome, curso, carga, data, codigo, qr }
- */
-export function buildTokenValues(cert, origin) {
-  const url = buildValidarUrl(origin, cert.code);
-  const qr  = generateQrDataUrl(url);
-  return {
-    nome:   cert.holder_name  || '',
-    curso:  cert.course_title || '',
-    carga:  cert.hours        || '',
-    data:   formatIssuedOn(cert.issued_on),
-    codigo: cert.code         || '',
-    qr,
-  };
 }
 
 /**
@@ -1772,6 +1751,8 @@ export function mount(viewEl, ctx) {
   _filterTurmaId = '';
   _filterStatus  = '';
   _filterQ       = '';
+  _filterDateFrom = '';
+  _filterDateTo   = '';
   _clients       = [];
   _turmaIndex    = {};
   _turmasByClient = {};

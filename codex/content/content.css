@@ -828,6 +828,18 @@
 .cdx-resp-card.is-expanded .cdx-resp-content { max-height: none; }
 .cdx-resp-actions { display: flex; gap: 0.4rem; margin-top: 0.5rem; flex-wrap: wrap; }
 
+/* Per-tarefa instructor reply + grade (t1b): the toggles bar + the per-card input rows.
+   Theme-token only (dark-safe); the active toggle uses --primary. */
+.cdx-resp-flags { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; margin-bottom: 0.6rem; }
+.cdx-resp-flags-label { font-size: 0.74rem; color: var(--text-secondary); font-weight: 600; }
+.cdx-resp-flag.is-on { border-color: var(--primary); color: var(--primary); }
+.cdx-resp-grade-badge { font-size: 0.72rem; font-weight: 700; color: var(--primary); border: 1px solid var(--primary); border-radius: 999px; padding: 0.04rem 0.45rem; margin-left: auto; }
+.cdx-resp-reply, .cdx-resp-grade { margin-top: 0.5rem; border-top: 1px dashed var(--border); padding-top: 0.5rem; }
+.cdx-resp-sublabel { display: block; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-secondary); font-weight: 700; margin-bottom: 0.25rem; }
+.cdx-resp-reply-row, .cdx-resp-grade-row { display: flex; gap: 0.4rem; align-items: center; }
+.cdx-resp-reply-row .cdx-input { flex: 1; min-width: 0; }
+.cdx-resp-grade-row .cdx-input { width: 9rem; flex: 0 0 auto; }
+
 /* ── Tarefas sub-tab (native, master-detail like Items) ──────────────────────
    Reuses the Items split shell: left = tarefa list, right = the selected
    tarefa's editor stacked above its answers. All theme tokens, dark-safe. */

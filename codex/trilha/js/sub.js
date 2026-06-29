@@ -3,6 +3,8 @@
 // materiais). Clicking expands inline below it with the rendered item content
 // (via the Codex item renderer) + a right-side action button. Item content is
 // fetched through the Trail facade (ct_get_item_public).
+// Globals (set by the Trilha HTML boot, before the module boot):
+//   window.CdxGlyphs (icon library)
 import { state } from './state.js';
 import { esc } from './utils.js';
 import { isFresh } from './freshness.js';
@@ -104,7 +106,8 @@ export async function toggleSub(sub, item, opts = {}) {
     exp.innerHTML = '';
     renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);
-  } catch (_) {
+  } catch (e) {
+    if (window.bsLog) window.bsLog('trilha sub itemPublic: ' + (e && e.message || e), 'error');
     exp.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';
   }
 }

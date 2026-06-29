@@ -21,21 +21,6 @@ test('aulaDateStatusKey classifies lesson dates against today', () => {
   assert.equal(rel.aulaDateStatusKey({}, today).key, 'tbd', 'no dates = tbd');
 });
 
-test('diffAulaSelection splits release / move-into / drop-out', () => {
-  // item 1: not released anywhere, now checked -> release (+set aula)
-  // item 2: released in aula 5 already, now checked here (aula 3) -> move (setAula)
-  // item 3: bound to this aula (3), now unchecked -> drop
-  // item 4: bound to this aula (3), still checked -> no-op
-  const released = [2, 3, 4];
-  const releasedMeta = { 2: { aula_number: 5 }, 3: { aula_number: 3 }, 4: { aula_number: 3 } };
-  const out = rel.diffAulaSelection({
-    released, releasedMeta, aulaNum: 3, poolIds: [1, 2, 3, 4], selectedIds: [1, 2, 4],
-  });
-  assert.deepEqual(out.toRelease, [1], 'unreleased+checked -> release');
-  assert.deepEqual(out.toSetAula, [2], 'released-elsewhere+checked -> move');
-  assert.deepEqual(out.toDropAula, [3], 'bound+unchecked -> drop');
-});
-
 test('diffOutrosSelection releases new picks and unreleases dropped Outros items', () => {
   // item 1: not released, now checked -> release
   // item 2: in Outros (released, no aula), now unchecked -> unrelease

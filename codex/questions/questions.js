@@ -51,7 +51,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   if (_activeModule && _activeModule.unmount) {
-    try { _activeModule.unmount(); } catch (_) { /* ignore */ }
+    try { _activeModule.unmount(); } catch (e) { if (window.bsLog) window.bsLog('questions unmount sub-module: ' + (e && e.message || e), 'error'); }
   }
   _activeModule = null;
   if (_viewEl) _viewEl.innerHTML = '';

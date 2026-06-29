@@ -63,7 +63,8 @@ export async function renderForum(root) {
   try {
     const res = await trail.forumListThreads({ session_token: state.sessionToken, _silent: true });
     _threads = (res && res.threads) || [];
-  } catch (_) {
+  } catch (e) {
+    if (window.bsLog) window.bsLog('forum listThreads: ' + (e && e.message || e), 'error');
     _root.innerHTML = '<div class="cdx-tr-empty">' + esc(t('forum.load_error')) + '</div>';
     return;
   }
@@ -177,6 +178,8 @@ async function submitNewThread(form) {
     _threads = (res && res.threads) || [];
     _openId = null;
     paintBoard();
+  } catch (e) {
+    if (window.bsLog) window.bsLog('forum submitNewThread: ' + (e && e.message || e), 'error');
   } finally { if (btn) btn.disabled = false; }
 }
 
@@ -192,7 +195,7 @@ async function openThread(id) {
   box.innerHTML = '<div class="cdx-tr-empty">' + esc(t('page.loading')) + '</div>';
   let data;
   try { data = await trail.forumGetThread({ session_token: state.sessionToken, thread_id: id, _silent: true }); }
-  catch (_) { box.innerHTML = '<div class="cdx-tr-empty">' + esc(t('forum.load_error')) + '</div>'; return; }
+  catch (e) { if (window.bsLog) window.bsLog('forum openThread: ' + (e && e.message || e), 'error'); box.innerHTML = '<div class="cdx-tr-empty">' + esc(t('forum.load_error')) + '</div>'; return; }
   paintReplies(box, id, (data && data.posts) || []);
 }
 
@@ -253,6 +256,8 @@ function wireReplies(box, threadId) {
       try {
         await trail.forumCreatePost({ session_token: state.sessionToken, thread_id: threadId, body });
         await refreshOpen(threadId);
+      } catch (e) {
+        if (window.bsLog) window.bsLog('forum createPost: ' + (e && e.message || e), 'error');
       } finally { send.disabled = false; }
     };
     send.addEventListener('click', go);
@@ -279,8 +284,12 @@ function beginEdit(box, threadId, postId) {
   row.querySelector('[data-fr-editsave]').addEventListener('click', async () => {
     const body = (ta.value || '').trim();
     if (!body) return;
-    await trail.forumEditPost({ session_token: state.sessionToken, post_id: postId, body });
-    await refreshOpen(threadId);
+    try {
+      await trail.forumEditPost({ session_token: state.sessionToken, post_id: postId, body });
+      await refreshOpen(threadId);
+    } catch (e) {
+      if (window.bsLog) window.bsLog('forum editPost: ' + (e && e.message || e), 'error');
+    }
   });
 }
 
@@ -290,7 +299,7 @@ async function refreshOpen(threadId) {
   if (!box) return;
   let data;
   try { data = await trail.forumGetThread({ session_token: state.sessionToken, thread_id: threadId, _silent: true }); }
-  catch (_) { return; }
+  catch (e) { if (window.bsLog) window.bsLog('forum refreshOpen: ' + (e && e.message || e), 'error'); return; }
   paintReplies(box, threadId, (data && data.posts) || []);
 }
 

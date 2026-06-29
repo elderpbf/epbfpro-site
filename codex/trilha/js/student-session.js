@@ -117,15 +117,6 @@ export function otherKnownTurmas(known, client, turma) {
   );
 }
 
-// Pull the magic-link token (?lt=<token>) out of the entrar URL or a bare query
-// string. Returns null when absent.
-export function extractMagicToken(input) {
-  if (!input) return null;
-  const q = input.indexOf('?') !== -1 ? input.slice(input.indexOf('?') + 1) : input;
-  const v = new URLSearchParams(q).get('lt');
-  return v || null;
-}
-
 // Pull the QR enrollment token (?et=<token>) out of the URL or a bare query string.
 // The in-class QR carries it; presence is claimed and the frictionless join offered.
 // Returns null when absent.

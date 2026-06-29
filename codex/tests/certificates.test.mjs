@@ -8,7 +8,6 @@
 //   - buildValidarUrl (pure)
 //   - formatIssuedOn (pure)
 //   - statusBadgeClass (pure)
-//   - buildTokenValues (pure — stubs generateQrDataUrl via the same module import)
 //   - buildIssuePayload (pure)
 //   - filterCerts (pure)
 //   - QR vendor: generateQrDataUrl returns a data URL string (Node fallback)
@@ -59,7 +58,6 @@ describe('certificates module exports', () => {
     assert.equal(typeof certs.buildValidarUrl,   'function');
     assert.equal(typeof certs.formatIssuedOn,    'function');
     assert.equal(typeof certs.statusBadgeClass,  'function');
-    assert.equal(typeof certs.buildTokenValues,  'function');
     assert.equal(typeof certs.buildIssuePayload, 'function');
     assert.equal(typeof certs.filterCerts,       'function');
   });
@@ -313,50 +311,6 @@ describe('filterCerts', () => {
   });
 });
 
-// ── 7. buildTokenValues ───────────────────────────────────────────────────────
-describe('buildTokenValues', () => {
-  test('maps all expected token keys from a certificate row', () => {
-    const cert = {
-      holder_name:  'Maria Oliveira',
-      course_title: 'IA Aplicada',
-      hours:        '40',
-      issued_on:    '2026-06-12',
-      code:         'C1',
-    };
-    // Use a short origin so the QR URL fits in version 3 (<=42 bytes)
-    // "https://x.io/trilha/validar/C1" = 31 bytes
-    const values = certs.buildTokenValues(cert, 'https://x.io');
-    assert.equal(values.nome,   'Maria Oliveira');
-    assert.equal(values.curso,  'IA Aplicada');
-    assert.equal(values.carga,  '40');
-    assert.equal(values.data,   '12/06/2026');
-    assert.equal(values.codigo, 'C1');
-    // qr must be a data URL
-    assert.ok(typeof values.qr === 'string', 'qr is a string');
-    assert.ok(values.qr.startsWith('data:'), 'qr is a data URL: ' + values.qr.slice(0, 30));
-  });
-
-  test('qr data URL encodes the correct validar URL', () => {
-    // "https://x.io/trilha/validar/C42" = 32 bytes - fits in version 3
-    const cert = { holder_name: 'X', course_title: 'Y', hours: '1', issued_on: '2026-01-01', code: 'C42' };
-    const values = certs.buildTokenValues(cert, 'https://x.io');
-    // We can't decode the QR, but we can assert the validar URL was passed by re-generating it
-    const expectedUrl = certs.buildValidarUrl('https://x.io', 'C42');
-    // The QR data URL is derived from expectedUrl; just confirm it's a data URL
-    assert.ok(values.qr.startsWith('data:'));
-    assert.ok(values.qr.length > 20, 'data URL is non-trivial');
-  });
-
-  test('missing cert fields produce empty strings (no crash)', () => {
-    const cert = { code: 'X' };
-    const values = certs.buildTokenValues(cert, '');
-    assert.equal(values.nome,   '');
-    assert.equal(values.curso,  '');
-    assert.equal(values.carga,  '');
-    assert.equal(values.data,   '');
-    assert.equal(values.codigo, 'X');
-  });
-});
 
 // ── 8. subtabs ────────────────────────────────────────────────────────────────
 describe('subtabs', () => {

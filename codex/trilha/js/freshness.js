@@ -25,5 +25,3 @@ export function countFreshIn(items, now) {
   for (const it of items) if (isFresh(it, now)) n++;
   return n;
 }
-
-export { WINDOW_DAYS };

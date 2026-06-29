@@ -9,6 +9,9 @@
 
 'use strict';
 
+// Globals (shared Backstage scripts, loaded before the module boot):
+//   window.bsLog (debug pill, backstage/js/debug.js)
+
 export function createCssVarPref({ storageKey, cssVar, defaultValue }) {
   function _log(msg) { try { if (window.bsLog) window.bsLog(msg, 'error'); } catch (_) {} }
 

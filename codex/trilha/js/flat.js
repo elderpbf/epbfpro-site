@@ -3,6 +3,8 @@
 // tabs. Cards expand inline (no sub-card nesting); body content comes from the
 // Codex item renderer, the action row from Actions.appendFlatActionRow. Reuses
 // the same cdx-tr- card styles as the Aulas timeline. Registers both renderers.
+// Globals (set by the Trilha HTML boot, before the module boot):
+//   window.CdxGlyphs (icon library)
 import { state } from './state.js';
 import { esc } from './utils.js';
 import { isFresh } from './freshness.js';
@@ -166,7 +168,8 @@ async function toggleFlatCard(card, item) {
     body.appendChild(contentWrap);
     renderItem(data.item, contentWrap, { preview: true });
     appendFlatActionRow(body, data.item);
-  } catch (_) {
+  } catch (e) {
+    if (window.bsLog) window.bsLog('trilha flat itemPublic: ' + (e && e.message || e), 'error');
     body.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';
   }
 }

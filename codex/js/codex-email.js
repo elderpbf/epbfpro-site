@@ -5,6 +5,8 @@
 // sends, and routes failures to the debug pill (window.bsLog) with real detail.
 // The backend is the ONE shared Resend transport (worker lib/email.js), so there
 // is never a second integration to keep in sync.
+// Globals (shared Backstage scripts, loaded before the module boot):
+//   window.bsLog (debug pill, backstage/js/debug.js)
 import { email as emailApi } from './codex-api.js';
 
 /**

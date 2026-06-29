@@ -484,7 +484,4 @@ export function renderResults(question, counts, container, opts) {
   }
 }
 
-// Namespace bundle for callers that prefer a single import (the render element
-// imports `* as QR`). Same functions, grouped.
-export const QR = { renderInput, renderResults, renderDisplay, getTypeLabel, getTypeConfig };
-export default QR;
+// Named exports above are the render surface; the element imports them via `* as QR`.

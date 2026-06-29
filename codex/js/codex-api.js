@@ -20,6 +20,8 @@
 //   to codex-api, auth-free public path). On the admin it is still
 //   backstage/js/api-client.js until that page's auth is ported. The facade is
 //   identical either way; tests stub this global to read back the action.
+//   Also reads window.WORKER_URL (boot-set base URL, index.html) in assetUrl(),
+//   falling back to '' — the single place R2/asset URLs resolve.
 
 export function call(action, params) {
   const p = Object.assign({}, params || {});
@@ -245,8 +247,12 @@ export const content = {
   // from ct-admin.js (Phase 5). listItemTurmas powers the "also released in"
   // reuse label across turmas.
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
-  listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug }
-  deleteSubmission:(p) => call('ct_delete_submission', p)   // { id }
+  listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug } -> { submissions, flags }
+  deleteSubmission:(p) => call('ct_delete_submission', p),  // { id }
+  // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
+  replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)
+  gradeSubmission: (p) => call('ct_grade_submission', p),   // { id, grade } (empty clears)
+  setTarefaFlags:  (p) => call('ct_set_tarefa_flags', p)    // { client_slug, turma_slug, item_id, reply_enabled?, grade_enabled? }
 };
 
 // Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the

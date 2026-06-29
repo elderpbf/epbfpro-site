@@ -12,14 +12,6 @@ test('slides module satisfies the tab contract', () => {
   assert.equal(typeof slides.unmount, 'function', 'exports unmount()');
 });
 
-test('resolveDeckSelection keeps valid current, else first, else null', () => {
-  assert.equal(typeof slides.resolveDeckSelection, 'function', 'exports resolveDeckSelection');
-  const list = [{ slug: 'a' }, { slug: 'b' }, { slug: 'c' }];
-  assert.equal(slides.resolveDeckSelection(list, 'b'), 'b');   // keep valid current
-  assert.equal(slides.resolveDeckSelection(list, 'zzz'), 'a'); // fall back to first
-  assert.equal(slides.resolveDeckSelection([], 'a'), null);    // empty -> nothing
-});
-
 test('codexStore round-trips a deck through the facade (save then load)', async () => {
   // Stub the slides facade with an in-memory R2 keyed by slug.
   const r2 = new Map();

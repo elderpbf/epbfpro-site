@@ -16,33 +16,6 @@ const itemsSrc = read('../content/items.js');
 const apiSrc = read('../js/codex-api.js');
 const editorModules = [['item-form', formSrc], ['item-creator', creatorSrc]];
 
-// ── renderTypeOptions (pure) ────────────────────────────────────────────────
-test('renderTypeOptions lists visible types and marks the selected one', () => {
-  const types = [{ slug: 'prompt', label: 'Prompt' }, { slug: 'guide', label: 'Guia', icon: '📘' }];
-  const html = itemForm.renderTypeOptions(types, 'guide', false, []);
-  assert.match(html, /value="prompt"/);
-  assert.match(html, /value="guide" selected/);
-  assert.match(html, /📘 Guia/);
-  assert.ok(!/__new__/.test(html), 'new-type option absent when disabled');
-});
-
-test('renderTypeOptions hides excluded types', () => {
-  const types = [{ slug: 'prompt', label: 'Prompt' }, { slug: 'tarefa', label: 'Tarefa' }];
-  const html = itemForm.renderTypeOptions(types, 'prompt', false, ['tarefa']);
-  assert.ok(!/value="tarefa"/.test(html), 'excluded type hidden');
-  assert.match(html, /value="prompt"/);
-});
-
-test('renderTypeOptions prepends an unregistered fallback for an unknown selected slug', () => {
-  const html = itemForm.renderTypeOptions([{ slug: 'prompt', label: 'Prompt' }], 'legacy_x', false, []);
-  assert.match(html, /value="legacy_x" selected/, 'unknown saved type stays selectable');
-});
-
-test('renderTypeOptions appends the new-type option when enabled', () => {
-  const html = itemForm.renderTypeOptions([{ slug: 'prompt', label: 'Prompt' }], 'prompt', true, []);
-  assert.match(html, /value="__new__"/);
-});
-
 // ── module contract ─────────────────────────────────────────────────────────
 test('editor modules reach the backend only through the facade', () => {
   for (const [name, src] of editorModules) {

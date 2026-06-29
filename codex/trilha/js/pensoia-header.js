@@ -16,6 +16,8 @@
 // SVG via the shared js/brand-logos.js (same source the admin topbar uses), in a
 // light/dark pair so the mark follows the theme toggle. It links to pensoia.com.
 
+// Globals (set by the Trilha HTML boot, before the module boot):
+//   window.ThemeManager (theme toggle), window.QRShareModal (share modal, inert on public Trail)
 import { glyphWordmark, stdColors } from '../../js/brand-logos.js';
 
 const QR_GLYPH =
