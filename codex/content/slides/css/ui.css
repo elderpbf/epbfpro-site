@@ -62,7 +62,10 @@
 .cdx-deck-editor #stagewrap { position: absolute; top: var(--chrome-h, 52px); right: 0; bottom: 0; left: 192px; display: flex; align-items: center; justify-content: center; overflow: hidden; background: radial-gradient(1200px 600px at 50% -10%, var(--stage-grad-1), var(--stage-grad-2)); }
 .cdx-deck-editor #stagebox { position: relative; }
 .cdx-deck-editor.presenting #chrome, .cdx-deck-editor.presenting #nav { display: none; }
-.cdx-deck-editor.presenting #stagewrap { inset: 0; }
+/* Presenting: the audience stage covers the whole viewport. position:fixed (not the
+   editor's absolute) so it escapes the inner Codex content region and sits above the
+   topbar; requestFullscreen (app.js) hides browser chrome on top of this. */
+.cdx-deck-editor.presenting #stagewrap { position: fixed; inset: 0; z-index: 9000; }
 
 /* mask popover (viewport-fixed by JS) */
 .cdx-deck-editor #maskpop { position: fixed; z-index: 61; display: none; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 8px; box-shadow: 0 10px 30px var(--overlay-strong); }

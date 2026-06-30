@@ -448,7 +448,10 @@ export function mount(root, ctx = {}) {
     },
     setPresenting(on) {
       this.presenting = on;
-      document.body.classList.toggle("presenting", on);
+      // Scope the class to the editor host (.cdx-deck-editor), NOT document.body:
+      // in Codex the app is mounted into an inner host, and every presenting/presenter
+      // rule is scoped under .cdx-deck-editor — toggling body never matched.
+      this.root.classList.toggle("presenting", on);
       this.step = 0;
       if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();

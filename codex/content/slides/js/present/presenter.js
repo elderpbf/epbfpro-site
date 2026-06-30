@@ -29,7 +29,9 @@ export function createSync(app) {
 /** Presenter-window side: receive state, render the presenter dashboard. */
 export function initPresenter(app) {
   const channel = app.channel;
-  document.body.classList.add("presenter");
+  // Scope to the editor host (.cdx-deck-editor), not document.body: the presenter
+  // dashboard CSS is all scoped under .cdx-deck-editor.presenter (body never matched).
+  app.root.classList.add("presenter");
   const $ = (id) => document.getElementById(id);
 
   function renderMini(id, i) {
