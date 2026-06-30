@@ -39,9 +39,10 @@ test('the split surfaces install the shared resizer (no duplicated drag code)', 
   }
   assert.match(releasesJs, /cdx-releases-split'[\s\S]{0,80}cdx_rz_releases_split|cdx_rz_releases_split/, 'releases installs on its split');
   assert.match(tarefasJs, /cdx_rz_tarefas_split/, 'tarefas installs on its split');
-  // Cohorts no longer installs the resizer (its CLIENTES nav is the auto-hide rail).
-  assert.ok(!/installResizer\(/.test(cohortsJs), 'cohorts does not install the resizer anymore');
-  assert.match(cohortsJs, /cdx-sm--open/, 'cohorts wires the auto-hide rail instead');
+  // The CLIENTES nav is the auto-hide rail (no resizer there), but the Aulas hub IS
+  // a resizable list | detail split, so cohorts installs the shared resizer on it.
+  assert.match(cohortsJs, /installResizer\(_q\('cdx-aulas-hub'\)/, 'cohorts installs the resizer on the aula hub');
+  assert.match(cohortsJs, /cdx-sm--open/, 'cohorts still wires the auto-hide rail');
 });
 
 test('CSS keeps the split grid var, the grip, and the Clientes title', () => {

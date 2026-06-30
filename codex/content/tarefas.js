@@ -32,6 +32,12 @@ let _flags = {};         // item_id -> { reply_enabled, grade_enabled } (per-ins
 let _selectedId = null;  // selected tarefa id (master-detail)
 let _picker = null;
 let _cleanup = [];
+// Aula-locked mode (embedded in the Cohorts aula hub): when set, the list is
+// filtered to this one aula and new tarefas are created bound to it; _onChange
+// pings the host to refresh its aula badges after a create/remove. Both null in
+// the standalone Content-tab mount.
+let _lockedAula = null;  // aula number | null
+let _onChange = null;
 
 // ── Pure rules (exported for tests) ──────────────────────────────────────────
 export function parseMeta(metaJson) {
@@ -130,6 +136,8 @@ function _loadTarefas(clientSlug, turmaSlug) {
     _items = sortTarefas(allTarefas
       .filter((i) => Object.prototype.hasOwnProperty.call(releaseMap, i.id))
       .map((i) => { i._aula_number = releaseMap[i.id]; return i; }));
+    // Aula-locked embed: only this aula's released tarefas.
+    if (_lockedAula != null) _items = _items.filter((i) => Number(i._aula_number) === Number(_lockedAula));
     _renderList();
   }).catch((err) => {
     listEl.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_loading') + ': ' + _esc((err && err.message) || err) + '</div>';
@@ -347,6 +355,7 @@ function _deleteTarefa(item) {
       toast.ok(t('tarefas.removed'));
       if (Number(_selectedId) === Number(item.id)) _selectedId = null;
       _loadTarefas(_client, _turma);
+      if (_onChange) _onChange();
     }).catch((err) => notice.internal(_err(err)));
   });
 }
@@ -589,8 +598,12 @@ function _openNew() {
       '<div class="cdx-modal-title">' + t('tarefas.new_title') + '</div>' +
       '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
         '<input type="text" data-fld="title" placeholder="' + _esc(t('tarefas.new_title_placeholder')) + '"></div>' +
-      '<div class="cdx-field"><label>' + t('tarefas.aula_optional') + '</label>' +
-        '<input type="number" data-fld="aula" placeholder="' + _esc(t('tarefas.aula_placeholder')) + '"></div>' +
+      // Aula-locked embed: the aula is fixed by the hub, so carry it hidden instead
+      // of asking again. Standalone: the optional aula-number field shows.
+      (_lockedAula != null
+        ? '<input type="hidden" data-fld="aula" value="' + _esc(String(_lockedAula)) + '">'
+        : '<div class="cdx-field"><label>' + t('tarefas.aula_optional') + '</label>' +
+            '<input type="number" data-fld="aula" placeholder="' + _esc(t('tarefas.aula_placeholder')) + '"></div>') +
       '<div class="cdx-field"><label>' + t('tarefas.instructions_label') + '</label>' +
         '<textarea data-fld="body" rows="6" placeholder="' + _esc(t('tarefas.new_body_placeholder')) + '"></textarea></div>' +
       '<label class="cdx-toggle-label">' +
@@ -620,18 +633,26 @@ function _openNew() {
       _closeModal(bd);
       toast.ok(t('tarefas.created'));
       _loadTarefas(_client, _turma);
+      if (_onChange) _onChange();
     }).catch((err) => notice.internal(_err(err)));
   });
 }
 
 // ── Shell ──────────────────────────────────────────────────────────────────────
 function _renderShell() {
-  _viewEl.innerHTML =
-    '<div class="cdx-tarefas">' +
-      '<div class="cdx-tarefas-toolbar">' +
+  // Aula-locked embed: drop the page-level "Tarefas" h2 (the aula detail header
+  // already names the surface) and keep just the new-tarefa action.
+  const toolbar = (_lockedAula != null)
+    ? '<div class="cdx-tarefas-toolbar cdx-tarefas-toolbar--locked">' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-tarefa-new">' + t('tarefas.new_btn') + '</button>' +
+      '</div>'
+    : '<div class="cdx-tarefas-toolbar">' +
         '<h2 class="cdx-tarefas-title">' + t('tarefas.title') + '</h2>' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-tarefa-new">' + t('tarefas.new_btn') + '</button>' +
-      '</div>' +
+      '</div>';
+  _viewEl.innerHTML =
+    '<div class="cdx-tarefas">' +
+      toolbar +
       '<div class="cdx-turma-picker" id="cdx-tar-picker"></div>' +
       '<div class="cdx-tarefas-meta" id="cdx-tarefas-meta"></div>' +
       '<div class="cdx-items-split cdx-tarefas-split" id="cdx-tarefas-split">' +
@@ -657,6 +678,8 @@ export function mount(viewEl, ctx = {}) {
   _submissions = {};
   _selectedId = null;
   _cleanup = [];
+  _lockedAula = (ctx.aulaNumber != null && ctx.aulaNumber !== '') ? Number(ctx.aulaNumber) : null;
+  _onChange = (typeof ctx.onChange === 'function') ? ctx.onChange : null;
   _renderShell();
   // Draggable divider between the tarefa list and the editor/answers (persisted).
   installResizer(_q('cdx-tarefas-split'), { storeKey: 'cdx_rz_tarefas_split', defaultPx: 380, min: 260, max: 680 });
@@ -677,6 +700,8 @@ export function mount(viewEl, ctx = {}) {
 export function unmount() {
   if (_picker && _picker.destroy) _picker.destroy();
   _picker = null;
+  _lockedAula = null;
+  _onChange = null;
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

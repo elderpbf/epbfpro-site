@@ -362,6 +362,14 @@ export default {
   'cohorts.aula_field_rescheduled_from': 'Remarcada de (data original)',
   'cohorts.aula_field_rescheduled_note': 'Nota de remarcação (opcional)',
   'cohorts.aula_note_placeholder':  'Ex: feriado, aguardando nova data',
+  // Cohorts — hub de aulas (Layout A: lista | detalhe com sub-abas por aula)
+  'cohorts.aula_tab_dados':         'Dados',
+  'cohorts.aula_outros':            'Outros (sem aula)',
+  'cohorts.aula_outros_sub':        'Itens liberados sem associação a uma aula.',
+  'cohorts.aula_no_content':        'sem conteúdo',
+  'cohorts.aula_select_prompt':     'Selecione uma aula à esquerda.',
+  'cohorts.aula_mark_happened':     'Marcar como ocorrida',
+  'cohorts.aula_hours_unit':        'h',
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'ocorreu em',

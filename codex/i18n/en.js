@@ -362,6 +362,14 @@ export default {
   'cohorts.aula_field_rescheduled_from': 'Rescheduled from (original date)',
   'cohorts.aula_field_rescheduled_note': 'Reschedule note (optional)',
   'cohorts.aula_note_placeholder':  'E.g. holiday, waiting for new date',
+  // Cohorts — aula hub (Layout A: list | detail with per-aula sub-tabs)
+  'cohorts.aula_tab_dados':         'Details',
+  'cohorts.aula_outros':            'Other (no lesson)',
+  'cohorts.aula_outros_sub':        'Items released without a lesson.',
+  'cohorts.aula_no_content':        'no content',
+  'cohorts.aula_select_prompt':     'Select a lesson on the left.',
+  'cohorts.aula_mark_happened':     'Mark as held',
+  'cohorts.aula_hours_unit':        'h',
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'happened on',

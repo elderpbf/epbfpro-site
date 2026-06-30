@@ -1,10 +1,12 @@
-// Source-contract for Batch B: the turma-scoped management surfaces (Liberações +
-// Tarefas) live in the cohort dossier, not the Content tab. They reuse the SAME
-// modules (content/releases.js, content/tarefas.js), mounted turma-bound so they
-// skip their picker. Plus the per-turma delete fix: removing a tarefa from a turma
-// unreleases it (per-turma) instead of deleting the global library item (which used
-// to wipe it from every turma at once). These pin the relocation + the fix so a
-// refactor can't silently re-bridge them to Content or restore the global delete.
+// Source-contract for the turma-scoped management surfaces (Liberações + Tarefas):
+// they live in the cohort dossier, not the Content tab, and reuse the SAME modules
+// (content/releases.js, content/tarefas.js) rather than a duplicated composer. As of
+// the Aula-hub redesign (Layout A) they are mounted AULA-LOCKED inside each aula's
+// detail (the old turma-level Liberações/Tarefas sub-tabs were retired into the hub).
+// Plus the per-turma delete fix: removing a tarefa from a turma unreleases it (per-
+// turma) instead of deleting the global library item. These pin the relocation, the
+// single-composer reuse, and the fix so a refactor can't silently re-bridge them to
+// Content, fork the composer, or restore the global delete.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -23,27 +25,31 @@ const tarefasJs = read('../content/tarefas.js');
 const ptJs = read('../i18n/pt.js');
 const enJs = read('../i18n/en.js');
 
-test('the dossier has Liberações + Tarefas sub-tabs and panels', () => {
-  assert.match(cohortsJs, /data-dtab="liberacoes"/, 'liberacoes sub-tab button');
-  assert.match(cohortsJs, /data-dtab="tarefas"/, 'tarefas sub-tab button');
-  assert.match(cohortsJs, /data-dpanel="liberacoes"/, 'liberacoes panel');
-  assert.match(cohortsJs, /data-dpanel="tarefas"/, 'tarefas panel');
-  assert.match(cohortsJs, /id="cdx-doss-liberacoes"/, 'liberacoes mount point');
-  assert.match(cohortsJs, /id="cdx-doss-tarefas"/, 'tarefas mount point');
+test('the Aulas tab is the aula hub; Liberações + Tarefas are per-aula, not turma-level sub-tabs', () => {
+  // The turma-level Liberações/Tarefas sub-tabs were retired into the per-aula hub.
+  assert.ok(!/data-dtab="liberacoes"/.test(cohortsJs), 'no turma-level liberacoes sub-tab');
+  assert.ok(!/data-dtab="tarefas"/.test(cohortsJs), 'no turma-level tarefas sub-tab');
+  // The Aulas hub renders a list | detail split with per-aula sub-tabs.
+  assert.match(cohortsJs, /cdx-aulas-hub/, 'aula hub container');
+  assert.match(cohortsJs, /data-aulatab="liberacoes"/, 'per-aula Liberações sub-tab');
+  assert.match(cohortsJs, /data-aulatab="tarefas"/, 'per-aula Tarefas sub-tab');
 });
 
-test('cohorts reuses the existing modules, mounted turma-bound (no duplicated composer)', () => {
+test('cohorts reuses the existing modules, mounted aula-locked (no duplicated composer)', () => {
   assert.match(cohortsJs, /import \* as releasesAdmin from '\.\.\/content\/releases\.js'/, 'imports releases module');
   assert.match(cohortsJs, /import \* as tarefasAdmin from '\.\.\/content\/tarefas\.js'/, 'imports tarefas module');
-  // The modules take the port-foundation turma-bound mount: { clientSlug, turmaSlug }.
-  assert.match(cohortsJs, /_embed\s*=\s*\{ clientSlug: turma\.client_slug, turmaSlug: turma\.slug \}/, 'builds the embed ctx');
-  assert.match(cohortsJs, /releasesAdmin\.mount\(e, _embed\)/, 'mounts releases turma-bound');
-  assert.match(cohortsJs, /tarefasAdmin\.mount\(e, _embed\)/, 'mounts tarefas turma-bound');
+  // The detail pane mounts the SAME modules in aula-locked mode (aula / aulaNumber).
+  assert.match(cohortsJs, /releasesAdmin\.mount\(paneEl, \{[^}]*aula: aula\.id/, 'mounts releases aula-locked');
+  assert.match(cohortsJs, /tarefasAdmin\.mount\(paneEl, \{[^}]*aulaNumber: aula\.aula_number/, 'mounts tarefas aula-locked');
+  // And reuses the composer's OWN per-aula tally instead of re-deriving counts.
+  assert.match(cohortsJs, /releasesAdmin\.aulaReleaseCounts\(/, 'reuses the exported counts helper');
 });
 
-test('the heavy management panels mount lazily on first open', () => {
-  assert.match(cohortsJs, /_lazyMount\s*=/, 'lazy mount registry');
-  assert.match(cohortsJs, /_mounted\[key\]\s*=\s*true/, 'each lazy panel mounts once');
+test('the per-aula embeds are torn down on switch (singleton modules, no esc-handler leak)', () => {
+  assert.match(cohortsJs, /_aulaEmbedMounted/, 'tracks which embed is live');
+  assert.match(cohortsJs, /function _unmountAulaEmbeds\(\)/, 'has an embed teardown');
+  assert.match(cohortsJs, /releasesAdmin\.unmount\(\)/, 'unmounts the releases embed');
+  assert.match(cohortsJs, /tarefasAdmin\.unmount\(\)/, 'unmounts the tarefas embed');
 });
 
 test('Tarefas + Liberações are no longer Content sub-tabs', () => {
