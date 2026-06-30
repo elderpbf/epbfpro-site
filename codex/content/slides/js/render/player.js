@@ -194,6 +194,33 @@ export function flowStyle(el, g) {
   if (g.h != null) el.style.minHeight = g.h + "px";
 }
 
+/**
+ * Centralized "animação simplificada": every CONTENT BLOCK reveals one-by-one in
+ * DOM/insertion order. A block = a topic li, a card, a free asset, or a layout image
+ * slot. Structural text (title/subtitle) stays fixed (Élder: "título de cara").
+ * Nested candidates (an image part inside a card, a card inside a free stack) are
+ * neutralized so only the TOP-LEVEL block is a step — the stack reveals as one unit.
+ * Overrides whatever per-item data-step the layouts emit, so the engine has ONE source
+ * of truth for order + count. Returns the step count (the slide's max step).
+ * Pre-step for the future per-element animation panel (Phase 7).
+ */
+export function autoSteps(stage) {
+  const SEL = "[data-step], .asset, .imgslot.filled"; // .filled: an empty image dropzone is not a reveal step
+  const all = [...stage.querySelectorAll(SEL)];
+  const nested = (el) => all.some((o) => o !== el && o.contains(el));
+  let n = 0;
+  all.forEach((el) => {
+    if (nested(el)) {
+      el.classList.remove("reveal"); // inside another block: never its own step
+      el.dataset.step = "0";
+    } else {
+      el.classList.add("reveal");
+      el.dataset.step = String(++n);
+    }
+  });
+  return n;
+}
+
 /** Reveal visibility: in edit mode everything shows; presenting steps through. */
 export function applySteps(stage, step, presenting) {
   const all = !presenting;

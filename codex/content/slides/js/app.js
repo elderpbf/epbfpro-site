@@ -112,6 +112,7 @@ export function mount(root, ctx = {}) {
     _layoutLabel: layoutLabel, // i18n layout label resolver (the add-slide picker reuses it)
     index: 0,
     step: 0,
+    _maxStep: 0, // reveal-step count of the current slide, assigned by player.autoSteps in renderSlide
     presenting: false,
     editing: false,
     activeEditable: null,
@@ -129,7 +130,10 @@ export function mount(root, ctx = {}) {
     deck() { return store.getDeck(); },
     cur() { return this.deck().slides[this.index]; },
     layoutOf(s) { return registry.get(s.layout); },
-    maxStep() { return this.layoutOf(this.cur()).reveals(this.cur().slots); },
+    // maxStep = the count assigned by player.autoSteps at the LAST renderSlide (the
+    // centralized one-by-one ordering), not the layout's reveals(): all content blocks
+    // animate, in DOM order, with one source of truth.
+    maxStep() { return this._maxStep || 0; },
     effMax() { return this.presenting ? this.maxStep() : 0; },
     scaleNow() { return player.scaleOf(this.stage, this.deck().canvas.w); },
     fit() { return player.fit(this.stagewrap, this.stagebox, this.stage, this.deck().canvas, this.presenting ? 0 : 40); },
@@ -146,6 +150,7 @@ export function mount(root, ctx = {}) {
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
+      this._maxStep = player.autoSteps(this.stage); // centralized one-by-one reveal ordering
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.select) this.select.afterRender();
       if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
@@ -165,9 +170,12 @@ export function mount(root, ctx = {}) {
       const ni = this.index + d;
       if (ni < 0 || ni >= this.deck().slides.length) return;
       this.index = ni;
-      this.step = d < 0 ? this.effMax() : 0;
+      this.step = 0;
       if (this.select) this.select.clear();
-      this.renderSlide(); this.renderNav(); this.broadcast();
+      this.renderSlide(); // assigns _maxStep for the new slide
+      // entering a slide BACKWARDS lands on its last reveal step (read after render)
+      if (d < 0 && this.presenting) { this.step = this.maxStep(); player.applySteps(this.stage, this.step, this.presenting); }
+      this.renderNav(); this.broadcast();
     },
     // jump to slide i. NOT named `select`: wiring.js owns app.select (the selection
     // object), so this nav method must not collide with it.
@@ -589,10 +597,9 @@ function wireChrome(app, root) {
     };
   };
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
-  // showReveal: does the slide's LAYOUT support a per-slide reveal toggle (its defaults
-  // carry `reveal`)? Keying off the layout, not `"reveal" in slots`, makes the toggle
-  // appear for legacy slides that predate the flag. Seeded default-ON (absent !== false).
-  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal !== false, "reveal" in app.layoutOf(app.cur()).defaults()), btn));
+  // Animação menu = just the entrance type now; reveal ORDER is centralized in
+  // player.autoSteps (every content block animates one-by-one in insertion order).
+  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim), btn));
   // The "Tema" button opens its own settings panel (themebox), not a context-bar menu,
   // so it is wired directly (toggles on re-click; the panel owns its outside-click).
   const themeBtn = $("#appearBtn");
