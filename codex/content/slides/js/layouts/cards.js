@@ -12,8 +12,10 @@ export default {
   id: "cards",
   label: "Cards",
   group: "cards",
-  defaults: () => ({ title: "", reveal: false, cards: [{ id: uid(), parts: { body: true }, text: "Texto do card" }] }),
-  reveals: (s) => (s.reveal ? Math.max(0, ...s.cards.map((c, i) => c.step != null ? c.step : (i + 1))) : 0),
+  // reveal 1-a-1 is ON by default. Only an explicit `reveal:false` turns it off, so
+  // new slides AND legacy decks that predate the flag (key absent) reveal step by step.
+  defaults: () => ({ title: "", reveal: true, cards: [{ id: uid(), parts: { body: true }, text: "Texto do card" }] }),
+  reveals: (s) => (s.reveal === false ? 0 : Math.max(0, ...s.cards.map((c, i) => c.step != null ? c.step : (i + 1)))),
   render: (s) => {
     const cards = s.cards || [];
     const colCls = s.stacked ? " col" : "";

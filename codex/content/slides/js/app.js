@@ -455,9 +455,16 @@ export function mount(root, ctx = {}) {
       this.step = 0;
       if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();
+      // requestFullscreen/exitFullscreen return a PROMISE; a blocked request (e.g. a
+      // Permissions-Policy "fullscreen" restriction) rejects asynchronously, which the
+      // try/catch can't see — it surfaced as an "Unhandled: Permissions check failed"
+      // in the debug log. Swallow the rejection explicitly. The CSS already fills the
+      // viewport (position:fixed), so a blocked OS-fullscreen degrades gracefully.
       try {
-        if (on) document.documentElement.requestFullscreen && document.documentElement.requestFullscreen();
-        else if (document.fullscreenElement) document.exitFullscreen();
+        const p = on
+          ? (document.documentElement.requestFullscreen && document.documentElement.requestFullscreen())
+          : (document.fullscreenElement && document.exitFullscreen());
+        if (p && p.catch) p.catch(() => {});
       } catch (e) { /* ignore */ }
     },
 
@@ -582,7 +589,10 @@ function wireChrome(app, root) {
     };
   };
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
-  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal, "reveal" in app.cur().slots), btn));
+  // showReveal: does the slide's LAYOUT support a per-slide reveal toggle (its defaults
+  // carry `reveal`)? Keying off the layout, not `"reveal" in slots`, makes the toggle
+  // appear for legacy slides that predate the flag. Seeded default-ON (absent !== false).
+  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim, app.cur().slots.reveal !== false, "reveal" in app.layoutOf(app.cur()).defaults()), btn));
   // The "Tema" button opens its own settings panel (themebox), not a context-bar menu,
   // so it is wired directly (toggles on re-click; the panel owns its outside-click).
   const themeBtn = $("#appearBtn");
