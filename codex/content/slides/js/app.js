@@ -132,7 +132,7 @@ export function mount(root, ctx = {}) {
     maxStep() { return this.layoutOf(this.cur()).reveals(this.cur().slots); },
     effMax() { return this.presenting ? this.maxStep() : 0; },
     scaleNow() { return player.scaleOf(this.stage, this.deck().canvas.w); },
-    fit() { return player.fit(this.stagewrap, this.stagebox, this.stage, this.deck().canvas); },
+    fit() { return player.fit(this.stagewrap, this.stagebox, this.stage, this.deck().canvas, this.presenting ? 0 : 40); },
     commit() { store.touch(); },
     // The top bar wraps to 2 rows on narrow windows; nav + stage track its real
     // height via --chrome-h so the first thumbnail isn't clipped under the bar.
@@ -608,8 +608,15 @@ function wireChrome(app, root) {
   app._onDocClick = onDocClick;
 
   $("#present").onclick = () => {
-    app.setPresenting(true);
+    // Open the presenter window FIRST. Spawning a popup steals focus, and a focus
+    // change while the opener is *entering* fullscreen makes the browser bounce right
+    // back out, which fired onFs -> setPresenting(false). That's why the first click
+    // only ever opened the popup and a second click was needed for fullscreen. With the
+    // popup already up, we return focus to the opener and only then take fullscreen, so
+    // nothing interrupts it.
     window.open(location.href.split("?")[0] + "?presenter=1", "slides-presenter", "width=1100,height=720");
+    try { window.focus(); } catch (e) { /* noop */ }
+    app.setPresenting(true);
   };
 
   // AI-fill overlay: the "IA" button in the chrome bar shows a small overlay

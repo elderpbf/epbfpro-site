@@ -215,9 +215,13 @@ export function scaleOf(stage, canvasW) {
   return stage.getBoundingClientRect().width / canvasW;
 }
 
-/** Scale the whole stage to fit its wrapper (resolution-on-the-fly). */
-export function fit(stagewrap, stagebox, stage, canvas) {
-  const s = Math.min((stagewrap.clientWidth - 40) / canvas.w, (stagewrap.clientHeight - 40) / canvas.h);
+/**
+ * Scale the whole stage to fit its wrapper (resolution-on-the-fly). `pad` is the
+ * breathing room (px) left around the slide in the editor; presenting passes 0 so the
+ * slide reaches the viewport edges (only the 16:9 letterbox remains).
+ */
+export function fit(stagewrap, stagebox, stage, canvas, pad = 40) {
+  const s = Math.min((stagewrap.clientWidth - pad) / canvas.w, (stagewrap.clientHeight - pad) / canvas.h);
   if (stagebox) {
     stagebox.style.width = canvas.w * s + "px";
     stagebox.style.height = canvas.h * s + "px";
