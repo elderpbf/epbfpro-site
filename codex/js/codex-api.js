@@ -252,7 +252,15 @@ export const content = {
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
   replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)
   gradeSubmission: (p) => call('ct_grade_submission', p),   // { id, grade } (empty clears)
-  setTarefaFlags:  (p) => call('ct_set_tarefa_flags', p)    // { client_slug, turma_slug, item_id, reply_enabled?, grade_enabled? }
+  setTarefaFlags:  (p) => call('ct_set_tarefa_flags', p),   // { client_slug, turma_slug, item_id, reply_enabled?, grade_enabled? }
+  // Tarefa bank sections (Fatia 6, t1b): named reorderable groups for the tarefa bank.
+  // No copy/instance — placing a tarefa on an aula stays a release; these organize the bank.
+  listTarefaSections:   (p) => call('ct_list_tarefa_sections', p),   // -> { sections }
+  createTarefaSection:  (p) => call('ct_create_tarefa_section', p),  // { name } -> { section }
+  renameTarefaSection:  (p) => call('ct_rename_tarefa_section', p),  // { id, name }
+  reorderTarefaSections:(p) => call('ct_reorder_tarefa_sections', p),// { order:[id,...] }
+  deleteTarefaSection:  (p) => call('ct_delete_tarefa_section', p),  // { id } orphans its tarefas
+  setItemSection:       (p) => call('ct_set_item_section', p)        // { item_id, section_id|null, position? }
 };
 
 // Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the

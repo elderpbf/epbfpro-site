@@ -921,3 +921,82 @@
 .cdx-drive-field input.is-invalid { border-color: var(--error); }
 .cdx-drive-editor-error { color: var(--error); font-size: 0.82rem; min-height: 1em; }
 .cdx-drive-editor-actions { display: flex; justify-content: flex-end; gap: 0.5rem; }
+
+/* ══ Tarefas t1b (aula-locked authoring: cards + bank-add + reusable editor) ══════ */
+.cdx-tarefas--t1b { padding: 0; }
+.cdx-t1b-pane { display: block; }
+
+/* reveal hint bar (shown when the turma has reveal-on-completion on) */
+.cdx-t1b-revbar { display: flex; align-items: center; gap: 0.45rem; font-size: 0.8rem;
+  color: var(--text-secondary); background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border);
+  border-radius: 9px; padding: 0.45rem 0.6rem; margin-bottom: 0.7rem; }
+.cdx-t1b-revbar svg { flex: 0 0 auto; color: var(--primary); }
+
+.cdx-t1b-addbar { margin-bottom: 0.7rem; }
+
+/* inline ＋Adicionar block: bank (sections + drag) | reusable editor */
+.cdx-t1b-addwrap { border: 1.5px dashed var(--primary); border-radius: 12px; padding: 0.7rem;
+  margin-bottom: 0.85rem; background: var(--surface); }
+.cdx-t1b-wb { display: grid; grid-template-columns: 248px 1fr; gap: 0.75rem; align-items: start; }
+@media (max-width: 900px) { .cdx-t1b-wb { grid-template-columns: 1fr; } }
+
+.cdx-t1b-wbank { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: var(--surface); }
+.cdx-t1b-wbh { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.6rem;
+  background: var(--cdx-chip-bg); border-bottom: 1px solid var(--border); font-size: 0.78rem; font-weight: 700; }
+.cdx-t1b-wb-new { margin-left: auto; font-size: 0.74rem; color: var(--primary); cursor: pointer; font-weight: 700; }
+.cdx-t1b-srch { width: calc(100% - 1rem); margin: 0.45rem 0.5rem 0; }
+.cdx-t1b-secs { padding: 0.35rem 0; }
+.cdx-t1b-sec { border-bottom: 1px solid var(--border); }
+.cdx-t1b-sechd { display: flex; align-items: center; gap: 0.35rem; padding: 0.42rem 0.55rem;
+  font-size: 0.74rem; font-weight: 700; color: var(--text-secondary); cursor: pointer;
+  text-transform: uppercase; letter-spacing: 0.03em; }
+.cdx-t1b-seccar { transition: transform 0.15s; font-size: 0.6rem; color: var(--text-secondary); }
+.cdx-t1b-sec.is-open .cdx-t1b-seccar { transform: rotate(90deg); }
+.cdx-t1b-secn { margin-left: auto; font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; }
+.cdx-t1b-secrows { display: none; }
+.cdx-t1b-sec.is-open .cdx-t1b-secrows { display: block; }
+.cdx-t1b-brow { display: flex; align-items: center; gap: 0.45rem; padding: 0.4rem 0.55rem 0.4rem 0.7rem;
+  cursor: pointer; border-top: 1px solid var(--border); }
+.cdx-t1b-brow:hover { background: var(--cdx-card-hover-bg); }
+.cdx-t1b-brow.is-sel { background: var(--cdx-card-sel-bg); border-left: 3px solid var(--primary); padding-left: calc(0.7rem - 3px); }
+.cdx-t1b-brow.is-dragging { opacity: 0.4; }
+.cdx-t1b-grip { color: var(--text-secondary); cursor: grab; font-size: 0.85rem; flex: 0 0 auto; }
+.cdx-t1b-bname { font-size: 0.82rem; font-weight: 600; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-t1b-addsec { padding: 0.45rem 0.55rem; color: var(--primary); font-weight: 700; font-size: 0.78rem; cursor: pointer; }
+.cdx-t1b-addsec:hover { background: var(--cdx-card-hover-bg); }
+.cdx-t1b-addhint { padding: 1rem; }
+
+/* instance cards */
+.cdx-t1b-cards { display: block; }
+.cdx-t1b-card { border: 1px solid var(--border); border-radius: 11px; margin-bottom: 0.6rem; overflow: hidden; background: var(--surface); }
+.cdx-t1b-card.is-open { border-color: var(--primary); }
+.cdx-t1b-chead { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; cursor: pointer; flex-wrap: wrap; }
+.cdx-t1b-chead:hover { background: var(--cdx-card-hover-bg); }
+.cdx-t1b-cname { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+.cdx-t1b-badge { font-size: 0.66rem; font-weight: 700; border-radius: 999px; padding: 0.08rem 0.45rem; border: 1px solid var(--cdx-chip-border); }
+.cdx-t1b-badge.is-avail { color: var(--primary); background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+.cdx-t1b-badge.is-held { color: var(--text-secondary); background: var(--cdx-chip-bg); }
+.cdx-t1b-tag { font-size: 0.64rem; font-weight: 700; border-radius: 5px; padding: 0 0.3rem; text-transform: uppercase;
+  letter-spacing: 0.03em; color: var(--text-secondary); background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border); }
+.cdx-t1b-ccount { font-size: 0.74rem; color: var(--text-secondary); }
+.cdx-t1b-toggles { display: flex; gap: 0.4rem; margin-left: auto; }
+.cdx-t1b-edit.is-on { color: var(--primary); border-color: var(--primary); }
+.cdx-t1b-caret { color: var(--text-secondary); font-size: 0.7rem; transition: transform 0.15s; }
+.cdx-t1b-card.is-open .cdx-t1b-caret { transform: rotate(90deg); }
+.cdx-t1b-cbody { border-top: 1px solid var(--border); padding: 0.7rem 0.75rem; background: var(--surface); }
+.cdx-t1b-cbody.is-hidden { display: none; }
+.cdx-t1b-card-editor { margin-bottom: 0.7rem; }
+.cdx-t1b-answers { display: block; }
+
+/* reusable editor box (js/tarefa-editor.js) — used by the card edit AND the add block */
+.cdx-ted-box { border: 1px solid var(--primary); border-radius: 11px; overflow: hidden; background: var(--surface); }
+.cdx-ted-head { display: flex; align-items: center; padding: 0.5rem 0.7rem; background: var(--cdx-chip-bg); border-bottom: 1px solid var(--border); }
+.cdx-ted-head-label { font-weight: 700; font-size: 0.84rem; color: var(--text-primary); }
+.cdx-ted-fields { padding: 0.6rem 0.7rem; }
+.cdx-ted-saverow { display: flex; gap: 0.45rem; justify-content: flex-end; flex-wrap: wrap; align-items: center;
+  border-top: 1px solid var(--border); padding: 0.55rem 0.7rem; background: var(--cdx-chip-bg); }
+.cdx-ted-hint { font-size: 0.74rem; color: var(--text-secondary); margin-right: auto; }
+
+/* Dados da turma: reveal toggle helper */
+.cdx-doss-reveal { margin-top: 0.3rem; }
+.cdx-doss-reveal-hint { margin-top: 0.25rem; }
