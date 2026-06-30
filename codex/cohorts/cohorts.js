@@ -8,6 +8,7 @@ import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { glyphSvg } from '../js/glyphs.js';
+import { installResizer } from '../js/resizable.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';

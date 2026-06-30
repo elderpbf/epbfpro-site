@@ -41,6 +41,7 @@ test('the split surfaces install the shared resizer (no duplicated drag code)', 
   assert.match(tarefasJs, /cdx_rz_tarefas_split/, 'tarefas installs on its split');
   // The CLIENTES nav is the auto-hide rail (no resizer there), but the Aulas hub IS
   // a resizable list | detail split, so cohorts installs the shared resizer on it.
+  assert.match(cohortsJs, /import \{ installResizer \} from '\.\.\/js\/resizable\.js'/, 'cohorts imports the resizer (not just calls it)');
   assert.match(cohortsJs, /installResizer\(_q\('cdx-aulas-hub'\)/, 'cohorts installs the resizer on the aula hub');
   assert.match(cohortsJs, /cdx-sm--open/, 'cohorts still wires the auto-hide rail');
 });
