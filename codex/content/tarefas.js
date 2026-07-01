@@ -52,6 +52,9 @@ let _bankLoaded = false;
 let _adding = false;
 let _addSel = null;
 let _editCard = null;
+// Bank-only mode (Content > Tarefas sub-tab): the bank page with NO turma, NO aula-release
+// actions and NO answers, just create/edit/delete tarefas (guarded). Reuses the add-block bank.
+let _bankOnly = false;
 
 // ── Pure rules (exported for tests) ──────────────────────────────────────────
 export function parseMeta(metaJson) {
@@ -1102,28 +1105,33 @@ function _createSection() {
 function _addEditorHtml() {
   if (!_addSel) return '<div class="cdx-empty cdx-t1b-addhint">' + t('tarefas.add_choose') + '</div>';
   if (_addSel.kind === 'new') {
+    // Bank-only page has no aula to release into, so drop "Salvar e incluir na aula".
+    const buttons = _bankOnly
+      ? [{ key: 'save', label: t('tarefas.save_to_bank'), primary: true }]
+      : [{ key: 'save', label: t('tarefas.save_to_bank') },
+         { key: 'saveInclude', label: t('tarefas.save_and_include'), primary: true }];
     return renderEditor({
       head: t('tarefas.new_title'),
       titleLabel: t('editor.title_label'), bodyLabel: t('tarefas.instructions_label'),
       title: '', body: '', extra: _fieldExtraHtml({}),
-      buttons: [
-        { key: 'save', label: t('tarefas.save_to_bank') },
-        { key: 'saveInclude', label: t('tarefas.save_and_include'), primary: true },
-      ],
+      buttons: buttons,
     });
   }
   const tmpl = _addSel.item || _bankItems.find((i) => i.id === _addSel.id) || {};
+  // Bank-only page: no "Usar como está" (that releases into an aula); just overwrite / fork / delete.
+  const buttons = _bankOnly
+    ? [{ key: 'overwrite', label: t('tarefas.save_overwrite'), primary: true },
+       { key: 'new', label: t('tarefas.save_as_new') }]
+    : [{ key: 'include', label: t('tarefas.use_as_is'), primary: true },
+       { key: 'overwrite', label: t('tarefas.save_overwrite') },
+       { key: 'new', label: t('tarefas.save_as_new') }];
   return renderEditor({
-    head: t('tarefas.adapt').replace('{name}', tmpl.title || ''),
+    head: _bankOnly ? t('tarefas.edit_title') : t('tarefas.adapt').replace('{name}', tmpl.title || ''),
     headExtra: '<button type="button" class="cdx-t1b-delbank" data-delbank="' + _esc(tmpl.id) + '">🗑 ' + _esc(t('tarefas.delete_bank_btn')) + '</button>',
     titleLabel: t('editor.title_label'), bodyLabel: t('tarefas.instructions_label'),
     title: tmpl.title || '', body: tmpl.body_md || '',
     extra: _fieldExtraHtml(parseMeta(tmpl.meta_json)),
-    buttons: [
-      { key: 'include', label: t('tarefas.use_as_is'), primary: true },
-      { key: 'overwrite', label: t('tarefas.save_overwrite') },
-      { key: 'new', label: t('tarefas.save_as_new') },
-    ],
+    buttons: buttons,
   });
 }
 function _wireAddEditor() {
@@ -1338,6 +1346,19 @@ function _renderShell() {
   _q('cdx-tarefas-list').addEventListener('click', _onListClick);
 }
 
+// Bank-only page shell (Content > Tarefas sub-tab): the bank panel + reusable editor, permanently
+// open. Reuses the aula pane's add block (_renderAddBlock) with _adding pinned true; the toggle
+// button, instance cards, aula-release and answers all belong to the aula pane and never render here.
+function _renderBankShell() {
+  _viewEl.innerHTML =
+    '<div class="cdx-tarefas cdx-tarefas--bank">' +
+      '<div class="cdx-tarefas-toolbar"><h2 class="cdx-tarefas-title">' + t('tarefas.bank_title') + '</h2></div>' +
+      '<div class="cdx-t1b-add" id="cdx-t1b-add"></div>' +
+    '</div>';
+  _adding = true;
+  _renderAddBlock();
+}
+
 // ── Tab contract ─────────────────────────────────────────────────────────────
 export function mount(viewEl, ctx = {}) {
   _viewEl = viewEl;
@@ -1355,10 +1376,13 @@ export function mount(viewEl, ctx = {}) {
   _bankLoaded = false;
   _bankItems = [];
   _bankSections = [];
+  _bankOnly = !!ctx.bankOnly;
   _lockedAula = (ctx.aulaNumber != null && ctx.aulaNumber !== '') ? Number(ctx.aulaNumber) : null;
   _revealOn = !!ctx.revealOn;
   _aulaHappened = !!ctx.aulaHappened;
   _onChange = (typeof ctx.onChange === 'function') ? ctx.onChange : null;
+  // Bank-only page (Content > Tarefas): render the always-open bank + editor, no turma/picker/split.
+  if (_bankOnly) { _renderBankShell(); return; }
   _renderShell();
   // Draggable divider only in the standalone split; the t1b aula-locked pane stacks cards.
   if (_lockedAula == null) {
@@ -1389,6 +1413,7 @@ export function unmount() {
   _bankLoaded = false;
   _bankItems = [];
   _bankSections = [];
+  _bankOnly = false;
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

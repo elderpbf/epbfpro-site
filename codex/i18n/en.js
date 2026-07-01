@@ -784,7 +784,7 @@ export default {
   'tarefas.created':          'Assignment created and released.',
 
   // Tarefas t1b (aula-locked authoring: cards + bank with sections + reusable editor)
-  'tarefas.add_btn':          '＋ Assignment bank',
+  'tarefas.add_btn':          'Assignment bank',
   'tarefas.added':            'Assignment added to the lesson.',
   'tarefas.empty_aula':       'No assignments in this lesson yet.',
   'tarefas.from_bank':        'from bank',

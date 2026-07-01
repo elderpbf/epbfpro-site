@@ -52,10 +52,12 @@ test('the per-aula embeds are torn down on switch (singleton modules, no esc-han
   assert.match(cohortsJs, /tarefasAdmin\.unmount\(\)/, 'unmounts the tarefas embed');
 });
 
-test('Tarefas + Liberações are no longer Content sub-tabs', () => {
-  assert.ok(!/key:\s*'tarefas'/.test(contentJs), 'Tarefas not in Content SUBTABS');
+test('Content > Tarefas is the bank-only page; Liberações + turma-scoped tarefas stay in the dossiê', () => {
+  // Tarefas is back as a Content sub-tab, but BANK ONLY (no turma, no release-to-aula, no answers).
+  assert.match(contentJs, /key:\s*'tarefas'[\s\S]*?mountCtx:\s*\{\s*bankOnly:\s*true/, 'Tarefas sub-tab mounts bankOnly');
+  assert.match(contentJs, /import \* as tarefas from/, 'Content imports tarefas');
+  // Liberações is NOT a Content sub-tab; it stays turma-scoped in the cohort dossiê.
   assert.ok(!/key:\s*'releases'/.test(contentJs), 'Liberações not in Content SUBTABS');
-  assert.ok(!/import \* as tarefas from/.test(contentJs), 'Content does not import tarefas');
   assert.ok(!/import \* as releases from/.test(contentJs), 'Content does not import releases');
 });
 
