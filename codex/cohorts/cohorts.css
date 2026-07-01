@@ -292,96 +292,8 @@
   margin-top: 4px;
 }
 
-/* ----- Aulas column: toolbar + inline editor ----- */
-
-.cdx-aulas-toolbar {
-  display: flex;
-  justify-content: flex-start;
-  margin-bottom: 8px;
-}
-
-.cdx-aulas-col-list {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
-.cdx-aula-col-row {
-  display: flex;
-  flex-direction: column;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  background: var(--surface);
-  overflow: hidden;
-  transition: border-color 0.12s, box-shadow 0.12s;
-}
-
-.cdx-aula-col-row-display {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 0.55rem 0.75rem;
-  cursor: pointer;
-  transition: background 0.12s;
-}
-
-.cdx-aula-col-row-display:hover {
-  background: var(--cdx-card-hover-bg);
-}
-
-.cdx-aula-col-row.is-editing {
-  border-color: var(--primary);
-  box-shadow: 0 0 0 1px var(--primary);
-}
-
-/* Drag-to-reorder grip (⠿). Mirrors questions.css .cdx-q-drag. */
-.cdx-aula-col-drag {
-  color: var(--text-secondary);
-  font-size: 1.05rem;
-  line-height: 1;
-  cursor: grab;
-  user-select: none;
-  flex-shrink: 0;
-}
-
-.cdx-aula-col-drag:active { cursor: grabbing; }
-
-.cdx-aula-col-row.is-dragging { opacity: 0.5; }
-
-.cdx-aula-col-row-main {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  flex: 1;
-  min-width: 0;
-}
-
-.cdx-aula-col-row-title {
-  font-size: 0.85rem;
-  color: var(--text-primary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.cdx-aula-col-row-title .is-empty {
-  color: var(--text-secondary);
-  font-style: italic;
-}
-
-/* Aula label pill */
-.cdx-rel-aula-label {
-  font-size: 0.72rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  color: var(--tint-primary-tx);
-  flex-shrink: 0;
-  background: var(--cdx-chip-bg);
-  padding: 2px 9px;
-  border-radius: 999px;
-}
+/* ----- Aulas: date badges + the detail-pane editor (the inline-row list was
+   replaced by the aula hub, below; its row/toolbar/drag CSS was removed with it) ----- */
 
 /* Aula date badges */
 .cdx-rel-aula-date {
@@ -429,6 +341,103 @@
   display: flex;
   gap: 0.5rem;
 }
+
+/* ----- Aulas hub (Layout A): resizable list | detail with per-aula sub-tabs ----- */
+/* The grid's first column rides the shared resizer var (js/resizable.js); the grip is
+   absolutely positioned over the gap (.cdx-rz-grip, defined above). Collapses to a
+   single column on small widths, mirroring the Liberações/Tarefas split. */
+.cdx-aulas-hub {
+  position: relative;
+  display: grid;
+  grid-template-columns: var(--cdx-rz-w, 300px) 1fr;
+  gap: 1rem;
+  align-items: start;
+  min-height: calc(100vh - 360px);
+}
+@media (max-width: 980px) { .cdx-aulas-hub { grid-template-columns: 1fr; } }
+
+/* Left: the aula list (.cdx-pane gives it the surface/border/radius). */
+.cdx-aulas-hub-list { display: flex; flex-direction: column; min-height: 0; }
+.cdx-aulas-hub-lh {
+  display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
+  padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border);
+  font-size: 0.74rem; text-transform: uppercase; letter-spacing: 0.05em;
+  color: var(--text-secondary); font-weight: 700;
+}
+.cdx-aulas-hub-lh-t { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-aulas-hub-rows { display: flex; flex-direction: column; }
+
+.cdx-aula-hub-row {
+  display: flex; align-items: center; gap: 0.55rem;
+  padding: 0.55rem 0.7rem; cursor: pointer;
+  border-left: 3px solid transparent; border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+.cdx-aula-hub-row:hover { background: var(--cdx-card-hover-bg); }
+.cdx-aula-hub-row.is-on { background: var(--tint-primary); border-left-color: var(--primary); }
+.cdx-aula-hub-row.is-dragging { opacity: 0.5; }
+.cdx-aula-hub-num {
+  flex: 0 0 auto; width: 26px; height: 26px; border-radius: 7px;
+  background: var(--cdx-chip-bg); color: var(--tint-primary-tx);
+  display: grid; place-items: center; font-weight: 700; font-size: 0.82rem;
+}
+.cdx-aula-hub-info { min-width: 0; flex: 1; }
+.cdx-aula-hub-title {
+  font-weight: 600; font-size: 0.85rem; color: var(--text-primary);
+  overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cdx-aula-hub-title .is-empty { color: var(--text-secondary); font-style: italic; }
+.cdx-aula-hub-sub { display: flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; margin-top: 0.15rem; }
+.cdx-aula-hub-counts { display: inline-flex; gap: 0.4rem; align-items: center; flex-wrap: wrap; }
+
+.cdx-aula-cc { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.7rem; color: var(--text-secondary); }
+.cdx-aula-cc svg { display: block; }
+.cdx-aula-cc.is-empty { font-style: italic; opacity: 0.8; }
+
+/* The "Outros (sem aula)" bucket row, pinned under the aula list. */
+.cdx-aulas-hub-outros {
+  display: flex; align-items: center; gap: 0.5rem;
+  padding: 0.55rem 0.7rem; cursor: pointer; color: var(--text-secondary);
+  border-left: 3px solid transparent; border-top: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.cdx-aulas-hub-outros:hover { background: var(--cdx-card-hover-bg); }
+.cdx-aulas-hub-outros.is-on { background: var(--tint-primary); border-left-color: var(--primary); color: var(--text-primary); }
+.cdx-aulas-hub-outros svg { flex: 0 0 auto; }
+.cdx-aulas-hub-outros-t { flex: 1; min-width: 0; }
+
+/* Right: the selected aula's detail (.cdx-pane chrome) — header, sub-tabs, pane. */
+.cdx-aulas-hub-detail { min-height: 0; }
+.cdx-aula-dh {
+  display: flex; align-items: center; justify-content: space-between; gap: 1rem;
+  padding: 0.85rem 1rem; border-bottom: 1px solid var(--border);
+}
+.cdx-aula-dh-main { min-width: 0; }
+.cdx-aula-dh-title { margin: 0; font-size: 1.05rem; color: var(--text-primary); }
+.cdx-aula-dh-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem; }
+
+.cdx-aula-subtabs { display: flex; gap: 0.25rem; padding: 0.5rem 1rem 0; border-bottom: 1px solid var(--border); }
+.cdx-aula-stab {
+  border: none; background: none; cursor: pointer; font-family: inherit;
+  display: flex; align-items: center; gap: 0.35rem;
+  padding: 0.45rem 0.8rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);
+  border-bottom: 2px solid transparent; margin-bottom: -1px; transition: color 0.15s ease, border-color 0.15s ease;
+}
+.cdx-aula-stab:hover { color: var(--text-primary); }
+.cdx-aula-stab.is-on { color: var(--text-primary); border-bottom-color: var(--primary); font-weight: 700; }
+.cdx-aula-stab-b {
+  font-size: 0.66rem; background: var(--cdx-chip-bg); color: var(--text-secondary);
+  border-radius: 999px; padding: 0 0.4rem; font-weight: 700;
+}
+
+.cdx-aula-pane { padding: 1rem; }
+/* Dados reuses the aula editor form (_renderAulaColEditor); it no longer sits below a
+   display strip, so drop the inline border-top + padding it carried there. */
+.cdx-aula-dados .cdx-aula-col-editor { border-top: none; padding: 0; }
+/* Liberações + Tarefas mount the Content module shells aula-locked; trim their
+   viewport-sized split for the dossier chrome above and drop the module's own top gap. */
+.cdx-aula-pane .cdx-tarefas-split { min-height: calc(100vh - 440px); }
+.cdx-aula-pane .cdx-tarefas, .cdx-aula-pane .cdx-releases { gap: 0.75rem; }
 
 /* Component + status tokens (--cdx-*) moved to css/codex.css (2026-06-04) so
    codex.css is the single token home. See ARCHITECTURE.md §8. */
@@ -700,17 +709,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-panel { animation: cdx-doss-fade .18s ease both; }
 @keyframes cdx-doss-fade { from { opacity: 0; } to { opacity: 1; } }
 .cdx-doss-panel[hidden] { display: none; }
-/* Liberações + Tarefas reuse the Content split shell (content.css). Its split is
-   sized to the viewport (100vh - 240px), which assumes the slim Content chrome; in
-   a dossier there is extra chrome above (the dossier header + the sub-tab strip), so
-   trim the min-height a touch and drop the modules' own top gap (the panel already
-   spaces them). */
-.cdx-doss-panel--embed .cdx-items-split { min-height: calc(100vh - 360px); }
-.cdx-doss-panel--embed .cdx-tarefas,
-.cdx-doss-panel--embed .cdx-releases { gap: .75rem; }
-/* The Tarefas surface keeps its own "Tarefas" h2; inside the dossier the sub-tab
-   already says Tarefas, so drop the duplicate heading. */
-.cdx-doss-panel--embed .cdx-tarefas-title { display: none; }
 .cdx-doss-subhead { font-size: .8rem; font-weight: 700; color: var(--text-primary); margin: 1.2rem 0 .7rem; padding-top: 1rem; border-top: 1px solid var(--border); }
 .cdx-doss-panel-bar { display: flex; align-items: center; gap: .5rem; margin-bottom: .7rem; }
 

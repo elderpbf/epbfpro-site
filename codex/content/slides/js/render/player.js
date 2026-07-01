@@ -194,6 +194,33 @@ export function flowStyle(el, g) {
   if (g.h != null) el.style.minHeight = g.h + "px";
 }
 
+/**
+ * Centralized "animação simplificada": every CONTENT BLOCK reveals one-by-one in
+ * DOM/insertion order. A block = a topic li, a card, a free asset, or a layout image
+ * slot. Structural text (title/subtitle) stays fixed (Élder: "título de cara").
+ * Nested candidates (an image part inside a card, a card inside a free stack) are
+ * neutralized so only the TOP-LEVEL block is a step — the stack reveals as one unit.
+ * Overrides whatever per-item data-step the layouts emit, so the engine has ONE source
+ * of truth for order + count. Returns the step count (the slide's max step).
+ * Pre-step for the future per-element animation panel (Phase 7).
+ */
+export function autoSteps(stage) {
+  const SEL = "[data-step], .asset, .imgslot.filled"; // .filled: an empty image dropzone is not a reveal step
+  const all = [...stage.querySelectorAll(SEL)];
+  const nested = (el) => all.some((o) => o !== el && o.contains(el));
+  let n = 0;
+  all.forEach((el) => {
+    if (nested(el)) {
+      el.classList.remove("reveal"); // inside another block: never its own step
+      el.dataset.step = "0";
+    } else {
+      el.classList.add("reveal");
+      el.dataset.step = String(++n);
+    }
+  });
+  return n;
+}
+
 /** Reveal visibility: in edit mode everything shows; presenting steps through. */
 export function applySteps(stage, step, presenting) {
   const all = !presenting;
@@ -215,9 +242,13 @@ export function scaleOf(stage, canvasW) {
   return stage.getBoundingClientRect().width / canvasW;
 }
 
-/** Scale the whole stage to fit its wrapper (resolution-on-the-fly). */
-export function fit(stagewrap, stagebox, stage, canvas) {
-  const s = Math.min((stagewrap.clientWidth - 40) / canvas.w, (stagewrap.clientHeight - 40) / canvas.h);
+/**
+ * Scale the whole stage to fit its wrapper (resolution-on-the-fly). `pad` is the
+ * breathing room (px) left around the slide in the editor; presenting passes 0 so the
+ * slide reaches the viewport edges (only the 16:9 letterbox remains).
+ */
+export function fit(stagewrap, stagebox, stage, canvas, pad = 40) {
+  const s = Math.min((stagewrap.clientWidth - pad) / canvas.w, (stagewrap.clientHeight - pad) / canvas.h);
   if (stagebox) {
     stagebox.style.width = canvas.w * s + "px";
     stagebox.style.height = canvas.h * s + "px";

@@ -3,10 +3,12 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../js/worker-call.js, Codex-owned; was backstage/js/api-client.js)
-import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, assetUrl } from '../js/codex-api.js';
+import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, releases as relApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
+import { glyphSvg } from '../js/glyphs.js';
+import { installResizer } from '../js/resizable.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
@@ -60,6 +62,12 @@ let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
 let _dossierParticipants = []; // cached list; reloaded per turma
 let _cleanup = []; // teardown functions pushed by mount
+// Aulas hub (Layout A): the released items (ct_get_turma_view) feed the per-aula
+// content counts; the rest is selection state for the list | detail split.
+let _turmaViewItems = []; // released items, for the aula count chips/badges
+let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
+let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
+let _aulaEmbedMounted = { liberacoes: false, tarefas: false }; // which detail embed is live
 
 // CLIENTES rail (mirrors the Questions sessions sidebar). Starts OPEN + pinned
 // with the dossiê showing the empty prompt; the first turma pick flips it to the
@@ -1109,6 +1117,9 @@ function _openParticipantEditModal(participant, onSaved) {
 function _selectTurma(clientSlug, turmaSlug) {
   if (!clientSlug || !turmaSlug) return;
   if (clientSlug === _relClientSlug && turmaSlug === _relTurmaSlug) return;
+  // New turma: reset the aula hub selection so it opens on the first aula's Dados.
+  _selectedAulaId = null;
+  _aulaTab = 'dados';
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
   try { localStorage.setItem('cdx_cohorts_last', clientSlug + '\n' + turmaSlug); } catch (_) {}  // reopen this turma after a refresh
@@ -1132,6 +1143,9 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
+  // Tear down any live aula embed before the dossier DOM is replaced (no leak across
+  // turma switches / dossier re-renders).
+  _unmountAulaEmbeds();
   if (!turma) { el.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>'; return; }
   _dossierTurma = turma;
   _dossierParticipants = [];
@@ -1209,8 +1223,6 @@ function _renderDossier(turma) {
         '<button type="button" class="cdx-subtab active" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
         '<button type="button" class="cdx-subtab" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="liberacoes" role="tab">' + _esc(t('cohorts.doss_liberacoes')) + '</button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
         '<button type="button" class="cdx-subtab" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
       '</div></div>' +
@@ -1244,17 +1256,11 @@ function _renderDossier(turma) {
         '</div>' +
         '<div id="cdx-doss-participants"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
-      // Aulas panel (reuses the aula editor via #cdx-aulas-list).
+      // Aulas panel = the aula HUB (Layout A): a resizable list | detail split. The
+      // per-aula Liberações + Tarefas now live INSIDE each aula's detail (aula-locked
+      // embeds), so the old turma-level Liberações/Tarefas sub-tabs were retired.
       '<div class="cdx-doss-panel" data-dpanel="aulas" hidden>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
-      '</div>' +
-      // Liberações panel: the aula-centric release composer, turma-bound (no picker).
-      '<div class="cdx-doss-panel cdx-doss-panel--embed" data-dpanel="liberacoes" hidden>' +
-        '<div id="cdx-doss-liberacoes"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-      '</div>' +
-      // Tarefas panel: this turma's released assignments + answers, turma-bound.
-      '<div class="cdx-doss-panel cdx-doss-panel--embed" data-dpanel="tarefas" hidden>' +
-        '<div id="cdx-doss-tarefas"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
       // Certificados panel.
       '<div class="cdx-doss-panel" data-dpanel="certs" hidden>' +
@@ -1281,24 +1287,14 @@ function _renderDossier(turma) {
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
   }));
 
-  // Per-turma sub-tab switching: show the picked panel, hide the rest. Most loaders
-  // fire eagerly on mount, so switching is pure show/hide. The two heavier surfaces
-  // (Liberações + Tarefas fetch the whole library) mount LAZILY on first open.
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
+  // fires eagerly on mount, so switching is pure show/hide.
   const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
   const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
-  // The modules take a turma-bound mount via { clientSlug, turmaSlug } (the port
-  // foundation), which hides their picker and loads this turma straight in.
-  const _embed = { clientSlug: turma.client_slug, turmaSlug: turma.slug };
-  const _lazyMount = {
-    liberacoes: () => { const e = el.querySelector('#cdx-doss-liberacoes'); if (e) releasesAdmin.mount(e, _embed); },
-    tarefas: () => { const e = el.querySelector('#cdx-doss-tarefas'); if (e) tarefasAdmin.mount(e, _embed); },
-  };
-  const _mounted = {};
   _dtabs.forEach((tab) => tab.addEventListener('click', () => {
     const key = tab.dataset.dtab;
     _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
     _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
-    if (_lazyMount[key] && !_mounted[key]) { _mounted[key] = true; _lazyMount[key](); }
   }));
 
   _wireDossierInlineEdit(el, turma);
@@ -1315,7 +1311,7 @@ function _renderDossier(turma) {
     _ensureDossierDeps(() => { if (_dossierTurma === turma) _renderDossier(turma); });
   }
 
-  _loadTurmaAulas(turma.client_slug, turma.slug);
+  _loadTurmaAulas(turma);
   _loadDossierParticipants(turma);
   _loadDossierCerts(turma);
   // Fórum moderation (2-pane): the instructor's full toolkit, mounted into the
@@ -1582,13 +1578,28 @@ function _loadDossierCerts(turma) {
   }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: load certs failed: ' + (e && e.message || e), 'error'); });
 }
 
-function _loadTurmaAulas(clientSlug, turmaSlug) {
+// ── Aulas hub (Layout A): list | grip | detail ────────────────────────────────
+// The Aulas dossier sub-tab is a resizable two-pane hub: a selectable aula list on
+// the left, the selected aula's detail on the right with its own Dados / Liberações
+// / Tarefas sub-tabs. Liberações + Tarefas are the SAME content modules, mounted in
+// aula-locked mode, so there is one composer/editor codebase, not a per-aula copy.
+
+// Load this turma's aulas AND its released-items view (ct_get_turma_view, the source
+// for the per-aula content counts), then paint the hub. No token (turma without a
+// trilha link yet) just yields empty counts.
+function _loadTurmaAulas(turma) {
   const el = _q(IDS.aulasList);
   if (!el) return;
   el.innerHTML = '<div class="cdx-empty">' + t('cohorts.loading_aulas') + '</div>';
-  api.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }).then((d) => {
-    _turmaAulas = (d.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
-    _renderTurmaAulas();
+  const aulasCall = api.listAulas({ client_slug: turma.client_slug, turma_slug: turma.slug });
+  const viewCall = turma.token
+    ? relApi.turmaView({ client_slug: turma.client_slug, turma_slug: turma.slug, token: turma.token })
+        .catch((e) => { if (window.bsLog) window.bsLog('cohorts: aula counts turmaView failed: ' + (e && e.message || e), 'error'); return { items: [] }; })
+    : Promise.resolve({ items: [] });
+  Promise.all([aulasCall, viewCall]).then(([ad, vd]) => {
+    _turmaAulas = (ad.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
+    _turmaViewItems = (vd && vd.items) || [];
+    _renderAulasHub(turma);
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.aulasList);
@@ -1596,54 +1607,230 @@ function _loadTurmaAulas(clientSlug, turmaSlug) {
   });
 }
 
-function _renderTurmaAulas() {
-  const el = _q(IDS.aulasList);
-  if (!el) return;
-
-  const addBtnHtml =
-    '<div class="cdx-aulas-toolbar">' +
-      '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-btn-add-aula">' + t('cohorts.new_aula') + '</button>' +
-    '</div>';
-
-  if (!_turmaAulas.length) {
-    el.innerHTML = addBtnHtml + '<div class="cdx-empty">' + t('cohorts.no_aulas') + '</div>';
-  } else {
-    el.innerHTML = addBtnHtml +
-      '<div class="cdx-aulas-col-list">' +
-        _turmaAulas.map((a, idx) => _renderAulaColRow(a, idx)).join('') +
-      '</div>';
-  }
-
-  _wireAulasColEvents();
+// Per-aula content counts, reusing the Liberações composer's own tally (exported
+// from releases.js) so the hub and the composer can never disagree on what an aula
+// holds. Returns { apostila, tarefa, outros, drive, total }.
+function _aulaCounts(aulaNumber) {
+  return releasesAdmin.aulaReleaseCounts(_turmaViewItems, aulaNumber);
 }
 
-function _renderAulaColRow(a, idx) {
-  const ds = _aulaDateStatus(a);
-  const titleHtml = a.title
-    ? _esc(a.title)
-    : '<span class="is-empty">' + t('cohorts.aula_no_title') + '</span>';
-  // Drag-to-reorder is only meaningful with 2+ aulas; the handle (⠿) signals it.
-  // aula_number follows the top-to-bottom order, so a drop renumbers and remaps
-  // the released content + lesson plan in lockstep (see api.reorderAulas).
-  const canDrag = _turmaAulas.length > 1;
-  const handleHtml = canDrag
-    ? '<span class="cdx-aula-col-drag" aria-hidden="true" title="' + _esc(t('cohorts.aula_drag_hint')) + '">⠿</span>'
-    : '';
-  // draggable lives on the display strip (not the row): the row also hosts the
-  // inline editor when open, and a draggable ancestor would fight text selection
-  // in its inputs. The display strip is hidden while editing, so it never does.
-  return (
-    '<div class="cdx-aula-col-row" data-aula-idx="' + idx + '" data-aula-id="' + _esc(a.id == null ? '' : a.id) + '">' +
-      '<div class="cdx-aula-col-row-display"' + (canDrag ? ' draggable="true"' : '') + '>' +
-        handleHtml +
-        '<div class="cdx-aula-col-row-main">' +
-          '<span class="cdx-rel-aula-label">' + t('cohorts.aula_label') + ' ' + _esc(a.aula_number) + '</span>' +
-          '<span class="cdx-aula-col-row-title">' + titleHtml + '</span>' +
+// Items released with NO aula binding -> the "Outros (sem aula)" bucket count.
+function _outrosCount() {
+  let n = 0;
+  (_turmaViewItems || []).forEach((it) => {
+    const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
+    if (nums.length === 0 && releasesAdmin.releaseItemBucket(it)) n++;
+  });
+  return n;
+}
+
+function _countChip(glyph, n) {
+  return '<span class="cdx-aula-cc">' + glyphSvg(glyph, { size: 13 }) + ' ' + n + '</span>';
+}
+
+function _aulaCountChipsHtml(aulaNumber) {
+  const c = _aulaCounts(aulaNumber);
+  let html = '';
+  if (c.apostila) html += _countChip('book', c.apostila);
+  if (c.tarefa) html += _countChip('clipboard', c.tarefa);
+  if (c.outros) html += _countChip('layers', c.outros);
+  if (c.drive) html += _countChip('folder', c.drive);
+  return html || '<span class="cdx-aula-cc is-empty">' + _esc(t('cohorts.aula_no_content')) + '</span>';
+}
+
+// Is `a` the currently-selected aula? A pending (unsaved) new aula carries no id, so
+// it is matched by the 'new' sentinel; saved aulas match by id.
+function _isAulaSelected(a) {
+  if (!a) return false;
+  if (_selectedAulaId === 'new') return !!a._isNew;
+  return a.id != null && String(a.id) === String(_selectedAulaId);
+}
+
+function _findSelectedAula() {
+  if (_selectedAulaId === 'new') return _turmaAulas.find((a) => a._isNew) || null;
+  return _turmaAulas.find((a) => a.id != null && String(a.id) === String(_selectedAulaId)) || null;
+}
+
+function _renderAulasHub(turma) {
+  const el = _q(IDS.aulasList);
+  if (!el) return;
+  _unmountAulaEmbeds();
+  // Keep a valid selection across reloads (reorder/save re-renders); fall back to the
+  // first aula when the current selection no longer exists (e.g. after a turma switch).
+  const valid = _selectedAulaId === 'outros'
+    || (_selectedAulaId === 'new' && _turmaAulas.some((a) => a._isNew))
+    || _turmaAulas.some((a) => a.id != null && String(a.id) === String(_selectedAulaId));
+  if (!valid) { _selectedAulaId = _turmaAulas.length ? String(_turmaAulas[0].id) : null; _aulaTab = 'dados'; }
+
+  el.innerHTML =
+    '<div class="cdx-aulas-hub" id="cdx-aulas-hub">' +
+      '<div class="cdx-aulas-hub-list cdx-pane">' +
+        '<div class="cdx-aulas-hub-lh">' +
+          '<span class="cdx-aulas-hub-lh-t">' + _esc(t('cohorts.col_aulas')) + ' · ' + _esc(turma.name) + '</span>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-btn-add-aula" title="' + _esc(t('cohorts.new_aula')) + '">+</button>' +
         '</div>' +
-        '<span class="cdx-rel-aula-date ' + ds.cls + '">' + _esc(ds.text) + '</span>' +
+        '<div class="cdx-aulas-hub-rows" id="cdx-aulas-hub-rows"></div>' +
+        '<div class="cdx-aulas-hub-outros' + (_selectedAulaId === 'outros' ? ' is-on' : '') + '" data-aula-id="outros">' +
+          glyphSvg('layers', { size: 15 }) +
+          '<span class="cdx-aulas-hub-outros-t">' + _esc(t('cohorts.aula_outros')) + '</span>' +
+          '<span class="cdx-aula-cc">' + _outrosCount() + '</span>' +
+        '</div>' +
+      '</div>' +
+      '<div class="cdx-aulas-hub-detail cdx-pane" id="cdx-aulas-hub-detail"></div>' +
+    '</div>';
+  installResizer(_q('cdx-aulas-hub'), { storeKey: 'cdx_rz_aulas_hub', defaultPx: 300, min: 210, max: 520 });
+  _renderAulaHubRows();
+  _renderAulaDetail(turma);
+  _wireAulasHubList(turma);
+}
+
+function _renderAulaHubRows() {
+  const rowsEl = _q('cdx-aulas-hub-rows');
+  if (!rowsEl) return;
+  if (!_turmaAulas.length) {
+    rowsEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.no_aulas') + '</div>';
+    return;
+  }
+  rowsEl.innerHTML = _turmaAulas.map((a, idx) => _renderAulaHubRow(a, idx)).join('');
+}
+
+function _renderAulaHubRow(a, idx) {
+  const ds = _aulaDateStatus(a);
+  const on = _isAulaSelected(a);
+  const titleHtml = a.title ? _esc(a.title) : '<span class="is-empty">' + t('cohorts.aula_no_title') + '</span>';
+  // Drag-to-reorder is meaningful with 2+ saved aulas; the row itself is draggable
+  // (the detail editor lives in the right pane now, so there is no inline editor to
+  // fight text selection). aula_number follows the order, so a drop renumbers and
+  // remaps released content + lesson plan in lockstep (api.reorderAulas).
+  const canDrag = _turmaAulas.length > 1 && !a._isNew;
+  return (
+    '<div class="cdx-aula-hub-row' + (on ? ' is-on' : '') + '" data-aula-idx="' + idx + '" data-aula-id="' + _esc(a._isNew ? 'new' : (a.id == null ? '' : a.id)) + '"' + (canDrag ? ' draggable="true"' : '') + '>' +
+      '<span class="cdx-aula-hub-num">' + _esc(a.aula_number) + '</span>' +
+      '<div class="cdx-aula-hub-info">' +
+        '<div class="cdx-aula-hub-title">' + titleHtml + '</div>' +
+        '<div class="cdx-aula-hub-sub">' +
+          '<span class="cdx-rel-aula-date ' + ds.cls + '">' + _esc(ds.text) + '</span>' +
+          '<span class="cdx-aula-hub-counts">' + _aulaCountChipsHtml(a.aula_number) + '</span>' +
+        '</div>' +
       '</div>' +
     '</div>'
   );
+}
+
+// Right pane: the empty prompt, the Outros release composer, or the selected aula's
+// detail (header + Dados/Liberações/Tarefas sub-tabs).
+function _renderAulaDetail(turma) {
+  const detailEl = _q('cdx-aulas-hub-detail');
+  if (!detailEl) return;
+  _unmountAulaEmbeds();
+  if (_selectedAulaId === 'outros') {
+    // Outros has no Dados/Tarefas; the whole detail is the no-aula release composer.
+    detailEl.innerHTML =
+      '<div class="cdx-aula-dh"><div class="cdx-aula-dh-main">' +
+        '<h3 class="cdx-aula-dh-title">' + _esc(t('cohorts.aula_outros')) + '</h3>' +
+        '<div class="cdx-aula-dh-sub">' + _esc(t('cohorts.aula_outros_sub')) + '</div>' +
+      '</div></div>' +
+      '<div class="cdx-aula-pane" id="cdx-aula-pane"></div>';
+    const paneEl = detailEl.querySelector('#cdx-aula-pane');
+    releasesAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: 'outros', onChange: () => _refreshAulaCountsAfterEmbed(turma) });
+    _aulaEmbedMounted.liberacoes = true;
+    return;
+  }
+  const aula = _findSelectedAula();
+  if (!aula) { detailEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.aula_select_prompt') + '</div>'; return; }
+
+  const counts = _aulaCounts(aula.aula_number);
+  const ds = _aulaDateStatus(aula);
+  const carga = (aula.hours != null && aula.hours !== '') ? (aula.hours + t('cohorts.aula_hours_unit')) : '';
+  const subBits = [ds.text, carga].filter(Boolean).join(' · ');
+  const markBtn = (aula.scheduled_for && !aula.happened_on)
+    ? '<button type="button" class="cdx-btn cdx-btn-sm" data-aula-mark="' + _esc(aula.id) + '">' + _esc(t('cohorts.aula_mark_happened')) + '</button>'
+    : '';
+  // An unsaved new aula has no id yet, so Liberações/Tarefas (which release content TO
+  // an aula) can't bind to it; show only Dados until it is saved.
+  const subtabs = aula._isNew
+    ? '<button type="button" class="cdx-aula-stab is-on" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>'
+    : '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'dados' ? ' is-on' : '') + '" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>' +
+      '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'liberacoes' ? ' is-on' : '') + '" data-aulatab="liberacoes" role="tab">' + _esc(t('cohorts.doss_liberacoes')) + ' <span class="cdx-aula-stab-b">' + counts.total + '</span></button>' +
+      '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'tarefas' ? ' is-on' : '') + '" data-aulatab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + ' <span class="cdx-aula-stab-b">' + counts.tarefa + '</span></button>';
+  if (aula._isNew) _aulaTab = 'dados';
+
+  detailEl.innerHTML =
+    '<div class="cdx-aula-dh">' +
+      '<div class="cdx-aula-dh-main">' +
+        '<h3 class="cdx-aula-dh-title">' + _esc(t('cohorts.aula_label')) + ' ' + _esc(aula.aula_number) + (aula.title ? ' · ' + _esc(aula.title) : '') + '</h3>' +
+        (subBits ? '<div class="cdx-aula-dh-sub">' + _esc(subBits) + '</div>' : '') +
+      '</div>' +
+      markBtn +
+    '</div>' +
+    '<div class="cdx-aula-subtabs" role="tablist">' + subtabs + '</div>' +
+    '<div class="cdx-aula-pane" id="cdx-aula-pane"></div>';
+
+  const mb = detailEl.querySelector('[data-aula-mark]');
+  if (mb) mb.addEventListener('click', () => _markAulaHappened(aula));
+  detailEl.querySelectorAll('.cdx-aula-stab').forEach((tab) => tab.addEventListener('click', () => {
+    if (_aulaTab === tab.dataset.aulatab) return;
+    _unmountAulaEmbeds();
+    _aulaTab = tab.dataset.aulatab;
+    detailEl.querySelectorAll('.cdx-aula-stab').forEach((x) => x.classList.toggle('is-on', x === tab));
+    _renderAulaPane(turma, aula);
+  }));
+  _renderAulaPane(turma, aula);
+}
+
+// The active sub-tab's body: Dados is the reused aula editor; Liberações + Tarefas
+// mount the shared content modules in aula-locked mode (one codebase, no per-aula copy).
+function _renderAulaPane(turma, aula) {
+  const paneEl = _q('cdx-aula-pane');
+  if (!paneEl) return;
+  _unmountAulaEmbeds();
+  const onChange = () => _refreshAulaCountsAfterEmbed(turma);
+  if (_aulaTab === 'liberacoes') {
+    releasesAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: aula.id, onChange });
+    _aulaEmbedMounted.liberacoes = true;
+    return;
+  }
+  if (_aulaTab === 'tarefas') {
+    tarefasAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aulaNumber: aula.aula_number,
+      revealOn: !!turma.reveal_on_completion, aulaHappened: !!aula.happened_on, onChange });
+    _aulaEmbedMounted.tarefas = true;
+    return;
+  }
+  paneEl.innerHTML = '<div class="cdx-aula-dados">' + _renderAulaColEditor(aula) + '</div>';
+  _wireAulaDadosEditor(paneEl, aula, turma);
+}
+
+// A Liberações/Tarefas embed changed the released set: refetch the view so the row
+// chips + sub-tab badges refresh. The active pane stays mounted (no re-mount thrash).
+function _refreshAulaCountsAfterEmbed(turma) {
+  if (!turma.token) return;
+  relApi.turmaView({ client_slug: turma.client_slug, turma_slug: turma.slug, token: turma.token })
+    .then((vd) => {
+      _turmaViewItems = (vd && vd.items) || [];
+      _renderAulaHubRows();
+      _repaintAulaBadges();
+      _repaintOutrosCount();
+    })
+    .catch((e) => { if (window.bsLog) window.bsLog('cohorts: refresh aula counts failed: ' + (e && e.message || e), 'error'); });
+}
+
+// Repaint just the detail sub-tab count badges (Liberações total + Tarefas) without
+// re-rendering the detail (which would unmount the live embed the user is editing).
+function _repaintAulaBadges() {
+  const aula = _findSelectedAula();
+  if (!aula || _selectedAulaId === 'outros') return;
+  const counts = _aulaCounts(aula.aula_number);
+  const detailEl = _q('cdx-aulas-hub-detail');
+  if (!detailEl) return;
+  const badges = detailEl.querySelectorAll('.cdx-aula-stab .cdx-aula-stab-b');
+  if (badges[0]) badges[0].textContent = counts.total;
+  if (badges[1]) badges[1].textContent = counts.tarefa;
+}
+
+function _repaintOutrosCount() {
+  const el = _q(IDS.aulasList);
+  const c = el && el.querySelector('.cdx-aulas-hub-outros .cdx-aula-cc');
+  if (c) c.textContent = _outrosCount();
 }
 
 function _renderAulaColEditor(a) {
@@ -1687,66 +1874,75 @@ function _renderAulaColEditor(a) {
   );
 }
 
-function _wireAulasColEvents() {
+// Wire the hub list: the add button, row + Outros selection, and drag-to-reorder.
+// Listeners go on the freshly-rendered elements (recreated on every _renderAulasHub),
+// so they never stack across renders.
+function _wireAulasHubList(turma) {
   const addBtn = _q('cdx-btn-add-aula');
-  if (addBtn) addBtn.addEventListener('click', _addNewAulaCol);
+  if (addBtn) addBtn.addEventListener('click', () => _addNewAulaCol(turma));
 
-  const el = _q(IDS.aulasList);
-  if (!el) return;
-  el.querySelectorAll('.cdx-aula-col-row').forEach((row) => {
-    const display = row.querySelector('.cdx-aula-col-row-display');
-    if (display) display.addEventListener('click', () => _expandAulaCol(row));
+  const hub = _q('cdx-aulas-hub');
+  const listPane = hub && hub.querySelector('.cdx-aulas-hub-list');
+  if (!listPane) return;
+  listPane.addEventListener('click', (e) => {
+    if (e.target.closest('.cdx-aulas-hub-outros')) { _selectAula(turma, 'outros'); return; }
+    const row = e.target.closest('.cdx-aula-hub-row');
+    if (row) _selectAula(turma, row.dataset.aulaId);
   });
 
-  // Drag-to-reorder. Listeners go on the freshly-rendered list element (recreated
-  // on every _renderTurmaAulas), so they never stack across renders.
-  const listEl = el.querySelector('.cdx-aulas-col-list');
-  if (!listEl) return;
+  // Drag-to-reorder. Blocked while an unsaved new aula exists (it can't take part in
+  // ordered_ids); the right-pane editor is no longer inline, so a list re-render does
+  // not drop any editor.
+  const rowsEl = _q('cdx-aulas-hub-rows');
+  if (!rowsEl) return;
   let dragId = null;
-  listEl.addEventListener('dragstart', (e) => {
-    // Block while an aula is unsaved or an editor is open: a re-render would drop
-    // the editor, and an unsaved (id=null) aula can't be part of the ordered ids.
-    if (_reorderBlocked()) { e.preventDefault(); return; }
-    const row = e.target.closest('.cdx-aula-col-row');
-    if (!row || !row.dataset.aulaId) { e.preventDefault(); return; }
+  rowsEl.addEventListener('dragstart', (e) => {
+    if (_turmaAulas.some((a) => a._isNew)) { e.preventDefault(); return; }
+    const row = e.target.closest('.cdx-aula-hub-row');
+    if (!row || !row.dataset.aulaId || row.dataset.aulaId === 'new') { e.preventDefault(); return; }
     dragId = row.dataset.aulaId;
     row.classList.add('is-dragging');
     if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
   });
-  listEl.addEventListener('dragover', (e) => {
+  rowsEl.addEventListener('dragover', (e) => {
     if (dragId == null) return;
     e.preventDefault();
     if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
   });
-  listEl.addEventListener('dragend', () => {
-    listEl.querySelectorAll('.is-dragging').forEach((r) => r.classList.remove('is-dragging'));
+  rowsEl.addEventListener('dragend', () => {
+    rowsEl.querySelectorAll('.is-dragging').forEach((r) => r.classList.remove('is-dragging'));
     dragId = null;
   });
-  listEl.addEventListener('drop', (e) => {
+  rowsEl.addEventListener('drop', (e) => {
     if (dragId == null) return;
     e.preventDefault();
-    const row = e.target.closest('.cdx-aula-col-row');
+    const row = e.target.closest('.cdx-aula-hub-row');
     const tgtId = row ? row.dataset.aulaId : null;
     const fromId = dragId;
     dragId = null;
-    if (!tgtId || tgtId === fromId) return;
-    _reorderAulas(fromId, tgtId);
+    if (!tgtId || tgtId === fromId || tgtId === 'new') return;
+    _reorderAulas(turma, fromId, tgtId);
   });
 }
 
-// Reorder is unsafe while an aula is unsaved (id=null, can't be in ordered_ids) or
-// an editor is open (the re-render would discard it). Either condition blocks drag.
-function _reorderBlocked() {
-  if (_turmaAulas.some((a) => a._isNew)) return true;
-  const el = _q(IDS.aulasList);
-  return !!(el && el.querySelector('.cdx-aula-col-row.is-editing'));
+// Select an aula (or the Outros bucket): leaving an unsaved new aula discards it,
+// then repaint the rows + detail. Tears the live embed down first (it is re-mounted
+// for the newly-selected aula by _renderAulaDetail).
+function _selectAula(turma, aulaId) {
+  if (String(_selectedAulaId) === String(aulaId)) return;
+  if (_selectedAulaId === 'new') _turmaAulas = _turmaAulas.filter((a) => !a._isNew);
+  _unmountAulaEmbeds();
+  _selectedAulaId = aulaId;
+  _aulaTab = 'dados';
+  _renderAulaHubRows();
+  _renderAulaDetail(turma);
 }
 
 // Move the dragged aula to the dropped-on aula's slot, renumber 1..N top-to-bottom
-// (optimistic, so the labels update at once), then persist. aula_number is also the
-// binding key for released content + the lesson plan, so the worker remaps those in
-// lockstep; on failure we reload from the server to discard the optimistic order.
-function _reorderAulas(fromId, tgtId) {
+// (optimistic), then persist. aula_number is the binding key for released content +
+// the lesson plan, so the worker remaps those in lockstep; on success we reload so the
+// per-aula counts reflect the remap, on failure we reload to discard the optimistic order.
+function _reorderAulas(turma, fromId, tgtId) {
   const ids = _turmaAulas.map((a) => String(a.id));
   const from = ids.indexOf(String(fromId));
   const to = ids.indexOf(String(tgtId));
@@ -1754,88 +1950,77 @@ function _reorderAulas(fromId, tgtId) {
   const moved = _turmaAulas.splice(from, 1)[0];
   _turmaAulas.splice(to, 0, moved);
   _turmaAulas.forEach((a, i) => { a.aula_number = i + 1; });
-  _renderTurmaAulas();
+  _renderAulaHubRows();
+  _renderAulaDetail(turma);
   api.reorderAulas({
-    client_slug: _relClientSlug,
-    turma_slug: _relTurmaSlug,
+    client_slug: turma.client_slug,
+    turma_slug: turma.slug,
     ordered_ids: _turmaAulas.map((a) => a.id),
   }).then(() => {
     toast.ok(t('cohorts.aulas_reordered'));
+    _loadTurmaAulas(turma);  // refresh counts against the remapped aula numbers
   }).catch((err) => {
     if (window.bsLog) window.bsLog('cohorts: reorder aulas failed: ' + (err && err.message || err), 'error');
     notice.internal(t('cohorts.error') + ': ' + (err.message || err));
-    _loadTurmaAulas(_relClientSlug, _relTurmaSlug);
+    _loadTurmaAulas(turma);
   });
 }
 
-function _addNewAulaCol() {
-  const nums = _turmaAulas.map(a => a.aula_number || 0);
-  const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
-  const newAula = {
-    id: null,
-    aula_number: nextNum,
-    title: '',
-    scheduled_for: null,
-    happened_on: null,
-    rescheduled_from: null,
-    rescheduled_note: null,
-    _isNew: true,
-  };
-  _turmaAulas.push(newAula);
-  _renderTurmaAulas();
-  const rows = (_q(IDS.aulasList) || document).querySelectorAll('.cdx-aula-col-row');
-  const newRow = rows[rows.length - 1];
-  if (newRow) _expandAulaCol(newRow);
-}
-
-function _expandAulaCol(row) {
-  const idx = parseInt(row.dataset.aulaIdx, 10);
-  const aula = _turmaAulas[idx];
-  if (!aula) return;
-
-  // Collapse any other open editor
-  const el = _q(IDS.aulasList);
-  if (el) {
-    el.querySelectorAll('.cdx-aula-col-row.is-editing').forEach((r) => {
-      if (r !== row) _collapseAulaCol(r);
-    });
+// "+ Nova aula": push one unsaved aula (at most one at a time) and open it on Dados.
+function _addNewAulaCol(turma) {
+  if (!_turmaAulas.some((a) => a._isNew)) {
+    const nums = _turmaAulas.map((a) => a.aula_number || 0);
+    const nextNum = nums.length ? Math.max(...nums) + 1 : 1;
+    _turmaAulas.push({ id: null, aula_number: nextNum, title: '', scheduled_for: null, happened_on: null, rescheduled_from: null, rescheduled_note: null, _isNew: true });
   }
-
-  row.classList.add('is-editing');
-  const display = row.querySelector('.cdx-aula-col-row-display');
-  if (display) display.style.display = 'none';
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = _renderAulaColEditor(aula);
-  row.appendChild(wrapper.firstChild);
-  _wireAulaEditorEvents(row, aula, idx);
-  const titleInput = row.querySelector('.cdx-aula-title');
+  _selectedAulaId = 'new';
+  _aulaTab = 'dados';
+  _renderAulasHub(turma);
+  const titleInput = _q('cdx-aula-pane') && _q('cdx-aula-pane').querySelector('.cdx-aula-title');
   if (titleInput) setTimeout(() => titleInput.focus(), 0);
 }
 
-function _collapseAulaCol(row) {
-  row.classList.remove('is-editing');
-  const display = row.querySelector('.cdx-aula-col-row-display');
-  if (display) display.style.display = '';
-  const editor = row.querySelector('.cdx-aula-col-editor');
-  if (editor) editor.parentNode.removeChild(editor);
+// "Marcar como ocorrida": stamp happened_on = scheduled_for (occurred on its planned
+// day). ct_update_aula replaces every field, so rebuild the full payload.
+function _markAulaHappened(aula) {
+  const turma = _dossierTurma;
+  if (!turma || !aula || !aula.scheduled_for) return;
+  api.updateAula({
+    client_slug: turma.client_slug, turma_slug: turma.slug,
+    id: aula.id, aula_number: aula.aula_number,
+    title: aula.title || '',
+    scheduled_for: aula.scheduled_for || null,
+    happened_on: aula.scheduled_for,
+    rescheduled_from: aula.rescheduled_from || null,
+    rescheduled_note: aula.rescheduled_note || null,
+  }).then((r) => {
+    if (r && r.error) throw new Error(r.error);
+    aula.happened_on = aula.scheduled_for;
+    toast.ok(t('releases.mark_happened_done'));
+    _renderAulaHubRows();
+    _renderAulaDetail(turma);
+  }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
-function _wireAulaEditorEvents(row, aula, idx) {
-  const saveBtn   = row.querySelector('.cdx-aula-save');
-  const cancelBtn = row.querySelector('.cdx-aula-cancel');
-  const deleteBtn = row.querySelector('.cdx-aula-delete');
-  const titleInput = row.querySelector('.cdx-aula-title');
-  const schedInput = row.querySelector('.cdx-aula-scheduled');
-  const hoursInput = row.querySelector('.cdx-aula-hours');
-  const happInput  = row.querySelector('.cdx-aula-happened');
-  const rfromInput = row.querySelector('.cdx-aula-rescheduled-from');
-  const rnoteInput = row.querySelector('.cdx-aula-rescheduled-note');
+// The Dados sub-tab editor wiring (the editor render is reused from _renderAulaColEditor).
+// Save persists, then repaints the row + detail header keeping the selection; cancel
+// reverts edits (or discards the unsaved new aula); delete removes it.
+function _wireAulaDadosEditor(container, aula, turma) {
+  const saveBtn   = container.querySelector('.cdx-aula-save');
+  const cancelBtn = container.querySelector('.cdx-aula-cancel');
+  const deleteBtn = container.querySelector('.cdx-aula-delete');
+  const titleInput = container.querySelector('.cdx-aula-title');
+  const schedInput = container.querySelector('.cdx-aula-scheduled');
+  const hoursInput = container.querySelector('.cdx-aula-hours');
+  const happInput  = container.querySelector('.cdx-aula-happened');
+  const rfromInput = container.querySelector('.cdx-aula-rescheduled-from');
+  const rnoteInput = container.querySelector('.cdx-aula-rescheduled-note');
 
-  saveBtn.addEventListener('click', () => {
+  if (saveBtn) saveBtn.addEventListener('click', () => {
     const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
     const payload = {
-      client_slug: _relClientSlug,
-      turma_slug: _relTurmaSlug,
+      client_slug: turma.client_slug,
+      turma_slug: turma.slug,
       aula_number: aula.aula_number,
       title: titleInput.value.trim(),
       hours:            hoursVal,
@@ -1852,10 +2037,7 @@ function _wireAulaEditorEvents(row, aula, idx) {
     call.then((res) => {
       if (isNew) {
         const created = (res && res.aula) || res;
-        if (created && created.id) {
-          aula.id = created.id;
-          aula._isNew = false;
-        }
+        if (created && created.id) { aula.id = created.id; aula._isNew = false; _selectedAulaId = String(aula.id); }
       }
       aula.title            = payload.title;
       aula.hours            = payload.hours;
@@ -1864,40 +2046,50 @@ function _wireAulaEditorEvents(row, aula, idx) {
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
       toast.ok(t('cohorts.aula_saved'));
-      _renderTurmaAulas();
+      _renderAulaHubRows();
+      _renderAulaDetail(turma);
       _refreshDerivedFacts();
     }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
   });
 
-  cancelBtn.addEventListener('click', () => {
+  if (cancelBtn) cancelBtn.addEventListener('click', () => {
     if (aula._isNew) {
-      _turmaAulas.splice(idx, 1);
-      _renderTurmaAulas();
+      _turmaAulas = _turmaAulas.filter((a) => !a._isNew);
+      _selectedAulaId = _turmaAulas.length ? String(_turmaAulas[0].id) : null;
+      _renderAulasHub(turma);
     } else {
-      _collapseAulaCol(row);
+      _renderAulaDetail(turma);  // reload the editor from current state (discard edits)
     }
   });
 
-  deleteBtn.addEventListener('click', () => {
+  if (deleteBtn) deleteBtn.addEventListener('click', () => {
     if (aula._isNew) {
-      _turmaAulas.splice(idx, 1);
-      _renderTurmaAulas();
+      _turmaAulas = _turmaAulas.filter((a) => !a._isNew);
+      _selectedAulaId = _turmaAulas.length ? String(_turmaAulas[0].id) : null;
+      _renderAulasHub(turma);
       return;
     }
-    // Use inline confirm modal instead of confirm()
     _openArchiveConfirm({
       title: t('cohorts.delete_aula_title') + ' ' + aula.aula_number,
       message: t('cohorts.delete_aula_msg'),
       onConfirm() {
         api.deleteAula({ id: aula.id }).then(() => {
-          _turmaAulas.splice(idx, 1);
+          _turmaAulas = _turmaAulas.filter((a) => !(a.id != null && String(a.id) === String(aula.id)));
+          if (String(_selectedAulaId) === String(aula.id)) { _selectedAulaId = _turmaAulas.length ? String(_turmaAulas[0].id) : null; _aulaTab = 'dados'; }
           toast.ok(t('cohorts.aula_deleted'));
-          _renderTurmaAulas();
+          _renderAulasHub(turma);
           _refreshDerivedFacts();
         }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
       }
     });
   });
+}
+
+// Tear down whichever Liberações/Tarefas embed is currently mounted in the detail
+// pane (they are module singletons, so this stops esc-handler leaks across switches).
+function _unmountAulaEmbeds() {
+  if (_aulaEmbedMounted.liberacoes) { try { releasesAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.liberacoes = false; }
+  if (_aulaEmbedMounted.tarefas) { try { tarefasAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.tarefas = false; }
 }
 
 // #27: recompute the dossier's DERIVED facts (Carga horária = SUM of saved aula
@@ -1928,6 +2120,10 @@ export function mount(viewEl, ctx) {
   _dossierDepsTried = false;
   _navPinned = true;
   _cleanup = [];
+  _turmaViewItems = [];
+  _selectedAulaId = null;
+  _aulaTab = 'dados';
+  _aulaEmbedMounted = { liberacoes: false, tarefas: false };
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default
   // (Concept A) merged Turmas+Clientes list → dossier view is the shell below.
@@ -1940,6 +2136,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   cursos.unmount();
+  _unmountAulaEmbeds();
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

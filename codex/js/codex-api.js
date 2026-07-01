@@ -252,7 +252,15 @@ export const content = {
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
   replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)
   gradeSubmission: (p) => call('ct_grade_submission', p),   // { id, grade } (empty clears)
-  setTarefaFlags:  (p) => call('ct_set_tarefa_flags', p)    // { client_slug, turma_slug, item_id, reply_enabled?, grade_enabled? }
+  setTarefaFlags:  (p) => call('ct_set_tarefa_flags', p),   // { client_slug, turma_slug, item_id, reply_enabled?, grade_enabled? }
+  // Tarefa bank sections (Fatia 6, t1b): named reorderable groups for the tarefa bank.
+  // No copy/instance — placing a tarefa on an aula stays a release; these organize the bank.
+  listTarefaSections:   (p) => call('ct_list_tarefa_sections', p),   // -> { sections }
+  createTarefaSection:  (p) => call('ct_create_tarefa_section', p),  // { name } -> { section }
+  renameTarefaSection:  (p) => call('ct_rename_tarefa_section', p),  // { id, name }
+  reorderTarefaSections:(p) => call('ct_reorder_tarefa_sections', p),// { order:[id,...] }
+  deleteTarefaSection:  (p) => call('ct_delete_tarefa_section', p),  // { id } orphans its tarefas
+  setItemSection:       (p) => call('ct_set_item_section', p)        // { item_id, section_id|null, position? }
 };
 
 // Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the
@@ -292,8 +300,10 @@ export const releases = {
   // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
   setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }
   // Aggregate student-view payload for a turma: the released items with their
-  // aula_number binding. Needs the turma token (read from ct_list_turmas).
-  turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
+  // aula_number binding. Needs the turma token (read from ct_list_turmas). admin_full
+  // bypasses reveal-on-completion so the composer/aula-hub always sees the full released
+  // set (the Trail facade omits it, so student + admin-preview get the gated view).
+  turmaView: (p) => call('ct_get_turma_view', Object.assign({ admin_full: true }, p))
 };
 
 // Certificates — admin cert_* actions (API.md §Certificate Administration, auth required).

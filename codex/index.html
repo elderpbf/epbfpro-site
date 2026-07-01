@@ -52,7 +52,7 @@
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
 <link rel="stylesheet" href="content/slides/css/slide.css?v=2.5">
-<link rel="stylesheet" href="content/slides/css/ui.css?v=3.3">
+<link rel="stylesheet" href="content/slides/css/ui.css?v=3.4">
 <link rel="stylesheet" href="lessons/lessons.css?v=2.5">
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.1">
@@ -208,11 +208,25 @@
   // very first call is covered.
   installReconnect();
 
+  const params = new URLSearchParams(location.search);
+
+  // Presenter window: the Slides editor's ▶ Apresentar opens this same page with
+  // ?presenter=1. Mount ONLY the slides editor in presenter mode; the deck is pushed
+  // over the BroadcastChannel from the opener, so no auth, tab routing or store is
+  // needed here. Handled before the auth gate so it works from any session state.
+  if (params.get('presenter') === '1') {
+    applyI18n();
+    const host = document.createElement('div');
+    host.className = 'cdx-deck-editor';
+    document.body.appendChild(host);
+    const slides = await import('./content/slides/js/app.js');
+    slides.mount(host, {});
+  }
   // Codex own-login gate (item 11.2): if not authed, show the e-mail+OTP login and STOP.
   // No tabs mount until an admin session is in place. This replaces the legacy
   // BS_AUTH.guard() redirect to /backstage/; on successful login the page reloads and
   // this branch is skipped.
-  if (!isAuthed()) {
+  else if (!isAuthed()) {
     applyI18n();
     mountLogin();
   } else {
@@ -221,7 +235,6 @@
     applyI18n();
 
     const TABS = { cohorts, content, lessons, questions, certificates };
-    const params = new URLSearchParams(location.search);
     const tab = TABS[params.get('tab')] ? params.get('tab') : 'cohorts';
     const sub = params.get('sub') || undefined;
 

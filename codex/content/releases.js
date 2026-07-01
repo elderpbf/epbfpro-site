@@ -30,8 +30,48 @@ let _types = [];
 let _selectedAula = null;           // selected aula id (string) or 'outros' or null
 let _picker = null;
 let _cleanup = [];
+// Aula-locked mode (embedded in the Cohorts aula hub): when set, the module skips
+// the picker + the aula list + the resizer and renders ONLY this one aula's (or
+// 'outros') composer. _onChange notifies the host so it can refresh its aula badges
+// after a release save. Both null in the standalone Content-tab mount.
+let _lockedAula = null;             // aula id (string) | 'outros' | null
+let _onChange = null;
 
 // ── Pure rules (exported for tests) ──────────────────────────────────────────
+// Categorize one released item (a ct_get_turma_view row, which carries type +
+// set_id) into its content bucket, mirroring EXACTLY the composer pool predicates
+// below (_isTarefa/_isDrive/_isOutros + the apostila = set-item rule) so the Cohorts
+// aula hub and this composer can never disagree on what an aula holds. Returns the
+// bucket key, or null for a set-less 'conteudo' (which the composer never counts).
+export function releaseItemBucket(it) {
+  if (!it) return null;
+  if (it.set_id) return 'apostila';
+  if (it.type === 'tarefa') return 'tarefa';
+  if (it.type === 'drive_file') return 'drive';
+  if (it.type === 'conteudo') return null; // a set-less conteudo is not a pool item
+  return 'outros';
+}
+
+// Per-aula content counts from a raw ct_get_turma_view items array. An item counts
+// for an aula when its #23 multi-aula bindings (aula_numbers) include it, falling
+// back to the single aula_number for legacy rows. Pure + exported so the Cohorts
+// aula hub reuses it instead of re-deriving the same tallies.
+export function aulaReleaseCounts(viewItems, aulaNum) {
+  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, total: 0 };
+  const n = String(aulaNum);
+  (viewItems || []).forEach((it) => {
+    const nums = Array.isArray(it.aula_numbers)
+      ? it.aula_numbers
+      : (it.aula_number != null ? [it.aula_number] : []);
+    if (nums.map(String).indexOf(n) === -1) return;
+    const bucket = releaseItemBucket(it);
+    if (!bucket) return;
+    counts[bucket]++;
+    counts.total++;
+  });
+  return counts;
+}
+
 // Lesson date status for the composer. Returns { key, date }; key is i18n-free so
 // the renderer maps it through t() in the cohorts.date_* namespace. The RULE lives
 // in the shared js/aula-status.js (same one the admin Cohorts view + the Trail use);
@@ -171,6 +211,8 @@ function _loadReleases(clientSlug, turmaSlug) {
   if (el) el.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
   const pv = _q('cdx-releases-preview');
   if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('releases.select') + '</div>';
+  const lk = _q('cdx-releases-locked');
+  if (lk) lk.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
 
   const loadApostila = contentApi.listSets().then((data) => {
     const sets = ((data && data.sets) || []).filter((s) => (s.item_count || 0) > 0);
@@ -193,6 +235,8 @@ function _loadReleases(clientSlug, turmaSlug) {
     const turma = ((results[1] && results[1].turmas) || []).find((tu) => tu.slug === turmaSlug);
     if (!turma) {
       if (el) el.innerHTML = '<div class="cdx-empty">' + t('releases.turma_not_found') + '</div>';
+      const lk2 = _q('cdx-releases-locked');
+      if (lk2) lk2.innerHTML = '<div class="cdx-empty">' + t('releases.turma_not_found') + '</div>';
       return;
     }
     return api.turmaView({ client_slug: clientSlug, turma_slug: turmaSlug, token: turma.token }).then((vd) => {
@@ -204,8 +248,8 @@ function _loadReleases(clientSlug, turmaSlug) {
         aula_numbers: Array.isArray(i.aula_numbers) ? i.aula_numbers : (i.aula_number != null ? [i.aula_number] : []),
         released_at: i.released_at,
       }; });
-      _renderList();
-    }).catch((err) => { _released = []; _releasedMeta = {}; _renderList(); notice.internal(_err(err)); });
+      _renderMain();
+    }).catch((err) => { _released = []; _releasedMeta = {}; _renderMain(); notice.internal(_err(err)); });
   }).catch((err) => {
     if (el) el.innerHTML = '<div class="cdx-empty">' + t('releases.error_loading') + '</div>';
     notice.internal(_err(err));
@@ -305,6 +349,38 @@ function _renderList() {
     '</div>';
 
   el.innerHTML = html;
+}
+
+// Render dispatcher: in the aula-locked embed, draw only the one composer; in the
+// standalone Content-tab mount, draw the selectable aula list as before.
+function _renderMain() {
+  if (_lockedAula != null) _renderLocked();
+  else _renderList();
+}
+
+// Aula-locked embed: render just the selected aula's (or Outros) composer straight
+// into the locked pane, no list, no preview split. Reuses the same composer
+// builders the standalone path uses, so the surface is identical.
+function _renderLocked() {
+  const container = _q('cdx-releases-locked');
+  if (!container) return;
+  _selectedAula = _lockedAula;
+  if (_lockedAula === 'outros') { _renderOutrosComposer(container); return; }
+  const aula = _aulas.find((a) => String(a.id) === String(_lockedAula));
+  if (!aula) { container.innerHTML = '<div class="cdx-empty">' + t('releases.no_aulas') + '</div>'; return; }
+  _renderAulaComposer(container, aula);
+}
+
+// After a composer save: the locked embed re-renders its single composer and pings
+// the host to refresh aula badges; the standalone path repaints list + preview.
+function _afterSave() {
+  if (_lockedAula != null) {
+    _renderLocked();
+    if (_onChange) _onChange();
+  } else {
+    _renderList();
+    _renderPreview();
+  }
 }
 
 // ── Right pane: empty prompt | the selected aula's (or Outros) composer ──────
@@ -604,8 +680,7 @@ function _saveAula(container, aulaNum, pools) {
         m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
       });
       toast.ok(t('releases.saved'));
-      _renderList();
-      _renderPreview();
+      _afterSave();
     }).catch((err) => {
       btn.disabled = false;
       btn.textContent = t('content.save');
@@ -635,8 +710,7 @@ function _saveOutros(container, pools) {
       delete _releasedMeta[id];
     });
     toast.ok(t('releases.saved'));
-    _renderList();
-    _renderPreview();
+    _afterSave();
   }).catch((err) => {
     btn.disabled = false;
     btn.textContent = t('content.save');
@@ -646,6 +720,16 @@ function _saveOutros(container, pools) {
 
 // ── Shell ──────────────────────────────────────────────────────────────────────
 function _renderShell() {
+  // Aula-locked embed: just a pane for the one composer (no picker, no split).
+  if (_lockedAula != null) {
+    _viewEl.innerHTML =
+      '<div class="cdx-releases cdx-releases--locked">' +
+        '<div class="cdx-rel-locked-pane" id="cdx-releases-locked">' +
+          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
+        '</div>' +
+      '</div>';
+    return;
+  }
   _viewEl.innerHTML =
     '<div class="cdx-releases">' +
       '<div class="cdx-turma-picker" id="cdx-rel-picker"></div>' +
@@ -674,10 +758,17 @@ export function mount(viewEl, ctx = {}) {
   _types = [];
   _selectedAula = null;
   _cleanup = [];
+  _lockedAula = (ctx.aula != null && ctx.aula !== '') ? String(ctx.aula) : null;
+  _onChange = (typeof ctx.onChange === 'function') ? ctx.onChange : null;
   _renderShell();
+  contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); });
+  // Aula-locked embed (Cohorts aula hub): turma + aula already fixed, load straight in.
+  if (_lockedAula != null) {
+    if (ctx.clientSlug && ctx.turmaSlug) _loadReleases(ctx.clientSlug, ctx.turmaSlug);
+    return;
+  }
   // Draggable divider between the aula list and the composer (persisted).
   installResizer(_q('cdx-releases-split'), { storeKey: 'cdx_rz_releases_split', defaultPx: 380, min: 260, max: 680 });
-  contentApi.listTypes().then((d) => { _types = (d && d.types) || []; }).catch((e) => { notice.internal(_err(e)); });
   // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): the turma is already
   // chosen, so hide the picker and load straight into it. Standalone (Content tab): the
   // picker drives selection as before.
@@ -696,6 +787,8 @@ export function mount(viewEl, ctx = {}) {
 export function unmount() {
   if (_picker && _picker.destroy) _picker.destroy();
   _picker = null;
+  _lockedAula = null;
+  _onChange = null;
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
