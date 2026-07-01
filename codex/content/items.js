@@ -104,35 +104,7 @@ function _fmtDate(ts) {
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
 // ── Modal helpers (mirror the Cohorts tab) ──────────────────────────────────
-function _openModal(html, opts) {
-  opts = opts || {};
-  const bd = document.createElement('div');
-  bd.className = 'cdx-modal-backdrop';
-  bd.innerHTML = html;
-  if (!opts.disableBackdropClose) {
-    bd.addEventListener('click', (e) => { if (e.target === bd) _closeModal(bd); });
-  }
-  const escHandler = (e) => {
-    if (e.key !== 'Escape') return;
-    // Only the topmost modal responds to ESC, so a nested picker/confirm closing
-    // doesn't also close the modal beneath it.
-    const all = document.querySelectorAll('.cdx-modal-backdrop');
-    if (all.length && all[all.length - 1] !== bd) return;
-    _closeModal(bd);
-    document.removeEventListener('keydown', escHandler);
-  };
-  document.addEventListener('keydown', escHandler);
-  _cleanup.push(() => document.removeEventListener('keydown', escHandler));
-  document.body.appendChild(bd);
-  const first = bd.querySelector('input,textarea,select');
-  if (first) setTimeout(() => first.focus(), 60);
-  return bd;
-}
-
-function _closeModal(bd) {
-  const target = bd || document.querySelector('.cdx-modal-backdrop');
-  if (target && target.parentNode) target.parentNode.removeChild(target);
-}
+import { openModal, closeModal } from '../js/modal.js';
 
 // Generic confirm modal (no window.confirm). opts: { title, message, confirmLabel, danger, onConfirm }
 function _openConfirm(opts) {
@@ -146,9 +118,9 @@ function _openConfirm(opts) {
         '<button class="cdx-btn' + cls + '" data-act="ok">' + _esc(opts.confirmLabel || t('content.confirm_delete_btn')) + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { _closeModal(bd); opts.onConfirm(); });
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); opts.onConfirm(); });
 }
 
 // Single-field prompt modal (no window.prompt). opts: { title, label, value, onSubmit }
@@ -164,10 +136,10 @@ function _openPrompt(opts) {
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.save') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
+  const bd = openModal(html);
   const input = bd.querySelector('[data-fld="value"]');
-  const submit = () => { _closeModal(bd); opts.onSubmit(input.value.trim()); };
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const submit = () => { closeModal(bd); opts.onSubmit(input.value.trim()); };
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', submit);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
 }
@@ -579,17 +551,17 @@ function _openItem(id) {
 
 // New item: content-first creator (step 1) → full editor (step 2).
 function _newItem() {
-  const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
   itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
     types: _types.filter((ty) => NON_LIBRARY_TYPES.indexOf(ty.slug) < 0),
     tags: _tags,
     titleLabel: t('content.new_item_step1'),
     closeLabel: t('content.close'),
-    onClose: () => _closeModal(bd),
-    onCancel: () => _closeModal(bd),
-    onManual: (out) => { _closeModal(bd); _openItemEditorFull(null, { body_md: out.body_md }, null); },
+    onClose: () => closeModal(bd),
+    onCancel: () => closeModal(bd),
+    onManual: (out) => { closeModal(bd); _openItemEditorFull(null, { body_md: out.body_md }, null); },
     onAIComplete: async (result) => {
-      _closeModal(bd);
+      closeModal(bd);
       const tagIds = await _tagsByLabels(result.tagLabels || []);
       const prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
       _openItemEditorFull(null, prefill, result.aiContext);
@@ -599,7 +571,7 @@ function _newItem() {
 
 function _openItemEditorFull(item, prefill, aiContext) {
   const isEdit = !!item;
-  const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
   itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
@@ -612,13 +584,13 @@ function _openItemEditorFull(item, prefill, aiContext) {
     excludeTypes: isEdit ? [] : NON_LIBRARY_TYPES,
     onCreateType: _openTypeCreateForm,
     onSave: () => {
-      _closeModal(bd);
+      closeModal(bd);
       toast.ok(isEdit ? t('content.item_updated') : t('content.item_created'));
       _detailCache.clear();   // edited content is stale; preview re-fetches
       _loadItems({ silent: true });
       _loadTags();
     },
-    onCancel: () => _closeModal(bd),
+    onCancel: () => closeModal(bd),
   });
 }
 
@@ -663,8 +635,8 @@ function _openTypeCreateForm(callback) {
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.create') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html, { disableBackdropClose: true });
-  const done = (slug) => { _closeModal(bd); if (callback) callback(slug); };
+  const bd = openModal(html, { disableBackdropClose: true });
+  const done = (slug) => { closeModal(bd); if (callback) callback(slug); };
   const iconBtn = bd.querySelector('[data-fld="icon-btn"]');
   iconBtn.addEventListener('click', () => {
     _openGlyphPicker(chosenIcon, (val) => {
@@ -701,12 +673,12 @@ function _openGlyphPicker(currentIcon, onPick) {
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('.cdx-glyph-grid').addEventListener('click', (e) => {
     const btn = e.target.closest('[data-glyph]');
     if (!btn) return;
-    _closeModal(bd);
+    closeModal(bd);
     onPick(GLYPH_PREFIX + btn.dataset.glyph);
   });
 }
@@ -724,7 +696,7 @@ function _openTypeManager() {
         '<button class="cdx-btn" data-act="close">' + t('content.close') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html, { disableBackdropClose: true });
+  const bd = openModal(html, { disableBackdropClose: true });
   const listEl = bd.querySelector('[data-list]');
 
   function render() {
@@ -746,7 +718,7 @@ function _openTypeManager() {
   bd.querySelector('[data-act="new"]').addEventListener('click', () => {
     _openTypeCreateForm((slug) => { if (slug) render(); });
   });
-  bd.querySelector('[data-act="close"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => closeModal(bd));
 
   listEl.addEventListener('click', (e) => {
     const row = e.target.closest('.cdx-type-row');
@@ -808,7 +780,7 @@ function _openTagManager() {
         '<button class="cdx-btn" data-act="close">' + t('content.close') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html, { disableBackdropClose: true });
+  const bd = openModal(html, { disableBackdropClose: true });
   const newInput = bd.querySelector('[data-fld="new"]');
   const listEl = bd.querySelector('[data-list]');
 
@@ -838,7 +810,7 @@ function _openTagManager() {
 
   // Delegated handlers inside the manager modal.
   bd.querySelector('[data-act="add"]').addEventListener('click', addTag);
-  bd.querySelector('[data-act="close"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('[data-act="close"]').addEventListener('click', () => closeModal(bd));
   newInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); addTag(); } });
   listEl.addEventListener('click', (e) => {
     const row = e.target.closest('.cdx-tag-row');

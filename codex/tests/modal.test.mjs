@@ -56,6 +56,10 @@ globalThis.document = {
     removeCalls.push({ t, f });
   },
   querySelector() { return null; },
+  querySelectorAll(sel) {
+    if (sel === '.cdx-modal-backdrop') return bodyChildren.filter((c) => c.className === 'cdx-modal-backdrop');
+    return [];
+  },
 };
 
 // Now import the module (it captures our stubbed document at evaluation time).
@@ -142,4 +146,20 @@ test('multiple modals each track their own Escape listener independently', () =>
   assert.equal(liveKeydownCount(), before + 1, 'one listener after first close');
   closeModal(bd2);
   assert.equal(liveKeydownCount(), before, 'zero extra listeners after both closed');
+});
+
+test('Escape closes only the topmost modal when several are stacked', () => {
+  const bd1 = openModal('<div>1</div>');
+  const bd2 = openModal('<div>2</div>');
+  // bd1 is not topmost: its Escape handler must be a no-op.
+  bd1._escHandler({ key: 'Escape' });
+  assert.ok(bodyChildren.includes(bd1), 'lower modal stays open while a modal sits above it');
+  assert.ok(bodyChildren.includes(bd2), 'top modal untouched');
+  // bd2 is topmost: Escape closes it.
+  bd2._escHandler({ key: 'Escape' });
+  assert.ok(!bodyChildren.includes(bd2), 'topmost modal closed by Escape');
+  assert.ok(bodyChildren.includes(bd1), 'lower modal still open');
+  // bd1 is now topmost: Escape closes it.
+  bd1._escHandler({ key: 'Escape' });
+  assert.ok(!bodyChildren.includes(bd1), 'lower modal closes once it becomes topmost');
 });

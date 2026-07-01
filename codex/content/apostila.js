@@ -36,32 +36,7 @@ import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
 // ── Modal helpers (mirror the Items sub-tab) ─────────────────────────────────
-function _openModal(html, opts) {
-  opts = opts || {};
-  const bd = document.createElement('div');
-  bd.className = 'cdx-modal-backdrop';
-  bd.innerHTML = html;
-  if (!opts.disableBackdropClose) {
-    bd.addEventListener('click', (e) => { if (e.target === bd) _closeModal(bd); });
-  }
-  const escHandler = (e) => {
-    if (e.key !== 'Escape') return;
-    const all = document.querySelectorAll('.cdx-modal-backdrop');
-    if (all.length && all[all.length - 1] !== bd) return;
-    _closeModal(bd);
-    document.removeEventListener('keydown', escHandler);
-  };
-  document.addEventListener('keydown', escHandler);
-  _cleanup.push(() => document.removeEventListener('keydown', escHandler));
-  document.body.appendChild(bd);
-  const first = bd.querySelector('input,textarea,select');
-  if (first) setTimeout(() => first.focus(), 60);
-  return bd;
-}
-function _closeModal(bd) {
-  const target = bd || document.querySelector('.cdx-modal-backdrop');
-  if (target && target.parentNode) target.parentNode.removeChild(target);
-}
+import { openModal, closeModal } from '../js/modal.js';
 function _openConfirm(opts) {
   const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
@@ -73,9 +48,9 @@ function _openConfirm(opts) {
         '<button class="cdx-btn' + cls + '" data-act="ok">' + _esc(opts.confirmLabel || t('content.confirm_delete_btn')) + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { _closeModal(bd); opts.onConfirm(); });
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); opts.onConfirm(); });
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -215,7 +190,7 @@ function _editSection(id) {
   api.getItem({ id }).then((d) => {
     const item = (d && d.item) || null;
     if (!item) return;
-    const bd = _openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+    const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
     itemForm.mount(bd.querySelector('.cdx-modal-body'), {
       item,
       types: _types,
@@ -224,8 +199,8 @@ function _editSection(id) {
       saveLabel: t('content.save'),
       closeLabel: t('content.close'),
       // No onCreateType: editing imported course sections does not invent types.
-      onSave: () => { _closeModal(bd); toast.ok(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
-      onCancel: () => _closeModal(bd),
+      onSave: () => { closeModal(bd); toast.ok(t('content.item_updated')); _detailCache.delete(Number(id)); _load(); },
+      onCancel: () => closeModal(bd),
     });
   }).catch((e) => notice.internal(_err(e)));
 }
@@ -293,8 +268,8 @@ function _openImport() {
         '<button class="cdx-btn cdx-btn-primary" data-act="import">' + t('apostila.import_confirm') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html, { disableBackdropClose: true });
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html, { disableBackdropClose: true });
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="import"]').addEventListener('click', function () {
     const url = bd.querySelector('[data-fld="url"]').value.trim();
     if (!url) { toast.err(t('creator.gdoc_url_required')); return; }
@@ -303,7 +278,7 @@ function _openImport() {
     btn.disabled = true;
     btn.textContent = t('apostila.importing');
     api.ingestGdoc({ url, mode: 'set', marker }).then((res) => {
-      _closeModal(bd);
+      closeModal(bd);
       const n = (res && res.items_created) ? res.items_created
         : (res && res.count) ? res.count
         : (res && res.items) ? res.items.length : '?';

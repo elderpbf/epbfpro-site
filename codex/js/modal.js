@@ -26,7 +26,12 @@ export function openModal(html, opts) {
   }
 
   const escHandler = (e) => {
-    if (e.key === 'Escape') closeModal(bd);
+    if (e.key !== 'Escape') return;
+    // Only the topmost modal responds to Escape, so a nested picker/confirm
+    // closing does not also close the modal beneath it.
+    const all = document.querySelectorAll('.cdx-modal-backdrop');
+    if (all.length && all[all.length - 1] !== bd) return;
+    closeModal(bd);
   };
   bd._escHandler = escHandler;
   bd._trigger = trigger;
