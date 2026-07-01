@@ -7,12 +7,13 @@
 //
 //   googleSection()   - "Conta Google": connect / disconnect via window.BS_GOOGLE.
 //   passwordSection() - "Segurança": change the password-hash fallback via
-//                       callWorker('change_password') + the local hashPw + BS_AUTH.
+//                       auth.changePassword() (codex-api facade) + the local hashPw + BS_AUTH.
 //
 // Auth globals (window in the browser; stubbed on globalThis in tests):
 //   callWorker (api-client / worker-call), BS_AUTH (auth.js), BS_GOOGLE.
 // hashPw is Codex-owned (below), no longer the backstage utils.js global.
 import { t } from './i18n.js';
+import { auth } from './codex-api.js';
 
 function _esc(s) {
   return String(s == null ? '' : s)
@@ -137,7 +138,7 @@ function _initPwChange() {
     try {
       var curHash = await hashPw(cur);
       var newHash = await hashPw(newPw);
-      await globalThis.callWorker({ action: 'change_password', auth_token: curHash, new_hash: newHash });
+      await auth.changePassword({ auth_token: curHash, new_hash: newHash });
       localStorage.setItem(globalThis.BS_AUTH ? globalThis.BS_AUTH.PW_KEY : 'bs_pw_hash', newHash);
       document.getElementById('sd-pw-current').value = '';
       document.getElementById('sd-pw-new').value = '';

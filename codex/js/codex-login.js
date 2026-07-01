@@ -13,6 +13,8 @@
 // Errors surface to the shared debug pill (window.bsLog) AND an inline message, per the
 // Codex rule that no error is swallowed into a generic message alone.
 
+import { auth } from './codex-api.js';
+
 const PW_KEY = 'bs_pw_hash';
 
 function $(id) { return document.getElementById(id); }
@@ -85,7 +87,7 @@ export function mountLogin() {
     if (resendBtn) resendBtn.disabled = true;
     try {
       // callWorker throws on a worker {error}; reaching the next line means ok.
-      await window.callWorker({ action: 'admin_otp_request', email: email });
+      await auth.otpRequest({ email: email });
       currentEmail = email;
       if (emailEcho) emailEcho.textContent = email;
       showStep('code');
@@ -103,7 +105,7 @@ export function mountLogin() {
     setErr('');
     if (codeBtn) codeBtn.disabled = true;
     try {
-      const r = await window.callWorker({ action: 'admin_otp_verify', email: email, code: codeVal });
+      const r = await auth.otpVerify({ email: email, code: codeVal });
       if (r && r.admin_session) {
         try { localStorage.setItem(PW_KEY, r.admin_session); } catch (_) {}
         location.reload();   // re-run the boot; isAuthed() is now true, the app mounts
