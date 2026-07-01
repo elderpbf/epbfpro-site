@@ -31,11 +31,7 @@ let _onClick = null;
 let _onChange = null;
 let _onResize = null;
 
-function _esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
+import { esc as _esc } from '../js/dom.js';
 
 // Default-on map (missing key = enabled), identical to CVLabs.isLabEnabled.
 function _readMap() {

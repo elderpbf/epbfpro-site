@@ -30,11 +30,7 @@ import * as toast from '../js/toast.js';
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
 
-function _esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc as _esc } from '../js/dom.js';
 
 import { errMsg as _err } from '../js/content-err.js';
 // Surface AI failures to the debug pill (client-side parse failures never reach

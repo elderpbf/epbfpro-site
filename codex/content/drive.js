@@ -33,11 +33,7 @@ let _syncing = false;
 let _onClick = null;
 let _onSubmit = null;
 
-function _esc(s) {
-  return String(s == null ? '' : s).replace(/[&<>"']/g, (c) => (
-    { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]
-  ));
-}
+import { esc as _esc } from '../js/dom.js';
 function _q(sel) { return _viewEl && _viewEl.querySelector(sel); }
 function _bs() { return (typeof window !== 'undefined') ? window.BS_GOOGLE : null; }
 

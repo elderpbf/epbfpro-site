@@ -14,10 +14,8 @@
 // The pure *Html builders + dispatchType are exported for unit tests; the DOM
 // application and the marked path are verified on staging.
 
-export function esc(s) {
-  if (!s) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc } from './dom.js';
+export { esc };
 
 // type -> renderer key. Unknown types fall back to plain markdown.
 export function dispatchType(type) {

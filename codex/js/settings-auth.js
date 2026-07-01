@@ -15,11 +15,7 @@
 import { t } from './i18n.js';
 import { auth } from './codex-api.js';
 
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc as _esc } from './dom.js';
 
 // SHA-256 hex of a password, the bs_pw_hash fallback contract. Vendored from the
 // legacy utils.js (its only on-Codex caller was this password-change form; the

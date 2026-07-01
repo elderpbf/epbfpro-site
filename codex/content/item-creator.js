@@ -24,11 +24,7 @@ import * as aiSpec from '../js/ai-spec.js';
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
 
-function _esc(s) {
-  if (s == null) return '';
-  return String(s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc as _esc } from '../js/dom.js';
 // Surface AI failures to the debug pill (a client-side parse failure never
 // reaches callWorker's logging, so log it here with a response snippet).
 function _logAi(detail, res) {

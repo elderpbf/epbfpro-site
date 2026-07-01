@@ -7,11 +7,7 @@
 // local/instance copy, every save lands in the bank. Strings come in already t()-resolved
 // from the caller, so this module is i18n-agnostic and unit-testable without a DOM.
 
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
+import { esc as _esc } from './dom.js';
 
 // opts: { head, titleLabel, bodyLabel, title, body, hint, readonly?, extra?,
 //         buttons: [{ key, label, primary?, danger? }] }

@@ -12,11 +12,7 @@
 // (lessons.css, scoped under .cdx-lessons-sidebar-head); onSelect(preset) /
 // onReset() drive the sidebar filtering.
 
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc as _esc } from './dom.js';
 
 function _resolveHost(container) {
   var host = (typeof container === 'string')

@@ -14,11 +14,7 @@
 import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
+import { esc as _esc } from '../js/dom.js';
 function _ls(key) { try { return key ? localStorage.getItem(key) : null; } catch (_) { return null; } }
 function _lsSet(key, val) { try { if (key) localStorage.setItem(key, val); } catch (_) { /* ignore */ } }
 

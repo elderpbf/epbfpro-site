@@ -17,11 +17,7 @@
 // ES module: imported by codex-topbar.js (replaces the legacy window.SettingsDrawer).
 import { t } from './i18n.js';
 
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc as _esc } from './dom.js';
 
 // ── Section HTML builder ─────────────────────────────────────────────────────
 function _buildSection(id, title, bodyHtml, expanded) {
