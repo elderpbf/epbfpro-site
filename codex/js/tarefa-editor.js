@@ -28,7 +28,7 @@ export function renderEditor(opts) {
       'data-ted-act="' + _esc(b.key) + '">' + _esc(b.label) + '</button>';
   }).join('');
   return '<div class="cdx-ted-box">' +
-    '<div class="cdx-ted-head"><span class="cdx-ted-head-label">' + _esc(opts.head || '') + '</span></div>' +
+    '<div class="cdx-ted-head"><span class="cdx-ted-head-label">' + _esc(opts.head || '') + '</span>' + (opts.headExtra || '') + '</div>' +
     '<div class="cdx-ted-fields">' +
       '<div class="cdx-field"><label>' + _esc(opts.titleLabel || 'Título') + '</label>' +
         '<input type="text" class="cdx-ted-title" value="' + _esc(opts.title || '') + '"' + ro + '></div>' +

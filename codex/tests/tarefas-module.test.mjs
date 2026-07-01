@@ -51,12 +51,28 @@ test('t1b: drives the tarefa bank sections through the facade', () => {
   }
 });
 
-test('t1b: the three saves all land in the bank (no local/instance copy)', () => {
-  // place = release as-is; overwrite = updateItem; save-as-new = createItem. No duplicateItem.
-  assert.match(src, /_overwriteAndPlace|_overwriteBankItem/, 'overwrite path');
-  assert.match(src, /_saveAsNewAndPlace/, 'save-as-new path');
-  assert.match(src, /_placeFromBank/, 'use-as-is (place) path');
+test('t1b: bank saves are decoupled from the aula release (no auto-release on save)', () => {
+  // Bank ops write the bank only: overwrite = updateItem, save-as-new = createItem.
+  assert.match(src, /_overwriteInBank|_overwriteCardItem/, 'overwrite (bank) path');
+  assert.match(src, /_saveAsNew\b/, 'save-as-new (bank) path');
+  // The ONLY release action is _includeInAula (a separate button), never bundled into a save.
+  assert.match(src, /_includeInAula/, 'explicit include-in-aula action');
   assert.ok(!/duplicateItem/.test(src), 'no item duplication (instance copy was dropped)');
+});
+
+test('t1b v2: targeted DOM updates, no full-pane rebuild on view interactions', () => {
+  // Expand/edit/flag must NOT call _renderLockedPane (that was the full-reload bug).
+  assert.match(src, /function _toggleCard\(/, 'targeted card expand');
+  assert.match(src, /function _toggleEdit\(/, 'targeted editor open');
+  assert.match(src, /function _repaintCard\(/, 'single-card repaint');
+  assert.ok(!/_toggleCard[\s\S]{0,200}_renderLockedPane\(/.test(src), 'card toggle does not rebuild the pane');
+});
+
+test('t1b v2: exposes remove-from-turma, delete-from-bank (title confirm), section rename/delete', () => {
+  assert.match(src, /_removeFromTurma/, 'remove from turma');
+  assert.match(src, /_openTitleConfirm/, 'delete-from-bank title confirmation');
+  assert.match(src, /_renameSection/, 'rename section');
+  assert.match(src, /_deleteSection/, 'delete section');
 });
 
 test('t1b: renders instance cards + reveal badge in aula-locked mode', () => {

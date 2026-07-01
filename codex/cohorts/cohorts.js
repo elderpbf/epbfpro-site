@@ -1244,14 +1244,6 @@ function _renderDossier(turma) {
         '</div>' +
         '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
         '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
-        // Fatia 7: reveal-on-completion — content+tarefas stay hidden from students until
-        // the aula is marked happened. Per-turma, default off.
-        '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_reveal')) + '</div>' +
-        '<label class="cdx-toggle-label cdx-doss-reveal">' +
-          '<span class="cdx-toggle"><input type="checkbox" id="cdx-doss-reveal-cb"' + (turma.reveal_on_completion ? ' checked' : '') + '><span class="cdx-toggle-slider"></span></span>' +
-          '<span class="cdx-toggle-text">' + _esc(t('cohorts.reveal_label')) + '</span>' +
-        '</label>' +
-        '<p class="cdx-helper-text cdx-doss-reveal-hint">' + _esc(t('cohorts.reveal_hint')) + '</p>' +
       '</div>' +
       // Participantes panel (the roster/help controls move into a panel toolbar).
       '<div class="cdx-doss-panel" data-dpanel="participantes" hidden>' +
@@ -1313,14 +1305,6 @@ function _renderDossier(turma) {
     accEl.innerHTML = accessSettingsHtml(turma);
     wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
   }
-  // Fatia 7 reveal toggle: persist via ct_update_turma_meta (additive field).
-  const revCb = el.querySelector('#cdx-doss-reveal-cb');
-  if (revCb) revCb.addEventListener('change', () => {
-    const on = revCb.checked ? 1 : 0;
-    api.updateTurmaMeta({ client_slug: turma.client_slug, slug: turma.slug, reveal_on_completion: on })
-      .then(() => { turma.reveal_on_completion = on; toast.ok(t('cohorts.turma_updated')); })
-      .catch((err) => { revCb.checked = !revCb.checked; notice.internal(t('cohorts.error') + ': ' + (err.message || err)); });
-  });
   // The course + classpulse selects need their option lists; load once and re-render
   // this dossier when they arrive (so the saved option is selectable).
   if ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length)) {

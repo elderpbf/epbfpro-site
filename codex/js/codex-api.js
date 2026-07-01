@@ -300,8 +300,10 @@ export const releases = {
   // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
   setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }
   // Aggregate student-view payload for a turma: the released items with their
-  // aula_number binding. Needs the turma token (read from ct_list_turmas).
-  turmaView: (p) => call('ct_get_turma_view', p)    // { client_slug, turma_slug, token }
+  // aula_number binding. Needs the turma token (read from ct_list_turmas). admin_full
+  // bypasses reveal-on-completion so the composer/aula-hub always sees the full released
+  // set (the Trail facade omits it, so student + admin-preview get the gated view).
+  turmaView: (p) => call('ct_get_turma_view', Object.assign({ admin_full: true }, p))
 };
 
 // Certificates — admin cert_* actions (API.md §Certificate Administration, auth required).

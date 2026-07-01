@@ -532,9 +532,14 @@ function _toggleFlag(itemId, flag) {
   payload[key] = next ? 1 : 0;
   api.setTarefaFlags(payload).then(() => {
     cur[key] = next; _flags[itemId] = cur;
-    // t1b: the toggle lives in the card head, so repaint the whole card; standalone keeps
-    // its single answers pane.
-    if (_lockedAula != null) _renderLockedPane(); else _renderSubmissions(itemId);
+    // t1b: the toggle lives in the card head, flip just that button + re-render the answers
+    // (so the reply/grade rows appear/disappear), never the whole pane.
+    if (_lockedAula != null) {
+      const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
+      const b = card && card.querySelector('.cdx-resp-flag[data-flag="' + flag + '"]');
+      if (b) { b.classList.toggle('is-on', next); b.innerHTML = (next ? '☑ ' : '☐ ') + _esc(flag === 'reply' ? t('tarefas.reply_toggle') : t('tarefas.grade_toggle')); }
+      _renderSubmissions(itemId);
+    } else _renderSubmissions(itemId);
   }).catch((err) => notice.internal(_err(err)));
 }
 function _saveReply(sid, reply, itemId) {
@@ -691,12 +696,25 @@ function _renderLockedPane() {
   if (addBtn) addBtn.addEventListener('click', _toggleAdd);
   _wireLockedCards();
   if (_adding) _renderAddBlock();
-  if (_editCard != null) {
-    api.getItem({ id: _editCard }).then((res) => {
-      if (_editCard != null) _renderCardEditor((res && res.item) || {});
-    }).catch((e) => notice.internal(_err(e)));
-  }
-  if (_selectedId != null) _loadSubmissions(_selectedId);
+  // Prefetch answer counts so the badges are accurate and the "Retirar" button can gate
+  // on zero-answers before the card is ever opened.
+  _items.forEach((it) => _prefetchLockedCount(it.id));
+}
+
+function _prefetchLockedCount(itemId) {
+  api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
+    _submissions[itemId] = (res && res.submissions) || [];
+    _updateLockedCount(itemId);
+  }).catch(() => { /* count stays 0; the remove click re-checks server-side */ });
+}
+function _updateLockedCount(itemId) {
+  const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
+  if (!card) return;
+  const n = (_submissions[itemId] || []).length;
+  const countEl = card.querySelector('.cdx-t1b-ccount');
+  if (countEl) countEl.textContent = n + ' ' + _plural(n, t('tarefas.answer_one'), t('tarefas.answer_many'));
+  const rm = card.querySelector('.cdx-t1b-remove');
+  if (rm) { rm.disabled = n > 0; if (n > 0) rm.title = t('tarefas.remove_has_answers'); }
 }
 
 function _revealBarHtml() {
@@ -738,39 +756,114 @@ function _lockedCardHtml(item) {
     '</div>' +
     '<div class="cdx-t1b-cbody' + (open ? '' : ' is-hidden') + '">' +
       (editing ? '<div class="cdx-t1b-card-editor" data-card-editor="' + _esc(item.id) + '"></div>' : '') +
+      '<div class="cdx-t1b-cbody-bar">' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger cdx-t1b-remove"' + (subCount > 0 ? ' disabled title="' + _esc(t('tarefas.remove_has_answers')) + '"' : '') + '>' +
+          _esc(t('tarefas.remove_from_turma')) + '</button>' +
+      '</div>' +
       '<div class="cdx-t1b-answers" data-card="' + _esc(item.id) + '"><div class="cdx-empty">' + t('tarefas.loading_answers') + '</div></div>' +
     '</div>' +
   '</div>';
 }
 
+// Delegated click handling so a single card can be repainted without re-wiring, and view
+// interactions (expand / edit / flag / remove) never rebuild the whole pane. Clicks inside
+// the answers list or the inline editor have their own wiring and are ignored here.
 function _wireLockedCards() {
   const cards = _q('cdx-t1b-cards');
   if (!cards) return;
-  cards.querySelectorAll('[data-card-head]').forEach((head) => {
-    head.addEventListener('click', (e) => {
-      if (e.target.closest('.cdx-resp-flag') || e.target.closest('.cdx-t1b-edit')) return;
-      const id = Number(head.dataset.cardHead);
-      if (Number(_selectedId) === id) { _selectedId = null; _editCard = null; }
-      else { _selectedId = id; }
-      _renderLockedPane();
+  cards.addEventListener('click', _onCardsClick);
+}
+function _onCardsClick(e) {
+  if (e.target.closest('.cdx-t1b-answers') || e.target.closest('.cdx-t1b-card-editor')) return;
+  const card = e.target.closest('.cdx-t1b-card');
+  if (!card) return;
+  const id = Number(card.dataset.card);
+  const flag = e.target.closest('.cdx-resp-flag');
+  if (flag) { e.stopPropagation(); _toggleFlag(id, flag.dataset.flag); return; }
+  if (e.target.closest('.cdx-t1b-edit')) { e.stopPropagation(); _toggleEdit(id); return; }
+  if (e.target.closest('.cdx-t1b-remove')) { e.stopPropagation(); _removeFromTurma(id); return; }
+  if (e.target.closest('.cdx-t1b-chead')) _toggleCard(id);
+}
+
+// Expand/collapse a card in place (no pane rebuild); answers load lazily on first open.
+function _toggleCard(id) {
+  const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + id + '"]');
+  if (!card) return;
+  const body = card.querySelector('.cdx-t1b-cbody');
+  if (card.classList.contains('is-open')) {
+    _selectedId = null; _editCard = null;
+    card.classList.remove('is-open');
+    if (body) body.classList.add('is-hidden');
+    const ed = card.querySelector('.cdx-t1b-card-editor'); if (ed) ed.remove();
+    const eb = card.querySelector('.cdx-t1b-edit'); if (eb) { eb.classList.remove('is-on'); eb.innerHTML = '✎ ' + _esc(t('tarefas.edit_btn')); }
+  } else {
+    _selectedId = id;
+    card.classList.add('is-open');
+    if (body) body.classList.remove('is-hidden');
+    _loadSubmissions(id);
+  }
+}
+// Open/close the inline editor inside a card, injected into the existing DOM.
+function _toggleEdit(id) {
+  const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + id + '"]');
+  if (!card) return;
+  if (!card.classList.contains('is-open')) _toggleCard(id);
+  const body = card.querySelector('.cdx-t1b-cbody');
+  const btn = card.querySelector('.cdx-t1b-edit');
+  let ed = body && body.querySelector('.cdx-t1b-card-editor');
+  if (ed) {
+    ed.remove(); _editCard = null;
+    if (btn) { btn.classList.remove('is-on'); btn.innerHTML = '✎ ' + _esc(t('tarefas.edit_btn')); }
+  } else if (body) {
+    _editCard = id;
+    ed = document.createElement('div');
+    ed.className = 'cdx-t1b-card-editor';
+    ed.dataset.cardEditor = String(id);
+    body.insertBefore(ed, body.firstChild);
+    if (btn) { btn.classList.add('is-on'); btn.innerHTML = '✎ ' + _esc(t('tarefas.close_editor')); }
+    api.getItem({ id }).then((res) => { if (Number(_editCard) === Number(id)) _renderCardEditor((res && res.item) || {}); }).catch((e) => notice.internal(_err(e)));
+  }
+}
+// Repaint ONE card's node in place (title/count/badge changed), preserving open/edit state.
+function _repaintCard(itemId) {
+  const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
+  const item = _items.find((i) => Number(i.id) === Number(itemId));
+  if (!card || !item) return;
+  const tmp = document.createElement('div');
+  tmp.innerHTML = _lockedCardHtml(item);
+  const fresh = tmp.firstElementChild;
+  if (!fresh) return;
+  card.replaceWith(fresh);
+  _updateLockedCount(itemId);
+  if (Number(_selectedId) === Number(itemId)) _loadSubmissions(itemId);
+  if (Number(_editCard) === Number(itemId)) _toggleEdit(itemId);
+}
+
+function _removeFromTurma(id) {
+  // Gate server-side (the prefetched count can be stale if the fetch failed): only a tarefa
+  // with zero answers can be taken out of the turma.
+  api.listSubmissions({ item_id: id, client_slug: _client, turma_slug: _turma }).then((res) => {
+    if (((res && res.submissions) || []).length > 0) { toast.err(t('tarefas.remove_has_answers')); return; }
+    const item = _items.find((i) => Number(i.id) === Number(id)) || {};
+    const html = '<div class="cdx-modal" style="max-width:460px">' +
+      '<div class="cdx-modal-title">' + t('tarefas.remove_title') + '</div>' +
+      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.remove_warning') + '</p>' +
+      '<p class="cdx-tarefa-delete-quote">' + _esc(item.title || '') + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('tarefas.remove_from_turma') + '</button>' +
+      '</div></div>';
+    const bd = _openModal(html);
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
+      relApi.unrelease({ item_id: id, client_slug: _client, turma_slug: _turma }).then(() => {
+        _closeModal(bd); toast.ok(t('tarefas.removed'));
+        _selectedId = null; _editCard = null;
+        _loadTarefas(_client, _turma);
+        if (_onChange) _onChange();
+      }).catch((err) => notice.internal(_err(err)));
     });
-  });
-  cards.querySelectorAll('.cdx-t1b-edit').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = Number(btn.dataset.edit);
-      _selectedId = id;
-      _editCard = (Number(_editCard) === id) ? null : id;
-      _renderLockedPane();
-    });
-  });
-  cards.querySelectorAll('.cdx-resp-flag').forEach((btn) => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const card = btn.closest('.cdx-t1b-card');
-      if (card) _toggleFlag(Number(card.dataset.card), btn.dataset.flag);
-    });
-  });
+  }).catch((e) => notice.internal(_err(e)));
 }
 
 // The field-type chips + anonymous toggle, shared by the card editor and the add editor
@@ -803,8 +896,9 @@ function _readFieldAnon(container) {
   return { field_type: activeChip ? activeChip.dataset.slug : 'text', allow_anonymous: !!(anonEl && anonEl.checked) };
 }
 
-// Inline editor inside an instance card: edits write to the bank (Sobrescrever). The
-// fork-to-new lives in the Add flow; editing an existing instance overwrites the bank item.
+// Inline editor inside an instance card: edits ALWAYS land in the bank (no local copy).
+// Sobrescrever updates the bank item (reflects everywhere it's used); Salvar como nova
+// forks a new bank item. Neither touches the aula binding.
 function _renderCardEditor(item) {
   const host = _viewEl && _viewEl.querySelector('[data-card-editor="' + item.id + '"]');
   if (!host) return;
@@ -813,14 +907,19 @@ function _renderCardEditor(item) {
     head: t('tarefas.edit_title'),
     titleLabel: t('editor.title_label'), bodyLabel: t('tarefas.instructions_label'),
     title: item.title, body: item.body_md || '',
-    hint: t('tarefas.already_released').replace('{n}', String(_lockedAula)),
     extra: _fieldExtraHtml(meta),
-    buttons: [{ key: 'overwrite', label: t('tarefas.save_overwrite'), primary: true }],
+    buttons: [
+      { key: 'overwrite', label: t('tarefas.save_overwrite'), primary: true },
+      { key: 'new', label: t('tarefas.save_as_new') },
+    ],
   });
   _wireFieldExtra(host);
-  wireEditor(host, { overwrite: (vals) => _overwriteBankItem(item, vals, host) });
+  wireEditor(host, {
+    overwrite: (vals) => _overwriteCardItem(item, vals, host),
+    new: (vals) => _saveAsNew(vals, host),
+  });
 }
-function _overwriteBankItem(item, vals, host) {
+function _overwriteCardItem(item, vals, host) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   const fa = _readFieldAnon(host);
   const meta = parseMeta(item.meta_json);
@@ -828,15 +927,23 @@ function _overwriteBankItem(item, vals, host) {
   api.updateItem({ id: item.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) }).then(() => {
     toast.ok(t('tarefas.updated'));
     item.title = vals.title; item.body_md = vals.body; item.meta_json = JSON.stringify(meta);
-    const lib = _items.find((i) => i.id === item.id);
+    const lib = _items.find((i) => Number(i.id) === Number(item.id));
     if (lib) { lib.title = vals.title; lib.meta_json = item.meta_json; }
     _editCard = null;
-    _renderLockedPane();
+    _repaintCard(item.id);
   }).catch((err) => notice.internal(_err(err)));
 }
 
 // ── ＋Adicionar: the inline add block (bank with sections+drag | reusable editor) ──
-function _toggleAdd() { _adding = !_adding; _addSel = null; _renderLockedPane(); }
+// Toggling shows/hides just the add block; the cards below are untouched.
+function _toggleAdd() {
+  _adding = !_adding; _addSel = null;
+  const btn = _q('cdx-t1b-addbtn');
+  if (btn) { btn.classList.toggle('cdx-btn-primary', !_adding); btn.innerHTML = _adding ? ('✕ ' + _esc(t('content.cancel'))) : _esc(t('tarefas.add_btn')); }
+  const add = _q('cdx-t1b-add');
+  if (_adding) _renderAddBlock();
+  else if (add) add.innerHTML = '';
+}
 
 function _loadBank() {
   return Promise.all([api.listItems({ type: 'tarefa' }), api.listTarefaSections({})]).then((res) => {
@@ -886,9 +993,16 @@ function _bankSectionHtml(secId, name, items) {
     return '<div class="cdx-t1b-brow' + sel + '" draggable="true" data-bank="' + _esc(it.id) + '">' +
       '<span class="cdx-t1b-grip">⠿</span><span class="cdx-t1b-bname">' + _esc(it.title) + '</span></div>';
   }).join('');
-  return '<div class="cdx-t1b-sec is-open" data-sec="' + _esc(secId == null ? '' : secId) + '">' +
+  // Real sections get rename/delete affordances; the synthetic "Sem seção" group (secId null) does not.
+  const acts = (secId != null)
+    ? '<span class="cdx-t1b-secacts">' +
+        '<button type="button" class="cdx-t1b-secedit" data-sec-edit="' + _esc(secId) + '" title="' + _esc(t('tarefas.section_rename')) + '">✎</button>' +
+        '<button type="button" class="cdx-t1b-secdel" data-sec-del="' + _esc(secId) + '" title="' + _esc(t('tarefas.section_delete')) + '">🗑</button>' +
+      '</span>'
+    : '';
+  return '<div class="cdx-t1b-sec is-open" data-sec="' + _esc(secId == null ? '' : secId) + '" data-secname="' + _esc(name) + '">' +
     '<div class="cdx-t1b-sechd"><span class="cdx-t1b-seccar">▸</span><span class="cdx-t1b-secname">' + _esc(name) + '</span>' +
-      '<span class="cdx-t1b-secn">' + items.length + '</span></div>' +
+      '<span class="cdx-t1b-secn">' + items.length + '</span>' + acts + '</div>' +
     '<div class="cdx-t1b-secrows">' + rows + '</div>' +
   '</div>';
 }
@@ -896,8 +1010,19 @@ function _bankSectionHtml(secId, name, items) {
 function _wireBankPanel() {
   const host = _q('cdx-t1b-add');
   if (!host) return;
-  host.querySelectorAll('.cdx-t1b-sechd').forEach((hd) => hd.addEventListener('click', () => {
+  host.querySelectorAll('.cdx-t1b-sechd').forEach((hd) => hd.addEventListener('click', (e) => {
+    if (e.target.closest('.cdx-t1b-secedit') || e.target.closest('.cdx-t1b-secdel')) return;
     hd.parentElement.classList.toggle('is-open');
+  }));
+  host.querySelectorAll('.cdx-t1b-secedit').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const sec = b.closest('.cdx-t1b-sec');
+    _renameSection(Number(b.dataset.secEdit), sec ? sec.dataset.secname : '');
+  }));
+  host.querySelectorAll('.cdx-t1b-secdel').forEach((b) => b.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const sec = b.closest('.cdx-t1b-sec');
+    _deleteSection(Number(b.dataset.secDel), sec ? sec.dataset.secname : '');
   }));
   host.querySelectorAll('.cdx-t1b-brow').forEach((row) => {
     row.addEventListener('click', () => {
@@ -974,19 +1099,21 @@ function _addEditorHtml() {
       head: t('tarefas.new_title'),
       titleLabel: t('editor.title_label'), bodyLabel: t('tarefas.instructions_label'),
       title: '', body: '', extra: _fieldExtraHtml({}),
-      hint: t('tarefas.will_release').replace('{n}', String(_lockedAula)),
-      buttons: [{ key: 'create', label: t('tarefas.save_to_bank'), primary: true }],
+      buttons: [
+        { key: 'save', label: t('tarefas.save_to_bank') },
+        { key: 'saveInclude', label: t('tarefas.save_and_include'), primary: true },
+      ],
     });
   }
   const tmpl = _addSel.item || _bankItems.find((i) => i.id === _addSel.id) || {};
   return renderEditor({
     head: t('tarefas.adapt').replace('{name}', tmpl.title || ''),
+    headExtra: '<button type="button" class="cdx-t1b-delbank" data-delbank="' + _esc(tmpl.id) + '">🗑 ' + _esc(t('tarefas.delete_bank_btn')) + '</button>',
     titleLabel: t('editor.title_label'), bodyLabel: t('tarefas.instructions_label'),
     title: tmpl.title || '', body: tmpl.body_md || '',
     extra: _fieldExtraHtml(parseMeta(tmpl.meta_json)),
-    hint: t('tarefas.will_release').replace('{n}', String(_lockedAula)),
     buttons: [
-      { key: 'use', label: t('tarefas.use_as_is'), primary: true },
+      { key: 'include', label: t('tarefas.use_as_is'), primary: true },
       { key: 'overwrite', label: t('tarefas.save_overwrite') },
       { key: 'new', label: t('tarefas.save_as_new') },
     ],
@@ -996,54 +1123,136 @@ function _wireAddEditor() {
   const ed = _q('cdx-t1b-addeditor');
   if (!ed) return;
   _wireFieldExtra(ed);
+  const del = ed.querySelector('.cdx-t1b-delbank');
+  if (del) del.addEventListener('click', () => _deleteFromBank(Number(del.dataset.delbank)));
   if (!_addSel) return;
   if (_addSel.kind === 'new') {
-    wireEditor(ed, { create: (vals) => _createNewTarefa(vals, ed) });
+    wireEditor(ed, {
+      save: (vals) => _createToBank(vals, ed, false),
+      saveInclude: (vals) => _createToBank(vals, ed, true),
+    });
   } else {
     const tmpl = _addSel.item || _bankItems.find((i) => i.id === _addSel.id) || {};
     wireEditor(ed, {
-      use: () => _placeFromBank(tmpl),
-      overwrite: (vals) => _overwriteAndPlace(tmpl, vals, ed),
-      new: (vals) => _saveAsNewAndPlace(vals, ed),
+      include: () => _includeInAula(tmpl.id),
+      overwrite: (vals) => _overwriteInBank(tmpl, vals, ed),
+      new: (vals) => _saveAsNew(vals, ed),
     });
   }
 }
 
-function _releaseToAula(itemId) {
-  const base = { client_slug: _client, turma_slug: _turma };
-  return relApi.release(Object.assign({ item_id: itemId }, base))
-    .then(() => relApi.setAula(Object.assign({ item_id: itemId, aula_number_or_null: Number(_lockedAula) }, base)));
-}
+// Bank ≠ aula. Saves land in the bank only; "Incluir na aula" is the sole release action.
 function _afterAdd() {
   _adding = false; _addSel = null;
-  toast.ok(t('tarefas.added'));
   _loadTarefas(_client, _turma);
   if (_onChange) _onChange();
 }
-function _placeFromBank(tmpl) {
-  _releaseToAula(tmpl.id).then(_afterAdd).catch((err) => notice.internal(_err(err)));
+function _refreshBank() { return _loadBank().then(() => { if (_adding) _renderAddBlock(); }); }
+
+function _includeInAula(itemId) {
+  const base = { client_slug: _client, turma_slug: _turma };
+  relApi.release(Object.assign({ item_id: itemId }, base))
+    .then(() => relApi.setAula(Object.assign({ item_id: itemId, aula_number_or_null: Number(_lockedAula) }, base)))
+    .then(() => { toast.ok(t('tarefas.added')); _afterAdd(); })
+    .catch((err) => {
+      if (/already released/i.test((err && err.message) || '')) { toast.info(t('tarefas.already_in_aula')); _afterAdd(); return; }
+      notice.internal(_err(err));
+    });
 }
-function _createNewTarefa(vals, ed) {
+function _createToBank(vals, ed, include) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   const fa = _readFieldAnon(ed);
   const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
-    .then((res) => _releaseToAula(res.item.id)).then(_afterAdd).catch((err) => notice.internal(_err(err)));
+    .then((res) => {
+      const id = res && res.item && res.item.id;
+      if (include) { _includeInAula(id); return; }
+      toast.ok(t('tarefas.saved_to_bank'));
+      _addSel = { kind: 'bank', id: id, item: res.item };
+      _refreshBank();
+    }).catch((err) => notice.internal(_err(err)));
 }
-function _overwriteAndPlace(tmpl, vals, ed) {
+function _overwriteInBank(tmpl, vals, ed) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   const fa = _readFieldAnon(ed);
   const meta = parseMeta(tmpl.meta_json);
   meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
   api.updateItem({ id: tmpl.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
-    .then(() => _releaseToAula(tmpl.id)).then(_afterAdd).catch((err) => notice.internal(_err(err)));
+    .then(() => {
+      toast.ok(t('tarefas.updated'));
+      const lib = _items.find((i) => Number(i.id) === Number(tmpl.id));
+      if (lib) { lib.title = vals.title; lib.meta_json = JSON.stringify(meta); _repaintCard(tmpl.id); }
+      if (_addSel && _addSel.item) { _addSel.item.title = vals.title; _addSel.item.body_md = vals.body; _addSel.item.meta_json = JSON.stringify(meta); }
+      _refreshBank();
+    }).catch((err) => notice.internal(_err(err)));
 }
-function _saveAsNewAndPlace(vals, ed) {
+function _saveAsNew(vals, ed) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   const fa = _readFieldAnon(ed);
   const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
-    .then((res) => _releaseToAula(res.item.id)).then(_afterAdd).catch((err) => notice.internal(_err(err)));
+    .then((res) => {
+      toast.ok(t('tarefas.saved_as_new'));
+      // switch selection to the fork so the next click can include it; if we forked from a
+      // card editor there is no add block open, and _refreshBank is a no-op there.
+      _addSel = { kind: 'bank', id: res.item.id, item: res.item };
+      _refreshBank();
+    }).catch((err) => notice.internal(_err(err)));
+}
+
+function _deleteFromBank(itemId) {
+  const it = _bankItems.find((i) => Number(i.id) === Number(itemId)) || (_addSel && _addSel.item) || {};
+  _openTitleConfirm(it.title || '', () => {
+    api.deleteItem({ id: itemId }).then(() => {
+      toast.ok(t('tarefas.deleted_from_bank'));
+      _addSel = null;
+      _refreshBank();
+      if (_items.some((i) => Number(i.id) === Number(itemId))) _loadTarefas(_client, _turma);
+    }).catch((err) => notice.internal(_err(err)));
+  });
+}
+function _renameSection(secId, curName) {
+  _openPrompt(t('tarefas.section_rename_prompt'), curName || '', (name) => {
+    if (!name || name === curName) return;
+    api.renameTarefaSection({ id: secId, name: name }).then(() => _refreshBank()).catch((e) => notice.internal(_err(e)));
+  });
+}
+function _deleteSection(secId, name) {
+  const html = '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal-title">' + t('tarefas.section_delete_title') + '</div>' +
+    '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.section_delete_warning') + '</p>' +
+    '<p class="cdx-tarefa-delete-quote">' + _esc(name || '') + '</p>' +
+    '<div class="cdx-modal-actions">' +
+      '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+      '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('content.delete') + '</button>' +
+    '</div></div>';
+  const bd = _openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
+    api.deleteTarefaSection({ id: secId }).then(() => { _closeModal(bd); _refreshBank(); }).catch((e) => notice.internal(_err(e)));
+  });
+}
+
+// Delete-from-bank guard: retype the tarefa title (case-insensitive) to confirm, since it
+// removes the tarefa from EVERY turma, not just this one.
+function _openTitleConfirm(title, onOk) {
+  const html = '<div class="cdx-modal" style="max-width:480px">' +
+    '<div class="cdx-modal-title">' + t('tarefas.delete_bank_title') + '</div>' +
+    '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_bank_warning') + '</p>' +
+    '<p class="cdx-tarefa-delete-quote">' + _esc(title) + '</p>' +
+    '<div class="cdx-field"><label>' + t('tarefas.delete_bank_confirm_label') + '</label>' +
+      '<input type="text" class="cdx-input cdx-confirm-input" placeholder="' + _esc(title) + '"></div>' +
+    '<div class="cdx-modal-actions">' +
+      '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+      '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok" disabled>' + t('tarefas.delete_bank_btn') + '</button>' +
+    '</div></div>';
+  const bd = _openModal(html);
+  const input = bd.querySelector('.cdx-confirm-input');
+  const okBtn = bd.querySelector('[data-act="ok"]');
+  const match = () => input.value.trim().toLowerCase() === String(title).trim().toLowerCase();
+  input.addEventListener('input', () => { okBtn.disabled = !match(); });
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  okBtn.addEventListener('click', () => { if (okBtn.disabled || !match()) return; _closeModal(bd); onOk(); });
 }
 
 function _openPrompt(label, initial, onOk) {
