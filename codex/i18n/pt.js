@@ -784,7 +784,7 @@ export default {
   'tarefas.created':          'Tarefa criada e liberada.',
 
   // Tarefas t1b (autoria aula-locked: cards + banco com seções + editor reusável)
-  'tarefas.add_btn':          '＋ Adicionar tarefa',
+  'tarefas.add_btn':          '＋ Banco de tarefas',
   'tarefas.added':            'Tarefa adicionada à aula.',
   'tarefas.empty_aula':       'Nenhuma tarefa nesta aula ainda.',
   'tarefas.from_bank':        'do banco',
