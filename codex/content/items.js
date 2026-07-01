@@ -91,7 +91,7 @@ function _slugify(s) {
 //   notice.warn            persistent actionable guidance (top), e.g. type_in_use
 //   notice.internal        admin/technical error → debug pill; visible as a notice
 //                          only when the pill is ON (users see only what they act on)
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { errMsg as _err } from '../js/content-err.js';
 
 function _typeMeta(slug) {
   const ty = _types.find((x) => x.slug === slug);

@@ -36,7 +36,7 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { errMsg as _err } from '../js/content-err.js';
 // Surface AI failures to the debug pill (client-side parse failures never reach
 // callWorker's logging, so log them here with a response snippet).
 function _logAi(detail, res) {

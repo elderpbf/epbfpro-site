@@ -80,7 +80,7 @@ function _esc(s) {
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
 }
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 // Where the answers list renders: inside the open instance card (t1b aula-locked) or the
 // right pane (standalone). One lookup so the submissions machinery is shared by both.
