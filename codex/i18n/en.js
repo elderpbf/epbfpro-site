@@ -813,6 +813,8 @@ export default {
   'tarefas.save_and_include': 'Save and add to lesson',
   'tarefas.saved_to_bank':    'Saved to the bank.',
   'tarefas.saved_as_new':     'Saved as new in the bank.',
+  'tarefas.no_changes':       'No changes to save.',
+  'tarefas.no_changes_fork':  'No changes, nothing to save as new.',
   'tarefas.already_in_aula':  'This assignment is already in this lesson.',
   'tarefas.remove_from_turma':'Remove from this class',
   'tarefas.remove_has_answers':'Cannot remove: it already has answers. Delete the answers first.',

@@ -813,6 +813,8 @@ export default {
   'tarefas.save_and_include': 'Salvar e incluir na aula',
   'tarefas.saved_to_bank':    'Salva no banco.',
   'tarefas.saved_as_new':     'Salva como nova no banco.',
+  'tarefas.no_changes':       'Sem alterações a salvar.',
+  'tarefas.no_changes_fork':  'Sem alterações, nada para salvar como nova.',
   'tarefas.already_in_aula':  'Essa tarefa já está nesta aula.',
   'tarefas.remove_from_turma':'Retirar desta turma',
   'tarefas.remove_has_answers':'Não dá para retirar: já tem respostas. Exclua as respostas antes.',

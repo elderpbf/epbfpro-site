@@ -902,6 +902,17 @@ function _readFieldAnon(container) {
   return { field_type: activeChip ? activeChip.dataset.slug : 'text', allow_anonymous: !!(anonEl && anonEl.checked) };
 }
 
+// True if the editor's current values differ from `item`'s stored values (title/body/field/anon).
+// Both "Sobrescrever" and "Salvar como nova" gate on this: no no-op overwrite, no identical fork.
+function _editorChanged(host, item, vals) {
+  const meta = parseMeta(item && item.meta_json);
+  const fa = _readFieldAnon(host);
+  return (vals.title || '') !== ((item && item.title) || '')
+    || (vals.body || '') !== ((item && item.body_md) || '')
+    || fa.field_type !== (meta.field_type || 'text')
+    || !!fa.allow_anonymous !== !!meta.allow_anonymous;
+}
+
 // Inline editor inside an instance card: edits ALWAYS land in the bank (no local copy).
 // Sobrescrever updates the bank item (reflects everywhere it's used); Salvar como nova
 // forks a new bank item. Neither touches the aula binding.
@@ -922,11 +933,12 @@ function _renderCardEditor(item) {
   _wireFieldExtra(host);
   wireEditor(host, {
     overwrite: (vals) => _overwriteCardItem(item, vals, host),
-    new: (vals) => _saveAsNew(vals, host),
+    new: (vals) => _saveAsNew(vals, host, item),
   });
 }
 function _overwriteCardItem(item, vals, host) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
+  if (!_editorChanged(host, item, vals)) { toast.info(t('tarefas.no_changes')); return; }
   const fa = _readFieldAnon(host);
   const meta = parseMeta(item.meta_json);
   meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
@@ -1151,7 +1163,7 @@ function _wireAddEditor() {
     wireEditor(ed, {
       include: () => _includeInAula(tmpl.id),
       overwrite: (vals) => _overwriteInBank(tmpl, vals, ed),
-      new: (vals) => _saveAsNew(vals, ed),
+      new: (vals) => _saveAsNew(vals, ed, tmpl),
     });
   }
 }
@@ -1189,6 +1201,7 @@ function _createToBank(vals, ed, include) {
 }
 function _overwriteInBank(tmpl, vals, ed) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
+  if (!_editorChanged(ed, tmpl, vals)) { toast.info(t('tarefas.no_changes')); return; }
   const fa = _readFieldAnon(ed);
   const meta = parseMeta(tmpl.meta_json);
   meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
@@ -1201,8 +1214,10 @@ function _overwriteInBank(tmpl, vals, ed) {
       _refreshBank();
     }).catch((err) => notice.internal(_err(err)));
 }
-function _saveAsNew(vals, ed) {
+function _saveAsNew(vals, ed, src) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
+  // A fork identical to its source is a pointless duplicate: only save as new when something changed.
+  if (src && !_editorChanged(ed, src, vals)) { toast.info(t('tarefas.no_changes_fork')); return; }
   const fa = _readFieldAnon(ed);
   const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
