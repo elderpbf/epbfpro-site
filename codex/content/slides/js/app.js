@@ -49,6 +49,7 @@ const shellHTML = () => `
   <button id="appearBtn">${t("slides.ed_theme")} ▾</button>
   <button id="animBtn">${t("slides.ed_anim")} ▾</button>
   <button id="aiFillBtn">${t("slides.ai_fill")}</button>
+  <button id="notesBtn">📝 ${t("slides.ed_notes")}</button>
   <span class="spacer"></span>
   <button id="present" class="primary">▶ ${t("slides.ed_present")}</button>
 </div>
@@ -69,9 +70,15 @@ ${addSlidePanelHTML()}
 
 <div id="nav"></div>
 <div id="stagewrap"><div id="stagebox"><div id="stage"></div></div></div>
+<div id="notesbar"><div class="nb-label">${t("slides.ed_notes")}</div><textarea id="notesarea" placeholder="${t("slides.ed_notes_ph")}"></textarea></div>
+
+<!-- Presenter overlays (Phase 4), audience-window only: B/W blank, jump-to-slide readout, end-of-deck. -->
+<div id="blankout"></div>
+<div id="jumpind"></div>
+<div id="endout"><div class="eo-box"><div class="eo-title">${t("slides.ed_end_title")}</div><div class="eo-hint">${t("slides.ed_end_hint")}</div></div></div>
 
 <div id="pv">
-  <div class="bar"><span class="timer" id="pvTimer">00:00</span><span class="clock" id="pvClock">--:--</span><span class="pos" id="pvPos">1 / 1</span></div>
+  <div class="bar"><span class="timer" id="pvTimer">00:00</span><span class="clock" id="pvClock">--:--</span><span class="pvstatus" id="pvStatus"></span><span class="pos" id="pvPos">1 / 1</span></div>
   <div class="now"><div class="label">${t("slides.ed_current_slide")}</div><div class="mini"><div class="scale" id="pvNow"></div></div></div>
   <div class="next"><div class="label">${t("slides.ed_next_slide")}</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
   <div class="notes" id="pvNotes"></div>
@@ -114,6 +121,9 @@ export function mount(root, ctx = {}) {
     step: 0,
     _maxStep: 0, // reveal-step count of the current slide, assigned by player.autoSteps in renderSlide
     presenting: false,
+    blank: null,   // presenting only: null | "black" | "white" (B/W blank the audience) — 4A
+    atEnd: false,  // presenting only: showing the end-of-deck screen — 4C
+    jumpBuf: "",   // presenting only: digits typed for jump-to-slide, committed on Enter — 4B
     editing: false,
     activeEditable: null,
     fontScope: "all", // "all" = deck.theme.fontScale · "slide" = per-slide override
@@ -157,6 +167,14 @@ export function mount(root, ctx = {}) {
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
+      this.syncNotes();
+    },
+    // Notes authoring: mirror the current slide's notes into the notes textarea (unless
+    // it's being typed in). Written back on input by the wiring in wireChrome; the same
+    // slide.notes the presenter panel reads, so authoring + presenting share one field.
+    syncNotes() {
+      const ta = this.root.querySelector("#notesarea");
+      if (ta && document.activeElement !== ta) ta.value = this.cur().notes || "";
     },
     renderNav() {}, // assigned below (navigator)
     broadcast() {}, // assigned below (sync)
@@ -164,10 +182,14 @@ export function mount(root, ctx = {}) {
     refresh() { this.renderSlide(); this.renderNav(); this.commit(); this.broadcast(); },
 
     go(d) {
+      // On the end-of-deck screen (4C): forward restarts, backward returns to the deck.
+      if (this.atEnd) { if (d > 0) this.restart(); else this.setEnd(false); return; }
       const mx = this.effMax();
       if (d > 0 && this.step < mx) { this.step++; player.applySteps(this.stage, this.step, this.presenting); this.broadcast(); return; }
       if (d < 0 && this.step > 0) { this.step--; player.applySteps(this.stage, this.step, this.presenting); this.broadcast(); return; }
       const ni = this.index + d;
+      // Forward past the last slide, while presenting, shows the end screen (4C).
+      if (d > 0 && ni >= this.deck().slides.length) { if (this.presenting) this.setEnd(true); return; }
       if (ni < 0 || ni >= this.deck().slides.length) return;
       this.index = ni;
       this.step = 0;
@@ -460,6 +482,12 @@ export function mount(root, ctx = {}) {
       // in Codex the app is mounted into an inner host, and every presenting/presenter
       // rule is scoped under .cdx-deck-editor — toggling body never matched.
       this.root.classList.toggle("presenting", on);
+      if (on) this.root.classList.remove("notes-open"); // the notes bar is edit-only
+      if (!on) { // leaving: clear every presenter-control state + its overlays
+        this.blank = null; this.atEnd = false; this.jumpBuf = "";
+        this.root.classList.remove("blank-black", "blank-white", "end-open");
+        this._showJump();
+      }
       this.step = 0;
       if (this.select) this.select.clear();
       this.syncChrome(); this.fit(); this.renderSlide(); this.renderNav();
@@ -474,6 +502,49 @@ export function mount(root, ctx = {}) {
           : (document.fullscreenElement && document.exitFullscreen());
         if (p && p.catch) p.catch(() => {});
       } catch (e) { /* ignore */ }
+    },
+
+    // ── Presenter controls (Phase 4) ──────────────────────────────────────────
+    // 4A — blank the audience screen black/white; the same key toggles it back. Nav
+    // still works underneath (this only paints an overlay). Broadcast so the presenter
+    // window shows the blanked state.
+    toggleBlank(mode) {
+      this.blank = this.blank === mode ? null : mode;
+      this.root.classList.toggle("blank-black", this.blank === "black");
+      this.root.classList.toggle("blank-white", this.blank === "white");
+      this.broadcast();
+    },
+    // 4C — end-of-deck screen. Forward past the last slide shows it; forward again (or R,
+    // or a click) restarts; backward returns to the last slide.
+    setEnd(on) {
+      this.atEnd = on;
+      this.root.classList.toggle("end-open", on);
+      this.broadcast();
+    },
+    restart() {
+      this.atEnd = false;
+      this.root.classList.remove("end-open");
+      this.goTo(0); // broadcasts
+    },
+    // 4B — jump to a slide by typing its number then Enter. Feeds one key at a time;
+    // returns true when it consumed the key (so the caller stops handling it).
+    jumpKey(key) {
+      if (/^[0-9]$/.test(key)) { this.jumpBuf += key; this._showJump(); return true; }
+      if (key === "Backspace" && this.jumpBuf) { this.jumpBuf = this.jumpBuf.slice(0, -1); this._showJump(); return true; }
+      if (key === "Escape" && this.jumpBuf) { this.jumpBuf = ""; this._showJump(); return true; }
+      if (key === "Enter" && this.jumpBuf) {
+        const n = parseInt(this.jumpBuf, 10);
+        this.jumpBuf = ""; this._showJump();
+        if (n >= 1 && n <= this.deck().slides.length) { if (this.atEnd) this.setEnd(false); this.goTo(n - 1); }
+        return true;
+      }
+      return false;
+    },
+    _showJump() {
+      const el = this.root.querySelector("#jumpind");
+      if (!el) return;
+      el.textContent = this.jumpBuf;
+      el.style.display = this.jumpBuf ? "block" : "none";
     },
 
     // fillSlideWithAI — calls the AI service for the current slide's layout +
@@ -624,6 +695,32 @@ function wireChrome(app, root) {
   document.addEventListener("click", onDocClick);
   app._onDocClick = onDocClick;
 
+  // Notes authoring: the chrome "Notas" button toggles a bottom bar with a textarea
+  // bound to the current slide's notes (the same field the presenter panel shows). Write
+  // mirrors the inline-text pattern: coalesced record + commit + broadcast per input, so
+  // an open presenter window updates live and the debounced store save persists it.
+  const notesBtn = $("#notesBtn");
+  const notesarea = $("#notesarea");
+  if (notesBtn && notesarea) {
+    notesBtn.onclick = () => {
+      const open = app.root.classList.toggle("notes-open");
+      if (open) { app.syncNotes(); notesarea.focus(); }
+      app.fit(); // the stage shrinks above the bar; refit to the new height
+    };
+    notesarea.addEventListener("input", () => {
+      app.record("notes:" + app.cur().id); // coalesces a typing burst into one undo
+      app.cur().notes = notesarea.value;
+      app.commit();
+      app.broadcast();
+    });
+    // typing in the notes bar must not trigger the deck's nav / undo hotkeys
+    notesarea.addEventListener("keydown", (e) => e.stopPropagation());
+  }
+
+  // 4C: clicking the end-of-deck screen restarts the presentation.
+  const endout = $("#endout");
+  if (endout) endout.onclick = () => app.restart();
+
   $("#present").onclick = () => {
     // Open the presenter window FIRST. Spawning a popup steals focus, and a focus
     // change while the opener is *entering* fullscreen makes the browser bounce right
@@ -677,13 +774,22 @@ function wireChrome(app, root) {
   if (aiIntent) aiIntent.addEventListener("keydown", (e) => { if (e.key === "Enter") e.stopPropagation(); });
 
   const onKey = (e) => {
+    const typing = e.target.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName);
+    // Presenter hotkeys (Phase 4), only while presenting and not typing / not a shortcut.
+    if (app.presenting && !typing && !e.ctrlKey && !e.metaKey && !e.altKey) {
+      if (app.jumpKey(e.key)) { e.preventDefault(); return; } // 4B: digits / Enter / Backspace / Esc (while buffering)
+      const k = e.key.toLowerCase();
+      if (k === "b") { e.preventDefault(); app.toggleBlank("black"); return; } // 4A
+      if (k === "w") { e.preventDefault(); app.toggleBlank("white"); return; } // 4A
+      if (k === "r") { e.preventDefault(); app.restart(); return; }            // 4C
+    }
     if (e.key === "Escape" && app.presenting) { app.setPresenting(false); return; }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const k = e.key.toLowerCase();
       if (k === "z" && !e.shiftKey) { e.preventDefault(); app.undo(); return; }
       if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); app.redo(); return; }
     }
-    if (e.target.isContentEditable || /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+    if (typing) return;
     if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); app.go(1); }
     if (e.key === "ArrowLeft") app.go(-1);
   };

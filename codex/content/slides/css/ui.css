@@ -67,6 +67,27 @@
    topbar; requestFullscreen (app.js) hides browser chrome on top of this. */
 .cdx-deck-editor.presenting #stagewrap { position: fixed; inset: 0; z-index: 9000; }
 
+/* Notes authoring bar (edit-only): docked below the stage; the stage shrinks above it
+   when open. The same slide.notes the presenter panel reads, authored here. */
+.cdx-deck-editor #notesbar { position: absolute; left: 192px; right: 0; bottom: 0; height: 150px; display: none; flex-direction: column; gap: 6px; background: var(--panel-2); border-top: 1px solid var(--border); padding: 10px 14px; z-index: 5; }
+.cdx-deck-editor.notes-open #notesbar { display: flex; }
+.cdx-deck-editor.notes-open #stagewrap { bottom: 150px; }
+.cdx-deck-editor #notesbar .nb-label { font-size: 12px; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; }
+.cdx-deck-editor #notesbar textarea { flex: 1; resize: none; font: inherit; font-size: 15px; line-height: 1.4; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 8px 10px; }
+.cdx-deck-editor.presenting #notesbar, .cdx-deck-editor.presenter #notesbar { display: none; }
+
+/* Presenter overlays (Phase 4), audience window only, above the presenting stage (z 9000). */
+.cdx-deck-editor #blankout { position: fixed; inset: 0; z-index: 9500; display: none; }
+.cdx-deck-editor.blank-black #blankout { display: block; background: #000; }
+.cdx-deck-editor.blank-white #blankout { display: block; background: #fff; }
+.cdx-deck-editor #jumpind { position: fixed; right: 34px; bottom: 30px; z-index: 9600; display: none; min-width: 46px; padding: 8px 18px; font-size: 34px; font-weight: 700; text-align: center; color: #fff; background: rgba(0, 0, 0, .72); border-radius: 12px; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #endout { position: fixed; inset: 0; z-index: 9550; display: none; align-items: center; justify-content: center; background: #0a1211; color: #dfeae8; cursor: pointer; }
+.cdx-deck-editor.end-open #endout { display: flex; }
+.cdx-deck-editor #endout .eo-title { font-size: 40px; font-weight: 700; text-align: center; }
+.cdx-deck-editor #endout .eo-hint { margin-top: 12px; font-size: 18px; color: #9fd6cc; text-align: center; }
+/* presenter-panel status badge (BLACK/WHITE/END), sits between the clock and the position */
+.cdx-deck-editor #pv .pvstatus:not(:empty) { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #0a1211; background: var(--teal-l); border-radius: 6px; padding: 3px 10px; }
+
 /* mask popover (viewport-fixed by JS) */
 .cdx-deck-editor #maskpop { position: fixed; z-index: 61; display: none; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 8px; box-shadow: 0 10px 30px var(--overlay-strong); }
 .cdx-deck-editor #maskpop .mp-types { display: flex; gap: 4px; }
