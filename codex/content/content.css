@@ -978,6 +978,11 @@
 .cdx-t1b-badge.is-held { color: var(--text-secondary); background: var(--cdx-chip-bg); }
 .cdx-t1b-tag { font-size: 0.64rem; font-weight: 700; border-radius: 5px; padding: 0 0.3rem; text-transform: uppercase;
   letter-spacing: 0.03em; color: var(--text-secondary); background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border); }
+/* bank row: tarefa already released to the current turma */
+.cdx-t1b-tag.is-released { margin-left: auto; color: var(--primary); background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
+.cdx-t1b-brow.is-released .cdx-t1b-bname { color: var(--text-secondary); }
+.cdx-tarefa-blocked-list { margin: 0.4rem 0 0.2rem; padding-left: 1.1rem; font-size: 0.85rem; color: var(--text-primary); }
+.cdx-tarefa-blocked-list li { margin: 0.15rem 0; }
 .cdx-t1b-ccount { font-size: 0.74rem; color: var(--text-secondary); }
 .cdx-t1b-toggles { display: flex; gap: 0.4rem; margin-left: auto; }
 .cdx-t1b-edit.is-on { color: var(--primary); border-color: var(--primary); }

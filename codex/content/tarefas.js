@@ -28,6 +28,7 @@ let _client = null;
 let _turma = null;
 let _items = [];
 let _itemTurmas = {};    // item_id -> [{ client_slug, turma_slug, ... }]
+let _turmaReleasedIds = new Set(); // item ids released to the current turma (bank "já na turma" badge)
 let _submissions = {};   // item_id -> [submission]
 let _flags = {};         // item_id -> { reply_enabled, grade_enabled } (per-instance toggles)
 let _selectedId = null;  // selected tarefa id (master-detail)
@@ -151,7 +152,9 @@ function _loadTarefas(clientSlug, turmaSlug) {
   }).then((results) => {
     const allTarefas = ((results[0] && results[0].items) || []).filter((i) => i.type === 'tarefa');
     const releaseMap = {};
+    _turmaReleasedIds = new Set();
     ((results[1] && results[1].items) || []).forEach((i) => {
+      _turmaReleasedIds.add(Number(i.id));
       if (i.type === 'tarefa') releaseMap[i.id] = i.aula_number == null ? null : i.aula_number;
     });
     _items = sortTarefas(allTarefas
@@ -990,8 +993,12 @@ function _bankPanelHtml() {
 function _bankSectionHtml(secId, name, items) {
   const rows = items.map((it) => {
     const sel = (_addSel && _addSel.kind === 'bank' && Number(_addSel.id) === Number(it.id)) ? ' is-sel' : '';
-    return '<div class="cdx-t1b-brow' + sel + '" draggable="true" data-bank="' + _esc(it.id) + '">' +
-      '<span class="cdx-t1b-grip">⠿</span><span class="cdx-t1b-bname">' + _esc(it.title) + '</span></div>';
+    const released = _turmaReleasedIds.has(Number(it.id));
+    const relBadge = released
+      ? '<span class="cdx-t1b-tag is-released" title="' + _esc(t('tarefas.bank_released_hint')) + '">' + _esc(t('tarefas.bank_released_badge')) + '</span>'
+      : '';
+    return '<div class="cdx-t1b-brow' + sel + (released ? ' is-released' : '') + '" draggable="true" data-bank="' + _esc(it.id) + '">' +
+      '<span class="cdx-t1b-grip">⠿</span><span class="cdx-t1b-bname">' + _esc(it.title) + '</span>' + relBadge + '</div>';
   }).join('');
   // Real sections get rename/delete affordances; the synthetic "Sem seção" group (secId null) does not.
   const acts = (secId != null)
@@ -1202,14 +1209,43 @@ function _saveAsNew(vals, ed) {
 
 function _deleteFromBank(itemId) {
   const it = _bankItems.find((i) => Number(i.id) === Number(itemId)) || (_addSel && _addSel.item) || {};
-  _openTitleConfirm(it.title || '', () => {
-    api.deleteItem({ id: itemId }).then(() => {
-      toast.ok(t('tarefas.deleted_from_bank'));
-      _addSel = null;
-      _refreshBank();
-      if (_items.some((i) => Number(i.id) === Number(itemId))) _loadTarefas(_client, _turma);
-    }).catch((err) => notice.internal(_err(err)));
-  });
+  // Guard: a tarefa still released to any turma cannot be deleted from the bank, that would wipe
+  // it (and its answers) from every turma. Make the user unrelease it first; ctDeleteItem enforces
+  // the same rule server-side as a backstop.
+  api.listItemTurmas({ item_id: itemId }).then((res) => {
+    const released = ((res && res.turmas) || []).filter((e) => e.turma_status !== 'archived');
+    if (released.length) {
+      _openReleasedBlock(it.title || '', released.map((e) => e.client_display_name + ' · ' + e.turma_display_name));
+      return;
+    }
+    _openTitleConfirm(it.title || '', () => {
+      api.deleteItem({ id: itemId }).then(() => {
+        toast.ok(t('tarefas.deleted_from_bank'));
+        _addSel = null;
+        _refreshBank();
+        if (_items.some((i) => Number(i.id) === Number(itemId))) _loadTarefas(_client, _turma);
+      }).catch((err) => {
+        if (/item_released/i.test((err && err.message) || '')) { notice.warn(t('tarefas.delete_bank_blocked_generic')); _refreshBank(); return; }
+        notice.internal(_err(err));
+      });
+    });
+  }).catch((err) => notice.internal(_err(err)));
+}
+
+// Blocking notice when the tarefa is still released: list the turmas and tell the user to remove
+// it from each first. No delete path here, that is the whole point of the guard.
+function _openReleasedBlock(title, turmaLabels) {
+  const list = turmaLabels.map((l) => '<li>' + _esc(l) + '</li>').join('');
+  const html = '<div class="cdx-modal" style="max-width:480px">' +
+    '<div class="cdx-modal-title">' + t('tarefas.delete_bank_blocked_title') + '</div>' +
+    '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_bank_blocked_body') + '</p>' +
+    '<p class="cdx-tarefa-delete-quote">' + _esc(title) + '</p>' +
+    '<ul class="cdx-tarefa-blocked-list">' + list + '</ul>' +
+    '<div class="cdx-modal-actions">' +
+      '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('tarefas.blocked_ok') + '</button>' +
+    '</div></div>';
+  const bd = _openModal(html);
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => _closeModal(bd));
 }
 function _renameSection(secId, curName) {
   _openPrompt(t('tarefas.section_rename_prompt'), curName || '', (name) => {
@@ -1309,6 +1345,7 @@ export function mount(viewEl, ctx = {}) {
   _turma = null;
   _items = [];
   _itemTurmas = {};
+  _turmaReleasedIds = new Set();
   _submissions = {};
   _selectedId = null;
   _cleanup = [];

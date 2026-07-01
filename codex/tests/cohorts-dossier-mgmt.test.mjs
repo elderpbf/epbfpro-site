@@ -76,9 +76,11 @@ test('tarefas supports a turma-bound (picker-less) mount', () => {
 test('per-turma remove unreleases (never a global delete); delete-from-bank is separate + guarded', () => {
   // Removing a tarefa from the turma must be a per-turma unrelease, scoped to client+turma.
   assert.match(tarefasJs, /relApi\.unrelease\(\{ item_id: [a-z.]+, client_slug: _client, turma_slug: _turma \}\)/, 'removes via per-turma unrelease');
-  // The ONLY global ct_delete_item call is the deliberate delete-from-bank, gated behind the
-  // retype-the-title confirmation (_openTitleConfirm) — never wired to the per-turma remove.
-  assert.match(tarefasJs, /_deleteFromBank[\s\S]{0,200}_openTitleConfirm/, 'delete-from-bank is title-confirmed');
+  // The ONLY global ct_delete_item call is the deliberate delete-from-bank, now double-guarded:
+  // a release pre-check (listItemTurmas) blocks deletion while the tarefa is released to any turma,
+  // and the deliberate delete still sits behind the retype-the-title confirmation (_openTitleConfirm).
+  assert.match(tarefasJs, /_deleteFromBank[\s\S]{0,400}listItemTurmas/, 'delete-from-bank pre-checks releases');
+  assert.match(tarefasJs, /_deleteFromBank[\s\S]{0,700}_openTitleConfirm/, 'delete-from-bank is title-confirmed');
   assert.ok(!/_removeFromTurma[\s\S]{0,300}api\.deleteItem\(/.test(tarefasJs), 'per-turma remove never calls global deleteItem');
 });
 
