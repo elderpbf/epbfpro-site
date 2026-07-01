@@ -12,7 +12,7 @@
 //   window.callWorker (Worker transport, set by the import below); window.pywebview.api
 //   (desktop bridge); window.WORKER_URL (set on boot); window.bsLog (debug pill)
 import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
-import { certificates as api } from '../js/codex-api.js';
+import { certificates as api, auth } from '../js/codex-api.js';
 import { renderCertsPdfBase64 } from './cert-pdf.js';
 import { renderCertHtml, buildValidarUrl, formatIssuedOn } from './certificates.js';
 import { glyphWordmark, stdColors } from '../js/brand-logos.js';
@@ -52,7 +52,7 @@ async function login() {
   $('#loginMsg').textContent = '';
   const hash = await hashPw(pw);
   let res;
-  try { res = await window.callWorker({ action: 'validate_auth', auth_token: hash }); }
+  try { res = await auth.validate({ auth_token: hash }); }
   catch (_) { res = { ok: false }; }
   if (!res || !res.ok) { $('#loginMsg').textContent = 'Senha incorreta.'; return; }
   localStorage.setItem('bs_pw_hash', hash);
@@ -178,7 +178,7 @@ $('#selAll').addEventListener('change', (e) => {
   const hash = localStorage.getItem('bs_pw_hash');
   if (!hash) return;
   let res;
-  try { res = await window.callWorker({ action: 'validate_auth', auth_token: hash }); } catch (_) { res = { ok: false }; }
+  try { res = await auth.validate({ auth_token: hash }); } catch (_) { res = { ok: false }; }
   if (res && res.ok) {
     $('#loginPanel').classList.add('hide');
     $('#certPanel').classList.remove('hide');

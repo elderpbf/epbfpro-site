@@ -76,6 +76,16 @@ export const appConfig = {
   get: () => call('get_client_config')
 };
 
+// Admin auth (Codex own-login + settings + the desktop cert-signer). The action strings
+// are the frozen codex-api auth contract; feature modules reach them through this seam
+// instead of calling window.callWorker directly (§3b, facade-only).
+export const auth = {
+  otpRequest:     (p) => call('admin_otp_request', p),   // { email }
+  otpVerify:      (p) => call('admin_otp_verify', p),     // { email, code }
+  changePassword: (p) => call('change_password', p),      // { auth_token, new_hash }
+  validate:       (p) => call('validate_auth', p),        // { auth_token } -> { ok }
+};
+
 // Questions (host/admin plane): live sessions, bank, student Q&A, stats. The
 // core actions carry NO prefix (the original pre-prefix ClassPulse actions);
 // cp_* is the public student/trilha path (see `cp` above), out of the host
