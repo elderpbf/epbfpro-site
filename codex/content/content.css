@@ -939,6 +939,9 @@
   margin-bottom: 0.85rem; background: var(--surface); }
 .cdx-t1b-wb { display: grid; grid-template-columns: 248px 1fr; gap: 0.75rem; align-items: start; }
 @media (max-width: 900px) { .cdx-t1b-wb { grid-template-columns: 1fr; } }
+/* bank-only page (Content > Tarefas): the block stands alone, so drop the dashed "add" frame */
+.cdx-tarefas--bank .cdx-t1b-addwrap { border: none; padding: 0; margin: 0; background: transparent; }
+.cdx-tarefas--bank .cdx-t1b-wb { min-height: 62vh; }
 
 .cdx-t1b-wbank { border: 1px solid var(--border); border-radius: 11px; overflow: hidden; background: var(--surface); }
 .cdx-t1b-wbh { display: flex; align-items: center; gap: 0.4rem; padding: 0.5rem 0.6rem;

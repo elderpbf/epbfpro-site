@@ -13,15 +13,20 @@ import * as apostila from './apostila.js';
 import * as labs from './labs.js';
 import * as drive from './drive.js';
 import * as slides from './slides.js';
+import * as tarefas from './tarefas.js';
 
 // Content is the authoring/library surface. The two turma-scoped management
 // sub-tabs (Tarefas answers + Liberações) moved into the cohort dossier, where the
 // turma is already in context; their modules (content/tarefas.js, content/releases.js)
 // are mounted turma-bound from cohorts.js. Keeping the modules where they are avoids
 // duplicating the composer, the dossier just mounts them with { turma }.
+// The Tarefas sub-tab here is the BANK ONLY (create/edit/delete tarefas, with the
+// release guard), mounted via mountCtx { bankOnly: true }. Releasing a tarefa to an
+// aula happens inside the aula dossiê, not here, same tarefas.js module, no fork.
 export const SUBTABS = [
   { key: 'items',    labelKey: 'content.sub_items',    module: items },
   { key: 'apostila', labelKey: 'content.sub_apostila', module: apostila },
+  { key: 'tarefas',  labelKey: 'content.sub_tarefas',  module: tarefas, mountCtx: { bankOnly: true } },
   { key: 'drive',    labelKey: 'content.sub_drive',    module: drive },
   { key: 'slides',   labelKey: 'content.sub_slides',   module: slides },
   { key: 'labs',     labelKey: 'content.sub_labs',     module: labs },
@@ -57,7 +62,7 @@ export function mount(viewEl, ctx) {
   const entry = _native().find((s) => s.key === _resolveSub(ctx.sub));
   viewEl.innerHTML = '<div class="cdx-subview" id="cdx-subview"></div>';
   _activeModule = entry ? entry.module : null;
-  if (_activeModule && _activeModule.mount) _activeModule.mount(viewEl.querySelector('#cdx-subview'), {});
+  if (_activeModule && _activeModule.mount) _activeModule.mount(viewEl.querySelector('#cdx-subview'), (entry && entry.mountCtx) || {});
 }
 
 export function unmount() {
