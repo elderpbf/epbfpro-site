@@ -29,8 +29,9 @@ const REVEAL_ZONE = 6;     // px from the left edge that triggers the reveal
 const HIDE_DELAY = 1500;   // ms after the cursor leaves the rail before it hides
 
 // Server accuracy is a 0..1 ratio (or null when unscored). Render as a rounded
-// integer percent, or null so callers can show a non-numeric state.
-export function pct(accuracy) {
+// integer percent, or null so callers can show a non-numeric state. Private: the
+// canonical exported copy lives in stats.js (nothing imports this one). [questions-07]
+function pct(accuracy) {
   if (accuracy === null || accuracy === undefined) return null;
   return Math.round(accuracy * 100);
 }
