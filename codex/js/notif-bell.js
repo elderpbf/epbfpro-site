@@ -102,9 +102,10 @@ export function createBell({ fetchNotifications, markSeen, onNavigate, t, btnCla
     if (!panel.hidden) paint(_items);
   }
 
-  function openPanel() { panel.hidden = false; paint(_items); document.addEventListener('click', onOutside, true); }
-  function closePanel() { panel.hidden = true; document.removeEventListener('click', onOutside, true); }
+  function openPanel() { panel.hidden = false; paint(_items); document.addEventListener('click', onOutside, true); document.addEventListener('keydown', onEsc); }
+  function closePanel() { panel.hidden = true; document.removeEventListener('click', onOutside, true); document.removeEventListener('keydown', onEsc); }
   function onOutside(e) { if (!wrap.contains(e.target)) closePanel(); }
+  function onEsc(e) { if (e.key === 'Escape') closePanel(); }
 
   btn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); if (panel.hidden) openPanel(); else closePanel(); });
   markBtn.addEventListener('click', () => {

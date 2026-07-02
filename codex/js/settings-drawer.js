@@ -37,7 +37,7 @@ function _buildSection(id, title, bodyHtml, expanded) {
 }
 
 // ── Drawer shell ─────────────────────────────────────────────────────────────
-var _overlay, _drawer;
+var _overlay, _drawer, _escHandler;
 var _onOpenCallbacks = [];
 
 function _injectDrawer(sectionsHtml, footerHtml) {
@@ -79,6 +79,8 @@ export function open() {
   _onOpenCallbacks.forEach(function (fn) { fn(); });
   _overlay.hidden = false;
   _drawer.hidden = false;
+  _escHandler = function (e) { if (e.key === 'Escape') close(); };
+  document.addEventListener('keydown', _escHandler);
   requestAnimationFrame(function () {
     _overlay.classList.add('open');
     _drawer.classList.add('open');
@@ -86,6 +88,7 @@ export function open() {
 }
 
 export function close() {
+  if (_escHandler) { document.removeEventListener('keydown', _escHandler); _escHandler = null; }
   _overlay.classList.remove('open');
   _drawer.classList.remove('open');
   setTimeout(function () {
