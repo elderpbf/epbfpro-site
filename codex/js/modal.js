@@ -1,11 +1,11 @@
 // js/modal.js
 // Shared modal primitive for Codex modules.
 //
-//   openModal(html, opts)  — append a .cdx-modal-backdrop with the given inner html.
+//   openModal(html, opts): append a .cdx-modal-backdrop with the given inner html.
 //                            opts.disableBackdropClose (bool) disables click-outside.
 //                            Registers and self-removes its own Escape keydown listener.
 //                            Returns the backdrop element.
-//   closeModal(bd)         — removes the backdrop (and its Escape listener).
+//   closeModal(bd): removes the backdrop (and its Escape listener).
 //
 // The Escape handler is stored on the backdrop element itself (_escHandler) so
 // closeModal can always remove it without the caller tracking any cleanup array.
