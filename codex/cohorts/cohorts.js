@@ -66,6 +66,7 @@ let _cleanup = []; // teardown functions pushed by mount
 // Aulas hub (Layout A): the released items (ct_get_turma_view) feed the per-aula
 // content counts; the rest is selection state for the list | detail split.
 let _turmaViewItems = []; // released items, for the aula count chips/badges
+let _turmaViewApps = [];  // granted apps (with aula_number), for the aula app chip
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
 let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
 let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false }; // which detail embed is live
@@ -1600,6 +1601,7 @@ function _loadTurmaAulas(turma) {
   Promise.all([aulasCall, viewCall]).then(([ad, vd]) => {
     _turmaAulas = (ad.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
     _turmaViewItems = (vd && vd.items) || [];
+    _turmaViewApps = (vd && vd.apps) || [];
     _renderAulasHub(turma);
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
@@ -1629,9 +1631,15 @@ function _countChip(glyph, n) {
   return '<span class="cdx-aula-cc">' + glyphSvg(glyph, { size: 13 }) + ' ' + n + '</span>';
 }
 
+function _aulaAppCount(aulaNumber) {
+  return (_turmaViewApps || []).filter((a) => Number(a.aula_number) === Number(aulaNumber)).length;
+}
+
 function _aulaCountChipsHtml(aulaNumber) {
   const c = _aulaCounts(aulaNumber);
+  const apps = _aulaAppCount(aulaNumber);
   let html = '';
+  if (apps) html += _countChip('grid', apps);
   if (c.apostila) html += _countChip('book', c.apostila);
   if (c.tarefa) html += _countChip('clipboard', c.tarefa);
   if (c.outros) html += _countChip('layers', c.outros);
@@ -1792,7 +1800,7 @@ function _renderAulaPane(turma, aula) {
     paneEl.innerHTML = '<div id="cdx-aula-rel-content"></div><div id="cdx-aula-rel-apps" class="cdx-aula-rel-apps-slot"></div>';
     releasesAdmin.mount(paneEl.querySelector('#cdx-aula-rel-content'), { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: aula.id, onChange });
     _aulaEmbedMounted.liberacoes = true;
-    appRelease.mount(paneEl.querySelector('#cdx-aula-rel-apps'), { turmaId: turma.id, aulaNumber: aula.aula_number });
+    appRelease.mount(paneEl.querySelector('#cdx-aula-rel-apps'), { turmaId: turma.id, aulaNumber: aula.aula_number, onChange });
     _aulaEmbedMounted.apps = true;
     return;
   }
@@ -1813,6 +1821,7 @@ function _refreshAulaCountsAfterEmbed(turma) {
   relApi.turmaView({ client_slug: turma.client_slug, turma_slug: turma.slug, token: turma.token })
     .then((vd) => {
       _turmaViewItems = (vd && vd.items) || [];
+      _turmaViewApps = (vd && vd.apps) || [];
       _renderAulaHubRows();
       _repaintAulaBadges();
       _repaintOutrosCount();

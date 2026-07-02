@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDescription } from '../content/apps.js';
-import { isWindows } from '../trilha/js/app-card.js';
+import { isWindows, parseDesc } from '../trilha/js/app-card.js';
 
 test('parseDescription reads the tagline/access_note/benefits shape', () => {
   const d = parseDescription('{"tagline":"T","access_note":"A","benefits":[{"glyph":"spark","title":"x","desc":"y"}]}');
@@ -34,6 +34,20 @@ test('parseDescription accepts an already-parsed object', () => {
   const d = parseDescription({ tagline: 'obj', benefits: [{ glyph: 'g', title: 't', desc: 'd' }] });
   assert.equal(d.tagline, 'obj');
   assert.equal(d.benefits[0].title, 't');
+});
+
+test('parseDescription (admin) carries the screenshots, blank when absent', () => {
+  const withShots = parseDescription('{"screenshots":{"light":"a.png","dark":"b.png"}}');
+  assert.deepEqual(withShots.screenshots, { light: 'a.png', dark: 'b.png' });
+  const without = parseDescription('{"tagline":"x"}');
+  assert.deepEqual(without.screenshots, { light: '', dark: '' }); // editor fields stay bindable
+});
+
+test('parseDesc (trilha) carries screenshots when present, null when absent', () => {
+  const withShots = parseDesc('{"screenshots":{"light":"a.png","dark":"b.png"}}');
+  assert.deepEqual(withShots.screenshots, { light: 'a.png', dark: 'b.png' });
+  assert.equal(parseDesc('{"tagline":"x"}').screenshots, null); // card omits the figure
+  assert.equal(parseDesc('bad json').screenshots, null);
 });
 
 test('isWindows detects Windows desktop from the user agent', () => {

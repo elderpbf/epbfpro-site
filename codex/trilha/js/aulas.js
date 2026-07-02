@@ -8,7 +8,7 @@ import { state } from './state.js';
 import { esc, aulaStatus, aulaDateText, parseTopics } from './utils.js';
 import { countFreshIn } from './freshness.js';
 import { buildSub } from './sub.js';
-import { buildAppCard } from './app-card.js';
+import { buildAppSub } from './app-card.js';
 import { registerRenderer } from './page.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 import { t } from '../i18n.js';
@@ -190,10 +190,11 @@ function buildAulaBody(aula) {
 
   const body = document.createElement('div');
   body.className = 'cdx-tr-body';
+  // Apps sit at the TOP of the lesson, before tarefas, collapsed (Élder).
+  if (appsForAula.length) body.appendChild(buildAppSection(appsForAula));
   if (tarefaItems.length) body.appendChild(buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true }));
   if (apostilaItems.length) body.appendChild(buildSection('Conteúdo da aula', apostilaItems, { isApostila: true }));
   if (outrosItems.length) body.appendChild(buildOutrosSection(outrosItems));
-  if (appsForAula.length) body.appendChild(buildAppSection(appsForAula));
   if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length && !appsForAula.length) {
     body.innerHTML = '<div class="cdx-tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
   }
@@ -211,15 +212,15 @@ function buildSection(label, items, opts = {}) {
   return section;
 }
 
-// Apps released to a lesson: a section whose body is one full app card per app (same
-// builder as the Aplicativos tab). Section label via t() (the app card owns the rest).
+// Apps released to a lesson: a section of COLLAPSED sub-cards (logo + name + a Store button),
+// each expanding to the full app card. Same sub-card style as the tarefa/conteúdo rows.
 function buildAppSection(apps) {
   const section = document.createElement('div');
   section.className = 'cdx-tr-section cdx-tr-section--apps';
   section.innerHTML = '<div class="cdx-tr-section-label">' + esc(t('apps.aula_section')) + '</div>';
   const list = document.createElement('div');
-  list.className = 'cdx-tr-app-list';
-  apps.forEach((app) => list.appendChild(buildAppCard(app)));
+  list.className = 'cdx-tr-sub-list';
+  apps.forEach((app) => list.appendChild(buildAppSub(app)));
   section.appendChild(list);
   return section;
 }

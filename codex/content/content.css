@@ -1026,32 +1026,38 @@
 
 /* ── Content > Aplicativos sub-tab (catalog manager) ─────────────────────────── */
 .cdx-apps-admin { display: flex; flex-direction: column; height: 100%; }
-.cdx-app-icon-img { width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
+/* The detail pane is a flex column: the form scrolls, the actions bar pins to the bottom. */
+.cdx-apps-admin #cdx-apps-detail { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
+.cdx-app-icon-img { width: 20px; height: 20px; object-fit: cover; border-radius: 5px; }
 .cdx-app-icon-ph { display: inline-flex; color: var(--text-secondary); }
-.cdx-app-off-badge { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+.cdx-app-off-badge { font-size: 0.66rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
   color: var(--text-secondary); background: var(--cdx-chip-bg); border: 1px solid var(--border);
   border-radius: 6px; padding: 0.05rem 0.35rem; margin-left: 0.4rem; vertical-align: middle; }
-.cdx-app-form { display: flex; flex-direction: column; gap: 0.9rem; padding: 0.2rem 0.1rem; }
+.cdx-app-form { flex: 1; overflow-y: auto; display: flex; flex-direction: column; gap: 0.85rem; padding: 1.1rem 1.25rem; }
 .cdx-app-form-head { display: flex; align-items: center; gap: 0.6rem; }
-.cdx-app-form-head .cdx-app-icon-img, .cdx-app-form-head .cdx-app-icon-ph { width: 28px; height: 28px; }
-.cdx-app-form-title { font-size: 1.05rem; font-weight: 700; margin: 0; flex: 1; color: var(--text-primary); }
-.cdx-app-enabled { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
+.cdx-app-form-head .cdx-app-icon-img, .cdx-app-form-head .cdx-app-icon-ph { width: 30px; height: 30px; }
+.cdx-app-form-title { font-size: 1rem; font-weight: 700; margin: 0; flex: 1; color: var(--text-primary); }
+.cdx-app-enabled { display: inline-flex; align-items: center; gap: 0.4rem; font-size: 0.82rem;
+  color: var(--text-secondary); cursor: pointer; user-select: none; }
+.cdx-app-enabled input { width: 16px; height: 16px; margin: 0; accent-color: var(--primary); cursor: pointer; }
 .cdx-app-field { display: flex; flex-direction: column; gap: 0.3rem; }
-.cdx-app-field .cdx-field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
-.cdx-app-field input[type="text"] { width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--border);
-  border-radius: 8px; background: var(--background); color: var(--text-primary); font: inherit; }
+.cdx-app-field .cdx-field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-primary); }
+.cdx-app-field input[type="text"] { width: 100%; box-sizing: border-box; padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--background); color: var(--text-primary);
+  font: inherit; font-size: 0.85rem; }
 .cdx-app-field input[type="text"]:focus { outline: none; border-color: var(--primary); }
-.cdx-app-field .cdx-field-hint { font-size: 0.75rem; color: var(--text-secondary); }
-.cdx-app-sep { height: 1px; background: var(--border); margin: 0.3rem 0; }
+.cdx-app-field .cdx-field-hint { font-size: 0.74rem; color: var(--text-secondary); }
+.cdx-app-sep { height: 1px; background: var(--border); margin: 0.35rem 0 0.1rem; }
 .cdx-app-copy-head { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
 .cdx-app-benefits { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.5rem; }
-.cdx-app-benefit { display: grid; grid-template-columns: 24px 6rem 1fr 1.4fr auto; gap: 0.4rem; align-items: center; }
+.cdx-app-benefit { display: grid; grid-template-columns: 26px 6rem 1fr 1.4fr auto; gap: 0.4rem; align-items: center; }
 .cdx-app-benefit-glyph { display: inline-flex; justify-content: center; color: var(--primary); }
-.cdx-app-benefit input[type="text"] { padding: 0.35rem 0.5rem; border: 1px solid var(--border);
+.cdx-app-benefit input[type="text"] { box-sizing: border-box; padding: 0.4rem 0.5rem; border: 1px solid var(--border);
   border-radius: 7px; background: var(--background); color: var(--text-primary); font: inherit; font-size: 0.82rem; }
 .cdx-app-benefit input[type="text"]:focus { outline: none; border-color: var(--primary); }
+.cdx-app-b-del { line-height: 1; }
 .cdx-app-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem;
-  padding: 0.7rem 0.1rem 0.2rem; margin-top: auto; border-top: 1px solid var(--border); }
+  padding: 0.7rem 1.25rem; border-top: 1px solid var(--border); background: var(--surface); }
 .cdx-app-msg { font-size: 0.8rem; color: var(--text-secondary); margin-right: auto; }
 @media (max-width: 640px) {
   .cdx-app-benefit { grid-template-columns: 1fr; }

@@ -1,10 +1,12 @@
 // codex/trilha/js/app-card.js
-// Shared renderer for an app's card on the student trilha, used in BOTH places the app
-// surfaces: inside the lesson body (aulas.js) and the dedicated Aplicativos tab (apps.js).
-// One builder so the two never drift. The card mirrors the app's own login screen (the copy
-// is the single source in ct_apps.description): name + tagline + benefits + access note, plus
-// the download. The app is a Windows PC program (Microsoft Store): on Windows we show the
-// Store button; on any other OS we hide it and say it is Windows-only for now.
+// Shared renderers for an app on the student trilha, used in BOTH places it surfaces:
+//   - buildAppSub(): a COLLAPSED sub-card (like a tarefa/conteúdo row) shown at the TOP of
+//     the lesson body; its icon is the app logo and it expands to the full card.
+//   - buildAppCard(): the full card (Aplicativos tab, and inside an expanded sub-card).
+// One card builder so the two never drift. The card mirrors the app's own login screen (the
+// copy is the single source in ct_apps.description): logo + tagline + benefits + a theme-aware
+// screenshot + access note + download. The app is a Windows PC program (Microsoft Store): on
+// Windows we show Store buttons; on any other OS we hide them and say it is Windows-only.
 import { esc } from './utils.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
@@ -24,17 +26,18 @@ export function isWindows(win) {
 
 // The card copy lives in ct_apps.description as JSON. Parse defensively; a bad/empty value
 // yields a blank card (name + download still render), never a throw.
-function parseDesc(raw) {
-  if (!raw) return { tagline: '', access_note: '', benefits: [] };
+export function parseDesc(raw) {
+  if (!raw) return { tagline: '', access_note: '', benefits: [], screenshots: null };
   try {
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return {
       tagline: d.tagline || '',
       access_note: d.access_note || '',
       benefits: Array.isArray(d.benefits) ? d.benefits : [],
+      screenshots: (d.screenshots && (d.screenshots.light || d.screenshots.dark)) ? d.screenshots : null,
     };
   } catch (_) {
-    return { tagline: '', access_note: '', benefits: [] };
+    return { tagline: '', access_note: '', benefits: [], screenshots: null };
   }
 }
 
@@ -46,18 +49,41 @@ function glyphHtml(key, size) {
   return '';
 }
 
-function iconHtml(app) {
-  const icon = app && app.icon;
-  if (icon) {
-    const src = /^https?:\/\//.test(icon) ? icon : assetUrl('/r2/' + icon);
-    return '<img class="cdx-tr-app-icon" src="' + esc(src) + '" alt="">';
-  }
-  return '<span class="cdx-tr-app-icon cdx-tr-app-icon--ph">' + glyphHtml('grid', 24) + '</span>';
+// Resolve an R2 path (or absolute URL) to a servable src.
+function srcOf(path) {
+  if (!path) return '';
+  return /^https?:\/\//.test(path) ? path : assetUrl('/r2/' + path);
 }
 
-// Build one app card element. `win` is injectable for tests (platform detection).
+function iconHtml(app, cls) {
+  const c = cls || 'cdx-tr-app-icon';
+  if (app && app.icon) return '<img class="' + c + '" src="' + esc(srcOf(app.icon)) + '" alt="">';
+  return '<span class="' + c + ' ' + c + '--ph">' + glyphHtml('grid', 24) + '</span>';
+}
+
+// A Store download link. `cls` distinguishes the top (above the print) and foot buttons.
+function downloadHtml(app, onWindows, cls) {
+  if (!onWindows || !app.store_url) return '';
+  return '<a class="cdx-tr-app-download ' + cls + '" href="' + esc(app.store_url) + '" target="_blank" rel="noopener">' +
+    glyphHtml('download', 18) + '<span>' + esc(t('apps.download')) + '</span></a>';
+}
+
+// Light + dark screenshots; CSS shows the one matching the active [data-theme] so it swaps
+// live on theme toggle. Missing one variant falls back to the other.
+function shotsHtml(screenshots) {
+  if (!screenshots) return '';
+  const light = srcOf(screenshots.light || screenshots.dark);
+  const dark = srcOf(screenshots.dark || screenshots.light);
+  return '<div class="cdx-tr-app-shots">' +
+    '<img class="cdx-tr-app-shot cdx-tr-app-shot--light" src="' + esc(light) + '" alt="" loading="lazy">' +
+    '<img class="cdx-tr-app-shot cdx-tr-app-shot--dark" src="' + esc(dark) + '" alt="" loading="lazy">' +
+  '</div>';
+}
+
+// Build the full app card. `win` is injectable for tests (platform detection).
 export function buildAppCard(app, opts = {}) {
   const d = parseDesc(app.description);
+  const onWindows = isWindows(opts.window);
   const card = document.createElement('div');
   card.className = 'cdx-tr-app-card';
   card.dataset.app = app.app_key;
@@ -72,12 +98,20 @@ export function buildAppCard(app, opts = {}) {
     '</li>'
   ).join('');
 
-  const onWindows = isWindows(opts.window);
-  const downloadHtml = (onWindows && app.store_url)
-    ? '<a class="cdx-tr-app-download" href="' + esc(app.store_url) + '" target="_blank" rel="noopener">' +
-        glyphHtml('download', 18) + '<span>' + esc(t('apps.download')) + '</span>' +
-      '</a>'
+  const shots = shotsHtml(d.screenshots);
+  const topDl = downloadHtml(app, onWindows, 'cdx-tr-app-download--top');
+  const footDl = onWindows
+    ? downloadHtml(app, onWindows, 'cdx-tr-app-download--foot')
     : '<div class="cdx-tr-app-winonly">' + esc(t('apps.windows_only')) + '</div>';
+
+  // Two columns on wide screens: benefits left, the print (with a download above it) right.
+  // On mobile they stack with the print FIRST (col-right order flips in CSS).
+  const rightCol = shots
+    ? '<div class="cdx-tr-app-col-right">' +
+        (topDl ? '<div class="cdx-tr-app-topdl">' + topDl + '</div>' : '') +
+        shots +
+      '</div>'
+    : '';
 
   card.innerHTML =
     '<div class="cdx-tr-app-head">' +
@@ -87,9 +121,68 @@ export function buildAppCard(app, opts = {}) {
         (d.tagline ? '<div class="cdx-tr-app-tagline">' + esc(d.tagline) + '</div>' : '') +
       '</div>' +
     '</div>' +
-    (benefitsHtml ? '<ul class="cdx-tr-app-benefits">' + benefitsHtml + '</ul>' : '') +
-    (d.access_note ? '<div class="cdx-tr-app-access">' + esc(d.access_note) + '</div>' : '') +
-    '<div class="cdx-tr-app-actions">' + downloadHtml + '</div>';
+    '<div class="cdx-tr-app-cols' + (shots ? '' : ' cdx-tr-app-cols--nofig') + '">' +
+      '<div class="cdx-tr-app-col-left">' +
+        (benefitsHtml ? '<ul class="cdx-tr-app-benefits">' + benefitsHtml + '</ul>' : '') +
+      '</div>' +
+      rightCol +
+    '</div>' +
+    '<div class="cdx-tr-app-foot">' +
+      (d.access_note ? '<div class="cdx-tr-app-access">' + esc(d.access_note) + '</div>' : '') +
+      footDl +
+    '</div>';
 
   return card;
+}
+
+// A collapsed sub-card for the lesson body: same shape as the tarefa/conteúdo rows, but the
+// app logo replaces the type glyph and a Store button is the row action (Windows). Clicking
+// expands the full card inline below it. Single-open within its own (app-only) list.
+export function buildAppSub(app, opts = {}) {
+  const sub = document.createElement('div');
+  sub.className = 'cdx-tr-sub cdx-tr-sub--app';
+  sub.dataset.app = app.app_key;
+  sub.setAttribute('role', 'button');
+  sub.setAttribute('tabindex', '0');
+
+  const onWindows = isWindows(opts.window);
+  const rowDl = (onWindows && app.store_url)
+    ? '<a class="cdx-tr-item-action cdx-tr-app-row-dl" href="' + esc(app.store_url) + '" target="_blank" rel="noopener">' +
+        glyphHtml('download', 16) + '<span>' + esc(t('apps.download')) + '</span></a>'
+    : '';
+
+  sub.innerHTML =
+    '<div class="cdx-tr-sub-zone cdx-tr-sub-zone--app">' + iconHtml(app, 'cdx-tr-app-sub-logo') + '</div>' +
+    '<div class="cdx-tr-sub-meta">' +
+      '<span class="cdx-tr-sub-type">' + esc(t('apps.aula_section')) + '</span>' +
+      '<span class="cdx-tr-sub-title">' + esc(app.name || app.app_key) + '</span>' +
+    '</div>' +
+    '<div class="cdx-tr-sub-actions">' + rowDl + '</div>';
+
+  sub.addEventListener('click', (e) => {
+    if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
+    toggleAppSub(sub, app, opts);
+  });
+  sub.addEventListener('keydown', (e) => {
+    if (e.key !== 'Enter' && e.key !== ' ') return;
+    if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
+    e.preventDefault();
+    toggleAppSub(sub, app, opts);
+  });
+  return sub;
+}
+
+function toggleAppSub(sub, app, opts) {
+  const already = sub.classList.contains('is-expanded');
+  const list = sub.parentNode;
+  if (list) {
+    list.querySelectorAll('.cdx-tr-sub-expanded').forEach((el) => el.remove());
+    list.querySelectorAll('.cdx-tr-sub.is-expanded').forEach((el) => el.classList.remove('is-expanded'));
+  }
+  if (already) return;
+  sub.classList.add('is-expanded');
+  const exp = document.createElement('div');
+  exp.className = 'cdx-tr-sub-expanded cdx-tr-sub-expanded--app';
+  exp.appendChild(buildAppCard(app, opts));
+  if (sub.parentNode) sub.parentNode.insertBefore(exp, sub.nextSibling);
 }

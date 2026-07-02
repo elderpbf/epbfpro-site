@@ -16,6 +16,7 @@ import * as toast from '../js/toast.js';
 let _host = null;
 let _turmaId = null;
 let _aulaNumber = null;
+let _notify = null;   // ping the host (refresh the aula chips) after a toggle
 let _apps = [];       // ct_list_apps catalog (only enabled apps are offered)
 let _grants = {};     // app_key -> { enabled, aula_number }
 
@@ -71,7 +72,8 @@ function _onChange(e) {
       if (res && res.error) throw new Error(res.error);
       _grants[appKey] = { enabled, aula_number: _aulaNumber };
       toast.ok(t('apps.saved'));
-      _render(); // repaint markers (e.g. a moved binding)
+      _render(); // repaint markers from _grants (fresh checkboxes, disabled state reset)
+      if (_notify) _notify(); // refresh the aula-row app chip
     })
     .catch((err) => {
       cb.checked = !cb.checked;
@@ -84,6 +86,7 @@ export function mount(host, ctx = {}) {
   _host = host;
   _turmaId = ctx.turmaId != null ? ctx.turmaId : null;
   _aulaNumber = ctx.aulaNumber != null ? ctx.aulaNumber : null;
+  _notify = typeof ctx.onChange === 'function' ? ctx.onChange : null;
   _apps = [];
   _grants = {};
   if (!_host) return;
@@ -107,6 +110,7 @@ export function unmount() {
   _host = null;
   _turmaId = null;
   _aulaNumber = null;
+  _notify = null;
   _apps = [];
   _grants = {};
 }

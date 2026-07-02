@@ -34,16 +34,19 @@ function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 // value yields a blank form, never a throw). Shape: { tagline, access_note, benefits:[
 // { glyph, title, desc } ] }.
 export function parseDescription(raw) {
-  if (!raw) return { tagline: '', access_note: '', benefits: [] };
+  const blank = { tagline: '', access_note: '', benefits: [], screenshots: { light: '', dark: '' } };
+  if (!raw) return blank;
   try {
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
+    const s = d.screenshots || {};
     return {
       tagline: d.tagline || '',
       access_note: d.access_note || '',
       benefits: Array.isArray(d.benefits) ? d.benefits.map((b) => ({ glyph: b.glyph || '', title: b.title || '', desc: b.desc || '' })) : [],
+      screenshots: { light: s.light || '', dark: s.dark || '' },
     };
   } catch (_) {
-    return { tagline: '', access_note: '', benefits: [] };
+    return blank;
   }
 }
 
@@ -128,6 +131,8 @@ function _renderDetail() {
       _fieldRow(t('apps.f_tagline'), '<input type="text" id="cdx-app-tagline" value="' + _esc(d.tagline) + '">') +
       _fieldRow(t('apps.f_access_note'), '<input type="text" id="cdx-app-access" value="' + _esc(d.access_note) + '">') +
       _fieldRow(t('apps.f_benefits'), _benefitsHtml(), t('apps.f_benefits_hint')) +
+      _fieldRow(t('apps.f_shot_light'), '<input type="text" id="cdx-app-shot-light" value="' + _esc(d.screenshots.light) + '" spellcheck="false" placeholder="apps/pdf/shot-light.png">', t('apps.f_shot_hint')) +
+      _fieldRow(t('apps.f_shot_dark'), '<input type="text" id="cdx-app-shot-dark" value="' + _esc(d.screenshots.dark) + '" spellcheck="false" placeholder="apps/pdf/shot-dark.png">') +
     '</div>' +
     '<div class="cdx-app-form-actions">' +
       '<span class="cdx-app-msg" aria-live="polite"></span>' +
@@ -186,10 +191,15 @@ function _save() {
   const enabled = !!(_q('cdx-app-enabled') || {}).checked;
   const tagline = (_q('cdx-app-tagline') || {}).value || '';
   const access_note = (_q('cdx-app-access') || {}).value || '';
+  const shotLight = (_q('cdx-app-shot-light') || {}).value || '';
+  const shotDark = (_q('cdx-app-shot-dark') || {}).value || '';
   const benefits = _benefits
     .filter((b) => b.glyph || b.title || b.desc)
     .map((b) => ({ glyph: b.glyph.trim(), title: b.title.trim(), desc: b.desc.trim() }));
-  const description = JSON.stringify({ tagline: tagline.trim(), access_note: access_note.trim(), benefits });
+  const description = JSON.stringify({
+    tagline: tagline.trim(), access_note: access_note.trim(), benefits,
+    screenshots: { light: shotLight.trim(), dark: shotDark.trim() },
+  });
   if (btn) btn.disabled = true;
   if (msg) msg.textContent = '';
   api.updateApp({ app_key: app.app_key, name: name.trim(), store_url: store_url.trim(), icon: icon.trim(), enabled: enabled ? 1 : 0, description })
