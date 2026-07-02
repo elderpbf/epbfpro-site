@@ -120,6 +120,7 @@ export function initPresenter(app) {
 
   channel.onmessage = (e) => {
     const m = e.data;
+    if (m.type === "saved") { if (app._notify) app._notify(t("slides.pv_notes_saved")); return; } // editor confirmed the persist
     if (m.type !== "state") return;
     const deck = app.deck();
     if (m.deck) deck.slides = JSON.parse(m.deck);

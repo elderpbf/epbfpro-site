@@ -219,8 +219,11 @@
     const host = document.createElement('div');
     host.className = 'cdx-deck-editor';
     document.body.appendChild(host);
-    const slides = await import('./content/slides/js/app.js');
-    slides.mount(host, {});
+    const [slides, toast] = await Promise.all([
+      import('./content/slides/js/app.js'),
+      import('./js/toast.js'),
+    ]);
+    slides.mount(host, { notify: (msg) => toast.ok(msg) });
   }
   // Codex own-login gate (item 11.2): if not authed, show the e-mail+OTP login and STOP.
   // No tabs mount until an admin session is in place. This replaces the legacy

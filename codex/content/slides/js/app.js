@@ -128,6 +128,9 @@ export function mount(root, ctx = {}) {
   // and disabled until a Picker API key is configured; the gallery's Drive button feature-
   // detects it. See adapters/drivePicker.js.
   const drivePicker = ctx.drivePicker || null;
+  // ctx.notify: injected toast function (Codex passes toast.ok). Kept out of the vendored
+  // core as an adapter so the core stays portable; the presenter uses it for "notes saved".
+  const notify = typeof ctx.notify === "function" ? ctx.notify : null;
 
   const app = {
     isPresenter,
@@ -136,6 +139,7 @@ export function mount(root, ctx = {}) {
     _library: library,
     _imageStore: imageStore,
     _drivePicker: drivePicker,
+    _notify: notify, // injected toast (Codex boot passes toast.ok); presenter "notes saved"
     // When a saved layout is being edited in place, this holds { id, slideId, name }:
     // saving the slide whose id is slideId OVERWRITES template id (not a new save).
     _editingTpl: null,

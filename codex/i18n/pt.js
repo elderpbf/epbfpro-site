@@ -1445,6 +1445,7 @@ export default {
   'slides.pv_slides':         'Slides',
   'slides.pv_slide_n':        'Slide',
   'slides.pv_no_notes':       '(sem notas)',
+  'slides.pv_notes_saved':    'Notas salvas',
   'slides.pv_hint':           'Setas ← → navegam · clique num slide pra pular · B/W apagam a tela · R reinicia',
   'slides.ed_color':          'Cor',
   'slides.ed_color2':         'Cor 2',

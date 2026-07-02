@@ -1445,6 +1445,7 @@ export default {
   'slides.pv_slides':         'Slides',
   'slides.pv_slide_n':        'Slide',
   'slides.pv_no_notes':       '(no notes)',
+  'slides.pv_notes_saved':    'Notes saved',
   'slides.pv_hint':           'Arrows ← → navigate · click a slide to jump · B/W blank the screen · R restarts',
   'slides.ed_color':          'Color',
   'slides.ed_color2':         'Color 2',

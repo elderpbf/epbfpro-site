@@ -349,10 +349,16 @@ async function _openDeck(slug, fresh, initialDeck) {
     if (!store.getDeck()) store.setDeck(newDeck());
   }
 
-  // Debounced autosave on any later deck change (the R2 path).
+  // Debounced autosave on any later deck change (the R2 path). On a successful save we
+  // ping the presenter window over the deck channel so it can toast "saved" (notes edited
+  // in the presenter view round-trip here to be persisted; the ping confirms the REAL save).
   store.on('change', () => {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => { store.save().catch((e) => notice.internal(e)); }, 800);
+    _saveTimer = setTimeout(() => {
+      store.save()
+        .then(() => { const a = _editorHandles && _editorHandles.app; if (a && a.channel) a.channel.postMessage({ type: 'saved' }); })
+        .catch((e) => notice.internal(e));
+    }, 800);
   });
   // Persist the initial deck (fresh OR imported) so it survives a reload.
   if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
