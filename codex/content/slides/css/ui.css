@@ -283,12 +283,19 @@
 .cdx-deck-editor #pv .pvbtn { font: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: #dfeae8; background: #16302b; border: 1px solid #24463f; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
 .cdx-deck-editor #pv .pvbtn:hover { background: #1d3d36; }
 .cdx-deck-editor #pv .pvbtn kbd { font: inherit; font-size: 11px; background: #0a1211; border: 1px solid #24463f; border-radius: 4px; padding: 0 5px; color: #9fd6cc; }
+.cdx-deck-editor #pv .pvbtn.active { background: var(--teal-l); color: #0a1211; border-color: var(--teal-l); } /* the clicked control stays lit while its mode is on */
+.cdx-deck-editor #pv .pvbtn.active kbd { background: rgba(0, 0, 0, .15); color: #0a1211; border-color: rgba(0, 0, 0, .25); }
+/* true black/white swatches (the ⬜/⬛ emoji rendered lilac on some systems) */
+.cdx-deck-editor #pv .pvchip { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.cdx-deck-editor #pv .pvchip-black { background: #000; border: 1px solid #4a5a56; }
+.cdx-deck-editor #pv .pvchip-white { background: #fff; border: 1px solid #b8c4c0; }
 
 .cdx-deck-editor #pv .now { grid-area: now; }
 .cdx-deck-editor #pv .next { grid-area: next; }
 .cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 14px; overflow: hidden; }
 .cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 8px; }
-.cdx-deck-editor #pv .mini { width: 100%; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
+/* cap the big previews so the whole panel fits 100vh (no host scroll → no truncation) */
+.cdx-deck-editor #pv .mini { width: 100%; max-width: 340px; margin: 0 auto; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
 .cdx-deck-editor #pv .mini > .scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
 
 .cdx-deck-editor #pv .notes { grid-area: notes; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; }

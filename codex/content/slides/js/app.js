@@ -94,11 +94,10 @@ ${addSlidePanelHTML()}
         <button class="pvctl" data-t="cd" data-a="reset" title="${t("slides.pv_reset")}">↺</button></span>
     </div>
     <div class="pvright">
-      <span class="pvstatus" id="pvStatus"></span>
       <span class="pos" id="pvPos">1 / 1</span>
       <div class="pvbtns">
-        <button class="pvbtn" id="pvBlack">⬛ ${t("slides.pv_btn_black")} <kbd>B</kbd></button>
-        <button class="pvbtn" id="pvWhite">⬜ ${t("slides.pv_btn_white")} <kbd>W</kbd></button>
+        <button class="pvbtn" id="pvBlack"><span class="pvchip pvchip-black"></span> ${t("slides.pv_btn_black")} <kbd>B</kbd></button>
+        <button class="pvbtn" id="pvWhite"><span class="pvchip pvchip-white"></span> ${t("slides.pv_btn_white")} <kbd>W</kbd></button>
         <button class="pvbtn" id="pvRestart">↺ ${t("slides.pv_btn_restart")} <kbd>R</kbd></button>
       </div>
     </div>

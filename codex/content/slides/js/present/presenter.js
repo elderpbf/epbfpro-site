@@ -83,6 +83,7 @@ export function initPresenter(app) {
       el.addEventListener("click", () => channel.postMessage({ type: "goto", index: Number(el.dataset.i) }))
     );
     listN = deck.slides.length;
+    requestAnimationFrame(scaleListMinis); // scale once the new rows are laid out
   }
   function updateListHighlight() {
     const list = $("pvList");
@@ -97,6 +98,18 @@ export function initPresenter(app) {
     });
     const cur = list.querySelector(".pvli.current");
     if (cur) cur.scrollIntoView({ block: "nearest" });
+  }
+  // Re-apply each list mini's scale from its CURRENT laid-out width. Built-once minis get
+  // the wrong scale if the list wasn't laid out yet at build time; recomputing on every
+  // state update self-corrects (the mini box is fixed-width, so this is cheap + stable).
+  function scaleListMinis() {
+    const list = $("pvList");
+    if (!list) return;
+    const cw = app.deck().canvas.w;
+    list.querySelectorAll(".pvli-scale").forEach((scale) => {
+      const w = scale.parentElement.clientWidth;
+      if (w) scale.style.transform = `scale(${w / cw})`;
+    });
   }
 
   channel.onmessage = (e) => {
@@ -115,11 +128,13 @@ export function initPresenter(app) {
     renderMini("pvNow", app.index);
     renderMini("pvNext", app.index + 1);
     updateListHighlight();
-    // Reflect the audience state (Phase 4) so the presenter knows what's on screen.
-    const st = $("pvStatus");
-    if (st) st.textContent = m.blank === "black" ? t("slides.pv_blank_black")
-      : m.blank === "white" ? t("slides.pv_blank_white")
-      : m.atEnd ? t("slides.pv_end") : "";
+    scaleListMinis();
+    // Reflect the audience state by HIGHLIGHTING the active control (not a text badge):
+    // the button you clicked stays lit while its mode is on.
+    const setActive = (id, on) => { const b = $(id); if (b) b.classList.toggle("active", on); };
+    setActive("pvBlack", m.blank === "black");
+    setActive("pvWhite", m.blank === "white");
+    setActive("pvRestart", !!m.atEnd);
   };
 
   // The presenter window drives the audience: arrows/space navigate, and the Phase 4
