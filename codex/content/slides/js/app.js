@@ -106,7 +106,6 @@ ${addSlidePanelHTML()}
   <div class="next"><div class="label">${t("slides.ed_next_slide")}</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
   <div class="notes" id="pvNotes"></div>
   <div class="pvslides"><div class="label">${t("slides.pv_slides")}</div><div class="pvlist" id="pvList"></div></div>
-  <div class="hintbar">${t("slides.pv_hint")}</div>
 </div>`;
 
 export function mount(root, ctx = {}) {
