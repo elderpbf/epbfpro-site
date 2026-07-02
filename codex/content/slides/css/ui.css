@@ -261,16 +261,51 @@
 
 /* presenter view (rendered in a separate popup window; kept scoped for parity) */
 .cdx-deck-editor.presenter { background: #0a1211; color: #dfeae8; overflow: auto; }
-.cdx-deck-editor #pv { display: none; height: 100vh; grid-template-columns: 1.4fr 1fr; grid-template-rows: auto 1fr auto; gap: 18px; padding: 22px; }
-.cdx-deck-editor.presenter #chrome, .cdx-deck-editor.presenter #stagewrap, .cdx-deck-editor.presenter #nav { display: none; }
+.cdx-deck-editor #pv { display: none; height: 100vh; grid-template-columns: 1.3fr 1fr; grid-template-rows: auto auto minmax(0, 1fr) auto; grid-template-areas: "top top" "now next" "notes list" "hint hint"; gap: 14px 18px; padding: 18px 20px; }
+.cdx-deck-editor.presenter #chrome, .cdx-deck-editor.presenter #stagewrap, .cdx-deck-editor.presenter #nav, .cdx-deck-editor.presenter #notesbar { display: none; }
 .cdx-deck-editor.presenter #pv { display: grid; }
-.cdx-deck-editor #pv .bar { grid-column: 1/-1; display: flex; align-items: center; gap: 20px; }
-.cdx-deck-editor #pv .timer { font-size: 30px; font-weight: 700; color: var(--teal-l); font-variant-numeric: tabular-nums; }
-.cdx-deck-editor #pv .clock { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.cdx-deck-editor #pv .pos { margin-left: auto; font-size: 20px; color: #9fd6cc; }
-.cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px; overflow: hidden; }
-.cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 10px; }
+
+/* top bar: three clocks (left) + status/pos/buttons (right) */
+.cdx-deck-editor #pv .pvtop { grid-area: top; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.cdx-deck-editor #pv .pvtimes { display: flex; align-items: center; gap: 22px; }
+.cdx-deck-editor #pv .pvt { display: inline-flex; align-items: center; gap: 7px; }
+.cdx-deck-editor #pv .pvt .pvg { display: inline-flex; opacity: .8; }
+.cdx-deck-editor #pv .pvt b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvt-clock { color: #6fafa3; font-size: 15px; }        /* current time: small + muted */
+.cdx-deck-editor #pv .pvt-sw b { font-size: 28px; color: var(--teal-l); }
+.cdx-deck-editor #pv .pvt-cd b { font-size: 28px; color: #dfeae8; cursor: pointer; }
+.cdx-deck-editor #pv .pvt-cd.done b { color: #ff6b6b; }
+.cdx-deck-editor #pv .pvctl { font: inherit; font-size: 13px; line-height: 1; color: #dfeae8; background: #16302b; border: 1px solid #24463f; border-radius: 7px; padding: 4px 7px; cursor: pointer; }
+.cdx-deck-editor #pv .pvctl:hover { background: #1d3d36; }
+.cdx-deck-editor #pv .pvright { margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cdx-deck-editor #pv .pos { font-size: 18px; color: #9fd6cc; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvbtns { display: flex; gap: 8px; }
+.cdx-deck-editor #pv .pvbtn { font: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: #dfeae8; background: #16302b; border: 1px solid #24463f; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.cdx-deck-editor #pv .pvbtn:hover { background: #1d3d36; }
+.cdx-deck-editor #pv .pvbtn kbd { font: inherit; font-size: 11px; background: #0a1211; border: 1px solid #24463f; border-radius: 4px; padding: 0 5px; color: #9fd6cc; }
+
+.cdx-deck-editor #pv .now { grid-area: now; }
+.cdx-deck-editor #pv .next { grid-area: next; }
+.cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 14px; overflow: hidden; }
+.cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 8px; }
 .cdx-deck-editor #pv .mini { width: 100%; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
 .cdx-deck-editor #pv .mini > .scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
-.cdx-deck-editor #pv .notes { grid-column: 1/-1; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 20px 24px; font-size: 22px; line-height: 1.5; color: #d6ece8; min-height: 90px; }
-.cdx-deck-editor #pv .hintbar { grid-column: 1/-1; color: #5f9089; font-size: 13px; text-align: center; }
+
+.cdx-deck-editor #pv .notes { grid-area: notes; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; }
+
+/* slide list (right, below "próximo"): number + preview + title, click to jump; the
+   current/next entries are blurred with a label since their full preview is up top. */
+.cdx-deck-editor #pv .pvslides { grid-area: list; display: flex; flex-direction: column; min-height: 0; }
+.cdx-deck-editor #pv .pvlist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+.cdx-deck-editor #pv .pvli { display: grid; grid-template-columns: 24px 84px 1fr; align-items: center; gap: 10px; padding: 5px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; }
+.cdx-deck-editor #pv .pvli:hover { background: #10201d; }
+.cdx-deck-editor #pv .pvli.current { border-color: var(--teal-l); background: #12241f; }
+.cdx-deck-editor #pv .pvli-n { text-align: center; font-size: 13px; color: #6fafa3; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvli-mini { position: relative; width: 84px; aspect-ratio: 16/9; background: #fff; border-radius: 6px; overflow: hidden; }
+.cdx-deck-editor #pv .pvli-scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
+.cdx-deck-editor #pv .pvli-lbl { display: none; }
+.cdx-deck-editor #pv .pvli.current .pvli-scale, .cdx-deck-editor #pv .pvli.next .pvli-scale { filter: blur(3px); }
+.cdx-deck-editor #pv .pvli.current .pvli-lbl, .cdx-deck-editor #pv .pvli.next .pvli-lbl { display: flex; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #0a1211; background: rgba(255, 255, 255, .5); }
+.cdx-deck-editor #pv .pvli-t { font-size: 14px; color: #d6ece8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.cdx-deck-editor #pv .hintbar { grid-area: hint; color: #5f9089; font-size: 13px; text-align: center; }

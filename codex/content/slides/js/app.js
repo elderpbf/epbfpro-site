@@ -37,6 +37,11 @@ const LAYOUT_LABEL_KEY = {
 };
 const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) : L.label);
 
+// Inline SVG glyphs for the three presenter clocks (currentColor, so theme-driven).
+const G_CLOCK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.5 2"/></svg>';
+const G_STOPWATCH = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 2.5h6M12 2.5v2.5M18.5 6l1.2-1.2"/><circle cx="12" cy="13" r="7.5"/><path d="M12 13V9"/></svg>';
+const G_HOURGLASS = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12M7.5 3c0 4.5 4.5 6 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 6-4.5 9s4.5 4.5 4.5 9"/></svg>';
+
 // SHELL is built per-mount so every user-facing string resolves through t() in
 // the active language (the dictionary may switch between mounts).
 const shellHTML = () => `
@@ -78,11 +83,31 @@ ${addSlidePanelHTML()}
 <div id="endout"><div class="eo-box"><div class="eo-title">${t("slides.ed_end_title")}</div><div class="eo-hint">${t("slides.ed_end_hint")}</div></div></div>
 
 <div id="pv">
-  <div class="bar"><span class="timer" id="pvTimer">00:00</span><span class="clock" id="pvClock">--:--</span><span class="pvstatus" id="pvStatus"></span><span class="pos" id="pvPos">1 / 1</span></div>
+  <div class="pvtop">
+    <div class="pvtimes">
+      <span class="pvt pvt-clock" title="${t("slides.pv_now_time")}"><i class="pvg">${G_CLOCK}</i><b id="pvClock">--:--</b></span>
+      <span class="pvt pvt-sw" title="${t("slides.pv_stopwatch")}"><i class="pvg">${G_STOPWATCH}</i><b id="pvSw">00:00</b>
+        <button class="pvctl" data-t="sw" data-a="toggle" title="${t("slides.pv_pause_resume")}">⏸</button>
+        <button class="pvctl" data-t="sw" data-a="reset" title="${t("slides.pv_reset")}">↺</button></span>
+      <span class="pvt pvt-cd" title="${t("slides.pv_countdown")}"><i class="pvg">${G_HOURGLASS}</i><b id="pvCd" title="${t("slides.pv_cd_set")}">15:00</b>
+        <button class="pvctl" data-t="cd" data-a="toggle" title="${t("slides.pv_start_pause")}">▶</button>
+        <button class="pvctl" data-t="cd" data-a="reset" title="${t("slides.pv_reset")}">↺</button></span>
+    </div>
+    <div class="pvright">
+      <span class="pvstatus" id="pvStatus"></span>
+      <span class="pos" id="pvPos">1 / 1</span>
+      <div class="pvbtns">
+        <button class="pvbtn" id="pvBlack">⬛ ${t("slides.pv_btn_black")} <kbd>B</kbd></button>
+        <button class="pvbtn" id="pvWhite">⬜ ${t("slides.pv_btn_white")} <kbd>W</kbd></button>
+        <button class="pvbtn" id="pvRestart">↺ ${t("slides.pv_btn_restart")} <kbd>R</kbd></button>
+      </div>
+    </div>
+  </div>
   <div class="now"><div class="label">${t("slides.ed_current_slide")}</div><div class="mini"><div class="scale" id="pvNow"></div></div></div>
   <div class="next"><div class="label">${t("slides.ed_next_slide")}</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
   <div class="notes" id="pvNotes"></div>
-  <div class="hintbar">${t("slides.ed_presenter_hint")}</div>
+  <div class="pvslides"><div class="label">${t("slides.pv_slides")}</div><div class="pvlist" id="pvList"></div></div>
+  <div class="hintbar">${t("slides.pv_hint")}</div>
 </div>`;
 
 export function mount(root, ctx = {}) {

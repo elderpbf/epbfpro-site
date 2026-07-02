@@ -4,6 +4,13 @@
 import { renderInto } from "../render/player.js";
 import { applyDeckTheme } from "../theme/tokens.js";
 import { t } from "../../../../js/i18n.js";
+import {
+  loadTimers, saveTimers, fmt,
+  swStart, swPause, swReset, swNormalize, swElapsed,
+  cdStart, cdPause, cdReset, cdSet, cdNormalize, cdRemaining,
+} from "./timers.js";
+
+const escapeHtml = (s) => String(s).replace(/[&<>"]/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;" }[c]));
 
 /** Editor-side: outbound state + inbound nav/hello from the presenter window. */
 export function createSync(app) {
@@ -28,6 +35,7 @@ export function createSync(app) {
     else if (m.type === "blankkey") app.toggleBlank(m.mode); // 4A from the presenter window
     else if (m.type === "restart") app.restart();            // 4C from the presenter window
     else if (m.type === "jumpkey") app.jumpKey(m.key);       // 4B from the presenter window
+    else if (m.type === "goto") { if (app.atEnd) app.setEnd(false); app.goTo(m.index); } // slide-list click
   };
   return { broadcast };
 }
@@ -39,17 +47,56 @@ export function initPresenter(app) {
   // dashboard CSS is all scoped under .cdx-deck-editor.presenter (body never matched).
   app.root.classList.add("presenter");
   const $ = (id) => document.getElementById(id);
+  const now = () => Date.now();
 
   function renderMini(id, i) {
-    const t = $(id);
-    if (!t) return;
+    const el = $(id);
+    if (!el) return;
     const deck = app.deck();
-    if (i < 0 || i >= deck.slides.length) {
-      t.innerHTML = "";
-      return;
-    }
-    renderInto(t, deck, deck.slides[i]);
-    t.style.transform = `scale(${t.parentElement.clientWidth / deck.canvas.w})`;
+    if (i < 0 || i >= deck.slides.length) { el.innerHTML = ""; return; }
+    renderInto(el, deck, deck.slides[i]);
+    el.style.transform = `scale(${el.parentElement.clientWidth / deck.canvas.w})`;
+  }
+
+  // ── Slide list (built once; rebuilt only when the slide count changes) ──────
+  let listN = -1;
+  function slideLabel(s) {
+    const raw = (s.slots && (s.slots.title || s.slots.subtitle)) || "";
+    return String(raw).replace(/<[^>]*>/g, "").trim() || null;
+  }
+  function buildList() {
+    const list = $("pvList");
+    if (!list) return;
+    const deck = app.deck();
+    list.innerHTML = deck.slides.map((s, i) =>
+      `<div class="pvli" data-i="${i}"><span class="pvli-n">${i + 1}</span>` +
+      `<div class="pvli-mini"><div class="pvli-scale"></div><span class="pvli-lbl"></span></div>` +
+      `<span class="pvli-t">${escapeHtml(slideLabel(s) || `${t("slides.pv_slide_n")} ${i + 1}`)}</span></div>`
+    ).join("");
+    deck.slides.forEach((s, i) => {
+      const scale = list.querySelector(`.pvli[data-i="${i}"] .pvli-scale`);
+      if (!scale) return;
+      renderInto(scale, deck, s);
+      scale.style.transform = `scale(${scale.parentElement.clientWidth / deck.canvas.w})`;
+    });
+    list.querySelectorAll(".pvli").forEach((el) =>
+      el.addEventListener("click", () => channel.postMessage({ type: "goto", index: Number(el.dataset.i) }))
+    );
+    listN = deck.slides.length;
+  }
+  function updateListHighlight() {
+    const list = $("pvList");
+    if (!list) return;
+    list.querySelectorAll(".pvli").forEach((el) => {
+      const i = Number(el.dataset.i);
+      const isCur = i === app.index, isNext = i === app.index + 1;
+      el.classList.toggle("current", isCur);
+      el.classList.toggle("next", isNext);
+      const lbl = el.querySelector(".pvli-lbl");
+      if (lbl) lbl.textContent = isCur ? t("slides.ed_current_slide") : isNext ? t("slides.ed_next_slide") : "";
+    });
+    const cur = list.querySelector(".pvli.current");
+    if (cur) cur.scrollIntoView({ block: "nearest" });
   }
 
   channel.onmessage = (e) => {
@@ -59,16 +106,15 @@ export function initPresenter(app) {
     if (m.deck) deck.slides = JSON.parse(m.deck);
     if (m.assets) deck.assets = m.assets;
     if (m.logo) deck.logo = m.logo; // keep the deck logo in sync (D4)
-    if (m.theme) {
-      deck.theme = m.theme;
-      applyDeckTheme(deck, app.stage);
-    }
+    if (m.theme) { deck.theme = m.theme; applyDeckTheme(deck, app.stage); }
     app.index = m.index;
     app.step = m.step;
+    if (deck.slides.length !== listN) buildList(); // rebuild only on count change
     $("pvPos").textContent = `${app.index + 1} / ${deck.slides.length}`;
-    $("pvNotes").textContent = deck.slides[app.index].notes || "(sem notas)";
+    $("pvNotes").textContent = deck.slides[app.index].notes || t("slides.pv_no_notes");
     renderMini("pvNow", app.index);
     renderMini("pvNext", app.index + 1);
+    updateListHighlight();
     // Reflect the audience state (Phase 4) so the presenter knows what's on screen.
     const st = $("pvStatus");
     if (st) st.textContent = m.blank === "black" ? t("slides.pv_blank_black")
@@ -88,18 +134,63 @@ export function initPresenter(app) {
     else if (/^[0-9]$/.test(e.key) || e.key === "Enter" || e.key === "Backspace") channel.postMessage({ type: "jumpkey", key: e.key });
   });
 
-  let secs = 0;
-  setInterval(() => {
-    secs++;
-    const m = String(Math.floor(secs / 60)).padStart(2, "0");
-    const s = String(secs % 60).padStart(2, "0");
-    $("pvTimer").textContent = `${m}:${s}`;
-  }, 1000);
-  setInterval(() => {
-    const d = new Date();
-    $("pvClock").textContent =
-      String(d.getHours()).padStart(2, "0") + ":" + String(d.getMinutes()).padStart(2, "0");
-  }, 1000);
+  // Control buttons mirror the hotkeys, posted back to the editor.
+  const bindBtn = (id, msg) => { const b = $(id); if (b) b.onclick = () => channel.postMessage(msg); };
+  bindBtn("pvBlack", { type: "blankkey", mode: "black" });
+  bindBtn("pvWhite", { type: "blankkey", mode: "white" });
+  bindBtn("pvRestart", { type: "restart" });
+
+  // ── Timers (wall-clock anchored + persisted, so they survive closing this window
+  // or stopping the presentation, and the stopwatch caps at 4h). ──────────────
+  let timers = loadTimers();
+  // Auto-start the stopwatch the first time it's pristine, so it runs with the talk.
+  if (!timers.sw.running && timers.sw.accumMs === 0) timers.sw = swStart(timers.sw, now());
+  saveTimers(timers);
+
+  document.querySelectorAll(".pvctl").forEach((btn) => {
+    btn.addEventListener("click", () => {
+      const t0 = now();
+      if (btn.dataset.t === "sw") {
+        timers.sw = btn.dataset.a === "reset" ? swReset(timers.sw, t0)
+          : timers.sw.running ? swPause(timers.sw, t0) : swStart(timers.sw, t0);
+      } else {
+        timers.cd = btn.dataset.a === "reset" ? cdReset(timers.cd)
+          : timers.cd.running ? cdPause(timers.cd, t0) : cdStart(timers.cd, t0);
+      }
+      saveTimers(timers);
+      paintTimers();
+    });
+  });
+  // Click the countdown time to set its minutes (default 15).
+  const cdEl = $("pvCd");
+  if (cdEl) cdEl.addEventListener("click", () => {
+    const cur = Math.round(timers.cd.durationMs / 60000) || 15;
+    // eslint-disable-next-line no-alert
+    const v = window.prompt(t("slides.pv_cd_prompt"), String(cur));
+    if (v == null) return;
+    const min = parseInt(v, 10);
+    if (!isNaN(min) && min >= 0) { timers.cd = cdSet(timers.cd, min); saveTimers(timers); paintTimers(); }
+  });
+
+  function paintTimers() {
+    const t0 = now();
+    timers.sw = swNormalize(timers.sw, t0); // auto-pause at the 4h cap
+    timers.cd = cdNormalize(timers.cd, t0); // stop at 0
+    const swEl = $("pvSw"), cd = $("pvCd"), clk = $("pvClock");
+    if (swEl) swEl.textContent = fmt(swElapsed(timers.sw, t0));
+    if (cd) {
+      const rem = cdRemaining(timers.cd, t0);
+      cd.textContent = fmt(rem);
+      cd.parentElement.classList.toggle("done", rem <= 0 && timers.cd.durationMs > 0);
+    }
+    if (clk) { const d = new Date(); clk.textContent = `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`; }
+    const swBtn = document.querySelector('.pvctl[data-t="sw"][data-a="toggle"]');
+    if (swBtn) swBtn.textContent = timers.sw.running ? "⏸" : "▶";
+    const cdBtn = document.querySelector('.pvctl[data-t="cd"][data-a="toggle"]');
+    if (cdBtn) cdBtn.textContent = timers.cd.running ? "⏸" : "▶";
+  }
+  setInterval(() => { paintTimers(); saveTimers(timers); }, 500);
+  paintTimers();
 
   channel.postMessage({ type: "hello" });
 }
