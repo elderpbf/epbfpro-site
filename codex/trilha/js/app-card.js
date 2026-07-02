@@ -104,14 +104,10 @@ export function buildAppCard(app, opts = {}) {
     ? downloadHtml(app, onWindows, 'cdx-tr-app-download--foot')
     : '<div class="cdx-tr-app-winonly">' + esc(t('apps.windows_only')) + '</div>';
 
-  // Two columns on wide screens: benefits left, the print (with a download above it) right.
-  // On mobile they stack with the print FIRST (col-right order flips in CSS).
-  const rightCol = shots
-    ? '<div class="cdx-tr-app-col-right">' +
-        (topDl ? '<div class="cdx-tr-app-topdl">' + topDl + '</div>' : '') +
-        shots +
-      '</div>'
-    : '';
+  // Header: logo + name/tagline on the left, the top download aligned to the right.
+  // Body: two columns on wide screens (benefits left, the print right), vertically
+  // centered; on mobile they stack with the print FIRST (col-right order flips in CSS).
+  const rightCol = shots ? '<div class="cdx-tr-app-col-right">' + shots + '</div>' : '';
 
   card.innerHTML =
     '<div class="cdx-tr-app-head">' +
@@ -120,6 +116,7 @@ export function buildAppCard(app, opts = {}) {
         '<div class="cdx-tr-app-name">' + esc(app.name || app.app_key) + '</div>' +
         (d.tagline ? '<div class="cdx-tr-app-tagline">' + esc(d.tagline) + '</div>' : '') +
       '</div>' +
+      (topDl ? '<div class="cdx-tr-app-head-dl">' + topDl + '</div>' : '') +
     '</div>' +
     '<div class="cdx-tr-app-cols' + (shots ? '' : ' cdx-tr-app-cols--nofig') + '">' +
       '<div class="cdx-tr-app-col-left">' +

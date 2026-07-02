@@ -541,12 +541,13 @@
 .cdx-tr-app-icon { width: 52px; height: 52px; object-fit: cover; border-radius: 12px; flex-shrink: 0; }
 .cdx-tr-app-icon--ph { display: inline-flex; align-items: center; justify-content: center;
   background: var(--tint-primary); color: var(--primary); }
-.cdx-tr-app-head-text { min-width: 0; }
+.cdx-tr-app-head-text { flex: 1; min-width: 0; }
+.cdx-tr-app-head-dl { flex-shrink: 0; margin-left: auto; }
 .cdx-tr-app-name { font-size: 1.2rem; font-weight: 700; color: var(--text-primary); }
 .cdx-tr-app-tagline { font-size: 0.9rem; color: var(--text-secondary); margin-top: 2px; }
 
 /* Two columns on wide screens: benefits left, the print (download above it) right. */
-.cdx-tr-app-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: start; }
+.cdx-tr-app-cols { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; align-items: center; }
 .cdx-tr-app-cols--nofig { grid-template-columns: 1fr; }
 .cdx-tr-app-col-left, .cdx-tr-app-col-right { min-width: 0; }
 
@@ -557,7 +558,6 @@
 .cdx-tr-app-benefit-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
 .cdx-tr-app-benefit-desc { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; }
 
-.cdx-tr-app-topdl { display: flex; justify-content: flex-end; margin-bottom: 12px; }
 .cdx-tr-app-shots { display: block; }
 .cdx-tr-app-shot { width: 100%; height: auto; display: block; border-radius: 10px; border: 1px solid var(--border); }
 .cdx-tr-app-shot--dark { display: none; }

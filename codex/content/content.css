@@ -1025,7 +1025,9 @@
 @media (max-width: 560px) { .cdx-ted-saverow { flex-wrap: wrap; } }
 
 /* ── Content > Aplicativos sub-tab (catalog manager) ─────────────────────────── */
-.cdx-apps-admin { display: flex; flex-direction: column; height: 100%; }
+/* Same arrangement as the Presets screen: a column with a gap between the toolbar and
+   the master-detail split (the missing gap made it read cramped). */
+.cdx-apps-admin { display: flex; flex-direction: column; gap: 1rem; height: 100%; }
 /* The detail pane is a flex column: the form scrolls, the actions bar pins to the bottom. */
 .cdx-apps-admin #cdx-apps-detail { display: flex; flex-direction: column; padding: 0; overflow: hidden; }
 .cdx-app-icon-img { width: 20px; height: 20px; object-fit: cover; border-radius: 5px; }
