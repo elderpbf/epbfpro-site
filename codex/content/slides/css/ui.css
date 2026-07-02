@@ -294,8 +294,7 @@
 .cdx-deck-editor #pv .next { grid-area: next; }
 .cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 14px; overflow: hidden; }
 .cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 8px; }
-/* cap the big previews so the whole panel fits 100vh (no host scroll → no truncation) */
-.cdx-deck-editor #pv .mini { width: 100%; max-width: 340px; margin: 0 auto; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
+.cdx-deck-editor #pv .mini { width: 100%; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
 .cdx-deck-editor #pv .mini > .scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
 
 .cdx-deck-editor #pv .notes { grid-area: notes; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; }
