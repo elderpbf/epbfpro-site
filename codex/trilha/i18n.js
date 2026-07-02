@@ -28,6 +28,11 @@ const pt = {
   'page.tab_aulas':         'Aulas',
   'page.tab_outros':        'Outros materiais',
   'page.tab_apostila':      'Apostila do curso',
+  'page.tab_apps':          'Aplicativos',
+  'apps.empty':             'Nenhum aplicativo disponível ainda.',
+  'apps.aula_section':      'Aplicativo',
+  'apps.download':          'Baixar na Microsoft Store',
+  'apps.windows_only':      'Por enquanto este app é só para Windows.',
   'page.wa_group':          'Grupo no WhatsApp',
   'page.footer':            'Feito com PensoIA',
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
@@ -177,6 +182,11 @@ const en = {
   'page.tab_aulas':         'Classes',
   'page.tab_outros':        'Other materials',
   'page.tab_apostila':      'Course handbook',
+  'page.tab_apps':          'Apps',
+  'apps.empty':             'No apps available yet.',
+  'apps.aula_section':      'App',
+  'apps.download':          'Get it on the Microsoft Store',
+  'apps.windows_only':      'This app is Windows-only for now.',
   'page.wa_group':          'WhatsApp group',
   'page.footer':            'Made with PensoIA',
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.

@@ -38,11 +38,20 @@ test('the Aulas tab is the aula hub; Liberações + Tarefas are per-aula, not tu
 test('cohorts reuses the existing modules, mounted aula-locked (no duplicated composer)', () => {
   assert.match(cohortsJs, /import \* as releasesAdmin from '\.\.\/content\/releases\.js'/, 'imports releases module');
   assert.match(cohortsJs, /import \* as tarefasAdmin from '\.\.\/content\/tarefas\.js'/, 'imports tarefas module');
-  // The detail pane mounts the SAME modules in aula-locked mode (aula / aulaNumber).
-  assert.match(cohortsJs, /releasesAdmin\.mount\(paneEl, \{[^}]*aula: aula\.id/, 'mounts releases aula-locked');
+  // The detail pane mounts the SAME modules in aula-locked mode (aula / aulaNumber). The
+  // Liberações composer now mounts into a sub-slot so the Aplicativos section can stack below.
+  assert.match(cohortsJs, /releasesAdmin\.mount\([^,]+,\s*\{[^}]*aula: aula\.id/, 'mounts releases aula-locked');
   assert.match(cohortsJs, /tarefasAdmin\.mount\(paneEl, \{[^}]*aulaNumber: aula\.aula_number/, 'mounts tarefas aula-locked');
   // And reuses the composer's OWN per-aula tally instead of re-deriving counts.
   assert.match(cohortsJs, /releasesAdmin\.aulaReleaseCounts\(/, 'reuses the exported counts helper');
+});
+
+test('the per-aula Liberações pane also mounts the Aplicativos release section (app = content per aula)', () => {
+  assert.match(cohortsJs, /import \* as appRelease from '\.\/app-release\.js'/, 'imports the app-release module');
+  assert.match(cohortsJs, /appRelease\.mount\(/, 'mounts the app-release section');
+  // Bound to THIS aula (turma-wide entitlement, aula placement), mirroring content release.
+  assert.match(cohortsJs, /turmaId: turma\.id, aulaNumber: aula\.aula_number/, 'app-release bound to this aula');
+  assert.match(cohortsJs, /appRelease\.unmount\(\)/, 'unmounts the app-release embed');
 });
 
 test('the per-aula embeds are torn down on switch (singleton modules, no esc-handler leak)', () => {

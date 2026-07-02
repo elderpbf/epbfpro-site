@@ -19,7 +19,7 @@
 <link rel="stylesheet" href="/codex/css/item-render.css?v=1.0">
 <link rel="stylesheet" href="/codex/questions/questions.css?v=4.9">
 <link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.3">
-<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.3">
+<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.4">
 <link rel="stylesheet" href="/codex/trilha/css/forum.css?v=1.1">
 <link rel="stylesheet" href="/codex/trilha/css/wall.css?v=1.2">
 <link rel="stylesheet" href="/codex/css/notif-bell.css?v=1.1">
@@ -69,6 +69,7 @@
         <button class="cdx-tr-tab-btn active" role="tab" data-tab="aulas" aria-selected="true" data-i18n="page.tab_aulas">Aulas</button>
         <button class="cdx-tr-tab-btn" role="tab" data-tab="forum" aria-selected="false" id="cdx-tr-tab-forum" data-i18n="page.tab_forum" hidden>Fórum</button>
         <button class="cdx-tr-tab-btn" role="tab" data-tab="outros" aria-selected="false" id="cdx-tr-tab-outros" hidden>Outros materiais</button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="apps" aria-selected="false" id="cdx-tr-tab-apps" hidden>Aplicativos</button>
       </div>
       <div class="cdx-trilha-tabs-right">
         <button class="cdx-tr-tab-btn" role="tab" data-tab="apostila" aria-selected="false" id="cdx-tr-tab-apostila" data-i18n="page.tab_apostila" hidden>Apostila do curso</button>
@@ -99,6 +100,11 @@
         <div id="cdx-tr-outros-list" class="cdx-tr-card-list"></div>
       </div>
 
+      <!-- APLICATIVOS -->
+      <div class="cdx-trilha-panel" data-panel="apps" hidden>
+        <div id="cdx-tr-apps-list" class="cdx-tr-card-list"></div>
+      </div>
+
     </div>
 
     <footer class="cdx-trilha-footer">
@@ -121,6 +127,7 @@
   import '/codex/trilha/js/aulas.js'; // self-registers the 'aulas' panel renderer
   import '/codex/trilha/js/forum.js'; // self-registers the 'forum' panel renderer
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
+  import '/codex/trilha/js/apps.js';  // self-registers the 'apps' panel renderer
   import '/codex/trilha/js/nexo.js';  // self-starts the live-question poller
   window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already

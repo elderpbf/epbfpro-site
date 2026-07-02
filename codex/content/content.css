@@ -1023,3 +1023,37 @@
 .cdx-t1b-sechd:hover .cdx-t1b-secedit, .cdx-t1b-sechd:hover .cdx-t1b-secdel { opacity: 1; }
 .cdx-t1b-secedit:hover, .cdx-t1b-secdel:hover { background: var(--cdx-card-hover-bg); }
 @media (max-width: 560px) { .cdx-ted-saverow { flex-wrap: wrap; } }
+
+/* ── Content > Aplicativos sub-tab (catalog manager) ─────────────────────────── */
+.cdx-apps-admin { display: flex; flex-direction: column; height: 100%; }
+.cdx-app-icon-img { width: 20px; height: 20px; object-fit: contain; border-radius: 4px; }
+.cdx-app-icon-ph { display: inline-flex; color: var(--text-secondary); }
+.cdx-app-off-badge { font-size: 0.68rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em;
+  color: var(--text-secondary); background: var(--cdx-chip-bg); border: 1px solid var(--border);
+  border-radius: 6px; padding: 0.05rem 0.35rem; margin-left: 0.4rem; vertical-align: middle; }
+.cdx-app-form { display: flex; flex-direction: column; gap: 0.9rem; padding: 0.2rem 0.1rem; }
+.cdx-app-form-head { display: flex; align-items: center; gap: 0.6rem; }
+.cdx-app-form-head .cdx-app-icon-img, .cdx-app-form-head .cdx-app-icon-ph { width: 28px; height: 28px; }
+.cdx-app-form-title { font-size: 1.05rem; font-weight: 700; margin: 0; flex: 1; color: var(--text-primary); }
+.cdx-app-enabled { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.85rem; color: var(--text-secondary); cursor: pointer; }
+.cdx-app-field { display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-app-field .cdx-field-label { font-size: 0.8rem; font-weight: 600; color: var(--text-secondary); }
+.cdx-app-field input[type="text"] { width: 100%; padding: 0.45rem 0.6rem; border: 1px solid var(--border);
+  border-radius: 8px; background: var(--background); color: var(--text-primary); font: inherit; }
+.cdx-app-field input[type="text"]:focus { outline: none; border-color: var(--primary); }
+.cdx-app-field .cdx-field-hint { font-size: 0.75rem; color: var(--text-secondary); }
+.cdx-app-sep { height: 1px; background: var(--border); margin: 0.3rem 0; }
+.cdx-app-copy-head { font-size: 0.9rem; font-weight: 700; color: var(--text-primary); }
+.cdx-app-benefits { display: flex; flex-direction: column; gap: 0.45rem; margin-bottom: 0.5rem; }
+.cdx-app-benefit { display: grid; grid-template-columns: 24px 6rem 1fr 1.4fr auto; gap: 0.4rem; align-items: center; }
+.cdx-app-benefit-glyph { display: inline-flex; justify-content: center; color: var(--primary); }
+.cdx-app-benefit input[type="text"] { padding: 0.35rem 0.5rem; border: 1px solid var(--border);
+  border-radius: 7px; background: var(--background); color: var(--text-primary); font: inherit; font-size: 0.82rem; }
+.cdx-app-benefit input[type="text"]:focus { outline: none; border-color: var(--primary); }
+.cdx-app-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem;
+  padding: 0.7rem 0.1rem 0.2rem; margin-top: auto; border-top: 1px solid var(--border); }
+.cdx-app-msg { font-size: 0.8rem; color: var(--text-secondary); margin-right: auto; }
+@media (max-width: 640px) {
+  .cdx-app-benefit { grid-template-columns: 1fr; }
+  .cdx-app-benefit-glyph { justify-content: flex-start; }
+}
