@@ -104,7 +104,7 @@ ${addSlidePanelHTML()}
   </div>
   <div class="now"><div class="label">${t("slides.ed_current_slide")}</div><div class="mini"><div class="scale" id="pvNow"></div></div></div>
   <div class="next"><div class="label">${t("slides.ed_next_slide")}</div><div class="mini"><div class="scale" id="pvNext"></div></div></div>
-  <div class="notes" id="pvNotes"></div>
+  <textarea class="notes" id="pvNotes" placeholder="${t("slides.ed_notes_ph")}"></textarea>
   <div class="pvslides"><div class="label">${t("slides.pv_slides")}</div><div class="pvlist" id="pvList"></div></div>
 </div>`;
 

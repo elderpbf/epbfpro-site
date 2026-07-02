@@ -36,6 +36,12 @@ export function createSync(app) {
     else if (m.type === "restart") app.restart();            // 4C from the presenter window
     else if (m.type === "jumpkey") app.jumpKey(m.key);       // 4B from the presenter window
     else if (m.type === "goto") { if (app.atEnd) app.setEnd(false); app.goTo(m.index); } // slide-list click
+    else if (m.type === "setnotes") { // notes edited in the presenter window: persist here
+      const s = app.deck().slides[m.index];
+      if (s) { app.record("notes:" + m.index); s.notes = m.notes; app.commit(); app.syncNotes(); }
+      // no re-broadcast: the presenter already shows what it typed, and broadcasting would
+      // re-render its minis on every keystroke.
+    }
   };
   return { broadcast };
 }
@@ -124,7 +130,8 @@ export function initPresenter(app) {
     app.step = m.step;
     if (deck.slides.length !== listN) buildList(); // rebuild only on count change
     $("pvPos").textContent = `${app.index + 1} / ${deck.slides.length}`;
-    $("pvNotes").textContent = deck.slides[app.index].notes || t("slides.pv_no_notes");
+    const nt = $("pvNotes"); // editable; don't clobber it while it's being typed in
+    if (nt && document.activeElement !== nt) nt.value = deck.slides[app.index].notes || "";
     renderMini("pvNow", app.index);
     renderMini("pvNext", app.index + 1);
     updateListHighlight();
@@ -154,6 +161,14 @@ export function initPresenter(app) {
   bindBtn("pvBlack", { type: "blankkey", mode: "black" });
   bindBtn("pvWhite", { type: "blankkey", mode: "white" });
   bindBtn("pvRestart", { type: "restart" });
+
+  // Editable presenter notes: edits round-trip to the editor window (which owns the
+  // store) to persist; typing here must not trigger the deck nav / blank hotkeys.
+  const notesEl = $("pvNotes");
+  if (notesEl) {
+    notesEl.addEventListener("input", () => channel.postMessage({ type: "setnotes", index: app.index, notes: notesEl.value }));
+    notesEl.addEventListener("keydown", (e) => e.stopPropagation());
+  }
 
   // ── Timers (wall-clock anchored + persisted, so they survive closing this window
   // or stopping the presentation, and the stopwatch caps at 4h). ──────────────

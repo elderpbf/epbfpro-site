@@ -297,7 +297,9 @@
 .cdx-deck-editor #pv .mini { width: 100%; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
 .cdx-deck-editor #pv .mini > .scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
 
-.cdx-deck-editor #pv .notes { grid-area: notes; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; }
+.cdx-deck-editor #pv .notes { grid-area: notes; box-sizing: border-box; width: 100%; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font: inherit; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; resize: none; }
+.cdx-deck-editor #pv .notes:focus { outline: none; border-color: var(--teal-l); }
+.cdx-deck-editor #pv .notes::placeholder { color: #4d6f68; }
 
 /* slide list (right, below "próximo"): number + preview + title, click to jump; the
    current/next entries are blurred with a label since their full preview is up top. */
