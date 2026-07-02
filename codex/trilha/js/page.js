@@ -21,7 +21,7 @@ import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
 
-const PANELS = ['aulas', 'forum', 'apostila', 'outros'];
+const PANELS = ['aulas', 'forum', 'apostila', 'outros', 'apps'];
 
 // Which panel a location hash selects (default 'aulas').
 export function resolveTab(hash) {
@@ -369,9 +369,20 @@ function renderTabs(root) {
   const outrosBtn = root.querySelector('#cdx-tr-tab-outros');
   const apostilaBtn = root.querySelector('#cdx-tr-tab-apostila');
   const forumBtn = root.querySelector('#cdx-tr-tab-forum');
+  const appsBtn = root.querySelector('#cdx-tr-tab-apps');
 
   // The Fórum tab shows only when the turma enabled it.
   if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
+
+  // Aplicativos tab: shows only when the turma has at least one app whose lesson has
+  // occurred (the backend already applied that happened-gate to data.apps). With exactly
+  // one app the tab takes that app's name; with several it is the generic "Aplicativos".
+  const apps = data.apps || [];
+  if (appsBtn) {
+    appsBtn.hidden = !apps.length;
+    if (apps.length === 1 && apps[0].name) appsBtn.textContent = apps[0].name;
+    else appsBtn.textContent = t('page.tab_apps');
+  }
 
   if (outrosBtn) {
     if (outros.length) outrosBtn.textContent = t('page.tab_outros') + ' (' + outros.length + ')';

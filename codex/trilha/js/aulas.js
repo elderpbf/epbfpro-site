@@ -8,8 +8,10 @@ import { state } from './state.js';
 import { esc, aulaStatus, aulaDateText, parseTopics } from './utils.js';
 import { countFreshIn } from './freshness.js';
 import { buildSub } from './sub.js';
+import { buildAppSub } from './app-card.js';
 import { registerRenderer } from './page.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
+import { t } from '../i18n.js';
 
 let _wired = false;
 
@@ -181,12 +183,19 @@ function buildAulaBody(aula) {
     })
     .sort((a, b) => (a.position || 0) - (b.position || 0));
 
+  // Apps released to THIS lesson. The backend happened-gate already withheld apps whose
+  // lesson has not occurred, so anything here is releasable; it renders as a full app card
+  // (same builder as the Aplicativos tab), like content shows in both the lesson and a tab.
+  const appsForAula = (data.apps || []).filter((a) => a.aula_number === aula.aula_number);
+
   const body = document.createElement('div');
   body.className = 'cdx-tr-body';
+  // Apps sit at the TOP of the lesson, before tarefas, collapsed (Élder).
+  if (appsForAula.length) body.appendChild(buildAppSection(appsForAula));
   if (tarefaItems.length) body.appendChild(buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true }));
   if (apostilaItems.length) body.appendChild(buildSection('Conteúdo da aula', apostilaItems, { isApostila: true }));
   if (outrosItems.length) body.appendChild(buildOutrosSection(outrosItems));
-  if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length) {
+  if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length && !appsForAula.length) {
     body.innerHTML = '<div class="cdx-tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';
   }
   return body;
@@ -199,6 +208,19 @@ function buildSection(label, items, opts = {}) {
   const list = document.createElement('div');
   list.className = 'cdx-tr-sub-list';
   items.forEach((item) => list.appendChild(buildSub(item, opts)));
+  section.appendChild(list);
+  return section;
+}
+
+// Apps released to a lesson: a section of COLLAPSED sub-cards (logo + name + a Store button),
+// each expanding to the full app card. Same sub-card style as the tarefa/conteúdo rows.
+function buildAppSection(apps) {
+  const section = document.createElement('div');
+  section.className = 'cdx-tr-section cdx-tr-section--apps';
+  section.innerHTML = '<div class="cdx-tr-section-label">' + esc(t('apps.aula_section')) + '</div>';
+  const list = document.createElement('div');
+  list.className = 'cdx-tr-sub-list';
+  apps.forEach((app) => list.appendChild(buildAppSub(app)));
   section.appendChild(list);
   return section;
 }

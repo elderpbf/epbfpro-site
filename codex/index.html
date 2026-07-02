@@ -46,13 +46,13 @@
 <link rel="stylesheet" href="css/tokens.css?v=1.8">
 <link rel="stylesheet" href="css/components.css?v=1">
 <link rel="stylesheet" href="css/codex.css?v=3.0">
-<link rel="stylesheet" href="cohorts/cohorts.css?v=4.0">
-<link rel="stylesheet" href="content/content.css?v=3.6">
+<link rel="stylesheet" href="cohorts/cohorts.css?v=4.1">
+<link rel="stylesheet" href="content/content.css?v=3.9">
 <link rel="stylesheet" href="content/slides.css?v=2.0">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.2">
 <link rel="stylesheet" href="content/slides/css/slide.css?v=2.5">
-<link rel="stylesheet" href="content/slides/css/ui.css?v=3.4">
+<link rel="stylesheet" href="content/slides/css/ui.css?v=3.11">
 <link rel="stylesheet" href="lessons/lessons.css?v=2.5">
 <!-- QR share modal styles (Codex copy, pairs with js/qr-share-modal.js). -->
 <link rel="stylesheet" href="css/qr-share-modal.css?v=1.1">
@@ -219,8 +219,11 @@
     const host = document.createElement('div');
     host.className = 'cdx-deck-editor';
     document.body.appendChild(host);
-    const slides = await import('./content/slides/js/app.js');
-    slides.mount(host, {});
+    const [slides, toast] = await Promise.all([
+      import('./content/slides/js/app.js'),
+      import('./js/toast.js'),
+    ]);
+    slides.mount(host, { notify: (msg) => toast.ok(msg) });
   }
   // Codex own-login gate (item 11.2): if not authed, show the e-mail+OTP login and STOP.
   // No tabs mount until an admin session is in place. This replaces the legacy

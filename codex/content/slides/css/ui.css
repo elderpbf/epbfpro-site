@@ -67,6 +67,27 @@
    topbar; requestFullscreen (app.js) hides browser chrome on top of this. */
 .cdx-deck-editor.presenting #stagewrap { position: fixed; inset: 0; z-index: 9000; }
 
+/* Notes authoring bar (edit-only): docked below the stage; the stage shrinks above it
+   when open. The same slide.notes the presenter panel reads, authored here. */
+.cdx-deck-editor #notesbar { position: absolute; left: 192px; right: 0; bottom: 0; height: 150px; display: none; flex-direction: column; gap: 6px; background: var(--panel-2); border-top: 1px solid var(--border); padding: 10px 14px; z-index: 5; }
+.cdx-deck-editor.notes-open #notesbar { display: flex; }
+.cdx-deck-editor.notes-open #stagewrap { bottom: 150px; }
+.cdx-deck-editor #notesbar .nb-label { font-size: 12px; letter-spacing: .5px; color: var(--muted); text-transform: uppercase; }
+.cdx-deck-editor #notesbar textarea { flex: 1; resize: none; font: inherit; font-size: 15px; line-height: 1.4; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 8px 10px; }
+.cdx-deck-editor.presenting #notesbar, .cdx-deck-editor.presenter #notesbar { display: none; }
+
+/* Presenter overlays (Phase 4), audience window only, above the presenting stage (z 9000). */
+.cdx-deck-editor #blankout { position: fixed; inset: 0; z-index: 9500; display: none; }
+.cdx-deck-editor.blank-black #blankout { display: block; background: #000; }
+.cdx-deck-editor.blank-white #blankout { display: block; background: #fff; }
+.cdx-deck-editor #jumpind { position: fixed; right: 34px; bottom: 30px; z-index: 9600; display: none; min-width: 46px; padding: 8px 18px; font-size: 34px; font-weight: 700; text-align: center; color: #fff; background: rgba(0, 0, 0, .72); border-radius: 12px; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #endout { position: fixed; inset: 0; z-index: 9550; display: none; align-items: center; justify-content: center; background: #0a1211; color: #dfeae8; cursor: pointer; }
+.cdx-deck-editor.end-open #endout { display: flex; }
+.cdx-deck-editor #endout .eo-title { font-size: 40px; font-weight: 700; text-align: center; }
+.cdx-deck-editor #endout .eo-hint { margin-top: 12px; font-size: 18px; color: #9fd6cc; text-align: center; }
+/* presenter-panel status badge (BLACK/WHITE/END), sits between the clock and the position */
+.cdx-deck-editor #pv .pvstatus:not(:empty) { font-size: 14px; font-weight: 700; letter-spacing: 1px; color: #0a1211; background: var(--teal-l); border-radius: 6px; padding: 3px 10px; }
+
 /* mask popover (viewport-fixed by JS) */
 .cdx-deck-editor #maskpop { position: fixed; z-index: 61; display: none; flex-direction: column; gap: 6px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 8px; box-shadow: 0 10px 30px var(--overlay-strong); }
 .cdx-deck-editor #maskpop .mp-types { display: flex; gap: 4px; }
@@ -240,16 +261,57 @@
 
 /* presenter view (rendered in a separate popup window; kept scoped for parity) */
 .cdx-deck-editor.presenter { background: #0a1211; color: #dfeae8; overflow: auto; }
-.cdx-deck-editor #pv { display: none; height: 100vh; grid-template-columns: 1.4fr 1fr; grid-template-rows: auto 1fr auto; gap: 18px; padding: 22px; }
-.cdx-deck-editor.presenter #chrome, .cdx-deck-editor.presenter #stagewrap, .cdx-deck-editor.presenter #nav { display: none; }
+.cdx-deck-editor #pv { display: none; height: 100vh; grid-template-columns: 1.3fr 1fr; grid-template-rows: auto auto minmax(0, 1fr); grid-template-areas: "top top" "now next" "notes list"; gap: 14px 18px; padding: 18px 20px; }
+.cdx-deck-editor.presenter #chrome, .cdx-deck-editor.presenter #stagewrap, .cdx-deck-editor.presenter #nav, .cdx-deck-editor.presenter #notesbar { display: none; }
 .cdx-deck-editor.presenter #pv { display: grid; }
-.cdx-deck-editor #pv .bar { grid-column: 1/-1; display: flex; align-items: center; gap: 20px; }
-.cdx-deck-editor #pv .timer { font-size: 30px; font-weight: 700; color: var(--teal-l); font-variant-numeric: tabular-nums; }
-.cdx-deck-editor #pv .clock { font-size: 30px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.cdx-deck-editor #pv .pos { margin-left: auto; font-size: 20px; color: #9fd6cc; }
-.cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px; overflow: hidden; }
-.cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 10px; }
+
+/* top bar: three clocks (left) + status/pos/buttons (right) */
+.cdx-deck-editor #pv .pvtop { grid-area: top; display: flex; align-items: center; gap: 18px; flex-wrap: wrap; }
+.cdx-deck-editor #pv .pvtimes { display: flex; align-items: center; gap: 22px; }
+.cdx-deck-editor #pv .pvt { display: inline-flex; align-items: center; gap: 7px; }
+.cdx-deck-editor #pv .pvt .pvg { display: inline-flex; opacity: .8; }
+.cdx-deck-editor #pv .pvt b { font-weight: 700; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvt-clock { color: #6fafa3; font-size: 15px; }        /* current time: small + muted */
+.cdx-deck-editor #pv .pvt-sw b { font-size: 28px; color: var(--teal-l); }
+.cdx-deck-editor #pv .pvt-cd b { font-size: 28px; color: #dfeae8; cursor: pointer; }
+.cdx-deck-editor #pv .pvt-cd.done b { color: #ff6b6b; }
+.cdx-deck-editor #pv .pvctl { font: inherit; font-size: 13px; line-height: 1; color: #dfeae8; background: #16302b; border: 1px solid #24463f; border-radius: 7px; padding: 4px 7px; cursor: pointer; }
+.cdx-deck-editor #pv .pvctl:hover { background: #1d3d36; }
+.cdx-deck-editor #pv .pvright { margin-left: auto; display: flex; align-items: center; gap: 14px; flex-wrap: wrap; }
+.cdx-deck-editor #pv .pos { font-size: 18px; color: #9fd6cc; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvbtns { display: flex; gap: 8px; }
+.cdx-deck-editor #pv .pvbtn { font: inherit; font-size: 13px; display: inline-flex; align-items: center; gap: 6px; color: #dfeae8; background: #16302b; border: 1px solid #24463f; border-radius: 8px; padding: 6px 10px; cursor: pointer; }
+.cdx-deck-editor #pv .pvbtn:hover { background: #1d3d36; }
+.cdx-deck-editor #pv .pvbtn kbd { font: inherit; font-size: 11px; background: #0a1211; border: 1px solid #24463f; border-radius: 4px; padding: 0 5px; color: #9fd6cc; }
+.cdx-deck-editor #pv .pvbtn.active { background: var(--teal-l); color: #0a1211; border-color: var(--teal-l); } /* the clicked control stays lit while its mode is on */
+.cdx-deck-editor #pv .pvbtn.active kbd { background: rgba(0, 0, 0, .15); color: #0a1211; border-color: rgba(0, 0, 0, .25); }
+/* true black/white swatches (the ⬜/⬛ emoji rendered lilac on some systems) */
+.cdx-deck-editor #pv .pvchip { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex: 0 0 auto; }
+.cdx-deck-editor #pv .pvchip-black { background: #000; border: 1px solid #4a5a56; }
+.cdx-deck-editor #pv .pvchip-white { background: #fff; border: 1px solid #b8c4c0; }
+
+.cdx-deck-editor #pv .now { grid-area: now; }
+.cdx-deck-editor #pv .next { grid-area: next; }
+.cdx-deck-editor #pv .now, .cdx-deck-editor #pv .next { background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 14px; overflow: hidden; }
+.cdx-deck-editor #pv .label { font-size: 12px; letter-spacing: 1.5px; color: #6fafa3; text-transform: uppercase; margin-bottom: 8px; }
 .cdx-deck-editor #pv .mini { width: 100%; aspect-ratio: 16/9; background: #fff; border-radius: 8px; overflow: hidden; position: relative; }
 .cdx-deck-editor #pv .mini > .scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
-.cdx-deck-editor #pv .notes { grid-column: 1/-1; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 20px 24px; font-size: 22px; line-height: 1.5; color: #d6ece8; min-height: 90px; }
-.cdx-deck-editor #pv .hintbar { grid-column: 1/-1; color: #5f9089; font-size: 13px; text-align: center; }
+
+.cdx-deck-editor #pv .notes { grid-area: notes; box-sizing: border-box; width: 100%; background: #10201d; border: 1px solid #1d3531; border-radius: 14px; padding: 16px 20px; font: inherit; font-size: 20px; line-height: 1.5; color: #d6ece8; overflow: auto; resize: none; }
+.cdx-deck-editor #pv .notes:focus { outline: none; border-color: var(--teal-l); }
+.cdx-deck-editor #pv .notes::placeholder { color: #4d6f68; }
+
+/* slide list (right, below "próximo"): number + preview + title, click to jump; the
+   current/next entries are blurred with a label since their full preview is up top. */
+.cdx-deck-editor #pv .pvslides { grid-area: list; display: flex; flex-direction: column; min-height: 0; }
+.cdx-deck-editor #pv .pvlist { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; padding-right: 4px; }
+.cdx-deck-editor #pv .pvli { display: grid; grid-template-columns: 24px 84px 1fr; align-items: center; gap: 10px; padding: 5px; border-radius: 10px; border: 1px solid transparent; cursor: pointer; min-height: 58px; overflow: hidden; } /* fixed row height: no collapse/overlap between entries */
+.cdx-deck-editor #pv .pvli:hover { background: #10201d; }
+.cdx-deck-editor #pv .pvli.current { border-color: var(--teal-l); background: #12241f; }
+.cdx-deck-editor #pv .pvli-n { text-align: center; font-size: 13px; color: #6fafa3; font-variant-numeric: tabular-nums; }
+.cdx-deck-editor #pv .pvli-mini { position: relative; width: 84px; height: 47px; background: #fff; border-radius: 6px; overflow: hidden; } /* explicit height, not aspect-ratio (unstable in a grid cell) */
+.cdx-deck-editor #pv .pvli-scale { position: absolute; top: 0; left: 0; width: 1280px; height: 720px; transform-origin: top left; }
+.cdx-deck-editor #pv .pvli-lbl { display: none; }
+.cdx-deck-editor #pv .pvli.current .pvli-scale, .cdx-deck-editor #pv .pvli.next .pvli-scale { filter: blur(3px); }
+.cdx-deck-editor #pv .pvli.current .pvli-lbl, .cdx-deck-editor #pv .pvli.next .pvli-lbl { display: flex; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #0a1211; background: rgba(255, 255, 255, .5); }
+.cdx-deck-editor #pv .pvli-t { font-size: 14px; color: #d6ece8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

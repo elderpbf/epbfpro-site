@@ -14,10 +14,7 @@ const BELL_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
   '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
 
-function esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc } from './dom.js';
 
 // Group items by their `group` label (teacher cross-turma). Items with no group
 // fall into a single null bucket (student, single turma) rendered without a header.
@@ -105,9 +102,10 @@ export function createBell({ fetchNotifications, markSeen, onNavigate, t, btnCla
     if (!panel.hidden) paint(_items);
   }
 
-  function openPanel() { panel.hidden = false; paint(_items); document.addEventListener('click', onOutside, true); }
-  function closePanel() { panel.hidden = true; document.removeEventListener('click', onOutside, true); }
+  function openPanel() { panel.hidden = false; paint(_items); document.addEventListener('click', onOutside, true); document.addEventListener('keydown', onEsc); }
+  function closePanel() { panel.hidden = true; document.removeEventListener('click', onOutside, true); document.removeEventListener('keydown', onEsc); }
   function onOutside(e) { if (!wrap.contains(e.target)) closePanel(); }
+  function onEsc(e) { if (e.key === 'Escape') closePanel(); }
 
   btn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); if (panel.hidden) openPanel(); else closePanel(); });
   markBtn.addEventListener('click', () => {

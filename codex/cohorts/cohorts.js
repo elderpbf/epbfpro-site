@@ -23,6 +23,7 @@ import * as cursos from './courses.js';
 // the picker). Reused as-is, no composer logic is duplicated.
 import * as releasesAdmin from '../content/releases.js';
 import * as tarefasAdmin from '../content/tarefas.js';
+import * as appRelease from './app-release.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 // Cohorts gained sub-tabs with the Cursos data model: the operational
@@ -65,9 +66,10 @@ let _cleanup = []; // teardown functions pushed by mount
 // Aulas hub (Layout A): the released items (ct_get_turma_view) feed the per-aula
 // content counts; the rest is selection state for the list | detail split.
 let _turmaViewItems = []; // released items, for the aula count chips/badges
+let _turmaViewApps = [];  // granted apps (with aula_number), for the aula app chip
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
 let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
-let _aulaEmbedMounted = { liberacoes: false, tarefas: false }; // which detail embed is live
+let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false }; // which detail embed is live
 
 // CLIENTES rail (mirrors the Questions sessions sidebar). Starts OPEN + pinned
 // with the dossiê showing the empty prompt; the first turma pick flips it to the
@@ -1599,6 +1601,7 @@ function _loadTurmaAulas(turma) {
   Promise.all([aulasCall, viewCall]).then(([ad, vd]) => {
     _turmaAulas = (ad.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
     _turmaViewItems = (vd && vd.items) || [];
+    _turmaViewApps = (vd && vd.apps) || [];
     _renderAulasHub(turma);
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
@@ -1628,9 +1631,15 @@ function _countChip(glyph, n) {
   return '<span class="cdx-aula-cc">' + glyphSvg(glyph, { size: 13 }) + ' ' + n + '</span>';
 }
 
+function _aulaAppCount(aulaNumber) {
+  return (_turmaViewApps || []).filter((a) => Number(a.aula_number) === Number(aulaNumber)).length;
+}
+
 function _aulaCountChipsHtml(aulaNumber) {
   const c = _aulaCounts(aulaNumber);
+  const apps = _aulaAppCount(aulaNumber);
   let html = '';
+  if (apps) html += _countChip('grid', apps);
   if (c.apostila) html += _countChip('book', c.apostila);
   if (c.tarefa) html += _countChip('clipboard', c.tarefa);
   if (c.outros) html += _countChip('layers', c.outros);
@@ -1786,8 +1795,13 @@ function _renderAulaPane(turma, aula) {
   _unmountAulaEmbeds();
   const onChange = () => _refreshAulaCountsAfterEmbed(turma);
   if (_aulaTab === 'liberacoes') {
-    releasesAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: aula.id, onChange });
+    // Content composer + the "Aplicativos" release section stack in the same pane: the
+    // app is content released to this aula, so it lives alongside the item composer.
+    paneEl.innerHTML = '<div id="cdx-aula-rel-content"></div><div id="cdx-aula-rel-apps" class="cdx-aula-rel-apps-slot"></div>';
+    releasesAdmin.mount(paneEl.querySelector('#cdx-aula-rel-content'), { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: aula.id, onChange });
     _aulaEmbedMounted.liberacoes = true;
+    appRelease.mount(paneEl.querySelector('#cdx-aula-rel-apps'), { turmaId: turma.id, aulaNumber: aula.aula_number, onChange });
+    _aulaEmbedMounted.apps = true;
     return;
   }
   if (_aulaTab === 'tarefas') {
@@ -1807,6 +1821,7 @@ function _refreshAulaCountsAfterEmbed(turma) {
   relApi.turmaView({ client_slug: turma.client_slug, turma_slug: turma.slug, token: turma.token })
     .then((vd) => {
       _turmaViewItems = (vd && vd.items) || [];
+      _turmaViewApps = (vd && vd.apps) || [];
       _renderAulaHubRows();
       _repaintAulaBadges();
       _repaintOutrosCount();
@@ -2089,6 +2104,7 @@ function _wireAulaDadosEditor(container, aula, turma) {
 // pane (they are module singletons, so this stops esc-handler leaks across switches).
 function _unmountAulaEmbeds() {
   if (_aulaEmbedMounted.liberacoes) { try { releasesAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.liberacoes = false; }
+  if (_aulaEmbedMounted.apps) { try { appRelease.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.apps = false; }
   if (_aulaEmbedMounted.tarefas) { try { tarefasAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.tarefas = false; }
 }
 
@@ -2123,7 +2139,7 @@ export function mount(viewEl, ctx) {
   _turmaViewItems = [];
   _selectedAulaId = null;
   _aulaTab = 'dados';
-  _aulaEmbedMounted = { liberacoes: false, tarefas: false };
+  _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false };
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default
   // (Concept A) merged Turmas+Clientes list → dossier view is the shell below.

@@ -15,10 +15,8 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.CdxGlyphs (icon library, set by the HTML boot)
 
-export function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc } from './dom.js';
+export { esc };
 
 // A type's icon is "glyph:<key>" (resolved to an inline SVG by the Codex glyph
 // library) or a legacy emoji. We reach the library through window.CdxGlyphs so

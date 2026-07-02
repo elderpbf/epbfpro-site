@@ -11,10 +11,8 @@
 // renderStored, toCsvValue }. The pure bits (validate / toCsvValue / renderStored
 // / get / list) are unit-tested; renderForm's DOM is verified on staging.
 
-export function esc(s) {
-  if (s == null) return '';
-  return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
+import { esc } from './dom.js';
+export { esc };
 
 function parseAnswer(answer_json) {
   if (!answer_json) return null;

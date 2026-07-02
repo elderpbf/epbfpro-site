@@ -1123,3 +1123,18 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   padding: 0.4rem 0.55rem;
 }
 .cdx-doss-walink:hover { border-color: var(--primary); }
+
+/* ── Aula Liberações: the "Aplicativos" release section (below the item composer) ── */
+.cdx-aula-rel-apps-slot { margin-top: 0.9rem; }
+.cdx-aula-apps { border-top: 1px solid var(--border); padding-top: 0.8rem; }
+.cdx-aula-apps-head { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem; }
+.cdx-aula-apps-hint { font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 0.55rem; }
+.cdx-aula-apps-list { display: flex; flex-direction: column; gap: 0.15rem; }
+.cdx-aula-app-row { display: flex; align-items: center; gap: 0.5rem; padding: 0.4rem 0.5rem;
+  border-radius: 8px; cursor: pointer; }
+.cdx-aula-app-row:hover { background: var(--cdx-card-hover-bg); }
+.cdx-aula-app-cb { width: 16px; height: 16px; flex-shrink: 0; cursor: pointer; }
+.cdx-aula-app-name { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.88rem; color: var(--text-primary); }
+.cdx-aula-app-name svg { color: var(--primary); }
+.cdx-aula-app-row.is-elsewhere .cdx-aula-app-name { color: var(--text-secondary); }
+.cdx-aula-app-elsewhere { font-size: 0.72rem; color: var(--text-secondary); font-style: italic; }

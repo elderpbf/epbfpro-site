@@ -71,11 +71,7 @@ let _overBottom = false;
 const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs'];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
+import { esc as _esc } from '../js/dom.js';
 function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 

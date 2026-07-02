@@ -125,12 +125,8 @@ export function diffOutrosSelection({ released, releasedMeta, poolIds, selectedI
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { esc as _esc } from '../js/dom.js';
+import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _today() { return new Date().toISOString().slice(0, 10); }
 // Debug gate: the shared Backstage bs_debug flag (same flag the live-host

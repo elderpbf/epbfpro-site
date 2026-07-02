@@ -56,11 +56,15 @@ function parseSections(html) {
 }
 
 globalThis.requestAnimationFrame = (fn) => fn();
+const _docL = {};
 globalThis.document = {
   head: makeEl('head'),
   body: makeEl('body'),
   createElement: makeEl,
   getElementById: (id) => byId.get(id) || null,
+  addEventListener(t2, fn) { (_docL[t2] = _docL[t2] || []).push(fn); },
+  removeEventListener(t2, fn) { _docL[t2] = (_docL[t2] || []).filter((f) => f !== fn); },
+  dispatch(t2, ev) { (_docL[t2] || []).slice().forEach((fn) => fn(ev || {})); },
 };
 
 const drawer = await import('../js/settings-drawer.js');
@@ -138,6 +142,16 @@ test('clicking a section header toggles its body', () => {
   assert.ok(header.closest('.sd-section').classList.contains('sd-section-open'));
   header.dispatch('click', {});
   assert.equal(body.hidden, true, 'collapses again');
+});
+
+test('Escape closes the open drawer', () => {
+  freshButton('sd-close'); freshButton('settings-btn');
+  drawer.init({ sections: [sectionSpy('esc', 'Esc').desc] });
+  const aside = byId.get('settings-drawer');
+  drawer.open();
+  assert.ok(aside.classList.contains('open'), 'open class set after open()');
+  document.dispatch('keydown', { key: 'Escape' });
+  assert.ok(!aside.classList.contains('open'), 'Escape removes the open class');
 });
 
 test('the .sd- styles are injected exactly once', () => {

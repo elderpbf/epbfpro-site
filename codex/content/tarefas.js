@@ -75,12 +75,8 @@ export function sortTarefas(items) {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { esc as _esc } from '../js/dom.js';
+import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 // Where the answers list renders: inside the open instance card (t1b aula-locked) or the
 // right pane (standalone). One lookup so the submissions machinery is shared by both.
@@ -103,32 +99,7 @@ function _formatTs(unix) {
 }
 
 // ── Modal helpers (mirror the Items sub-tab) ─────────────────────────────────
-function _openModal(html, opts) {
-  opts = opts || {};
-  const bd = document.createElement('div');
-  bd.className = 'cdx-modal-backdrop';
-  bd.innerHTML = html;
-  if (!opts.disableBackdropClose) {
-    bd.addEventListener('click', (e) => { if (e.target === bd) _closeModal(bd); });
-  }
-  const escHandler = (e) => {
-    if (e.key !== 'Escape') return;
-    const all = document.querySelectorAll('.cdx-modal-backdrop');
-    if (all.length && all[all.length - 1] !== bd) return;
-    _closeModal(bd);
-    document.removeEventListener('keydown', escHandler);
-  };
-  document.addEventListener('keydown', escHandler);
-  _cleanup.push(() => document.removeEventListener('keydown', escHandler));
-  document.body.appendChild(bd);
-  const first = bd.querySelector('input,textarea,select');
-  if (first) setTimeout(() => first.focus(), 60);
-  return bd;
-}
-function _closeModal(bd) {
-  const target = bd || document.querySelector('.cdx-modal-backdrop');
-  if (target && target.parentNode) target.parentNode.removeChild(target);
-}
+import { openModal, closeModal } from '../js/modal.js';
 
 // ── Load ──────────────────────────────────────────────────────────────────────
 function _loadTarefas(clientSlug, turmaSlug) {
@@ -380,11 +351,11 @@ function _deleteTarefa(item) {
         '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('tarefas.remove_btn') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     relApi.unrelease({ item_id: item.id, client_slug: _client, turma_slug: _turma }).then(() => {
-      _closeModal(bd);
+      closeModal(bd);
       toast.ok(t('tarefas.removed'));
       if (Number(_selectedId) === Number(item.id)) _selectedId = null;
       _loadTarefas(_client, _turma);
@@ -582,9 +553,9 @@ function _openConfirmSimple(message, onConfirm) {
         '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('content.delete') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { _closeModal(bd); onConfirm(); });
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); onConfirm(); });
 }
 
 // ── CSV export ────────────────────────────────────────────────────────────────
@@ -657,8 +628,8 @@ function _openNew() {
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('tarefas.create_release') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', function () {
     const title = bd.querySelector('[data-fld="title"]').value.trim();
     const body = bd.querySelector('[data-fld="body"]').value;
@@ -673,7 +644,7 @@ function _openNew() {
         if (aula) return relApi.setAula(Object.assign({ item_id: item.id, aula_number_or_null: parseInt(aula, 10) }, base));
       });
     }).then(() => {
-      _closeModal(bd);
+      closeModal(bd);
       toast.ok(t('tarefas.created'));
       _loadTarefas(_client, _turma);
       if (_onChange) _onChange();
@@ -859,11 +830,11 @@ function _removeFromTurma(id) {
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
         '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('tarefas.remove_from_turma') + '</button>' +
       '</div></div>';
-    const bd = _openModal(html);
-    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+    const bd = openModal(html);
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
     bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
       relApi.unrelease({ item_id: id, client_slug: _client, turma_slug: _turma }).then(() => {
-        _closeModal(bd); toast.ok(t('tarefas.removed'));
+        closeModal(bd); toast.ok(t('tarefas.removed'));
         _selectedId = null; _editCard = null;
         _loadTarefas(_client, _turma);
         if (_onChange) _onChange();
@@ -1267,8 +1238,8 @@ function _openReleasedBlock(title, turmaLabels) {
     '<div class="cdx-modal-actions">' +
       '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('tarefas.blocked_ok') + '</button>' +
     '</div></div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => closeModal(bd));
 }
 function _renameSection(secId, curName) {
   _openPrompt(t('tarefas.section_rename_prompt'), curName || '', (name) => {
@@ -1285,10 +1256,10 @@ function _deleteSection(secId, name) {
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('content.delete') + '</button>' +
     '</div></div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
-    api.deleteTarefaSection({ id: secId }).then(() => { _closeModal(bd); _refreshBank(); }).catch((e) => notice.internal(_err(e)));
+    api.deleteTarefaSection({ id: secId }).then(() => { closeModal(bd); _refreshBank(); }).catch((e) => notice.internal(_err(e)));
   });
 }
 
@@ -1305,13 +1276,13 @@ function _openTitleConfirm(title, onOk) {
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok" disabled>' + t('tarefas.delete_bank_btn') + '</button>' +
     '</div></div>';
-  const bd = _openModal(html);
+  const bd = openModal(html);
   const input = bd.querySelector('.cdx-confirm-input');
   const okBtn = bd.querySelector('[data-act="ok"]');
   const match = () => input.value.trim().toLowerCase() === String(title).trim().toLowerCase();
   input.addEventListener('input', () => { okBtn.disabled = !match(); });
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  okBtn.addEventListener('click', () => { if (okBtn.disabled || !match()) return; _closeModal(bd); onOk(); });
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  okBtn.addEventListener('click', () => { if (okBtn.disabled || !match()) return; closeModal(bd); onOk(); });
 }
 
 function _openPrompt(label, initial, onOk) {
@@ -1322,11 +1293,11 @@ function _openPrompt(label, initial, onOk) {
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.save') + '</button>' +
     '</div></div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     const v = (bd.querySelector('.cdx-prompt-input').value || '').trim();
-    _closeModal(bd); onOk(v);
+    closeModal(bd); onOk(v);
   });
 }
 

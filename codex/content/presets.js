@@ -59,12 +59,8 @@ export function groupPickerItems(items) {
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
-function _esc(s) {
-  return String(s == null ? '' : s)
-    .replace(/&/g, '&amp;').replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
-}
-function _err(e) { return t('content.error') + ': ' + ((e && e.message) || e); }
+import { esc as _esc } from '../js/dom.js';
+import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
 // A synthetic 'lab' item keeps a fixed glyph (no real ct_types slug); every
@@ -82,30 +78,7 @@ function _pickerItems() {
 }
 
 // ── Modal helpers (delete confirmation only; the editor is inline) ───────────
-function _openModal(html, opts) {
-  opts = opts || {};
-  const bd = document.createElement('div');
-  bd.className = 'cdx-modal-backdrop';
-  bd.innerHTML = html;
-  if (!opts.disableBackdropClose) {
-    bd.addEventListener('click', (e) => { if (e.target === bd) _closeModal(bd); });
-  }
-  const escHandler = (e) => {
-    if (e.key !== 'Escape') return;
-    const all = document.querySelectorAll('.cdx-modal-backdrop');
-    if (all.length && all[all.length - 1] !== bd) return;
-    _closeModal(bd);
-    document.removeEventListener('keydown', escHandler);
-  };
-  document.addEventListener('keydown', escHandler);
-  _cleanup.push(() => document.removeEventListener('keydown', escHandler));
-  document.body.appendChild(bd);
-  return bd;
-}
-function _closeModal(bd) {
-  const target = bd || document.querySelector('.cdx-modal-backdrop');
-  if (target && target.parentNode) target.parentNode.removeChild(target);
-}
+import { openModal, closeModal } from '../js/modal.js';
 function _openConfirm(opts) {
   const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
@@ -117,9 +90,9 @@ function _openConfirm(opts) {
         '<button class="cdx-btn' + cls + '" data-act="ok">' + _esc(opts.confirmLabel || t('content.confirm_delete_btn')) + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { _closeModal(bd); opts.onConfirm(); });
+  const bd = openModal(html);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); opts.onConfirm(); });
 }
 
 // ── Item picker (ported CVItemPicker) ────────────────────────────────────────
@@ -314,7 +287,7 @@ function _openRename() {
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.save') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = _openModal(html, { disableBackdropClose: true });
+  const bd = openModal(html, { disableBackdropClose: true });
   const input = bd.querySelector('#cdx-preset-rename');
   const errEl = bd.querySelector('[data-error]');
   setTimeout(() => input.focus(), 60);
@@ -322,7 +295,7 @@ function _openRename() {
     const name = (input.value || '').trim();
     if (!name) { errEl.textContent = t('presets.name_required'); input.classList.add('is-invalid'); return; }
     _editName = name;
-    _closeModal(bd);
+    closeModal(bd);
     if (editing) {
       api.update({ id: _selectedId, name }).then(() => {
         toast.ok(t('presets.updated'));
@@ -330,7 +303,7 @@ function _openRename() {
       }).then(() => _renderList()).catch((err) => notice.internal(_err(err)));
     }
   };
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => _closeModal(bd));
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', submit);
   input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
 }

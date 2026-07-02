@@ -316,6 +316,18 @@ export const releases = {
   turmaView: (p) => call('ct_get_turma_view', Object.assign({ admin_full: true }, p))
 };
 
+// Apps: external relying-party apps that integrate via the /ext/ identity contract
+// (1st: the PDF Extractor). Admin side only here: the catalog (Content > Aplicativos
+// sub-tab) + the per-aula release toggle (the aula Liberações "Aplicativos" section).
+// An app is released to a SPECIFIC aula (setTurmaApp carries aula_number), like content;
+// the trilha reads the granted apps from ct_get_turma_view's apps[] (see releases.turmaView).
+export const apps = {
+  list:         (p) => call('ct_list_apps', p),           // -> { apps } (catalog: name/store_url/icon/description/enabled)
+  updateApp:    (p) => call('ct_update_app', p),          // { app_key, name?, store_url?, icon?, description?, enabled? } (only passed fields change)
+  getTurmaApps: (p) => call('ct_get_turma_apps', p),      // { turma_id } -> { apps } (grants + bound aula_number, for the toggle state)
+  setTurmaApp:  (p) => call('ct_set_turma_app', p)        // { turma_id, app_key, enabled, aula_number? } (release/unrelease to an aula)
+};
+
 // Certificates — admin cert_* actions (API.md §Certificate Administration, auth required).
 //
 // NOTE: The PUBLIC `cert_validate` action is intentionally NOT here. It is consumed

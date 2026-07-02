@@ -14,6 +14,7 @@ import * as labs from './labs.js';
 import * as drive from './drive.js';
 import * as slides from './slides.js';
 import * as tarefas from './tarefas.js';
+import * as apps from './apps.js';
 
 // Content is the authoring/library surface. The two turma-scoped management
 // sub-tabs (Tarefas answers + Liberações) moved into the cohort dossier, where the
@@ -31,6 +32,7 @@ export const SUBTABS = [
   { key: 'slides',   labelKey: 'content.sub_slides',   module: slides },
   { key: 'labs',     labelKey: 'content.sub_labs',     module: labs },
   { key: 'presets',  labelKey: 'content.sub_presets',  module: presets },
+  { key: 'apps',     labelKey: 'content.sub_apps',     module: apps },
 ];
 
 function _native() { return SUBTABS.filter((s) => s.module); }
