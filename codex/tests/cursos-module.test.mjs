@@ -139,6 +139,10 @@ test('per-turma actions moved into the dossier (nothing lost in the merge)', () 
     assert.ok(cohorts.includes(act), `dossier wires ${act}`);
   }
   assert.match(cohorts, /cdx-doss-fact--trail/, 'dossier has the trail link card inside Dados da turma');
+  // QR-share button beside the trail actions, wired to the reusable modal.
+  assert.match(cohorts, /data-doss="qrshare"/, 'trail card has the QR-share button');
+  assert.match(cohorts, /qr-share-modal\.js/, 'reuses the shared QR modal (no new QR)');
+  assert.match(cohorts, /qrShare\.open\(\{ joinUrl/, 'QR button opens the modal with the trilha url');
   // those actions reuse the existing helpers
   for (const fn of ['_archiveTurma', '_regenToken', '_copyUrl']) {
     assert.ok(cohorts.includes(fn), `keeps ${fn}`);

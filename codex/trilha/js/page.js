@@ -238,6 +238,7 @@ function renderHeaderActions() {
       let bell = null;
       if (data.turma && data.turma.forum_enabled) {
         bell = createBell({
+          role: 'student',
           fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
             .then((res) => {
               const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));

@@ -330,6 +330,7 @@ export default {
   'cohorts.token_regenerated':     'Token regenerated. Share the new link with students.',
   'cohorts.copy_url':              'Copy URL',
   'cohorts.open_url':              'Open URL in new tab',
+  'cohorts.qr_title':              'Show trail QR',
   'cohorts.url_unavailable':       'URL unavailable',
   'cohorts.display_name_prefix':   'For students:',
   'cohorts.aula_singular':         'lesson',

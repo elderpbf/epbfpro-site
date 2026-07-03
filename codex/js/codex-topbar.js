@@ -382,6 +382,7 @@ export function init(opts) {
   // an item deep-links to THAT turma's dossiê Fórum tab (Cohorts reads fclient/fturma
   // and opens the Fórum sub-tab). Refreshes on load + window focus.
   const bell = createBell({
+    role: 'admin',
     fetchNotifications: () => cohortsApi.forumNotifications(),
     markSeen: () => cohortsApi.forumMarkSeen({}),
     onNavigate: (item) => {

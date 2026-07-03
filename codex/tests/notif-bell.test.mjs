@@ -43,6 +43,17 @@ test('the teacher topbar mounts the bell against the admin facade', () => {
   assert.match(src, /from '\.\/notif-bell\.js'/, 'imports the bell');
   assert.match(src, /forumNotifications\(\)/, 'wires the cross-turma source');
 });
+test('the bell is role-aware and self-dismisses the open tier when opened', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /from '\.\/notif-policy\.js'/, 'imports the dismissal-tier policy');
+  assert.match(src, /role = 'student'/, 'takes a role (defaults to student)');
+  assert.match(src, /dismissOnOpen\(\)/, 'dismisses the open tier on open');
+  assert.match(src, /positionMobile\(\)/, 'pins the tray under the bell on mobile');
+});
+test('both surfaces pass their role to the bell', () => {
+  assert.match(read('../js/codex-topbar.js'), /role: 'admin'/, 'admin bell gets role:admin');
+  assert.match(read('../trilha/js/page.js'), /role: 'student'/, 'student bell gets role:student');
+});
 test('the student trilha header mounts the bell + prefs only when enabled + logged in', () => {
   const src = read('../trilha/js/page.js');
   assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
