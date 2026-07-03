@@ -392,6 +392,7 @@
 
 .cdx-aula-cc { display: inline-flex; align-items: center; gap: 0.2rem; font-size: 0.7rem; color: var(--text-secondary); }
 .cdx-aula-cc svg { display: block; }
+.cdx-aula-cc-app { width: 14px; height: 14px; flex-shrink: 0; border-radius: 3px; object-fit: cover; display: block; }
 .cdx-aula-cc.is-empty { font-style: italic; opacity: 0.8; }
 
 /* The "Outros (sem aula)" bucket row, pinned under the aula list. */

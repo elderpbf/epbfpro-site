@@ -10,6 +10,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { installResizer } from '../js/resizable.js';
 import { openModal, closeModal } from '../js/modal.js';
+import * as qrShare from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
@@ -703,6 +704,8 @@ function _refreshDossierTrail(turma) {
   const url = _turmaUrl(turma.client_slug, turma.slug, turma.token);
   const copyBtn = el.querySelector('[data-doss="copyurl"]');
   if (copyBtn) copyBtn.dataset.url = url;
+  const qrBtn = el.querySelector('[data-doss="qrshare"]');
+  if (qrBtn) qrBtn.dataset.url = url;
   const openLink = el.querySelector('.cdx-doss-fact--trail a[href]');
   if (openLink) openLink.setAttribute('href', url);
 }
@@ -1198,6 +1201,7 @@ function _renderDossier(turma) {
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="copyurl" data-url="' + _esc(url) + '">' + _esc(t('cohorts.copy_url')) + '</button>' +
           '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
         '</div>'
       : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
     '</div>';
@@ -1287,6 +1291,7 @@ function _renderDossier(turma) {
     else if (a === 'delete') _deleteTurma(turma);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
+    else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url });
   }));
 
   // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
@@ -1631,15 +1636,27 @@ function _countChip(glyph, n) {
   return '<span class="cdx-aula-cc">' + glyphSvg(glyph, { size: 13 }) + ' ' + n + '</span>';
 }
 
-function _aulaAppCount(aulaNumber) {
-  return (_turmaViewApps || []).filter((a) => Number(a.aula_number) === Number(aulaNumber)).length;
+// The apps bound to this aula. Each carries its own icon (R2 path), so the aula
+// chip can show the real app logo instead of a generic glyph.
+function _aulaApps(aulaNumber) {
+  return (_turmaViewApps || []).filter((a) => Number(a.aula_number) === Number(aulaNumber));
+}
+
+// App chip: the real app icon in place of the generic 'grid' glyph (falls back to
+// the glyph when the app has no icon). Count kept for parity with the other chips.
+function _appChip(apps) {
+  const src = apps.length ? _iconSrc(apps[0].icon) : null;
+  const lead = src
+    ? '<img class="cdx-aula-cc-app" src="' + _esc(src) + '" alt="" loading="lazy">'
+    : glyphSvg('grid', { size: 13 });
+  return '<span class="cdx-aula-cc">' + lead + ' ' + apps.length + '</span>';
 }
 
 function _aulaCountChipsHtml(aulaNumber) {
   const c = _aulaCounts(aulaNumber);
-  const apps = _aulaAppCount(aulaNumber);
+  const apps = _aulaApps(aulaNumber);
   let html = '';
-  if (apps) html += _countChip('grid', apps);
+  if (apps.length) html += _appChip(apps);
   if (c.apostila) html += _countChip('book', c.apostila);
   if (c.tarefa) html += _countChip('clipboard', c.tarefa);
   if (c.outros) html += _countChip('layers', c.outros);

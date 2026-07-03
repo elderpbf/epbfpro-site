@@ -60,6 +60,18 @@ pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding:
 .cdx-bell-ntext { display: block; font-size: .85rem; color: var(--text-primary); line-height: 1.45; }
 .cdx-bell-nmeta { display: block; font-size: .72rem; color: var(--text-secondary); margin-top: .2rem; }
 
+/* Mobile: the tray is anchored (right:0) to the bell button, which on the Trilha
+   header is the LEFTMOST of several right-side actions — so a 360px/86vw box hung
+   off it spilled past the viewport edge and clipped. Below the phone breakpoint,
+   pin it across the screen with even gutters (the standard mobile notification
+   tray) instead of to the button, so it can never be cut off. */
+@media (max-width: 560px) {
+  .cdx-bell-panel {
+    position: fixed; top: 58px; left: 12px; right: 12px;
+    width: auto; max-width: none;
+  }
+}
+
 /* ── Notification preferences (student): initials + gear button + popover ──
    Shares the panel idiom with the bell. Lives here because it's part of the
    notification surface. cdx-ns- prefix. */

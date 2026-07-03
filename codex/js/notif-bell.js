@@ -9,6 +9,7 @@
 // Refresh policy: on creation, and on every window focus (cheap; no aggressive
 // polling). The badge sits in the top-right CORNER of the button (mock sino, S2).
 import { relTime } from './rel-time.js';
+import { dismissalFor, DISMISS_OPEN } from './notif-policy.js';
 
 const BELL_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -35,7 +36,7 @@ function groupItems(items) {
 //   onNavigate:         (item) => void   (the bell closes + marks seen first)
 //   t:                  (key) => string  (labels: notif.title / notif.mark_all / notif.empty)
 //   btnClass:           extra class for the button (defaults to the topbar icon button)
-export function createBell({ fetchNotifications, markSeen, onNavigate, t, btnClass = 'bs-icon-btn' }) {
+export function createBell({ fetchNotifications, markSeen, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-bell-wrap';
   wrap.innerHTML =
@@ -102,7 +103,39 @@ export function createBell({ fetchNotifications, markSeen, onNavigate, t, btnCla
     if (!panel.hidden) paint(_items);
   }
 
-  function openPanel() { panel.hidden = false; paint(_items); document.addEventListener('click', onOutside, true); document.addEventListener('keydown', onEsc); }
+  function openPanel() {
+    panel.hidden = false;
+    paint(_items);
+    positionMobile();
+    dismissOnOpen();
+    document.addEventListener('click', onOutside, true);
+    document.addEventListener('keydown', onEsc);
+  }
+  // On a narrow viewport the panel is a viewport-pinned tray (css/notif-bell.css sets
+  // position:fixed + 12px gutters); anchor its TOP just under the bell so it clears the
+  // header regardless of header height. Desktop clears the inline top so CSS owns it.
+  function positionMobile() {
+    if (typeof window === 'undefined' || !window.matchMedia) return;
+    if (window.matchMedia('(max-width: 560px)').matches) {
+      panel.style.top = (btn.getBoundingClientRect().bottom + 8) + 'px';
+    } else {
+      panel.style.top = '';
+    }
+  }
+  // Dismissal tiers (notif-policy.js): items whose policy is 'open' clear as soon as the
+  // tray is opened (the default, informational tier); 'act' items persist until acted on
+  // or dismissed by hand. Role-aware. Today the policy returns 'open' for everything, so
+  // opening dismisses all. markSeen persists it (a watermark today — see ARCHITECTURE).
+  // The open-tier rows keep their "new" highlight for THIS viewing; we only flag them
+  // seen locally (no repaint) so a re-open/refresh doesn't recount them.
+  function dismissOnOpen() {
+    const openItems = _items.filter((it) => !it.seen && dismissalFor(it, role) === DISMISS_OPEN);
+    if (!openItems.length) return;
+    const remaining = _items.filter((it) => !it.seen && dismissalFor(it, role) !== DISMISS_OPEN).length;
+    setBadge(remaining);
+    if (markSeen) Promise.resolve(markSeen()).catch(() => {});
+    openItems.forEach((it) => { it.seen = true; });
+  }
   function closePanel() { panel.hidden = true; document.removeEventListener('click', onOutside, true); document.removeEventListener('keydown', onEsc); }
   function onOutside(e) { if (!wrap.contains(e.target)) closePanel(); }
   function onEsc(e) { if (e.key === 'Escape') closePanel(); }
