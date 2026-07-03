@@ -86,7 +86,10 @@ function _render() {
     _renderPreview();
     return;
   }
-  if (labelEl) labelEl.textContent = _set.category_label || t('apostila.title_default');
+  // The set's category_label is a stored (Portuguese) data value baked in at import
+  // ('Conteúdo do curso'). Rendering it verbatim ignored the active locale, so EN
+  // still showed the PT title. Localize the default via i18n; honor only a custom label.
+  if (labelEl) labelEl.textContent = (_set.category_label && _set.category_label !== 'Conteúdo do curso') ? _set.category_label : t('apostila.title_default');
   if (delBtn) delBtn.style.display = '';
 
   if (!_items.length) {
@@ -233,16 +236,36 @@ function _deleteSet() {
     title: t('apostila.delete_set_title'),
     message: t('apostila.confirm_delete_set'),
     danger: true,
-    onConfirm() {
-      api.deleteSet({ id: _set.id }).then(() => {
-        _set = null;
-        _items = [];
-        _selectedId = null;
-        _detailCache.clear();
-        _render();
-        toast.ok(t('apostila.set_deleted'));
-      }).catch((err) => notice.internal(_err(err)));
-    },
+    onConfirm() { _doDeleteSet(false); },
+  });
+}
+
+// force=false first. If the backend refuses because items are still released to
+// live cohorts (error 'set_has_releases'), surface a SECOND, stronger confirmation
+// that names how much is at stake, and only then retry with force=true. This is the
+// repeated-confirmation wall that protects a released module from an accidental wipe.
+function _doDeleteSet(force) {
+  api.deleteSet({ id: _set.id, force }).then(() => {
+    _set = null;
+    _items = [];
+    _selectedId = null;
+    _detailCache.clear();
+    _render();
+    toast.ok(t('apostila.set_deleted'));
+  }).catch((err) => {
+    if (err && err.data && err.data.error === 'set_has_releases') {
+      _openConfirm({
+        title: t('apostila.delete_set_released_title'),
+        message: t('apostila.delete_set_released_msg')
+          .replace('{n}', err.data.released_count)
+          .replace('{t}', err.data.turma_count),
+        danger: true,
+        confirmLabel: t('apostila.delete_set_released_confirm'),
+        onConfirm() { _doDeleteSet(true); },
+      });
+      return;
+    }
+    notice.internal(_err(err));
   });
 }
 

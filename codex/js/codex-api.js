@@ -306,6 +306,9 @@ export const releases = {
   unrelease: (p) => call('ct_unrelease_item', p),
   setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
   setAulas:  (p) => call('ct_set_release_aulas', p), // { ..., aula_numbers: [1,3] } (#23 multi-aula)
+  // Copy every released item from one turma to another (same client). Additive:
+  // items already released in the target are skipped, nothing is removed.
+  copyReleases: (p) => call('ct_copy_releases', p),  // { client_slug, from_turma_slug, to_turma_slug }
   // Debug-only: toggle the NOVO badge for every item in an aula by moving
   // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
   setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }

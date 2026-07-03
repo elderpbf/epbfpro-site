@@ -13,6 +13,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
+import { openModal, closeModal } from '../js/modal.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -286,6 +287,11 @@ function _renderList() {
   const el = _q('cdx-releases-list');
   if (!el) return;
   let html = '';
+  html += '<div class="cdx-rel-toolbar">' +
+    '<button type="button" class="cdx-btn cdx-btn-sm cdx-rel-copy-from" title="' + _esc(t('releases.copy_from_title')) + '">' +
+      t('releases.copy_from_btn') +
+    '</button>' +
+  '</div>';
   if (!_aulas.length) {
     html += '<div class="cdx-empty" style="margin-bottom:0.5rem">' + t('releases.no_aulas') + '</div>';
   }
@@ -402,6 +408,8 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const copyBtn = e.target.closest('.cdx-rel-copy-from');
+  if (copyBtn) { _openCopyFrom(); return; }
   const markBtn = e.target.closest('.cdx-rel-mark-happened');
   if (markBtn) { _markAulaHappened(markBtn.dataset.markHappened); return; }
   const toggleBtn = e.target.closest('.cdx-rel-clear-fresh');
@@ -450,6 +458,52 @@ function _toggleFresh(aulaNum, makeFresh) {
       _renderList();
     })
     .catch((err) => notice.internal(_err(err)));
+}
+
+// Copy every released item from ANOTHER turma of this client into the current one.
+// The backend (ct_copy_releases) is additive: items already released here are skipped
+// and nothing is ever removed, but it is still a meaningful bulk change, so it sits
+// behind a source picker + explicit confirm. On success we reload the whole surface
+// so aula counts reflect the copied releases.
+function _openCopyFrom() {
+  if (!_clientSlug || !_turmaSlug) return;
+  cohortsApi.listTurmas({ client_slug: _clientSlug }).then((d) => {
+    const others = ((d && d.turmas) || []).filter((tu) => tu.slug !== _turmaSlug && tu.status !== 'archived');
+    if (!others.length) { notice.info(t('releases.copy_from_none')); return; }
+    const opts = others.map((tu) =>
+      '<option value="' + _esc(tu.slug) + '">' + _esc(tu.display_name || tu.name || tu.slug) + '</option>').join('');
+    const html =
+      '<div class="cdx-modal" style="max-width:440px">' +
+        '<div class="cdx-modal-title">' + t('releases.copy_from_modal_title') + '</div>' +
+        '<p style="margin:0 0 1rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(t('releases.copy_from_help')) + '</p>' +
+        '<label class="cdx-field"><span>' + _esc(t('releases.copy_from_source_label')) + '</span>' +
+          '<select class="cdx-rel-copy-src">' + opts + '</select></label>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('releases.copy_from_confirm') + '</button>' +
+        '</div>' +
+      '</div>';
+    const bd = openModal(html);
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
+      const from = bd.querySelector('.cdx-rel-copy-src').value;
+      const okBtn = bd.querySelector('[data-act="ok"]');
+      okBtn.disabled = true;
+      okBtn.textContent = t('releases.saving');
+      api.copyReleases({ client_slug: _clientSlug, from_turma_slug: from, to_turma_slug: _turmaSlug })
+        .then((r) => {
+          if (r && r.error) throw new Error(r.error);
+          closeModal(bd);
+          toast.ok(t('releases.copy_from_done').replace('{n}', (r && r.copied) || 0).replace('{s}', (r && r.skipped) || 0));
+          _loadReleases(_clientSlug, _turmaSlug);
+        })
+        .catch((err) => {
+          okBtn.disabled = false;
+          okBtn.textContent = t('releases.copy_from_confirm');
+          notice.internal(_err(err));
+        });
+    });
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
