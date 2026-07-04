@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Política de Privacidade do Extrator PDF para LLM (PensoIA / EPBF Soluções em Tecnologia Ltda): seus documentos nunca saem do seu computador; a rede é usada só para login e feedback.">
+<link rel="canonical" href="https://pensoia.com/extrator-pdf/privacidade">
+<title>Política de Privacidade · Extrator PDF para LLM · PensoIA</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css?v=2.3">
+<style>
+  /* Legal-page layout — copied verbatim from /privacy so the two legal pages match.
+     Self-styled with brand tokens so it survives the upcoming CSS refactor. */
+  .legal-wrap{max-width:820px;margin:0 auto;padding:48px 20px 96px;}
+  .legal-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:40px;}
+  .legal-brand{font-family:'Comfortaa',sans-serif;font-weight:700;font-size:1.4rem;color:var(--text-primary);text-decoration:none;}
+  .legal-brand b{color:var(--primary);}
+  .legal-back{font-size:.85rem;font-weight:600;color:var(--primary);text-decoration:none;}
+  .legal-wrap h1{font-size:2rem;line-height:1.2;color:var(--text-primary);margin-bottom:8px;}
+  .legal-meta{font-size:.85rem;color:var(--text-secondary);margin-bottom:36px;line-height:1.6;}
+  .legal-wrap h2{font-size:1.15rem;color:var(--text-primary);margin:34px 0 10px;}
+  .legal-wrap p,.legal-wrap li{font-size:.96rem;line-height:1.75;color:var(--text-secondary);}
+  .legal-wrap ul{padding-left:22px;margin:8px 0;}
+  .legal-wrap li{margin-bottom:6px;}
+  .legal-wrap a{color:var(--primary);font-weight:600;}
+  .legal-foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--accent);font-size:.82rem;color:var(--text-secondary);}
+</style>
+</head>
+<body>
+  <div class="legal-wrap">
+    <div class="legal-top">
+      <a class="legal-brand" href="/index.html"><span>p</span>enso<b>IA</b></a>
+      <a class="legal-back" href="/index.html">&larr; Voltar ao site</a>
+    </div>
+
+    <h1>Política de Privacidade</h1>
+    <p class="legal-meta">
+      <strong>Extrator PDF para LLM</strong> &middot; Última atualização: 4 de julho de 2026<br>
+      Responsável: EPBF Soluções em Tecnologia Ltda (marca PensoIA) &middot; CNPJ 65.254.064/0001-64
+    </p>
+
+    <h2>Resumo</h2>
+    <p>Seus documentos nunca saem do seu computador. A extração de texto e o OCR rodam inteiramente na sua máquina. Nenhum PDF ou texto extraído é enviado a nenhum servidor.</p>
+
+    <h2>Dados que o aplicativo trata</h2>
+    <ul>
+      <li><strong>Extração (100% local):</strong> todo o processamento de PDFs acontece no seu computador. Os PDFs, o texto extraído e o histórico ficam apenas na sua máquina. O histórico é cifrado com a sua conta do Windows.</li>
+      <li><strong>Conta e login:</strong> para usar o aplicativo você entra com seu e-mail. Enviamos um código de verificação por e-mail. Guardamos um identificador da sua conta e do seu dispositivo (no máximo 2 dispositivos por conta) apenas para validar o acesso. Não armazenamos senha.</li>
+      <li><strong>Feedback (opcional):</strong> se você optar por enviar feedback, apenas o texto e as informações de diagnóstico que você escolher enviar são transmitidos a nós.</li>
+    </ul>
+
+    <h2>O que NÃO é transmitido</h2>
+    <p>Nenhum documento, nenhum texto extraído e nenhum conteúdo dos seus PDFs. Não há telemetria nem rastreamento de uso.</p>
+
+    <h2>Uso da internet</h2>
+    <p>A internet é usada apenas para: (1) o login da conta (envio e verificação do código por e-mail) e (2) o envio opcional de feedback. Fora isso, o aplicativo funciona offline.</p>
+
+    <h2>Seus direitos</h2>
+    <p>Você pode solicitar a exclusão da sua conta e dos dados associados (identificadores de conta e de dispositivo) pelo contato abaixo.</p>
+
+    <h2>Contato</h2>
+    <p>Para exercer seus direitos ou tirar dúvidas sobre privacidade, fale com a gente pelo e-mail <a href="mailto:contato@pensoia.com">contato@pensoia.com</a>.</p>
+
+    <div class="legal-foot">
+      &copy; <span id="currentYear"></span> PensoIA / EPBF Soluções em Tecnologia Ltda &middot; CNPJ 65.254.064/0001-64
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Respect the theme chosen on the main site; no cookies/analytics on this page.
+      document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+      var year = document.getElementById('currentYear');
+      if (year) year.textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>
