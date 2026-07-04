@@ -1426,6 +1426,7 @@ export default {
   'slides.ed_anim_fadeup':    'rise + fade',
   'slides.ed_anim_fade':      'fade',
   'slides.ed_anim_none':      'instant',
+  'slides.ed_animate':        'Animate',
   'slides.ed_theme_toggle':   'light / dark',
   'slides.ed_present':        'Present',
   'slides.ed_notes':          'Notes',

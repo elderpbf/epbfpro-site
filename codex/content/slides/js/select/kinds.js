@@ -13,6 +13,7 @@ import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
 import { list as cardParts } from "../render/cardparts.js";
+import { keyForSel } from "../render/animsteps.js";
 import * as registry from "../layouts/registry.js";
 import { t } from "../../../../js/i18n.js";
 
@@ -29,6 +30,30 @@ function resetCtrl() {
       const ov = app.cur().overrides;
       if (ov) delete ov[sel.ref];
       app.refresh();
+    },
+  };
+}
+
+// Phase 7.1: per-element "Animar" toggle, shared by every reveal kind (asset, card,
+// topic, image slot). Default ON = the block animates one-by-one (player.autoSteps); OFF
+// marks it IMMEDIATE (it appears with the fixed content), e.g. an image that shows
+// together with the title. `key` (via keyForSel) matches what autoSteps reads, so the bar
+// and the step engine stay one source of truth. Writes stay sparse (drops empty build).
+function animateCtrl(app, key) {
+  const build = app.cur().build || {};
+  return {
+    type: "toggle",
+    id: "animate",
+    labelKey: "slides.ed_animate",
+    on: build[key] !== false,
+    write(app2, sel2, checked) {
+      app2.record("anim");
+      const s = app2.cur();
+      const b = s.build || (s.build = {});
+      if (checked) delete b[key];
+      else b[key] = false;
+      if (!Object.keys(b).length) delete s.build;
+      app2.refresh();
     },
   };
 }
@@ -122,6 +147,7 @@ register({
         },
       });
     }
+    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("asset", sel.ref)));
     ctrls.push({
       type: "button",
       id: "delete",
@@ -299,6 +325,7 @@ register({
         },
       },
     ];
+    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("imageSlot", sel.ref)));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push(resetCtrl());
     return ctrls;
   },
@@ -515,6 +542,7 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
+      animateCtrl(app, keyForSel("card", sel.ref)),
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
     return ctrls;
@@ -598,6 +626,7 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     );
+    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("topic", sel.ref)));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },

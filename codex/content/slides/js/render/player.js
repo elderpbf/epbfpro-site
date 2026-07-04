@@ -6,6 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
+import { animKey, isImmediate } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -202,16 +203,22 @@ export function flowStyle(el, g) {
  * neutralized so only the TOP-LEVEL block is a step — the stack reveals as one unit.
  * Overrides whatever per-item data-step the layouts emit, so the engine has ONE source
  * of truth for order + count. Returns the step count (the slide's max step).
- * Pre-step for the future per-element animation panel (Phase 7).
+ *
+ * Phase 7.1: `build` (slide.build) is an optional sparse map of block-key -> false that
+ * marks a block IMMEDIATE (it appears at once with the fixed content instead of taking its
+ * own step, e.g. an image that should show together with the title). A block with no entry
+ * animates as before, so a deck without `build` is unchanged. Keys match animsteps.animKey.
  */
-export function autoSteps(stage) {
+export function autoSteps(stage, build) {
   const SEL = "[data-step], .asset, .imgslot.filled"; // .filled: an empty image dropzone is not a reveal step
   const all = [...stage.querySelectorAll(SEL)];
   const nested = (el) => all.some((o) => o !== el && o.contains(el));
   let n = 0;
   all.forEach((el) => {
-    if (nested(el)) {
-      el.classList.remove("reveal"); // inside another block: never its own step
+    // Inside another block (reveals as one unit), or opted out to appear immediately:
+    // either way it is not its own step. Otherwise it animates in DOM order.
+    if (nested(el) || isImmediate(animKey(el.dataset), build)) {
+      el.classList.remove("reveal");
       el.dataset.step = "0";
     } else {
       el.classList.add("reveal");

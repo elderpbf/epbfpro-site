@@ -187,7 +187,7 @@ export function mount(root, ctx = {}) {
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
-      this._maxStep = player.autoSteps(this.stage); // centralized one-by-one reveal ordering
+      this._maxStep = player.autoSteps(this.stage, s.build); // centralized one-by-one reveal ordering; s.build opts blocks out (Phase 7.1)
       player.applySteps(this.stage, this.step, this.presenting);
       if (this.select) this.select.afterRender();
       if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
