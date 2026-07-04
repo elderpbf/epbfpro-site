@@ -11,35 +11,15 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-<link rel="stylesheet" href="css/style.css?v=2.3">
-<style>
-  /* Legal-page layout — uses brand tokens from style.css; self-styled so it
-     survives the upcoming CSS refactor. */
-  .legal-wrap{max-width:820px;margin:0 auto;padding:48px 20px 96px;}
-  .legal-top{display:flex;justify-content:space-between;align-items:center;gap:16px;flex-wrap:wrap;margin-bottom:40px;}
-  .legal-brand{font-family:'Comfortaa',sans-serif;font-weight:700;font-size:1.4rem;color:var(--text-primary);text-decoration:none;}
-  .legal-brand b{color:var(--primary);}
-  .legal-back{font-size:.85rem;font-weight:600;color:var(--primary);text-decoration:none;}
-  .legal-lang{background:var(--surface);border:1px solid var(--accent);color:var(--text-primary);font-family:inherit;font-weight:600;
-    font-size:.8rem;padding:7px 14px;border-radius:20px;cursor:pointer;}
-  .legal-wrap h1{font-size:2rem;line-height:1.2;color:var(--text-primary);margin-bottom:8px;}
-  .legal-meta{font-size:.85rem;color:var(--text-secondary);margin-bottom:36px;}
-  .legal-wrap h2{font-size:1.15rem;color:var(--text-primary);margin:34px 0 10px;}
-  .legal-wrap p,.legal-wrap li{font-size:.96rem;line-height:1.75;color:var(--text-secondary);}
-  .legal-wrap ul{padding-left:22px;margin:8px 0;}
-  .legal-wrap li{margin-bottom:6px;}
-  .legal-wrap a{color:var(--primary);font-weight:600;}
-  .legal-foot{margin-top:48px;padding-top:20px;border-top:1px solid var(--accent);font-size:.82rem;color:var(--text-secondary);}
-  [data-lang-block]{display:none;}
-  [data-lang-block].active{display:block;}
-</style>
+<link rel="stylesheet" href="/css/style.css?v=2.3">
+<link rel="stylesheet" href="/css/legal.css?v=1">
 </head>
 <body>
   <div class="legal-wrap">
     <div class="legal-top">
-      <a class="legal-brand" href="index.html"><span>p</span>enso<b>IA</b></a>
-      <div style="display:flex;gap:14px;align-items:center;">
-        <a class="legal-back" href="index.html" data-key="back">&larr; Voltar ao site</a>
+      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
+      <div class="legal-actions">
+        <a class="legal-back" href="/index.html" data-key="back">&larr; Voltar ao site</a>
         <button class="legal-lang" id="langToggle">EN</button>
       </div>
     </div>
@@ -133,11 +113,11 @@
     </div>
   </div>
 
-  <script src="js/consent.js?v=1"></script>
+  <script src="/js/consent.js?v=1"></script>
   <script>
     (function () {
-      // Respect the theme chosen on the main site.
-      document.documentElement.setAttribute('data-theme', localStorage.getItem('theme') || 'light');
+      // Follow the site theme (js/theme.js persists localStorage.plp_theme, dark default).
+      document.documentElement.setAttribute('data-theme', localStorage.getItem('plp_theme') || 'dark');
       var year = document.getElementById('currentYear');
       if (year) year.textContent = new Date().getFullYear();
 
