@@ -49,16 +49,16 @@ test('facade exposes the editor backend methods (frozen action strings)', () => 
   assert.match(apiSrc, /chat:\s*\(p\)\s*=>\s*call\('ai_chat'/, 'ai.chat -> ai_chat');
 });
 
-// ── documento type: any downloadable file, local + Drive via the shared module ──
-test('item-form registers the documento type wired to the shared file-source', () => {
+// ── arquivo type: any downloadable file, local + Drive via the shared module ──
+test('item-form registers the arquivo type wired to the shared file-source', () => {
   assert.match(formSrc, /from\s+['"]\.\.\/js\/file-source\.js['"]/, 'imports the shared file-source module');
   assert.match(formSrc, /createDriveSource|pickLocalFile/, 'uses the shared local + Drive sources');
-  assert.match(formSrc, /typeSlug === 'documento'/, 'has the documento editor branch');
+  assert.match(formSrc, /typeSlug === 'arquivo'/, 'has the arquivo editor branch');
   assert.match(formSrc, /onFileSelected\(f, 'attachment_url'\)/, 'the picked file flows into attachment_url (the trail renders it as a download)');
   assert.match(formSrc, /view: 'any'/, 'the Drive picker browses any file, not just images');
 });
-test('documento i18n keys exist in both dictionaries', () => {
-  for (const k of ['editor.documento_file_label', 'editor.file_from_computer', 'editor.file_from_drive', 'editor.file_selected']) {
+test('arquivo i18n keys exist in both dictionaries', () => {
+  for (const k of ['editor.arquivo_file_label', 'editor.file_from_computer', 'editor.file_from_drive', 'editor.file_selected']) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
   }

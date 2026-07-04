@@ -598,7 +598,7 @@ export default {
   'editor.platform_linux':        'Linux',
   'editor.material_file_label':   'Arquivo anexo (PNG, JPG, PDF, opcional)',
   'editor.current_file':          'Arquivo atual:',
-  'editor.documento_file_label':  'Arquivo (qualquer tipo que o aluno baixa)',
+  'editor.arquivo_file_label':    'Arquivo (qualquer tipo que o aluno baixa)',
   'editor.file_from_computer':    'Do computador',
   'editor.file_from_drive':       'Do Google Drive',
   'editor.file_selected':         'Selecionado:',

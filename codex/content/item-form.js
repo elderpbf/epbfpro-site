@@ -161,13 +161,13 @@ function _buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
-  if (typeSlug === 'documento') {
+  if (typeSlug === 'arquivo') {
     // Any downloadable file (pdf/docx/zip/…), sourced from the computer OR Google Drive via the
     // shared file-source module. The student gets a "Baixar" action in the trail (actions.js
     // renders attachment_url generically). Drive button hides until the Picker key is configured.
     return '<div class="cdx-type-block">' +
       hasBody +
-      '<div class="cdx-field"><label>' + t('editor.documento_file_label') + '</label>' +
+      '<div class="cdx-field"><label>' + t('editor.arquivo_file_label') + '</label>' +
         '<div class="cdx-upload-row">' +
           '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-local">' + t('editor.file_from_computer') + '</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-drive" style="display:none">' + t('editor.file_from_drive') + '</button>' +
@@ -277,7 +277,7 @@ function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
     });
   }
 
-  // documento: pick any file from the computer OR Google Drive (shared file-source module),
+  // arquivo: pick any file from the computer OR Google Drive (shared file-source module),
   // both handing the File to the same pending-upload path as the native file inputs above.
   const docLocal = block.querySelector('#ie-doc-local');
   const docDrive = block.querySelector('#ie-doc-drive');
@@ -319,7 +319,7 @@ function _collectTypeData(root, typeSlug) {
     }
   } else if (typeSlug === 'material') {
     meta_json = {};
-  } else if (typeSlug === 'documento') {
+  } else if (typeSlug === 'arquivo') {
     meta_json = {}; // attachment_url is set by the pending-file upload on save
   } else if (typeSlug === 'paper') {
     meta_json = {

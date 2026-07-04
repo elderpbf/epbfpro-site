@@ -598,7 +598,7 @@ export default {
   'editor.platform_linux':        'Linux',
   'editor.material_file_label':   'Attachment (PNG, JPG, PDF, optional)',
   'editor.current_file':          'Current file:',
-  'editor.documento_file_label':  'File (any type the student downloads)',
+  'editor.arquivo_file_label':    'File (any type the student downloads)',
   'editor.file_from_computer':    'From computer',
   'editor.file_from_drive':       'From Google Drive',
   'editor.file_selected':         'Selected:',
