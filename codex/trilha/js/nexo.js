@@ -88,7 +88,10 @@ function mountAnswer(sessionCode) {
     host.id = HOST_ID;
     (document.querySelector('.cdx-trilha-main') || document.body).appendChild(host);
   }
-  mountAnswer_(host, { sessionCode });
+  // The inner <codex-question> element sees the CLOSE edge on its own ~2s poll; wire it
+  // back here so the trilha returns in ~2s instead of waiting up to POLL_LIVE_MS (15s) for
+  // our own close-watch poll. schedule(idle) so a re-opened session then surfaces snappily.
+  mountAnswer_(host, { sessionCode, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
   _isMounted = true;
   _lastCode = sessionCode;
 }
