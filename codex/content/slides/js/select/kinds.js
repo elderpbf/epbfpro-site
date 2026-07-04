@@ -58,7 +58,7 @@ function animCtrls(app, kind, ref, def) {
 
 // A whole deck's animation, offered on the list container's bar (and mirrored into the
 // card "Ajustes ▾"). `list` is the slots key (topics / cards / a named list).
-function deckAnimCtrls(app, list) {
+function deckAnimCtrls(app, list, withMove = true) {
   const mode = listModeOf(app.cur().build, list); // "each" | "unit" | "none"
   const out = [{
     type: "choice", id: "anim", value: mode,
@@ -69,7 +69,7 @@ function deckAnimCtrls(app, list) {
     ],
     write(app2, sel2, v) { app2.animListMode(list, v); },
   }];
-  if (mode !== "none") out.push(
+  if (withMove && mode !== "none") out.push(
     { type: "button", id: "anim-earlier", label: "◀", run(app2) { app2.animListMove(list, -1); } },
     { type: "button", id: "anim-later", label: "▶", run(app2) { app2.animListMove(list, 1); } },
   );
@@ -560,6 +560,8 @@ register({
       { type: "button", id: "move-r", label: stacked ? "▼" : "▶", run(app2, sel2) { moveItem(app2, sel2.ref, 1); } },
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
+      // Deck-wide animation, reachable from a card (skip free stacks: they animate via .asset).
+      ...(stackAssetOf(app, sel.ref.split(".")[0]) ? [] : [{ type: "sep" }, ...deckAnimCtrls(app, sel.ref.split(".")[0], false)]),
       { type: "sep" },
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
@@ -644,6 +646,10 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     );
+    // Deck-wide animation, reachable by clicking an ITEM (not just the hard-to-hit
+    // container gap). Skipped for a free stack, which animates via its own .asset.
+    const tlist = sel.ref.split(".")[0];
+    if (!stackAssetOf(app, tlist)) ctrls.push({ type: "sep" }, ...deckAnimCtrls(app, tlist, false));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },

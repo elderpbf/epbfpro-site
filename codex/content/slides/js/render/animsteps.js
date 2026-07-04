@@ -68,14 +68,14 @@ export function planSteps(els, build) {
  * default-animated singleton contributes its key; free text boxes (def false) are left
  * out (fixed by default, opted in later). Order follows DOM order.
  */
-export function seedBuild(els) {
+export function seedBuild(els, includeAll = false) {
   const out = [];
   const seen = new Set();
   for (const e of els) {
     if (e.list) {
       if (!seen.has(e.list)) { seen.add(e.list); out.push("each:" + e.list); }
-    } else if (e.def && e.key) {
-      out.push(e.key);
+    } else if ((e.def || includeAll) && e.key) {
+      out.push(e.key); // includeAll also animates free text boxes ("ligar todos")
     }
   }
   return out;

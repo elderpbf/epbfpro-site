@@ -6,7 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
-import { planSteps, seedBuild } from "./animsteps.js";
+import { planSteps, seedBuild, parseListKey } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -248,6 +248,41 @@ export function autoSteps(stage, build) {
  *  changing what the slide currently shows. */
 export function animSeed(stage) {
   return seedBuild(blocksOf(stage));
+}
+
+/** Every block as an explicit build (free text boxes included) — the "ligar todos" seed. */
+export function animAll(stage) {
+  return seedBuild(blocksOf(stage), true);
+}
+
+/** The ordered ANIMATED units for the animation panel: the build (or the auto seed when
+ *  none), each labelled from the live DOM. A deck is one entry with its mode; a singleton
+ *  carries a type label (+ a text snippet). Returns [{ key, label, isDeck, list?, mode? }].
+ */
+export function animUnits(stage, build) {
+  const blocks = blocksOf(stage);
+  const b = build || seedBuild(blocks);
+  return b.map((key) => {
+    const lk = parseListKey(key);
+    if (lk) return { key, isDeck: true, list: lk.list, mode: lk.mode, label: deckLabel(lk.list) };
+    return { key, isDeck: false, label: singletonLabel(blocks.find((x) => x.key === key)) };
+  });
+}
+
+function deckLabel(list) {
+  if (list === "topics") return t("slides.ed_topic");
+  if (list === "cards") return t("slides.ed_card");
+  return list;
+}
+
+function singletonLabel(blk) {
+  if (!blk || !blk.el) return t("slides.ed_text");
+  const c = blk.el.classList;
+  if (c.contains("imgslot") || c.contains("a-image") || c.contains("a-photo")) return t("slides.ed_image");
+  if (c.contains("a-video")) return t("slides.ed_video");
+  if (c.contains("a-stack")) return t("slides.ed_list");
+  const s = (blk.el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 24);
+  return s ? `${t("slides.ed_text")}: ${s}` : t("slides.ed_text");
 }
 
 /** Reveal visibility: in edit mode everything shows; presenting steps through. */

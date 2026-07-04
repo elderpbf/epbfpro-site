@@ -59,6 +59,8 @@ test('empty build animates nothing (explicit), distinct from absent build', () =
 
 test('seedBuild snapshots the auto order: one each:<list> per list, singletons by key, text boxes omitted', () => {
   assert.deepEqual(seedBuild(els()), ['each:topics', 'f:hero']);
+  // "ligar todos" (includeAll) also pulls in the free text box, in DOM order.
+  assert.deepEqual(seedBuild(els(), true), ['f:title', 'each:topics', 'f:hero']);
 });
 
 test('moveKey shifts a unit and is a no-op at the ends', () => {
