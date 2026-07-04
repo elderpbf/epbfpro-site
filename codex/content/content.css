@@ -807,11 +807,15 @@
 .cdx-apostila-grip:active { cursor: grabbing; }
 .cdx-item-row.is-dragging { opacity: 0.45; }
 
-/* Working-copy status highlight: a new/edited section stands out at a glance */
-.cdx-item-row--new { border-left: 3px solid #059669; background: rgba(16,185,129,0.06); }
-.cdx-item-row--edited { border-left: 3px solid #b45309; background: rgba(245,158,11,0.07); }
-[data-theme="dark"] .cdx-item-row--new { border-left-color: #34d399; background: rgba(16,185,129,0.10); }
-[data-theme="dark"] .cdx-item-row--edited { border-left-color: #fbbf24; background: rgba(245,158,11,0.10); }
+/* Preview always shows title + summary + body (no need to open the editor). */
+.cdx-preview-summary { font-size: 0.86rem; color: var(--text-secondary); margin-top: 0.25rem; line-height: 1.4; }
+/* Working copy highlights the exact CHANGED TEXT (title/summary/body), not the list row. */
+.cdx-preview-title.is-changed,
+.cdx-preview-summary.is-changed { background: rgba(245,158,11,0.16); box-shadow: 0 0 0 3px rgba(245,158,11,0.16); border-radius: 4px; }
+.cdx-preview-render.is-changed { border-left: 3px solid #b45309; padding-left: 0.7rem; background: rgba(245,158,11,0.05); border-radius: 4px; }
+[data-theme="dark"] .cdx-preview-title.is-changed,
+[data-theme="dark"] .cdx-preview-summary.is-changed { background: rgba(245,158,11,0.22); box-shadow: 0 0 0 3px rgba(245,158,11,0.22); }
+[data-theme="dark"] .cdx-preview-render.is-changed { border-left-color: #fbbf24; background: rgba(245,158,11,0.09); }
 
 /* Draft status badges */
 .cdx-apostila-badge {
