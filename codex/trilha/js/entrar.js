@@ -9,7 +9,7 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { esc, cooldownButton } from './utils.js';
 import { createLoginFlow, validateEmail } from './student-login.js';
-import { getKnownTurmas, getToken, setToken, forgetTurma, clearToken } from './student-session.js';
+import { getKnownTurmas, getToken, setToken, forgetTurma } from './student-session.js';
 
 function applyI18n(root) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -21,15 +21,18 @@ function applyI18n(root) {
   });
 }
 
-// The code arrives as ?code=NNNN or as the path segment /trilha/NNNN (the rewrite keeps
-// the visible path). Pull the 4-digit token from either.
+// The code arrives as ?code=XXXX or as the path segment /trilha/XXXX (the rewrite keeps the
+// visible path). Pull the 4-char code from either: a 4-digit number (the new turma code) OR
+// a legacy letter code like TVKV. The path branch takes the LAST segment and requires
+// exactly 4 chars, so route words (/trilha/entrar) and longer slugs never read as a code.
 export function readCode(search, pathname) {
+  const isCode = (s) => /^[A-Za-z0-9]{4}$/.test(s);
   try {
     const q = new URLSearchParams(search || '').get('code');
-    if (q && /^[0-9]{4}$/.test(q.trim())) return q.trim();
+    if (q && isCode(q.trim())) return q.trim();
   } catch (_) { /* fall through to the path */ }
-  const m = String(pathname || '').match(/(\d{4})\/?$/);
-  return m ? m[1] : '';
+  const seg = String(pathname || '').split('/').filter(Boolean).pop() || '';
+  return isCode(seg) ? seg : '';
 }
 
 // PURE. The launch URL for a known/verified turma (the Continuar banner + the post-login
@@ -59,12 +62,12 @@ async function resolveAndGo(code, els) {
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
   let res;
-  try { res = await trail.resolveEnrollCode({ code }); } catch (_) { res = null; }
+  try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
   if (res && res.found) {
-    const url = location.origin + '/trilha/' + encodeURIComponent(res.client_slug) + '/' +
-      encodeURIComponent(res.turma_slug) + '?k=' + encodeURIComponent(res.turma_token || '') +
-      '&et=' + encodeURIComponent(res.enrollment_token || '');
-    location.replace(url); // forward into the trilha as if the QR were scanned
+    // The code is the turma's permanent URL in its own right: land ON it (/trilha/<code>) and
+    // let the student page resolve it in place. We resolve here only to validate + show an
+    // inline "not found" before navigating. The page re-resolves and picks up any open et.
+    location.replace(location.origin + '/trilha/' + encodeURIComponent(code));
     return;
   }
   els.state.textContent = '';
@@ -91,8 +94,11 @@ async function autoEnter(els) {
     try { res = await trail.sessionCheck({ session_token: getToken(entry.client_slug, entry.turma_slug), _silent: true }); }
     catch (_) { res = null; }
     if (res && res.ok) { location.replace(buildTurmaUrl(entry)); return; } // logged in for real -> straight in
-    clearToken(entry.client_slug, entry.turma_slug);   // revoked/dead -> prune the token and the registry row
-    forgetTurma(entry.client_slug, entry.turma_slug);
+    // Do NOT prune the token on a failed check (Élder): a network blip throws and is
+    // indistinguishable from a truly-dead session here, and deleting on a blip strands a
+    // still-logged-in student on the registration screen (the bug a student hit). The token
+    // is turma-specific and self-expires, so a dead one is harmless and just fails again;
+    // only an explicit "sair" clears it. Fall through to the código + e-mail entry below.
   }
   if (els.state) els.state.textContent = ''; // none valid -> reveal the código + e-mail entry
   if (els.paths) els.paths.hidden = false;

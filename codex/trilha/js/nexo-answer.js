@@ -167,6 +167,10 @@ export function mount(host, opts) {
     host, sessionCode, studentName,
     activeQuestion: null, els, listeners: [], current: null,
     myAnswer: null, lastSeenAnsKey: null, inboxTimer: null,
+    // Orchestrator (nexo.js) callback: fired once when the element reports the session
+    // closed, so the trilha is restored in ~2s instead of on the orchestrator's own poll.
+    onSessionClosed: (opts && typeof opts.onSessionClosed === 'function') ? opts.onSessionClosed : null,
+    closedNotified: false,
   };
   try { _state.lastSeenAnsKey = localStorage.getItem('nx_seen_ans_' + sessionCode) || null; } catch (_) { /* noop */ }
 
@@ -261,6 +265,13 @@ function _wireQuestionElement() {
       _showState('closed');
       if (els.qaBar) els.qaBar.classList.remove('visible');
       _collapseQa();
+      // Tell the orchestrator once so it restores the trilha now, not on its slow poll.
+      // Deferred via microtask so the teardown runs AFTER this poll cycle unwinds.
+      if (_state && _state.onSessionClosed && !_state.closedNotified) {
+        _state.closedNotified = true;
+        const cb = _state.onSessionClosed;
+        queueMicrotask(() => { try { cb(); } catch (_) { /* noop */ } });
+      }
       return;
     }
     _pulseDot('dot-waiting');

@@ -146,8 +146,8 @@ function _pollEnroll() {
     // the 4-digit code emphasized, so it can be dictated or typed on a computer.
     const urlEl = document.getElementById('cdx-disp-enroll-url');
     if (urlEl) {
-      const code = String(_enrollState.enrollment_code || '');
-      const codeOut = /^[0-9]{4}$/.test(code) ? code : '----';
+      const code = String(_enrollState.access_code || '');
+      const codeOut = /^[A-Za-z0-9]{4}$/.test(code) ? code : '----'; // 4-digit number or a legacy letter code
       // Code on its own line below the address, so it never splits across a wrap.
       urlEl.innerHTML = '<span class="cdx-disp-enroll-prefix">' + entrarUrl('') + '</span>' +
         '<span class="cdx-disp-enroll-code">' + codeOut + '</span>';

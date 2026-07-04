@@ -210,21 +210,10 @@ function _loadReleases(clientSlug, turmaSlug) {
   const lk = _q('cdx-releases-locked');
   if (lk) lk.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
 
-  const loadApostila = contentApi.listSets().then((data) => {
-    const sets = ((data && data.sets) || []).filter((s) => (s.item_count || 0) > 0);
-    if (!sets.length) return;
-    const current = sets[sets.length - 1];   // newest set with items (matches student view)
-    return contentApi.getSet({ id: current.id }).then((res) => {
-      _apostilaItems = ((res && res.items) || []).slice()
-        .sort((a, b) => (a.set_position || 0) - (b.set_position || 0));
-    });
-  }).catch((e) => { notice.internal(_err(e)); });
-
   Promise.all([
     contentApi.listItems(),
     cohortsApi.listTurmas({ client_slug: clientSlug }),
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }),
-    loadApostila,
   ]).then((results) => {
     _allItems = (results[0] && results[0].items) || [];
     _aulas = (results[2] && results[2].aulas) || [];
@@ -244,8 +233,17 @@ function _loadReleases(clientSlug, turmaSlug) {
         aula_numbers: Array.isArray(i.aula_numbers) ? i.aula_numbers : (i.aula_number != null ? [i.aula_number] : []),
         released_at: i.released_at,
       }; });
-      _renderMain();
-    }).catch((err) => { _released = []; _releasedMeta = {}; _renderMain(); notice.internal(_err(err)); });
+      // Apostila pool = the set bound to THIS turma's course (vd.apostila_set, resolved
+      // server-side by course_id -> apostila_set_id). Multi-apostila safe: no "newest set"
+      // guess. Empty when the course has no apostila bound.
+      const setId = vd && vd.apostila_set && vd.apostila_set.id;
+      if (!setId) { _apostilaItems = []; _renderMain(); return; }
+      return contentApi.getSet({ id: setId }).then((res) => {
+        _apostilaItems = ((res && res.items) || []).slice()
+          .sort((a, b) => (a.set_position || 0) - (b.set_position || 0));
+        _renderMain();
+      }).catch((e) => { _apostilaItems = []; _renderMain(); notice.internal(_err(e)); });
+    }).catch((err) => { _released = []; _releasedMeta = {}; _apostilaItems = []; _renderMain(); notice.internal(_err(err)); });
   }).catch((err) => {
     if (el) el.innerHTML = '<div class="cdx-empty">' + t('releases.error_loading') + '</div>';
     notice.internal(_err(err));

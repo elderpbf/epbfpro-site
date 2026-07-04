@@ -13,6 +13,7 @@
 //   window.ThemeManager, window.BS_AUTH
 import { t, languages, setLang } from './i18n.js';
 import { anchorLeft, placePill } from './anchored.js';
+import { call as codexCall } from './codex-api.js';
 // The Settings drawer is app-owned (the shell) with auth as an injected component.
 import { init as initSettingsDrawer } from './settings-drawer.js';
 import { googleSection, passwordSection } from './settings-auth.js';
@@ -376,6 +377,37 @@ export function init(opts) {
     langBtn.title = target === 'en' ? 'Switch to English' : 'Mudar para Português';
     langBtn.addEventListener('click', () => { setLang(target); location.reload(); });
     inner.appendChild(langBtn);
+  }
+
+  // Student-facing language (Élder, hidden admin control): the trilha + display language, a
+  // single GLOBAL setting, independent of the admin language above. Rendered as "Alunos:
+  // BR/EN" (the language you'd switch the students TO). Async: loads the current value, flips
+  // it on click; the audience surfaces adopt it on their next load. The capability exists so
+  // the multilingual build is not dead code, even though he realistically never flips it.
+  if (langs.length > 1) {
+    const stuBtn = document.createElement('button');
+    stuBtn.className = 'cdx-lang-btn cdx-lang-btn--students';
+    stuBtn.textContent = 'Alunos: …';
+    stuBtn.title = 'Idioma das telas do aluno (trilha + display)';
+    inner.appendChild(stuBtn);
+    const STU_LBL = { 'en': 'EN', 'pt-BR': 'BR' };
+    let stuCur = 'pt-BR';
+    const stuRender = () => {
+      const tgt = stuCur === 'pt-BR' ? 'en' : 'pt-BR';
+      stuBtn.textContent = 'Alunos: ' + STU_LBL[tgt];
+      stuBtn.dataset.target = tgt;
+    };
+    (async () => {
+      try { const r = await codexCall('ct_get_student_lang'); if (r && r.lang) stuCur = r.lang; } catch (_) { /* default BR */ }
+      stuRender();
+    })();
+    stuBtn.addEventListener('click', async () => {
+      const tgt = stuBtn.dataset.target || 'en';
+      stuBtn.disabled = true;
+      try { const r = await codexCall('ct_set_student_lang', { lang: tgt }); if (r && r.lang) stuCur = r.lang; } catch (_) { /* leave as-is */ }
+      stuBtn.disabled = false;
+      stuRender();
+    });
   }
 
   // Notification bell (teacher, cross-turma). Computed from forum activity; clicking

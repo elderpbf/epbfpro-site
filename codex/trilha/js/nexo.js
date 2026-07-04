@@ -30,10 +30,18 @@ let _timer = null;
 let _stopped = false;
 let _isMounted = false;
 let _lastCode = null;
+let _started = false;
 
+// Called twice by design: the self-start (DOMContentLoaded) and page.js. On a code entry
+// (/trilha/<code>) the URL carries no client/turma yet, so the self-start no-ops here and
+// page.js re-calls with the resolved identity. The _started guard makes the second call
+// idempotent for a direct entry (where the self-start already began polling).
 export function startNexo(loc) {
-  _loc = loc || parseLocation(location.search, location.pathname);
-  if (!_loc.clientSlug || !_loc.turmaSlug) return; // the page will surface its own error
+  const l = loc || parseLocation(location.search, location.pathname);
+  if (!l.clientSlug || !l.turmaSlug) return; // no identity yet; a later call (page.js) can start
+  if (_started) return;                       // already polling; never double-start
+  _started = true;
+  _loc = l;
   tick();
   document.addEventListener('visibilitychange', onVisibilityChange);
 }
@@ -88,7 +96,10 @@ function mountAnswer(sessionCode) {
     host.id = HOST_ID;
     (document.querySelector('.cdx-trilha-main') || document.body).appendChild(host);
   }
-  mountAnswer_(host, { sessionCode });
+  // The inner <codex-question> element sees the CLOSE edge on its own ~2s poll; wire it
+  // back here so the trilha returns in ~2s instead of waiting up to POLL_LIVE_MS (15s) for
+  // our own close-watch poll. schedule(idle) so a re-opened session then surfaces snappily.
+  mountAnswer_(host, { sessionCode, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
   _isMounted = true;
   _lastCode = sessionCode;
 }

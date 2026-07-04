@@ -12,13 +12,15 @@ import { makeDataUrlStore } from "./core/files.js";
 import { openGalleryBox, refreshGalleryBox, closeGalleryBox } from "./edit/gallerybox.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
+import { moveKey } from "./render/animsteps.js";
 import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
 import { initReorder } from "./select/reorder.js";
-import { insertMenu, appearanceMenu, animMenu } from "./edit/menus.js";
+import { insertMenu, appearanceMenu } from "./edit/menus.js";
 import { addSlidePanelHTML, initAddSlide } from "./edit/addslide.js";
 import { openThemeBox, refreshThemeBox, closeThemeBox } from "./edit/themebox.js";
+import { openAnimPanel, closeAnimPanel } from "./edit/animpanel.js";
 import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
@@ -151,6 +153,7 @@ export function mount(root, ctx = {}) {
     blank: null,   // presenting only: null | "black" | "white" (B/W blank the audience) — 4A
     atEnd: false,  // presenting only: showing the end-of-deck screen — 4C
     jumpBuf: "",   // presenting only: digits typed for jump-to-slide, committed on Enter — 4B
+    previewing: false, // Phase 7: in-editor step-through of THIS slide (no fullscreen/2nd window)
     editing: false,
     activeEditable: null,
     fontScope: "all", // "all" = deck.theme.fontScale · "slide" = per-slide override
@@ -171,7 +174,8 @@ export function mount(root, ctx = {}) {
     // centralized one-by-one ordering), not the layout's reveals(): all content blocks
     // animate, in DOM order, with one source of truth.
     maxStep() { return this._maxStep || 0; },
-    effMax() { return this.presenting ? this.maxStep() : 0; },
+    _stepMode() { return this.presenting || this.previewing; }, // reveal steps honoured while presenting OR previewing
+    effMax() { return this._stepMode() ? this.maxStep() : 0; },
     scaleNow() { return player.scaleOf(this.stage, this.deck().canvas.w); },
     fit() { return player.fit(this.stagewrap, this.stagebox, this.stage, this.deck().canvas, this.presenting ? 0 : 40); },
     commit() { store.touch(); },
@@ -187,8 +191,8 @@ export function mount(root, ctx = {}) {
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
-      this._maxStep = player.autoSteps(this.stage); // centralized one-by-one reveal ordering
-      player.applySteps(this.stage, this.step, this.presenting);
+      this._maxStep = player.autoSteps(this.stage, s.build); // ordered reveal plan (Phase 7); absent build = auto one-by-one
+      player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
       if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
@@ -203,6 +207,90 @@ export function mount(root, ctx = {}) {
       const ta = this.root.querySelector("#notesarea");
       if (ta && document.activeElement !== ta) ta.value = this.cur().notes || "";
     },
+
+    // ── Animation build (Phase 7) ─────────────────────────────────────────────
+    // slide.build is the explicit ordered reveal plan (see render/animsteps.js). It stays
+    // ABSENT while the slide follows the auto one-by-one default; the first edit
+    // MATERIALIZES it from the current auto order (player.animSeed) so nothing on screen
+    // jumps. From then on it is explicit (an empty array = "animate nothing").
+    _ensureBuild() {
+      const s = this.cur();
+      if (!s.build) s.build = player.animSeed(this.stage);
+      return s.build;
+    },
+    // include / exclude a singleton (free asset, image slot, text box) from the animation.
+    animToggle(key, on) {
+      this.record("anim:toggle");
+      const b = this._ensureBuild();
+      if (on) { if (!b.includes(key)) this.cur().build = [...b, key]; }
+      else this.cur().build = b.filter((k) => k !== key);
+      this._afterAnim();
+    },
+    // set a whole DECK's animation: "each" (item a item), "unit" (all at once) or "none"
+    // (fixed). Keeps the deck's place in the reveal order if it already had one.
+    animListMode(list, mode) {
+      this.record("anim:deck");
+      const b = this._ensureBuild();
+      const at = b.findIndex((k) => k === "each:" + list || k === "unit:" + list);
+      const out = b.filter((k) => k !== "each:" + list && k !== "unit:" + list);
+      if (mode !== "none") {
+        const key = mode === "unit" ? "unit:" + list : "each:" + list;
+        if (at >= 0) out.splice(Math.min(at, out.length), 0, key);
+        else out.push(key);
+      }
+      this.cur().build = out;
+      this._afterAnim();
+    },
+    // reorder a singleton unit one slot earlier (-1) / later (+1) in the reveal order.
+    animMove(key, dir) {
+      this.record("anim:move");
+      this.cur().build = moveKey(this._ensureBuild(), key, dir);
+      this._afterAnim();
+    },
+    // reorder a whole DECK one slot earlier / later (finds its current each:/unit: key).
+    animListMove(list, dir) {
+      this.record("anim:move");
+      const b = this._ensureBuild();
+      const key = b.find((k) => k === "each:" + list || k === "unit:" + list);
+      if (key) this.cur().build = moveKey(b, key, dir);
+      this._afterAnim();
+    },
+    // ── Animation panel data + preview (Phase 7) ──────────────────────────────
+    // Refresh the slide AND, if the panel is open, itself (registered via _animPanelRefresh).
+    _afterAnim() { this.refresh(); if (this._animPanelRefresh) this._animPanelRefresh(); },
+    animUnits() { return player.animUnits(this.stage, this.cur().build); }, // ordered animated units, labelled
+    animAllOn() { this.record("anim:all"); this.cur().build = player.animAll(this.stage); this._afterAnim(); },
+    animAllOff() { this.record("anim:none"); this.cur().build = []; this._afterAnim(); },
+    animReorder(orderedKeys) { this.record("anim:order"); this.cur().build = orderedKeys.slice(); this._afterAnim(); }, // drag drop result
+    animRemoveUnit(key) { this.record("anim:remove"); this.cur().build = this._ensureBuild().filter((k) => k !== key); this._afterAnim(); },
+    openAnim(btn) { openAnimPanel(this, btn); },
+    // Preview: step THIS slide's reveals in the editor (no fullscreen, no 2nd window). The
+    // ▶ Apresentar button becomes ■ Parar; leaving the slide or closing the panel stops it.
+    startPreview() {
+      if (this.presenting) return;
+      this.previewing = true;
+      this.step = 0;
+      this.root.classList.add("previewing");
+      this._syncPresentBtn();
+      this.renderSlide();
+      if (this._animPanelRefresh) this._animPanelRefresh(); // collapse the panel to the Stop control
+    },
+    stopPreview() {
+      this._clearPreview();
+      this.step = 0;
+      this.renderSlide();
+      if (this._animPanelRefresh) this._animPanelRefresh(); // expand the panel back
+    },
+    _clearPreview() {
+      if (!this.previewing) return;
+      this.previewing = false;
+      this.root.classList.remove("previewing");
+      this._syncPresentBtn();
+    },
+    _syncPresentBtn() {
+      const b = this.root.querySelector("#present");
+      if (b) b.textContent = this.previewing ? "■ " + t("slides.ed_stop") : "▶ " + t("slides.ed_present");
+    },
     renderNav() {}, // assigned below (navigator)
     broadcast() {}, // assigned below (sync)
 
@@ -212,8 +300,9 @@ export function mount(root, ctx = {}) {
       // On the end-of-deck screen (4C): forward restarts, backward returns to the deck.
       if (this.atEnd) { if (d > 0) this.restart(); else this.setEnd(false); return; }
       const mx = this.effMax();
-      if (d > 0 && this.step < mx) { this.step++; player.applySteps(this.stage, this.step, this.presenting); this.broadcast(); return; }
-      if (d < 0 && this.step > 0) { this.step--; player.applySteps(this.stage, this.step, this.presenting); this.broadcast(); return; }
+      if (d > 0 && this.step < mx) { this.step++; player.applySteps(this.stage, this.step, this._stepMode()); this.broadcast(); return; }
+      if (d < 0 && this.step > 0) { this.step--; player.applySteps(this.stage, this.step, this._stepMode()); this.broadcast(); return; }
+      if (this.previewing) return; // preview is confined to the current slide; step controls only
       const ni = this.index + d;
       // Forward past the last slide, while presenting, shows the end screen (4C).
       if (d > 0 && ni >= this.deck().slides.length) { if (this.presenting) this.setEnd(true); return; }
@@ -229,6 +318,7 @@ export function mount(root, ctx = {}) {
     // jump to slide i. NOT named `select`: wiring.js owns app.select (the selection
     // object), so this nav method must not collide with it.
     goTo(i) {
+      if (this.previewing) this._clearPreview(); // leaving the slide stops preview
       this.index = i; this.step = 0;
       if (this.select) this.select.clear();
       this.renderSlide(); this.renderNav(); this.broadcast();
@@ -504,6 +594,7 @@ export function mount(root, ctx = {}) {
       this.refresh();
     },
     setPresenting(on) {
+      if (on) this._clearPreview(); // a real presentation supersedes an in-editor preview
       this.presenting = on;
       // Scope the class to the editor host (.cdx-deck-editor), NOT document.body:
       // in Codex the app is mounted into an inner host, and every presenting/presenter
@@ -695,9 +786,11 @@ function wireChrome(app, root) {
     };
   };
   menuBtn("#insertBtn", (btn) => app.select.openMenu(insertMenu(), btn));
-  // Animação menu = just the entrance type now; reveal ORDER is centralized in
-  // player.autoSteps (every content block animates one-by-one in insertion order).
-  menuBtn("#animBtn", (btn) => app.select.openMenu(animMenu(app.deck().theme.anim), btn));
+  // Animação: opens the animation PANEL (edit/animpanel.js) — entrance type + the ordered
+  // reveal list (include/exclude, per-deck item-a-item/unit, reorder) + Preview. Wired
+  // directly (toggles on re-click via the panel's own open guard), like the Tema button.
+  const animBtn = $("#animBtn");
+  if (animBtn) animBtn.onclick = (e) => { e.stopPropagation(); app.select.clear(); app.openAnim(animBtn); };
   // The "Tema" button opens its own settings panel (themebox), not a context-bar menu,
   // so it is wired directly (toggles on re-click; the panel owns its outside-click).
   const themeBtn = $("#appearBtn");
@@ -749,6 +842,7 @@ function wireChrome(app, root) {
   if (endout) endout.onclick = () => app.restart();
 
   $("#present").onclick = () => {
+    if (app.previewing) { app.stopPreview(); return; } // during preview this button is ■ Parar
     // Open the presenter window FIRST. Spawning a popup steals focus, and a focus
     // change while the opener is *entering* fullscreen makes the browser bounce right
     // back out, which fired onFs -> setPresenting(false). That's why the first click
@@ -810,6 +904,7 @@ function wireChrome(app, root) {
       if (k === "w") { e.preventDefault(); app.toggleBlank("white"); return; } // 4A
       if (k === "r") { e.preventDefault(); app.restart(); return; }            // 4C
     }
+    if (e.key === "Escape" && app.previewing) { app.stopPreview(); return; }
     if (e.key === "Escape" && app.presenting) { app.setPresenting(false); return; }
     if ((e.ctrlKey || e.metaKey) && !e.altKey) {
       const k = e.key.toLowerCase();
@@ -830,6 +925,7 @@ function wireChrome(app, root) {
 export function unmount(app, root) {
   try { app.channel.close(); } catch (e) { /* noop */ }
   closeThemeBox(); // tear down the Tema panel + its document listener if open
+  closeAnimPanel(); // and the animation panel + its listeners
   closeGalleryBox(app); // and the gallery box + its outside-click listener
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);

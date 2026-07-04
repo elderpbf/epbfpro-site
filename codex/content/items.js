@@ -560,6 +560,7 @@ function _newItem() {
     onClose: () => closeModal(bd),
     onCancel: () => closeModal(bd),
     onManual: (out) => { closeModal(bd); _openItemEditorFull(null, { body_md: out.body_md }, null); },
+    onFile: (out) => { closeModal(bd); _openItemEditorFull(null, { type: 'arquivo' }, null, out.file); },
     onAIComplete: async (result) => {
       closeModal(bd);
       const tagIds = await _tagsByLabels(result.tagLabels || []);
@@ -569,13 +570,14 @@ function _newItem() {
   });
 }
 
-function _openItemEditorFull(item, prefill, aiContext) {
+function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
   const isEdit = !!item;
   const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
   itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
     aiContext,
+    pendingFile,
     types: _types,
     tags: _tags,
     titleLabel: isEdit ? t('content.edit_item') : t('content.new_item_step2'),

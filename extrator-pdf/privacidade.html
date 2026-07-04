@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="index, follow">
+<meta name="description" content="Política de Privacidade do Extrator PDF para LLM (PensoIA / EPBF Soluções em Tecnologia Ltda): seus documentos nunca saem do seu computador; a rede é usada só para login e feedback.">
+<link rel="canonical" href="https://pensoia.com/extrator-pdf/privacidade">
+<title>Política de Privacidade · Extrator PDF para LLM · PensoIA</title>
+<link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/style.css?v=2.3">
+<link rel="stylesheet" href="/css/legal.css?v=1">
+</head>
+<body>
+  <div class="legal-wrap">
+    <div class="legal-top">
+      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
+      <div class="legal-actions">
+        <a class="legal-back" href="/index.html">&larr; Voltar ao site</a>
+      </div>
+    </div>
+
+    <div class="legal-titlerow">
+      <img class="legal-mark" src="/images/app/extrator-pdf-mark.svg" alt="Extrator PDF para LLM">
+      <h1>Política de Privacidade</h1>
+    </div>
+    <p class="legal-meta">
+      <strong>Extrator PDF para LLM</strong> &middot; Última atualização: 4 de julho de 2026<br>
+      Responsável: EPBF Soluções em Tecnologia Ltda (marca PensoIA) &middot; CNPJ 65.254.064/0001-64
+    </p>
+
+    <h2>Resumo</h2>
+    <p>Seus documentos nunca saem do seu computador. A extração de texto e o OCR rodam inteiramente na sua máquina. Nenhum PDF ou texto extraído é enviado a nenhum servidor.</p>
+
+    <h2>Dados que o aplicativo trata</h2>
+    <ul>
+      <li><strong>Extração (100% local):</strong> todo o processamento de PDFs acontece no seu computador. Os PDFs, o texto extraído e o histórico ficam apenas na sua máquina. O histórico é cifrado com a sua conta do Windows.</li>
+      <li><strong>Conta e login:</strong> para usar o aplicativo você entra com seu e-mail. Enviamos um código de verificação por e-mail. Guardamos um identificador da sua conta e do seu dispositivo (no máximo 2 dispositivos por conta) apenas para validar o acesso. Não armazenamos senha.</li>
+      <li><strong>Feedback (opcional):</strong> se você optar por enviar feedback, apenas o texto e as informações de diagnóstico que você escolher enviar são transmitidos a nós.</li>
+    </ul>
+
+    <h2>O que NÃO é transmitido</h2>
+    <p>Nenhum documento, nenhum texto extraído e nenhum conteúdo dos seus PDFs. Não há telemetria nem rastreamento de uso.</p>
+
+    <h2>Uso da internet</h2>
+    <p>A internet é usada apenas para: (1) o login da conta (envio e verificação do código por e-mail) e (2) o envio opcional de feedback. Fora isso, o aplicativo funciona offline.</p>
+
+    <h2>Seus direitos</h2>
+    <p>Você pode solicitar a exclusão da sua conta e dos dados associados (identificadores de conta e de dispositivo) pelo contato abaixo.</p>
+
+    <h2>Contato</h2>
+    <!-- email_off: opt this Store-facing contact out of Cloudflare email obfuscation so it
+         renders literally for reviewers / no-JS fetches (a privacy policy must show a real contact). -->
+    <p>Para exercer seus direitos ou tirar dúvidas sobre privacidade, fale com a gente pelo e-mail <!--email_off--><a href="mailto:contato@pensoia.com">contato@pensoia.com</a><!--/email_off-->.</p>
+
+    <div class="legal-foot">
+      &copy; <span id="currentYear"></span> PensoIA / EPBF Soluções em Tecnologia Ltda &middot; CNPJ 65.254.064/0001-64
+    </div>
+  </div>
+
+  <script>
+    (function () {
+      // Follow the user's OS/browser light-mode preference, independent of any app theme. No cookies here.
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      function applyTheme() { document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light'); }
+      applyTheme();
+      mq.addEventListener('change', applyTheme);
+      var year = document.getElementById('currentYear');
+      if (year) year.textContent = new Date().getFullYear();
+    })();
+  </script>
+</body>
+</html>

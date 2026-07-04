@@ -224,7 +224,8 @@ export const courses = {
   get:     (p) => call('ct_get_course', p),      // { id } -> { course } (with ementa_json)
   create:  (p) => call('ct_create_course', p),   // { title, hours?, ementa_json? } -> { course }
   update:  (p) => call('ct_update_course', p),   // { id, title?, hours?, ementa_json? } -> { course }
-  archive: (p) => call('ct_archive_course', p)   // { id }
+  archive: (p) => call('ct_archive_course', p),  // { id }
+  setApostila: (p) => call('ct_set_course_apostila', p) // { id, apostila_set_id|null } -> { course } — binds the course's apostila
 };
 
 // Content — the item library (Items sub-tab) plus the shared types/tags it
@@ -250,9 +251,22 @@ export const content = {
   // Apostila sets (imported course content). Shared by Apostila + the Releases
   // composer (which surfaces the current set's items as the "Conteúdo do curso"
   // pool). Action names read from ct-admin.js.
-  listSets:        (p) => call('ct_list_sets', p),
+  listSets:        (p) => call('ct_list_sets', p),          // -> { sets:[{id,name,category_label,item_count,course_count}] }
   getSet:          (p) => call('ct_get_set', p),            // { id } -> { set, items }
   deleteSet:       (p) => call('ct_delete_set', p),         // { id } cascades to its items
+  // Apostila redesign (2026-07): create/rename apostilas, reorder live sections, and the
+  // working-copy (draft) -> converge flow. The AI edits the copy; converge applies it to
+  // the live items by id so releases/access are preserved. See actions/apostila.js.
+  createSet:         (p) => call('ct_create_set', p),          // { name } -> { set }
+  updateSet:         (p) => call('ct_update_set', p),          // { id, name?, category_label? }
+  reorderSetItems:   (p) => call('ct_reorder_set_items', p),   // { set_id, ordered_ids }
+  startDraft:        (p) => call('ct_start_apostila_draft', p),// { set_id } -> seeds + { exists, sections, removed }
+  getDraft:          (p) => call('ct_get_apostila_draft', p),  // { set_id } -> { exists, sections, removed }
+  saveDraftSection:  (p) => call('ct_save_draft_section', p),  // { set_id, id?, title, body_md, summary? } -> { section }
+  deleteDraftSection:(p) => call('ct_delete_draft_section', p),// { id }
+  reorderDraft:      (p) => call('ct_reorder_draft', p),       // { set_id, ordered_ids }
+  discardDraft:      (p) => call('ct_discard_apostila_draft', p),// { set_id }
+  convergeApostila:  (p) => call('ct_converge_apostila', p),   // { set_id, force? } -> { updated, inserted, removed } | { error:'converge_removals_released', removals }
   // Tarefas (assignments) authoring + student submissions. Action names read
   // from ct-admin.js (Phase 5). listItemTurmas powers the "also released in"
   // reuse label across turmas.
@@ -306,6 +320,9 @@ export const releases = {
   unrelease: (p) => call('ct_unrelease_item', p),
   setAula:   (p) => call('ct_set_release_aula', p), // { ..., aula_number_or_null }
   setAulas:  (p) => call('ct_set_release_aulas', p), // { ..., aula_numbers: [1,3] } (#23 multi-aula)
+  // Copy every released item from one turma to another (same client). Additive:
+  // items already released in the target are skipped, nothing is removed.
+  copyReleases: (p) => call('ct_copy_releases', p),  // { client_slug, from_turma_slug, to_turma_slug }
   // Debug-only: toggle the NOVO badge for every item in an aula by moving
   // released_at relative to the 5-day window. fresh:false hides, fresh:true shows.
   setFreshness: (p) => call('ct_set_release_freshness', p), // { client_slug, turma_slug, aula_number, fresh }

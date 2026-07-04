@@ -51,3 +51,24 @@ test('content facade passes params through unchanged', () => {
   assert.deepEqual(out.ids, [3, 4, 5], 'ids preserved');
   assert.equal(out.action, 'ct_delete_items_bulk');
 });
+
+test('content facade maps the apostila redesign actions', () => {
+  const c = api.content;
+  const cases = [
+    [() => c.createSet({ name: 'A' }),                    'ct_create_set'],
+    [() => c.updateSet({ id: 1, name: 'B' }),             'ct_update_set'],
+    [() => c.reorderSetItems({ set_id: 1, ordered_ids: [2, 1] }), 'ct_reorder_set_items'],
+    [() => c.startDraft({ set_id: 1 }),                   'ct_start_apostila_draft'],
+    [() => c.getDraft({ set_id: 1 }),                     'ct_get_apostila_draft'],
+    [() => c.saveDraftSection({ set_id: 1, title: 't' }), 'ct_save_draft_section'],
+    [() => c.deleteDraftSection({ id: 1 }),               'ct_delete_draft_section'],
+    [() => c.reorderDraft({ set_id: 1, ordered_ids: [1] }), 'ct_reorder_draft'],
+    [() => c.discardDraft({ set_id: 1 }),                 'ct_discard_apostila_draft'],
+    [() => c.convergeApostila({ set_id: 1, force: true }), 'ct_converge_apostila'],
+  ];
+  for (const [fn, action] of cases) {
+    assert.equal(fn().action, action, `maps to ${action}`);
+  }
+  // force flag passes through for the guarded converge
+  assert.equal(c.convergeApostila({ set_id: 1, force: true }).force, true);
+});

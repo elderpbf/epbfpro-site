@@ -315,3 +315,37 @@
 .cdx-deck-editor #pv .pvli.current .pvli-scale, .cdx-deck-editor #pv .pvli.next .pvli-scale { filter: blur(3px); }
 .cdx-deck-editor #pv .pvli.current .pvli-lbl, .cdx-deck-editor #pv .pvli.next .pvli-lbl { display: flex; position: absolute; inset: 0; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; letter-spacing: .5px; text-transform: uppercase; color: #0a1211; background: rgba(255, 255, 255, .5); }
 .cdx-deck-editor #pv .pvli-t { font-size: 14px; color: #d6ece8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+/* ── Animation panel (Phase 7): entrance + ordered reveal list + preview ───────── */
+.cdx-deck-editor .cdx-animpanel { position: fixed; z-index: 80; width: 320px; max-height: 80vh; overflow-y: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; box-shadow: 0 16px 48px var(--overlay-strong); padding: 8px 12px 12px; font-size: 12px; color: var(--text); }
+.cdx-deck-editor .cdx-animpanel .ap-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--panel); padding: 4px 0 8px; z-index: 1; }
+.cdx-deck-editor .cdx-animpanel .ap-title { font-weight: 700; font-size: 14px; }
+.cdx-deck-editor .cdx-animpanel .ap-x { font: inherit; background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 2px 9px; cursor: pointer; color: var(--text); }
+.cdx-deck-editor .cdx-animpanel .ap-sec { margin-top: 12px; }
+.cdx-deck-editor .cdx-animpanel .ap-sec-h { font-size: 10px; font-weight: 700; letter-spacing: .07em; text-transform: uppercase; color: var(--muted); margin-bottom: 7px; }
+.cdx-deck-editor .cdx-animpanel .ap-listh { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cdx-deck-editor .cdx-animpanel .ap-listacts { display: flex; gap: 5px; }
+.cdx-deck-editor .cdx-animpanel .ap-act { font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 3px 7px; cursor: pointer; }
+.cdx-deck-editor .cdx-animpanel .ap-act:hover { background: var(--btn-hover); }
+.cdx-deck-editor .cdx-animpanel .ap-ent { display: flex; gap: 6px; }
+.cdx-deck-editor .cdx-animpanel .ap-ent-o { flex: 1; font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 7px; padding: 6px 4px; cursor: pointer; }
+.cdx-deck-editor .cdx-animpanel .ap-ent-o.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+.cdx-deck-editor .cdx-animpanel .ap-list { display: flex; flex-direction: column; gap: 4px; margin-top: 7px; }
+.cdx-deck-editor .cdx-animpanel .ap-empty { color: var(--muted); font-style: italic; padding: 6px 2px; }
+.cdx-deck-editor .cdx-animpanel .ap-row { display: flex; align-items: center; gap: 6px; background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 4px 6px; }
+.cdx-deck-editor .cdx-animpanel .ap-row.ap-deck { border-left: 3px solid var(--primary); }
+.cdx-deck-editor .cdx-animpanel .ap-row.ap-over { box-shadow: 0 -2px 0 var(--primary); }
+.cdx-deck-editor .cdx-animpanel .ap-grab { cursor: grab; color: var(--muted); letter-spacing: -2px; user-select: none; }
+.cdx-deck-editor .cdx-animpanel .ap-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.cdx-deck-editor .cdx-animpanel .ap-ctl { display: inline-flex; gap: 3px; }
+.cdx-deck-editor .cdx-animpanel .ap-offrow { opacity: .55; }
+.cdx-deck-editor .cdx-animpanel .ap-grab-off { cursor: default; visibility: hidden; }
+.cdx-deck-editor .cdx-animpanel .ap-m { font: inherit; font-size: 10px; background: transparent; color: var(--muted); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
+.cdx-deck-editor .cdx-animpanel .ap-m.on { background: var(--primary); color: #fff; border-color: var(--primary); }
+.cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; }
+.cdx-deck-editor .cdx-animpanel .ap-mv { font: inherit; font-size: 11px; line-height: 1; background: transparent; color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
+.cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; min-width: 44px; }
+.cdx-deck-editor .cdx-animpanel .ap-foot { margin-top: 12px; }
+.cdx-deck-editor .cdx-animpanel .ap-preview { width: 100%; font: inherit; font-size: 13px; font-weight: 700; background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 8px; cursor: pointer; }
+/* Preview indicator: a subtle ring on the stage while stepping in-editor. */
+.cdx-deck-editor.previewing #stagewrap { outline: 2px solid var(--primary); outline-offset: -2px; }

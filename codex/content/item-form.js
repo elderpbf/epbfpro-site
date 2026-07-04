@@ -20,9 +20,10 @@
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
 //   window.marked          (CDN, lazy)                       markdown preview
-import { content as api, ai as aiApi } from '../js/codex-api.js';
+import { appConfig, content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
+import { createDriveSource, pickLocalFile } from '../js/file-source.js';
 import * as aiSpec from '../js/ai-spec.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
@@ -33,6 +34,27 @@ const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
 import { esc as _esc } from '../js/dom.js';
 
 import { errMsg as _err } from '../js/content-err.js';
+
+// Google Picker key (for the "Do Drive" file option): fetched once from the Worker and read
+// live by the shared Drive source, exactly like the Slides gallery. The Drive button stays
+// hidden until it lands, so the local-upload path always works on its own.
+let _pickerKey = '';
+let _pickerKeyPromise = null;
+function _primePickerKey() {
+  if (!_pickerKeyPromise) {
+    _pickerKeyPromise = appConfig.get()
+      .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
+      .catch((e) => { _pickerKey = ''; notice.internal(e); });
+  }
+  return _pickerKeyPromise;
+}
+function _fileDriveSource() {
+  return createDriveSource({
+    getApiKey: () => _pickerKey,
+    getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null),
+  });
+}
+
 // Surface AI failures to the debug pill (client-side parse failures never reach
 // callWorker's logging, so log them here with a response snippet).
 function _logAi(detail, res) {
@@ -139,6 +161,24 @@ function _buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
+  if (typeSlug === 'arquivo') {
+    // Any downloadable file (pdf/docx/zip/…), sourced from the computer OR Google Drive via the
+    // shared file-source module. The student gets a "Baixar" action in the trail (actions.js
+    // renders attachment_url generically). Drive button hides until the Picker key is configured.
+    return '<div class="cdx-type-block">' +
+      hasBody +
+      '<div class="cdx-field"><label>' + t('editor.arquivo_file_label') + '</label>' +
+        '<div class="cdx-upload-row">' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-local">' + t('editor.file_from_computer') + '</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-drive" style="display:none">' + t('editor.file_from_drive') + '</button>' +
+          '<span class="cdx-upload-progress"></span>' +
+        '</div>' +
+        '<div class="cdx-upload-filename" id="ie-doc-filename">' +
+          (m.attachment_url ? t('editor.current_file') + ' <a href="' + _esc(m.attachment_url) + '" target="_blank" rel="noopener">' + t('editor.view') + '</a>' : '') +
+        '</div>' +
+      '</div>' +
+    '</div>';
+  }
   if (typeSlug === 'paper') {
     return '<div class="cdx-type-block">' +
       '<div class="cdx-field"><label>' + t('editor.authors_label') + '</label>' +
@@ -236,6 +276,28 @@ function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
       if (f) onFileSelected(f, 'pdf_url');
     });
   }
+
+  // arquivo: pick any file from the computer OR Google Drive (shared file-source module),
+  // both handing the File to the same pending-upload path as the native file inputs above.
+  const docLocal = block.querySelector('#ie-doc-local');
+  const docDrive = block.querySelector('#ie-doc-drive');
+  if (docLocal || docDrive) {
+    const nameEl = block.querySelector('#ie-doc-filename');
+    const showPicked = (f) => { if (nameEl && f) nameEl.textContent = t('editor.file_selected') + ' ' + f.name; };
+    if (docLocal) docLocal.addEventListener('click', async () => {
+      const f = await pickLocalFile({});
+      if (f) { onFileSelected(f, 'attachment_url'); showPicked(f); }
+    });
+    if (docDrive) {
+      const src = _fileDriveSource();
+      const syncAvail = () => { docDrive.style.display = src.available() ? '' : 'none'; };
+      _primePickerKey().then(syncAvail).catch(() => {});
+      docDrive.addEventListener('click', async () => {
+        const f = await src.pick({ view: 'any' });
+        if (f) { onFileSelected(f, 'attachment_url'); showPicked(f); }
+      });
+    }
+  }
 }
 
 function _collectTypeData(root, typeSlug) {
@@ -257,6 +319,8 @@ function _collectTypeData(root, typeSlug) {
     }
   } else if (typeSlug === 'material') {
     meta_json = {};
+  } else if (typeSlug === 'arquivo') {
+    meta_json = {}; // attachment_url is set by the pending-file upload on save
   } else if (typeSlug === 'paper') {
     meta_json = {
       authors:  (root.querySelector('#ie-paper-authors') || {}).value || null,
@@ -371,6 +435,7 @@ export function mount(container, opts) {
   const onDirtyChange = opts.onDirtyChange || function () {};
   const onCreateType = opts.onCreateType || null;
   const excludeTypes = Array.isArray(opts.excludeTypes) ? opts.excludeTypes : [];
+  const pendingFile = opts.pendingFile || null; // a File chosen at the creator step (arquivo import)
 
   const isEdit = !!item;
   const src = prefill || item || {};
@@ -465,6 +530,17 @@ export function mount(container, opts) {
 
   renderTypeBlock(initialType);
 
+  // A file picked at the creator step (arquivo import) arrives as opts.pendingFile: seed the
+  // same pending-upload path the type editor uses, and show the chosen name. The type is
+  // already 'arquivo' via prefill.type, so its block (with #ie-doc-filename) is mounted.
+  if (pendingFile) {
+    _pendingAssetFile = pendingFile;
+    _pendingAssetField = 'attachment_url';
+    markDirty();
+    const nm = root.querySelector('#ie-doc-filename');
+    if (nm) nm.textContent = t('editor.file_selected') + ' ' + pendingFile.name;
+  }
+
   typeSel.addEventListener('change', function () {
     if (typeSel.value === '__new__') {
       if (onCreateType) {
@@ -487,6 +563,7 @@ export function mount(container, opts) {
       return;
     }
     lastTypeValue = typeSel.value;
+    _refreshPicker(typeSel.value); // move the is-active highlight to the clicked type (was only set at build)
     renderTypeBlock(typeSel.value);
     markDirty();
   });
@@ -589,10 +666,16 @@ export function mount(container, opts) {
     saveBtn.disabled = true;
     try {
       let saveRes;
-      if (isEdit) { params.id = item.id; saveRes = await api.updateItem(params); }
+      // saveFn override: the Apostila editor persists into a set (createItem with set_id)
+      // or the working copy (saveDraftSection), not the plain bank. When absent the default
+      // bank create/update path runs unchanged.
+      if (typeof opts.saveFn === 'function') {
+        if (isEdit && item) params.id = item.id;
+        saveRes = await opts.saveFn(params, { isEdit, item });
+      } else if (isEdit) { params.id = item.id; saveRes = await api.updateItem(params); }
       else { saveRes = await api.createItem(params); }
       if (saveRes && saveRes.error) throw new Error(saveRes.error);
-      const savedItem = saveRes && saveRes.item ? saveRes.item : null;
+      const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
       const savedId = isEdit
         ? item.id
         : (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));

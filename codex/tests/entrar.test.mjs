@@ -13,7 +13,7 @@ const html = read('../trilha/entrar.html');
 const served = read('../../trilha/entrar.html');
 const css = read('../trilha/css/entrar.css');
 const js = read('../trilha/js/entrar.js');
-const htaccess = read('../../trilha/.htaccess');
+const redirects = read('../../_redirects');
 const i18n = read('../trilha/i18n.js');
 const home = read('../../index.html');
 
@@ -38,22 +38,27 @@ test('entrar.css carries the mock-D card layout values (prefixed)', () => {
   assert.ok(!/\.container\s*\{/.test(css), 'old .container selector gone (prefixed to cdx-entrar)');
 });
 
-test('entrar.js resolves the code via the facade and forwards with k + et', () => {
+test('entrar.js validates the code via the facade and lands on the permanent /trilha/<code>', () => {
   assert.match(js, /from '\.\/api\.js'/, 'uses the trilha facade');
-  assert.match(js, /resolveEnrollCode\(/, 'resolves the 4-digit code server-side');
+  assert.match(js, /resolveCode\(/, 'resolves the code server-side to validate (permanent access_code or legacy letters)');
   assert.match(js, /location\.replace\(/, 'forwards into the trilha');
-  assert.match(js, /'\?k='/, 'carries the public token (k)');
-  assert.match(js, /'&et='/, 'carries the enrollment token (et), like the QR');
+  assert.match(js, /'\/trilha\/'\s*\+\s*encodeURIComponent\(code\)/, 'lands ON the code URL (the turma permanent identity); the page resolves it in place');
   assert.match(js, /location\.origin/, 'redirects on the current origin (staging stays on staging)');
+  // resolveAndGo no longer builds the slug/token URL; the &et= hand-off is gone (the page picks
+  // up the et from the resolution). buildTurmaUrl still uses ?k= for the e-mail / trocar-turma
+  // paths — the page normalizes those to the code on load — so ?k= legitimately remains.
+  assert.ok(!/'&et='/.test(js), 'the entry no longer threads the enrollment token in the URL (the page resolves it)');
   assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
 });
 
-test('readCode reads the 4-digit code from the path or the query', () => {
+test('readCode reads a 4-char code (digits or legacy letters) from the path or the query', () => {
   assert.equal(readCode('?code=1234', '/trilha/entrar'), '1234');
   assert.equal(readCode('', '/trilha/4321'), '4321');
   assert.equal(readCode('', '/trilha/4321/'), '4321');
-  assert.equal(readCode('?code=abc', '/trilha/entrar'), '');   // non-numeric query ignored
-  assert.equal(readCode('', '/trilha/foo/bar'), '');           // not a code path
+  assert.equal(readCode('', '/trilha/TVKV'), 'TVKV');          // legacy 4-letter code resolves too
+  assert.equal(readCode('?code=abc', '/trilha/entrar'), '');   // 3 chars: not a code
+  assert.equal(readCode('', '/trilha/entrar'), '');            // the entry route word is not a code
+  assert.equal(readCode('', '/trilha/foo/bar'), '');           // last segment 'bar' is 3 chars
 });
 
 test('buildTurmaUrl builds the public turma launch URL with k (url-encoded)', () => {
@@ -72,7 +77,7 @@ test('entrar auto-enters a valid device session (no Continuar banner, no hub)', 
   assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
   assert.match(js, /createLoginFlow/, 'drives the shared login controller for the e-mail path');
   assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
-  assert.match(js, /forgetTurma\(/, 'prunes a revoked/dead turma so it never resurfaces');
+  assert.ok(!/clearToken\(/.test(js), 'a failed device-session check never deletes the token (a network blip must not strand a logged-in student on the registration screen)');
   assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
   assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');
   assert.ok(!/renderHub|cdx-entrar-hub/.test(js), 'the minhas-turmas hub is gone');
@@ -87,10 +92,12 @@ test('entrar.html hosts the código + e-mail entry, no Continuar banner, no hub 
   assert.equal(served, html, 'served copy still matches the source copy');
 });
 
-test('the served copy is in sync and the 4-digit route is wired', () => {
+test('the served copy is in sync and the code route serves the student page in place', () => {
   assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
-  assert.match(htaccess, /\^\(\[0-9\]\{4\}\)\/\?\$ entrar\.html\?code=\$1/, '/trilha/<4-digit> routes to entrar.html');
-  assert.match(htaccess, /\^\$ entrar\.html/, 'bare /trilha/ falls back to the manual entry form');
+  // Inversion: /trilha/<code> now serves the student area (the code is the resting URL),
+  // NOT the entrar page. The routing lives in _redirects (Cloudflare Pages), .htaccess is dead.
+  assert.match(redirects, /\/trilha\/:code\s+\/trilha\/\?code=:code\s+200/, '/trilha/<code> serves the student area in place');
+  assert.match(redirects, /\/trilha\/\s+\/trilha\/entrar\s+200/, 'bare /trilha/ still falls back to the manual entry form');
 });
 
 test('the homepage student entry points at /trilha and reads "Acessar minha trilha"', () => {

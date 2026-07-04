@@ -77,7 +77,7 @@ test('display shows the typed-entry URL + 4-digit code beside the QR', () => {
   assert.match(html, /id="cdx-disp-enroll-url"/, 'has the URL element');
   assert.match(html, /display_enroll_lead/, 'the lead line');
   assert.match(js, /entrarUrl\(/, 'builds pensoia.com/trilha/<code> via the shared helper');
-  assert.match(js, /enrollment_code/, 'reads the 4-digit code from the shared state');
+  assert.match(js, /access_code/, 'reads the turma permanent access_code from the shared state');
 });
 
 test('the live host Display button points at the ported Codex page', () => {

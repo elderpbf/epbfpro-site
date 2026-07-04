@@ -25,10 +25,13 @@ export function t(key) {
 
 export function languages() { return Object.keys(DICTS); }
 
-export function setLang(lang) {
+// persist=false sets the language for THIS page only (no localStorage write), so an
+// audience-facing surface (the projected display) can lock to pt-BR without clobbering
+// the operator's own codex_lang choice for the admin.
+export function setLang(lang, persist = true) {
   if (DICTS[lang]) {
     active = lang;
-    try { localStorage.setItem(LANG_KEY, lang); } catch (_) {}
+    if (persist) { try { localStorage.setItem(LANG_KEY, lang); } catch (_) {} }
   }
   return active;
 }

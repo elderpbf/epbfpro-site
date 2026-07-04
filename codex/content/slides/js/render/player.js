@@ -6,6 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
+import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -195,30 +196,117 @@ export function flowStyle(el, g) {
 }
 
 /**
- * Centralized "animação simplificada": every CONTENT BLOCK reveals one-by-one in
- * DOM/insertion order. A block = a topic li, a card, a free asset, or a layout image
- * slot. Structural text (title/subtitle) stays fixed (Élder: "título de cara").
- * Nested candidates (an image part inside a card, a card inside a free stack) are
- * neutralized so only the TOP-LEVEL block is a step — the stack reveals as one unit.
- * Overrides whatever per-item data-step the layouts emit, so the engine has ONE source
- * of truth for order + count. Returns the step count (the slide's max step).
- * Pre-step for the future per-element animation panel (Phase 7).
+ * Extract the slide's ordered reveal BLOCKS from the stage, in DOM order, skipping any
+ * candidate nested inside another (an image part inside a card, a card inside a free
+ * stack) so the outer block owns the step. Each descriptor carries { el, list, key, def }:
+ *   - a free asset  -> a singleton keyed "a:<id>" (def true)
+ *   - a filled image slot -> a singleton keyed "f:<fkey>" (def true)
+ *   - a list item (topic / card / roadnode: has data-step + fkey) -> { list: "<name>" }
+ *   - a free text box (.editable[data-fkey], no data-step) -> singleton "f:<fkey>", def
+ *     FALSE, so titles/subtitles stay fixed by default but can be opted in.
+ * The SAME extraction feeds autoSteps (which numbers them) and animSeed (which snapshots
+ * the auto order), so both agree on identity. Structural neutralized candidates get their
+ * reveal cleared here.
  */
-export function autoSteps(stage) {
-  const SEL = "[data-step], .asset, .imgslot.filled"; // .filled: an empty image dropzone is not a reveal step
+function blocksOf(stage) {
+  const SEL = "[data-step], .asset, .imgslot.filled, .editable[data-fkey]";
   const all = [...stage.querySelectorAll(SEL)];
   const nested = (el) => all.some((o) => o !== el && o.contains(el));
-  let n = 0;
-  all.forEach((el) => {
-    if (nested(el)) {
-      el.classList.remove("reveal"); // inside another block: never its own step
-      el.dataset.step = "0";
-    } else {
-      el.classList.add("reveal");
-      el.dataset.step = String(++n);
-    }
+  const blocks = [];
+  for (const el of all) {
+    if (nested(el)) { el.classList.remove("reveal"); el.dataset.step = "0"; continue; }
+    const d = el.dataset;
+    if (el.classList.contains("asset")) blocks.push({ el, list: null, key: "a:" + d.asset, def: true });
+    else if (el.classList.contains("imgslot")) blocks.push({ el, list: null, key: "f:" + d.fkey, def: true });
+    // A list ITEM is a topic/roadnode <li> or a .card, keyed "<list>.<id>". Classify by
+    // being that element, NOT by data-step presence: layouts stamp data-step on fixed
+    // slots (title/subtitle) too, and those must stay text singletons, not fake decks.
+    else if ((el.tagName === "LI" || el.classList.contains("card")) && d.fkey) blocks.push({ el, list: d.fkey.split(".")[0], key: null, def: true });
+    else if (el.classList.contains("editable") && d.fkey) blocks.push({ el, list: null, key: "f:" + d.fkey, def: false }); // free text box: fixed by default
+    else blocks.push({ el, list: null, key: d.fkey ? "f:" + d.fkey : null, def: true });
+  }
+  return blocks;
+}
+
+/**
+ * Number the reveal steps for the current slide. Delegates the ORDER + grouping decision
+ * to the pure animsteps.planSteps: with no slide.build it is the validated auto behaviour
+ * (every default block one-by-one in DOM order); with a build it follows that explicit
+ * ordered plan (per-element include/exclude, per-deck item-a-item vs unit, reorder).
+ * Returns the step count (the slide's max step). This is the ONE source of truth for
+ * order + count; layouts emit content, never step-truth.
+ */
+export function autoSteps(stage, build) {
+  const blocks = blocksOf(stage);
+  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build);
+  blocks.forEach((b, i) => {
+    if (steps[i] > 0) { b.el.classList.add("reveal"); b.el.dataset.step = String(steps[i]); }
+    else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; }
   });
-  return n;
+  return count;
+}
+
+/** Snapshot the current AUTO reveal order as an explicit build array (materialization),
+ *  so the selection controls can turn "no build" into an editable ordered plan without
+ *  changing what the slide currently shows. */
+export function animSeed(stage) {
+  return seedBuild(blocksOf(stage));
+}
+
+/** Every block as an explicit build (free text boxes included) — the "ligar todos" seed. */
+export function animAll(stage) {
+  return seedBuild(blocksOf(stage), true);
+}
+
+/** ALL animatable units for the panel, each with its TRUE on/off state, so the list
+ *  matches reality. A deck (a whole list) is one unit carrying its mode ("each"|"unit"|
+ *  "none"); a singleton (image / free text / asset) carries on/off. Ordered: animated
+ *  units in reveal order first (build order, or DOM order in auto), then the OFF units in
+ *  DOM order. Returns [{ kind:"deck"|"single", label, on, mode?, list?, key? }].
+ */
+export function animUnits(stage, build) {
+  const blocks = blocksOf(stage);
+  const units = [];
+  const seen = new Set();
+  for (const b of blocks) {
+    if (b.list) {
+      if (seen.has(b.list)) continue;
+      seen.add(b.list);
+      const mode = listModeOf(build, b.list);
+      units.push({ kind: "deck", list: b.list, label: deckLabel(b.list), mode, on: mode !== "none" });
+    } else if (b.key) {
+      units.push({ kind: "single", key: b.key, label: singletonLabel(b), on: isAnimated(build, b.key, b.def) });
+    }
+  }
+  if (build) {
+    const find = (k) => {
+      const lk = parseListKey(k);
+      return lk ? units.find((u) => u.kind === "deck" && u.list === lk.list)
+                : units.find((u) => u.kind === "single" && u.key === k);
+    };
+    const ordered = [];
+    const used = new Set();
+    for (const k of build) { const u = find(k); if (u && !used.has(u)) { ordered.push(u); used.add(u); } }
+    for (const u of units) if (!used.has(u)) ordered.push(u);
+    return ordered;
+  }
+  return [...units.filter((u) => u.on), ...units.filter((u) => !u.on)]; // auto: on (DOM order) then off
+}
+
+function deckLabel(list) {
+  if (list === "topics") return t("slides.ed_topic");
+  if (list === "cards") return t("slides.ed_card");
+  return list;
+}
+
+function singletonLabel(blk) {
+  if (!blk || !blk.el) return t("slides.ed_text");
+  const c = blk.el.classList;
+  if (c.contains("imgslot") || c.contains("a-image") || c.contains("a-photo")) return t("slides.ed_image");
+  if (c.contains("a-video")) return t("slides.ed_video");
+  if (c.contains("a-stack")) return t("slides.ed_list");
+  const s = (blk.el.textContent || "").trim().replace(/\s+/g, " ").slice(0, 24);
+  return s ? `${t("slides.ed_text")}: ${s}` : t("slides.ed_text");
 }
 
 /** Reveal visibility: in edit mode everything shows; presenting steps through. */

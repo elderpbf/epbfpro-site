@@ -9,17 +9,39 @@
 //   titleLabel / closeLabel   header + close-button text ('' hides close)
 //   onClose() / onCancel()
 //   onManual({ body_md })                       user picked "Continue manually"
+//   onFile({ file })                            user picked a local/Drive file (arquivo item)
 //   onAIComplete({ prefill, aiContext, tagLabels })   AI step succeeded
 // Returns: { destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.bsLog/window.dbg (../backstage/js/debug.js)       optional debug pill
-import { content as api, ai as aiApi } from '../js/codex-api.js';
+import { appConfig, content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
+import { createDriveSource, pickLocalFile } from '../js/file-source.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as aiSpec from '../js/ai-spec.js';
+
+// Google Picker key for the "Arquivo do Drive" import option: fetched once, read live by the
+// shared Drive source (same as the Slides gallery + the arquivo type editor). The Drive button
+// stays hidden until it lands, so the local-file option always works on its own.
+let _pickerKey = '';
+let _pickerKeyPromise = null;
+function _primePickerKey() {
+  if (!_pickerKeyPromise) {
+    _pickerKeyPromise = appConfig.get()
+      .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
+      .catch((e) => { _pickerKey = ''; notice.internal(e); });
+  }
+  return _pickerKeyPromise;
+}
+function _fileDriveSource() {
+  return createDriveSource({
+    getApiKey: () => _pickerKey,
+    getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null),
+  });
+}
 
 // AI action glyph (shared sparkle from the Codex glyph library; no emoji).
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
@@ -43,6 +65,7 @@ export function mount(container, opts) {
   const onClose = opts.onClose || function () {};
   const onCancel = opts.onCancel || function () {};
   const onManual = opts.onManual || function () {};
+  const onFile = opts.onFile || function () {};
   const onAIComplete = opts.onAIComplete || function () {};
 
   const closeBtn = closeLabel
@@ -67,6 +90,13 @@ export function mount(container, opts) {
             '<button class="cdx-btn cdx-btn-sm" id="cf-gdoc-load" type="button">' + t('creator.load') + '</button>' +
           '</div>' +
           '<p class="cdx-helper-text" id="cf-gdoc-hint">' + t('creator.gdoc_hint') + '</p>' +
+        '</div>' +
+        '<div class="cdx-gdoc-row">' +
+          '<span class="cdx-helper-text">' + t('creator.file_prompt') + '</span>' +
+          '<div class="cdx-gdoc-inline">' +
+            '<button class="cdx-btn cdx-btn-sm" id="cf-file-local" type="button">' + t('editor.file_from_computer') + '</button>' +
+            '<button class="cdx-btn cdx-btn-sm" id="cf-file-drive" type="button" style="display:none">' + t('editor.file_from_drive') + '</button>' +
+          '</div>' +
         '</div>' +
         '<div class="cdx-emoji-toggle-row">' +
           '<label class="cdx-toggle-label">' +
@@ -120,6 +150,26 @@ export function mount(container, opts) {
       notice.warn(t('creator.gdoc_not_shared'));
     });
   });
+
+  // Arquivo import: pick any file from the computer OR Google Drive (shared file-source
+  // module) and hand it to onFile, which opens the item form as an 'arquivo' item with the
+  // file attached, as easy as importing a Google Doc. Drive button hides until the key lands.
+  _primePickerKey();
+  const fileLocal = container.querySelector('#cf-file-local');
+  const fileDrive = container.querySelector('#cf-file-drive');
+  if (fileLocal) fileLocal.addEventListener('click', async () => {
+    const f = await pickLocalFile({});
+    if (f) onFile({ file: f });
+  });
+  if (fileDrive) {
+    const src = _fileDriveSource();
+    const sync = () => { fileDrive.style.display = src.available() ? '' : 'none'; };
+    _primePickerKey().then(sync).catch(() => {});
+    fileDrive.addEventListener('click', async () => {
+      const f = await src.pick({ view: 'any' });
+      if (f) onFile({ file: f });
+    });
+  }
 
   container.querySelector('#cf-manual').addEventListener('click', function () {
     onManual({ body_md: rawEl.value });

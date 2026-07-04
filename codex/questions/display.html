@@ -68,15 +68,23 @@
 <script type="module">
   import '/codex/js/worker-call.js';
   import '/codex/trilha/js/pensoia-header.js'; // defines <pensoia-header> (cdx, correct light/dark logo)
-  import { apply as applyI18n } from '/codex/js/i18n.js';
+  import { apply as applyI18n, setLang } from '/codex/js/i18n.js';
+  import { call as codexCall } from '/codex/js/codex-api.js';
   import { start } from '/codex/questions/display.js';
 
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
   BS_AUTH.guard();
   BS_AUTH.clearPasswordInputs();
-  applyI18n();
-  start();
+  // The projected display is audience-facing: use the GLOBAL student language (default
+  // pt-BR), never the admin's codex_lang. persist=false so it never touches the admin choice.
+  (async () => {
+    let lang = 'pt-BR';
+    try { const r = await codexCall('ct_get_student_lang'); if (r && r.lang) lang = r.lang; } catch (_) { /* default pt-BR */ }
+    setLang(lang, false);
+    applyI18n();
+    start();
+  })();
 </script>
 </body>
 </html>
