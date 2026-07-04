@@ -42,27 +42,28 @@ function resetCtrl() {
 // slide.build through app.anim* (materialized on first edit), so the bar and the step engine
 // (player.autoSteps -> animsteps.planSteps) stay one source of truth. `def` is the block's
 // AUTO default (blocks true, free text boxes false, so titles stay fixed until opted in).
-// Consistent with the panel (edit/animpanel.js): a singleton is ONE "Animar" toggle
-// (active = animated). Reorder lives in the panel, not the bar.
+// Consistent with the panel (edit/animpanel.js): rendered as highlighted BUTTONS (bar's
+// .ctl.on), NOT checkboxes, so the bar and the panel look the same. A singleton is one
+// "Animar" button (lit = animated). Reorder lives in the panel, not the bar.
 function animCtrls(app, kind, ref, def) {
   const key = singletonKey(kind, ref);
+  const on = isAnimated(app.cur().build, key, def);
   return [{
-    type: "toggle", id: "animate", labelKey: "slides.ed_animate",
-    on: isAnimated(app.cur().build, key, def),
-    write(app2, sel2, checked) { app2.animToggle(key, checked); },
+    type: "button", id: "animate", labelKey: "slides.ed_animate", on,
+    run(app2) { app2.animToggle(key, !on); },
   }];
 }
 
-// A whole deck's animation, offered on the item/container bar. Same two toggles as the
-// panel: "item a item" / "tudo junto" — the active one is the mode; clicking the active one
-// (or leaving both off) turns the deck off. Reorder lives in the panel.
+// A whole deck's animation, offered on the item/container bar. Same two lit buttons as the
+// panel: "item a item" / "tudo junto" — the lit one is the mode; clicking the lit one (or
+// leaving both off) turns the deck off. Reorder lives in the panel.
 function deckAnimCtrls(app, list) {
   const mode = listModeOf(app.cur().build, list); // "each" | "unit" | "none"
   return [
-    { type: "toggle", id: "anim-each", labelKey: "slides.ed_anim_each", on: mode === "each",
-      write(app2, sel2, checked) { app2.animListMode(list, checked ? "each" : "none"); } },
-    { type: "toggle", id: "anim-unit", labelKey: "slides.ed_anim_unit", on: mode === "unit",
-      write(app2, sel2, checked) { app2.animListMode(list, checked ? "unit" : "none"); } },
+    { type: "button", id: "anim-each", labelKey: "slides.ed_anim_each", on: mode === "each",
+      run(app2) { app2.animListMode(list, mode === "each" ? "none" : "each"); } },
+    { type: "button", id: "anim-unit", labelKey: "slides.ed_anim_unit", on: mode === "unit",
+      run(app2) { app2.animListMode(list, mode === "unit" ? "none" : "unit"); } },
   ];
 }
 
