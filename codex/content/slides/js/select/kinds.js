@@ -13,7 +13,7 @@ import { resolveLogo, DEFAULT_LOGO } from "../render/player.js";
 import { getByPath, uid, resolveStyleObj } from "../core/schema.js";
 import { formatControls } from "../edit/textstyle.js";
 import { list as cardParts } from "../render/cardparts.js";
-import { keyForSel } from "../render/animsteps.js";
+import { singletonKey, listModeOf, isAnimated } from "../render/animsteps.js";
 import * as registry from "../layouts/registry.js";
 import { t } from "../../../../js/i18n.js";
 
@@ -34,28 +34,46 @@ function resetCtrl() {
   };
 }
 
-// Phase 7.1: per-element "Animar" toggle, shared by every reveal kind (asset, card,
-// topic, image slot). Default ON = the block animates one-by-one (player.autoSteps); OFF
-// marks it IMMEDIATE (it appears with the fixed content), e.g. an image that shows
-// together with the title. `key` (via keyForSel) matches what autoSteps reads, so the bar
-// and the step engine stay one source of truth. Writes stay sparse (drops empty build).
-function animateCtrl(app, key) {
-  const build = app.cur().build || {};
-  return {
-    type: "toggle",
-    id: "animate",
-    labelKey: "slides.ed_animate",
-    on: build[key] !== false,
-    write(app2, sel2, checked) {
-      app2.record("anim");
-      const s = app2.cur();
-      const b = s.build || (s.build = {});
-      if (checked) delete b[key];
-      else b[key] = false;
-      if (!Object.keys(b).length) delete s.build;
-      app2.refresh();
-    },
-  };
+// Phase 7: animation controls. A SINGLETON (free asset, filled image slot, free text box)
+// gets an "Animar" include/exclude toggle; when animated it also gets ◀ ▶ to reorder its
+// place in the reveal sequence. A DECK (a whole topics/cards list) is controlled as a UNIT
+// (Élder: "a animação de decks é pro deck inteiro, não por card"): item a item / tudo
+// junto / não animar, plus ◀ ▶ to move the whole deck. All of this reads/writes the ordered
+// slide.build through app.anim* (materialized on first edit), so the bar and the step engine
+// (player.autoSteps -> animsteps.planSteps) stay one source of truth. `def` is the block's
+// AUTO default (blocks true, free text boxes false, so titles stay fixed until opted in).
+function animCtrls(app, kind, ref, def) {
+  const key = singletonKey(kind, ref);
+  const on = isAnimated(app.cur().build, key, def);
+  const out = [{
+    type: "toggle", id: "animate", labelKey: "slides.ed_animate", on,
+    write(app2, sel2, checked) { app2.animToggle(key, checked); },
+  }];
+  if (on) out.push(
+    { type: "button", id: "anim-earlier", label: "◀", run(app2) { app2.animMove(key, -1); } },
+    { type: "button", id: "anim-later", label: "▶", run(app2) { app2.animMove(key, 1); } },
+  );
+  return out;
+}
+
+// A whole deck's animation, offered on the list container's bar (and mirrored into the
+// card "Ajustes ▾"). `list` is the slots key (topics / cards / a named list).
+function deckAnimCtrls(app, list) {
+  const mode = listModeOf(app.cur().build, list); // "each" | "unit" | "none"
+  const out = [{
+    type: "choice", id: "anim", value: mode,
+    options: [
+      { v: "each", labelKey: "slides.ed_anim_each" },
+      { v: "unit", labelKey: "slides.ed_anim_unit" },
+      { v: "none", labelKey: "slides.ed_anim_off" },
+    ],
+    write(app2, sel2, v) { app2.animListMode(list, v); },
+  }];
+  if (mode !== "none") out.push(
+    { type: "button", id: "anim-earlier", label: "◀", run(app2) { app2.animListMove(list, -1); } },
+    { type: "button", id: "anim-later", label: "▶", run(app2) { app2.animListMove(list, 1); } },
+  );
+  return out;
 }
 
 const _kinds = new Map();
@@ -147,7 +165,7 @@ register({
         },
       });
     }
-    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("asset", sel.ref)));
+    ctrls.push({ type: "sep" }, ...animCtrls(app, "asset", sel.ref, true));
     ctrls.push({
       type: "button",
       id: "delete",
@@ -266,6 +284,7 @@ register({
   },
   controls(app, sel) {
     const ctrls = [...formatControls(app)];
+    ctrls.push({ type: "sep" }, ...animCtrls(app, "textSlot", sel.ref, false));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },
@@ -325,7 +344,7 @@ register({
         },
       },
     ];
-    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("imageSlot", sel.ref)));
+    ctrls.push({ type: "sep" }, ...animCtrls(app, "imageSlot", sel.ref, true));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push(resetCtrl());
     return ctrls;
   },
@@ -542,7 +561,6 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       { type: "sep" },
-      animateCtrl(app, keyForSel("card", sel.ref)),
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
     return ctrls;
@@ -626,7 +644,6 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_topic")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", labelKey: "slides.ed_remove", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, false); } },
     );
-    ctrls.push({ type: "sep" }, animateCtrl(app, keyForSel("topic", sel.ref)));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },
@@ -671,6 +688,8 @@ register({
       return [
         { type: "button", id: "add", label: "＋ card", run(app2, sel2) { addItem(app2, "cards", sel2.row || 0); } },
         { type: "button", id: "add-row", label: "＋ linha", run(app2) { addRow(app2); } },
+        { type: "sep" },
+        ...deckAnimCtrls(app, "cards"), // deck-wide animation (item a item / junto / não), Élder: pro deck inteiro
       ];
     }
     // A free-placed CARD stack: add a card. Detected by the asset variant, so the
@@ -690,6 +709,9 @@ register({
         write(app2, sel2, checked) { app2.record(); app2.cur().slots.orientation = checked ? "col" : "row"; app2.refresh(); },
       });
     }
+    // A layout list (topics / named) is a DECK: its whole-deck animation lives here. A free
+    // stack (st truthy) animates as a unit via its own .asset, so it is skipped.
+    if (!st) ctrls.push({ type: "sep" }, ...deckAnimCtrls(app, sel.ref));
     return ctrls;
   },
 });

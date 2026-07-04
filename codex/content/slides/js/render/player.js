@@ -6,7 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
-import { animKey, isImmediate } from "./animsteps.js";
+import { planSteps, seedBuild } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -196,36 +196,58 @@ export function flowStyle(el, g) {
 }
 
 /**
- * Centralized "animação simplificada": every CONTENT BLOCK reveals one-by-one in
- * DOM/insertion order. A block = a topic li, a card, a free asset, or a layout image
- * slot. Structural text (title/subtitle) stays fixed (Élder: "título de cara").
- * Nested candidates (an image part inside a card, a card inside a free stack) are
- * neutralized so only the TOP-LEVEL block is a step — the stack reveals as one unit.
- * Overrides whatever per-item data-step the layouts emit, so the engine has ONE source
- * of truth for order + count. Returns the step count (the slide's max step).
- *
- * Phase 7.1: `build` (slide.build) is an optional sparse map of block-key -> false that
- * marks a block IMMEDIATE (it appears at once with the fixed content instead of taking its
- * own step, e.g. an image that should show together with the title). A block with no entry
- * animates as before, so a deck without `build` is unchanged. Keys match animsteps.animKey.
+ * Extract the slide's ordered reveal BLOCKS from the stage, in DOM order, skipping any
+ * candidate nested inside another (an image part inside a card, a card inside a free
+ * stack) so the outer block owns the step. Each descriptor carries { el, list, key, def }:
+ *   - a free asset  -> a singleton keyed "a:<id>" (def true)
+ *   - a filled image slot -> a singleton keyed "f:<fkey>" (def true)
+ *   - a list item (topic / card / roadnode: has data-step + fkey) -> { list: "<name>" }
+ *   - a free text box (.editable[data-fkey], no data-step) -> singleton "f:<fkey>", def
+ *     FALSE, so titles/subtitles stay fixed by default but can be opted in.
+ * The SAME extraction feeds autoSteps (which numbers them) and animSeed (which snapshots
+ * the auto order), so both agree on identity. Structural neutralized candidates get their
+ * reveal cleared here.
  */
-export function autoSteps(stage, build) {
-  const SEL = "[data-step], .asset, .imgslot.filled"; // .filled: an empty image dropzone is not a reveal step
+function blocksOf(stage) {
+  const SEL = "[data-step], .asset, .imgslot.filled, .editable[data-fkey]";
   const all = [...stage.querySelectorAll(SEL)];
   const nested = (el) => all.some((o) => o !== el && o.contains(el));
-  let n = 0;
-  all.forEach((el) => {
-    // Inside another block (reveals as one unit), or opted out to appear immediately:
-    // either way it is not its own step. Otherwise it animates in DOM order.
-    if (nested(el) || isImmediate(animKey(el.dataset), build)) {
-      el.classList.remove("reveal");
-      el.dataset.step = "0";
-    } else {
-      el.classList.add("reveal");
-      el.dataset.step = String(++n);
-    }
+  const blocks = [];
+  for (const el of all) {
+    if (nested(el)) { el.classList.remove("reveal"); el.dataset.step = "0"; continue; }
+    const d = el.dataset;
+    if (el.classList.contains("asset")) blocks.push({ el, list: null, key: "a:" + d.asset, def: true });
+    else if (el.classList.contains("imgslot")) blocks.push({ el, list: null, key: "f:" + d.fkey, def: true });
+    else if (d.step != null && d.fkey) blocks.push({ el, list: d.fkey.split(".")[0], key: null, def: true }); // list item
+    else if (el.classList.contains("editable") && d.fkey) blocks.push({ el, list: null, key: "f:" + d.fkey, def: false }); // free text box
+    else blocks.push({ el, list: null, key: d.fkey ? "f:" + d.fkey : null, def: true });
+  }
+  return blocks;
+}
+
+/**
+ * Number the reveal steps for the current slide. Delegates the ORDER + grouping decision
+ * to the pure animsteps.planSteps: with no slide.build it is the validated auto behaviour
+ * (every default block one-by-one in DOM order); with a build it follows that explicit
+ * ordered plan (per-element include/exclude, per-deck item-a-item vs unit, reorder).
+ * Returns the step count (the slide's max step). This is the ONE source of truth for
+ * order + count; layouts emit content, never step-truth.
+ */
+export function autoSteps(stage, build) {
+  const blocks = blocksOf(stage);
+  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build);
+  blocks.forEach((b, i) => {
+    if (steps[i] > 0) { b.el.classList.add("reveal"); b.el.dataset.step = String(steps[i]); }
+    else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; }
   });
-  return n;
+  return count;
+}
+
+/** Snapshot the current AUTO reveal order as an explicit build array (materialization),
+ *  so the selection controls can turn "no build" into an editable ordered plan without
+ *  changing what the slide currently shows. */
+export function animSeed(stage) {
+  return seedBuild(blocksOf(stage));
 }
 
 /** Reveal visibility: in edit mode everything shows; presenting steps through. */

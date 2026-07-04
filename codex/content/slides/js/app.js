@@ -12,6 +12,7 @@ import { makeDataUrlStore } from "./core/files.js";
 import { openGalleryBox, refreshGalleryBox, closeGalleryBox } from "./edit/gallerybox.js";
 import { applyDeckTheme, initChromeTheme } from "./theme/tokens.js";
 import * as player from "./render/player.js";
+import { moveKey } from "./render/animsteps.js";
 import { initEditing } from "./edit/editor.js";
 import { initMaskPanel, maskPanelHTML } from "./edit/maskpanel.js";
 import { initSelect } from "./select/wiring.js";
@@ -202,6 +203,54 @@ export function mount(root, ctx = {}) {
     syncNotes() {
       const ta = this.root.querySelector("#notesarea");
       if (ta && document.activeElement !== ta) ta.value = this.cur().notes || "";
+    },
+
+    // ── Animation build (Phase 7) ─────────────────────────────────────────────
+    // slide.build is the explicit ordered reveal plan (see render/animsteps.js). It stays
+    // ABSENT while the slide follows the auto one-by-one default; the first edit
+    // MATERIALIZES it from the current auto order (player.animSeed) so nothing on screen
+    // jumps. From then on it is explicit (an empty array = "animate nothing").
+    _ensureBuild() {
+      const s = this.cur();
+      if (!s.build) s.build = player.animSeed(this.stage);
+      return s.build;
+    },
+    // include / exclude a singleton (free asset, image slot, text box) from the animation.
+    animToggle(key, on) {
+      this.record("anim:toggle");
+      const b = this._ensureBuild();
+      if (on) { if (!b.includes(key)) this.cur().build = [...b, key]; }
+      else this.cur().build = b.filter((k) => k !== key);
+      this.refresh();
+    },
+    // set a whole DECK's animation: "each" (item a item), "unit" (all at once) or "none"
+    // (fixed). Keeps the deck's place in the reveal order if it already had one.
+    animListMode(list, mode) {
+      this.record("anim:deck");
+      const b = this._ensureBuild();
+      const at = b.findIndex((k) => k === "each:" + list || k === "unit:" + list);
+      const out = b.filter((k) => k !== "each:" + list && k !== "unit:" + list);
+      if (mode !== "none") {
+        const key = mode === "unit" ? "unit:" + list : "each:" + list;
+        if (at >= 0) out.splice(Math.min(at, out.length), 0, key);
+        else out.push(key);
+      }
+      this.cur().build = out;
+      this.refresh();
+    },
+    // reorder a singleton unit one slot earlier (-1) / later (+1) in the reveal order.
+    animMove(key, dir) {
+      this.record("anim:move");
+      this.cur().build = moveKey(this._ensureBuild(), key, dir);
+      this.refresh();
+    },
+    // reorder a whole DECK one slot earlier / later (finds its current each:/unit: key).
+    animListMove(list, dir) {
+      this.record("anim:move");
+      const b = this._ensureBuild();
+      const key = b.find((k) => k === "each:" + list || k === "unit:" + list);
+      if (key) this.cur().build = moveKey(b, key, dir);
+      this.refresh();
     },
     renderNav() {}, // assigned below (navigator)
     broadcast() {}, // assigned below (sync)
