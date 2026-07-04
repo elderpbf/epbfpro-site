@@ -66,14 +66,19 @@ test('arquivo i18n keys exist in both dictionaries', () => {
 test('the type picker highlight follows the clicked type (visual selection bug)', () => {
   assert.match(formSrc, /_refreshPicker\(typeSel\.value\)/, 'a type change re-highlights the picker (is-active moves to the clicked type, not just the block re-renders)');
 });
-test('item-creator offers a local/Drive file import that opens an arquivo item', () => {
-  assert.match(creatorSrc, /from\s+['"]\.\.\/js\/file-source\.js['"]/, 'creator imports the shared file-source module');
+test('item-creator: document import (gdoc/local/Drive) extracts text on step 1, offers extract vs download', () => {
+  assert.match(creatorSrc, /from\s+['"]\.\.\/js\/file-source\.js['"]/, 'imports the shared file source');
+  assert.match(creatorSrc, /from\s+['"]\.\.\/js\/file-text\.js['"]/, 'imports the client-side text extractor');
+  assert.match(creatorSrc, /extractText\(/, 'a picked file has its text extracted into the raw box');
   assert.match(creatorSrc, /cf-file-local/, 'has a "from computer" import button');
-  assert.match(creatorSrc, /cf-file-drive/, 'has a "from Drive" import button');
-  assert.match(creatorSrc, /onFile\(\{ file/, 'hands the picked file to onFile');
-  assert.match(itemsSrc, /onFile:.*type: 'arquivo'/, 'items wires the creator file import to an arquivo item + pending file');
+  assert.match(creatorSrc, /name="cf-file-mode"/, 'offers the extract vs download choice on step 1 (not a jump to step 2)');
+  assert.match(creatorSrc, /_fileMode\(\) === 'download'/, 'download mode routes to an arquivo item');
+  assert.match(creatorSrc, /file: isDownload/, 'the AI carries the file when it is used for download');
+  assert.match(itemsSrc, /result\.file \|\| null/, 'items passes the AI-carried file to the form as a pending upload');
   assert.match(formSrc, /opts\.pendingFile/, 'the form seeds the pending upload from the creator file');
-  assert.ok('creator.file_prompt' in pt && 'creator.file_prompt' in en, 'the file prompt exists in both dictionaries');
+  for (const k of ['creator.import_prompt', 'creator.file_extract', 'creator.file_download', 'creator.file_no_text']) {
+    assert.ok(k in pt && k in en, `i18n ${k} exists in both dictionaries`);
+  }
 });
 
 // ── i18n parity for the new strings ─────────────────────────────────────────

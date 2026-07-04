@@ -10,7 +10,8 @@
 //   onClose() / onCancel()
 //   onManual({ body_md })                       user picked "Continue manually"
 //   onFile({ file })                            user picked a local/Drive file (arquivo item)
-//   onAIComplete({ prefill, aiContext, tagLabels })   AI step succeeded
+//   onAIComplete({ prefill, aiContext, tagLabels, file })   AI step succeeded; `file` is set
+//                                                           when a picked file is used for download
 // Returns: { destroy() }
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
@@ -19,6 +20,7 @@ import { appConfig, content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { createDriveSource, pickLocalFile } from '../js/file-source.js';
+import { extractText, hasExtractableText } from '../js/file-text.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as aiSpec from '../js/ai-spec.js';
@@ -84,18 +86,21 @@ export function mount(container, opts) {
           '<textarea id="cf-raw" rows="10" placeholder="' + _esc(t('creator.raw_placeholder')) + '"></textarea>' +
         '</div>' +
         '<div class="cdx-gdoc-row">' +
-          '<span class="cdx-helper-text">' + t('creator.gdoc_prompt') + '</span>' +
+          '<span class="cdx-helper-text">' + t('creator.import_prompt') + '</span>' +
           '<div class="cdx-gdoc-inline">' +
-            '<input type="text" id="cf-gdoc-url" placeholder="' + _esc(t('creator.gdoc_url_placeholder')) + '" style="flex:1;min-width:0">' +
+            '<input type="text" id="cf-gdoc-url" placeholder="' + _esc(t('creator.gdoc_url_placeholder')) + '" style="flex:1;min-width:120px">' +
             '<button class="cdx-btn cdx-btn-sm" id="cf-gdoc-load" type="button">' + t('creator.load') + '</button>' +
-          '</div>' +
-          '<p class="cdx-helper-text" id="cf-gdoc-hint">' + t('creator.gdoc_hint') + '</p>' +
-        '</div>' +
-        '<div class="cdx-gdoc-row">' +
-          '<span class="cdx-helper-text">' + t('creator.file_prompt') + '</span>' +
-          '<div class="cdx-gdoc-inline">' +
             '<button class="cdx-btn cdx-btn-sm" id="cf-file-local" type="button">' + t('editor.file_from_computer') + '</button>' +
             '<button class="cdx-btn cdx-btn-sm" id="cf-file-drive" type="button" style="display:none">' + t('editor.file_from_drive') + '</button>' +
+          '</div>' +
+          '<p class="cdx-helper-text" id="cf-gdoc-hint">' + t('creator.gdoc_hint') + '</p>' +
+          '<div class="cdx-file-picked" id="cf-file-picked" style="display:none">' +
+            '<span class="cdx-file-picked-name" id="cf-file-name"></span>' +
+            '<div class="cdx-file-mode">' +
+              '<label class="cdx-radio-label"><input type="radio" name="cf-file-mode" value="extract" checked> ' + _esc(t('creator.file_extract')) + '</label>' +
+              '<label class="cdx-radio-label"><input type="radio" name="cf-file-mode" value="download"> ' + _esc(t('creator.file_download')) + '</label>' +
+            '</div>' +
+            '<span class="cdx-helper-text" id="cf-file-status"></span>' +
           '</div>' +
         '</div>' +
         '<div class="cdx-emoji-toggle-row">' +
@@ -151,33 +156,58 @@ export function mount(container, opts) {
     });
   });
 
-  // Arquivo import: pick any file from the computer OR Google Drive (shared file-source
-  // module) and hand it to onFile, which opens the item form as an 'arquivo' item with the
-  // file attached, as easy as importing a Google Doc. Drive button hides until the key lands.
+  // Document import: pick a file from the computer OR Google Drive (shared file-source module).
+  // The file STAYS on this step-1 panel, it does NOT jump to step 2. Its text is extracted
+  // (client-side) into the raw box so both "Continuar manualmente" and "Formatar com IA" can
+  // use it, and a mode choice ("extrair" vs "usar como download") decides the final item.
+  let _pickedFile = null;
+  const _fileMode = () => {
+    const r = container.querySelector('input[name="cf-file-mode"]:checked');
+    return r ? r.value : 'extract';
+  };
+  async function _onFilePicked(f) {
+    if (!f) return;
+    _pickedFile = f;
+    const nameEl = container.querySelector('#cf-file-name');
+    const statusEl = container.querySelector('#cf-file-status');
+    const panel = container.querySelector('#cf-file-picked');
+    if (nameEl) nameEl.textContent = f.name;
+    if (panel) panel.style.display = '';
+    if (hasExtractableText(f)) {
+      if (statusEl) statusEl.textContent = t('creator.file_extracting');
+      let text = '';
+      try { text = await extractText(f); } catch (_) { text = ''; }
+      if (text) { rawEl.value = text; if (statusEl) statusEl.textContent = t('creator.file_extracted'); }
+      else if (statusEl) statusEl.textContent = t('creator.file_no_text');
+    } else if (statusEl) {
+      statusEl.textContent = t('creator.file_no_text');
+    }
+  }
   _primePickerKey();
   const fileLocal = container.querySelector('#cf-file-local');
   const fileDrive = container.querySelector('#cf-file-drive');
-  if (fileLocal) fileLocal.addEventListener('click', async () => {
-    const f = await pickLocalFile({});
-    if (f) onFile({ file: f });
-  });
+  if (fileLocal) fileLocal.addEventListener('click', async () => { await _onFilePicked(await pickLocalFile({})); });
   if (fileDrive) {
     const src = _fileDriveSource();
     const sync = () => { fileDrive.style.display = src.available() ? '' : 'none'; };
     _primePickerKey().then(sync).catch(() => {});
-    fileDrive.addEventListener('click', async () => {
-      const f = await src.pick({ view: 'any' });
-      if (f) onFile({ file: f });
-    });
+    fileDrive.addEventListener('click', async () => { await _onFilePicked(await src.pick({ view: 'any' })); });
   }
 
   container.querySelector('#cf-manual').addEventListener('click', function () {
+    // A picked file in "download" mode becomes an arquivo item (attachment); anything else
+    // (pasted text, gdoc, or a file in "extract" mode) continues as text content.
+    if (_pickedFile && _fileMode() === 'download') { onFile({ file: _pickedFile }); return; }
     onManual({ body_md: rawEl.value });
   });
 
   container.querySelector('#cf-ai').addEventListener('click', async function () {
     const raw = rawEl.value.trim();
-    if (!raw) { toast.err(t('creator.raw_required')); return; }
+    // A file with no extractable text (an image, a binary) still gets an AI pass from its
+    // metadata (Élder: "a IA faz o possível com os metadados"). Pasted text / gdoc use the box.
+    const isDownload = _pickedFile && _fileMode() === 'download';
+    const aiInput = raw || (_pickedFile ? ('Arquivo para os alunos: ' + _pickedFile.name + (_pickedFile.type ? ' (' + _pickedFile.type + ')' : '')) : '');
+    if (!aiInput) { toast.err(t('creator.raw_required')); return; }
     const addEmojis = container.querySelector('#cf-emoji-toggle').checked;
     const btn = this;
     const prev = btn.innerHTML;
@@ -187,26 +217,28 @@ export function mount(container, opts) {
       const systemPrompt = aiSpec.buildSystemPrompt(types, tags, { addEmojis });
       const res = await aiApi.chat({
         system: systemPrompt,
-        messages: [{ role: 'user', content: raw }],
+        messages: [{ role: 'user', content: aiInput }],
         temperature: 0.3,
         max_tokens: aiSpec.MAX_TOKENS
       });
       if (!res || !res.text) { _logAi('no content', res); notice.internal(t('creator.ai_no_content')); return; }
       let parsed = aiSpec.parseModelJson(res.text);
       if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('creator.ai_bad_format')); return; }
-      parsed = aiSpec.enforcePromptVerbatim(parsed, raw);
+      parsed = aiSpec.enforcePromptVerbatim(parsed, aiInput);
       // Truncation guard. Deferred cleanup: convert to a cdx confirm modal.
-      if (parsed.type !== 'prompt' && aiSpec.looksTruncated(raw, parsed.body_md)) {
+      if (parsed.type !== 'prompt' && aiSpec.looksTruncated(aiInput, parsed.body_md)) {
         if (!window.confirm(t('creator.ai_truncated_confirm'))) return;
       }
       const prefill = {
         title:   parsed.title   || '',
         summary: parsed.summary || '',
-        type:    parsed.type    || (types[0] && types[0].slug),
+        // "usar como download" forces the arquivo type (the file IS the item); the AI's read
+        // still fills the title/summary/body. Otherwise the AI picks the content type.
+        type:    isDownload ? 'arquivo' : (parsed.type || (types[0] && types[0].slug)),
         body_md: parsed.body_md || raw
       };
-      const aiContext = { rawInput: raw, firstOutput: parsed, addEmojis };
-      onAIComplete({ prefill, aiContext, tagLabels: parsed.tag_labels || [] });
+      const aiContext = { rawInput: aiInput, firstOutput: parsed, addEmojis };
+      onAIComplete({ prefill, aiContext, tagLabels: parsed.tag_labels || [], file: isDownload ? _pickedFile : null });
     } catch (e) {
       _logAi('exception', null);
       notice.internal(t('content.error') + ': ' + ((e && e.message) || e));
