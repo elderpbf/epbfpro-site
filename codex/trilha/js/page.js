@@ -7,6 +7,7 @@
 import { state } from './state.js';
 import { esc, showError } from './utils.js';
 import { trail } from './api.js';
+import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
 import { t, setLang } from '../i18n.js';
@@ -51,9 +52,36 @@ export async function mount(root, ctx = {}) {
 
   applyStaticI18n(root);
 
+  const api = ctx.api || trail;
+
+  // Code entry (/trilha/<code>): the 200 rewrite served the student page for a bare short
+  // code, keeping the visible path — so the code is the LAST path segment. Resolve it in
+  // place to the turma identity; the code STAYS in the bar as the turma's permanent URL
+  // (no bounce to slug/token). An open enrollment window returns an et, surfaced as ?et= so
+  // the shared enroll handling (wall + handleEnrollReturn) auto-approves exactly like a QR.
+  let enteredViaCode = false;
+  if (!state.clientSlug && !state.turmaSlug) {
+    const seg = String(loc.pathname || '').split('/').filter(Boolean).pop() || '';
+    if (/^[A-Za-z0-9]{4}$/.test(seg)) {
+      let r; try { r = await api.resolveCode({ code: seg }); } catch (_) { r = null; }
+      if (!r || !r.found) { showError(root, 'link_invalid', t); return; }
+      enteredViaCode = true;
+      state.clientSlug = r.client_slug; state.turmaSlug = r.turma_slug; state.token = r.turma_token;
+      if (r.enrollment_token && _win && _win.history && _win.history.replaceState) {
+        try {
+          const u = new URL(_win.location.href);
+          u.searchParams.set('et', r.enrollment_token);
+          _win.history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+        } catch (_) { /* et is best-effort */ }
+      }
+      // The live-question poller self-started with no identity (code URL) and no-oped; start
+      // it now with the resolved turma. Idempotent for a direct entry (guarded in nexo).
+      startNexo({ clientSlug: state.clientSlug, turmaSlug: state.turmaSlug, token: state.token });
+    }
+  }
+
   if (!state.clientSlug || !state.turmaSlug || !state.token) { showError(root, 'link_invalid', t); return; }
 
-  const api = ctx.api || trail;
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
     state.data = await api.turmaView({
@@ -101,6 +129,17 @@ export async function mount(root, ctx = {}) {
       onHashChange();
     }
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
+    // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
+    // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER
+    // handleEnrollReturn has consumed any ?et=. Skipped when we already entered via the code.
+    if (!enteredViaCode && state.data && state.data.turma && state.data.turma.access_code
+        && _win && _win.history && _win.history.replaceState) {
+      try {
+        const prefix = /^\/codex\//.test(loc.pathname || '') ? '/codex' : '';
+        _win.history.replaceState({}, '',
+          prefix + '/trilha/' + encodeURIComponent(state.data.turma.access_code) + (_win.location.hash || ''));
+      } catch (_) { /* normalization is cosmetic */ }
+    }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';

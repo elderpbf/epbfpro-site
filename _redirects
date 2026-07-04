@@ -27,8 +27,11 @@
 # Deep link cliente/turma -> index.html (servido na raiz /trilha/)
 /trilha/:client/:turma  /trilha/?c=:client&t=:turma    200
 
-# Codigo digitado: qualquer 1 segmento que nao seja um literal acima
-/trilha/:code           /trilha/entrar?code=:code      200
+# Codigo permanente da turma (/trilha/<code>): serve a AREA DO ALUNO direto (nao o entrar),
+# como o deep-link cliente/turma acima. O codigo e a URL EM REPOUSO; page.js le o ultimo
+# segmento do path, resolve via ct_resolve_code e monta a turma sem trocar a barra. Qualquer
+# 1 segmento que nao seja um literal reivindicado acima (validar/entrar).
+/trilha/:code           /trilha/?code=:code            200
 
 # /trilha sozinho -> entrada (sobrepoe o index.html padrao do diretorio)
 /trilha/                /trilha/entrar                 200

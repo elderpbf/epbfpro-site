@@ -64,10 +64,10 @@ async function resolveAndGo(code, els) {
   let res;
   try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
   if (res && res.found) {
-    const url = location.origin + '/trilha/' + encodeURIComponent(res.client_slug) + '/' +
-      encodeURIComponent(res.turma_slug) + '?k=' + encodeURIComponent(res.turma_token || '') +
-      '&et=' + encodeURIComponent(res.enrollment_token || '');
-    location.replace(url); // forward into the trilha as if the QR were scanned
+    // The code is the turma's permanent URL in its own right: land ON it (/trilha/<code>) and
+    // let the student page resolve it in place. We resolve here only to validate + show an
+    // inline "not found" before navigating. The page re-resolves and picks up any open et.
+    location.replace(location.origin + '/trilha/' + encodeURIComponent(code));
     return;
   }
   els.state.textContent = '';

@@ -30,10 +30,18 @@ let _timer = null;
 let _stopped = false;
 let _isMounted = false;
 let _lastCode = null;
+let _started = false;
 
+// Called twice by design: the self-start (DOMContentLoaded) and page.js. On a code entry
+// (/trilha/<code>) the URL carries no client/turma yet, so the self-start no-ops here and
+// page.js re-calls with the resolved identity. The _started guard makes the second call
+// idempotent for a direct entry (where the self-start already began polling).
 export function startNexo(loc) {
-  _loc = loc || parseLocation(location.search, location.pathname);
-  if (!_loc.clientSlug || !_loc.turmaSlug) return; // the page will surface its own error
+  const l = loc || parseLocation(location.search, location.pathname);
+  if (!l.clientSlug || !l.turmaSlug) return; // no identity yet; a later call (page.js) can start
+  if (_started) return;                       // already polling; never double-start
+  _started = true;
+  _loc = l;
   tick();
   document.addEventListener('visibilitychange', onVisibilityChange);
 }

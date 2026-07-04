@@ -4,9 +4,13 @@
 // wiring is verified visually on staging.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { parseLocation } from '../trilha/js/state.js';
 import { resolveTab } from '../trilha/js/page.js';
 import { fmtDate, aulaStatus, aulaDateText, parseTopics } from '../trilha/js/utils.js';
+
+const pageSrc = fs.readFileSync(fileURLToPath(new URL('../trilha/js/page.js', import.meta.url)), 'utf8');
 
 // ── parseLocation ───────────────────────────────────────────────────────────
 test('parseLocation: query params c/t/k', () => {
@@ -39,6 +43,19 @@ test('resolveTab: unknown/empty -> aulas', () => {
   assert.equal(resolveTab(''), 'aulas');
   assert.equal(resolveTab('#whatever'), 'aulas');
   assert.equal(resolveTab(null), 'aulas');
+});
+
+// ── code-as-URL inversion (source contract) ─────────────────────────────────
+test('mount resolves a bare /trilha/<code> in place (the code is the resting URL)', () => {
+  assert.match(pageSrc, /resolveCode\(\{ code: seg \}\)/, 'boots by resolving the last path segment as the turma code');
+  assert.match(pageSrc, /split\('\/'\)\.filter\(Boolean\)\.pop\(\)/, 'reads the code from the path (the 200 rewrite keeps the visible path), not a query');
+  assert.match(pageSrc, /import \{ startNexo \} from '\.\/nexo\.js'/, 'imports the poller');
+  assert.match(pageSrc, /startNexo\(\{ clientSlug: state\.clientSlug/, 'starts the live-question poller with the resolved identity (self-start no-oped on the code URL)');
+  assert.match(pageSrc, /searchParams\.set\('et'/, 'surfaces an open-window et as ?et= so the shared enroll handling auto-approves like a QR');
+});
+test('mount normalizes a legacy slug/token entry to the permanent /trilha/<code>', () => {
+  assert.match(pageSrc, /!enteredViaCode && state\.data && state\.data\.turma && state\.data\.turma\.access_code/, 'legacy entry rewrites the bar to the code (one public identity)');
+  assert.match(pageSrc, /'\/trilha\/' \+ encodeURIComponent\(state\.data\.turma\.access_code\)/, 'the normalized URL is the turma access_code');
 });
 
 // ── fmtDate (d/m, no year) ──────────────────────────────────────────────────
