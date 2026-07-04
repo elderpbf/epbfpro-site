@@ -1366,15 +1366,24 @@ function _wireDossierInlineEdit(el, turma) {
         const payload = { client_slug: turma.client_slug, slug: turma.slug };
         if (field === 'course_id') payload.course_id = raw ? Number(raw) : null;
         else payload[field] = raw.trim() === '' ? null : raw.trim();
-        call = api.updateTurma(payload).then(() => {
+        call = api.updateTurma(payload).then((d) => {
+          // Guard: the backend refuses a course change while handbook content is released
+          // (switching apostila would strand the released sections). Revert + warn.
+          if (d && d.error === 'course_change_has_apostila_releases') {
+            inp.value = cur;
+            notice.warn(t('cohorts.course_change_blocked').replace('{n}', d.released_count));
+            return { _handled: true };
+          }
+          if (d && d.error) throw new Error(d.error);
           if (field === 'course_id') {
             turma.course_id = payload.course_id;
             const c = (_turmaCourses || []).find((x) => String(x.id) === String(payload.course_id));
             turma.course_title = c ? c.title : null;
           } else turma[field] = payload[field];
+          return { _handled: false };
         });
       }
-      call.then(() => toast.ok(t('cohorts.turma_updated')))
+      call.then((r) => { if (!(r && r._handled)) toast.ok(t('cohorts.turma_updated')); })
         .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });
   });

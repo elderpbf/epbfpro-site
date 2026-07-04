@@ -150,6 +150,8 @@ function _renderMain() {
           '<select id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
         '<div class="cdx-cursos-f cdx-cursos-f-stat"><label>' + esc(t('cohorts.course_reuse_label')) + '</label>' +
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
+      '</div>' +
+      '<div class="cdx-cursos-metafoot">' +
         '<button class="cdx-btn cdx-btn-sm cdx-cursos-archive" id="cdx-cur-archive">' + esc(t('cohorts.archive')) + '</button>' +
       '</div>' +
     '</div>' +

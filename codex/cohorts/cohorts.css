@@ -578,12 +578,18 @@
 .cdx-cursos-meta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); padding: 1rem 1.2rem; }
 .cdx-cursos-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); border: none; outline: none; width: 100%; background: transparent; border-bottom: 2px solid transparent; padding-bottom: .2rem; }
 .cdx-cursos-title:focus { border-bottom-color: var(--primary); }
-.cdx-cursos-fields { display: flex; gap: .6rem; margin-top: .8rem; flex-wrap: wrap; align-items: flex-end; }
-.cdx-cursos-f { background: var(--background); border: 1px solid var(--border); border-radius: 9px; padding: .45rem .6rem; min-width: 150px; }
+/* 3 equal-hierarchy field cards (Carga horária | Apostila do curso | Reúso). */
+.cdx-cursos-fields { display: flex; gap: .6rem; margin-top: .8rem; flex-wrap: wrap; align-items: stretch; }
+.cdx-cursos-f { flex: 1 1 160px; display: flex; flex-direction: column; justify-content: center; background: var(--background); border: 1px solid var(--border); border-radius: 9px; padding: .45rem .6rem; min-width: 150px; }
 .cdx-cursos-f label { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; margin-bottom: .15rem; }
-.cdx-cursos-f input { border: none; background: transparent; font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none; }
-.cdx-cursos-f-stat { margin-left: auto; min-width: auto; background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); }
+.cdx-cursos-f input,
+.cdx-cursos-f select { border: none; background: transparent; font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none; }
+.cdx-cursos-f select { cursor: pointer; appearance: none; -webkit-appearance: none; }
+.cdx-cursos-f select option { color: var(--text-primary); background: var(--surface); }
+/* Reúso keeps its own tint to read as a stat, but sits at the SAME hierarchy as the others. */
+.cdx-cursos-f-stat { background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); flex: 1 1 120px; }
 .cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--tint-primary-tx); }
+.cdx-cursos-metafoot { display: flex; justify-content: flex-end; margin-top: .6rem; }
 /* ementa panel */
 .cdx-cursos-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); }
 .cdx-cursos-panel-h { display: flex; align-items: center; gap: .6rem; padding: .7rem .9rem; border-bottom: 1px solid var(--border); }

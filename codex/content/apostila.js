@@ -11,12 +11,14 @@
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
+import * as itemCreator from './item-creator.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { renderItem } from '../js/item-render.js';
 import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 import { openModal, closeModal } from '../js/modal.js';
+import { makeReorderable } from '../js/reorder.js';
 
 // ── Module state ──────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -30,6 +32,7 @@ let _selectedId = null;       // selected section id (live item id OR draft row 
 let _detailCache = new Map(); // live item id -> full item (with body_md)
 let _types = [];
 let _tags = [];
+let _reorderDestroy = null;   // teardown for the shared drag-reorder wiring
 
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
@@ -78,14 +81,19 @@ function _openPrompt(opts) {
 // ── Section editor (reuses itemForm via the saveFn hook) ─────────────────────
 function _openEditor(opts) {
   const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  // Apostila sections are always type 'conteudo'; force it (new) so the picker never lands
+  // on a foreign type from the creator's AI prefill.
+  const prefill = opts.item ? null : Object.assign({}, opts.prefill || {}, { type: 'conteudo' });
   itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item: opts.item || null,
-    prefill: opts.item ? null : { type: 'conteudo' },
+    prefill,
+    aiContext: opts.aiContext || null,
     types: _types,
     tags: _tags,
     titleLabel: opts.titleLabel,
     saveLabel: t('content.save'),
     closeLabel: t('content.close'),
+    excludeTypes: opts.item ? [] : _types.filter((ty) => ty.slug !== 'conteudo').map((ty) => ty.slug),
     saveFn: opts.saveFn,
     onSave: () => { closeModal(bd); opts.onDone && opts.onDone(); },
     onCancel: () => closeModal(bd),
@@ -211,6 +219,7 @@ function _openApostila(id, name) {
 }
 
 function _backToLibrary() {
+  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
   _setId = null;
   _selectedId = null;
   _renderShell();
@@ -295,23 +304,22 @@ function _renderList() {
     return;
   }
 
-  const last = rows.length - 1;
   const rowsHtml = rows.map((it, i) => {
     const id = it.id;
     const pos = _mode === 'draft' ? it.position : it.set_position;
     const active = Number(id) === Number(_selectedId);
+    // Draft rows carry a status highlight (new/edited) so a working copy shows at a glance
+    // what changed vs the live apostila; 'unchanged' rows stay plain.
+    const statusCls = (_mode === 'draft' && it.status && it.status !== 'unchanged') ? ' cdx-item-row--' + it.status : '';
     const badge = (_mode === 'draft' && it.status && it.status !== 'unchanged')
       ? '<span class="cdx-apostila-badge cdx-apostila-badge--' + it.status + '">' + t('apostila.status_' + it.status) + '</span>'
       : '';
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(id) + '">' +
+    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + statusCls + '" data-id="' + _esc(id) + '" draggable="true">' +
+      '<span class="cdx-apostila-grip" title="' + t('apostila.drag_hint') + '">⠿</span>' +
       '<span class="cdx-apostila-pos">' + _esc(pos || (i + 1)) + '</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(it.title || '') + badge + '</div>' +
         '<div class="cdx-item-sub">' + _esc((it.summary && it.summary.trim()) ? it.summary : t('apostila.no_summary')) + '</div>' +
-      '</div>' +
-      '<div class="cdx-apostila-move">' +
-        '<button class="cdx-iconbtn" data-act="up" data-id="' + _esc(id) + '"' + (i === 0 ? ' disabled' : '') + ' title="' + t('apostila.move_up') + '">▲</button>' +
-        '<button class="cdx-iconbtn" data-act="down" data-id="' + _esc(id) + '"' + (i === last ? ' disabled' : '') + ' title="' + t('apostila.move_down') + '">▼</button>' +
       '</div>' +
     '</div>';
   }).join('');
@@ -329,10 +337,6 @@ function _onListClick(e) {
   const act = (e.target.closest('[data-act]') || {}).dataset ? e.target.closest('[data-act]').dataset.act : null;
   if (act === 'start') return _startDraft();
   if (act === 'add') return _addSection();
-  if (act === 'up' || act === 'down') {
-    const id = Number(e.target.closest('[data-act]').dataset.id);
-    return _move(id, act === 'up' ? -1 : 1);
-  }
   const row = e.target.closest('.cdx-item-row');
   if (row) { _selectedId = Number(row.dataset.id); _renderList(); _renderPreview(); }
 }
@@ -402,8 +406,28 @@ function _onPreviewClick(e) {
 }
 
 // ── Section create / edit / remove / move (mode-aware) ───────────────────────
+// New section = the shared content-first creator (step 1: paste text / load a Google Doc /
+// pick a file, organized by the AI) reused verbatim from the Items tab, then the editor
+// (step 2). Only on CREATE; editing a section opens the editor directly.
 function _addSection() {
+  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
+    types: _types,
+    tags: _tags,
+    titleLabel: t('apostila.new_section'),
+    closeLabel: t('content.close'),
+    onClose: () => closeModal(bd),
+    onCancel: () => closeModal(bd),
+    onManual: () => { closeModal(bd); _openNewSectionEditor(null, null); },
+    onFile: () => { closeModal(bd); _openNewSectionEditor(null, null); },
+    onAIComplete: (result) => { closeModal(bd); _openNewSectionEditor(result.prefill, result.aiContext); },
+  });
+}
+
+function _openNewSectionEditor(prefill, aiContext) {
   _openEditor({
+    prefill: prefill || null,
+    aiContext: aiContext || null,
     titleLabel: t('apostila.new_section'),
     saveFn: (params) => _mode === 'draft' ? _saveDraft(params) : _createLive(params),
     onDone: () => { toast.ok(t('apostila.section_created')); _loadMode(); },
@@ -492,21 +516,19 @@ function _doDeleteLive(id, force) {
   });
 }
 
-function _move(id, dir) {
+// Drag-reorder callback (from the shared js/reorder.js). The DOM is already in the new
+// order; sync the local array + positions, persist, then re-render to fix the badges.
+function _onReorder(orderedIds) {
+  const ids = orderedIds.map(Number);
   const rows = _mode === 'draft' ? _draft.sections : _live;
-  const idx = rows.findIndex((r) => Number(r.id) === Number(id));
-  const j = idx + dir;
-  if (idx < 0 || j < 0 || j >= rows.length) return;
-  const copy = rows.slice();
-  const tmp = copy[idx]; copy[idx] = copy[j]; copy[j] = tmp;
-  const orderedIds = copy.map((r) => r.id);
-  // optimistic local reorder: renumber positions so the badges stay right pre-reload
-  copy.forEach((r, k) => { if (_mode === 'draft') r.position = k + 1; else r.set_position = k + 1; });
-  if (_mode === 'draft') { _draft.sections = copy; } else { _live = copy; }
+  const byId = new Map(rows.map((r) => [Number(r.id), r]));
+  const next = ids.map((id) => byId.get(id)).filter(Boolean);
+  next.forEach((r, k) => { if (_mode === 'draft') r.position = k + 1; else r.set_position = k + 1; });
+  if (_mode === 'draft') { _draft.sections = next; } else { _live = next; }
   _renderList();
   const call = _mode === 'draft'
-    ? api.reorderDraft({ set_id: _setId, ordered_ids: orderedIds })
-    : api.reorderSetItems({ set_id: _setId, ordered_ids: orderedIds });
+    ? api.reorderDraft({ set_id: _setId, ordered_ids: ids })
+    : api.reorderSetItems({ set_id: _setId, ordered_ids: ids });
   call.then((d) => { if (d && d.error) throw new Error(d.error); }).catch((err) => { notice.internal(_err(err)); _loadMode(); });
 }
 
@@ -593,6 +615,12 @@ function _renderShell() {
   _q('cdx-apostila-rename').addEventListener('click', () => _renameApostila(_sets.find((s) => Number(s.id) === Number(_setId)) || { id: _setId, name: _setName }));
   _q('cdx-apostila-modes').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b) _setMode(b.dataset.mode); });
   _q('cdx-apostila-list').addEventListener('click', _onListClick);
+  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
+  _reorderDestroy = makeReorderable(_q('cdx-apostila-list'), {
+    itemSelector: '.cdx-item-row',
+    getId: (el) => el.dataset.id,
+    onReorder: _onReorder,
+  });
   _q('cdx-apostila-preview').addEventListener('click', _onPreviewClick);
   _q('cdx-apostila-converge').addEventListener('click', () => _converge(false));
   _q('cdx-apostila-discard').addEventListener('click', _discard);
@@ -622,6 +650,7 @@ export function mount(viewEl, ctx) {
 }
 
 export function unmount() {
+  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _setId = null; _selectedId = null; _draft = null;
