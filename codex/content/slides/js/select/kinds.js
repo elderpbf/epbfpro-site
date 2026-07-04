@@ -42,38 +42,28 @@ function resetCtrl() {
 // slide.build through app.anim* (materialized on first edit), so the bar and the step engine
 // (player.autoSteps -> animsteps.planSteps) stay one source of truth. `def` is the block's
 // AUTO default (blocks true, free text boxes false, so titles stay fixed until opted in).
+// Consistent with the panel (edit/animpanel.js): a singleton is ONE "Animar" toggle
+// (active = animated). Reorder lives in the panel, not the bar.
 function animCtrls(app, kind, ref, def) {
   const key = singletonKey(kind, ref);
-  const on = isAnimated(app.cur().build, key, def);
-  const out = [{
-    type: "toggle", id: "animate", labelKey: "slides.ed_animate", on,
+  return [{
+    type: "toggle", id: "animate", labelKey: "slides.ed_animate",
+    on: isAnimated(app.cur().build, key, def),
     write(app2, sel2, checked) { app2.animToggle(key, checked); },
   }];
-  if (on) out.push(
-    { type: "button", id: "anim-earlier", label: "◀", run(app2) { app2.animMove(key, -1); } },
-    { type: "button", id: "anim-later", label: "▶", run(app2) { app2.animMove(key, 1); } },
-  );
-  return out;
 }
 
-// A whole deck's animation, offered on the list container's bar (and mirrored into the
-// card "Ajustes ▾"). `list` is the slots key (topics / cards / a named list).
-function deckAnimCtrls(app, list, withMove = true) {
+// A whole deck's animation, offered on the item/container bar. Same two toggles as the
+// panel: "item a item" / "tudo junto" — the active one is the mode; clicking the active one
+// (or leaving both off) turns the deck off. Reorder lives in the panel.
+function deckAnimCtrls(app, list) {
   const mode = listModeOf(app.cur().build, list); // "each" | "unit" | "none"
-  const out = [{
-    type: "choice", id: "anim", value: mode,
-    options: [
-      { v: "each", labelKey: "slides.ed_anim_each" },
-      { v: "unit", labelKey: "slides.ed_anim_unit" },
-      { v: "none", labelKey: "slides.ed_anim_off" },
-    ],
-    write(app2, sel2, v) { app2.animListMode(list, v); },
-  }];
-  if (withMove && mode !== "none") out.push(
-    { type: "button", id: "anim-earlier", label: "◀", run(app2) { app2.animListMove(list, -1); } },
-    { type: "button", id: "anim-later", label: "▶", run(app2) { app2.animListMove(list, 1); } },
-  );
-  return out;
+  return [
+    { type: "toggle", id: "anim-each", labelKey: "slides.ed_anim_each", on: mode === "each",
+      write(app2, sel2, checked) { app2.animListMode(list, checked ? "each" : "none"); } },
+    { type: "toggle", id: "anim-unit", labelKey: "slides.ed_anim_unit", on: mode === "unit",
+      write(app2, sel2, checked) { app2.animListMode(list, checked ? "unit" : "none"); } },
+  ];
 }
 
 const _kinds = new Map();
@@ -561,7 +551,7 @@ register({
       { type: "button", id: "add", label: `＋ ${t("slides.ed_card")}`, run(app2, sel2) { addAfter(app2, sel2.ref); } },
       { type: "button", id: "delete", label: "✕", danger: true, run(app2, sel2) { removeItem(app2, sel2.ref, true); } },
       // Deck-wide animation, reachable from a card (skip free stacks: they animate via .asset).
-      ...(stackAssetOf(app, sel.ref.split(".")[0]) ? [] : [{ type: "sep" }, ...deckAnimCtrls(app, sel.ref.split(".")[0], false)]),
+      ...(stackAssetOf(app, sel.ref.split(".")[0]) ? [] : [{ type: "sep" }, ...deckAnimCtrls(app, sel.ref.split(".")[0])]),
       { type: "sep" },
       { type: "button", id: "toggles", label: `${t("slides.ed_adjust")} ▾`, run(app2, sel2, btnEl) { app2.select.openDropdown(cardTogglesMenu(app2.cur().slots, resolveStyleObj(app2.cur().slots, sel2.ref)), btnEl); } }
     );
@@ -649,7 +639,7 @@ register({
     // Deck-wide animation, reachable by clicking an ITEM (not just the hard-to-hit
     // container gap). Skipped for a free stack, which animates via its own .asset.
     const tlist = sel.ref.split(".")[0];
-    if (!stackAssetOf(app, tlist)) ctrls.push({ type: "sep" }, ...deckAnimCtrls(app, tlist, false));
+    if (!stackAssetOf(app, tlist)) ctrls.push({ type: "sep" }, ...deckAnimCtrls(app, tlist));
     if ((app.cur().overrides || {})[sel.ref]) ctrls.push({ type: "sep" }, resetCtrl());
     return ctrls;
   },

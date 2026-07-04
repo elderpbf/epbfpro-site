@@ -91,12 +91,9 @@ function unitRow(app, u, onList, i) {
 }
 
 function build(app) {
+  // No header: the toolbar button names it, and clicking outside closes it, so we drop the
+  // title + ✕ to keep the panel compact (and the Parar control high while previewing).
   const box = el("div", "cdx-animpanel");
-
-  const head = el("div", "ap-head");
-  head.appendChild(el("span", "ap-title", t("slides.ed_anim")));
-  head.appendChild(btn("ap-x", "✕", false, closeAnimPanel));
-  box.appendChild(head);
 
   // While previewing, collapse to just a Parar control so the slide stays visible.
   if (app.previewing) {
