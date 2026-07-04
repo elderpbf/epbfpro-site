@@ -6,7 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
-import { planSteps, seedBuild, parseListKey } from "./animsteps.js";
+import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -218,8 +218,11 @@ function blocksOf(stage) {
     const d = el.dataset;
     if (el.classList.contains("asset")) blocks.push({ el, list: null, key: "a:" + d.asset, def: true });
     else if (el.classList.contains("imgslot")) blocks.push({ el, list: null, key: "f:" + d.fkey, def: true });
-    else if (d.step != null && d.fkey) blocks.push({ el, list: d.fkey.split(".")[0], key: null, def: true }); // list item
-    else if (el.classList.contains("editable") && d.fkey) blocks.push({ el, list: null, key: "f:" + d.fkey, def: false }); // free text box
+    // A list ITEM is a topic/roadnode <li> or a .card, keyed "<list>.<id>". Classify by
+    // being that element, NOT by data-step presence: layouts stamp data-step on fixed
+    // slots (title/subtitle) too, and those must stay text singletons, not fake decks.
+    else if ((el.tagName === "LI" || el.classList.contains("card")) && d.fkey) blocks.push({ el, list: d.fkey.split(".")[0], key: null, def: true });
+    else if (el.classList.contains("editable") && d.fkey) blocks.push({ el, list: null, key: "f:" + d.fkey, def: false }); // free text box: fixed by default
     else blocks.push({ el, list: null, key: d.fkey ? "f:" + d.fkey : null, def: true });
   }
   return blocks;
@@ -255,18 +258,39 @@ export function animAll(stage) {
   return seedBuild(blocksOf(stage), true);
 }
 
-/** The ordered ANIMATED units for the animation panel: the build (or the auto seed when
- *  none), each labelled from the live DOM. A deck is one entry with its mode; a singleton
- *  carries a type label (+ a text snippet). Returns [{ key, label, isDeck, list?, mode? }].
+/** ALL animatable units for the panel, each with its TRUE on/off state, so the list
+ *  matches reality. A deck (a whole list) is one unit carrying its mode ("each"|"unit"|
+ *  "none"); a singleton (image / free text / asset) carries on/off. Ordered: animated
+ *  units in reveal order first (build order, or DOM order in auto), then the OFF units in
+ *  DOM order. Returns [{ kind:"deck"|"single", label, on, mode?, list?, key? }].
  */
 export function animUnits(stage, build) {
   const blocks = blocksOf(stage);
-  const b = build || seedBuild(blocks);
-  return b.map((key) => {
-    const lk = parseListKey(key);
-    if (lk) return { key, isDeck: true, list: lk.list, mode: lk.mode, label: deckLabel(lk.list) };
-    return { key, isDeck: false, label: singletonLabel(blocks.find((x) => x.key === key)) };
-  });
+  const units = [];
+  const seen = new Set();
+  for (const b of blocks) {
+    if (b.list) {
+      if (seen.has(b.list)) continue;
+      seen.add(b.list);
+      const mode = listModeOf(build, b.list);
+      units.push({ kind: "deck", list: b.list, label: deckLabel(b.list), mode, on: mode !== "none" });
+    } else if (b.key) {
+      units.push({ kind: "single", key: b.key, label: singletonLabel(b), on: isAnimated(build, b.key, b.def) });
+    }
+  }
+  if (build) {
+    const find = (k) => {
+      const lk = parseListKey(k);
+      return lk ? units.find((u) => u.kind === "deck" && u.list === lk.list)
+                : units.find((u) => u.kind === "single" && u.key === k);
+    };
+    const ordered = [];
+    const used = new Set();
+    for (const k of build) { const u = find(k); if (u && !used.has(u)) { ordered.push(u); used.add(u); } }
+    for (const u of units) if (!used.has(u)) ordered.push(u);
+    return ordered;
+  }
+  return [...units.filter((u) => u.on), ...units.filter((u) => !u.on)]; // auto: on (DOM order) then off
 }
 
 function deckLabel(list) {

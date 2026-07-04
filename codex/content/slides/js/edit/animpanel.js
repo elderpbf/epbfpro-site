@@ -1,12 +1,13 @@
-// edit/animpanel.js — the "Animação" panel: entrance type + the ordered reveal list +
-// Preview. Opened from the chrome "Animação" button, like the Tema box. It renders the
-// ANIMATED units only (build order); include an element from its own selection bar or
-// via "ligar todos", turn one off here to drop it from the list. Rows reorder by drag
-// (grab handle) with ▲▼ as a reliable fallback; a deck row also carries item-a-item / tudo
-// junto. Everything writes through app.anim* (which materializes slide.build on first
-// edit); the panel re-renders itself after each change and registers app._animPanelRefresh
-// so a change made from the selection bar reflects here too. Preview steps THIS slide in
-// the editor (app.startPreview); closing the panel stops it.
+// edit/animpanel.js — the "Animação" panel: entrance type + the reveal list + Preview.
+// Opened from the chrome "Animação" button, like the Tema box. It lists EVERY animatable
+// unit with its true state (so it matches reality): a deck (a whole list) shows two toggle
+// buttons "item a item" / "tudo junto" (the selected one is its mode; neither selected =
+// off); a singleton shows one "Animar" toggle (active = animated). Animated units come
+// first, in reveal order, and reorder by drag (grab handle) or ▲▼; off units follow,
+// dimmed. "Ligar todos / Desligar todos" flips everything. Preview steps THIS slide in the
+// editor (app.startPreview); while previewing the panel collapses to just a Parar button so
+// the slide is visible. Everything writes through app.anim* (materializes slide.build on
+// first edit) and the panel re-renders itself after each change.
 import { t } from "../../../../js/i18n.js";
 
 let panel = null;
@@ -29,47 +30,63 @@ function btn(cls, txt, on, onClick) {
   return b;
 }
 
-// One row for an animated unit. `units` is the current ordered list (for reorder math).
-function unitRow(app, u, i, units) {
-  const row = el("div", "ap-row" + (u.isDeck ? " ap-deck" : ""));
-  row.dataset.key = u.key;
-  row.draggable = true;
-  row.ondragstart = (e) => { dragKey = u.key; try { e.dataTransfer.effectAllowed = "move"; } catch (_) {} };
-  row.ondragover = (e) => { e.preventDefault(); row.classList.add("ap-over"); };
-  row.ondragleave = () => row.classList.remove("ap-over");
-  row.ondrop = (e) => {
-    e.preventDefault();
-    row.classList.remove("ap-over");
-    if (dragKey == null || dragKey === u.key) return;
-    const keys = units.map((x) => x.key).filter((k) => k !== dragKey);
-    keys.splice(keys.indexOf(u.key), 0, dragKey); // drop BEFORE the target row
-    dragKey = null;
-    app.animReorder(keys);
-  };
+// Stable identity for a unit in slide.build: a deck by its mode+list, a singleton by key.
+function unitKey(u) {
+  return u.kind === "deck" ? (u.mode === "unit" ? "unit:" : "each:") + u.list : u.key;
+}
 
-  row.appendChild(el("span", "ap-grab", "⋮⋮"));
-  row.appendChild(el("span", "ap-label", u.label));
-
-  if (u.isDeck) {
-    const mode = el("span", "ap-mode");
-    mode.appendChild(btn("ap-m", t("slides.ed_anim_each"), u.mode === "each", () => app.animListMode(u.list, "each")));
-    mode.appendChild(btn("ap-m", t("slides.ed_anim_unit"), u.mode === "unit", () => app.animListMode(u.list, "unit")));
-    row.appendChild(mode);
+// One row. `onList` is the current ordered ON units (for reorder math); `i` is this unit's
+// index within it (or -1 when the unit is off, so it carries no reorder controls).
+function unitRow(app, u, onList, i) {
+  const on = u.on;
+  const row = el("div", "ap-row" + (u.kind === "deck" ? " ap-deck" : "") + (on ? "" : " ap-offrow"));
+  if (on) {
+    row.draggable = true;
+    row.dataset.key = unitKey(u);
+    row.ondragstart = (e) => { dragKey = unitKey(u); try { e.dataTransfer.effectAllowed = "move"; } catch (_) {} };
+    row.ondragover = (e) => { e.preventDefault(); row.classList.add("ap-over"); };
+    row.ondragleave = () => row.classList.remove("ap-over");
+    row.ondrop = (e) => {
+      e.preventDefault();
+      row.classList.remove("ap-over");
+      if (dragKey == null || dragKey === unitKey(u)) return;
+      const keys = onList.map(unitKey).filter((k) => k !== dragKey);
+      keys.splice(keys.indexOf(unitKey(u)), 0, dragKey); // drop BEFORE this row
+      dragKey = null;
+      app.animReorder(keys);
+    };
+    row.appendChild(el("span", "ap-grab", "⋮⋮"));
+  } else {
+    row.appendChild(el("span", "ap-grab ap-grab-off", "⋮⋮"));
   }
 
-  const ord = el("span", "ap-ord");
-  const move = (dir) => {
-    const keys = units.map((x) => x.key);
-    const j = i + dir;
-    if (j < 0 || j >= keys.length) return;
-    [keys[i], keys[j]] = [keys[j], keys[i]];
-    app.animReorder(keys);
-  };
-  ord.appendChild(btn("ap-mv", "▲", false, () => move(-1)));
-  ord.appendChild(btn("ap-mv", "▼", false, () => move(1)));
-  row.appendChild(ord);
+  row.appendChild(el("span", "ap-label", u.label));
 
-  row.appendChild(btn("ap-off", "✕", false, () => app.animRemoveUnit(u.key)));
+  const ctl = el("span", "ap-ctl");
+  if (u.kind === "deck") {
+    ctl.appendChild(btn("ap-m", t("slides.ed_anim_each"), u.mode === "each",
+      () => app.animListMode(u.list, u.mode === "each" ? "none" : "each")));
+    ctl.appendChild(btn("ap-m", t("slides.ed_anim_unit"), u.mode === "unit",
+      () => app.animListMode(u.list, u.mode === "unit" ? "none" : "unit")));
+  } else {
+    ctl.appendChild(btn("ap-m", t("slides.ed_animate"), on,
+      () => app.animToggle(u.key, !on)));
+  }
+  row.appendChild(ctl);
+
+  const ord = el("span", "ap-ord");
+  if (on) {
+    const move = (dir) => {
+      const keys = onList.map(unitKey);
+      const j = i + dir;
+      if (j < 0 || j >= keys.length) return;
+      [keys[i], keys[j]] = [keys[j], keys[i]];
+      app.animReorder(keys);
+    };
+    ord.appendChild(btn("ap-mv", "▲", false, () => move(-1)));
+    ord.appendChild(btn("ap-mv", "▼", false, () => move(1)));
+  }
+  row.appendChild(ord);
   return row;
 }
 
@@ -78,9 +95,16 @@ function build(app) {
 
   const head = el("div", "ap-head");
   head.appendChild(el("span", "ap-title", t("slides.ed_anim")));
-  const x = btn("ap-x", "✕", false, closeAnimPanel);
-  head.appendChild(x);
+  head.appendChild(btn("ap-x", "✕", false, closeAnimPanel));
   box.appendChild(head);
+
+  // While previewing, collapse to just a Parar control so the slide stays visible.
+  if (app.previewing) {
+    const foot = el("div", "ap-foot");
+    foot.appendChild(btn("ap-preview ap-stop", "■ " + t("slides.ed_stop"), false, () => app.stopPreview()));
+    box.appendChild(foot);
+    return box;
+  }
 
   // Entrada (entrance type) — reuses deck.theme.anim.
   const ent = el("section", "ap-sec");
@@ -92,7 +116,7 @@ function build(app) {
   ent.appendChild(opts);
   box.appendChild(ent);
 
-  // Ordem de animação — the animated units, in reveal order.
+  // Ordem de animação — every unit, animated first (reorderable), then the off ones.
   const ord = el("section", "ap-sec");
   const oh = el("div", "ap-sec-h ap-listh");
   oh.appendChild(el("span", null, t("slides.ed_anim_order")));
@@ -103,13 +127,13 @@ function build(app) {
   ord.appendChild(oh);
 
   const units = app.animUnits();
+  const onList = units.filter((u) => u.on);
   const list = el("div", "ap-list");
   if (!units.length) list.appendChild(el("div", "ap-empty", t("slides.ed_anim_empty")));
-  else units.forEach((u, i) => list.appendChild(unitRow(app, u, i, units)));
+  else units.forEach((u) => list.appendChild(unitRow(app, u, onList, u.on ? onList.indexOf(u) : -1)));
   ord.appendChild(list);
   box.appendChild(ord);
 
-  // Preview
   const foot = el("div", "ap-foot");
   foot.appendChild(btn("ap-preview", "▷ " + t("slides.ed_preview"), false, () => app.startPreview()));
   box.appendChild(foot);
@@ -130,7 +154,7 @@ function place(btnEl) {
   });
 }
 
-// Rebuild in place (keeps the panel open + anchored) after a change.
+// Rebuild in place (keeps it open + anchored) after a change or a preview toggle.
 function rebuild() {
   if (!panel || !appRef || !openBtn) return;
   const next = build(appRef);
@@ -158,7 +182,7 @@ export function openAnimPanel(app, btnEl) {
   openBtn = btnEl;
   app.root.appendChild(panel);
   place(btnEl);
-  app._animPanelRefresh = rebuild; // reflect changes made from the selection bar
+  app._animPanelRefresh = rebuild; // reflect changes made from the selection bar / preview
   onDoc = (e) => {
     if (panel.contains(e.target) || (btnEl && btnEl.contains(e.target))) return;
     closeAnimPanel();
