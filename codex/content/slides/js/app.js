@@ -273,8 +273,14 @@ export function mount(root, ctx = {}) {
       this.root.classList.add("previewing");
       this._syncPresentBtn();
       this.renderSlide();
+      if (this._animPanelRefresh) this._animPanelRefresh(); // collapse the panel to the Stop control
     },
-    stopPreview() { this._clearPreview(); this.step = 0; this.renderSlide(); },
+    stopPreview() {
+      this._clearPreview();
+      this.step = 0;
+      this.renderSlide();
+      if (this._animPanelRefresh) this._animPanelRefresh(); // expand the panel back
+    },
     _clearPreview() {
       if (!this.previewing) return;
       this.previewing = false;

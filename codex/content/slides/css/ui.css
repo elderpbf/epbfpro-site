@@ -337,12 +337,14 @@
 .cdx-deck-editor .cdx-animpanel .ap-row.ap-over { box-shadow: 0 -2px 0 var(--primary); }
 .cdx-deck-editor .cdx-animpanel .ap-grab { cursor: grab; color: var(--muted); letter-spacing: -2px; user-select: none; }
 .cdx-deck-editor .cdx-animpanel .ap-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cdx-deck-editor .cdx-animpanel .ap-mode { display: inline-flex; gap: 3px; }
+.cdx-deck-editor .cdx-animpanel .ap-ctl { display: inline-flex; gap: 3px; }
+.cdx-deck-editor .cdx-animpanel .ap-offrow { opacity: .55; }
+.cdx-deck-editor .cdx-animpanel .ap-grab-off { cursor: default; visibility: hidden; }
 .cdx-deck-editor .cdx-animpanel .ap-m { font: inherit; font-size: 10px; background: transparent; color: var(--muted); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
 .cdx-deck-editor .cdx-animpanel .ap-m.on { background: var(--primary); color: #fff; border-color: var(--primary); }
 .cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; }
-.cdx-deck-editor .cdx-animpanel .ap-mv, .cdx-deck-editor .cdx-animpanel .ap-off { font: inherit; font-size: 11px; line-height: 1; background: transparent; color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
-.cdx-deck-editor .cdx-animpanel .ap-off { color: var(--danger, #c0392b); }
+.cdx-deck-editor .cdx-animpanel .ap-mv { font: inherit; font-size: 11px; line-height: 1; background: transparent; color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
+.cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; min-width: 44px; }
 .cdx-deck-editor .cdx-animpanel .ap-foot { margin-top: 12px; }
 .cdx-deck-editor .cdx-animpanel .ap-preview { width: 100%; font: inherit; font-size: 13px; font-weight: 700; background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 8px; cursor: pointer; }
 /* Preview indicator: a subtle ring on the stage while stepping in-editor. */
