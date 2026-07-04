@@ -563,6 +563,7 @@ export function mount(container, opts) {
       return;
     }
     lastTypeValue = typeSel.value;
+    _refreshPicker(typeSel.value); // move the is-active highlight to the clicked type (was only set at build)
     renderTypeBlock(typeSel.value);
     markDirty();
   });
@@ -665,10 +666,16 @@ export function mount(container, opts) {
     saveBtn.disabled = true;
     try {
       let saveRes;
-      if (isEdit) { params.id = item.id; saveRes = await api.updateItem(params); }
+      // saveFn override: the Apostila editor persists into a set (createItem with set_id)
+      // or the working copy (saveDraftSection), not the plain bank. When absent the default
+      // bank create/update path runs unchanged.
+      if (typeof opts.saveFn === 'function') {
+        if (isEdit && item) params.id = item.id;
+        saveRes = await opts.saveFn(params, { isEdit, item });
+      } else if (isEdit) { params.id = item.id; saveRes = await api.updateItem(params); }
       else { saveRes = await api.createItem(params); }
       if (saveRes && saveRes.error) throw new Error(saveRes.error);
-      const savedItem = saveRes && saveRes.item ? saveRes.item : null;
+      const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
       const savedId = isEdit
         ? item.id
         : (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));

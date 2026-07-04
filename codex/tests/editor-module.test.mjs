@@ -63,6 +63,9 @@ test('arquivo i18n keys exist in both dictionaries', () => {
     assert.ok(k in en, `en.js has ${k}`);
   }
 });
+test('the type picker highlight follows the clicked type (visual selection bug)', () => {
+  assert.match(formSrc, /_refreshPicker\(typeSel\.value\)/, 'a type change re-highlights the picker (is-active moves to the clicked type, not just the block re-renders)');
+});
 test('item-creator offers a local/Drive file import that opens an arquivo item', () => {
   assert.match(creatorSrc, /from\s+['"]\.\.\/js\/file-source\.js['"]/, 'creator imports the shared file-source module');
   assert.match(creatorSrc, /cf-file-local/, 'has a "from computer" import button');
