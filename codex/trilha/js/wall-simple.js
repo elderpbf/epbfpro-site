@@ -11,7 +11,6 @@ import { esc } from './utils.js';
 import { t } from '../i18n.js';
 import { trail } from './api.js';
 import * as sess from './student-session.js';
-import { highlightHtml, contextFromState } from './support-contact.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -104,8 +103,7 @@ function renderDenied(wall) {
       '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
       '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
       '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
-    '</div>' +
-    highlightHtml(contextFromState(state));
+    '</div>';
 }
 
 function renderSimpleRegister(wall) {
@@ -119,8 +117,7 @@ function renderSimpleRegister(wall) {
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg"></div></div>' +
     '</div>' +
-    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>' +
-    highlightHtml(contextFromState(state));
+    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>';
 
   const cardEl = wall.querySelector('.cdx-en-reg');
   renderCardForm(cardEl);

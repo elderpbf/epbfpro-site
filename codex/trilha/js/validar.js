@@ -9,7 +9,6 @@
 // the Trail facade; never raw callWorker.
 import { trail } from './api.js';
 import { t as defaultT } from '../i18n.js';
-import { mountFooter } from './support-contact.js';
 
 // ── pure helpers (unit-tested) ─────────────────────────────────────────────
 
@@ -128,7 +127,6 @@ export function mount(root, ctx = {}) {
   const t   = ctx.t   || defaultT;
   const loc = ctx.location || (typeof window !== 'undefined' ? window.location : { search: '', pathname: '' });
   _root = root;
-  mountFooter(document.getElementById('cdx-tr-support-footer'), {});
   const code = getCode(loc.search || '', loc.pathname || '');
   if (code) { settle(root, api, t, code); return; }
 
