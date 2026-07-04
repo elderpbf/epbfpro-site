@@ -406,3 +406,9 @@
    background + weight already mark it active, so the label uses the normal readable text
    colour. Higher specificity so it wins regardless of stylesheet order. */
 .cdx-type-opts .cdx-type-opt.is-active { color: var(--text-primary); }
+
+/* Item creator: the picked-file panel (name + extract/download choice + extraction status). */
+.cdx-file-picked { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
+.cdx-file-picked-name { font-weight: 600; font-size: 0.9rem; }
+.cdx-file-mode { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+.cdx-radio-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }

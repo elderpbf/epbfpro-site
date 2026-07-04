@@ -147,7 +147,7 @@ export function renderEmailHtml(opts) {
         // Gradient header band with the real logo (+ optional seal)
         '<tr><td align="center" style="background:' + BRAND.navy + ';' +
           'background-image:linear-gradient(135deg,' + BRAND.navy + ' 0%,' + BRAND.tealDk + ' 140%);padding:30px 32px 28px">' +
-          '<img src="' + logo + '" alt="PensoIA" width="190" ' +
+          '<img src="' + logo + '" alt="PensoIA" width="190" height="69" ' +
             'style="display:inline-block;width:190px;max-width:62%;height:auto;border:0;outline:none;text-decoration:none">' +
           badge +
         '</td></tr>' +

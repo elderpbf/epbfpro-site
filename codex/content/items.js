@@ -565,7 +565,9 @@ function _newItem() {
       closeModal(bd);
       const tagIds = await _tagsByLabels(result.tagLabels || []);
       const prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
-      _openItemEditorFull(null, prefill, result.aiContext);
+      // result.file is set when a picked file is used "for download": open the arquivo item
+      // with the AI-filled fields AND the file already attached (pending upload on save).
+      _openItemEditorFull(null, prefill, result.aiContext, result.file || null);
     },
   });
 }

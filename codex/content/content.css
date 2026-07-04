@@ -799,15 +799,19 @@
 
 .cdx-apostila-add { align-self: flex-start; margin-bottom: 0.4rem; }
 
-/* Section move up/down */
-.cdx-apostila-move { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
-.cdx-iconbtn {
-  width: 1.4rem; height: 1.15rem; line-height: 1; font-size: 0.65rem;
-  border: 1px solid var(--border); border-radius: 4px;
-  background: var(--surface); color: var(--text-secondary); cursor: pointer; padding: 0;
+/* Drag-to-reorder grip (shared js/reorder.js) + dragging state */
+.cdx-apostila-grip {
+  flex-shrink: 0; cursor: grab; user-select: none;
+  color: var(--text-secondary); opacity: 0.5; font-size: 1rem; line-height: 1;
 }
-.cdx-iconbtn:disabled { opacity: 0.35; cursor: default; }
-.cdx-iconbtn:not(:disabled):hover { border-color: var(--primary); color: var(--text-primary); }
+.cdx-apostila-grip:active { cursor: grabbing; }
+.cdx-item-row.is-dragging { opacity: 0.45; }
+
+/* Working-copy status highlight: a new/edited section stands out at a glance */
+.cdx-item-row--new { border-left: 3px solid #059669; background: rgba(16,185,129,0.06); }
+.cdx-item-row--edited { border-left: 3px solid #b45309; background: rgba(245,158,11,0.07); }
+[data-theme="dark"] .cdx-item-row--new { border-left-color: #34d399; background: rgba(16,185,129,0.10); }
+[data-theme="dark"] .cdx-item-row--edited { border-left-color: #fbbf24; background: rgba(245,158,11,0.10); }
 
 /* Draft status badges */
 .cdx-apostila-badge {
