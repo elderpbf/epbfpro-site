@@ -19,6 +19,17 @@ import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { makeReorderable } from '../js/reorder.js';
+import { markChanges, DIFF_OPEN, DIFF_CLOSE } from '../js/text-diff.js';
+
+// Word-diff highlight helpers: wrap only the runs that differ from the live value in a
+// <mark>. For plain-text fields (title/summary) escape THEN swap the sentinels; for the
+// rendered body the caller swaps the sentinels on the post-render HTML.
+function _diffText(oldStr, newStr) {
+  return _esc(markChanges(oldStr, newStr)).split(DIFF_OPEN).join('<mark class="cdx-diff">').split(DIFF_CLOSE).join('</mark>');
+}
+function _swapDiffMarks(html) {
+  return String(html || '').split(DIFF_OPEN).join('<mark class="cdx-diff">').split(DIFF_CLOSE).join('</mark>');
+}
 
 // ── Module state ──────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -352,7 +363,7 @@ function _renderPreview() {
     const sec = (_draft.sections || []).find((s) => Number(s.id) === Number(_selectedId));
     if (!sec) { pane.innerHTML = '<div class="cdx-preview-empty">' + t('apostila.select') + '</div>'; return; }
     pane.innerHTML = _previewHtml(sec, 'draft');
-    _renderBody({ ...sec, type: 'conteudo' });
+    _renderBody({ ...sec, type: 'conteudo' }, sec.body_changed ? (sec.live_body || '') : null);
     return;
   }
   // live: fetch full item (getSet omits body_md)
@@ -378,16 +389,16 @@ function _renderPreview() {
 function _previewHtml(item, mode, loading) {
   const removeLabel = mode === 'draft' ? t('apostila.remove_section') : t('content.delete');
   const draft = mode === 'draft';
-  // In the working copy, highlight exactly the fields that were edited (title/summary/body).
-  const titleCls = (draft && item.title_changed) ? ' is-changed' : '';
-  const sumCls = (draft && item.summary_changed) ? ' is-changed' : '';
-  const bodyCls = (draft && item.body_changed) ? ' is-changed' : '';
+  // Working copy: word-diff each field vs the live value and mark ONLY the changed runs
+  // (a new section diffs against '' so all its text marks). Live mode renders plain.
+  const titleHtml = (draft && item.title_changed) ? _diffText(item.live_title || '', item.title || '') : _esc(item.title || '');
+  const summaryInner = (draft && item.summary_changed) ? _diffText(item.live_summary || '', item.summary || '') : _esc(item.summary || '');
   const summary = (item.summary && String(item.summary).trim())
-    ? '<div class="cdx-preview-summary' + sumCls + '">' + _esc(item.summary) + '</div>'
+    ? '<div class="cdx-preview-summary">' + summaryInner + '</div>'
     : '';
   return '<div class="cdx-preview-head">' +
       '<div class="cdx-preview-head-info">' +
-        '<div class="cdx-preview-title' + titleCls + '">' + _esc(item.title || '') + '</div>' +
+        '<div class="cdx-preview-title">' + titleHtml + '</div>' +
         summary +
       '</div>' +
       '<div class="cdx-preview-actions">' +
@@ -395,16 +406,24 @@ function _previewHtml(item, mode, loading) {
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="remove">' + removeLabel + '</button>' +
       '</div>' +
     '</div>' +
-    '<div class="cdx-preview-body"><div class="cdx-preview-render' + bodyCls + '" id="cdx-apostila-render">' +
+    '<div class="cdx-preview-body"><div class="cdx-preview-render" id="cdx-apostila-render">' +
       (loading ? '<div class="cdx-empty">' + t('content.loading') + '</div>' : '') +
     '</div></div>';
 }
 
-function _renderBody(item) {
+function _renderBody(item, diffOldBody) {
   const host = _q('cdx-apostila-render');
   if (!host) return;
-  try { renderItem(item, host, {}); }
-  catch (_) { host.textContent = item.body_md || ''; }
+  try {
+    if (diffOldBody != null) {
+      // Render the body with the changed words sentinel-wrapped, then swap the sentinels for
+      // <mark> on the rendered HTML (they carry through markdown as inert text).
+      renderItem(Object.assign({}, item, { body_md: markChanges(diffOldBody, item.body_md || '') }), host, {});
+      host.innerHTML = _swapDiffMarks(host.innerHTML);
+    } else {
+      renderItem(item, host, {});
+    }
+  } catch (_) { host.textContent = item.body_md || ''; }
 }
 
 function _onPreviewClick(e) {
