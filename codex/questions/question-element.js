@@ -113,7 +113,7 @@ export class QuestionElement extends ElementBase {
     this._fixedQuestionId = this.getAttribute('question-id') || null;
     this._slug = this.getAttribute('slug') || null;
     const pInt = parseInt(this.getAttribute('poll-interval') || '0', 10);
-    this._pollInterval = pInt > 0 ? pInt : 3000;
+    this._pollInterval = pInt > 0 ? pInt : 2000;
   }
 
   _forceNextRender() {
@@ -150,6 +150,15 @@ export class QuestionElement extends ElementBase {
     if (this._visListener) return;
     this._visListener = () => this._handleVisibilityChange();
     document.addEventListener('visibilitychange', this._visListener);
+    // Belt-and-suspenders for mobile: a bfcache restore or a tab refocus may NOT fire
+    // visibilitychange, leaving the poll loop stalled until a manual refresh (the "não
+    // passa pra próxima pergunta" report). pageshow + focus force an immediate catch-up
+    // (and resume a visibility-paused loop) whenever the student returns to the page.
+    if (typeof window !== 'undefined') {
+      this._resumeListener = () => this._handleResumeTrigger();
+      window.addEventListener('pageshow', this._resumeListener);
+      window.addEventListener('focus', this._resumeListener);
+    }
   }
 
   _teardownVisibilityListener() {
@@ -157,6 +166,26 @@ export class QuestionElement extends ElementBase {
       document.removeEventListener('visibilitychange', this._visListener);
       this._visListener = null;
     }
+    if (this._resumeListener && typeof window !== 'undefined') {
+      window.removeEventListener('pageshow', this._resumeListener);
+      window.removeEventListener('focus', this._resumeListener);
+    }
+    this._resumeListener = null;
+  }
+
+  // Resume trigger for pageshow/focus (mobile bfcache/refocus, where visibilitychange
+  // may not fire): resume a visibility-paused loop, or, if we should be live but the OS
+  // silently stopped the interval, force one immediate poll to catch up. Respects the
+  // inactivity pause (a paused student still taps to resume).
+  _handleResumeTrigger() {
+    if (typeof document !== 'undefined' && document.visibilityState === 'hidden') return;
+    if (this._isPausedForVisibility) {
+      this._isPausedForVisibility = false;
+      if (!this._isPausedForInactivity) this.startPolling();
+      return;
+    }
+    if (this._isPausedForInactivity || !this._session) return;
+    this._poll(); // catch up now; the setInterval keeps running
   }
 
   _handleVisibilityChange() {
