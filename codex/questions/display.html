@@ -68,13 +68,14 @@
 <script type="module">
   import '/codex/js/worker-call.js';
   import '/codex/trilha/js/pensoia-header.js'; // defines <pensoia-header> (cdx, correct light/dark logo)
-  import { apply as applyI18n } from '/codex/js/i18n.js';
+  import { apply as applyI18n, setLang } from '/codex/js/i18n.js';
   import { start } from '/codex/questions/display.js';
 
   window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
   BS_AUTH.guard();
   BS_AUTH.clearPasswordInputs();
+  setLang('pt-BR', false); // projected display is audience-facing: always PT, never the admin's codex_lang
   applyI18n();
   start();
 </script>
