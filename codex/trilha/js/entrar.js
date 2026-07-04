@@ -21,15 +21,18 @@ function applyI18n(root) {
   });
 }
 
-// The code arrives as ?code=NNNN or as the path segment /trilha/NNNN (the rewrite keeps
-// the visible path). Pull the 4-digit token from either.
+// The code arrives as ?code=XXXX or as the path segment /trilha/XXXX (the rewrite keeps the
+// visible path). Pull the 4-char code from either: a 4-digit number (the new turma code) OR
+// a legacy letter code like TVKV. The path branch takes the LAST segment and requires
+// exactly 4 chars, so route words (/trilha/entrar) and longer slugs never read as a code.
 export function readCode(search, pathname) {
+  const isCode = (s) => /^[A-Za-z0-9]{4}$/.test(s);
   try {
     const q = new URLSearchParams(search || '').get('code');
-    if (q && /^[0-9]{4}$/.test(q.trim())) return q.trim();
+    if (q && isCode(q.trim())) return q.trim();
   } catch (_) { /* fall through to the path */ }
-  const m = String(pathname || '').match(/(\d{4})\/?$/);
-  return m ? m[1] : '';
+  const seg = String(pathname || '').split('/').filter(Boolean).pop() || '';
+  return isCode(seg) ? seg : '';
 }
 
 // PURE. The launch URL for a known/verified turma (the Continuar banner + the post-login
@@ -59,7 +62,7 @@ async function resolveAndGo(code, els) {
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
   let res;
-  try { res = await trail.resolveEnrollCode({ code }); } catch (_) { res = null; }
+  try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
   if (res && res.found) {
     const url = location.origin + '/trilha/' + encodeURIComponent(res.client_slug) + '/' +
       encodeURIComponent(res.turma_slug) + '?k=' + encodeURIComponent(res.turma_token || '') +

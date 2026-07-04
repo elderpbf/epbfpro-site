@@ -40,7 +40,7 @@ test('entrar.css carries the mock-D card layout values (prefixed)', () => {
 
 test('entrar.js resolves the code via the facade and forwards with k + et', () => {
   assert.match(js, /from '\.\/api\.js'/, 'uses the trilha facade');
-  assert.match(js, /resolveEnrollCode\(/, 'resolves the 4-digit code server-side');
+  assert.match(js, /resolveCode\(/, 'resolves the code server-side (permanent access_code or legacy letters)');
   assert.match(js, /location\.replace\(/, 'forwards into the trilha');
   assert.match(js, /'\?k='/, 'carries the public token (k)');
   assert.match(js, /'&et='/, 'carries the enrollment token (et), like the QR');
@@ -48,12 +48,14 @@ test('entrar.js resolves the code via the facade and forwards with k + et', () =
   assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
 });
 
-test('readCode reads the 4-digit code from the path or the query', () => {
+test('readCode reads a 4-char code (digits or legacy letters) from the path or the query', () => {
   assert.equal(readCode('?code=1234', '/trilha/entrar'), '1234');
   assert.equal(readCode('', '/trilha/4321'), '4321');
   assert.equal(readCode('', '/trilha/4321/'), '4321');
-  assert.equal(readCode('?code=abc', '/trilha/entrar'), '');   // non-numeric query ignored
-  assert.equal(readCode('', '/trilha/foo/bar'), '');           // not a code path
+  assert.equal(readCode('', '/trilha/TVKV'), 'TVKV');          // legacy 4-letter code resolves too
+  assert.equal(readCode('?code=abc', '/trilha/entrar'), '');   // 3 chars: not a code
+  assert.equal(readCode('', '/trilha/entrar'), '');            // the entry route word is not a code
+  assert.equal(readCode('', '/trilha/foo/bar'), '');           // last segment 'bar' is 3 chars
 });
 
 test('buildTurmaUrl builds the public turma launch URL with k (url-encoded)', () => {
