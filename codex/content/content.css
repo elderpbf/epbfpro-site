@@ -778,6 +778,60 @@
   color: var(--text-secondary);
 }
 
+/* ── Apostila redesign: library, modes, working copy ─────────────────────── */
+.cdx-apostila-lib { display: flex; flex-direction: column; gap: 0.6rem; }
+.cdx-apostila-card {
+  display: flex; align-items: center; gap: 0.75rem;
+  padding: 0.75rem 0.9rem; border: 1px solid var(--border);
+  border-radius: 10px; background: var(--surface);
+}
+.cdx-apostila-card-open { flex: 1; min-width: 0; cursor: pointer; }
+.cdx-apostila-card-name { font-weight: 600; color: var(--text-primary); }
+.cdx-apostila-card-meta { font-size: 0.8rem; color: var(--text-secondary); margin-top: 0.15rem; }
+.cdx-apostila-card-actions { display: flex; gap: 0.4rem; flex-shrink: 0; }
+
+/* Live | working-copy toggle */
+.cdx-apostila-modes { display: inline-flex; gap: 0.3rem; }
+.cdx-apostila-modes .cdx-btn.is-active {
+  background: var(--primary); color: var(--text-on-accent); border-color: var(--primary);
+}
+.cdx-apostila-hint { font-size: 0.8rem; color: var(--text-secondary); }
+
+.cdx-apostila-add { align-self: flex-start; margin-bottom: 0.4rem; }
+
+/* Section move up/down */
+.cdx-apostila-move { display: flex; flex-direction: column; gap: 2px; flex-shrink: 0; }
+.cdx-iconbtn {
+  width: 1.4rem; height: 1.15rem; line-height: 1; font-size: 0.65rem;
+  border: 1px solid var(--border); border-radius: 4px;
+  background: var(--surface); color: var(--text-secondary); cursor: pointer; padding: 0;
+}
+.cdx-iconbtn:disabled { opacity: 0.35; cursor: default; }
+.cdx-iconbtn:not(:disabled):hover { border-color: var(--primary); color: var(--text-primary); }
+
+/* Draft status badges */
+.cdx-apostila-badge {
+  display: inline-block; margin-left: 0.4rem; padding: 0.05rem 0.4rem;
+  font-size: 0.62rem; font-weight: 700; text-transform: uppercase;
+  letter-spacing: 0.03em; border-radius: 999px; vertical-align: middle;
+}
+.cdx-apostila-badge--new { background: rgba(16,185,129,0.16); color: #059669; }
+.cdx-apostila-badge--edited { background: rgba(245,158,11,0.18); color: #b45309; }
+[data-theme="dark"] .cdx-apostila-badge--new { background: rgba(16,185,129,0.22); color: #34d399; }
+[data-theme="dark"] .cdx-apostila-badge--edited { background: rgba(245,158,11,0.22); color: #fbbf24; }
+
+/* Removed-in-copy list + start panel */
+.cdx-apostila-removed { margin-top: 0.75rem; padding-top: 0.6rem; border-top: 1px dashed var(--border); }
+.cdx-apostila-removed-title { font-size: 0.72rem; font-weight: 700; text-transform: uppercase; color: var(--danger); margin-bottom: 0.3rem; }
+.cdx-apostila-removed-row { font-size: 0.82rem; color: var(--text-secondary); text-decoration: line-through; padding: 0.15rem 0; }
+.cdx-apostila-draftstart { display: flex; flex-direction: column; gap: 0.6rem; align-items: flex-start; padding: 1rem 0; }
+
+/* Converge / discard bar */
+.cdx-apostila-draftbar {
+  display: flex; justify-content: flex-end; gap: 0.5rem;
+  padding-top: 0.75rem; border-top: 1px solid var(--border);
+}
+
 /* ── Tarefas sub-tab (assignments authoring + answers) ───────────────────── */
 .cdx-tarefas { display: flex; flex-direction: column; gap: 1rem; }
 .cdx-tarefas-toolbar { display: flex; align-items: center; gap: 0.75rem; flex-wrap: wrap; }

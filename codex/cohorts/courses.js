@@ -146,6 +146,8 @@ function _renderMain() {
       '<div class="cdx-cursos-fields">' +
         '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + '</label>' +
           '<input id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
+        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + '</label>' +
+          '<select id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
         '<div class="cdx-cursos-f cdx-cursos-f-stat"><label>' + esc(t('cohorts.course_reuse_label')) + '</label>' +
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
         '<button class="cdx-btn cdx-btn-sm cdx-cursos-archive" id="cdx-cur-archive">' + esc(t('cohorts.archive')) + '</button>' +
@@ -359,6 +361,33 @@ function _roman(n) {
   return out;
 }
 
+// Course -> apostila binding (mandatory model: a turma resolves its apostila via
+// course_id -> apostila_set_id). Populates the picker from the apostila library and
+// persists the choice immediately. Uses id cdx-cur-apostila-bind (distinct from the
+// AI-ementa apostila picker's cdx-cur-apostila).
+function _wireApostilaBind() {
+  const sel = _q('cdx-cur-apostila-bind');
+  if (!sel || !_course) return;
+  contentApi.listSets().then((d) => {
+    const sets = (d && d.sets) || [];
+    const cur = _course.apostila_set_id != null ? String(_course.apostila_set_id) : '';
+    sel.innerHTML = '<option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option>' +
+      sets.map((s) => {
+        const name = (s.name && s.name.trim()) ? s.name : t('apostila.unnamed');
+        const sub = ' (' + t('apostila.meta_sections').replace('{n}', s.item_count || 0) + ')';
+        return '<option value="' + esc(s.id) + '"' + (String(s.id) === cur ? ' selected' : '') + '>' + esc(name + sub) + '</option>';
+      }).join('');
+  }).catch((err) => { if (window.bsLog) window.bsLog('cursos apostila bind list: ' + (err && err.message || err), 'error'); });
+  sel.addEventListener('change', () => {
+    const val = sel.value ? Number(sel.value) : null;
+    api.setApostila({ id: _course.id, apostila_set_id: val }).then((d) => {
+      if (d && d.error) throw new Error(d.error);
+      _course.apostila_set_id = val;
+      toast.ok(t('cohorts.cursos_apostila_saved'));
+    }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)));
+  });
+}
+
 function _wireMain() {
   const titleEl = _q('cdx-cur-title');
   const hoursEl = _q('cdx-cur-hours');
@@ -366,6 +395,7 @@ function _wireMain() {
   if (hoursEl) hoursEl.addEventListener('change', () => _saveCourseMeta());
   const arch = _q('cdx-cur-archive');
   if (arch) arch.addEventListener('click', _onArchiveCourse);
+  _wireApostilaBind();
   const save = _q('cdx-cur-save');
   if (save) save.addEventListener('click', _saveEmenta);
   const paste = _q('cdx-cur-paste');

@@ -30,6 +30,16 @@ test('courses methods map to the frozen action strings', () => {
   }
 });
 
+test('courses.setApostila binds the course to an apostila set', () => {
+  assert.equal(typeof api.courses.setApostila, 'function', 'courses.setApostila exists');
+  const out = api.courses.setApostila({ id: 9, apostila_set_id: 7 });
+  assert.equal(out.action, 'ct_set_course_apostila');
+  assert.equal(out.id, 9);
+  assert.equal(out.apostila_set_id, 7);
+  // unbind passes null through
+  assert.equal(api.courses.setApostila({ id: 9, apostila_set_id: null }).apostila_set_id, null);
+});
+
 test('courses.create passes title/hours/ementa_json through unchanged', () => {
   const ementa = JSON.stringify({ modules: [{ title: 'M1', topics: [{ title: 'T1', subtopics: ['s1'] }] }] });
   const out = api.courses.create({ title: 'IA do Zero', hours: '12 horas', ementa_json: ementa });
