@@ -435,6 +435,7 @@ export function mount(container, opts) {
   const onDirtyChange = opts.onDirtyChange || function () {};
   const onCreateType = opts.onCreateType || null;
   const excludeTypes = Array.isArray(opts.excludeTypes) ? opts.excludeTypes : [];
+  const pendingFile = opts.pendingFile || null; // a File chosen at the creator step (arquivo import)
 
   const isEdit = !!item;
   const src = prefill || item || {};
@@ -528,6 +529,17 @@ export function mount(container, opts) {
   }
 
   renderTypeBlock(initialType);
+
+  // A file picked at the creator step (arquivo import) arrives as opts.pendingFile: seed the
+  // same pending-upload path the type editor uses, and show the chosen name. The type is
+  // already 'arquivo' via prefill.type, so its block (with #ie-doc-filename) is mounted.
+  if (pendingFile) {
+    _pendingAssetFile = pendingFile;
+    _pendingAssetField = 'attachment_url';
+    markDirty();
+    const nm = root.querySelector('#ie-doc-filename');
+    if (nm) nm.textContent = t('editor.file_selected') + ' ' + pendingFile.name;
+  }
 
   typeSel.addEventListener('change', function () {
     if (typeSel.value === '__new__') {

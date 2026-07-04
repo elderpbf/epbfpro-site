@@ -636,6 +636,7 @@ export default {
   'creator.raw_label':            'Paste or write your content',
   'creator.raw_placeholder':      'Paste the prompt, example, exercise or tip text here...',
   'creator.gdoc_prompt':          'or import from a Google Doc:',
+  'creator.file_prompt':          'or bring a file for the student to download:',
   'creator.gdoc_url_placeholder': 'Google Docs URL...',
   'creator.load':                 'Load',
   'creator.loading':              'Loading...',

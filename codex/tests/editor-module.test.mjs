@@ -63,6 +63,15 @@ test('arquivo i18n keys exist in both dictionaries', () => {
     assert.ok(k in en, `en.js has ${k}`);
   }
 });
+test('item-creator offers a local/Drive file import that opens an arquivo item', () => {
+  assert.match(creatorSrc, /from\s+['"]\.\.\/js\/file-source\.js['"]/, 'creator imports the shared file-source module');
+  assert.match(creatorSrc, /cf-file-local/, 'has a "from computer" import button');
+  assert.match(creatorSrc, /cf-file-drive/, 'has a "from Drive" import button');
+  assert.match(creatorSrc, /onFile\(\{ file/, 'hands the picked file to onFile');
+  assert.match(itemsSrc, /onFile:.*type: 'arquivo'/, 'items wires the creator file import to an arquivo item + pending file');
+  assert.match(formSrc, /opts\.pendingFile/, 'the form seeds the pending upload from the creator file');
+  assert.ok('creator.file_prompt' in pt && 'creator.file_prompt' in en, 'the file prompt exists in both dictionaries');
+});
 
 // ── i18n parity for the new strings ─────────────────────────────────────────
 test('editor/creator i18n keys exist in both dictionaries', () => {

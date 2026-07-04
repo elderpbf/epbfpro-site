@@ -636,6 +636,7 @@ export default {
   'creator.raw_label':            'Cole ou escreva seu conteúdo',
   'creator.raw_placeholder':      'Cole aqui o texto do prompt, exemplo, exercício, dica...',
   'creator.gdoc_prompt':          'ou importe de um Google Docs:',
+  'creator.file_prompt':          'ou traga um arquivo para o aluno baixar:',
   'creator.gdoc_url_placeholder': 'URL do Google Docs...',
   'creator.load':                 'Carregar',
   'creator.loading':              'Carregando...',
