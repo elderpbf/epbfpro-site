@@ -418,7 +418,7 @@ function _paintEnrollBtn() {
   qr.classList.toggle('is-on', projecting); // QR is projected on the display
   qr.classList.toggle('is-live', open);     // window is open (countdown running) even if the QR is hidden
   // Hover shows the access code, not just the word "QR" (Élder): "QR: 1561".
-  qr.title = (open && _enrollState.enrollment_code) ? ('QR: ' + _enrollState.enrollment_code) : 'QR';
+  qr.title = (open && _enrollState.access_code) ? ('QR: ' + _enrollState.access_code) : 'QR';
   const rem = qr.querySelector('.cdx-host-qr-rem');
   if (!rem) return;
   if (open && _enrollState.enrollment_expires_at) {
