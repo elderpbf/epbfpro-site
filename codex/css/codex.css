@@ -400,3 +400,9 @@
   background: var(--background, rgba(127,127,127,0.08));
   border-color: var(--border, #d1d5db);
 }
+
+/* The active content-type option kept a teal label (content.css: color: var(--primary)),
+   which blends into the selected teal-tint background in dark mode. The border + tinted
+   background + weight already mark it active, so the label uses the normal readable text
+   colour. Higher specificity so it wins regardless of stylesheet order. */
+.cdx-type-opts .cdx-type-opt.is-active { color: var(--text-primary); }
