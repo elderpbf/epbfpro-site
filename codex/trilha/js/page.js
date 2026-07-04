@@ -9,7 +9,7 @@ import { esc, showError } from './utils.js';
 import { trail } from './api.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
-import { t } from '../i18n.js';
+import { t, setLang } from '../i18n.js';
 import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { isWall } from './access.js';
@@ -44,6 +44,10 @@ export async function mount(root, ctx = {}) {
   _win = ctx.window || (typeof window !== 'undefined' ? window : undefined);
   const loc = ctx.location || (_win && _win.location) || { search: '', pathname: '' };
   state.init(loc.search || '', loc.pathname || '', _win);
+
+  // Audience surface: adopt the GLOBAL student language (default pt-BR) before rendering,
+  // independent of the operator's admin language. Best-effort: a failed fetch stays pt-BR.
+  try { const lr = await (ctx.api || trail).getStudentLang(); if (lr && lr.lang) setLang(lr.lang); } catch (_) { /* stays pt-BR */ }
 
   applyStaticI18n(root);
 

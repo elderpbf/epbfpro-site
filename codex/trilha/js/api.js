@@ -75,7 +75,8 @@ export const trail = {
   // The PERMANENT turma short-code resolver (codes redesign): a 4-digit access_code OR a
   // legacy letter code (e.g. TVKV), each straight to its turma (model A). Resolves whether
   // or not a window is open; carries the et too when the window is open (auto-approve).
-  resolveCode: (p) => call('ct_resolve_code', p) // { code } -> { ok, found, client_slug, turma_slug, turma_token, enrollment_token } | { ok, found:false }
+  resolveCode: (p) => call('ct_resolve_code', p), // { code } -> { ok, found, client_slug, turma_slug, turma_token, enrollment_token } | { ok, found:false }
+  getStudentLang: () => call('ct_get_student_lang') // {} -> { ok, lang: 'pt-BR'|'en' } (the global audience language)
 };
 
 export { assetUrl };
