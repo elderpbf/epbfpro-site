@@ -9,7 +9,7 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { esc, cooldownButton } from './utils.js';
 import { createLoginFlow, validateEmail } from './student-login.js';
-import { getKnownTurmas, getToken, setToken, forgetTurma, clearToken } from './student-session.js';
+import { getKnownTurmas, getToken, setToken, forgetTurma } from './student-session.js';
 import { mountHighlight } from './support-contact.js';
 
 function applyI18n(root) {
@@ -92,8 +92,11 @@ async function autoEnter(els) {
     try { res = await trail.sessionCheck({ session_token: getToken(entry.client_slug, entry.turma_slug), _silent: true }); }
     catch (_) { res = null; }
     if (res && res.ok) { location.replace(buildTurmaUrl(entry)); return; } // logged in for real -> straight in
-    clearToken(entry.client_slug, entry.turma_slug);   // revoked/dead -> prune the token and the registry row
-    forgetTurma(entry.client_slug, entry.turma_slug);
+    // Do NOT prune the token on a failed check (Élder): a network blip throws and is
+    // indistinguishable from a truly-dead session here, and deleting on a blip strands a
+    // still-logged-in student on the registration screen (the bug a student hit). The token
+    // is turma-specific and self-expires, so a dead one is harmless and just fails again;
+    // only an explicit "sair" clears it. Fall through to the código + e-mail entry below.
   }
   if (els.state) els.state.textContent = ''; // none valid -> reveal the código + e-mail entry
   if (els.paths) els.paths.hidden = false;

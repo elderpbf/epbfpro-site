@@ -72,7 +72,7 @@ test('entrar auto-enters a valid device session (no Continuar banner, no hub)', 
   assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
   assert.match(js, /createLoginFlow/, 'drives the shared login controller for the e-mail path');
   assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
-  assert.match(js, /forgetTurma\(/, 'prunes a revoked/dead turma so it never resurfaces');
+  assert.ok(!/clearToken\(/.test(js), 'a failed device-session check never deletes the token (a network blip must not strand a logged-in student on the registration screen)');
   assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
   assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');
   assert.ok(!/renderHub|cdx-entrar-hub/.test(js), 'the minhas-turmas hub is gone');
