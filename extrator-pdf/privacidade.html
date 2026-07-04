@@ -63,8 +63,11 @@
 
   <script>
     (function () {
-      // Follow the site theme (js/theme.js persists localStorage.plp_theme, dark default). No cookies here.
-      document.documentElement.setAttribute('data-theme', localStorage.getItem('plp_theme') || 'dark');
+      // Follow the user's OS/browser light-mode preference, independent of any app theme. No cookies here.
+      var mq = window.matchMedia('(prefers-color-scheme: dark)');
+      function applyTheme() { document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light'); }
+      applyTheme();
+      mq.addEventListener('change', applyTheme);
       var year = document.getElementById('currentYear');
       if (year) year.textContent = new Date().getFullYear();
     })();
