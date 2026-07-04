@@ -308,13 +308,12 @@ function _renderList() {
     const id = it.id;
     const pos = _mode === 'draft' ? it.position : it.set_position;
     const active = Number(id) === Number(_selectedId);
-    // Draft rows carry a status highlight (new/edited) so a working copy shows at a glance
-    // what changed vs the live apostila; 'unchanged' rows stay plain.
-    const statusCls = (_mode === 'draft' && it.status && it.status !== 'unchanged') ? ' cdx-item-row--' + it.status : '';
+    // A small badge flags new/edited sections in the list; the actual changed TEXT is
+    // highlighted in the preview (right pane), not the row itself.
     const badge = (_mode === 'draft' && it.status && it.status !== 'unchanged')
       ? '<span class="cdx-apostila-badge cdx-apostila-badge--' + it.status + '">' + t('apostila.status_' + it.status) + '</span>'
       : '';
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + statusCls + '" data-id="' + _esc(id) + '" draggable="true">' +
+    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(id) + '" draggable="true">' +
       '<span class="cdx-apostila-grip" title="' + t('apostila.drag_hint') + '">⠿</span>' +
       '<span class="cdx-apostila-pos">' + _esc(pos || (i + 1)) + '</span>' +
       '<div class="cdx-item-info">' +
@@ -378,15 +377,25 @@ function _renderPreview() {
 
 function _previewHtml(item, mode, loading) {
   const removeLabel = mode === 'draft' ? t('apostila.remove_section') : t('content.delete');
-  const removeCls = mode === 'draft' ? 'cdx-btn-danger' : 'cdx-btn-danger';
+  const draft = mode === 'draft';
+  // In the working copy, highlight exactly the fields that were edited (title/summary/body).
+  const titleCls = (draft && item.title_changed) ? ' is-changed' : '';
+  const sumCls = (draft && item.summary_changed) ? ' is-changed' : '';
+  const bodyCls = (draft && item.body_changed) ? ' is-changed' : '';
+  const summary = (item.summary && String(item.summary).trim())
+    ? '<div class="cdx-preview-summary' + sumCls + '">' + _esc(item.summary) + '</div>'
+    : '';
   return '<div class="cdx-preview-head">' +
-      '<div class="cdx-preview-head-info"><div class="cdx-preview-title">' + _esc(item.title || '') + '</div></div>' +
+      '<div class="cdx-preview-head-info">' +
+        '<div class="cdx-preview-title' + titleCls + '">' + _esc(item.title || '') + '</div>' +
+        summary +
+      '</div>' +
       '<div class="cdx-preview-actions">' +
         '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="edit">' + t('content.edit') + '</button>' +
-        '<button class="cdx-btn cdx-btn-sm ' + removeCls + '" data-act="remove">' + removeLabel + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-act="remove">' + removeLabel + '</button>' +
       '</div>' +
     '</div>' +
-    '<div class="cdx-preview-body"><div class="cdx-preview-render" id="cdx-apostila-render">' +
+    '<div class="cdx-preview-body"><div class="cdx-preview-render' + bodyCls + '" id="cdx-apostila-render">' +
       (loading ? '<div class="cdx-empty">' + t('content.loading') + '</div>' : '') +
     '</div></div>';
 }
@@ -540,21 +549,25 @@ function _renderDraftbar() {
 }
 
 function _converge(force) {
+  // The facade THROWS on a worker {error} (the thrown Error carries .data), so the guarded
+  // "released removals" case is handled in .catch via err.data, not in .then.
   api.convergeApostila({ set_id: _setId, force }).then((d) => {
-    if (d && d.error === 'converge_removals_released') {
+    toast.ok(t('apostila.converged').replace('{u}', d.updated || 0).replace('{i}', d.inserted || 0).replace('{r}', d.removed || 0));
+    _draft = null;
+    _setMode('live');   // back to the (now updated) live view
+  }).catch((err) => {
+    const data = (err && err.data) || {};
+    if (data.error === 'converge_removals_released') {
       _openConfirm({
         title: t('apostila.converge_released_title'),
-        message: t('apostila.converge_released_msg').replace('{n}', (d.removals || []).length),
+        message: t('apostila.converge_released_msg').replace('{n}', (data.removals || []).length),
         danger: true, confirmLabel: t('apostila.converge_released_confirm'),
         onConfirm() { _converge(true); },
       });
       return;
     }
-    if (d && d.error) throw new Error(d.error);
-    toast.ok(t('apostila.converged').replace('{u}', d.updated || 0).replace('{i}', d.inserted || 0).replace('{r}', d.removed || 0));
-    _draft = null;
-    _setMode('live');   // back to the (now updated) live view
-  }).catch((err) => notice.internal(_err(err)));
+    notice.internal(_err(err));
+  });
 }
 
 function _discard() {
