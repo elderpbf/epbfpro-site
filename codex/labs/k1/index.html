@@ -52,6 +52,12 @@
       font-family: var(--font-display);
     }
 
+    /* border-box for the whole lab. The panel set it but its children didn't
+       inherit it (UA default is content-box), so the mobile width:100% input
+       + its padding/border overflowed the right edge and got clipped by the
+       panel's overflow:hidden — that was the "cortando as laterais" bug. */
+    .k1-panel, .k1-panel * { box-sizing: border-box; }
+
     /* ── Section labels ───────────────────────────────────── */
     .k1-section-label {
       font-family: var(--font-mono);
