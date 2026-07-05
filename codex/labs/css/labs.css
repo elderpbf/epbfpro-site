@@ -267,6 +267,19 @@
 @media (max-width: 700px) {
   .lab-fs-btn { min-width: 44px; min-height: 44px; }
 }
+/* A−/A+ is desktop-only. On a phone the browser's own zoom is the only
+   control that actually works (these buttons can't beat it), so the slot
+   is just dead weight competing for scarce space. On a computer, where the
+   instructor presents fullscreen, the on-screen buttons ARE the practical
+   way to resize (no exiting fullscreen to reach browser settings). Hidden
+   on narrow AND short-landscape — both are phones; a laptop/desktop matches
+   neither. A student on a PC keeps them, harmless, they just sit unused. */
+@media (max-width: 700px) {
+  .lab-fs-ctl { display: none !important; }
+}
+@media (max-height: 500px) and (orientation: landscape) {
+  .lab-fs-ctl { display: none !important; }
+}
 
 /* =========================================================
    Mobile tab primitive (lab-tabs.js)

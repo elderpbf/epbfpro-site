@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Perdido no meio · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-info.js?v=1.0" defer></script>
@@ -421,6 +421,21 @@
         min-width: 0;
         text-align: center;
       }
+      /* A−/A+ is hidden on phone (shared rule), so the bar is just Entenda +
+         the two actions. Lay them out deliberately: the two secondary
+         controls (Entenda | Reiniciar) share the top row; the primary
+         "Perguntar" spans a full-width row below (thumb-friendly). */
+      .k4-button-bar > [data-lab-info-ctl] {
+        order: 1;
+        display: flex;
+        flex: 1 1 calc(50% - 0.2rem);
+      }
+      .k4-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
+      #k4-reset { order: 2; }
+      #k4-ask   { order: 3; flex: 1 1 100%; }
     }
 
     @media (max-width: 400px) {
