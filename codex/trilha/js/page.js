@@ -18,6 +18,7 @@ import { renderWall } from './wall.js';
 import { renderSimpleWall } from './wall-simple.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
+import { initInstallPrompt } from './install-prompt.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
@@ -128,6 +129,10 @@ export async function mount(root, ctx = {}) {
       if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
       onHashChange();
     }
+    // "Salvar como app": offer a home-screen install once the trilha is on screen
+    // (mounted last so it survives the tabs/wall render). Self-guards: no-op when
+    // already installed, not installable, or previously dismissed.
+    initInstallPrompt(root, { win: _win });
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER

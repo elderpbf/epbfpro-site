@@ -217,3 +217,63 @@ html, body {
 /* ── Tab panels ──────────────────────────────────────────── */
 .cdx-trilha-tabcontent { min-height: 20rem; }
 .cdx-trilha-panel { animation: cdx-tr-fade-in 0.25s ease both; }
+
+/* ── "Salvar como app" install card (install-prompt.js) ──── */
+/* Reuses shared tokens (surface/border/text/primary), so light+dark follow the theme. */
+.cdx-install-card {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 1rem;
+  margin: 0 0 1.25rem;
+  padding: 1rem 2.4rem 1rem 1.1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 4px solid var(--primary);
+  border-radius: 14px;
+  box-shadow: var(--shadow);
+  animation: cdx-tr-fade-in 0.25s ease both;
+}
+.cdx-install-body { display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-install-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.cdx-install-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
+.cdx-install-actions { margin-top: 0.6rem; }
+.cdx-install-btn {
+  padding: 0.55rem 1.1rem;
+  background: var(--primary);
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.cdx-install-btn:hover { background: var(--primary-dark); }
+.cdx-install-btn:disabled { opacity: 0.6; cursor: default; }
+.cdx-install-hint {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--text-secondary);
+}
+.cdx-install-glyph { width: 1.05rem; height: 1.05rem; flex-shrink: 0; color: var(--primary); }
+.cdx-install-close {
+  position: absolute;
+  top: 0.4rem;
+  right: 0.5rem;
+  width: 1.6rem;
+  height: 1.6rem;
+  padding: 0;
+  background: none;
+  border: none;
+  font-size: 1.25rem;
+  line-height: 1;
+  color: var(--text-secondary);
+  cursor: pointer;
+  border-radius: 8px;
+}
+.cdx-install-close:hover { color: var(--text-primary); background: var(--tint-primary-tx); }
