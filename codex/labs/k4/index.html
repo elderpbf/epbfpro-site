@@ -527,7 +527,7 @@
       <div class="k4-response">
         <h2 class="k4-response-title">Resposta do modelo</h2>
         <div class="k4-response-card k4-response--empty" id="k4-response">
-          Clique em "Perguntar ao modelo" para ver a resposta a partir desta posição.
+          Pergunte ao modelo.
         </div>
       </div>
     </div>
@@ -706,16 +706,16 @@
         let answer, verdict;
         if (zone === 'high') {
           answer = 'O réu foi intimado da sentença em 15 de março de 2024.';
-          verdict = 'Resposta correta. O ato estava perto da borda do processo e o modelo localizou sem dificuldade.';
+          verdict = 'Resposta correta.';
           card.classList.add('k4-response--high');
         } else if (zone === 'mid') {
           answer = 'Acredito que a intimação tenha ocorrido em 15 de março de 2024 (?).';
-          verdict = 'Recuperação incerta. O ato está se afastando da borda e o modelo já hesita.';
+          verdict = 'Recuperação incerta.';
           card.classList.add('k4-response--mid');
         } else {
           answer = LOW_ANSWERS[lowAnswerIdx % LOW_ANSWERS.length];
           lowAnswerIdx += 1;
-          verdict = 'Modelo perdeu o ato no meio do processo. Quanto maior o processo, maior essa zona morta.';
+          verdict = 'O modelo perdeu o ato no meio.';
           card.classList.add('k4-response--low');
         }
 
@@ -735,7 +735,7 @@
         lowAnswerIdx = 0;
         responseEl.classList.remove('k4-response--high', 'k4-response--mid', 'k4-response--low');
         responseEl.classList.add('k4-response--empty');
-        responseEl.innerHTML = 'Clique em "Perguntar ao modelo" para ver a resposta a partir desta posição.';
+        responseEl.innerHTML = 'Pergunte ao modelo.';
         render();
       }
 
