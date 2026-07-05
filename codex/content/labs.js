@@ -22,11 +22,13 @@
 import { t } from '../js/i18n.js';
 import { LABS } from '../js/labs-registry.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
+import { mountRail } from '../js/list-rail.js';
 
 const LS_KEY = 'cv_labs_enabled';
 
 let _viewEl = null;
 let _selectedKey = null;
+let _rail = null;         // the left labs list is the shared list-rail (js/list-rail.js)
 let _onClick = null;
 let _onChange = null;
 let _onResize = null;
@@ -72,11 +74,14 @@ function _switchHtml(on) {
     '</label>';
 }
 
-function _rowHtml(lab) {
+// The left labs list adopts the shared list-rail (track-21). Select-only (no drag); the
+// rail owns the row shell + selection. renderRow returns the inner content, wrapped in
+// .cdx-lab-rowwrap which carries the is-off dim (the rail row itself can't take is-off).
+// The on/off switch lives in the row (always visible) and is exempt from selection via
+// the rail's rowSelectIgnore, so toggling it never reloads the preview iframe.
+function _labRowMain(lab) {
   const on = _isEnabled(lab.key);
-  const active = String(lab.key) === String(_selectedKey);
-  return '<div class="cdx-item-row' + (active ? ' is-active' : '') + (on ? '' : ' is-off') +
-      '" data-lab-key="' + _esc(lab.key) + '">' +
+  return '<div class="cdx-lab-rowwrap' + (on ? '' : ' is-off') + '">' +
       '<span class="cdx-item-type-icon cdx-lab-icon">&#9672;</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(lab.title) + '</div>' +
@@ -109,11 +114,22 @@ function _previewHtml(lab) {
     '</div>';
 }
 
+function _buildRail() {
+  const el = _viewEl.querySelector('#cdx-labs-list');
+  if (!el) return;
+  _rail = mountRail(el, {
+    title: '',
+    items: () => _labs() || [],
+    getId: (l) => l.key,
+    renderRow: (lab) => ({ main: _labRowMain(lab) }),
+    selectedId: () => _selectedKey,
+    onSelect: (key) => { _selectedKey = key; _rail.render(); _renderPreview(); },
+    rowSelectIgnore: '.cdx-lab-switch',
+  });
+}
+
 function _renderList() {
-  const list = _viewEl.querySelector('#cdx-labs-list');
-  const labs = _labs();
-  if (!list) return;
-  list.innerHTML = (labs || []).map(_rowHtml).join('');
+  if (_rail) _rail.render();
 }
 
 function _renderPreview() {
@@ -154,15 +170,6 @@ function _scalePreview() {
   wrap.style.height = (vh * scale) + 'px';
 }
 
-function _select(key) {
-  _selectedKey = key;
-  // Re-highlight rows without rebuilding them (keeps the iframe load to the pane).
-  _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
-    r.classList.toggle('is-active', String(r.dataset.labKey) === String(key));
-  });
-  _renderPreview();
-}
-
 function _render() {
   const labs = _labs();
   if (!labs) {
@@ -181,6 +188,8 @@ function _render() {
         '<div class="cdx-item-preview" id="cdx-labs-preview"></div>' +
       '</div>' +
     '</div>';
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
   _renderList();
   _renderPreview();
 }
@@ -194,27 +203,26 @@ export function mount(viewEl) {
   _viewEl = viewEl;
   _render();
 
+  // Row selection is the rail's job (onSelect); the on/off switch is exempt via the rail's
+  // rowSelectIgnore. Only the preview's fullscreen button is wired here.
   _onClick = (e) => {
-    if (e.target.closest('.cdx-lab-switch')) return; // toggles are handled by change, not selection
     if (e.target.closest('[data-action="fullscreen"]')) { e.preventDefault(); if (_selectedKey) _openFullscreen(_selectedKey); return; }
-    const row = e.target.closest('.cdx-item-row');
-    if (row && row.dataset.labKey) _select(row.dataset.labKey);
   };
   _onChange = (e) => {
     const input = e.target.closest('.cdx-lab-switch-input');
     if (!input) return;
-    // The switch can live in a row (data-lab-key on the row) or in the preview
-    // head (no row; it targets the selected lab).
-    const row = input.closest('.cdx-item-row');
-    const key = row ? row.dataset.labKey : _selectedKey;
+    const checked = input.checked;
+    // The switch lives in a rail row (data-id = lab key) or in the preview head (no row;
+    // it targets the selected lab).
+    const row = input.closest('.cdx-rail-row');
+    const key = row ? row.getAttribute('data-id') : _selectedKey;
     if (!key) return;
-    _setEnabled(key, input.checked);
-    if (row) row.classList.toggle('is-off', !input.checked);
-    // Keep the row switch and the preview head switch in sync for the same lab.
+    _setEnabled(key, checked);
+    // Repaint the list rows (switch state + is-off dim) via the rail; do NOT re-render the
+    // preview (that would reload the iframe), just sync its head switch for the same lab.
+    if (_rail) _rail.render();
     if (String(key) === String(_selectedKey)) {
-      _viewEl.querySelectorAll('.cdx-lab-switch-input').forEach((sw) => { sw.checked = input.checked; });
-      const r = _viewEl.querySelector('.cdx-item-row[data-lab-key="' + key + '"]');
-      if (r) r.classList.toggle('is-off', !input.checked);
+      _viewEl.querySelectorAll('.cdx-lab-switch-input').forEach((sw) => { sw.checked = checked; });
     }
   };
   viewEl.addEventListener('click', _onClick);
@@ -225,6 +233,7 @@ export function mount(viewEl) {
 
 export function unmount() {
   if (_onResize && typeof window !== 'undefined') window.removeEventListener('resize', _onResize);
+  if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) {
     if (_onClick) _viewEl.removeEventListener('click', _onClick);
     if (_onChange) _viewEl.removeEventListener('change', _onChange);

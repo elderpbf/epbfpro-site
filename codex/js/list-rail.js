@@ -111,7 +111,12 @@ export function mountRail(container, cfg) {
         '</button>'
       ).join('') + '</div>';
     }
-    return '<div class="cdx-rail-head"><span class="cdx-rail-title">' + esc(cfg.title || '') + '</span>' + addBtn + '</div>' + filters;
+    // Skip the head bar entirely when there is nothing to put in it (no title, no add) —
+    // an empty bordered bar (e.g. labs, which has its own page head) would just be noise.
+    const head = (cfg.title || add)
+      ? '<div class="cdx-rail-head"><span class="cdx-rail-title">' + esc(cfg.title || '') + '</span>' + addBtn + '</div>'
+      : '';
+    return head + filters;
   }
 
   function render() {
@@ -143,7 +148,12 @@ export function mountRail(container, cfg) {
       if (e.target.closest('[data-newsec]')) { if (sections.onCreate) sections.onCreate(); return; }
     }
     const row = e.target.closest('.cdx-rail-row');
-    if (row && cfg.onSelect) cfg.onSelect(row.getAttribute('data-id'));
+    if (row && cfg.onSelect) {
+      // rowSelectIgnore: a selector for inline controls in a row (e.g. labs' on/off switch)
+      // whose clicks must NOT count as a row selection.
+      if (cfg.rowSelectIgnore && e.target.closest(cfg.rowSelectIgnore)) return;
+      cfg.onSelect(row.getAttribute('data-id'));
+    }
   }
 
   // Pointer-events drag: grip is the handle; works on touch + mouse.

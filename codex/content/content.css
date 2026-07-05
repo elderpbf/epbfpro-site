@@ -923,7 +923,11 @@
 .cdx-labs-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
 .cdx-labs-hint { color: var(--text-secondary); font-size: 0.9rem; max-width: 640px; }
 .cdx-labs-split .cdx-item-info { flex: 1; min-width: 0; }
-.cdx-labs-split .cdx-item-row.is-off { opacity: 0.5; }
+/* The labs list adopts the shared list-rail (track-21). The rail owns the row shell, so a
+   lab row's content sits inside .cdx-rail-main > .cdx-lab-rowwrap; the wrapper carries the
+   is-off dim (the rail row itself can't) and lays out icon + info + switch horizontally. */
+.cdx-labs-split .cdx-lab-rowwrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+.cdx-labs-split .cdx-lab-rowwrap.is-off { opacity: 0.5; }
 .cdx-lab-icon { color: var(--codex-content); font-size: 1.2rem; }
 
 /* On/off switch (ported value-for-value from the legacy ct-lab-switch). */
