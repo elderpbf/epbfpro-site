@@ -35,7 +35,6 @@ let _confirmDelQ = null;
 let _searching = false;
 let _editBank = false;
 let _selected = new Set();
-let _dragId = null;
 let _bulkItems = [];
 let _orderProposed = [];      // e2: AI-proposed question id order under review
 let _orderDir = 'asc';        // e2: chosen ordering direction (asc = easy→hard)
@@ -506,7 +505,7 @@ async function _loadVariaveis() {
 function _selectVariaveis() {
   _variaveisView = true; _currentSet = null;
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected.clear(); _dragId = null; _classFilter = 'all';
+  _editBank = false; _selected.clear(); _classFilter = 'all';
   _renderSets();
   _loadVariaveis();
 }
@@ -526,7 +525,7 @@ function _selectSet(name) {
   _currentSet = name;
   _variaveisView = false; _classFilter = 'all';
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null;
-  _editBank = false; _selected.clear(); _dragId = null;
+  _editBank = false; _selected.clear();
   _renderSets();
   _loadQuestions();
 }
@@ -534,7 +533,7 @@ function _selectSet(name) {
 // ---- Reorder / move mode ----
 function _toggleEditBank() {
   _editBank = !_editBank;
-  if (!_editBank) { _selected.clear(); _dragId = null; }
+  if (!_editBank) { _selected.clear(); }
   _renderConjunto();
 }
 
@@ -1242,7 +1241,7 @@ export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   _currentSet = null; _banks = []; _questions = []; _editingOriginal = null;
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _editBank = false; _selected = new Set(); _bulkItems = [];
   _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
@@ -1664,7 +1663,7 @@ export function unmount() {
   _cleanup = [];
   _viewEl = null; _currentSet = null; _banks = []; _questions = [];
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _editBank = false; _selected = new Set(); _bulkItems = [];
   _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';

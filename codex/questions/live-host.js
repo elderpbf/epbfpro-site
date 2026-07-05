@@ -80,19 +80,6 @@ function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]));
 }
 
-// Pure: move the dragged question before the drop target in the FULL raw list, so a
-// drag in the (possibly filtered) live picker persists a coherent bank order. Returns
-// a new array; ids compared as strings. Exported for unit tests.
-export function reorderByDrag(rawList, dragId, targetId) {
-  const list = (rawList || []).slice();
-  const from = list.findIndex((q) => String(q && q.id) === String(dragId));
-  if (from === -1 || String(dragId) === String(targetId)) return list;
-  const moved = list.splice(from, 1)[0];
-  const to = list.findIndex((q) => String(q && q.id) === String(targetId));
-  if (to === -1) { list.splice(from, 0, moved); return list; } // target gone: no-op
-  list.splice(to, 0, moved);
-  return list;
-}
 function _on(el, evt, fn, opts) { if (!el) return; el.addEventListener(evt, fn, opts); _cleanup.push(() => el.removeEventListener(evt, fn, opts)); }
 function _q(sel) { return _container && _container.querySelector(sel); }
 function _isOpen() { return _session && _session.status === 'open'; }
