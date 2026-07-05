@@ -593,7 +593,7 @@ details.cdx-cursos-arch[open] > .cdx-cursos-arch-h::before { transform: rotate(9
 .cdx-cursos-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 .cdx-cursos-meta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); padding: 1rem 1.2rem; }
 /* Editable affordance (Élder: nothing signaled these were editable, and the ✎ pencil
-   was noisy). A DISTINCT FILL signals editability instead — each editable control is a
+   was noisy). A DISTINCT FILL signals editability instead: each editable control is a
    filled input box that contrasts with its container, mirroring the dossier .cdx-doss-edit
    treatment. The read-only reúso stat stays a plain tinted value (no box). */
 .cdx-cursos-title {
