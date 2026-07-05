@@ -15,7 +15,17 @@
 // application and the marked path are verified on staging.
 
 import { esc } from './dom.js';
+import { assetUrl } from './codex-api.js';
 export { esc };
+
+// Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
+// worker-relative /r2/... keys, and /r2 is served by the codex-api Worker (NOT the
+// Pages site), so they must go through the facade's assetUrl (WORKER_URL) or the
+// browser resolves them against the page origin and 404s. Full http(s) urls
+// (external docs) pass through untouched.
+function _assetSrc(url) {
+  return /^https?:\/\//i.test(url || '') ? url : assetUrl(url || '');
+}
 
 // type -> renderer key. Unknown types fall back to plain markdown.
 export function dispatchType(type) {
@@ -32,7 +42,7 @@ export function dispatchType(type) {
 // A top-right affordance button (download / docs). Empty in preview or with no url.
 function affordanceBtnHtml(url, label, isPreview) {
   return (!isPreview && url)
-    ? '<a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-affordance-btn">' + label + '</a>'
+    ? '<a href="' + esc(_assetSrc(url)) + '" target="_blank" rel="noopener" class="ctr-affordance-btn">' + label + '</a>'
     : '';
 }
 
@@ -82,9 +92,10 @@ export function modelInfoHtml(item, opts = {}) {
 // embed markup lives in one place.
 export function pdfEmbedHtml(url) {
   if (!url) return '';
+  const src = esc(_assetSrc(url));
   return '<div class="ctr-pdf-embed">' +
-      '<object data="' + esc(url) + '" type="application/pdf" class="ctr-pdf-object">' +
-        '<a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
+      '<object data="' + src + '" type="application/pdf" class="ctr-pdf-object">' +
+        '<a href="' + src + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
       '</object>' +
     '</div>';
 }
@@ -95,10 +106,10 @@ export function pdfEmbedHtml(url) {
 export function attachmentHtml(url) {
   if (!url) return '';
   if (/\.(png|jpg|jpeg|webp)$/i.test(url)) {
-    return '<div class="ctr-attachment-img"><img src="' + esc(url) + '" alt="Anexo"></div>';
+    return '<div class="ctr-attachment-img"><img src="' + esc(_assetSrc(url)) + '" alt="Anexo"></div>';
   }
   if (/\.pdf$/i.test(url)) return pdfEmbedHtml(url);
-  return '<div class="ctr-attachment-link"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
+  return '<div class="ctr-attachment-link"><a href="' + esc(_assetSrc(url)) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
 }
 
 // ── paper shell (synchronous, markdown-free structure) ───────────────────────

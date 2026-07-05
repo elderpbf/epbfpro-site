@@ -6,6 +6,12 @@
 // are verified on staging, per the project test philosophy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+
+// item-render resolves /r2 asset paths through the facade's assetUrl(), which reads
+// window.WORKER_URL. Stub an (empty) window so assetUrl is an identity prefix here;
+// the WORKER_URL-prefix behavior is locked by its own test below.
+globalThis.window = globalThis.window || {};
+
 import {
   dispatchType,
   promptHtml,
@@ -76,6 +82,21 @@ test('pdfEmbedHtml: object embed with a download-link fallback inside; empty url
   assert.match(html, /data="\/r2\/a\/doc\.pdf"[^>]*type="application\/pdf"[^>]*class="ctr-pdf-object"/);
   assert.match(html, /ctr-dl-link.*Baixar PDF/s);
   assert.equal(pdfEmbedHtml(''), '');
+});
+
+// /r2 keys are served by the Worker, not the Pages origin: the src must be prefixed
+// with WORKER_URL (via assetUrl), else the <img>/<object> load against the page host.
+test('attachmentHtml/pdfEmbedHtml: /r2 paths resolve through WORKER_URL; http passes through', () => {
+  const prev = window.WORKER_URL;
+  window.WORKER_URL = 'https://codex-api.example';
+  try {
+    assert.match(attachmentHtml('/r2/a/pic.png'), /<img src="https:\/\/codex-api\.example\/r2\/a\/pic\.png"/);
+    assert.match(pdfEmbedHtml('/r2/a/doc.pdf'), /data="https:\/\/codex-api\.example\/r2\/a\/doc\.pdf"/);
+    // A full external url is not double-prefixed.
+    assert.match(attachmentHtml('https://cdn.example/x.png'), /<img src="https:\/\/cdn\.example\/x\.png"/);
+  } finally {
+    window.WORKER_URL = prev;
+  }
 });
 
 // ── paper shell (the synchronous, markdown-free structure) ───────────────────
