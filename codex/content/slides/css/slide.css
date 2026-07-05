@@ -49,6 +49,14 @@
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal { transform: translateY(12px); }
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal.shown { transform: none; }
 .cdx-deck-editor #stage[data-anim="none"] .reveal { transition: none; }
+/* Phase 9: per-element entrance effect (data-fx from slide.buildFx) overrides the deck-wide
+   entrance for that element. fade = opacity only; slide = enter from the left; zoom = scale
+   up into place. The .shown state resets the transform, so the transition animates it in. */
+.cdx-deck-editor .reveal[data-fx="fade"] { transform: none; }
+.cdx-deck-editor .reveal[data-fx="slide"] { transform: translateX(-28px); }
+.cdx-deck-editor .reveal[data-fx="slide"].shown { transform: none; }
+.cdx-deck-editor .reveal[data-fx="zoom"] { transform: scale(.85); }
+.cdx-deck-editor .reveal[data-fx="zoom"].shown { transform: none; }
 .cdx-deck-editor .mini .reveal, .cdx-deck-editor.presenter .reveal { transition: none; }
 .cdx-deck-editor .mini .editoronly, .cdx-deck-editor.presenter .editoronly { display: none !important; }
 .cdx-deck-editor .mini .asset, .cdx-deck-editor.presenter .asset { pointer-events: none !important; }

@@ -51,6 +51,10 @@
 .cdx-deck-editor .thumb .mini { width: 100%; aspect-ratio: var(--canvas-ar); background: #fff; border-radius: 6px; overflow: hidden; position: relative; pointer-events: none; }
 .cdx-deck-editor .thumb .mini > .scale { position: absolute; top: 0; left: 0; width: var(--canvas-w); height: var(--canvas-h); transform-origin: top left; }
 .cdx-deck-editor .thumb .revbadge { position: absolute; left: 4px; bottom: 4px; z-index: 3; font-size: 12px; line-height: 1; background: #fde68a; color: #92400e; border: 1px solid #f59e0b; border-radius: 6px; padding: 1px 4px; pointer-events: none; }
+/* Phase 9: per-unit effect picker in the animation panel row (Fade/Deslizar/Zoom). */
+.cdx-deck-editor .ap-fx { display: inline-flex; gap: 3px; margin-left: 6px; }
+.cdx-deck-editor .ap-fxb { font-size: 11px; padding: 2px 6px; border: 1px solid var(--btn-bd); background: var(--btn-bg); color: var(--muted); border-radius: 6px; cursor: pointer; }
+.cdx-deck-editor .ap-fxb.on { background: var(--teal); color: #fff; border-color: transparent; }
 .cdx-deck-editor .thumb .num { position: absolute; left: 6px; top: 5px; font-size: 11px; color: #9fd6cc; background: rgba(0, 0, 0, .45); border-radius: 6px; padding: 1px 6px; z-index: 2; }
 .cdx-deck-editor .thumb .tctl { position: absolute; right: 5px; top: 4px; display: flex; gap: 4px; z-index: 2; opacity: 0; transition: .12s; }
 .cdx-deck-editor .thumb:hover .tctl { opacity: 1; }

@@ -6,7 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
-import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated } from "./animsteps.js";
+import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated, keyOfList } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -236,12 +236,20 @@ function blocksOf(stage) {
  * Returns the step count (the slide's max step). This is the ONE source of truth for
  * order + count; layouts emit content, never step-truth.
  */
-export function autoSteps(stage, build) {
+export function autoSteps(stage, build, buildFx) {
   const blocks = blocksOf(stage);
   const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build);
   blocks.forEach((b, i) => {
-    if (steps[i] > 0) { b.el.classList.add("reveal"); b.el.dataset.step = String(steps[i]); }
-    else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; }
+    if (steps[i] > 0) {
+      b.el.classList.add("reveal");
+      b.el.dataset.step = String(steps[i]);
+      // Phase 9: per-unit entrance effect (fade/slide/zoom) from slide.buildFx, keyed by the
+      // unit's build key (a singleton key, or the list's each:/unit: key). Absent -> the
+      // deck-wide entrance (#stage[data-anim]) still applies.
+      const uk = b.key || (b.list ? keyOfList(build, b.list) : null);
+      const fx = uk && buildFx && buildFx[uk] && buildFx[uk].fx;
+      if (fx) b.el.dataset.fx = fx; else delete b.el.dataset.fx;
+    } else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; delete b.el.dataset.fx; }
   });
   return count;
 }

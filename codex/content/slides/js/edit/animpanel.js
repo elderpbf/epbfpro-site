@@ -74,6 +74,16 @@ function unitRow(app, u, onList, i) {
   }
   row.appendChild(ctl);
 
+  // Phase 9: per-unit entrance effect (ON units only). Fade / Deslizar / Zoom; the active
+  // one is lit, re-click clears it (back to the deck-wide entrance).
+  if (on) {
+    const cur = (app.cur().buildFx && app.cur().buildFx[unitKey(u)] && app.cur().buildFx[unitKey(u)].fx) || "";
+    const fx = el("span", "ap-fx");
+    [["fade", "Fade"], ["slide", "Deslizar"], ["zoom", "Zoom"]].forEach(([v, lbl]) =>
+      fx.appendChild(btn("ap-fxb", lbl, cur === v, () => app.animFx(unitKey(u), cur === v ? null : v))));
+    row.appendChild(fx);
+  }
+
   const ord = el("span", "ap-ord");
   if (on) {
     const move = (dir) => {

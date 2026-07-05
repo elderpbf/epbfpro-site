@@ -192,7 +192,7 @@ export function mount(root, ctx = {}) {
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
       player.fitToCanvas(this.stage, d.canvas); // Phase 8 reflow: shrink font if flow content overflows the canvas
-      this._maxStep = player.autoSteps(this.stage, s.build); // ordered reveal plan (Phase 7); absent build = auto one-by-one
+      this._maxStep = player.autoSteps(this.stage, s.build, s.buildFx); // ordered reveal plan (Phase 7) + per-unit effect (Phase 9)
       player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
       if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
@@ -264,6 +264,18 @@ export function mount(root, ctx = {}) {
     animAllOff() { this.record("anim:none"); this.cur().build = []; this._afterAnim(); },
     animReorder(orderedKeys) { this.record("anim:order"); this.cur().build = orderedKeys.slice(); this._afterAnim(); }, // drag drop result
     animRemoveUnit(key) { this.record("anim:remove"); this.cur().build = this._ensureBuild().filter((k) => k !== key); this._afterAnim(); },
+    // Phase 9: set/clear a unit's entrance effect (fade/slide/zoom). Stored in the additive
+    // slide.buildFx map (keyed by build unit key); an effect implies an explicit build. Null
+    // clears it (back to the deck-wide entrance).
+    animFx(key, fx) {
+      this.record("anim:fx");
+      const s = this.cur();
+      this._ensureBuild();
+      const map = s.buildFx || (s.buildFx = {});
+      if (fx) map[key] = { ...(map[key] || {}), fx };
+      else if (map[key]) { delete map[key].fx; if (!Object.keys(map[key]).length) delete map[key]; }
+      this._afterAnim();
+    },
     openAnim(btn) { openAnimPanel(this, btn); },
     // Preview: step THIS slide's reveals in the editor (no fullscreen, no 2nd window). The
     // ▶ Apresentar button becomes ■ Parar; leaving the slide or closing the panel stops it.
