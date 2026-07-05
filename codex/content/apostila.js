@@ -414,16 +414,24 @@ function _previewHtml(item, mode, loading) {
 function _renderBody(item, diffOldBody) {
   const host = _q('cdx-apostila-render');
   if (!host) return;
-  try {
-    if (diffOldBody != null) {
-      // Render the body with the changed words sentinel-wrapped, then swap the sentinels for
-      // <mark> on the rendered HTML (they carry through markdown as inert text).
+  const plain = () => { try { renderItem(item, host, {}); } catch (_) { host.textContent = item.body_md || ''; } };
+  if (diffOldBody == null) { plain(); return; }
+  // Diff render: sentinel-wrap the changed words, render, then swap the sentinels for <mark>
+  // on the FINAL HTML. renderMarkdown is async until marked.js is loaded (it shows a
+  // "Carregando..." placeholder first), so the swap must run AFTER marked is present or it
+  // would land on the placeholder and the raw sentinels would survive un-highlighted.
+  const doDiff = () => {
+    try {
       renderItem(Object.assign({}, item, { body_md: markChanges(diffOldBody, item.body_md || '') }), host, {});
       host.innerHTML = _swapDiffMarks(host.innerHTML);
-    } else {
-      renderItem(item, host, {});
-    }
-  } catch (_) { host.textContent = item.body_md || ''; }
+    } catch (_) { plain(); }
+  };
+  if (window.marked) { doDiff(); return; }
+  const s = document.createElement('script');
+  s.src = 'https://cdn.jsdelivr.net/npm/marked/marked.min.js';
+  s.onload = doDiff;
+  s.onerror = plain;
+  document.head.appendChild(s);
 }
 
 function _onPreviewClick(e) {
