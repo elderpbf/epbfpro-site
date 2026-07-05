@@ -6,9 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Atenção! · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -437,6 +438,17 @@
         min-height: 44px;
         text-align: center;
       }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k1-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k1-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
 
     @media (max-width: 400px) {
@@ -492,10 +504,19 @@
   </div>
 
   <div class="k1-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k1-fs-slot" data-lab-fs-ctl></span>
     <button class="k1-btn-suggest" id="k1-suggest" title="Inserir uma frase de exemplo aleatória">Sugerir frase</button>
     <button class="k1-btn-reset" id="k1-reset" title="Limpar a frase">Limpar</button>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Atenção: o contexto decide o sentido">
+    <p>Uma mesma palavra pode ter sentidos diferentes. <strong>“Manga”</strong> é a manga da fruta ou a manga da camisa? Sozinha, ela é ambígua.</p>
+    <p>O modelo resolve isso com <strong>atenção</strong>: ao processar cada palavra, ele “olha” para as vizinhas e <strong>pesa quais importam</strong>. <em>Costura, camisa</em> puxam o sentido pra ROUPA; <em>doce, madura</em> puxam pra FRUTA.</p>
+    <p>Não há um sentido fixo guardado na palavra; ele <strong>emerge do contexto</strong>. Quanto mais pistas de um lado, mais forte a puxada. Por isso o mesmo termo jurídico muda de sentido conforme o resto do texto.</p>
+  </template>
 
   <script>
     (function () {

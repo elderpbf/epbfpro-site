@@ -421,21 +421,18 @@
         min-width: 0;
         text-align: center;
       }
-      /* A−/A+ is hidden on phone (shared rule), so the bar is just Entenda +
-         the two actions. Lay them out deliberately: the two secondary
-         controls (Entenda | Reiniciar) share the top row; the primary
-         "Perguntar" spans a full-width row below (thumb-friendly). */
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, the actions keep their grid
+         below. Same layout in every lab. */
       .k4-button-bar > [data-lab-info-ctl] {
-        order: 1;
+        order: -1;
         display: flex;
-        flex: 1 1 calc(50% - 0.2rem);
+        flex: 1 1 100%;
       }
       .k4-button-bar > [data-lab-info-ctl] .lab-info-btn {
         width: 100%;
         justify-content: center;
       }
-      #k4-reset { order: 2; }
-      #k4-ask   { order: 3; flex: 1 1 100%; }
     }
 
     @media (max-width: 400px) {
