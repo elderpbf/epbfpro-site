@@ -32,7 +32,7 @@ test('isIosSafari: only real iOS Safari (and iPadOS), never other iOS browsers o
 
 test('install.* i18n keys exist in BOTH pt and en (module contract parity)', () => {
   const src = read('../trilha/i18n.js');
-  const keys = ['install.cta_title', 'install.cta_desc', 'install.btn', 'install.ios_hint', 'install.dismiss'];
+  const keys = ['install.pill', 'install.cta_title', 'install.cta_desc', 'install.btn', 'install.ios_hint', 'install.dismiss'];
   for (const k of keys) {
     const hits = src.match(new RegExp("'" + k.replace('.', '\\.') + "'", 'g')) || [];
     assert.ok(hits.length >= 2, `key ${k} must appear in both pt and en (found ${hits.length})`);

@@ -128,11 +128,10 @@ export async function mount(root, ctx = {}) {
       const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
       if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
       onHashChange();
+      // "Salvar como app": offer a home-screen install on the timeline only (never on
+      // the login wall). Self-guards: no-op if installed, not installable, or dismissed.
+      initInstallPrompt(root, { win: _win });
     }
-    // "Salvar como app": offer a home-screen install once the trilha is on screen
-    // (mounted last so it survives the tabs/wall render). Self-guards: no-op when
-    // already installed, not installable, or previously dismissed.
-    initInstallPrompt(root, { win: _win });
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER

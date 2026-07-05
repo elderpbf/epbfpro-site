@@ -219,25 +219,37 @@ html, body {
 .cdx-trilha-panel { animation: cdx-tr-fade-in 0.25s ease both; }
 
 /* ── "Salvar como app" install card (install-prompt.js) ──── */
-/* Reuses shared tokens (surface/border/text/primary), so light+dark follow the theme. */
+/* Reuses shared tokens (surface/border/text/primary), so light+dark follow the theme.   */
+/* Opens as a full card, then collapses to a logo pill (.is-collapsed); tap to re-expand. */
 .cdx-install-card {
   position: relative;
   display: flex;
-  align-items: flex-start;
-  gap: 1rem;
-  margin: 0 0 1.25rem;
-  padding: 1rem 2.4rem 1rem 1.1rem;
+  align-items: center;
+  gap: 0.85rem;
+  width: 100%;
+  max-width: 440px;
+  margin: 0 auto 1.25rem;
+  padding: 0.9rem 2.4rem 0.9rem 1rem;
   background: var(--surface);
   border: 1px solid var(--border);
   border-left: 4px solid var(--primary);
-  border-radius: 14px;
+  border-radius: 16px;
   box-shadow: var(--shadow);
   animation: cdx-tr-fade-in 0.25s ease both;
+  transition: padding 0.35s ease, border-radius 0.35s ease, border-left-width 0.35s ease;
 }
-.cdx-install-body { display: flex; flex-direction: column; gap: 0.3rem; }
+.cdx-install-logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 10px;
+  flex-shrink: 0;
+  transition: width 0.35s ease, height 0.35s ease;
+}
+.cdx-install-pill-label { display: none; font-size: 0.9rem; font-weight: 600; color: var(--text-primary); white-space: nowrap; }
+.cdx-install-body { display: flex; flex-direction: column; gap: 0.25rem; min-width: 0; }
 .cdx-install-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
-.cdx-install-desc { font-size: 0.85rem; color: var(--text-secondary); line-height: 1.4; }
-.cdx-install-actions { margin-top: 0.6rem; }
+.cdx-install-desc { font-size: 0.83rem; color: var(--text-secondary); line-height: 1.4; }
+.cdx-install-actions { margin-top: 0.5rem; }
 .cdx-install-btn {
   padding: 0.55rem 1.1rem;
   background: var(--primary);
@@ -277,3 +289,19 @@ html, body {
   border-radius: 8px;
 }
 .cdx-install-close:hover { color: var(--text-primary); background: var(--tint-primary-tx); }
+
+/* Collapsed: a compact logo + label pill, centered, tap to re-open. */
+.cdx-install-card.is-collapsed {
+  width: max-content;
+  max-width: 100%;
+  padding: 0.4rem 0.95rem 0.4rem 0.5rem;
+  border-left-width: 1px;
+  border-radius: 999px;
+  gap: 0.5rem;
+  cursor: pointer;
+}
+.cdx-install-card.is-collapsed .cdx-install-body,
+.cdx-install-card.is-collapsed .cdx-install-close { display: none; }
+.cdx-install-card.is-collapsed .cdx-install-pill-label { display: inline; }
+.cdx-install-card.is-collapsed .cdx-install-logo { width: 26px; height: 26px; border-radius: 7px; }
+.cdx-install-card.is-collapsed:hover { background: var(--tint-primary-tx); }

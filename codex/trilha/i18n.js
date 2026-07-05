@@ -37,6 +37,7 @@ const pt = {
   'page.footer':            'Feito com PensoIA',
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
   // "Salvar como app" (PWA install)
+  'install.pill':           'Instalar app',
   'install.cta_title':      'Leve sua trilha no celular',
   'install.cta_desc':       'Instale a Trilha como app na tela inicial e abra num toque, sem navegador.',
   'install.btn':            'Instalar app',
@@ -197,6 +198,7 @@ const en = {
   'page.footer':            'Made with PensoIA',
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.
   // "Salvar como app" (PWA install)
+  'install.pill':           'Install app',
   'install.cta_title':      'Take your trail on your phone',
   'install.cta_desc':       'Install Trilha as an app on your home screen and open it in one tap, no browser.',
   'install.btn':            'Install app',
