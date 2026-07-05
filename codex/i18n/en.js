@@ -1528,7 +1528,7 @@ export default {
   'slides.ed_anim_off':       'off',
   'slides.ed_anim_entrance':  'Entrance',
   'slides.ed_anim_order':     'Animation order',
-  'slides.ed_anim_all_on':    'Animate all',
+  'slides.ed_anim_all_on':    'All',
   'slides.ed_anim_all_off':   'None',
   'slides.ed_anim_empty':     'Nothing animated on this slide',
   'slides.ed_preview':        'Preview',
