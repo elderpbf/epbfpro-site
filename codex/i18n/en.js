@@ -161,7 +161,6 @@ export default {
   'cohorts.sub_turmas':           'Cohorts',
   'cohorts.sub_cursos':           'Courses',
   'cohorts.cursos_title':         'Courses',
-  'cohorts.cursos_desc':          'A library of reusable courses. Each course holds its syllabus and feeds many cohorts, with nothing retyped at issue time.',
   'cohorts.cursos_new':           '＋ New course',
   'cohorts.cursos_new_default':   'New course',
   'cohorts.cursos_apostila_label':  'Course handbook',
@@ -237,6 +236,10 @@ export default {
   'cohorts.course_delete_title':  'Delete course',
   'cohorts.course_delete_msg':    'The course is permanently deleted. Cohorts already created from it are not affected (they keep their own copy).',
   'cohorts.course_delete_in_use': 'This course is used by {n} cohort(s). Archive it instead of deleting, or unlink the cohorts first.',
+  'cohorts.course_unarchive':     'Unarchive',
+  'cohorts.course_unarchived':    'Course unarchived.',
+  'cohorts.course_archived_section': 'Archived',
+  'cohorts.cursos_edit_hint':     'Click the title, hours or handbook to edit.',
   // Turma form — course link + instance fields (feed the certificate)
   'cohorts.tf_section_course':    'Course & cohort',
   'cohorts.tf_course':            'Course',

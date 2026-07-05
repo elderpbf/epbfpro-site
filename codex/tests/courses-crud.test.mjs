@@ -11,7 +11,34 @@ const read = (rel) => fs.readFileSync(path(rel), 'utf8');
 
 const coursesSrc = read('../cohorts/courses.js');
 const cohortsSrc = read('../cohorts/cohorts.js');
+const cohortsCss = read('../cohorts/cohorts.css');
 const facadeSrc = read('../js/codex-api.js');
+
+test('BUG FIX: dossier-pane transparent rule is scoped to the DIRECT empty-state placeholder', () => {
+  assert.match(cohortsCss, /\.cdx-doss-pane:has\(>\s*\.cdx-doss-body\s*>\s*\.cdx-placeholder\)/, 'scoped :has selector');
+  assert.ok(!/\.cdx-doss-pane:has\(\.cdx-placeholder\)\s*\{/.test(cohortsCss), 'no broad :has(.cdx-placeholder) that a nested loader placeholder would trip');
+});
+
+test('item 8/9: the cursos description is gone and "+ new" moved into the rail header', () => {
+  assert.ok(!/cursos_desc/.test(coursesSrc), 'no cursos_desc rendered');
+  assert.ok(!/cdx-cursos-sub/.test(coursesSrc), 'no description subtitle');
+  assert.match(coursesSrc, /cdx-cursos-rail-h[\s\S]{0,240}cdx-cursos-add/, 'rail header carries the + add button');
+  assert.match(coursesSrc, /class="cdx-cursos-add" id="cdx-cursos-new"/, 'the add button is in the rail head');
+  assert.match(coursesSrc, />\+<\/button>/, 'the add control renders a bare +');
+});
+
+test('item 3: an editable-fields hint is rendered on the course meta', () => {
+  assert.match(coursesSrc, /cdx-cursos-edithint/, 'edit hint element');
+  assert.match(coursesSrc, /cohorts\.cursos_edit_hint/, 'edit hint string');
+});
+
+test('item 4: archived courses load + render as a reversible bottom section', () => {
+  assert.match(coursesSrc, /include_archived:\s*true/, 'loads archived courses');
+  assert.match(coursesSrc, /cdx-cursos-arch-h/, 'archived section header');
+  assert.match(coursesSrc, /is-archived/, 'archived rows are marked');
+  assert.match(coursesSrc, /api\.unarchive\(/, 'unarchive wired');
+  assert.match(facadeSrc, /unarchive:\s*\(p\)\s*=>\s*call\('ct_unarchive_course'/, 'facade -> ct_unarchive_course');
+});
 
 test('IV: the course meta row carries Duplicate + Delete alongside Archive', () => {
   assert.match(coursesSrc, /id="cdx-cur-duplicate"/, 'Duplicate button');
@@ -52,6 +79,11 @@ test('the new i18n keys exist in BOTH dictionaries', async () => {
     'cohorts.course_duplicate', 'cohorts.course_duplicated', 'cohorts.course_delete',
     'cohorts.course_deleted', 'cohorts.course_delete_title', 'cohorts.course_delete_msg',
     'cohorts.course_delete_in_use', 'cohorts.field_whatsapp_hint',
+    'cohorts.course_unarchive', 'cohorts.course_unarchived', 'cohorts.course_archived_section',
+    'cohorts.cursos_edit_hint',
   ];
   for (const k of keys) { assert.ok(k in pt, `pt ${k}`); assert.ok(k in en, `en ${k}`); }
+  // item 8: the deleted description key is gone from both dictionaries.
+  assert.ok(!('cohorts.cursos_desc' in pt), 'pt cursos_desc removed');
+  assert.ok(!('cohorts.cursos_desc' in en), 'en cursos_desc removed');
 });

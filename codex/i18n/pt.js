@@ -161,7 +161,6 @@ export default {
   'cohorts.sub_turmas':           'Turmas',
   'cohorts.sub_cursos':           'Cursos',
   'cohorts.cursos_title':         'Cursos',
-  'cohorts.cursos_desc':          'Biblioteca de cursos reutilizáveis. Cada curso guarda a ementa e alimenta várias turmas, sem redigitar nada na emissão.',
   'cohorts.cursos_new':           '＋ Novo curso',
   'cohorts.cursos_new_default':   'Novo curso',
   'cohorts.cursos_apostila_label':  'Apostila do curso',
@@ -237,6 +236,10 @@ export default {
   'cohorts.course_delete_title':  'Excluir curso',
   'cohorts.course_delete_msg':    'O curso é apagado de vez. As turmas já criadas a partir dele não são afetadas (ficam com a própria cópia).',
   'cohorts.course_delete_in_use': 'Este curso está em uso por {n} turma(s). Arquive em vez de excluir, ou desvincule as turmas primeiro.',
+  'cohorts.course_unarchive':     'Desarquivar',
+  'cohorts.course_unarchived':    'Curso desarquivado.',
+  'cohorts.course_archived_section': 'Arquivados',
+  'cohorts.cursos_edit_hint':     'Clique no título, na carga horária ou na apostila para editar.',
   // Turma form — course link + instance fields (feed the certificate)
   'cohorts.tf_section_course':    'Curso e turma',
   'cohorts.tf_course':            'Curso',

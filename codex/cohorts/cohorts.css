@@ -78,9 +78,11 @@
 }
 
 /* The dossiê pane IS the .cdx-pane card once a turma is open. While empty (only
-   the placeholder), drop the card so the prompt sits on the page like Perguntas,
-   not inside a white box. The CLIENTES listpane always keeps its .cdx-pane card. */
-.cdx-doss-pane:has(.cdx-placeholder) {
+   the top-level placeholder), drop the card so the prompt sits on the page like
+   Perguntas, not inside a white box. The CLIENTES listpane always keeps its card.
+   Scope to the DIRECT dossier-body placeholder: a nested .cdx-placeholder from a
+   loader (e.g. the Aulas hub "select an aula" prompt) must NOT strip the card. */
+.cdx-doss-pane:has(> .cdx-doss-body > .cdx-placeholder) {
   background: transparent;
   border: none;
   border-radius: 0;
@@ -567,17 +569,29 @@
 .cdx-cursos-work { display: grid; grid-template-columns: 210px 1fr; gap: 1.1rem; align-items: start; }
 /* rail */
 .cdx-cursos-rail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); overflow: hidden; }
-.cdx-cursos-rail-h { padding: .6rem .8rem; border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
-.cdx-cursos-ri { padding: .55rem .8rem; cursor: pointer; border-left: 3px solid transparent; }
+.cdx-cursos-rail-h { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .8rem; border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
+.cdx-cursos-add { flex: 0 0 auto; border: none; background: var(--primary); color: var(--text-on-accent, #fff); width: 22px; height: 22px; border-radius: 6px; font-size: 1.15rem; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
+.cdx-cursos-add:hover { filter: brightness(1.08); }
+.cdx-cursos-ri { display: flex; align-items: center; gap: .5rem; padding: .55rem .8rem; cursor: pointer; border-left: 3px solid transparent; }
 .cdx-cursos-ri:hover { background: var(--cdx-card-hover-bg); }
 .cdx-cursos-ri.is-on { background: var(--cdx-card-sel-bg); border-left-color: var(--primary); }
+.cdx-cursos-ri-b { min-width: 0; flex: 1; }
 .cdx-cursos-ri-t { font-weight: 600; font-size: .86rem; color: var(--text-primary); }
 .cdx-cursos-ri-m { font-size: .72rem; color: var(--text-secondary); margin-top: .15rem; }
+/* Archived courses (Élder): a muted section at the rail bottom, reversible via Unarchive. */
+.cdx-cursos-arch-h { padding: .5rem .8rem .25rem; border-top: 1px solid var(--border); margin-top: .3rem; font-size: .62rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
+.cdx-cursos-ri.is-archived { opacity: .55; }
+.cdx-cursos-ri.is-archived:hover { opacity: .8; }
+.cdx-cursos-unarch { flex: 0 0 auto; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: .66rem; padding: .15rem .4rem; border-radius: 6px; cursor: pointer; }
+.cdx-cursos-unarch:hover { border-color: var(--primary); color: var(--tint-primary-tx); }
 /* main */
 .cdx-cursos-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 .cdx-cursos-meta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); padding: 1rem 1.2rem; }
-.cdx-cursos-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); border: none; outline: none; width: 100%; background: transparent; border-bottom: 2px solid transparent; padding-bottom: .2rem; }
-.cdx-cursos-title:focus { border-bottom-color: var(--primary); }
+/* Editable affordance (Élder: nothing signaled these were editable) — a persistent
+   dashed underline that firms to solid on hover/focus. */
+.cdx-cursos-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); border: none; outline: none; width: 100%; background: transparent; border-bottom: 1px dashed var(--border); padding-bottom: .2rem; cursor: text; }
+.cdx-cursos-title:hover { border-bottom-color: var(--primary); }
+.cdx-cursos-title:focus { border-bottom: 1px solid var(--primary); }
 /* 3 equal-hierarchy field cards (Carga horária | Apostila do curso | Reúso). */
 .cdx-cursos-fields { display: flex; gap: .6rem; margin-top: .8rem; flex-wrap: wrap; align-items: stretch; }
 .cdx-cursos-f { flex: 1 1 160px; display: flex; flex-direction: column; justify-content: center; background: var(--background); border: 1px solid var(--border); border-radius: 9px; padding: .45rem .6rem; min-width: 150px; }
@@ -586,6 +600,10 @@
 .cdx-cursos-f select { border: none; background: transparent; font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none; }
 .cdx-cursos-f select { cursor: pointer; appearance: none; -webkit-appearance: none; }
 .cdx-cursos-f select option { color: var(--text-primary); background: var(--surface); }
+/* The editable data fields (not the read-only turma-count stat) highlight on hover. */
+.cdx-cursos-f:not(.cdx-cursos-f-stat) { cursor: pointer; transition: border-color .12s; }
+.cdx-cursos-f:not(.cdx-cursos-f-stat):hover { border-color: var(--primary); }
+.cdx-cursos-edithint { margin-top: .55rem; font-size: .72rem; font-style: italic; color: var(--text-secondary); }
 /* Reúso keeps its own tint to read as a stat, but sits at the SAME hierarchy as the others. */
 .cdx-cursos-f-stat { background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); flex: 1 1 120px; }
 .cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--tint-primary-tx); }
