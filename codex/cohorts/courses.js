@@ -169,14 +169,13 @@ function _renderMain() {
     // course data on top
     '<div class="cdx-cursos-meta">' +
       '<div class="cdx-cursos-titlerow">' +
-        '<input class="cdx-cursos-title" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
-        '<span class="cdx-cursos-editmark" aria-hidden="true">✎</span>' +
+        '<input class="cdx-cursos-title cdx-cursos-edit" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
       '</div>' +
       '<div class="cdx-cursos-fields">' +
-        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + ' <span class="cdx-cursos-editmark" aria-hidden="true">✎</span></label>' +
-          '<input id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
-        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + ' <span class="cdx-cursos-editmark" aria-hidden="true">✎</span></label>' +
-          '<select id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
+        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + '</label>' +
+          '<input class="cdx-cursos-edit" id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
+        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + '</label>' +
+          '<select class="cdx-cursos-edit" id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
         '<div class="cdx-cursos-f cdx-cursos-f-stat"><label>' + esc(t('cohorts.course_reuse_label')) + '</label>' +
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
       '</div>' +

@@ -27,10 +27,12 @@ test('item 8/9: the cursos description is gone and "+ new" moved into the rail h
   assert.match(coursesSrc, />\+<\/button>/, 'the add control renders a bare +');
 });
 
-test('item 3: an editable hint + persistent pencil marks signal the editable fields', () => {
+test('item 3: an editable hint + a distinct fill (not pencil marks) signal the editable fields', () => {
   assert.match(coursesSrc, /cdx-cursos-edithint/, 'edit hint element');
   assert.match(coursesSrc, /cohorts\.cursos_edit_hint/, 'edit hint string');
-  assert.match(coursesSrc, /cdx-cursos-editmark/, 'persistent pencil marks on the editable fields');
+  assert.ok(!/cdx-cursos-editmark/.test(coursesSrc), 'the ✎ pencil marks are gone (a distinct fill signals editability instead)');
+  const marked = (coursesSrc.match(/cdx-cursos-edit\b/g) || []).length;
+  assert.ok(marked >= 3, 'title + hours + apostila controls carry the cdx-cursos-edit marker (>=3), got ' + marked);
 });
 
 test('item 4: archived courses load + render as a COLLAPSED reversible bottom section', () => {

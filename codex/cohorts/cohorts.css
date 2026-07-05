@@ -592,30 +592,36 @@ details.cdx-cursos-arch[open] > .cdx-cursos-arch-h::before { transform: rotate(9
 /* main */
 .cdx-cursos-main { display: flex; flex-direction: column; gap: 1rem; min-width: 0; }
 .cdx-cursos-meta { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); padding: 1rem 1.2rem; }
-/* Editable affordance (Élder: nothing signaled these were editable) — a persistent
-   dashed underline that firms to solid on hover/focus. */
-.cdx-cursos-title { font-size: 1.35rem; font-weight: 700; color: var(--text-primary); border: none; outline: none; width: 100%; background: transparent; border-bottom: 1px dashed var(--border); padding-bottom: .2rem; cursor: text; }
-.cdx-cursos-title:hover { border-bottom-color: var(--primary); }
-.cdx-cursos-title:focus { border-bottom: 1px solid var(--primary); }
+/* Editable affordance (Élder: nothing signaled these were editable, and the ✎ pencil
+   was noisy). A DISTINCT FILL signals editability instead — each editable control is a
+   filled input box that contrasts with its container, mirroring the dossier .cdx-doss-edit
+   treatment. The read-only reúso stat stays a plain tinted value (no box). */
+.cdx-cursos-title {
+  font-size: 1.35rem; font-weight: 700; color: var(--text-primary); width: 100%; outline: none;
+  cursor: text; box-sizing: border-box; background: var(--background); border: 1px solid var(--border);
+  border-radius: 8px; padding: .35rem .55rem; transition: border-color .12s, box-shadow .12s;
+}
+.cdx-cursos-title:hover { border-color: var(--primary); }
+.cdx-cursos-title:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--tint-primary); }
 /* 3 equal-hierarchy field cards (Carga horária | Apostila do curso | Reúso). */
 .cdx-cursos-fields { display: flex; gap: .6rem; margin-top: .8rem; flex-wrap: wrap; align-items: stretch; }
 .cdx-cursos-f { flex: 1 1 160px; display: flex; flex-direction: column; justify-content: center; background: var(--background); border: 1px solid var(--border); border-radius: 9px; padding: .45rem .6rem; min-width: 150px; }
 .cdx-cursos-f label { display: block; font-size: .64rem; text-transform: uppercase; letter-spacing: .05em; color: var(--text-secondary); font-weight: 700; margin-bottom: .15rem; }
 .cdx-cursos-f input,
-.cdx-cursos-f select { border: none; background: transparent; font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none; }
+.cdx-cursos-f select {
+  font: inherit; font-size: .86rem; font-weight: 600; color: var(--text-primary); width: 100%; outline: none;
+  box-sizing: border-box; cursor: text; background: var(--surface, #fff); border: 1px solid var(--border);
+  border-radius: 6px; padding: .22rem .4rem; transition: border-color .12s, box-shadow .12s;
+}
 .cdx-cursos-f select { cursor: pointer; appearance: none; -webkit-appearance: none; }
 .cdx-cursos-f select option { color: var(--text-primary); background: var(--surface); }
-/* The editable data fields (not the read-only turma-count stat) highlight on hover. */
-.cdx-cursos-f:not(.cdx-cursos-f-stat) { cursor: pointer; transition: border-color .12s; }
-.cdx-cursos-f:not(.cdx-cursos-f-stat):hover { border-color: var(--primary); }
+.cdx-cursos-f input:hover,
+.cdx-cursos-f select:hover { border-color: var(--primary); }
+.cdx-cursos-f input:focus,
+.cdx-cursos-f select:focus { border-color: var(--primary); box-shadow: 0 0 0 2px var(--tint-primary); }
 .cdx-cursos-edithint { margin-top: .55rem; font-size: .72rem; font-style: italic; color: var(--text-secondary); }
-/* Persistent "editable" marker (Élder: the dashed underline + hint alone read as
-   non-editable). A primary pencil next to the title + each editable field label. */
 .cdx-cursos-titlerow { display: flex; align-items: center; gap: .4rem; }
 .cdx-cursos-titlerow .cdx-cursos-title { flex: 1; min-width: 0; }
-.cdx-cursos-editmark { flex: 0 0 auto; color: var(--primary); }
-.cdx-cursos-titlerow .cdx-cursos-editmark { font-size: 1rem; }
-.cdx-cursos-f label .cdx-cursos-editmark { font-size: .62rem; }
 /* Reúso keeps its own tint to read as a stat, but sits at the SAME hierarchy as the others. */
 .cdx-cursos-f-stat { background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); flex: 1 1 120px; }
 .cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--tint-primary-tx); }
