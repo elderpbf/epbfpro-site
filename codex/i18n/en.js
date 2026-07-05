@@ -70,6 +70,7 @@ export default {
   'alunos.certs':        'Certificates enabled',
   'alunos.forum':        'Class forum',
   'alunos.reveal':       'Reveal content only when the lesson is done',
+  'alunos.app_install':  'Offer app install on the trail',
   'alunos.notifications':'Notifications (bell)',
   'alunos.save':         'Save',
   'alunos.saved':        'Saved.',

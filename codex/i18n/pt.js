@@ -70,6 +70,7 @@ export default {
   'alunos.certs':        'Certificados habilitados',
   'alunos.forum':        'Fórum da turma',
   'alunos.reveal':       'Revelar conteúdo só ao concluir a aula',
+  'alunos.app_install':  'Oferecer instalação do app na trilha',
   'alunos.notifications':'Notificações (sino)',
   'alunos.save':         'Salvar',
   'alunos.saved':        'Salvo.',

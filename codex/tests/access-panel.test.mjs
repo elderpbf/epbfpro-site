@@ -37,6 +37,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
     '.cdx-acc-certs': { checked: true },
     '.cdx-acc-forum': { checked: true },
     '.cdx-acc-reveal': { checked: true },
+    '.cdx-acc-appinstall': { checked: true },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
     '.cdx-acc-msg':   { textContent: '' },
   };
@@ -51,6 +52,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
     access_gated: 1, simple_enroll_enabled: 1, certificates_enabled: 1, forum_enabled: 1, reveal_on_completion: 1,
+    app_install_prompt: 1,
   });
   assert.ok(!('gate_mode' in sent), 'retired mode not sent');
   assert.ok(!('enrollment_prompt_enabled' in sent), 'retired enroll-prompt not sent');
@@ -62,6 +64,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.equal(turma.certificates_enabled, 1);
   assert.equal(turma.forum_enabled, 1, 'forum flag kept in sync');
   assert.equal(turma.reveal_on_completion, 1, 'reveal flag kept in sync');
+  assert.equal(turma.app_install_prompt, 1, 'app-install flag kept in sync');
 });
 
 test('the cohort dossier mounts the shared panel into the Dados tab', () => {
