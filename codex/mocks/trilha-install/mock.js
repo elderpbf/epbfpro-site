@@ -122,14 +122,18 @@ let armCleanup = null;
 
 function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
 
-// 1 · Hero-extend banner -> 1-line strip
+// 1 · TRUE hero extension: the hero box grows UPWARD to hold the install info (one
+// continuous box, same width, no divider). Collapsed = a thin strip on top, still part
+// of the same box (hero drops its top rounding/border via .mk-hero-joined).
 function opt1() {
   const hero = document.querySelector('.cdx-trilha-hero');
+  hero.classList.add('mk-hero-joined');
   const b = el('div', 'mk-o1',
     logoImg() + '<div class="mk-o1-txt"><span class="mk-o1-title">Leve a trilha da TJSE no celular</span>' +
     '<span class="mk-o1-desc">Abra num toque, sem navegador.</span></div>' + BTN);
   hero.parentNode.insertBefore(b, hero);
-  return { nodes: [b], collapse: () => b.classList.add('is-min'), expand: () => b.classList.remove('is-min') };
+  return { nodes: [b], collapse: () => b.classList.add('is-min'), expand: () => b.classList.remove('is-min'),
+    onRemove: () => hero.classList.remove('mk-hero-joined') };
 }
 // 2 · Detached banner above hero -> pill in topbar
 function opt2() {
@@ -184,7 +188,7 @@ const OPTS = { 1: opt1, 2: opt2, 3: opt3, 4: opt4, 5: opt5, 6: opt6 };
 
 function selectOption(n) {
   if (armCleanup) { armCleanup(); armCleanup = null; }
-  if (current) { current.nodes.forEach((x) => x.remove()); current = null; }
+  if (current) { if (current.onRemove) current.onRemove(); current.nodes.forEach((x) => x.remove()); current = null; }
   document.querySelectorAll('.mk-tog-btn').forEach((b) => b.classList.toggle('is-sel', Number(b.dataset.opt) === n));
   current = OPTS[n]();
   current.nodes.forEach((x) => { if (x.querySelector) { const btn = x.matches && x.matches('.mk-btn') ? x : x.querySelector('.mk-btn'); if (btn) btn.addEventListener('click', () => alert('Aqui instalaria (Android) / mostraria a dica do iPhone.')); } });

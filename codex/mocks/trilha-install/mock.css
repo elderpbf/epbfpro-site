@@ -38,17 +38,20 @@
 .mk-btn { padding: .5rem 1rem; background: var(--primary); color: #fff; border: none; border-radius: 10px; font: 600 .85rem system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
 .mk-btn:hover { background: var(--primary-dark); }
 
-/* 1 · Hero-extend banner -> 1-line strip glued to the hero top */
-.mk-o1 { display: flex; align-items: center; gap: .85rem; max-width: 860px; margin: 0 auto; padding: 1rem 1.2rem;
-  background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 16px 16px 0 0;
-  box-shadow: var(--shadow); transition: padding .3s ease; }
+/* 1 · TRUE hero extension: same width as the hero, same surface, NO divider between them,
+   only the outer corners rounded. The hero box literally grows upward to hold the invite. */
+.mk-o1 { display: flex; align-items: center; gap: .85rem; margin: 1rem 0 0; padding: 1.2rem 1.75rem;
+  background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 20px 20px 0 0;
+  transition: padding .3s ease; }
 .mk-o1-txt { display: flex; flex-direction: column; gap: .15rem; }
 .mk-o1-title { font-weight: 700; font-size: .95rem; color: var(--text-primary); }
 .mk-o1-desc { font-size: .82rem; color: var(--text-secondary); }
 .mk-o1 .mk-btn { margin-left: auto; }
-.mk-o1.is-min { padding: .4rem 1.1rem; }
+.mk-o1.is-min { padding: .5rem 1.75rem; }               /* collapsed = a thin strip on top */
 .mk-o1.is-min .mk-o1-desc { display: none; }
-.mk-o1.is-min .mk-logo { width: 24px; height: 24px; }
+.mk-o1.is-min .mk-logo { width: 22px; height: 22px; }
+/* hero becomes the bottom half of the same box: no top rounding/border, flush to the strip */
+.cdx-trilha-hero.mk-hero-joined { margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
 
 /* 2 · Detached banner above hero -> pill in the topbar */
 .mk-o2 { display: flex; align-items: center; gap: .85rem; max-width: 520px; margin: 1rem auto -.2rem; padding: .8rem 1rem;
