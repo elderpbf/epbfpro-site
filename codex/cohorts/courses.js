@@ -105,8 +105,11 @@ function _renderRail() {
   } else {
     body = _courses.map((c) => _railRow(c, false)).join('');
     if (_archived.length) {
-      body += '<div class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + '</div>' +
-        _archived.map((c) => _railRow(c, true)).join('');
+      // Collapsed by default (Élder): a <details> the admin expands only when needed.
+      body += '<details class="cdx-cursos-arch">' +
+        '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
+        _archived.map((c) => _railRow(c, true)).join('') +
+      '</details>';
     }
   }
   el.innerHTML = head + body;
@@ -165,11 +168,14 @@ function _renderMain() {
   el.innerHTML =
     // course data on top
     '<div class="cdx-cursos-meta">' +
-      '<input class="cdx-cursos-title" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
+      '<div class="cdx-cursos-titlerow">' +
+        '<input class="cdx-cursos-title" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
+        '<span class="cdx-cursos-editmark" aria-hidden="true">✎</span>' +
+      '</div>' +
       '<div class="cdx-cursos-fields">' +
-        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + '</label>' +
+        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + ' <span class="cdx-cursos-editmark" aria-hidden="true">✎</span></label>' +
           '<input id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
-        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + '</label>' +
+        '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + ' <span class="cdx-cursos-editmark" aria-hidden="true">✎</span></label>' +
           '<select id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
         '<div class="cdx-cursos-f cdx-cursos-f-stat"><label>' + esc(t('cohorts.course_reuse_label')) + '</label>' +
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
@@ -589,10 +595,10 @@ function _onDeleteCourse() {
     closeModal(bd);
     api.remove({ id: _course.id }).then(() => {
       toast.ok(t('cohorts.course_deleted'));
-      _courses = _courses.filter((x) => x.id !== _course.id);
+      // Reload (not just filter _courses) so a deleted ARCHIVED course also leaves the
+      // archived section without a manual refresh. [Élder]
       _selectedId = null; _course = null; _ementa = emptyEmenta();
-      _renderRail();
-      if (_courses.length) _selectCourse(_courses[0].id); else _renderMain();
+      _loadCourses();
     }).catch((err) => {
       const code = err && err.data && err.data.error;
       if (code === 'course_in_use') {

@@ -578,8 +578,13 @@
 .cdx-cursos-ri-b { min-width: 0; flex: 1; }
 .cdx-cursos-ri-t { font-weight: 600; font-size: .86rem; color: var(--text-primary); }
 .cdx-cursos-ri-m { font-size: .72rem; color: var(--text-secondary); margin-top: .15rem; }
-/* Archived courses (Élder): a muted section at the rail bottom, reversible via Unarchive. */
+/* Archived courses (Élder): a collapsed <details> section at the rail bottom, reversible
+   via Unarchive. The summary is the header; a caret flips when open. */
+details.cdx-cursos-arch > summary { list-style: none; cursor: pointer; }
+details.cdx-cursos-arch > summary::-webkit-details-marker { display: none; }
 .cdx-cursos-arch-h { padding: .5rem .8rem .25rem; border-top: 1px solid var(--border); margin-top: .3rem; font-size: .62rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
+.cdx-cursos-arch-h::before { content: '\25B8'; margin-right: .35rem; font-size: .9em; display: inline-block; transition: transform .12s; }
+details.cdx-cursos-arch[open] > .cdx-cursos-arch-h::before { transform: rotate(90deg); }
 .cdx-cursos-ri.is-archived { opacity: .55; }
 .cdx-cursos-ri.is-archived:hover { opacity: .8; }
 .cdx-cursos-unarch { flex: 0 0 auto; border: 1px solid var(--border); background: transparent; color: var(--text-secondary); font-size: .66rem; padding: .15rem .4rem; border-radius: 6px; cursor: pointer; }
@@ -604,6 +609,13 @@
 .cdx-cursos-f:not(.cdx-cursos-f-stat) { cursor: pointer; transition: border-color .12s; }
 .cdx-cursos-f:not(.cdx-cursos-f-stat):hover { border-color: var(--primary); }
 .cdx-cursos-edithint { margin-top: .55rem; font-size: .72rem; font-style: italic; color: var(--text-secondary); }
+/* Persistent "editable" marker (Élder: the dashed underline + hint alone read as
+   non-editable). A primary pencil next to the title + each editable field label. */
+.cdx-cursos-titlerow { display: flex; align-items: center; gap: .4rem; }
+.cdx-cursos-titlerow .cdx-cursos-title { flex: 1; min-width: 0; }
+.cdx-cursos-editmark { flex: 0 0 auto; color: var(--primary); }
+.cdx-cursos-titlerow .cdx-cursos-editmark { font-size: 1rem; }
+.cdx-cursos-f label .cdx-cursos-editmark { font-size: .62rem; }
 /* Reúso keeps its own tint to read as a stat, but sits at the SAME hierarchy as the others. */
 .cdx-cursos-f-stat { background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); flex: 1 1 120px; }
 .cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--tint-primary-tx); }

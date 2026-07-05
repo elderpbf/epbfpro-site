@@ -27,17 +27,27 @@ test('item 8/9: the cursos description is gone and "+ new" moved into the rail h
   assert.match(coursesSrc, />\+<\/button>/, 'the add control renders a bare +');
 });
 
-test('item 3: an editable-fields hint is rendered on the course meta', () => {
+test('item 3: an editable hint + persistent pencil marks signal the editable fields', () => {
   assert.match(coursesSrc, /cdx-cursos-edithint/, 'edit hint element');
   assert.match(coursesSrc, /cohorts\.cursos_edit_hint/, 'edit hint string');
+  assert.match(coursesSrc, /cdx-cursos-editmark/, 'persistent pencil marks on the editable fields');
 });
 
-test('item 4: archived courses load + render as a reversible bottom section', () => {
+test('item 4: archived courses load + render as a COLLAPSED reversible bottom section', () => {
   assert.match(coursesSrc, /include_archived:\s*true/, 'loads archived courses');
-  assert.match(coursesSrc, /cdx-cursos-arch-h/, 'archived section header');
+  assert.match(coursesSrc, /<details class="cdx-cursos-arch">/, 'archived section is a collapsed <details>');
+  assert.match(coursesSrc, /<summary class="cdx-cursos-arch-h">/, 'the section header is the summary');
   assert.match(coursesSrc, /is-archived/, 'archived rows are marked');
   assert.match(coursesSrc, /api\.unarchive\(/, 'unarchive wired');
   assert.match(facadeSrc, /unarchive:\s*\(p\)\s*=>\s*call\('ct_unarchive_course'/, 'facade -> ct_unarchive_course');
+});
+
+test('item 3 fix: deleting a course reloads (so a deleted archived course also leaves)', () => {
+  // The delete success path must refresh both lists, not just filter the active one.
+  const del = coursesSrc.match(/function _onDeleteCourse\([\s\S]*?\n}/);
+  assert.ok(del, '_onDeleteCourse defined');
+  assert.match(del[0], /api\.remove\([\s\S]*?_loadCourses\(\)/, 'delete success calls _loadCourses');
+  assert.ok(!/_courses = _courses\.filter/.test(del[0]), 'no stale active-only filter left behind');
 });
 
 test('IV: the course meta row carries Duplicate + Delete alongside Archive', () => {
