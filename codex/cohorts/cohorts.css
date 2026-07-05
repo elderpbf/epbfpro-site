@@ -589,7 +589,7 @@
 /* Reúso keeps its own tint to read as a stat, but sits at the SAME hierarchy as the others. */
 .cdx-cursos-f-stat { background: var(--cdx-chip-bg); border-color: var(--cdx-chip-border); flex: 1 1 120px; }
 .cdx-cursos-f-v { font-size: .86rem; font-weight: 700; color: var(--tint-primary-tx); }
-.cdx-cursos-metafoot { display: flex; justify-content: flex-end; margin-top: .6rem; }
+.cdx-cursos-metafoot { display: flex; justify-content: flex-end; gap: .5rem; margin-top: .6rem; }
 /* ementa panel */
 .cdx-cursos-panel { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); }
 .cdx-cursos-panel-h { display: flex; align-items: center; gap: .6rem; padding: .7rem .9rem; border-bottom: 1px solid var(--border); }

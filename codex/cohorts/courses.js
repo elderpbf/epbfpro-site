@@ -152,7 +152,9 @@ function _renderMain() {
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
       '</div>' +
       '<div class="cdx-cursos-metafoot">' +
+        '<button class="cdx-btn cdx-btn-sm" id="cdx-cur-duplicate">' + esc(t('cohorts.course_duplicate')) + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-cursos-archive" id="cdx-cur-archive">' + esc(t('cohorts.archive')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" id="cdx-cur-delete">' + esc(t('cohorts.course_delete')) + '</button>' +
       '</div>' +
     '</div>' +
     // two separate panels: ementa | IA assistant (b2 hybrid)
@@ -397,6 +399,10 @@ function _wireMain() {
   if (hoursEl) hoursEl.addEventListener('change', () => _saveCourseMeta());
   const arch = _q('cdx-cur-archive');
   if (arch) arch.addEventListener('click', _onArchiveCourse);
+  const dup = _q('cdx-cur-duplicate');
+  if (dup) dup.addEventListener('click', _onDuplicateCourse);
+  const del = _q('cdx-cur-delete');
+  if (del) del.addEventListener('click', _onDeleteCourse);
   _wireApostilaBind();
   const save = _q('cdx-cur-save');
   if (save) save.addEventListener('click', _saveEmenta);
@@ -509,6 +515,58 @@ function _onArchiveCourse() {
       _renderRail();
       if (_courses.length) _selectCourse(_courses[0].id); else _renderMain();
     }).catch((err) => {
+      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
+    });
+  });
+}
+
+function _onDuplicateCourse() {
+  if (!_course) return;
+  api.duplicate({ id: _course.id }).then((d) => {
+    const c = d && d.course;
+    if (!c) return;
+    toast.ok(t('cohorts.course_duplicated'));
+    _courses.unshift(c);
+    _selectCourse(c.id);
+  }).catch((err) => {
+    notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
+  });
+}
+
+// Hard-delete (vs archive): only for a course NO turma uses. The worker refuses an in-use
+// course (course_in_use, since a turma resolves its apostila via course_id); the front
+// pre-checks the turma count for a friendlier message and still handles the worker guard
+// as the source of truth (which reads err.data.error, since the facade throws on {error}).
+function _onDeleteCourse() {
+  if (!_course) return;
+  const n = _courseTurmaCount();
+  if (n > 0) { notice.warn(t('cohorts.course_delete_in_use').replace('{n}', String(n))); return; }
+  const html =
+    '<div class="cdx-modal" style="max-width:420px">' +
+      '<div class="cdx-modal-title">' + esc(t('cohorts.course_delete_title')) + '</div>' +
+      '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_delete_msg')) + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-cur-del-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-cur-del-ok">' + esc(t('cohorts.course_delete')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  bd.querySelector('#cdx-cur-del-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-cur-del-ok').addEventListener('click', () => {
+    closeModal(bd);
+    api.remove({ id: _course.id }).then(() => {
+      toast.ok(t('cohorts.course_deleted'));
+      _courses = _courses.filter((x) => x.id !== _course.id);
+      _selectedId = null; _course = null; _ementa = emptyEmenta();
+      _renderRail();
+      if (_courses.length) _selectCourse(_courses[0].id); else _renderMain();
+    }).catch((err) => {
+      const code = err && err.data && err.data.error;
+      if (code === 'course_in_use') {
+        notice.warn(t('cohorts.course_delete_in_use').replace('{n}', String((err.data && err.data.turma_count) || '')));
+        _loadCourses();
+        return;
+      }
       notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
     });
   });

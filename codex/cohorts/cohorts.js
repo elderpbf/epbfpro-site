@@ -858,6 +858,7 @@ function _openTurmaForm(turma) {
         '<div class="cdx-tf-section">' + t('cohorts.tf_section_links') + '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.field_whatsapp') + '</label>' +
           '<input type="text" id="cdx-tf-whatsapp" value="' + _esc(isEdit ? (turma.whatsapp_url || '') : '') + '" placeholder="https://chat.whatsapp.com/...">' +
+          '<small class="cdx-field-hint">' + t('cohorts.field_whatsapp_hint') + '</small>' +
         '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.field_classpulse') + '</label>' +
           '<select id="cdx-tf-classpulse">' + cpOptions + '</select>' +
@@ -935,6 +936,9 @@ function _openTurmaForm(turma) {
           // Keep the dossier pointed at the just-saved turma after the reload.
           _relClientSlug = _selectedClientSlug;
           _relTurmaSlug = isEdit ? turma.slug : slug;
+          // A new turma auto-creates its own session (codes redesign); drop the cached
+          // session list so the dossier's session select shows it right away, no F5. [item C]
+          if (!isEdit) { _cpSessions = []; _dossierDepsTried = false; }
           _loadAll();
         }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });

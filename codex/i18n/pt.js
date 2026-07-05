@@ -230,6 +230,13 @@ export default {
   'cohorts.course_archived':      'Curso arquivado.',
   'cohorts.course_archive_title': 'Arquivar curso',
   'cohorts.course_archive_msg':   'O curso sai da lista. As turmas que já usam ficam com a cópia delas intacta.',
+  'cohorts.course_duplicate':     'Duplicar',
+  'cohorts.course_duplicated':    'Curso duplicado.',
+  'cohorts.course_delete':        'Excluir',
+  'cohorts.course_deleted':       'Curso excluído.',
+  'cohorts.course_delete_title':  'Excluir curso',
+  'cohorts.course_delete_msg':    'O curso é apagado de vez. As turmas já criadas a partir dele não são afetadas (ficam com a própria cópia).',
+  'cohorts.course_delete_in_use': 'Este curso está em uso por {n} turma(s). Arquive em vez de excluir, ou desvincule as turmas primeiro.',
   // Turma form — course link + instance fields (feed the certificate)
   'cohorts.tf_section_course':    'Curso e turma',
   'cohorts.tf_course':            'Curso',
@@ -306,7 +313,7 @@ export default {
 
   // Cohorts — client form fields
   'cohorts.field_name_internal':   'Nome interno',
-  'cohorts.field_display_name':    'Nome para alunos (opcional)',
+  'cohorts.field_display_name':    'Nome para alunos',
   'cohorts.field_icon':            'Ícone',
   'cohorts.field_name_placeholder':'Ex: Acme Ltda',
   'cohorts.field_display_placeholder': 'Igual ao nome interno se vazio',
@@ -352,7 +359,8 @@ export default {
 
   // Cohorts — turma form fields
   'cohorts.turma_name_placeholder': 'Ex: Turma A',
-  'cohorts.field_whatsapp':         'WhatsApp do grupo (URL, opcional)',
+  'cohorts.field_whatsapp':         'WhatsApp do grupo (URL)',
+  'cohorts.field_whatsapp_hint':    'opcional',
   'cohorts.field_classpulse':       'Sessão ClassPulse',
   'cohorts.field_trail':            'Link da Trilha',
 

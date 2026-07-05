@@ -230,6 +230,13 @@ export default {
   'cohorts.course_archived':      'Course archived.',
   'cohorts.course_archive_title': 'Archive course',
   'cohorts.course_archive_msg':   'The course leaves the list. Cohorts already using it keep their own copy intact.',
+  'cohorts.course_duplicate':     'Duplicate',
+  'cohorts.course_duplicated':    'Course duplicated.',
+  'cohorts.course_delete':        'Delete',
+  'cohorts.course_deleted':       'Course deleted.',
+  'cohorts.course_delete_title':  'Delete course',
+  'cohorts.course_delete_msg':    'The course is permanently deleted. Cohorts already created from it are not affected (they keep their own copy).',
+  'cohorts.course_delete_in_use': 'This course is used by {n} cohort(s). Archive it instead of deleting, or unlink the cohorts first.',
   // Turma form — course link + instance fields (feed the certificate)
   'cohorts.tf_section_course':    'Course & cohort',
   'cohorts.tf_course':            'Course',
@@ -306,7 +313,7 @@ export default {
 
   // Cohorts — client form fields
   'cohorts.field_name_internal':   'Internal name',
-  'cohorts.field_display_name':    'Student-facing name (optional)',
+  'cohorts.field_display_name':    'Student-facing name',
   'cohorts.field_icon':            'Icon',
   'cohorts.field_name_placeholder':'E.g. Acme Ltd',
   'cohorts.field_display_placeholder': 'Defaults to internal name if blank',
@@ -352,7 +359,8 @@ export default {
 
   // Cohorts — turma form fields
   'cohorts.turma_name_placeholder': 'E.g. Group A',
-  'cohorts.field_whatsapp':         'WhatsApp group URL (optional)',
+  'cohorts.field_whatsapp':         'WhatsApp group URL',
+  'cohorts.field_whatsapp_hint':    'optional',
   'cohorts.field_classpulse':       'ClassPulse session',
   'cohorts.field_trail':            'Trail link',
 
