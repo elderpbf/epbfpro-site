@@ -115,3 +115,13 @@ test('paperShellHtml: preview drops the affordance button, keeps the embed', () 
   assert.ok(!/ctr-affordance-btn/.test(html));
   assert.match(html, /ctr-pdf-object/);
 });
+
+// The worker returns meta_json as a raw JSON STRING (SELECT * on a TEXT column);
+// the builders must parse it, else every meta-driven field renders empty while the
+// action button (which parses) still works — the "button opens, no preview" bug.
+test('builders parse a string meta_json (not only a pre-parsed object)', () => {
+  const mi = modelInfoHtml({ meta_json: '{"provider":"Anthropic","doc_url":"https://d"}' }, {});
+  assert.match(mi, /ctr-badge-provider">Anthropic/);
+  const paper = paperShellHtml({ meta_json: '{"pdf_url":"/r2/a/x.pdf"}' }, { preview: true });
+  assert.match(paper, /data="\/r2\/a\/x\.pdf"[^>]*class="ctr-pdf-object"/);
+});
