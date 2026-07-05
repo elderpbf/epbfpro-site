@@ -16,6 +16,7 @@
 import { presets as api, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { getAllItems as labItems } from '../js/labs-registry.js';
@@ -29,6 +30,7 @@ let _selectedId = null;   // selected preset id (null when none / creating)
 let _creating = false;    // true when the right pane shows a blank new-preset editor
 let _editName = '';       // working preset name (edited via the header button, not inline)
 let _picker = null;       // the mounted item-picker instance (destroy on re-render)
+let _rail = null;         // the left list is the shared list-rail (js/list-rail.js)
 let _cleanup = [];
 
 // ── Pure rule (exported for tests) ──────────────────────────────────────────
@@ -212,24 +214,35 @@ function _destroyPicker() {
 }
 
 // ── Left list ────────────────────────────────────────────────────────────────
-function _renderList() {
+// The left list adopts the shared list-rail (track-21). Select-only (no drag), so no grip;
+// the "+ novo modelo" is the rail's add. renderRow returns the icon + info; the rail owns
+// the row shell (selected state moves to the uniform .cdx-rail-row.is-on).
+function _presetRowMain(p) {
+  const count = (p && p.item_ids && p.item_ids.length) || 0;
+  return '<span class="cdx-item-type-icon cdx-preset-icon">' + glyphSvg('layers', { size: 18 }) + '</span>' +
+    '<div class="cdx-item-info">' +
+      '<div class="cdx-item-title">' + _esc((p && p.name) || t('presets.unnamed')) + '</div>' +
+      '<div class="cdx-item-sub">' + count + ' ' + t('presets.item_count_suffix') + '</div>' +
+    '</div>';
+}
+
+function _buildRail() {
   const el = _q('cdx-preset-list');
   if (!el) return;
-  if (!_presets.length) {
-    el.innerHTML = '<div class="cdx-empty">' + t('presets.empty') + '</div>';
-    return;
-  }
-  el.innerHTML = _presets.map((p) => {
-    const count = (p && p.item_ids && p.item_ids.length) || 0;
-    const active = !_creating && Number(p.id) === Number(_selectedId);
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(p.id) + '">' +
-      '<span class="cdx-item-type-icon cdx-preset-icon">' + glyphSvg('layers', { size: 18 }) + '</span>' +
-      '<div class="cdx-item-info">' +
-        '<div class="cdx-item-title">' + _esc((p && p.name) || t('presets.unnamed')) + '</div>' +
-        '<div class="cdx-item-sub">' + count + ' ' + t('presets.item_count_suffix') + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  _rail = mountRail(el, {
+    title: '',
+    items: () => _presets,
+    getId: (p) => p.id,
+    renderRow: (p) => ({ main: _presetRowMain(p) }),
+    selectedId: () => (_creating ? null : _selectedId),
+    onSelect: (id) => { _creating = false; _selectedId = Number(id); _rail.render(); _renderPreview(); },
+    add: { label: '+', title: t('presets.new'), onAdd: _onNew },
+    emptyText: t('presets.empty'),
+  });
+}
+
+function _renderList() {
+  if (_rail) _rail.render();
 }
 
 // ── Right pane: empty prompt | the picker editor ─────────────────────────────
@@ -317,15 +330,6 @@ function _onNew() {
   _renderPreview();
 }
 
-function _onListClick(e) {
-  const row = e.target.closest('.cdx-item-row');
-  if (!row) return;
-  _creating = false;
-  _selectedId = Number(row.getAttribute('data-id'));
-  _renderList();
-  _renderPreview();
-}
-
 function _onPreviewClick(e) {
   const btn = e.target.closest('[data-act]');
   if (!btn) return;
@@ -405,19 +409,16 @@ function _renderShell() {
     '<div class="cdx-presets">' +
       '<div class="cdx-presets-toolbar">' +
         '<h2 class="cdx-presets-title">' + t('presets.title') + '</h2>' +
-        '<button class="cdx-btn cdx-btn-primary" id="cdx-preset-new">' + t('presets.new') + '</button>' +
       '</div>' +
       '<div class="cdx-items-split cdx-presets-split" id="cdx-presets-split">' +
-        '<div class="cdx-items-list" id="cdx-preset-list">' +
-          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
-        '</div>' +
+        '<div class="cdx-items-list" id="cdx-preset-list"></div>' +
         '<div class="cdx-item-preview" id="cdx-preset-preview">' +
           '<div class="cdx-preview-empty">' + t('presets.select') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
-  _q('cdx-preset-new').addEventListener('click', _onNew);
-  _q('cdx-preset-list').addEventListener('click', _onListClick);
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
   _q('cdx-preset-preview').addEventListener('click', _onPreviewClick);
 }
 
@@ -444,6 +445,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   _destroyPicker();
+  if (_rail) { _rail.destroy(); _rail = null; }
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
