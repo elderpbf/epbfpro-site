@@ -73,6 +73,25 @@ test('IV: delete handles the in-use guard via the thrown error payload', () => {
   assert.match(coursesSrc, /err\.data\s*&&\s*err\.data\.error/, 'reads err.data.error (facade throws on {error})');
 });
 
+test('Phase B: the facade exposes course reorder + section CRUD -> the new ct_ actions', () => {
+  assert.match(facadeSrc, /reorder:\s*\(p\)\s*=>\s*call\('ct_reorder_courses'/, 'reorder -> ct_reorder_courses');
+  assert.match(facadeSrc, /listSections:\s*\(p\)\s*=>\s*call\('ct_list_course_sections'/, 'listSections');
+  assert.match(facadeSrc, /createSection:\s*\(p\)\s*=>\s*call\('ct_create_course_section'/, 'createSection');
+  assert.match(facadeSrc, /renameSection:\s*\(p\)\s*=>\s*call\('ct_rename_course_section'/, 'renameSection');
+  assert.match(facadeSrc, /reorderSections:\s*\(p\)\s*=>\s*call\('ct_reorder_course_sections'/, 'reorderSections');
+  assert.match(facadeSrc, /deleteSection:\s*\(p\)\s*=>\s*call\('ct_delete_course_section'/, 'deleteSection');
+  assert.match(facadeSrc, /setSection:\s*\(p\)\s*=>\s*call\('ct_set_course_section'/, 'setSection');
+});
+
+test('Phase B: the Cursos rail wires reorder (grip) + editable sections with drag-between', () => {
+  assert.match(coursesSrc, /reorder:\s*\{[\s\S]{0,200}api\.reorder\(/, 'reorder wired to api.reorder');
+  assert.match(coursesSrc, /sections:\s*\{[\s\S]{0,400}onMoveItem/, 'sections wired with onMoveItem (drag between)');
+  assert.match(coursesSrc, /editable:\s*true/, 'sections are editable');
+  assert.match(coursesSrc, /api\.setSection\(/, 'move persists via setSection');
+  assert.match(coursesSrc, /api\.createSection\(/, 'create section wired');
+  assert.match(coursesSrc, /api\.deleteSection\(/, 'delete section wired');
+});
+
 test('II: creating a turma invalidates the cached session list so the dossier select refreshes', () => {
   assert.match(cohortsSrc, /!isEdit[\s\S]{0,60}_cpSessions\s*=\s*\[\][\s\S]{0,60}_dossierDepsTried\s*=\s*false/, 'resets the cp cache on create');
 });
@@ -96,6 +115,10 @@ test('the new i18n keys exist in BOTH dictionaries', async () => {
     'cohorts.course_delete_in_use', 'cohorts.field_whatsapp_hint',
     'cohorts.course_unarchive', 'cohorts.course_unarchived', 'cohorts.course_archived_section',
     'cohorts.cursos_edit_hint',
+    'cohorts.course_drag_hint', 'cohorts.course_section_new_btn', 'cohorts.course_section_new',
+    'cohorts.course_section_name_ph', 'cohorts.course_section_name_required', 'cohorts.course_section_rename',
+    'cohorts.course_section_created', 'cohorts.course_section_renamed', 'cohorts.course_section_delete_title',
+    'cohorts.course_section_delete_msg', 'cohorts.course_section_delete', 'cohorts.course_section_deleted',
   ];
   for (const k of keys) { assert.ok(k in pt, `pt ${k}`); assert.ok(k in en, `en ${k}`); }
   // item 8: the deleted description key is gone from both dictionaries.

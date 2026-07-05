@@ -228,7 +228,15 @@ export const courses = {
   unarchive: (p) => call('ct_unarchive_course', p), // { id } — restores an archived course to the active list
   duplicate: (p) => call('ct_duplicate_course', p), // { id } -> { course } — copies title(+cópia)/hours/ementa/apostila into a fresh mold
   remove:  (p) => call('ct_delete_course', p),   // { id } -> { ok } | { error:'course_in_use', turma_count } when turmas still link it
-  setApostila: (p) => call('ct_set_course_apostila', p) // { id, apostila_set_id|null } -> { course } — binds the course's apostila
+  setApostila: (p) => call('ct_set_course_apostila', p), // { id, apostila_set_id|null } -> { course } — binds the course's apostila
+  // Ordering + sections (track-21 Phase B, migration 0023) — mirror the tarefa-section family.
+  reorder:       (p) => call('ct_reorder_courses', p),        // { ordered_ids } — sort_order for a bucket (flat list or one section)
+  listSections:  (p) => call('ct_list_course_sections', p),   // -> { sections:[{id,name,position}] }
+  createSection: (p) => call('ct_create_course_section', p),  // { name } -> { section }
+  renameSection: (p) => call('ct_rename_course_section', p),  // { id, name }
+  reorderSections:(p) => call('ct_reorder_course_sections', p),// { order:[ids] }
+  deleteSection: (p) => call('ct_delete_course_section', p),  // { id } — orphans its courses to no-section
+  setSection:    (p) => call('ct_set_course_section', p)      // { course_id, section_id|null, ordered_ids? } — move + reposition
 };
 
 // Content — the item library (Items sub-tab) plus the shared types/tags it
