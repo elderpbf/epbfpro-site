@@ -120,6 +120,11 @@
   border-color: var(--cdx-card-sel-border);
   box-shadow: inset 3px 0 0 var(--codex-content);
 }
+/* Items adopts the shared list-rail (track-21): the row content sits in .cdx-items-rowwrap
+   (the check + icon + info). Preview selection is the rail's is-on; the BULK is-selected can't
+   live on the rail row, so it rides the wrapper and a :has() rule paints the whole row. */
+.cdx-items-split .cdx-items-rowwrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+.cdx-items-split .cdx-rail-row:has(.cdx-items-rowwrap.is-selected) { background: var(--cdx-card-sel-bg); }
 
 /* ── Preview pane ────────────────────────────────────────────────────────── */
 .cdx-item-preview {

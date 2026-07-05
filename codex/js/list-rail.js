@@ -73,7 +73,8 @@ export function mountRail(container, cfg) {
   function bodyHtml() {
     const its = readItems();
     if (!its.length) {
-      return '<div class="cdx-rail-empty">' + esc(cfg.emptyText || '') + '</div>';
+      const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
+      return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }
     if (!sections) {
       return '<div class="cdx-rail-list" data-seclist="__flat">' + its.map(rowHtml).join('') + '</div>';
