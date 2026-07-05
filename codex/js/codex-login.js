@@ -28,7 +28,54 @@ function logErr(msg) {
 //   window.callWorker (transport, js/worker-call.js); window.bsLog/window.dbg
 //   (debug pill, backstage/js/debug.js); window.BS_GOOGLE (Google auth context)
 
+// ── Dev-only shared preview session ──────────────────────────────────────────
+// On the STAGING PREVIEW domain only, the admin session is mirrored into a cookie scoped to
+// the parent domain (epbfpro-site-staging.pages.dev), so a login on ANY per-branch subdomain
+// (slides-p89.…, labs.…, <hash>.…) carries to every other one: one 30-day login instead of one
+// per branch. Gated hard on the host, so it is INERT on production (pensoia.com) and anywhere
+// else — there it never reads, writes, or clears a cookie, and auth stays localStorage-only.
+// Safe because only our own deploys can hold this domain and it is the admin's own token.
+const DEV_COOKIE = 'cdx_dev_session';
+const DEV_COOKIE_DOMAIN = 'epbfpro-site-staging.pages.dev';
+const DEV_COOKIE_MAX_AGE = 30 * 24 * 60 * 60; // match the 30-day admin session TTL
+
+function isPreviewHost() {
+  try {
+    const h = location.hostname;
+    return h === DEV_COOKIE_DOMAIN || h.endsWith('.' + DEV_COOKIE_DOMAIN);
+  } catch (_) { return false; }
+}
+function readDevCookie() {
+  try {
+    const m = document.cookie.match(/(?:^|;\s*)cdx_dev_session=([^;]+)/);
+    return m ? decodeURIComponent(m[1]) : '';
+  } catch (_) { return ''; }
+}
+function writeDevCookie(token) {
+  if (!isPreviewHost() || !token) return;
+  try {
+    document.cookie = DEV_COOKIE + '=' + encodeURIComponent(token) +
+      '; Domain=' + DEV_COOKIE_DOMAIN + '; Path=/; Max-Age=' + DEV_COOKIE_MAX_AGE + '; Secure; SameSite=Lax';
+  } catch (_) {}
+}
+function clearDevCookie() {
+  if (!isPreviewHost()) return;
+  try {
+    document.cookie = DEV_COOKIE + '=; Domain=' + DEV_COOKIE_DOMAIN + '; Path=/; Max-Age=0; Secure; SameSite=Lax';
+  } catch (_) {}
+}
+// Adopt the shared cookie's token when this preview subdomain has no local session yet.
+function hydrateFromDevCookie() {
+  if (!isPreviewHost()) return;
+  try {
+    if (localStorage.getItem(PW_KEY)) return;
+    const t = readDevCookie();
+    if (t) localStorage.setItem(PW_KEY, t);
+  } catch (_) {}
+}
+
 export function isAuthed() {
+  hydrateFromDevCookie(); // no-op off the preview domain
   try { return !!localStorage.getItem(PW_KEY); } catch (_) { return false; }
 }
 
@@ -36,6 +83,7 @@ export function isAuthed() {
 // the Codex login. Codex-owned, so logout no longer bounces to /backstage/.
 export function signOut() {
   try { localStorage.removeItem(PW_KEY); } catch (_) {}
+  clearDevCookie(); // drop the shared preview session too (logout is deck-wide across previews)
   try { if (window.BS_GOOGLE && window.BS_GOOGLE.signOut) window.BS_GOOGLE.signOut(); } catch (_) {}
   try { sessionStorage.removeItem('bs_auth'); } catch (_) {}
   location.replace('/codex/');
@@ -108,6 +156,7 @@ export function mountLogin() {
       const r = await auth.otpVerify({ email: email, code: codeVal });
       if (r && r.admin_session) {
         try { localStorage.setItem(PW_KEY, r.admin_session); } catch (_) {}
+        writeDevCookie(r.admin_session); // share this login across all preview subdomains (no-op off preview)
         location.reload();   // re-run the boot; isAuthed() is now true, the app mounts
         return;
       }
