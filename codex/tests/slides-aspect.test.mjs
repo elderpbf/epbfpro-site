@@ -4,7 +4,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  ASPECTS, canvasForAspect, aspectOfCanvas, reanchorDeck, migrateDeck, SCHEMA_VERSION,
+  ASPECTS, canvasForAspect, aspectOfCanvas, reanchorDeck, clampToCanvas, migrateDeck, SCHEMA_VERSION,
 } from '../content/slides/js/core/schema.js';
 
 test('canvasForAspect returns the table dims, as fresh copies, 16:9 by default', () => {
@@ -55,4 +55,37 @@ test('migrateDeck backfills a missing canvas from the declared aspect and is ide
   assert.deepEqual(d1.canvas, { w: 960, h: 720 }, 'canvas derived from the declared aspect');
   const d2 = migrateDeck(JSON.parse(JSON.stringify(d1)));
   assert.deepEqual(d2, d1, 'second migration is a no-op');
+});
+
+test('clampToCanvas keeps every absolute box inside the canvas', () => {
+  const deck = {
+    canvas: { w: 960, h: 720 },
+    logo: { x: 40, y: 30, h: 40 },
+    assets: [{ id: 'a', scope: 'slide', slideId: 's', x: 900, y: 10, w: 200, h: 80 }],
+    slides: [{ id: 's', overrides: { 'f.1': { x: 800, y: 700, w: 300, h: 60 } } }],
+  };
+  clampToCanvas(deck);
+  const a = deck.assets[0];
+  assert.ok(a.x + a.w <= 960 && a.y + a.h <= 720, 'asset clamped inside');
+  const ov = deck.slides[0].overrides['f.1'];
+  assert.ok(ov.x >= 0 && ov.x + ov.w <= 960 && ov.y + ov.h <= 720, 'override clamped inside');
+});
+
+test('clampToCanvas flags reflowWarn when the clamp pushes an element into an overlap', () => {
+  const deck = {
+    canvas: { w: 960, h: 720 },
+    assets: [],
+    slides: [{ id: 's', overrides: {
+      a: { x: 700, y: 300, w: 200, h: 200 },   // inside
+      b: { x: 1400, y: 300, w: 200, h: 200 },  // off-canvas -> clamps to x=760, over 'a'
+    } }],
+  };
+  clampToCanvas(deck);
+  assert.equal(deck.slides[0].reflowWarn, true, 'a clamp-induced overlap is flagged');
+});
+
+test('clampToCanvas clears a stale reflowWarn when nothing overlaps after the clamp', () => {
+  const deck = { canvas: { w: 1280, h: 720 }, assets: [], slides: [{ id: 's', reflowWarn: true, overrides: { a: { x: 100, y: 100, w: 100, h: 100 } } }] };
+  clampToCanvas(deck);
+  assert.ok(!deck.slides[0].reflowWarn, 'stale warn cleared when no overlap');
 });

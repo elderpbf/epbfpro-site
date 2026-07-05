@@ -45,6 +45,47 @@ export function reanchorDeck(deck, sx, sy) {
   return deck;
 }
 
+/** Do two {x,y,w,h} boxes overlap? Missing w/h count as 0. */
+function boxesOverlap(a, b) {
+  const ax2 = a.x + (a.w || 0), ay2 = a.y + (a.h || 0);
+  const bx2 = b.x + (b.w || 0), by2 = b.y + (b.h || 0);
+  return a.x < bx2 && ax2 > b.x && a.y < by2 && ay2 > b.y;
+}
+
+/**
+ * Clamp the deck's ABSOLUTE geometry inside its canvas so nothing crosses the slide
+ * border (freeform overrides, free assets, the deck logo). A slide where the clamp pushed
+ * a moved element into another absolute element is flagged `reflowWarn` (else the flag is
+ * cleared) so the editor can badge it "revisar". Pure: mutates + returns the deck.
+ */
+export function clampToCanvas(deck) {
+  if (!deck || !deck.canvas) return deck;
+  const { w: W, h: H } = deck.canvas;
+  const moved = new Set();
+  const clamp = (g) => {
+    if (!g || g.x == null) return;
+    const ox = g.x, oy = g.y;
+    if (g.w != null && g.w > W) g.w = W;
+    if (g.h != null && g.h > H) g.h = H;
+    g.x = Math.max(0, Math.min(g.x, Math.max(0, W - (g.w || 0))));
+    g.y = Math.max(0, Math.min(g.y, Math.max(0, H - (g.h || 0))));
+    if (g.x !== ox || g.y !== oy) moved.add(g);
+  };
+  if (deck.logo) clamp(deck.logo);
+  for (const a of deck.assets || []) clamp(a);
+  for (const slide of deck.slides || []) {
+    const ov = slide.overrides || {};
+    for (const k in ov) clamp(ov[k]);
+    const boxes = [];
+    for (const k in ov) if (ov[k] && ov[k].x != null) boxes.push(ov[k]);
+    for (const a of deck.assets || []) if (a.x != null && ((a.scope === "slide" && a.slideId === slide.id) || a.scope === "all")) boxes.push(a);
+    let warn = false;
+    for (const b of boxes) { if (!moved.has(b)) continue; for (const o of boxes) if (o !== b && boxesOverlap(b, o)) { warn = true; break; } if (warn) break; }
+    if (warn) slide.reflowWarn = true; else if (slide.reflowWarn) delete slide.reflowWarn;
+  }
+  return deck;
+}
+
 /** Deck-level logo default (top-left). Single source so deck/render/geometry agree. */
 export const DEFAULT_LOGO = { x: 40, y: 30, h: 40 };
 

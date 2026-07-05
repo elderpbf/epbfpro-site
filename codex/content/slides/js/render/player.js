@@ -344,3 +344,20 @@ export function fit(stagewrap, stagebox, stage, canvas, pad = 40) {
   stage.style.transform = `scale(${s})`;
   return s;
 }
+
+/**
+ * Phase 8 reflow: shrink the slide's font to fit the canvas when flow content overflows.
+ * All slide font sizes are calc(... * var(--fontScale) * var(--fitScale, 1)), so setting
+ * --fitScale on the stage scales every text size uniformly, with no per-layout branching.
+ * Measures at natural size, then applies 1/overflow (floored at 0.5) in a single pass:
+ * font tracks height ~linearly for text, so one correction fits. Absolute assets keep
+ * their size (they are clamped separately, not reflowed).
+ */
+export function fitToCanvas(stage, canvas) {
+  if (!stage || !canvas) return 1;
+  stage.style.setProperty("--fitScale", "1"); // measure at natural (unfitted) size
+  const over = Math.max(stage.scrollWidth / canvas.w, stage.scrollHeight / canvas.h);
+  const k = over > 1.002 ? Math.max(0.5, 1 / over) : 1;
+  stage.style.setProperty("--fitScale", String(Math.round(k * 1000) / 1000));
+  return k;
+}

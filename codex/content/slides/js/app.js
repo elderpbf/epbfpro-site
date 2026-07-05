@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck } from "./core/schema.js";
+import { uid, migrateDeck, clone, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck, clampToCanvas } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { addImage, removeImage, getImage } from "./core/gallery.js";
 import { makeDataUrlStore } from "./core/files.js";
@@ -191,6 +191,7 @@ export function mount(root, ctx = {}) {
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
+      player.fitToCanvas(this.stage, d.canvas); // Phase 8 reflow: shrink font if flow content overflows the canvas
       this._maxStep = player.autoSteps(this.stage, s.build); // ordered reveal plan (Phase 7); absent build = auto one-by-one
       player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
@@ -477,6 +478,7 @@ export function mount(root, ctx = {}) {
       d.aspect = aspect;
       d.canvas = to;
       reanchorDeck(d, to.w / from.w, to.h / from.h);
+      clampToCanvas(d); // keep every absolute element inside the resized canvas; flag overlaps "revisar"
       applyDeckTheme(this.deck(), this.stage);
       this.fit();
       this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
