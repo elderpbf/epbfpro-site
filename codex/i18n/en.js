@@ -302,6 +302,7 @@ export default {
   'cohorts.turma_deleted':         'Cohort deleted.',
   'cohorts.delete_turma_btn':      'Delete cohort permanently',
   'cohorts.delete_turma_warning':  'Deletes the cohort and everything tied to it: released content, lessons, participants, access sessions and the forum. Library items and already-issued certificates are not affected. This action cannot be undone.',
+  'cohorts.delete_turma_session_opt': "Also delete this turma's questions session",
 
   // Cohorts — client form fields
   'cohorts.field_name_internal':   'Internal name',
@@ -1064,6 +1065,7 @@ export default {
   'questions.sessions_delete':       'Delete',
   'questions.sessions_delete_confirm':'Delete the session and all its data?',
   'questions.sessions_delete_error': 'Could not delete the session.',
+  'questions.sessions_delete_linked_warn': "This session is linked to a turma. Deleting it may affect the turma's access and questions. Delete anyway?",
   'questions.sessions_untitled':     'Untitled',
   'questions.sessions_stats_kpi_q':  'Questions',
   'questions.sessions_stats_kpi_s':  'Unique students',

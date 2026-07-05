@@ -302,6 +302,7 @@ export default {
   'cohorts.turma_deleted':         'Turma excluída.',
   'cohorts.delete_turma_btn':      'Excluir turma permanentemente',
   'cohorts.delete_turma_warning':  'Apaga a turma e tudo ligado a ela: conteúdo liberado, aulas, participantes, sessões de acesso e o fórum. Os itens da biblioteca e os certificados já emitidos não são afetados. Essa ação não pode ser desfeita.',
+  'cohorts.delete_turma_session_opt': 'Apagar também a sessão de perguntas desta turma',
 
   // Cohorts — client form fields
   'cohorts.field_name_internal':   'Nome interno',
@@ -1064,6 +1065,7 @@ export default {
   'questions.sessions_delete':       'Excluir',
   'questions.sessions_delete_confirm':'Excluir a sessão e todos os seus dados?',
   'questions.sessions_delete_error': 'Não foi possível excluir a sessão.',
+  'questions.sessions_delete_linked_warn': 'Esta sessão está vinculada a uma turma. Apagá-la pode afetar o acesso e as perguntas da turma. Apagar mesmo assim?',
   'questions.sessions_untitled':     'Sem título',
   'questions.sessions_stats_kpi_q':  'Questões',
   'questions.sessions_stats_kpi_s':  'Alunos únicos',

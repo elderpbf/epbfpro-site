@@ -167,11 +167,12 @@ function _closeModal(bd) {
 // ── Typed-name delete confirmation modal ─────────────────────────────────────
 
 function _openDeleteConfirm(opts) {
-  // opts: { title, warningHtml, confirmName, onConfirm }
+  // opts: { title, warningHtml, extraHtml?, confirmName, onConfirm(flags) }
   const html =
     '<div class="cdx-modal" style="max-width:440px">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<div class="cdx-danger-zone">' + opts.warningHtml + '</div>' +
+      (opts.extraHtml || '') +
       '<div class="cdx-field" style="margin-top:1rem">' +
         '<label>' + _esc(t('cohorts.confirm_type_name')) + ' <strong>' + _esc(opts.confirmName) + '</strong></label>' +
         '<input type="text" id="cdx-del-confirm-input" autocomplete="off" placeholder="">' +
@@ -191,8 +192,12 @@ function _openDeleteConfirm(opts) {
   bd.querySelector('#cdx-del-cancel').addEventListener('click', () => _closeModal(bd));
   confirmBtn.addEventListener('click', () => {
     if (!matches()) return;
+    // Capture optional extra choices (e.g. "delete the linked session too") before the
+    // modal is torn down, then hand them to the caller.
+    const sessOpt = bd.querySelector('#cdx-del-session-opt');
+    const flags = { deleteSession: !!(sessOpt && sessOpt.checked) };
     _closeModal(bd);
-    opts.onConfirm();
+    opts.onConfirm(flags);
   });
 }
 
@@ -736,12 +741,22 @@ function _unarchiveTurma(clientSlug, turmaSlug) {
 // cascade drops every per-turma row (content, releases, aulas, participants,
 // sessions, forum); global library items and issued certificates are preserved.
 function _deleteTurma(turma) {
+  const sessCode = turma.classpulse_session_id || turma.access_code || null;
+  // A. One-way turma/session coupling: the turma owns an auto-created session; offer to
+  // delete it together (checked by default, since a kept session would be orphaned), but
+  // let the admin keep it if it doubles as a standalone Q&A.
+  const sessOpt = sessCode
+    ? '<label class="cdx-del-session-opt" style="display:flex;align-items:center;gap:.5rem;margin-top:.9rem;font-size:0.85rem;color:var(--text-secondary);cursor:pointer">' +
+        '<input type="checkbox" id="cdx-del-session-opt" checked> ' +
+        '<span>' + _esc(t('cohorts.delete_turma_session_opt')) + ' · <code>' + _esc(sessCode) + '</code></span></label>'
+    : '';
   _openDeleteConfirm({
     title: t('cohorts.delete_turma_btn'),
     warningHtml: '<p style="font-size:0.85rem;color:var(--text-secondary);margin:0">' + t('cohorts.delete_turma_warning') + '</p>',
+    extraHtml: sessOpt,
     confirmName: turma.name,
-    onConfirm() {
-      api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
+    onConfirm(flags) {
+      api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug, delete_session: !!(flags && flags.deleteSession) }).then(() => {
         toast.ok(t('cohorts.turma_deleted'));
         const wasSelected = _relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug;
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
