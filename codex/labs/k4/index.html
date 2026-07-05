@@ -49,45 +49,13 @@
       height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
-    }
-
-    /* ── Question card ───────────────────────────────────── */
-    .k4-question {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      padding: 0.85rem 1.3rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .k4-question-q {
-      font-family: var(--font-display);
-      font-style: italic;
-      font-size: var(--lab-fs-doc);
-      font-weight: 600;
-      letter-spacing: -0.005em;
-      line-height: 1.2;
-      margin: 0;
-      color: var(--text);
-    }
-    .k4-question-hint {
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      color: var(--text-dim);
-      line-height: 1.3;
-      margin: 0;
-    }
-    .k4-answer-key {
-      color: var(--good);
-      font-weight: 700;
     }
 
     /* ── Main area: accuracy + context bar + curve + response ── */
@@ -388,29 +356,19 @@
        their own phone floors), so these blocks only touch LAYOUT: padding,
        grid, tap targets, positioning. */
     @media (max-width: 700px) {
-      /* k4 is content-heavy (question + size selector + context bar + curve +
-         response). On a phone that does not fit one 100dvh screen, so here the
-         stage stops being fixed and the page scrolls — the auditorium
-         no-scroll model only applies on the wide stage. */
+      /* Fixed stage on phone too (no page scroll) — same app-fit model as the
+         other labs. The removed question box is what used to force scrolling;
+         with it gone the pieces fit one 100dvh screen. */
       .k4-panel {
-        height: auto;
-        min-height: 100dvh;
-        overflow: visible;
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
+        padding: 0.5rem 0.9rem 0.5rem;
+        gap: 0.4rem;
       }
-      .k4-question {
-        padding: 0.55rem 0.9rem;
-        gap: 0.3rem;
-      }
-      .k4-question-q { line-height: 1.25; }
-      .k4-question-hint { line-height: 1.35; }
 
-      .k4-main { gap: 0.6rem; }
+      .k4-main { gap: 0.45rem; }
       .k4-size-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.4rem;
+        gap: 0.3rem;
       }
       .k4-size-label {
         text-align: center;
@@ -423,40 +381,40 @@
         gap: 0.3rem;
       }
       .k4-size-btn {
-        padding: 0.45rem 0.7rem;
+        padding: 0.4rem 0.7rem;
         flex: 1 1 calc(50% - 0.15rem);
         min-width: 0;
-        min-height: 38px;
+        min-height: 40px;
         text-align: center;
       }
 
       /* Extra top room so the needle tag (absolutely positioned above the
          bar) clears the size-selector buttons, which wrap to two rows here. */
-      .k4-ctx-section { gap: 0.35rem; margin-top: 2.6rem; }
-      .k4-ctx-bar { height: 56px; }
+      .k4-ctx-section { gap: 0.3rem; margin-top: 2.4rem; }
+      .k4-ctx-bar { height: 46px; }
       .k4-needle-tag {
-        padding: 0.25rem 0.65rem;
-        top: -42px;
+        padding: 0.22rem 0.6rem;
+        top: -40px;
       }
-      .k4-scale {
-        padding: 0 0.2rem;
-      }
+      .k4-scale { padding: 0 0.2rem; }
 
+      /* Curve and response share the remaining height (both can shrink), so
+         the stage never overflows. The response card scrolls internally if an
+         answer is long — the page itself does not scroll. */
       .k4-bottom {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(140px, 1fr) auto;
-        gap: 0.55rem;
+        grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 0.4rem;
       }
       .k4-curve-title,
-      .k4-response-title { margin: 0 0 0.3rem; }
-      .k4-response-card { padding: 0.7rem 0.9rem; gap: 0.35rem; }
-      .k4-response-answer { line-height: 1.3; }
+      .k4-response-title { margin: 0 0 0.2rem; }
+      .k4-response-card { padding: 0.6rem 0.8rem; gap: 0.3rem; }
+      .k4-response-answer { line-height: 1.25; }
 
-      .k4-button-bar { gap: 0.4rem; padding: 0; }
-      /* Text-size control gets its own centered row on phones. */
+      .k4-button-bar { gap: 0.35rem; padding: 0; }
       .k4-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
       .k4-btn {
-        padding: 0.65rem 0.5rem;
+        padding: 0.5rem 0.5rem;
         flex: 1 1 calc(50% - 0.2rem);
         min-height: 44px;
         min-width: 0;
@@ -473,10 +431,6 @@
       .k4-panel {
         padding: 0.4rem 1rem 0.35rem;
         gap: 0.4rem;
-      }
-      .k4-question {
-        padding: 0.4rem 0.9rem;
-        gap: 0.2rem;
       }
       .k4-main { gap: 0.5rem; }
       .k4-size-btn {
@@ -499,15 +453,6 @@
   <div class="lab-header"
        data-lab-title="Perdido no meio"
        data-lab-subtitle="Acurácia ao longo do processo"></div>
-
-  <div class="k4-question">
-    <p class="k4-question-q">
-      "Em que data o réu foi intimado da sentença neste processo?"
-    </p>
-    <p class="k4-question-hint">
-      A informação — <span class="k4-answer-key">15 de março de 2024</span> — está em algum trecho do processo abaixo. Arraste a agulha para mover a posição do ato e veja como a resposta do modelo muda. Quanto maior o processo, mais profunda a zona morta no meio.
-    </p>
-  </div>
 
   <div class="k4-main">
     <div class="k4-size-row" role="radiogroup" aria-label="Tamanho do processo">
