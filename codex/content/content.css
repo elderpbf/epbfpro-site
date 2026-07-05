@@ -755,7 +755,7 @@
 .cdx-comp-item.is-already-released { opacity: 0.5; }
 .cdx-comp-item.is-already-released:hover { opacity: 0.75; }
 .cdx-comp-elsewhere { font-size: 0.7rem; font-weight: 600; color: var(--text-secondary); white-space: nowrap; margin-left: 0.6rem; }
-.cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; }
+.cdx-comp-actions { display: flex; justify-content: flex-end; flex-shrink: 0; margin-top: 0.75rem; }
 
 /* ── Apostila sub-tab (imported course content) ──────────────────────────── */
 .cdx-apostila { display: flex; flex-direction: column; gap: 1rem; }

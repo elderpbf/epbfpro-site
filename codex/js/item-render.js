@@ -27,6 +27,18 @@ function _assetSrc(url) {
   return /^https?:\/\//i.test(url || '') ? url : assetUrl(url || '');
 }
 
+// meta_json arrives from the worker as a JSON string (ct_get_item does SELECT *, so
+// the raw TEXT column comes through unparsed) OR as an already-parsed object. The
+// builders below index into it, so normalize to an object once here. Without this a
+// string meta silently yields undefined fields (an attachment renders nothing while
+// the action button, which parses, still works).
+function _meta(item) {
+  const m = item && item.meta_json;
+  if (!m) return {};
+  if (typeof m === 'string') { try { return JSON.parse(m) || {}; } catch (_) { return {}; } }
+  return m;
+}
+
 // type -> renderer key. Unknown types fall back to plain markdown.
 export function dispatchType(type) {
   if (type === 'prompt') return 'prompt';
@@ -57,7 +69,7 @@ export function promptHtml(item, opts = {}) {
 
 // ── model_info ───────────────────────────────────────────────────────────────
 export function modelInfoHtml(item, opts = {}) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const provider = meta.provider || '';
   const modelId = meta.model_id || '';
   const contextWindow = meta.context_window != null ? String(meta.context_window) : '';
@@ -114,7 +126,7 @@ export function attachmentHtml(url) {
 
 // ── paper shell (synchronous, markdown-free structure) ───────────────────────
 export function paperShellHtml(item, opts = {}) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const authors = meta.authors || '';
   const year = meta.year || '';
   const abstract = meta.abstract || '';
@@ -186,7 +198,7 @@ function renderMarkdown(item, container, opts) {
 }
 
 function renderGuide(item, container, opts) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const tabs = meta.platform_tabs || null;
   const tabKeys = tabs ? Object.keys(tabs).filter((k) => tabs[k]) : [];
   const hasMultipleTabs = tabKeys.length > 1;
@@ -227,7 +239,7 @@ function renderGuide(item, container, opts) {
 }
 
 function renderMaterial(item, container, opts) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const url = meta.attachment_url || '';
   container.innerHTML = '<div class="ctr-loading">Carregando...</div>';
   _loadMarked(() => {
