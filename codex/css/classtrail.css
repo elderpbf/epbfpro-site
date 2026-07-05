@@ -866,6 +866,10 @@
 /* A type whose icon is a Codex glyph renders as an inline SVG (currentColor). */
 .ct-tf-icon svg { display: block; width: 15px; height: 15px; }
 
+/* The admin chips render straight into #cdx-type-filter-host (no flex wrapper), so make
+   the host a flex row; align-items:center levels the no-icon "Todos" chip with the rest. */
+#cdx-type-filter-host { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
 .ct-tf-count {
   font-size: 0.74rem;
   opacity: 0.75;
