@@ -44,7 +44,7 @@
 .cdx-deck-editor .freed:hover { box-shadow: 0 0 0 1px var(--teal-l); }
 
 /* reveals */
-.cdx-deck-editor .reveal { opacity: 0; transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
+.cdx-deck-editor .reveal { opacity: 0; transition: opacity var(--rvdur, .35s) ease, transform var(--rvdur, .35s) ease; pointer-events: none; }
 .cdx-deck-editor .reveal.shown { opacity: 1; pointer-events: auto; }
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal { transform: translateY(12px); }
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal.shown { transform: none; }
@@ -57,6 +57,12 @@
 .cdx-deck-editor .reveal[data-fx="slide"].shown { transform: none; }
 .cdx-deck-editor .reveal[data-fx="zoom"] { transform: scale(.85); }
 .cdx-deck-editor .reveal[data-fx="zoom"].shown { transform: none; }
+/* Phase 9: slide-to-slide transition, played on #stagebox (no transform of its own, so it
+   animates freely while #stage keeps its fit scale). fade = opacity; push = slide in. */
+@keyframes sx-fade-kf { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sx-push-kf { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+.cdx-deck-editor #stagebox.sx-fade { animation: sx-fade-kf .28s ease; }
+.cdx-deck-editor #stagebox.sx-push { animation: sx-push-kf .3s ease; }
 .cdx-deck-editor .mini .reveal, .cdx-deck-editor.presenter .reveal { transition: none; }
 .cdx-deck-editor .mini .editoronly, .cdx-deck-editor.presenter .editoronly { display: none !important; }
 .cdx-deck-editor .mini .asset, .cdx-deck-editor.presenter .asset { pointer-events: none !important; }

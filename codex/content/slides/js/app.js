@@ -276,6 +276,36 @@ export function mount(root, ctx = {}) {
       else if (map[key]) { delete map[key].fx; if (!Object.keys(map[key]).length) delete map[key]; }
       this._afterAnim();
     },
+    // Phase 9: enter WITH the previous unit (same reveal step) vs AFTER it (own step).
+    // Stored as buildFx[key].timing ("with"); clearing returns to "after" (the default).
+    animTiming(key, timing) {
+      this.record("anim:timing");
+      const s = this.cur();
+      this._ensureBuild();
+      const map = s.buildFx || (s.buildFx = {});
+      if (timing === "with") map[key] = { ...(map[key] || {}), timing: "with" };
+      else if (map[key]) { delete map[key].timing; if (!Object.keys(map[key]).length) delete map[key]; }
+      this._afterAnim();
+    },
+    // Phase 9: deck-level slide-to-slide transition (none/fade/push), played on navigation.
+    setTransition(kind) {
+      this.record("transition");
+      this.deck().transition = kind;
+      this.commit(); this.broadcast();
+      if (this._animPanelRefresh) this._animPanelRefresh();
+    },
+    // Play the deck's transition on the stagebox (it has no transform of its own, so it can
+    // animate freely while #stage keeps its fit scale). One-shot: class removed on end.
+    _playTransition() {
+      const kind = this.deck().transition || "none";
+      if (kind === "none" || !this.stagebox) return;
+      const box = this.stagebox;
+      box.classList.remove("sx-fade", "sx-push");
+      void box.offsetWidth; // reflow so re-adding the class restarts the animation
+      box.classList.add("sx-" + kind);
+      const done = () => { box.classList.remove("sx-fade", "sx-push"); box.removeEventListener("animationend", done); };
+      box.addEventListener("animationend", done);
+    },
     openAnim(btn) { openAnimPanel(this, btn); },
     // Preview: step THIS slide's reveals in the editor (no fullscreen, no 2nd window). The
     // ▶ Apresentar button becomes ■ Parar; leaving the slide or closing the panel stops it.
@@ -324,6 +354,7 @@ export function mount(root, ctx = {}) {
       this.step = 0;
       if (this.select) this.select.clear();
       this.renderSlide(); // assigns _maxStep for the new slide
+      this._playTransition();
       // entering a slide BACKWARDS lands on its last reveal step (read after render)
       if (d < 0 && this.presenting) { this.step = this.maxStep(); player.applySteps(this.stage, this.step, this.presenting); }
       this.renderNav(); this.broadcast();
@@ -334,7 +365,7 @@ export function mount(root, ctx = {}) {
       if (this.previewing) this._clearPreview(); // leaving the slide stops preview
       this.index = i; this.step = 0;
       if (this.select) this.select.clear();
-      this.renderSlide(); this.renderNav(); this.broadcast();
+      this.renderSlide(); this._playTransition(); this.renderNav(); this.broadcast();
     },
 
     // Deck-wide look, opened into the context bar (menus.js supplies the control

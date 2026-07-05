@@ -77,10 +77,16 @@ function unitRow(app, u, onList, i) {
   // Phase 9: per-unit entrance effect (ON units only). Fade / Deslizar / Zoom; the active
   // one is lit, re-click clears it (back to the deck-wide entrance).
   if (on) {
-    const cur = (app.cur().buildFx && app.cur().buildFx[unitKey(u)] && app.cur().buildFx[unitKey(u)].fx) || "";
+    const meta = (app.cur().buildFx && app.cur().buildFx[unitKey(u)]) || {};
+    const cur = meta.fx || "";
     const fx = el("span", "ap-fx");
     [["fade", "Fade"], ["slide", "Deslizar"], ["zoom", "Zoom"]].forEach(([v, lbl]) =>
       fx.appendChild(btn("ap-fxb", lbl, cur === v, () => app.animFx(unitKey(u), cur === v ? null : v))));
+    // Phase 9 timing: a singleton can enter WITH the previous unit (same click).
+    if (u.kind === "single") {
+      const w = meta.timing === "with";
+      fx.appendChild(btn("ap-fxb ap-with", "＋junto", w, () => app.animTiming(unitKey(u), w ? "after" : "with")));
+    }
     row.appendChild(fx);
   }
 
@@ -122,6 +128,16 @@ function build(app) {
     .forEach(([v, k]) => opts.appendChild(btn("ap-ent-o", t(k), cur === v, () => { app.setTheme("anim", v); rebuild(); })));
   ent.appendChild(opts);
   box.appendChild(ent);
+
+  // Transição slide-a-slide (deck-level, Phase 9): Nenhuma / Fade / Empurrar.
+  const tr = el("section", "ap-sec");
+  tr.appendChild(el("div", "ap-sec-h", "Transição"));
+  const tro = el("div", "ap-ent");
+  const curT = app.deck().transition || "none";
+  [["none", "Nenhuma"], ["fade", "Fade"], ["push", "Empurrar"]].forEach(([v, lbl]) =>
+    tro.appendChild(btn("ap-ent-o", lbl, curT === v, () => { app.setTransition(v); rebuild(); })));
+  tr.appendChild(tro);
+  box.appendChild(tr);
 
   // Ordem de animação — every unit, animated first (reorderable), then the off ones.
   const ord = el("section", "ap-sec");

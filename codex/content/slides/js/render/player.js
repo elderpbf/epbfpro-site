@@ -238,7 +238,7 @@ function blocksOf(stage) {
  */
 export function autoSteps(stage, build, buildFx) {
   const blocks = blocksOf(stage);
-  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build);
+  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build, buildFx);
   blocks.forEach((b, i) => {
     if (steps[i] > 0) {
       b.el.classList.add("reveal");
@@ -247,9 +247,10 @@ export function autoSteps(stage, build, buildFx) {
       // unit's build key (a singleton key, or the list's each:/unit: key). Absent -> the
       // deck-wide entrance (#stage[data-anim]) still applies.
       const uk = b.key || (b.list ? keyOfList(build, b.list) : null);
-      const fx = uk && buildFx && buildFx[uk] && buildFx[uk].fx;
-      if (fx) b.el.dataset.fx = fx; else delete b.el.dataset.fx;
-    } else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; delete b.el.dataset.fx; }
+      const meta = (uk && buildFx && buildFx[uk]) || null;
+      if (meta && meta.fx) b.el.dataset.fx = meta.fx; else delete b.el.dataset.fx;
+      if (meta && meta.dur) b.el.style.setProperty("--rvdur", meta.dur + "ms"); else b.el.style.removeProperty("--rvdur");
+    } else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; delete b.el.dataset.fx; b.el.style.removeProperty("--rvdur"); }
   });
   return count;
 }
