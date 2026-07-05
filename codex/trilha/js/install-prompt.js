@@ -5,7 +5,7 @@
 //
 // Platform behavior:
 //   - Android/desktop (beforeinstallprompt available): the native prompt via a button.
-//     No close button — once the app is installed the browser stops firing the event, so
+//     No close button, once the app is installed the browser stops firing the event, so
 //     the affordance simply never shows again (self-hiding), and the small pill is harmless.
 //   - iOS Safari (no programmatic install, no install-state signal): a Share -> Adicionar
 //     à Tela de Início hint, WITH a close button (persisted), since we cannot auto-detect
@@ -16,7 +16,7 @@
 import { t } from '../i18n.js';
 import { esc } from './utils.js';
 
-const DISMISS_KEY = 'trilha_install_dismissed';
+const DISMISS_KEY = 'trilha_install_v2_dismissed'; // v2: old auto-dismiss flags are ignored
 const COLLAPSE_MS = 5000;
 const LOGO_SRC = '/codex/trilha/icons/app-icon-192.png';
 
@@ -59,6 +59,7 @@ if (typeof window !== 'undefined') {
   window.addEventListener('beforeinstallprompt', (e) => {
     e.preventDefault();
     _deferred = e;
+    if (window.bsLog) window.bsLog('pwa: beforeinstallprompt disparou', 'info');
     if (_onChange) _onChange('prompt');
   });
   window.addEventListener('appinstalled', () => {
@@ -76,10 +77,27 @@ export function isInstallAvailable(win) {
   return !!_deferred || isIosSafari(win.navigator);
 }
 
+// Register the minimal service worker (scope /trilha/). Chrome fires beforeinstallprompt
+// ONLY when a SW with a fetch handler is present, so without this the install card never
+// appears on Chrome. Idempotent; failures are non-fatal (browser-menu install still works).
+let _swTried = false;
+function registerSW(win) {
+  if (_swTried) return;
+  _swTried = true;
+  const nav = win && win.navigator;
+  if (!nav || !('serviceWorker' in nav)) return;
+  try {
+    nav.serviceWorker.register('/trilha/sw.js', { scope: '/trilha/' })
+      .then(() => { if (win.bsLog) win.bsLog('pwa: service worker registrado', 'info'); })
+      .catch((e) => { if (win.bsLog) win.bsLog('pwa: sw falhou: ' + (e && e.message || e), 'error'); });
+  } catch (e) { if (win.bsLog) win.bsLog('pwa: sw erro: ' + (e && e.message || e), 'error'); }
+}
+
 // Mount the install card (if installable and not previously dismissed). Idempotent.
 export function initInstallPrompt(root, opts = {}) {
   const win = opts.win || (typeof window !== 'undefined' ? window : undefined);
   if (!win || !root) return;
+  registerSW(win); // must run even if we don't render, so beforeinstallprompt can fire
   if (_installed || isStandalone(win)) return;
   try { if (win.localStorage.getItem(DISMISS_KEY) === '1') return; } catch (_) { /* private mode */ }
 
@@ -144,7 +162,10 @@ export function initInstallPrompt(root, opts = {}) {
     scheduleCollapse();
   }
 
-  _onChange = (mode) => { if (mode === 'installed') remove(true); else if (!card) render('prompt'); };
+  // On install, just hide (do NOT persist): once installed, Chrome stops firing
+  // beforeinstallprompt, so it won't reappear; and if the user later uninstalls, the
+  // invite should come back (a persisted flag would wrongly suppress it forever).
+  _onChange = (mode) => { if (mode === 'installed') remove(false); else if (!card) render('prompt'); };
 
   if (_deferred) render('prompt');
   else if (isIosSafari(win.navigator)) render('ios');
