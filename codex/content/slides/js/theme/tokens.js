@@ -15,6 +15,15 @@ const THEME_KEY = "bs_theme"; // same key Backstage/Codex use, so Phase 6 is sea
 export function applyDeckTheme(deck, stage) {
   const t = deck.theme;
   const r = document.documentElement.style;
+  // Deck canvas dimensions drive the stage + every mini/scale box (slide.css #stage,
+  // ui.css .scale) and the thumbnail aspect boxes; write them so a 4:3 deck renders at
+  // its true design width (Phase 8). Falls back to the 16:9 tokens when a deck has no canvas.
+  const cv = deck.canvas;
+  if (cv && cv.w && cv.h) {
+    r.setProperty("--canvas-w", cv.w + "px");
+    r.setProperty("--canvas-h", cv.h + "px");
+    r.setProperty("--canvas-ar", cv.w + " / " + cv.h);
+  }
   r.setProperty("--fontScale", t.fontScale);
   r.setProperty("--teal", t.accent);
   r.setProperty("--ink", t.ink);

@@ -35,8 +35,16 @@ test('appearanceMenu seeds current theme values and uses NO dropdown', () => {
   const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all');
   const types = m.map((c) => c.type);
   assert.ok(types.includes('range'), 'font size is a range');
-  assert.ok(!types.includes('choice') && !types.includes('select'), 'no dropdown in appearance');
+  assert.ok(!types.includes('select'), 'no HTML-select dropdown in appearance (a choice renders as a row of buttons, not a dropdown)');
   assert.equal(m.find((c) => c.id === 'accent').value, '#14b8a6');
+});
+test('appearanceMenu exposes the deck aspect ratio as a 16:9 / 4:3 choice (row of buttons, no dropdown)', () => {
+  const m = appearanceMenu({ fontScale: 1, accent: '#14b8a6', ink: '#134e4a', motif: '#14b8a6' }, 'all', 1, '4:3');
+  const asp = m.find((c) => c.id === 'aspect');
+  assert.ok(asp && asp.type === 'choice', 'an aspect choice control exists');
+  assert.deepEqual(asp.options.map((o) => o.v), ['16:9', '4:3'], 'both ratios offered, 16:9 first');
+  assert.equal(asp.value, '4:3', 'seeded with the deck current aspect');
+  assert.equal(typeof asp.write, 'function');
 });
 test('appearanceMenu leads with the preset swatches (teal/blue), marking the current accent on', () => {
   const m = appearanceMenu({ fontScale: 1, accent: '#2563eb', ink: '#16345c', motif: '#2563eb' }, 'all');

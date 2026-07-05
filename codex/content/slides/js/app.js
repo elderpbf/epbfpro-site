@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone, clearTextOverrides, setPath } from "./core/schema.js";
+import { uid, migrateDeck, clone, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { addImage, removeImage, getImage } from "./core/gallery.js";
 import { makeDataUrlStore } from "./core/files.js";
@@ -461,9 +461,27 @@ export function mount(root, ctx = {}) {
       // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"
       // scope, the deck default in "all" scope (5b).
       const fv = this.fontScope === "slide" ? player.effFontScale(this.deck(), this.cur()) : this.deck().theme.fontScale;
-      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
+      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv, this.deck().aspect), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
+    // Phase 8: switch the deck aspect ratio (16:9 / 4:3). Sets deck.aspect + canvas and
+    // re-anchors absolute geometry (freeform / assets / logo) by the size ratio so nothing
+    // falls off the resized canvas; flow content reflows on its own. Same record/apply/
+    // render pattern as the theme setters, plus a refit since the canvas dims changed.
+    setAspect(aspect) {
+      const d = this.deck();
+      if (!ASPECTS[aspect] || aspect === d.aspect) return;
+      const from = d.canvas || canvasForAspect(d.aspect);
+      const to = canvasForAspect(aspect);
+      this.record("aspect");
+      d.aspect = aspect;
+      d.canvas = to;
+      reanchorDeck(d, to.w / from.w, to.h / from.h);
+      applyDeckTheme(this.deck(), this.stage);
+      this.fit();
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      this.reopenAppearance(); // relight the active ratio in the open Tema menu
+    },
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
     // openAddSlide is assigned by initAddSlide (the modal preview picker), which

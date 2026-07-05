@@ -5,6 +5,46 @@ export const uid = () => Math.random().toString(36).slice(2, 9);
 /** Design canvas: all coordinates (assets + freeform overrides) live in this space. */
 export const CANVAS = { w: 1280, h: 720 };
 
+/**
+ * Selectable deck aspect ratios -> design-canvas dimensions. Height stays 720 so font
+ * sizes and line metrics are stable across ratios; only the width changes, so a 4:3
+ * deck is a NARROWER canvas, not a shorter one. 16:9 is the historical canvas (CANVAS).
+ */
+export const ASPECTS = { "16:9": { w: 1280, h: 720 }, "4:3": { w: 960, h: 720 } };
+
+/** Canvas dims (a fresh object) for an aspect key, defaulting to 16:9. */
+export function canvasForAspect(aspect) {
+  return { ...(ASPECTS[aspect] || ASPECTS["16:9"]) };
+}
+
+/** Infer the aspect key from a stored canvas (legacy decks carry a canvas, no aspect). */
+export function aspectOfCanvas(canvas) {
+  if (!canvas || !canvas.w || !canvas.h) return "16:9";
+  for (const k in ASPECTS) if (ASPECTS[k].w === canvas.w && ASPECTS[k].h === canvas.h) return k;
+  return Math.abs(canvas.w / canvas.h - 4 / 3) < 0.05 ? "4:3" : "16:9";
+}
+
+/**
+ * Re-anchor a deck's ABSOLUTE-positioned geometry when the canvas is resized, so nothing
+ * lands off the new canvas: freeform overrides, free assets and the deck logo scale by
+ * (sx,sy). Flow content reflows on its own and is left untouched. Pure: mutates + returns
+ * the deck. `sx = newW/oldW`, `sy = newH/oldH`.
+ */
+export function reanchorDeck(deck, sx, sy) {
+  if (!deck || (sx === 1 && sy === 1)) return deck;
+  const scaleBox = (g) => {
+    if (!g) return;
+    if (g.x != null) g.x *= sx;
+    if (g.y != null) g.y *= sy;
+    if (g.w != null) g.w *= sx;
+    if (g.h != null) g.h *= sy;
+  };
+  if (deck.logo) { if (deck.logo.x != null) deck.logo.x *= sx; if (deck.logo.y != null) deck.logo.y *= sy; }
+  for (const a of deck.assets || []) scaleBox(a);
+  for (const slide of deck.slides || []) { const ov = slide.overrides || {}; for (const k in ov) scaleBox(ov[k]); }
+  return deck;
+}
+
 /** Deck-level logo default (top-left). Single source so deck/render/geometry agree. */
 export const DEFAULT_LOGO = { x: 40, y: 30, h: 40 };
 
@@ -56,8 +96,10 @@ export function resolveStyleObj(slots, ref) {
  * v5 = card size is per-ROW: a stack sizes as a unit (slots.rowW keyed by row),
  * so any legacy per-card flow width (overrides["cards.<id>"]={w,flow}) folds into
  * its row and the per-card override is dropped. Cards then render at the row size.
+ * v6 = deck-level `aspect` ('16:9' | '4:3') driving `deck.canvas` dims; legacy decks
+ * get aspect inferred from their canvas (always 16:9) and a missing canvas backfilled.
  */
-export const SCHEMA_VERSION = 5;
+export const SCHEMA_VERSION = 6;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).
@@ -79,6 +121,11 @@ export function migrateDeck(deck) {
   const addSteps = from < 3; // one-shot: assign step=i+1 to items lacking it
   const dropMode = from < 4; // one-shot: retire the card `mode` field (folded into parts)
   const foldRowW = from < 5; // one-shot: fold per-card card widths into per-row slots.rowW
+
+  // v6: deck-level aspect ratio. Legacy decks carry a canvas but no aspect; infer it,
+  // and backfill a missing canvas from the aspect. Always-ensure -> idempotent.
+  if (deck.aspect == null) deck.aspect = aspectOfCanvas(deck.canvas);
+  if (!deck.canvas) deck.canvas = canvasForAspect(deck.aspect);
 
   for (const slide of deck.slides || []) {
     const slots = slide.slots || {};
