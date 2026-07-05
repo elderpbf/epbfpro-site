@@ -1460,7 +1460,7 @@ export default {
   'slides.ed_active':         'ativo',
   'slides.preset_teal':       'Teal',
   'slides.preset_blue':       'Azul',
-  'slides.ed_theme':          'Tema',
+  'slides.ed_theme':          'Aparência',
   'slides.ed_presets':        'Predefinições',
   'slides.ed_palette':        'Paleta',
   'slides.ed_typography':     'Tipografia',
