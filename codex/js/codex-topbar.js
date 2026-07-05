@@ -282,6 +282,40 @@ function debugSection() {
   };
 }
 
+// Student-facing language (Élder, single GLOBAL setting): the language of the
+// student screens (trilha + display), independent of the admin UI language. It
+// lives here as a Settings-drawer option (moved out of the topbar, where it was a
+// stray "Alunos: BR/EN" button). The button shows the CURRENT student language and
+// toggles on click; the audience surfaces adopt it on their next load. Composed
+// into the drawer only when more than one dictionary is loaded (see init()).
+function studentLangSection() {
+  const LBL = { 'en': t('settings.student_lang_en'), 'pt-BR': t('settings.student_lang_pt') };
+  return {
+    id: 'cdx-student-lang',
+    title: t('settings.student_lang_title'),
+    content:
+      '<button class="bs-toggle-btn" id="sd-student-lang" style="margin-bottom:.5rem"></button>' +
+      '<p class="bs-hint">' + t('settings.student_lang_hint') + '</p>',
+    onInit() {
+      const btn = document.getElementById('sd-student-lang');
+      if (!btn) return;
+      let cur = 'pt-BR';
+      const render = () => { btn.textContent = LBL[cur] || LBL['pt-BR']; };
+      (async () => {
+        try { const r = await codexCall('ct_get_student_lang'); if (r && r.lang) cur = r.lang; } catch (_) { /* default BR */ }
+        render();
+      })();
+      btn.addEventListener('click', async () => {
+        const tgt = cur === 'pt-BR' ? 'en' : 'pt-BR';
+        btn.disabled = true;
+        try { const r = await codexCall('ct_set_student_lang', { lang: tgt }); cur = (r && r.lang) ? r.lang : tgt; } catch (_) { /* leave as-is */ }
+        btn.disabled = false;
+        render();
+      });
+    },
+  };
+}
+
 export function init(opts) {
   opts = opts || {};
   const active = opts.active || '';
@@ -379,36 +413,9 @@ export function init(opts) {
     inner.appendChild(langBtn);
   }
 
-  // Student-facing language (Élder, hidden admin control): the trilha + display language, a
-  // single GLOBAL setting, independent of the admin language above. Rendered as "Alunos:
-  // BR/EN" (the language you'd switch the students TO). Async: loads the current value, flips
-  // it on click; the audience surfaces adopt it on their next load. The capability exists so
-  // the multilingual build is not dead code, even though he realistically never flips it.
-  if (langs.length > 1) {
-    const stuBtn = document.createElement('button');
-    stuBtn.className = 'cdx-lang-btn cdx-lang-btn--students';
-    stuBtn.textContent = 'Alunos: …';
-    stuBtn.title = 'Idioma das telas do aluno (trilha + display)';
-    inner.appendChild(stuBtn);
-    const STU_LBL = { 'en': 'EN', 'pt-BR': 'BR' };
-    let stuCur = 'pt-BR';
-    const stuRender = () => {
-      const tgt = stuCur === 'pt-BR' ? 'en' : 'pt-BR';
-      stuBtn.textContent = 'Alunos: ' + STU_LBL[tgt];
-      stuBtn.dataset.target = tgt;
-    };
-    (async () => {
-      try { const r = await codexCall('ct_get_student_lang'); if (r && r.lang) stuCur = r.lang; } catch (_) { /* default BR */ }
-      stuRender();
-    })();
-    stuBtn.addEventListener('click', async () => {
-      const tgt = stuBtn.dataset.target || 'en';
-      stuBtn.disabled = true;
-      try { const r = await codexCall('ct_set_student_lang', { lang: tgt }); if (r && r.lang) stuCur = r.lang; } catch (_) { /* leave as-is */ }
-      stuBtn.disabled = false;
-      stuRender();
-    });
-  }
+  // Student-facing language (Élder, global setting) now lives as an option IN the
+  // Settings drawer (studentLangSection), not a topbar button — see the drawer
+  // composition below.
 
   // Notification bell (teacher, cross-turma). Computed from forum activity; clicking
   // an item deep-links to THAT turma's dossiê Fórum tab (Cohorts reads fclient/fturma
@@ -541,7 +548,9 @@ export function init(opts) {
   // Compose the drawer in display order: the topbar's own sections, then the
   // injected auth + dev sections. The drawer shell owns none of this — Google
   // and password come from the settings-auth component, gated on their globals.
-  const drawerSections = [subtabModeSection(), appearanceSection(), orbSection(), ...sections];
+  const drawerSections = [subtabModeSection(), appearanceSection(), orbSection()];
+  if (languages().length > 1) drawerSections.push(studentLangSection());
+  drawerSections.push(...sections);
   if (typeof globalThis.BS_GOOGLE !== 'undefined') drawerSections.push(googleSection());
   drawerSections.push(debugSection());
   if (typeof globalThis.callWorker === 'function') drawerSections.push(passwordSection());
