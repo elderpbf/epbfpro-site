@@ -182,3 +182,9 @@
 .cdx-ds-modal-title { font-size: 1rem; font-weight: 700; color: var(--text-primary); margin: 0 0 0.4rem; }
 .cdx-ds-modal-body { font-size: 0.85rem; color: var(--text-secondary); margin: 0 0 1rem; }
 .cdx-ds-modal-acts { display: flex; gap: 0.5rem; justify-content: flex-end; }
+
+/* ── TYPE-FILTER CHIP ROW ────────────────────────────────────────────────────*/
+/* Shared row for the type-filter chip strip (js/type-filter.js adds .cdx-tf-row to
+   whatever container it renders into). Flex + align-items:center so the no-icon
+   "Todos" chip lines up with the icon-bearing type chips, in every area. */
+.cdx-tf-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }

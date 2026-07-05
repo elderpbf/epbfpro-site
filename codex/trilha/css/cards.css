@@ -378,10 +378,7 @@
 .cdx-tr-type-filter:empty { display: none; }
 .cdx-tr-section > .cdx-tr-type-filter { margin: 0.4rem 0 0.75rem; }
 
-/* Chips render straight into .cdx-tr-type-filter (no .ct-tf wrapper is emitted), so the
-   flex row must live on the container itself; align-items:center levels the no-icon
-   "Todos" chip with the icon-bearing type chips. */
-.cdx-tr-type-filter { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.cdx-tr-type-filter .ct-tf { display: flex; flex-wrap: wrap; gap: 8px; }
 .cdx-tr-type-filter .ct-tf-chip {
   display: inline-flex;
   align-items: center;
