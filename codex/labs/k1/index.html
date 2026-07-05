@@ -391,30 +391,34 @@
 
     /* ── Responsive: phone / narrow portrait ─────────────── */
     @media (max-width: 700px) {
+      /* Keep the top fields tight so the viz area stays tall enough to be
+         detected as portrait (clusters stack vertically) and everything fits
+         one fixed screen with no scroll. */
       .k1-panel {
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
+        padding: 0.5rem 0.9rem 0.5rem;
+        gap: 0.4rem;
       }
-      .k1-type-wrap { padding: 0.55rem 0.75rem 0.7rem; }
+      .k1-type-wrap { padding: 0.4rem 0.75rem 0.45rem; }
       .k1-type-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.55rem;
+        gap: 0.35rem;
       }
       .k1-type-input {
         width: 100%;
-        padding: 0.45rem 0.9rem;
+        padding: 0.35rem 0.85rem;
+        font-size: var(--lab-fs-answer);
       }
       .k1-type-suggestion {
         flex-wrap: wrap;
       }
       .k1-sug-chip { padding: 0.3rem 0.9rem; }
       .k1-sug-keys { display: none; }
-      .k1-frase-wrap { padding: 0.5rem 0.75rem 0.6rem; }
+      .k1-frase-wrap { padding: 0.4rem 0.75rem 0.45rem; }
       .k1-frase {
-        gap: 0.45rem 0.5rem;
-        min-height: 52px;
-        padding: 0.25rem 0.35rem;
+        gap: 0.4rem 0.5rem;
+        min-height: 44px;
+        padding: 0.2rem 0.35rem;
       }
       .k1-word-anchor {
         padding: 0.35rem 0.9rem;
@@ -876,12 +880,16 @@
       // Viz geometry — computed dynamically so viewBox matches container size.
       // This makes 1 viewBox unit equal to 1 screen pixel, and lets us pin
       // clusters at percentages of the actual width.
-      let VB_W, VB_H, CENTER_X, ROUPA_X, FRUTA_X, MANGA_Y, CLUSTER_R;
+      let VB_W, VB_H, PORTRAIT, ROUPA_CX, ROUPA_CY, FRUTA_CX, FRUTA_CY,
+          MID_X, MID_Y, ROUPA_LABEL_Y, FRUTA_LABEL_Y, CLUSTER_R, CAP_F, MEMBER_F;
       const MEMBER_DOT_R    = 11;
       const MEMBER_FONT     = 30;
       const CLUSTER_LABEL_F = 56;
-      const MANGA_DOT_R     = 32;
-      const MANGA_LABEL_F   = 56;
+      // manga dot + label sizes are orientation-aware (set in computeGeometry):
+      // full size on the wide stage, smaller when stacked on a phone so it
+      // doesn't crowd the two clusters it sits between.
+      let MANGA_DOT_R       = 32;
+      let MANGA_LABEL_F     = 56;
 
       // Member offsets are expressed as ratios of CLUSTER_R, so they scale
       // with the cluster size.
@@ -905,21 +913,50 @@
         if (rect.width <= 0 || rect.height <= 0) return false;
         VB_W = Math.round(rect.width);
         VB_H = Math.round(rect.height);
-        CENTER_X  = VB_W / 2;
-        // Push the cluster slightly below center so the big cluster labels
-        // above the regions always have room without clipping the viewBox.
-        MANGA_Y   = VB_H * 0.62;
-        // ROUPA / FRUTA cluster centres: aim for 16% / 84% of width, but
-        // clamp inward so the big cap-labels ("ROUPA" / "FRUTA") never get
-        // clipped by the viewBox at narrow widths. Half-width estimate for
-        // those labels is CLUSTER_LABEL_F * 1.8 (~5 chars × ~0.6em + letter
-        // spacing, then halved); add a 12-px safety margin.
-        const labelHalfW = CLUSTER_LABEL_F * 1.8;
-        ROUPA_X   = Math.max(labelHalfW + 12, VB_W * 0.16);
-        FRUTA_X   = Math.min(VB_W - labelHalfW - 12, VB_W * 0.84);
-        // Cluster gets a bigger radius now that the surrounding card is
-        // gone and the SVG has the full panel width and height.
-        CLUSTER_R = Math.min(VB_H * 0.32, VB_W * 0.11);
+        // Portrait / narrow container (phones): the two clusters cannot sit
+        // side by side without the big cap-labels colliding ("ROUPAFRUTA"), so
+        // stack them vertically — ROUPA on top, FRUTA on the bottom — and let
+        // manga travel up/down between them. Wide container (the desktop /
+        // auditorium stage): keep them side by side, unchanged.
+        PORTRAIT = VB_H >= VB_W * 0.7;
+        if (PORTRAIT) {
+          CAP_F = 40;
+          MEMBER_F = 19;
+          MANGA_DOT_R = 22;
+          MANGA_LABEL_F = 34;
+          const cx = VB_W / 2;
+          ROUPA_CX = cx;
+          FRUTA_CX = cx;
+          // Spread the two clusters to the top and bottom thirds so the middle
+          // stays clear for manga; radius is deliberately small so each
+          // cluster's members stay inside it and the zones don't touch.
+          ROUPA_CY = VB_H * 0.22;
+          FRUTA_CY = VB_H * 0.84;
+          const gap = FRUTA_CY - ROUPA_CY;
+          CLUSTER_R = Math.min(VB_W * 0.26, gap * 0.22);
+        } else {
+          CAP_F = CLUSTER_LABEL_F;
+          MEMBER_F = MEMBER_FONT;
+          MANGA_DOT_R = 32;
+          MANGA_LABEL_F = 56;
+          // Aim for 16% / 84% of width, but clamp inward so the big cap-labels
+          // never clip the viewBox at narrow widths (half-width estimate
+          // CLUSTER_LABEL_F * 1.8, plus a 12-px safety margin).
+          const labelHalfW = CLUSTER_LABEL_F * 1.8;
+          ROUPA_CX = Math.max(labelHalfW + 12, VB_W * 0.16);
+          FRUTA_CX = Math.min(VB_W - labelHalfW - 12, VB_W * 0.84);
+          // Push the clusters slightly below centre so the cap-labels above
+          // always have room without clipping the viewBox.
+          ROUPA_CY = VB_H * 0.62;
+          FRUTA_CY = VB_H * 0.62;
+          CLUSTER_R = Math.min(VB_H * 0.32, VB_W * 0.11);
+        }
+        MID_X = (ROUPA_CX + FRUTA_CX) / 2;
+        MID_Y = (ROUPA_CY + FRUTA_CY) / 2;
+        // Cap-label baselines (above each region), clamped so the cap top
+        // stays inside the viewBox.
+        ROUPA_LABEL_Y = Math.max(CAP_F * 0.85, ROUPA_CY - CLUSTER_R - CAP_F * 0.4);
+        FRUTA_LABEL_Y = Math.max(CAP_F * 0.85, FRUTA_CY - CLUSTER_R - CAP_F * 0.4);
         return true;
       }
 
@@ -931,12 +968,15 @@
       // contributes 0 to the fruta/roupa pull but still highlights).
       let activeWords = [];
       let currentMangaX = 0;
+      let currentMangaY = 0;
       let currentBias = 0;             // -1..+1
       let targetBias = 0;              // where the in-flight animation is heading
       let animId = null;
       let animStart = 0;
       let animFromX = 0;
       let animToX = 0;
+      let animFromY = 0;
+      let animToY = 0;
       let animFromBias = 0;
       let animToBias = 0;
       const ANIM_DUR = 650;
@@ -956,8 +996,13 @@
         // 4 ~93%, 5 ~97%. Tuned so 3 biased words clearly land manga inside.
         return Math.tanh(0.4 * (fruta - roupa));
       }
-      function biasToX(bias) {
-        return CENTER_X + bias * (FRUTA_X - CENTER_X);
+      // manga's position for a given bias, interpolated between the two
+      // cluster centres (works for both the side-by-side and stacked layouts).
+      function biasToPos(bias) {
+        return {
+          x: MID_X + bias * (FRUTA_CX - MID_X),
+          y: MID_Y + bias * (FRUTA_CY - MID_Y),
+        };
       }
       function lerpColor(bias) {
         let r, g, b;
@@ -1005,7 +1050,7 @@
 
         // Cluster regions
         roupaRegion = makeEl('circle', {
-          cx: ROUPA_X, cy: MANGA_Y, r: CLUSTER_R,
+          cx: ROUPA_CX, cy: ROUPA_CY, r: CLUSTER_R,
           fill: `rgba(${ROUPA_RGB.join(',')}, 0.06)`,
           stroke: `rgba(${ROUPA_RGB.join(',')}, 0.30)`,
           'stroke-width': '1.5',
@@ -1014,7 +1059,7 @@
         vizEl.appendChild(roupaRegion);
 
         fruitaRegion = makeEl('circle', {
-          cx: FRUTA_X, cy: MANGA_Y, r: CLUSTER_R,
+          cx: FRUTA_CX, cy: FRUTA_CY, r: CLUSTER_R,
           fill: `rgba(${FRUTA_RGB.join(',')}, 0.06)`,
           stroke: `rgba(${FRUTA_RGB.join(',')}, 0.30)`,
           'stroke-width': '1.5',
@@ -1027,14 +1072,12 @@
         // The SVG text Y attribute is the BASELINE, so the cap rises roughly
         // CLUSTER_LABEL_F * 0.8 above it. Anything less than that as a Y
         // value would clip the top of "FRUTA" / "ROUPA".
-        const idealLabelY = MANGA_Y - CLUSTER_R - CLUSTER_LABEL_F * 0.4;
-        const clusterLabelY = Math.max(CLUSTER_LABEL_F * 0.85, idealLabelY);
         roupaLabel = makeEl('text', {
-          x: ROUPA_X, y: clusterLabelY,
+          x: ROUPA_CX, y: ROUPA_LABEL_Y,
           'text-anchor': 'middle',
           fill: `rgb(${ROUPA_RGB.join(',')})`,
           'font-family': "'Inter', system-ui, sans-serif",
-          'font-size': CLUSTER_LABEL_F,
+          'font-size': CAP_F,
           'font-weight': '800',
           'letter-spacing': '4',
           opacity: '0.65',
@@ -1043,11 +1086,11 @@
         vizEl.appendChild(roupaLabel);
 
         fruitaLabel = makeEl('text', {
-          x: FRUTA_X, y: clusterLabelY,
+          x: FRUTA_CX, y: FRUTA_LABEL_Y,
           'text-anchor': 'middle',
           fill: `rgb(${FRUTA_RGB.join(',')})`,
           'font-family': "'Inter', system-ui, sans-serif",
-          'font-size': CLUSTER_LABEL_F,
+          'font-size': CAP_F,
           'font-weight': '800',
           'letter-spacing': '4',
           opacity: '0.65',
@@ -1056,36 +1099,38 @@
         vizEl.appendChild(fruitaLabel);
 
         // Cluster members — dot with label BELOW it, positions scale with CLUSTER_R
-        function renderMembers(centerX, ratios, rgb) {
+        function renderMembers(centerX, centerY, ratios, rgb) {
           ratios.forEach(m => {
             const x = centerX + m.rx * CLUSTER_R;
-            const y = MANGA_Y + m.ry * CLUSTER_R;
+            const y = centerY + m.ry * CLUSTER_R;
             vizEl.appendChild(makeEl('circle', {
               cx: x, cy: y, r: MEMBER_DOT_R,
               fill: `rgba(${rgb.join(',')}, 0.78)`,
             }));
             const t = makeEl('text', {
-              x, y: y + MEMBER_FONT * 1.25,
+              x, y: y + MEMBER_F * 1.25,
               'text-anchor': 'middle',
               fill: `rgba(${rgb.join(',')}, 0.92)`,
               'font-family': "'JetBrains Mono', ui-monospace, monospace",
-              'font-size': MEMBER_FONT,
+              'font-size': MEMBER_F,
               'font-weight': '500',
             });
             t.textContent = m.label;
             vizEl.appendChild(t);
           });
         }
-        renderMembers(ROUPA_X, ROUPA_RATIOS, ROUPA_RGB);
-        renderMembers(FRUTA_X, FRUTA_RATIOS, FRUTA_RGB);
+        renderMembers(ROUPA_CX, ROUPA_CY, ROUPA_RATIOS, ROUPA_RGB);
+        renderMembers(FRUTA_CX, FRUTA_CY, FRUTA_RATIOS, FRUTA_RGB);
 
-        // Recompute manga's x for the current bias under the new geometry
-        currentMangaX = biasToX(currentBias);
+        // Recompute manga's position for the current bias under the new geometry
+        const mp = biasToPos(currentBias);
+        currentMangaX = mp.x;
+        currentMangaY = mp.y;
         const currentCol = lerpColor(currentBias);
 
         // Manga dot
         mangaDot = makeEl('circle', {
-          cx: currentMangaX, cy: MANGA_Y, r: MANGA_DOT_R,
+          cx: currentMangaX, cy: currentMangaY, r: MANGA_DOT_R,
           fill: currentCol,
           filter: 'url(#k1-glow)',
         });
@@ -1093,7 +1138,7 @@
 
         // Manga label
         mangaLabel = makeEl('text', {
-          x: currentMangaX, y: MANGA_Y - MANGA_DOT_R - MANGA_LABEL_F * 0.4,
+          x: currentMangaX, y: currentMangaY - MANGA_DOT_R - MANGA_LABEL_F * 0.4,
           'text-anchor': 'middle',
           fill: currentCol,
           'font-family': "'Inter', system-ui, sans-serif",
@@ -1151,10 +1196,12 @@
       // ── Animate manga to new bias ────────────────────────
       function animateToBias(newBias) {
         targetBias = newBias;
-        const newX = biasToX(newBias);
+        const newPos = biasToPos(newBias);
         animFromX = currentMangaX;
+        animFromY = currentMangaY;
         animFromBias = currentBias;
-        animToX = newX;
+        animToX = newPos.x;
+        animToY = newPos.y;
         animToBias = newBias;
         animStart = performance.now();
         if (animId) cancelAnimationFrame(animId);
@@ -1166,16 +1213,20 @@
         const t = Math.min(elapsed / ANIM_DUR, 1);
         const u = easeInOut(t);
         const x = animFromX + (animToX - animFromX) * u;
+        const y = animFromY + (animToY - animFromY) * u;
         const b = animFromBias + (animToBias - animFromBias) * u;
 
         currentMangaX = x;
+        currentMangaY = y;
         currentBias = b;
 
         // Guard: the dot may have been rebuilt out from under us by a
         // resize. animTick gets cancelled in that case, but be defensive.
         if (mangaDot) {
           mangaDot.setAttribute('cx', x);
+          mangaDot.setAttribute('cy', y);
           mangaLabel.setAttribute('x', x);
+          mangaLabel.setAttribute('y', y - MANGA_DOT_R - MANGA_LABEL_F * 0.4);
           const col = lerpColor(b);
           mangaDot.setAttribute('fill', col);
           mangaLabel.setAttribute('fill', col);
