@@ -11,6 +11,7 @@ import {
   promptHtml,
   modelInfoHtml,
   attachmentHtml,
+  pdfEmbedHtml,
   paperShellHtml,
 } from '../js/item-render.js';
 
@@ -19,6 +20,7 @@ test('dispatchType: maps known types, falls back to markdown', () => {
   assert.equal(dispatchType('prompt'), 'prompt');
   assert.equal(dispatchType('guide'), 'guide');
   assert.equal(dispatchType('material'), 'material');
+  assert.equal(dispatchType('arquivo'), 'arquivo');
   assert.equal(dispatchType('paper'), 'paper');
   assert.equal(dispatchType('model_info'), 'model_info');
   assert.equal(dispatchType('google_doc'), 'google_doc');
@@ -60,11 +62,20 @@ test('modelInfoHtml: preview suppresses the top affordance button only', () => {
   assert.ok(!/ctr-affordance-btn/.test(html), 'no top affordance button in preview');
 });
 
-// ── material attachment ──────────────────────────────────────────────────────
-test('attachmentHtml: image url -> <img>, other -> download link', () => {
+// ── attachment preview (image inline / PDF inline embed / else download) ─────
+test('attachmentHtml: image -> <img>, pdf -> inline embed, other -> download link', () => {
   assert.match(attachmentHtml('/r2/a/pic.png'), /ctr-attachment-img.*<img src="\/r2\/a\/pic\.png"/s);
-  assert.match(attachmentHtml('/r2/a/file.pdf'), /ctr-attachment-link.*ctr-dl-link.*Baixar arquivo/s);
+  assert.match(attachmentHtml('/r2/a/paper.pdf'), /ctr-pdf-embed.*data="\/r2\/a\/paper\.pdf"[^>]*class="ctr-pdf-object"/s);
+  assert.match(attachmentHtml('/r2/a/data.zip'), /ctr-attachment-link.*ctr-dl-link.*Baixar arquivo/s);
   assert.equal(attachmentHtml(''), '');
+});
+
+test('pdfEmbedHtml: object embed with a download-link fallback inside; empty url -> ""', () => {
+  const html = pdfEmbedHtml('/r2/a/doc.pdf');
+  assert.match(html, /class="ctr-pdf-embed"/);
+  assert.match(html, /data="\/r2\/a\/doc\.pdf"[^>]*type="application\/pdf"[^>]*class="ctr-pdf-object"/);
+  assert.match(html, /ctr-dl-link.*Baixar PDF/s);
+  assert.equal(pdfEmbedHtml(''), '');
 });
 
 // ── paper shell (the synchronous, markdown-free structure) ───────────────────

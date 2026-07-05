@@ -22,6 +22,7 @@ export function dispatchType(type) {
   if (type === 'prompt') return 'prompt';
   if (type === 'guide') return 'guide';
   if (type === 'material') return 'material';
+  if (type === 'arquivo') return 'arquivo';
   if (type === 'paper') return 'paper';
   if (type === 'model_info') return 'model_info';
   if (type === 'google_doc') return 'google_doc';
@@ -76,13 +77,28 @@ export function modelInfoHtml(item, opts = {}) {
     (docLinkHtml ? '<div class="ctr-model-doc">' + docLinkHtml + '</div>' : '');
 }
 
-// ── material attachment (image vs download link) ─────────────────────────────
+// ── PDF inline embed (object + a download-link fallback inside) ───────────────
+// Shared by the paper shell and the material/arquivo attachment preview so the
+// embed markup lives in one place.
+export function pdfEmbedHtml(url) {
+  if (!url) return '';
+  return '<div class="ctr-pdf-embed">' +
+      '<object data="' + esc(url) + '" type="application/pdf" class="ctr-pdf-object">' +
+        '<a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
+      '</object>' +
+    '</div>';
+}
+
+// ── attachment preview (image inline / PDF inline embed / else download) ─────
+// The worker only stores image (png/jpg/webp) or PDF, both previewable inline;
+// anything else degrades to a plain download link.
 export function attachmentHtml(url) {
   if (!url) return '';
-  const isImage = /\.(png|jpg|jpeg|webp)$/i.test(url);
-  return isImage
-    ? '<div class="ctr-attachment-img"><img src="' + esc(url) + '" alt="Anexo"></div>'
-    : '<div class="ctr-attachment-link"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
+  if (/\.(png|jpg|jpeg|webp)$/i.test(url)) {
+    return '<div class="ctr-attachment-img"><img src="' + esc(url) + '" alt="Anexo"></div>';
+  }
+  if (/\.pdf$/i.test(url)) return pdfEmbedHtml(url);
+  return '<div class="ctr-attachment-link"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
 }
 
 // ── paper shell (synchronous, markdown-free structure) ───────────────────────
@@ -99,13 +115,7 @@ export function paperShellHtml(item, opts = {}) {
   const abstractHtml = abstract
     ? '<p class="ctr-paper-abstract">' + esc(abstract) + '</p>'
     : '';
-  const embedHtml = pdfUrl
-    ? '<div class="ctr-pdf-embed">' +
-        '<object data="' + esc(pdfUrl) + '" type="application/pdf" class="ctr-pdf-object">' +
-          '<a href="' + esc(pdfUrl) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
-        '</object>' +
-      '</div>'
-    : '';
+  const embedHtml = pdfEmbedHtml(pdfUrl);
 
   return '<div class="ctr-affordance-row">' + affordanceBtnHtml(pdfUrl, 'Baixar PDF', opts.preview) + '</div>' +
     metaLine + abstractHtml + embedHtml;
@@ -244,6 +254,7 @@ export function renderItem(item, container, opts = {}) {
     case 'prompt':     return renderPrompt(item, container, opts);
     case 'guide':      return renderGuide(item, container, opts);
     case 'material':   return renderMaterial(item, container, opts);
+    case 'arquivo':    return renderMaterial(item, container, opts);
     case 'paper':      return renderPaper(item, container, opts);
     case 'model_info': return renderModelInfo(item, container, opts);
     case 'google_doc': return renderGoogleDoc(item, container, opts);
