@@ -18,6 +18,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
 import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
+import { makeReorderable } from '../js/reorder.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -1529,35 +1530,24 @@ export function mount(viewEl, ctx) {
     else if (act === 'goto') { const set = btn.getAttribute('data-set'); _clearSearch(); _selectSet(set); }
   });
 
-  // Drag to reorder (delegated; only active in edit-bank mode).
+  // Drag to reorder (shared js/reorder.js). Only armed in edit-bank mode, which shows
+  // the full unfiltered set, so onReorder's ids are the whole list. Wired on the stable
+  // #cdx-bank-body; the rows live in the re-rendered .cdx-bank-qlist (resolved live).
   const bodyEl = viewEl.querySelector('#cdx-bank-body');
-  _on(bodyEl, 'dragstart', (e) => {
-    if (!_editBank) return;
-    const card = e.target.closest('.cdx-q'); if (!card) return;
-    _dragId = card.getAttribute('data-qid');
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-  });
-  _on(bodyEl, 'dragover', (e) => {
-    if (!_editBank || _dragId == null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  });
-  _on(bodyEl, 'drop', async (e) => {
-    if (!_editBank || _dragId == null) return;
-    e.preventDefault();
-    const card = e.target.closest('.cdx-q');
-    const tgtId = card ? card.getAttribute('data-qid') : null;
-    const dragId = _dragId; _dragId = null;
-    if (!tgtId || tgtId === dragId) return;
-    const ids = _questions.map((q) => String(q.id));
-    const from = ids.indexOf(String(dragId));
-    const to = ids.indexOf(String(tgtId));
-    if (from === -1 || to === -1) return;
-    const moved = _questions.splice(from, 1)[0];
-    _questions.splice(to, 0, moved);
-    _renderConjunto();
-    try { await api.reorder({ list_name: _currentSet, ordered_ids: _questions.map((q) => q.id) }); } catch (err) { notice.internal(err); }
-  });
+  _cleanup.push(makeReorderable(bodyEl, {
+    listSelector: '.cdx-bank-qlist',
+    itemSelector: '.cdx-q',
+    getId: (el) => el.getAttribute('data-qid'),
+    canDrag: () => _editBank,
+    onReorder: async (ids) => {
+      const byId = new Map(_questions.map((q) => [String(q.id), q]));
+      const next = ids.map((id) => byId.get(String(id))).filter(Boolean);
+      if (next.length !== _questions.length) return; // safety: unexpected row set
+      _questions = next;
+      _renderConjunto();
+      try { await api.reorder({ list_name: _currentSet, ordered_ids: _questions.map((q) => q.id) }); } catch (err) { notice.internal(err); }
+    },
+  }));
 
   // Editor modal (delegated)
   _on(viewEl.querySelector('#cdx-bank-modal'), 'click', (e) => {

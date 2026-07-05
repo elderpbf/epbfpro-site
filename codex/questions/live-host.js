@@ -25,6 +25,7 @@ import * as toast from '../js/toast.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
 import { filterByClass } from './bank.js';
 import { revealTarget, autoRevealDecision, DEFAULT_PCT } from './auto-reveal.js';
+import { makeReorderable } from '../js/reorder.js';
 import { buildAnswer, makeRng, hashSeed } from './sim-answers.js';
 import { hostLabel } from './identity.js';
 
@@ -57,7 +58,6 @@ let _bankFilter = 'all';      // active type chip: 'all'|'generic'|'variable'|'u
 let _bankSetName = '';        // currently loaded conjunto (empty = none picked yet)
 let _bankRaw = [];            // raw questions for the loaded set (audience/type filtered client-side)
 let _bankReorder = false;     // reorder-mode toggle: drag bank rows to persist a new order
-let _bankDragId = null;       // question id being dragged while reordering
 let _launchedBankIds = new Set(); // bank question ids already applied in this session/turma (worker c)
 let _trailTurma = null;
 let _trailAllTurmas = [];
@@ -936,8 +936,16 @@ function _audienceValues() {
 // re-render immediately, then save; a failure surfaces on the pill (order reverts on
 // the next set reload). The new order is the bank's order (same reorder_questions the
 // Banco edit mode uses), so it sticks across sessions.
-async function _persistBankReorder(dragId, targetId) {
-  _bankRaw = reorderByDrag(_bankRaw, dragId, targetId);
+// Persist a new bank order from the reorder drag. The list can be class-filtered while
+// reorder mode is on, so `visibleIds` covers only the shown rows: reorder those in place
+// among _bankRaw, leaving hidden (filtered-out) questions in their original slots.
+async function _persistBankOrder(visibleIds) {
+  const byId = new Map(_bankRaw.map((q) => [String(q.id), q]));
+  const queue = visibleIds.map(String).filter((id) => byId.has(id));
+  const visibleSet = new Set(queue);
+  let vi = 0;
+  const next = _bankRaw.map((q) => (visibleSet.has(String(q.id)) ? byId.get(queue[vi++]) : q));
+  _bankRaw = next;
   _renderBankList();
   try { await api.reorder({ list_name: _bankSetName, ordered_ids: _bankRaw.map((q) => q.id) }); }
   catch (e) { notice.internal(e); }
@@ -1263,27 +1271,17 @@ export function mount(containerEl, ctx) {
     if (item) item.classList.toggle('is-open');
   });
   // Reorder during the session: drag a bank row onto another to persist a new bank
-  // order (reuses reorder_questions). Only armed while reorder mode is on.
-  _on(_q('#cdx-bank-list'), 'dragstart', (e) => {
-    if (!_bankReorder) return;
-    const item = e.target.closest('.cdx-bank-item'); if (!item) return;
-    _bankDragId = item.getAttribute('data-qid');
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-  });
-  _on(_q('#cdx-bank-list'), 'dragover', (e) => {
-    if (!_bankReorder || _bankDragId == null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  });
-  _on(_q('#cdx-bank-list'), 'drop', (e) => {
-    if (!_bankReorder || _bankDragId == null) return;
-    e.preventDefault();
-    const item = e.target.closest('.cdx-bank-item');
-    const targetId = item ? item.getAttribute('data-qid') : null;
-    const dragId = _bankDragId; _bankDragId = null;
-    if (!targetId || String(targetId) === String(dragId)) return;
-    _persistBankReorder(dragId, targetId);
-  });
+  // order (reuses reorder_questions). Only armed while reorder mode is on. The shared
+  // js/reorder.js owns the DnD; onReorder hands us the visible rows' new id order.
+  const bankListEl = _q('#cdx-bank-list');
+  if (bankListEl) {
+    _cleanup.push(makeReorderable(bankListEl, {
+      itemSelector: '.cdx-bank-item',
+      getId: (el) => el.getAttribute('data-qid'),
+      canDrag: () => _bankReorder,
+      onReorder: (ids) => _persistBankOrder(ids),
+    }));
+  }
   _on(_q('#cdx-sqa-response'), 'input', _scheduleSqaSave);
   _on(_q('#cdx-auto-on'), 'change', (e) => { _auto.enabled = !!e.target.checked; _saveAuto(); _syncAutoUI(); });
   _on(_q('#cdx-auto-pct'), 'input', (e) => { const v = parseInt(e.target.value, 10); _auto.pct = (Number.isFinite(v) && v > 0) ? Math.min(100, v) : DEFAULT_PCT; _saveAuto(); _syncAutoUI(); });
