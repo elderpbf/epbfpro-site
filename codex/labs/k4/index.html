@@ -6,9 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Perdido no meio · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.3">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -521,10 +522,19 @@
   </div>
 
   <div class="k4-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k4-fs-slot" data-lab-fs-ctl></span>
     <button class="k4-btn k4-btn-primary" id="k4-ask">Perguntar ao modelo</button>
     <button class="k4-btn" id="k4-reset">Reiniciar</button>
   </div>
+
+  <!-- Theory that the app-fit rule keeps off the stage; surfaced by the
+       shared "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Por que o modelo se perde no meio?">
+    <p>Um modelo de linguagem <strong>não lê o processo com atenção uniforme</strong>. Ele recupera muito bem o que está no <strong>começo</strong> e no <strong>fim</strong> do texto, mas a precisão despenca para o que está no <strong>meio</strong>.</p>
+    <p>É a <strong>“zona morta no meio”</strong> (o efeito <em>lost in the middle</em>): quanto maior o processo, mais funda fica essa zona, e maior a chance de o modelo perder um ato, uma data ou uma intimação que esteja no centro dos autos.</p>
+    <p>Na prática, a mesma intimação é fácil de achar numa petição curta e pode <strong>sumir</strong> no meio de um processo monstro. O que decide não é só <em>se</em> a informação está nos autos, mas <em>onde</em> ela está.</p>
+  </template>
 
   <script>
     (function() {

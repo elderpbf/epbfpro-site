@@ -316,3 +316,142 @@
     color: var(--lab-focal);
   }
 }
+
+/* =========================================================
+   Info / theory button + modal (lab-info.js)
+   The app-fit rule strips expository text off the stage; the
+   theory lives here instead, reachable by a LABELLED, compact
+   "Entenda" button (a bare "?" isn't obvious to a student).
+   Same shell in every lab. Reuses existing --lab-* tokens
+   (all already have [data-theme="dark"] overrides), so no new
+   themed variable is introduced.
+   ========================================================= */
+.lab-info-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-family: var(--lab-font-display);
+  font-size: var(--lab-fs-ui);
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: 0.01em;
+  padding: 0.42rem 0.85rem;
+  min-height: 40px;
+  border-radius: 999px;
+  border: 1.5px solid var(--lab-border);
+  background: transparent;
+  color: var(--lab-text-dim);
+  cursor: pointer;
+  transition: background 160ms, color 160ms, border-color 160ms;
+}
+.lab-info-btn:hover {
+  border-color: var(--lab-focal);
+  color: var(--lab-focal);
+  background: rgba(var(--lab-focal-rgb), 0.08);
+}
+.lab-info-btn__icon {
+  width: 1.15em;
+  height: 1.15em;
+  flex: 0 0 auto;
+}
+/* Fallback placement when a lab reserves no [data-lab-info-ctl] slot:
+   a compact chip pinned top-right, uniform across labs. */
+.lab-info-btn--fixed {
+  position: fixed;
+  top: 0.7rem;
+  right: 0.7rem;
+  z-index: 45;
+  background: color-mix(in srgb, var(--lab-surface) 90%, transparent);
+}
+@media (max-width: 700px) {
+  .lab-info-btn { min-height: 44px; }
+}
+
+.lab-modal-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1.5rem;
+  background: rgba(8, 15, 20, 0.55);
+  -webkit-backdrop-filter: blur(2px);
+  backdrop-filter: blur(2px);
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 180ms;
+}
+.lab-modal-backdrop.lab-modal-open {
+  opacity: 1;
+  pointer-events: auto;
+}
+.lab-modal {
+  width: min(560px, 100%);
+  max-height: 85dvh;
+  overflow-y: auto;
+  position: relative;
+  background: var(--lab-surface);
+  color: var(--lab-text);
+  border: 1.5px solid var(--lab-border);
+  border-radius: 18px;
+  padding: 1.5rem 1.6rem 1.6rem;
+  box-shadow: 0 24px 60px rgba(0, 0, 0, 0.35);
+  transform: translateY(8px) scale(0.98);
+  transition: transform 200ms;
+}
+.lab-modal-backdrop.lab-modal-open .lab-modal { transform: none; }
+.lab-modal:focus { outline: none; }
+.lab-modal-close {
+  position: absolute;
+  top: 0.7rem;
+  right: 0.8rem;
+  width: 40px;
+  height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.6rem;
+  line-height: 1;
+  border-radius: 999px;
+  border: 1.5px solid transparent;
+  background: transparent;
+  color: var(--lab-text-dim);
+  cursor: pointer;
+  transition: background 150ms, color 150ms, border-color 150ms;
+}
+.lab-modal-close:hover { border-color: var(--lab-border); color: var(--lab-text); }
+.lab-modal-title {
+  margin: 0 2.5rem 0.9rem 0;
+  font-family: var(--lab-font-display);
+  font-size: clamp(20px, 2vw, 26px);
+  font-weight: 800;
+  letter-spacing: -0.01em;
+  line-height: 1.15;
+  color: var(--lab-text);
+}
+.lab-modal-body {
+  font-family: var(--lab-font-display);
+  font-size: var(--lab-fs-body);
+  line-height: 1.55;
+  color: var(--lab-text);
+}
+.lab-modal-body p { margin: 0 0 0.8rem; }
+.lab-modal-body p:last-child { margin-bottom: 0; }
+.lab-modal-body strong { color: var(--lab-focal); font-weight: 700; }
+.lab-modal-body ul { margin: 0 0 0.8rem; padding-left: 1.2rem; }
+.lab-modal-body li { margin-bottom: 0.35rem; }
+
+@media (max-width: 700px) {
+  /* Full-width bottom sheet on phone (the contract's "folha full-width"). */
+  .lab-modal-backdrop { padding: 0; align-items: flex-end; }
+  .lab-modal {
+    width: 100%;
+    max-height: 92dvh;
+    border-radius: 18px 18px 0 0;
+    border-bottom: none;
+    padding: 1.3rem 1.2rem 1.5rem;
+    transform: translateY(100%);
+  }
+  .lab-modal-backdrop.lab-modal-open .lab-modal { transform: none; }
+}
