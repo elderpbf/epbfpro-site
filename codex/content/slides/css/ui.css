@@ -52,9 +52,8 @@
 .cdx-deck-editor .thumb .mini > .scale { position: absolute; top: 0; left: 0; width: var(--canvas-w); height: var(--canvas-h); transform-origin: top left; }
 .cdx-deck-editor .thumb .revbadge { position: absolute; left: 4px; bottom: 4px; z-index: 3; font-size: 12px; line-height: 1; background: #fde68a; color: #92400e; border: 1px solid #f59e0b; border-radius: 6px; padding: 1px 4px; pointer-events: none; }
 /* Phase 9: per-unit effect picker in the animation panel row (Fade/Deslizar/Zoom). */
-.cdx-deck-editor .ap-fx { display: inline-flex; gap: 3px; margin-left: 6px; }
-.cdx-deck-editor .ap-fxb { font-size: 11px; padding: 2px 6px; border: 1px solid var(--btn-bd); background: var(--btn-bg); color: var(--muted); border-radius: 6px; cursor: pointer; }
-.cdx-deck-editor .ap-fxb.on { background: var(--teal); color: #fff; border-color: transparent; }
+.cdx-deck-editor .ap-with { font-size: 12px; line-height: 1; padding: 3px 6px; border: 1px solid var(--btn-bd); background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer; }
+.cdx-deck-editor .ap-with.on { background: var(--teal); color: #fff; border-color: transparent; }
 .cdx-deck-editor .thumb .num { position: absolute; left: 6px; top: 5px; font-size: 11px; color: #9fd6cc; background: rgba(0, 0, 0, .45); border-radius: 6px; padding: 1px 6px; z-index: 2; }
 .cdx-deck-editor .thumb .tctl { position: absolute; right: 5px; top: 4px; display: flex; gap: 4px; z-index: 2; opacity: 0; transition: .12s; }
 .cdx-deck-editor .thumb:hover .tctl { opacity: 1; }
@@ -342,14 +341,18 @@
 .cdx-deck-editor .cdx-animpanel .ap-row.ap-over { box-shadow: 0 -2px 0 var(--primary); }
 .cdx-deck-editor .cdx-animpanel .ap-grab { cursor: grab; color: var(--muted); letter-spacing: -2px; user-select: none; }
 .cdx-deck-editor .cdx-animpanel .ap-label { flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
-.cdx-deck-editor .cdx-animpanel .ap-ctl { display: inline-flex; gap: 3px; }
+.cdx-deck-editor .cdx-animpanel .ap-ctl { display: inline-flex; gap: 4px; align-items: center; }
+.cdx-deck-editor .cdx-animpanel .ap-dd { position: relative; display: inline-flex; }
+.cdx-deck-editor .cdx-animpanel .ap-ddbtn { font: inherit; font-size: 11px; background: var(--btn-bg); color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 3px 8px; cursor: pointer; white-space: nowrap; }
+.cdx-deck-editor .cdx-animpanel .ap-ddbtn:hover { background: var(--btn-hover); }
+.cdx-deck-editor .cdx-animpanel .ap-ddmenu { position: absolute; top: calc(100% + 3px); right: 0; z-index: 6; display: flex; flex-direction: column; gap: 2px; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 4px; box-shadow: 0 6px 20px rgba(0, 0, 0, .22); min-width: 108px; }
+.cdx-deck-editor .cdx-animpanel .ap-ddopt { font: inherit; font-size: 11px; text-align: left; background: transparent; color: var(--text); border: 0; border-radius: 5px; padding: 5px 8px; cursor: pointer; white-space: nowrap; }
+.cdx-deck-editor .cdx-animpanel .ap-ddopt:hover { background: var(--btn-hover); }
+.cdx-deck-editor .cdx-animpanel .ap-ddopt.on { background: var(--primary); color: #fff; }
 .cdx-deck-editor .cdx-animpanel .ap-offrow { opacity: .55; }
 .cdx-deck-editor .cdx-animpanel .ap-grab-off { cursor: default; visibility: hidden; }
 .cdx-deck-editor .cdx-animpanel .ap-m { font: inherit; font-size: 10px; background: transparent; color: var(--muted); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
 .cdx-deck-editor .cdx-animpanel .ap-m.on { background: var(--primary); color: #fff; border-color: var(--primary); }
-.cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; }
-.cdx-deck-editor .cdx-animpanel .ap-mv { font: inherit; font-size: 11px; line-height: 1; background: transparent; color: var(--text); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 2px 5px; cursor: pointer; }
-.cdx-deck-editor .cdx-animpanel .ap-ord { display: inline-flex; gap: 2px; min-width: 44px; }
 .cdx-deck-editor .cdx-animpanel .ap-foot { margin-top: 12px; }
 .cdx-deck-editor .cdx-animpanel .ap-preview { width: 100%; font: inherit; font-size: 13px; font-weight: 700; background: var(--primary); color: #fff; border: 0; border-radius: 8px; padding: 8px; cursor: pointer; }
 /* Preview indicator: a subtle ring on the stage while stepping in-editor. */
