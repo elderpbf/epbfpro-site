@@ -44,6 +44,8 @@ function aulaRow(num, status, badge, date, title, topics, tarefa) {
 function trilhaHtml() {
   return '' +
   // Header (ported from pensoia-header buildHeaderHtml; logo is a text placeholder for the mock).
+  // Wrapped in <pensoia-header> because public-header.css scopes every .ph-* rule under it.
+  '<pensoia-header mode="student">' +
   '<header class="ph-bar">' +
     '<div class="ph-left">' +
       '<a class="ph-logo" href="#" aria-label="PensoIA"><span class="ph-logo-mark" style="font-family:Comfortaa,system-ui,sans-serif;font-weight:700;font-size:1.15rem;color:var(--primary)">PensoIA</span></a>' +
@@ -55,6 +57,7 @@ function trilhaHtml() {
       '<div class="cdx-ns-wrap"><button class="ph-action-btn cdx-ns-btn" type="button"><span class="cdx-ns-initials">MB</span></button></div>' +
     '</div>' +
   '</header>' +
+  '</pensoia-header>' +
   '<div class="cdx-trilha-page" id="cdx-trilha-root">' +
     '<main class="cdx-trilha-main">' +
       '<section class="cdx-trilha-hero">' +
