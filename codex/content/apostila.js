@@ -293,7 +293,7 @@ function _startDraft() {
   }).catch((err) => notice.internal(_err(err)));
 }
 
-// ── Shared list render (live rows OR draft rows) — now the shared list-rail ────
+// ── Shared list render (live rows OR draft rows), now the shared list-rail ────
 // The section list adopts js/list-rail.js (track-21 rollout). The rail lives INSIDE
 // #cdx-apostila-list (which keeps its .cdx-items-list class, so the mobile drawer at
 // codex.css:194 still applies). The draft-START state (no working copy yet) is not a
@@ -339,7 +339,7 @@ function _buildRail() {
 function _renderList() {
   const el = _q('cdx-apostila-list');
   if (!el) return;
-  // Draft-start (no working copy) is a CTA, not a list — render it directly (no rail).
+  // Draft-start (no working copy) is a CTA, not a list, so render it directly (no rail).
   if (_mode === 'draft' && (!_draft || !_draft.exists)) {
     if (_rail) { _rail.destroy(); _rail = null; }
     el.innerHTML =

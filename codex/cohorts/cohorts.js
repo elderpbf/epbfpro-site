@@ -8,8 +8,7 @@ import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { glyphSvg } from '../js/glyphs.js';
-import { installResizer } from '../js/resizable.js';
-import { makeReorderable } from '../js/reorder.js';
+import { mountRail } from '../js/list-rail.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as qrShare from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
@@ -56,7 +55,7 @@ let _expandedClient = null; // accordion: the one client group whose turmas are 
 let _turmas = [];        // ALL turmas across clients (merged Concept-A list)
 let _turmaSearch = '';   // live filter for the merged turma list
 let _turmaAulas = [];
-let _aulaReorderDestroy = null; // teardown for the aula-hub drag (shared js/reorder.js)
+let _aulaRail = null;           // the aula-hub list is the shared list-rail (js/list-rail.js)
 let _relClientSlug = null;
 let _relTurmaSlug = null;
 let _cpSessions = [];
@@ -1712,6 +1711,7 @@ function _renderAulasHub(turma) {
   const el = _q(IDS.aulasList);
   if (!el) return;
   _unmountAulaEmbeds();
+  if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }  // rebuild below (drops old resizer/listeners)
   // Keep a valid selection across reloads (reorder/save re-renders); fall back to the
   // first aula when the current selection no longer exists (e.g. after a turma switch).
   const valid = _selectedAulaId === 'outros'
@@ -1721,57 +1721,73 @@ function _renderAulasHub(turma) {
 
   el.innerHTML =
     '<div class="cdx-aulas-hub" id="cdx-aulas-hub">' +
-      '<div class="cdx-aulas-hub-list cdx-pane">' +
-        '<div class="cdx-aulas-hub-lh">' +
-          '<span class="cdx-aulas-hub-lh-t">' + _esc(t('cohorts.col_aulas')) + ' · ' + _esc(turma.name) + '</span>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="cdx-btn-add-aula" title="' + _esc(t('cohorts.new_aula')) + '">+</button>' +
-        '</div>' +
-        '<div class="cdx-aulas-hub-rows" id="cdx-aulas-hub-rows"></div>' +
-        '<div class="cdx-aulas-hub-outros' + (_selectedAulaId === 'outros' ? ' is-on' : '') + '" data-aula-id="outros">' +
-          glyphSvg('layers', { size: 15 }) +
-          '<span class="cdx-aulas-hub-outros-t">' + _esc(t('cohorts.aula_outros')) + '</span>' +
-          '<span class="cdx-aula-cc">' + _outrosCount() + '</span>' +
-        '</div>' +
-      '</div>' +
+      '<div class="cdx-aulas-hub-list" id="cdx-aulas-hub-list"></div>' +
       '<div class="cdx-aulas-hub-detail cdx-pane" id="cdx-aulas-hub-detail"></div>' +
     '</div>';
-  installResizer(_q('cdx-aulas-hub'), { storeKey: 'cdx_rz_aulas_hub', defaultPx: 300, min: 210, max: 520 });
+  _buildAulaRail(turma);
   _renderAulaHubRows();
   _renderAulaDetail(turma);
-  _wireAulasHubList(turma);
 }
 
-function _renderAulaHubRows() {
-  const rowsEl = _q('cdx-aulas-hub-rows');
-  if (!rowsEl) return;
-  if (!_turmaAulas.length) {
-    rowsEl.innerHTML = '<div class="cdx-empty">' + t('cohorts.no_aulas') + '</div>';
-    return;
-  }
-  rowsEl.innerHTML = _turmaAulas.map((a, idx) => _renderAulaHubRow(a, idx)).join('');
+// The aula list adopts the shared list-rail (track-21). It lives INSIDE the list pane
+// (which keeps .cdx-aulas-hub-list.cdx-pane, so the resizer's grid column + the mobile
+// collapse are untouched); the rail brings its own box, so the pane goes bare (CSS). The
+// "Outros (sem aula)" bucket is not an aula row, so it rides the rail FOOTER and its
+// selection is wired here. Reorder is gated: no drag while an unsaved 'new' aula exists
+// or with a single aula (aula_number is the binding key; a drop renumbers + remaps).
+function _buildAulaRail(turma) {
+  const paneEl = _q('cdx-aulas-hub-list');
+  if (!paneEl) return;
+  _aulaRail = mountRail(paneEl, {
+    title: t('cohorts.col_aulas') + ' · ' + turma.name,
+    items: () => _turmaAulas,
+    getId: (a) => (a._isNew ? 'new' : (a.id == null ? '' : a.id)),
+    renderRow: (a) => ({ main: _aulaRowMain(a) }),
+    selectedId: () => _selectedAulaId,
+    onSelect: (id) => _selectAula(turma, id),
+    add: { label: '+', title: t('cohorts.new_aula'), onAdd: () => _addNewAulaCol(turma) },
+    emptyText: t('cohorts.no_aulas'),
+    footer: _outrosFooterHtml,
+    reorder: {
+      canDrag: () => _turmaAulas.length > 1 && !_turmaAulas.some((a) => a._isNew),
+      onReorder: (ids) => _reorderAulasByIds(turma, ids),
+    },
+    width: { mode: 'resize', storeKey: 'cdx_rz_aulas_hub', defaultPx: 300, min: 210, max: 520 },
+  });
+  // The Outros bucket sits in the footer (not a rail row), so wire its click here; the
+  // rail's own click handler ignores it (it is not a .cdx-rail-row).
+  paneEl.addEventListener('click', (e) => {
+    if (e.target.closest('.cdx-aulas-hub-outros')) _selectAula(turma, 'outros');
+  });
 }
 
-function _renderAulaHubRow(a, idx) {
+// The rail owns the row shell + grip; renderRow returns only the inner content (aula
+// number chip + title/date/counts), laid out horizontally inside .cdx-rail-main (CSS).
+function _aulaRowMain(a) {
   const ds = _aulaDateStatus(a);
-  const on = _isAulaSelected(a);
   const titleHtml = a.title ? _esc(a.title) : '<span class="is-empty">' + t('cohorts.aula_no_title') + '</span>';
-  // Drag-to-reorder is meaningful with 2+ saved aulas; the row itself is draggable
-  // (the detail editor lives in the right pane now, so there is no inline editor to
-  // fight text selection). aula_number follows the order, so a drop renumbers and
-  // remaps released content + lesson plan in lockstep (api.reorderAulas).
-  const canDrag = _turmaAulas.length > 1 && !a._isNew;
-  return (
-    '<div class="cdx-aula-hub-row' + (on ? ' is-on' : '') + '" data-aula-idx="' + idx + '" data-aula-id="' + _esc(a._isNew ? 'new' : (a.id == null ? '' : a.id)) + '"' + (canDrag ? ' draggable="true"' : '') + '>' +
-      '<span class="cdx-aula-hub-num">' + _esc(a.aula_number) + '</span>' +
-      '<div class="cdx-aula-hub-info">' +
-        '<div class="cdx-aula-hub-title">' + titleHtml + '</div>' +
-        '<div class="cdx-aula-hub-sub">' +
-          '<span class="cdx-rel-aula-date ' + ds.cls + '">' + _esc(ds.text) + '</span>' +
-          '<span class="cdx-aula-hub-counts">' + _aulaCountChipsHtml(a.aula_number) + '</span>' +
-        '</div>' +
+  return '<span class="cdx-aula-hub-num">' + _esc(a.aula_number) + '</span>' +
+    '<div class="cdx-aula-hub-info">' +
+      '<div class="cdx-aula-hub-title">' + titleHtml + '</div>' +
+      '<div class="cdx-aula-hub-sub">' +
+        '<span class="cdx-rel-aula-date ' + ds.cls + '">' + _esc(ds.text) + '</span>' +
+        '<span class="cdx-aula-hub-counts">' + _aulaCountChipsHtml(a.aula_number) + '</span>' +
       '</div>' +
-    '</div>'
-  );
+    '</div>';
+}
+
+function _outrosFooterHtml() {
+  return '<div class="cdx-aulas-hub-outros' + (_selectedAulaId === 'outros' ? ' is-on' : '') + '" data-aula-id="outros">' +
+    glyphSvg('layers', { size: 15 }) +
+    '<span class="cdx-aulas-hub-outros-t">' + _esc(t('cohorts.aula_outros')) + '</span>' +
+    '<span class="cdx-aula-cc">' + _outrosCount() + '</span>' +
+  '</div>';
+}
+
+// Re-render the aula list (rows + Outros footer) through the rail; a no-op before the hub
+// is built. Callers (select, reorder, count refresh) keep their name.
+function _renderAulaHubRows() {
+  if (_aulaRail) _aulaRail.render();
 }
 
 // Right pane: the empty prompt, the Outros release composer, or the selected aula's
@@ -1935,37 +1951,6 @@ function _renderAulaColEditor(a) {
       '</div>' +
     '</div>'
   );
-}
-
-// Wire the hub list: the add button, row + Outros selection, and drag-to-reorder.
-// Listeners go on the freshly-rendered elements (recreated on every _renderAulasHub),
-// so they never stack across renders.
-function _wireAulasHubList(turma) {
-  const addBtn = _q('cdx-btn-add-aula');
-  if (addBtn) addBtn.addEventListener('click', () => _addNewAulaCol(turma));
-
-  const hub = _q('cdx-aulas-hub');
-  const listPane = hub && hub.querySelector('.cdx-aulas-hub-list');
-  if (!listPane) return;
-  listPane.addEventListener('click', (e) => {
-    if (e.target.closest('.cdx-aulas-hub-outros')) { _selectAula(turma, 'outros'); return; }
-    const row = e.target.closest('.cdx-aula-hub-row');
-    if (row) _selectAula(turma, row.dataset.aulaId);
-  });
-
-  // Drag-to-reorder (shared js/reorder.js). Blocked while an unsaved new aula exists (a
-  // 'new' row can't take part in ordered_ids); the right-pane editor is no longer inline,
-  // so a list re-render does not drop any editor. Re-wired on each hub render, so tear the
-  // prior instance down first.
-  const rowsEl = _q('cdx-aulas-hub-rows');
-  if (!rowsEl) return;
-  if (_aulaReorderDestroy) { _aulaReorderDestroy(); _aulaReorderDestroy = null; }
-  _aulaReorderDestroy = makeReorderable(rowsEl, {
-    itemSelector: '.cdx-aula-hub-row',
-    getId: (el) => el.dataset.aulaId,
-    canDrag: () => !_turmaAulas.some((a) => a._isNew),
-    onReorder: (ids) => _reorderAulasByIds(turma, ids),
-  });
 }
 
 // Select an aula (or the Outros bucket): leaving an unsaved new aula discards it,
@@ -2180,7 +2165,7 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   cursos.unmount();
   _unmountAulaEmbeds();
-  if (_aulaReorderDestroy) { _aulaReorderDestroy(); _aulaReorderDestroy = null; }
+  if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

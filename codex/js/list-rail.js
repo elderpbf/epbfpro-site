@@ -13,7 +13,7 @@
 //   const rail = mountRail(containerEl, {
 //     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
 //     selectedId:()=>id, onSelect:(id)=>{},
-//     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false},
+//     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{}},
 //     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
@@ -153,6 +153,9 @@ export function mountRail(container, cfg) {
     if (!grip) return;
     const row = grip.closest('.cdx-rail-row');
     if (!row) return;
+    // canDrag(row): a predicate gating whether a drag may START (mode-gated lists, e.g.
+    // aula-hub blocks reorder while an unsaved row exists). Mirrors js/reorder.js's canDrag.
+    if (reorder.canDrag && !reorder.canDrag(row)) return;
     e.preventDefault();
     drag = { row, id: row.getAttribute('data-id'), fromList: row.parentNode, startY: e.clientY, moved: false, pointerId: e.pointerId };
     try { grip.setPointerCapture(e.pointerId); } catch (_) { /* older browsers */ }

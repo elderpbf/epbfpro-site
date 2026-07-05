@@ -358,8 +358,14 @@
 }
 @media (max-width: 980px) { .cdx-aulas-hub { grid-template-columns: 1fr; } }
 
-/* Left: the aula list (.cdx-pane gives it the surface/border/radius). */
+/* Left: the aula list. It adopts the shared list-rail (track-21), which brings its own
+   box (surface/border/radius) + grip, so the pane goes bare here (no .cdx-pane), like
+   Cursos' .cdx-cursos-rail wrapper. */
 .cdx-aulas-hub-list { display: flex; flex-direction: column; min-height: 0; }
+/* The rail owns the row shell; the aula-number chip + info sit inside .cdx-rail-main. */
+.cdx-aulas-hub-list .cdx-rail-main { display: flex; align-items: center; gap: 0.55rem; }
+/* Outros bucket rides the rail footer, which already carries a border-top. */
+.cdx-rail-foot .cdx-aulas-hub-outros { border-top: 0; }
 .cdx-aulas-hub-lh {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
   padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border);
