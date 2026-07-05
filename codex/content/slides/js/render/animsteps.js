@@ -39,24 +39,28 @@ export function parseListKey(k) {
  * titles stay fixed). Returns { steps, count }: steps[i] is the 1-based reveal step of
  * els[i] (0 = immediate/fixed), count is the slide's max step.
  */
-export function planSteps(els, build) {
+export function planSteps(els, build, buildFx) {
   const steps = els.map(() => 0);
   let n = 0;
   if (!build) {
     els.forEach((e, i) => { if (e.def) steps[i] = ++n; });
     return { steps, count: n };
   }
+  // Phase 9 timing: a unit marked timing:"with" shares the PREVIOUS unit's step (enters
+  // together) instead of taking its own; "after" (default) advances a step. Only merges
+  // when a previous step exists (n>0), and for singletons / whole-list "unit:" units.
+  const isWith = (k) => n > 0 && buildFx && buildFx[k] && buildFx[k].timing === "with";
   for (const k of build) {
     const lk = parseListKey(k);
     if (lk) {
       const idxs = [];
       els.forEach((e, i) => { if (e.list === lk.list) idxs.push(i); });
       if (!idxs.length) continue;
-      if (lk.mode === "unit") { const s = ++n; idxs.forEach((i) => (steps[i] = s)); }
-      else idxs.forEach((i) => { steps[i] = ++n; });
+      if (lk.mode === "unit") { const s = isWith(k) ? n : ++n; idxs.forEach((i) => (steps[i] = s)); }
+      else idxs.forEach((i) => { steps[i] = ++n; }); // each: per-item, timing not applied
     } else {
       const i = els.findIndex((e) => e.key === k);
-      if (i >= 0) steps[i] = ++n;
+      if (i >= 0) steps[i] = isWith(k) ? n : ++n;
     }
   }
   return { steps, count: n };

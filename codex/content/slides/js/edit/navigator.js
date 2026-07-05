@@ -38,6 +38,7 @@ export function createNavigator(app) {
       t.dataset.i = i;
       t.innerHTML =
         `<div class="num">${i + 1}</div>` +
+        (s.reflowWarn ? `<div class="revbadge" title="revisar: elementos se sobrepuseram ao mudar a proporção">⚠</div>` : "") +
         `<div class="tctl"><button data-up="${i}">↑</button><button data-down="${i}">↓</button><button data-rm="${i}">✕</button></div>` +
         `<div class="mini"><div class="scale"></div></div>`;
       renderInto(t.querySelector(".scale"), deck, s);

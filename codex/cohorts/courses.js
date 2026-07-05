@@ -28,6 +28,7 @@ import {
 
 let _viewEl = null;
 let _courses = [];
+let _archived = [];        // archived courses (shown as a muted section at the rail bottom)
 let _selectedId = null;
 let _course = null;        // full selected course (with ementa)
 let _ementa = emptyEmenta(); // working copy of the selected course's ementa
@@ -47,25 +48,24 @@ function _renderShell() {
   _viewEl.innerHTML =
     '<div class="cdx-cursos">' +
       '<div class="cdx-cursos-head">' +
-        '<div>' +
-          '<h1 class="cdx-cursos-h1">' + esc(t('cohorts.cursos_title')) + '</h1>' +
-          '<p class="cdx-cursos-sub">' + esc(t('cohorts.cursos_desc')) + '</p>' +
-        '</div>' +
-        '<button class="cdx-btn cdx-btn-primary" id="cdx-cursos-new">' + esc(t('cohorts.cursos_new')) + '</button>' +
+        '<h1 class="cdx-cursos-h1">' + esc(t('cohorts.cursos_title')) + '</h1>' +
       '</div>' +
       '<div class="cdx-cursos-work">' +
         '<div class="cdx-cursos-rail" id="' + IDS.rail + '"></div>' +
         '<div class="cdx-cursos-main" id="' + IDS.main + '"></div>' +
       '</div>' +
     '</div>';
-  _q('cdx-cursos-new').addEventListener('click', _onNewCourse);
 }
 
 // ── Course list (rail) ──────────────────────────────────────────────────────────
 
 function _loadCourses() {
-  api.list().then((d) => {
-    _courses = (d && d.courses) || [];
+  // Pull archived too (Élder: archived courses must not vanish, they sit as a muted
+  // section at the rail bottom with an Unarchive affordance) and split by status.
+  api.list({ include_archived: true }).then((d) => {
+    const all = (d && d.courses) || [];
+    _courses = all.filter((c) => c.status !== 'archived');
+    _archived = all.filter((c) => c.status === 'archived');
     _renderRail();
     if (_selectedId == null && _courses.length) _selectCourse(_courses[0].id);
     else if (_selectedId == null) _renderMain();
@@ -75,28 +75,54 @@ function _loadCourses() {
   });
 }
 
+// One course row (rail). Archived rows are muted and carry an Unarchive button.
+function _railRow(c, archived) {
+  const on = c.id === _selectedId ? ' is-on' : '';
+  const n = c.turma_count || 0;
+  const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
+  const hours = c.hours ? esc(c.hours) + ' · ' : '';
+  return (
+    '<div class="cdx-cursos-ri' + on + (archived ? ' is-archived' : '') + '" data-id="' + esc(String(c.id)) + '">' +
+      '<div class="cdx-cursos-ri-b">' +
+        '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
+        '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
+      '</div>' +
+      (archived
+        ? '<button type="button" class="cdx-cursos-unarch" data-unarch="' + esc(String(c.id)) + '" title="' + esc(t('cohorts.course_unarchive')) + '">' + esc(t('cohorts.course_unarchive')) + '</button>'
+        : '') +
+    '</div>'
+  );
+}
+
 function _renderRail() {
   const el = _q(IDS.rail);
   if (!el) return;
-  const head = '<div class="cdx-cursos-rail-h">' + esc(t('cohorts.cursos_title')) + '</div>';
-  if (!_courses.length) {
-    el.innerHTML = head + '<div class="cdx-empty">' + esc(t('cohorts.cursos_none')) + '</div>';
-    return;
+  const head = '<div class="cdx-cursos-rail-h"><span>' + esc(t('cohorts.cursos_title')) + '</span>' +
+    '<button type="button" class="cdx-cursos-add" id="cdx-cursos-new" title="' + esc(t('cohorts.cursos_new')) + '" aria-label="' + esc(t('cohorts.cursos_new')) + '">+</button></div>';
+  let body;
+  if (!_courses.length && !_archived.length) {
+    body = '<div class="cdx-empty">' + esc(t('cohorts.cursos_none')) + '</div>';
+  } else {
+    body = _courses.map((c) => _railRow(c, false)).join('');
+    if (_archived.length) {
+      // Collapsed by default (Élder): a <details> the admin expands only when needed.
+      body += '<details class="cdx-cursos-arch">' +
+        '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
+        _archived.map((c) => _railRow(c, true)).join('') +
+      '</details>';
+    }
   }
-  el.innerHTML = head + _courses.map((c) => {
-    const on = c.id === _selectedId ? ' is-on' : '';
-    const n = c.turma_count || 0;
-    const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
-    const hours = c.hours ? esc(c.hours) + ' · ' : '';
-    return (
-      '<div class="cdx-cursos-ri' + on + '" data-id="' + esc(String(c.id)) + '">' +
-        '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
-        '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
-      '</div>'
-    );
-  }).join('');
+  el.innerHTML = head + body;
+  const addBtn = _q('cdx-cursos-new');
+  if (addBtn) addBtn.addEventListener('click', _onNewCourse);
   el.querySelectorAll('.cdx-cursos-ri').forEach((r) => {
-    r.addEventListener('click', () => _selectCourse(Number(r.dataset.id)));
+    r.addEventListener('click', (e) => {
+      if (e.target.closest('.cdx-cursos-unarch')) return; // the button has its own handler
+      _selectCourse(Number(r.dataset.id));
+    });
+  });
+  el.querySelectorAll('.cdx-cursos-unarch').forEach((b) => {
+    b.addEventListener('click', (e) => { e.stopPropagation(); _onUnarchiveCourse(Number(b.dataset.unarch)); });
   });
 }
 
@@ -142,17 +168,22 @@ function _renderMain() {
   el.innerHTML =
     // course data on top
     '<div class="cdx-cursos-meta">' +
-      '<input class="cdx-cursos-title" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
+      '<div class="cdx-cursos-titlerow">' +
+        '<input class="cdx-cursos-title cdx-cursos-edit" id="cdx-cur-title" value="' + esc(_course.title || '') + '" placeholder="' + esc(t('cohorts.course_title_ph')) + '">' +
+      '</div>' +
       '<div class="cdx-cursos-fields">' +
         '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.course_hours_label')) + '</label>' +
-          '<input id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
+          '<input class="cdx-cursos-edit" id="cdx-cur-hours" value="' + esc(_course.hours || '') + '" placeholder="' + esc(t('cohorts.course_hours_ph')) + '"></div>' +
         '<div class="cdx-cursos-f"><label>' + esc(t('cohorts.cursos_apostila_label')) + '</label>' +
-          '<select id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
+          '<select class="cdx-cursos-edit" id="cdx-cur-apostila-bind"><option value="">' + esc(t('cohorts.cursos_apostila_none')) + '</option></select></div>' +
         '<div class="cdx-cursos-f cdx-cursos-f-stat"><label>' + esc(t('cohorts.course_reuse_label')) + '</label>' +
           '<div class="cdx-cursos-f-v">' + esc((_courseTurmaCount()) + ' ' + (_courseTurmaCount() === 1 ? t('cohorts.turma_singular') : t('cohorts.turma_plural'))) + '</div></div>' +
       '</div>' +
+      '<div class="cdx-cursos-edithint">' + esc(t('cohorts.cursos_edit_hint')) + '</div>' +
       '<div class="cdx-cursos-metafoot">' +
+        '<button class="cdx-btn cdx-btn-sm" id="cdx-cur-duplicate">' + esc(t('cohorts.course_duplicate')) + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-cursos-archive" id="cdx-cur-archive">' + esc(t('cohorts.archive')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" id="cdx-cur-delete">' + esc(t('cohorts.course_delete')) + '</button>' +
       '</div>' +
     '</div>' +
     // two separate panels: ementa | IA assistant (b2 hybrid)
@@ -397,6 +428,10 @@ function _wireMain() {
   if (hoursEl) hoursEl.addEventListener('change', () => _saveCourseMeta());
   const arch = _q('cdx-cur-archive');
   if (arch) arch.addEventListener('click', _onArchiveCourse);
+  const dup = _q('cdx-cur-duplicate');
+  if (dup) dup.addEventListener('click', _onDuplicateCourse);
+  const del = _q('cdx-cur-delete');
+  if (del) del.addEventListener('click', _onDeleteCourse);
   _wireApostilaBind();
   const save = _q('cdx-cur-save');
   if (save) save.addEventListener('click', _saveEmenta);
@@ -504,11 +539,72 @@ function _onArchiveCourse() {
     closeModal(bd);
     api.archive({ id: _course.id }).then(() => {
       toast.ok(t('cohorts.course_archived'));
-      _courses = _courses.filter((x) => x.id !== _course.id);
       _selectedId = null; _course = null; _ementa = emptyEmenta();
-      _renderRail();
-      if (_courses.length) _selectCourse(_courses[0].id); else _renderMain();
+      _loadCourses(); // reload so it drops into the archived section, active list re-selects
     }).catch((err) => {
+      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
+    });
+  });
+}
+
+// Restore an archived course to the active list (Élder: archived courses stay visible +
+// reversible, no dead end).
+function _onUnarchiveCourse(id) {
+  api.unarchive({ id }).then(() => {
+    toast.ok(t('cohorts.course_unarchived'));
+    _loadCourses();
+  }).catch((err) => {
+    notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
+  });
+}
+
+function _onDuplicateCourse() {
+  if (!_course) return;
+  api.duplicate({ id: _course.id }).then((d) => {
+    const c = d && d.course;
+    if (!c) return;
+    toast.ok(t('cohorts.course_duplicated'));
+    _courses.unshift(c);
+    _selectCourse(c.id);
+  }).catch((err) => {
+    notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
+  });
+}
+
+// Hard-delete (vs archive): only for a course NO turma uses. The worker refuses an in-use
+// course (course_in_use, since a turma resolves its apostila via course_id); the front
+// pre-checks the turma count for a friendlier message and still handles the worker guard
+// as the source of truth (which reads err.data.error, since the facade throws on {error}).
+function _onDeleteCourse() {
+  if (!_course) return;
+  const n = _courseTurmaCount();
+  if (n > 0) { notice.warn(t('cohorts.course_delete_in_use').replace('{n}', String(n))); return; }
+  const html =
+    '<div class="cdx-modal" style="max-width:420px">' +
+      '<div class="cdx-modal-title">' + esc(t('cohorts.course_delete_title')) + '</div>' +
+      '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_delete_msg')) + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-cur-del-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-cur-del-ok">' + esc(t('cohorts.course_delete')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  bd.querySelector('#cdx-cur-del-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-cur-del-ok').addEventListener('click', () => {
+    closeModal(bd);
+    api.remove({ id: _course.id }).then(() => {
+      toast.ok(t('cohorts.course_deleted'));
+      // Reload (not just filter _courses) so a deleted ARCHIVED course also leaves the
+      // archived section without a manual refresh. [Élder]
+      _selectedId = null; _course = null; _ementa = emptyEmenta();
+      _loadCourses();
+    }).catch((err) => {
+      const code = err && err.data && err.data.error;
+      if (code === 'course_in_use') {
+        notice.warn(t('cohorts.course_delete_in_use').replace('{n}', String((err.data && err.data.turma_count) || '')));
+        _loadCourses();
+        return;
+      }
       notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
     });
   });
@@ -546,6 +642,7 @@ function _openPasteModal() {
 export function mount(viewEl) {
   _viewEl = viewEl;
   _courses = [];
+  _archived = [];
   _selectedId = null;
   _course = null;
   _ementa = emptyEmenta();
@@ -559,6 +656,7 @@ export function unmount() {
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _courses = [];
+  _archived = [];
   _selectedId = null;
   _course = null;
   _ementa = emptyEmenta();

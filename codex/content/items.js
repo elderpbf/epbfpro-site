@@ -509,23 +509,43 @@ function _deleteItem(id) {
     title: t('content.delete_item_title'),
     message: t('content.confirm_delete_item'),
     danger: true,
-    onConfirm() {
-      // Move selection to a neighbour in the currently visible list first.
-      const nextId = selectionAfterRemoval(_visibleItems(), id);
-      const idx = _items.findIndex((it) => Number(it.id) === Number(id));
-      if (idx >= 0) _items.splice(idx, 1);
-      _detailCache.delete(Number(id));
-      if (Number(_selectedId) === Number(id)) _selectedId = nextId;
-      _renderItems();
-      api.deleteItem({ id, _silent: true }).then(() => {
-        toast.ok(t('content.item_deleted'));
-      }).catch((e) => {
-        // The item still exists server-side; resync truth rather than guess the slot.
-        notice.internal(_err(e));
-        _selectedId = Number(id);
-        _loadItems();
-      });
-    },
+    onConfirm() { _doDeleteItem(id, false); },
+  });
+}
+
+// Delete an item. The worker refuses (error 'item_released') when the content is live
+// in one or more turmas unless force=true; instead of a cryptic notice we surface WHERE
+// it is released and offer a second confirm that force-deletes (cascading the releases).
+// Non-optimistic: only drop it from the list once the server confirms, so a refusal
+// leaves the UI intact.
+function _doDeleteItem(id, force) {
+  api.deleteItem({ id, force: !!force, _silent: true }).then(() => {
+    const nextId = selectionAfterRemoval(_visibleItems(), id);
+    const idx = _items.findIndex((it) => Number(it.id) === Number(id));
+    if (idx >= 0) _items.splice(idx, 1);
+    _detailCache.delete(Number(id));
+    if (Number(_selectedId) === Number(id)) _selectedId = nextId;
+    _renderItems();
+    toast.ok(t('content.item_deleted'));
+  }).catch((e) => {
+    if (e && e.data && e.data.error === 'item_released') { _confirmForceDelete(id, e.data); return; }
+    notice.internal(_err(e));
+    _selectedId = Number(id);
+    _loadItems();
+  });
+}
+
+function _confirmForceDelete(id, data) {
+  const turmas = Array.isArray(data.turmas) ? data.turmas : [];
+  const where = turmas.length
+    ? turmas.map((x) => x.label).join('; ')
+    : String(data.turma_count || data.released_count || '');
+  _openConfirm({
+    title: t('content.delete_released_title'),
+    message: t('content.delete_released_where') + ' ' + where + '. ' + t('content.delete_released_warn'),
+    confirmLabel: t('content.delete_anyway'),
+    danger: true,
+    onConfirm() { _doDeleteItem(id, true); },
   });
 }
 

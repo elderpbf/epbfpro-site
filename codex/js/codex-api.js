@@ -225,6 +225,9 @@ export const courses = {
   create:  (p) => call('ct_create_course', p),   // { title, hours?, ementa_json? } -> { course }
   update:  (p) => call('ct_update_course', p),   // { id, title?, hours?, ementa_json? } -> { course }
   archive: (p) => call('ct_archive_course', p),  // { id }
+  unarchive: (p) => call('ct_unarchive_course', p), // { id } — restores an archived course to the active list
+  duplicate: (p) => call('ct_duplicate_course', p), // { id } -> { course } — copies title(+cópia)/hours/ementa/apostila into a fresh mold
+  remove:  (p) => call('ct_delete_course', p),   // { id } -> { ok } | { error:'course_in_use', turma_count } when turmas still link it
   setApostila: (p) => call('ct_set_course_apostila', p) // { id, apostila_set_id|null } -> { course } — binds the course's apostila
 };
 

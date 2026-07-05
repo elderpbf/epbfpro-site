@@ -15,13 +15,36 @@
 // application and the marked path are verified on staging.
 
 import { esc } from './dom.js';
+import { assetUrl } from './codex-api.js';
 export { esc };
+
+// Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
+// worker-relative /r2/... keys, and /r2 is served by the codex-api Worker (NOT the
+// Pages site), so they must go through the facade's assetUrl (WORKER_URL) or the
+// browser resolves them against the page origin and 404s. Full http(s) urls
+// (external docs) pass through untouched.
+function _assetSrc(url) {
+  return /^https?:\/\//i.test(url || '') ? url : assetUrl(url || '');
+}
+
+// meta_json arrives from the worker as a JSON string (ct_get_item does SELECT *, so
+// the raw TEXT column comes through unparsed) OR as an already-parsed object. The
+// builders below index into it, so normalize to an object once here. Without this a
+// string meta silently yields undefined fields (an attachment renders nothing while
+// the action button, which parses, still works).
+function _meta(item) {
+  const m = item && item.meta_json;
+  if (!m) return {};
+  if (typeof m === 'string') { try { return JSON.parse(m) || {}; } catch (_) { return {}; } }
+  return m;
+}
 
 // type -> renderer key. Unknown types fall back to plain markdown.
 export function dispatchType(type) {
   if (type === 'prompt') return 'prompt';
   if (type === 'guide') return 'guide';
   if (type === 'material') return 'material';
+  if (type === 'arquivo') return 'arquivo';
   if (type === 'paper') return 'paper';
   if (type === 'model_info') return 'model_info';
   if (type === 'google_doc') return 'google_doc';
@@ -31,7 +54,7 @@ export function dispatchType(type) {
 // A top-right affordance button (download / docs). Empty in preview or with no url.
 function affordanceBtnHtml(url, label, isPreview) {
   return (!isPreview && url)
-    ? '<a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-affordance-btn">' + label + '</a>'
+    ? '<a href="' + esc(_assetSrc(url)) + '" target="_blank" rel="noopener" class="ctr-affordance-btn">' + label + '</a>'
     : '';
 }
 
@@ -46,7 +69,7 @@ export function promptHtml(item, opts = {}) {
 
 // ── model_info ───────────────────────────────────────────────────────────────
 export function modelInfoHtml(item, opts = {}) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const provider = meta.provider || '';
   const modelId = meta.model_id || '';
   const contextWindow = meta.context_window != null ? String(meta.context_window) : '';
@@ -76,18 +99,34 @@ export function modelInfoHtml(item, opts = {}) {
     (docLinkHtml ? '<div class="ctr-model-doc">' + docLinkHtml + '</div>' : '');
 }
 
-// ── material attachment (image vs download link) ─────────────────────────────
+// ── PDF inline embed (object + a download-link fallback inside) ───────────────
+// Shared by the paper shell and the material/arquivo attachment preview so the
+// embed markup lives in one place.
+export function pdfEmbedHtml(url) {
+  if (!url) return '';
+  const src = esc(_assetSrc(url));
+  return '<div class="ctr-pdf-embed">' +
+      '<object data="' + src + '" type="application/pdf" class="ctr-pdf-object">' +
+        '<a href="' + src + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
+      '</object>' +
+    '</div>';
+}
+
+// ── attachment preview (image inline / PDF inline embed / else download) ─────
+// The worker only stores image (png/jpg/webp) or PDF, both previewable inline;
+// anything else degrades to a plain download link.
 export function attachmentHtml(url) {
   if (!url) return '';
-  const isImage = /\.(png|jpg|jpeg|webp)$/i.test(url);
-  return isImage
-    ? '<div class="ctr-attachment-img"><img src="' + esc(url) + '" alt="Anexo"></div>'
-    : '<div class="ctr-attachment-link"><a href="' + esc(url) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
+  if (/\.(png|jpg|jpeg|webp)$/i.test(url)) {
+    return '<div class="ctr-attachment-img"><img src="' + esc(_assetSrc(url)) + '" alt="Anexo"></div>';
+  }
+  if (/\.pdf$/i.test(url)) return pdfEmbedHtml(url);
+  return '<div class="ctr-attachment-link"><a href="' + esc(_assetSrc(url)) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar arquivo</a></div>';
 }
 
 // ── paper shell (synchronous, markdown-free structure) ───────────────────────
 export function paperShellHtml(item, opts = {}) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const authors = meta.authors || '';
   const year = meta.year || '';
   const abstract = meta.abstract || '';
@@ -99,13 +138,7 @@ export function paperShellHtml(item, opts = {}) {
   const abstractHtml = abstract
     ? '<p class="ctr-paper-abstract">' + esc(abstract) + '</p>'
     : '';
-  const embedHtml = pdfUrl
-    ? '<div class="ctr-pdf-embed">' +
-        '<object data="' + esc(pdfUrl) + '" type="application/pdf" class="ctr-pdf-object">' +
-          '<a href="' + esc(pdfUrl) + '" target="_blank" rel="noopener" class="ctr-dl-link">Baixar PDF</a>' +
-        '</object>' +
-      '</div>'
-    : '';
+  const embedHtml = pdfEmbedHtml(pdfUrl);
 
   return '<div class="ctr-affordance-row">' + affordanceBtnHtml(pdfUrl, 'Baixar PDF', opts.preview) + '</div>' +
     metaLine + abstractHtml + embedHtml;
@@ -165,7 +198,7 @@ function renderMarkdown(item, container, opts) {
 }
 
 function renderGuide(item, container, opts) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const tabs = meta.platform_tabs || null;
   const tabKeys = tabs ? Object.keys(tabs).filter((k) => tabs[k]) : [];
   const hasMultipleTabs = tabKeys.length > 1;
@@ -206,7 +239,7 @@ function renderGuide(item, container, opts) {
 }
 
 function renderMaterial(item, container, opts) {
-  const meta = item.meta_json || {};
+  const meta = _meta(item);
   const url = meta.attachment_url || '';
   container.innerHTML = '<div class="ctr-loading">Carregando...</div>';
   _loadMarked(() => {
@@ -244,6 +277,7 @@ export function renderItem(item, container, opts = {}) {
     case 'prompt':     return renderPrompt(item, container, opts);
     case 'guide':      return renderGuide(item, container, opts);
     case 'material':   return renderMaterial(item, container, opts);
+    case 'arquivo':    return renderMaterial(item, container, opts);
     case 'paper':      return renderPaper(item, container, opts);
     case 'model_info': return renderModelInfo(item, container, opts);
     case 'google_doc': return renderGoogleDoc(item, container, opts);

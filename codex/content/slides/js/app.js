@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone, clearTextOverrides, setPath } from "./core/schema.js";
+import { uid, migrateDeck, clone, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck, clampToCanvas } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { addImage, removeImage, getImage } from "./core/gallery.js";
 import { makeDataUrlStore } from "./core/files.js";
@@ -191,7 +191,8 @@ export function mount(root, ctx = {}) {
       this.stage.innerHTML = player.slideHTML(d, s);
       player.applyOverrides(this.stage, s);
       player.applyTextStyles(this.stage, d, s);
-      this._maxStep = player.autoSteps(this.stage, s.build); // ordered reveal plan (Phase 7); absent build = auto one-by-one
+      player.fitToCanvas(this.stage, d.canvas); // Phase 8 reflow: shrink font if flow content overflows the canvas
+      this._maxStep = player.autoSteps(this.stage, s.build, s.buildFx); // ordered reveal plan (Phase 7) + per-unit effect (Phase 9)
       player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
       if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
@@ -263,6 +264,48 @@ export function mount(root, ctx = {}) {
     animAllOff() { this.record("anim:none"); this.cur().build = []; this._afterAnim(); },
     animReorder(orderedKeys) { this.record("anim:order"); this.cur().build = orderedKeys.slice(); this._afterAnim(); }, // drag drop result
     animRemoveUnit(key) { this.record("anim:remove"); this.cur().build = this._ensureBuild().filter((k) => k !== key); this._afterAnim(); },
+    // Phase 9: set/clear a unit's entrance effect (fade/slide/zoom). Stored in the additive
+    // slide.buildFx map (keyed by build unit key); an effect implies an explicit build. Null
+    // clears it (back to the deck-wide entrance).
+    animFx(key, fx) {
+      this.record("anim:fx");
+      const s = this.cur();
+      this._ensureBuild();
+      const map = s.buildFx || (s.buildFx = {});
+      if (fx) map[key] = { ...(map[key] || {}), fx };
+      else if (map[key]) { delete map[key].fx; if (!Object.keys(map[key]).length) delete map[key]; }
+      this._afterAnim();
+    },
+    // Phase 9: enter WITH the previous unit (same reveal step) vs AFTER it (own step).
+    // Stored as buildFx[key].timing ("with"); clearing returns to "after" (the default).
+    animTiming(key, timing) {
+      this.record("anim:timing");
+      const s = this.cur();
+      this._ensureBuild();
+      const map = s.buildFx || (s.buildFx = {});
+      if (timing === "with") map[key] = { ...(map[key] || {}), timing: "with" };
+      else if (map[key]) { delete map[key].timing; if (!Object.keys(map[key]).length) delete map[key]; }
+      this._afterAnim();
+    },
+    // Phase 9: deck-level slide-to-slide transition (none/fade/push), played on navigation.
+    setTransition(kind) {
+      this.record("transition");
+      this.deck().transition = kind;
+      this.commit(); this.broadcast();
+      if (this._animPanelRefresh) this._animPanelRefresh();
+    },
+    // Play the deck's transition on the stagebox (it has no transform of its own, so it can
+    // animate freely while #stage keeps its fit scale). One-shot: class removed on end.
+    _playTransition() {
+      const kind = this.deck().transition || "none";
+      if (kind === "none" || !this.stagebox) return;
+      const box = this.stagebox;
+      box.classList.remove("sx-fade", "sx-push");
+      void box.offsetWidth; // reflow so re-adding the class restarts the animation
+      box.classList.add("sx-" + kind);
+      const done = () => { box.classList.remove("sx-fade", "sx-push"); box.removeEventListener("animationend", done); };
+      box.addEventListener("animationend", done);
+    },
     openAnim(btn) { openAnimPanel(this, btn); },
     // Preview: step THIS slide's reveals in the editor (no fullscreen, no 2nd window). The
     // ▶ Apresentar button becomes ■ Parar; leaving the slide or closing the panel stops it.
@@ -311,6 +354,7 @@ export function mount(root, ctx = {}) {
       this.step = 0;
       if (this.select) this.select.clear();
       this.renderSlide(); // assigns _maxStep for the new slide
+      this._playTransition();
       // entering a slide BACKWARDS lands on its last reveal step (read after render)
       if (d < 0 && this.presenting) { this.step = this.maxStep(); player.applySteps(this.stage, this.step, this.presenting); }
       this.renderNav(); this.broadcast();
@@ -321,7 +365,7 @@ export function mount(root, ctx = {}) {
       if (this.previewing) this._clearPreview(); // leaving the slide stops preview
       this.index = i; this.step = 0;
       if (this.select) this.select.clear();
-      this.renderSlide(); this.renderNav(); this.broadcast();
+      this.renderSlide(); this._playTransition(); this.renderNav(); this.broadcast();
     },
 
     // Deck-wide look, opened into the context bar (menus.js supplies the control
@@ -464,6 +508,25 @@ export function mount(root, ctx = {}) {
       this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
+    // Phase 8: switch the deck aspect ratio (16:9 / 4:3). Sets deck.aspect + canvas and
+    // re-anchors absolute geometry (freeform / assets / logo) by the size ratio so nothing
+    // falls off the resized canvas; flow content reflows on its own. Same record/apply/
+    // render pattern as the theme setters, plus a refit since the canvas dims changed.
+    setAspect(aspect) {
+      const d = this.deck();
+      if (!ASPECTS[aspect] || aspect === d.aspect) return;
+      const from = d.canvas || canvasForAspect(d.aspect);
+      const to = canvasForAspect(aspect);
+      this.record("aspect");
+      d.aspect = aspect;
+      d.canvas = to;
+      reanchorDeck(d, to.w / from.w, to.h / from.h);
+      clampToCanvas(d); // keep every absolute element inside the resized canvas; flag overlaps "revisar"
+      applyDeckTheme(this.deck(), this.stage);
+      this.fit();
+      this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
+      refreshThemeBox(this); // relight the active ratio in the open Tema box
+    },
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
     // openAddSlide is assigned by initAddSlide (the modal preview picker), which

@@ -44,11 +44,25 @@
 .cdx-deck-editor .freed:hover { box-shadow: 0 0 0 1px var(--teal-l); }
 
 /* reveals */
-.cdx-deck-editor .reveal { opacity: 0; transition: opacity .35s ease, transform .35s ease; pointer-events: none; }
+.cdx-deck-editor .reveal { opacity: 0; transition: opacity var(--rvdur, .35s) ease, transform var(--rvdur, .35s) ease; pointer-events: none; }
 .cdx-deck-editor .reveal.shown { opacity: 1; pointer-events: auto; }
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal { transform: translateY(12px); }
 .cdx-deck-editor #stage[data-anim="fade-up"] .reveal.shown { transform: none; }
 .cdx-deck-editor #stage[data-anim="none"] .reveal { transition: none; }
+/* Phase 9: per-element entrance effect (data-fx from slide.buildFx) overrides the deck-wide
+   entrance for that element. fade = opacity only; slide = enter from the left; zoom = scale
+   up into place. The .shown state resets the transform, so the transition animates it in. */
+.cdx-deck-editor .reveal[data-fx="fade"] { transform: none; }
+.cdx-deck-editor .reveal[data-fx="slide"] { transform: translateX(-28px); }
+.cdx-deck-editor .reveal[data-fx="slide"].shown { transform: none; }
+.cdx-deck-editor .reveal[data-fx="zoom"] { transform: scale(.85); }
+.cdx-deck-editor .reveal[data-fx="zoom"].shown { transform: none; }
+/* Phase 9: slide-to-slide transition, played on #stagebox (no transform of its own, so it
+   animates freely while #stage keeps its fit scale). fade = opacity; push = slide in. */
+@keyframes sx-fade-kf { from { opacity: 0; } to { opacity: 1; } }
+@keyframes sx-push-kf { from { opacity: 0; transform: translateX(40px); } to { opacity: 1; transform: translateX(0); } }
+.cdx-deck-editor #stagebox.sx-fade { animation: sx-fade-kf .28s ease; }
+.cdx-deck-editor #stagebox.sx-push { animation: sx-push-kf .3s ease; }
 .cdx-deck-editor .mini .reveal, .cdx-deck-editor.presenter .reveal { transition: none; }
 .cdx-deck-editor .mini .editoronly, .cdx-deck-editor.presenter .editoronly { display: none !important; }
 .cdx-deck-editor .mini .asset, .cdx-deck-editor.presenter .asset { pointer-events: none !important; }
@@ -60,8 +74,8 @@
 .cdx-deck-editor .imgslot:not(.filled) { background: transparent; border: 1.5px solid color-mix(in srgb, var(--ink) 28%, transparent); }
 .cdx-deck-editor .imgslot.filled { background: #eef2f1; }
 .cdx-deck-editor .imgcue { display: flex; flex-direction: column; align-items: center; gap: 7px; color: color-mix(in srgb, var(--ink) 60%, #fff); padding: 8px; text-align: center; pointer-events: none; }
-.cdx-deck-editor .imgcue svg { width: calc(30px * var(--fontScale)); height: calc(30px * var(--fontScale)); opacity: .9; }
-.cdx-deck-editor .imgcue-lbl { font-size: calc(13px * var(--fontScale)); font-weight: 700; letter-spacing: .2px; }
+.cdx-deck-editor .imgcue svg { width: calc(30px * var(--fontScale) * var(--fitScale, 1)); height: calc(30px * var(--fontScale) * var(--fitScale, 1)); opacity: .9; }
+.cdx-deck-editor .imgcue-lbl { font-size: calc(13px * var(--fontScale) * var(--fitScale, 1)); font-weight: 700; letter-spacing: .2px; }
 .cdx-deck-editor .slotimg { position: absolute; inset: 0; cursor: grab; user-select: none; }
 .cdx-deck-editor .slotimg img { width: 100%; height: 100%; object-fit: contain; display: block; pointer-events: none; }
 .cdx-deck-editor .slotimg.dragging { cursor: grabbing; }
@@ -75,15 +89,15 @@
 .cdx-deck-editor .divider::after { content: ""; width: 4px; height: 58px; border-radius: 3px; background: var(--teal); opacity: 0; transition: .12s; }
 .cdx-deck-editor .divider:hover::after { opacity: .75; }
 
-.cdx-deck-editor .eyebrow { color: var(--teal-d); font-weight: 700; letter-spacing: 3px; font-size: calc(22px * var(--fontScale)); text-transform: uppercase; }
+.cdx-deck-editor .eyebrow { color: var(--teal-d); font-weight: 700; letter-spacing: 3px; font-size: calc(22px * var(--fontScale) * var(--fitScale, 1)); text-transform: uppercase; }
 
 /* cover */
 .cdx-deck-editor .L-cover { position: absolute; inset: 0; display: grid; place-content: center; text-align: center; padding: 0 80px; gap: 4px; }
 .cdx-deck-editor .L-cover .hero { display: flex; align-items: center; justify-content: center; gap: 36px; }
 .cdx-deck-editor .L-cover .heroicon { width: 200px; height: 200px; flex: 0 0 auto; color: var(--teal); border-radius: 18px; overflow: hidden; position: relative; display: grid; place-items: center; }
 .cdx-deck-editor .L-cover .heroicon .imgslot { position: absolute; inset: 0; }
-.cdx-deck-editor .L-cover h1 { font-size: calc(78px * var(--fontScale)); font-weight: 900; color: var(--ink); line-height: 1.0; text-align: left; }
-.cdx-deck-editor .L-cover .sub { font-size: calc(32px * var(--fontScale)); color: var(--ink2); margin-top: 20px; font-weight: 400; }
+.cdx-deck-editor .L-cover h1 { font-size: calc(78px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); line-height: 1.0; text-align: left; }
+.cdx-deck-editor .L-cover .sub { font-size: calc(32px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink2); margin-top: 20px; font-weight: 400; }
 
 /* split */
 .cdx-deck-editor .L-split { position: absolute; inset: 0; display: grid; }
@@ -91,13 +105,13 @@
 .cdx-deck-editor .L-split .pic { position: relative; }
 .cdx-deck-editor .L-split .pic .imgslot { position: absolute; inset: 0; }
 .cdx-deck-editor .L-split .content { position: relative; padding: 70px 58px; display: grid; align-content: center; gap: 6px; z-index: 2; }
-.cdx-deck-editor .L-split h2 { font-size: calc(48px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 16px; line-height: 1.05; }
+.cdx-deck-editor .L-split h2 { font-size: calc(48px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 16px; line-height: 1.05; }
 
 /* topics */
 .cdx-deck-editor .L-topics { position: absolute; inset: 0; padding: 92px 86px 70px; display: grid; align-content: start; }
-.cdx-deck-editor .L-topics h2 { font-size: calc(52px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 24px; line-height: 1.05; }
+.cdx-deck-editor .L-topics h2 { font-size: calc(52px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 24px; line-height: 1.05; }
 .cdx-deck-editor .topiclist { list-style: none; }
-.cdx-deck-editor .topiclist li { position: relative; display: flex; align-items: flex-start; gap: 14px; font-size: calc(30px * var(--fontScale)); color: var(--ink); margin: 18px 0; line-height: 1.28; }
+.cdx-deck-editor .topiclist li { position: relative; display: flex; align-items: flex-start; gap: 14px; font-size: calc(30px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink); margin: 18px 0; line-height: 1.28; }
 .cdx-deck-editor .topiclist li::before { content: ""; flex: 0 0 auto; width: 14px; height: 14px; margin-top: 9px; border-radius: 3px; transform: rotate(45deg); background: var(--teal); }
 .cdx-deck-editor .li-x { margin-left: auto; border: 0; background: #e6f6f2; color: #3f8a7f; border-radius: 6px; cursor: pointer; font-size: 13px; padding: 3px 8px; }
 .cdx-deck-editor .addtopic { margin-top: 18px; justify-self: start; border: 1px dashed var(--teal); background: #effaf7; color: var(--teal-d); font: inherit; font-weight: 700; font-size: 16px; border-radius: 9px; padding: 8px 14px; cursor: pointer; }
@@ -106,19 +120,19 @@
 .cdx-deck-editor .L-bleed { position: absolute; inset: 0; }
 .cdx-deck-editor .L-bleed .imgslot { position: absolute; inset: 0; }
 .cdx-deck-editor .L-bleed .scrim { position: absolute; left: 0; right: 0; bottom: 0; padding: 44px 58px; z-index: 3; background: linear-gradient(to top, rgba(6, 48, 43, .82), rgba(6, 48, 43, 0)); }
-.cdx-deck-editor .L-bleed .scrim .line { color: #fff; font-size: calc(46px * var(--fontScale)); font-weight: 900; text-shadow: 0 2px 16px rgba(0, 0, 0, .4); }
+.cdx-deck-editor .L-bleed .scrim .line { color: #fff; font-size: calc(46px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; text-shadow: 0 2px 16px rgba(0, 0, 0, .4); }
 
 /* statement — frase de impacto (typographic, no image) */
 .cdx-deck-editor .L-statement { position: absolute; inset: 0; padding: 84px 72px; display: flex; align-items: center; }
-.cdx-deck-editor .L-statement .big { font-size: calc(66px * var(--fontScale)); font-weight: 900; color: var(--ink); line-height: 1.06; max-width: 92%; }
+.cdx-deck-editor .L-statement .big { font-size: calc(66px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); line-height: 1.06; max-width: 92%; }
 
 /* quote — citação + autoria */
 .cdx-deck-editor .L-quote { position: absolute; inset: 0; padding: 88px 80px; display: flex; flex-direction: column; justify-content: center; gap: 26px; }
 .cdx-deck-editor .L-quote blockquote { margin: 0; }
-.cdx-deck-editor .L-quote .q-text { font-size: calc(46px * var(--fontScale)); font-weight: 300; font-style: italic; color: var(--ink); line-height: 1.2; }
+.cdx-deck-editor .L-quote .q-text { font-size: calc(46px * var(--fontScale) * var(--fitScale, 1)); font-weight: 300; font-style: italic; color: var(--ink); line-height: 1.2; }
 .cdx-deck-editor .L-quote .q-by { display: flex; flex-direction: column; gap: 2px; }
-.cdx-deck-editor .L-quote .q-author { font-size: calc(28px * var(--fontScale)); font-weight: 700; color: var(--teal-d); }
-.cdx-deck-editor .L-quote .q-role { font-size: calc(20px * var(--fontScale)); color: var(--ink2); }
+.cdx-deck-editor .L-quote .q-author { font-size: calc(28px * var(--fontScale) * var(--fitScale, 1)); font-weight: 700; color: var(--teal-d); }
+.cdx-deck-editor .L-quote .q-role { font-size: calc(20px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink2); }
 
 /* image-box — imagem contida numa caixa + tópicos */
 .cdx-deck-editor .L-imgbox { position: absolute; inset: 0; padding: 84px 56px 60px; display: grid; grid-template-columns: 40% 1fr; gap: 48px; align-items: center; }
@@ -127,62 +141,62 @@
 .cdx-deck-editor .L-imgbox .ib-pic { position: relative; aspect-ratio: 1 / 1; border-radius: 20px; overflow: hidden; box-shadow: 0 16px 36px rgba(20, 40, 38, .18); }
 .cdx-deck-editor .L-imgbox .ib-pic .imgslot { position: absolute; inset: 0; }
 .cdx-deck-editor .L-imgbox .ib-content { position: relative; }
-.cdx-deck-editor .L-imgbox .ib-content h2 { font-size: calc(42px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; line-height: 1.05; }
+.cdx-deck-editor .L-imgbox .ib-content h2 { font-size: calc(42px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 18px; line-height: 1.05; }
 
 /* compare — dois painéis A × B */
 .cdx-deck-editor .L-comp { position: absolute; inset: 0; padding: 84px 56px 60px; display: grid; grid-template-columns: 1fr auto 1fr; gap: 30px; align-items: center; }
 .cdx-deck-editor .L-comp .cmp-panel { align-self: stretch; display: flex; flex-direction: column; background: var(--panel-grad, #f4fbfa); border: 1px solid var(--panel-line, #d6e6e3); border-radius: 18px; padding: 32px 28px; }
 .cdx-deck-editor .L-comp .cmp-a { border-top: 8px solid var(--teal); }
 .cdx-deck-editor .L-comp .cmp-b { border-top: 8px solid var(--ink); }
-.cdx-deck-editor .L-comp .cmp-title { font-size: calc(34px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 14px; line-height: 1.05; }
-.cdx-deck-editor .L-comp .cmp-badge { align-self: center; min-width: 84px; height: 84px; padding: 0 14px; border-radius: 999px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: calc(38px * var(--fontScale)); font-weight: 900; }
-.cdx-deck-editor .L-comp .topiclist li { font-size: calc(26px * var(--fontScale)); margin: 12px 0; }
+.cdx-deck-editor .L-comp .cmp-title { font-size: calc(34px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 14px; line-height: 1.05; }
+.cdx-deck-editor .L-comp .cmp-badge { align-self: center; min-width: 84px; height: 84px; padding: 0 14px; border-radius: 999px; background: var(--ink); color: #fff; display: grid; place-items: center; font-size: calc(38px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; }
+.cdx-deck-editor .L-comp .topiclist li { font-size: calc(26px * var(--fontScale) * var(--fitScale, 1)); margin: 12px 0; }
 
 /* checklist — faça / não faça */
 .cdx-deck-editor .L-check { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
-.cdx-deck-editor .L-check h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; line-height: 1.05; }
+.cdx-deck-editor .L-check h2 { font-size: calc(44px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 18px; line-height: 1.05; }
 .cdx-deck-editor .L-check .chk-cols { flex: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 40px; }
-.cdx-deck-editor .L-check .chk-h { font-size: calc(28px * var(--fontScale)); font-weight: 900; margin-bottom: 8px; }
+.cdx-deck-editor .L-check .chk-h { font-size: calc(28px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; margin-bottom: 8px; }
 .cdx-deck-editor .L-check .chk-do .chk-h { color: #16a34a; }
 .cdx-deck-editor .L-check .chk-dont .chk-h { color: #dc2626; }
-.cdx-deck-editor .L-check .topiclist li { font-size: calc(26px * var(--fontScale)); margin: 12px 0; }
+.cdx-deck-editor .L-check .topiclist li { font-size: calc(26px * var(--fontScale) * var(--fitScale, 1)); margin: 12px 0; }
 .cdx-deck-editor .L-check .chk-do .topiclist li::before { content: "✓"; background: #16a34a; color: #fff; border-radius: 6px; width: 24px; height: 24px; display: grid; place-items: center; transform: none; font-size: 16px; margin-top: 4px; }
 .cdx-deck-editor .L-check .chk-dont .topiclist li::before { content: "✕"; background: #dc2626; color: #fff; border-radius: 6px; width: 24px; height: 24px; display: grid; place-items: center; transform: none; font-size: 16px; margin-top: 4px; }
 
 /* steps — fluxo numerado (row | col) */
 .cdx-deck-editor .L-steps { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
-.cdx-deck-editor .L-steps h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 22px; line-height: 1.05; }
+.cdx-deck-editor .L-steps h2 { font-size: calc(44px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 22px; line-height: 1.05; }
 .cdx-deck-editor .L-steps .topiclist { flex: 1; counter-reset: step; display: flex; gap: 16px; align-items: stretch; justify-content: center; }
 .cdx-deck-editor .L-steps.col .topiclist { flex-direction: column; align-items: stretch; justify-content: center; }
-.cdx-deck-editor .L-steps .topiclist li { counter-increment: step; flex: 1; flex-direction: column; align-items: center; text-align: center; gap: 10px; background: var(--panel-grad, #f4fbfa); border: 1px solid var(--panel-line, #d6e6e3); border-radius: 14px; padding: 22px 16px; margin: 0; font-size: calc(24px * var(--fontScale)); }
+.cdx-deck-editor .L-steps .topiclist li { counter-increment: step; flex: 1; flex-direction: column; align-items: center; text-align: center; gap: 10px; background: var(--panel-grad, #f4fbfa); border: 1px solid var(--panel-line, #d6e6e3); border-radius: 14px; padding: 22px 16px; margin: 0; font-size: calc(24px * var(--fontScale) * var(--fitScale, 1)); }
 .cdx-deck-editor .L-steps.col .topiclist li { flex-direction: row; gap: 18px; text-align: left; }
 .cdx-deck-editor .L-steps .topiclist li::before { content: counter(step); background: var(--teal); color: #fff; width: 46px; height: 46px; border-radius: 50%; display: grid; place-items: center; font-weight: 900; font-size: 22px; transform: none; margin: 0; flex: 0 0 auto; }
 
 /* roadmap — roteiro de conceitos com nó ativo */
 .cdx-deck-editor .L-road { position: absolute; inset: 0; padding: 84px 56px; display: flex; flex-direction: column; justify-content: center; gap: 26px; }
-.cdx-deck-editor .L-road .eyebrow { font-size: calc(26px * var(--fontScale)); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--teal-d); }
+.cdx-deck-editor .L-road .eyebrow { font-size: calc(26px * var(--fontScale) * var(--fitScale, 1)); font-weight: 700; text-transform: uppercase; letter-spacing: 2px; color: var(--teal-d); }
 .cdx-deck-editor .L-road .roadnodes { list-style: none; display: flex; gap: 18px; padding: 0; margin: 0; }
-.cdx-deck-editor .L-road .roadnodes li { flex: 1; display: block; text-align: center; background: var(--panel-grad, #eef5f4); border: 1px solid var(--panel-line, #d6e6e3); border-radius: 16px; padding: 30px 14px; margin: 0; font-size: calc(26px * var(--fontScale)); font-weight: 700; color: #5b7572; }
+.cdx-deck-editor .L-road .roadnodes li { flex: 1; display: block; text-align: center; background: var(--panel-grad, #eef5f4); border: 1px solid var(--panel-line, #d6e6e3); border-radius: 16px; padding: 30px 14px; margin: 0; font-size: calc(26px * var(--fontScale) * var(--fitScale, 1)); font-weight: 700; color: #5b7572; }
 .cdx-deck-editor .L-road .roadnodes li::before { display: none; }
 .cdx-deck-editor .L-road .roadnodes li.on { background: linear-gradient(var(--teal), var(--teal-d)); color: #fff; border-color: transparent; box-shadow: 0 12px 28px rgba(20, 184, 166, .4); transform: translateY(-8px); }
 
 /* define — termo + definição em grade */
 .cdx-deck-editor .L-def { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
-.cdx-deck-editor .L-def h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
+.cdx-deck-editor .L-def h2 { font-size: calc(44px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
 .cdx-deck-editor .L-def .topiclist { display: grid; grid-template-columns: 1fr 1fr; gap: 14px 40px; }
 .cdx-deck-editor .L-def .topiclist li { display: grid; grid-template-columns: auto 1fr; gap: 16px; align-items: baseline; margin: 8px 0; }
 .cdx-deck-editor .L-def .topiclist li::before { display: none; }
-.cdx-deck-editor .L-def .d-term { font-size: calc(30px * var(--fontScale)); font-weight: 900; color: var(--teal-d); white-space: nowrap; }
-.cdx-deck-editor .L-def .d-def { font-size: calc(23px * var(--fontScale)); color: #5b7572; line-height: 1.3; }
+.cdx-deck-editor .L-def .d-term { font-size: calc(30px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--teal-d); white-space: nowrap; }
+.cdx-deck-editor .L-def .d-def { font-size: calc(23px * var(--fontScale) * var(--fitScale, 1)); color: #5b7572; line-height: 1.3; }
 
 /* agenda — trilha com horário + rótulo */
 .cdx-deck-editor .L-agenda { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; }
-.cdx-deck-editor .L-agenda h2 { font-size: calc(44px * var(--fontScale)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
+.cdx-deck-editor .L-agenda h2 { font-size: calc(44px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); margin-bottom: 18px; }
 .cdx-deck-editor .L-agenda .topiclist { display: flex; flex-direction: column; }
 .cdx-deck-editor .L-agenda .topiclist li { display: flex; align-items: center; gap: 28px; padding: 16px 0; margin: 0; border-bottom: 1px solid #e3efec; }
 .cdx-deck-editor .L-agenda .topiclist li::before { display: none; }
-.cdx-deck-editor .L-agenda .ag-time { font-family: "Roboto Mono", monospace; font-weight: 700; font-size: calc(27px * var(--fontScale)); color: var(--teal-d); min-width: 140px; }
-.cdx-deck-editor .L-agenda .ag-label { font-size: calc(27px * var(--fontScale)); color: var(--ink); }
+.cdx-deck-editor .L-agenda .ag-time { font-family: "Roboto Mono", monospace; font-weight: 700; font-size: calc(27px * var(--fontScale) * var(--fitScale, 1)); color: var(--teal-d); min-width: 140px; }
+.cdx-deck-editor .L-agenda .ag-label { font-size: calc(27px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink); }
 /* The "now"/active row marker (slots.active): a teal left bar + faint tint, so the
    current session reads at a glance. Mirrors the roadmap's active-node highlight. */
 .cdx-deck-editor .L-agenda .topiclist li.on { background: linear-gradient(90deg, rgba(20, 184, 166, .14), transparent); border-radius: 10px; box-shadow: inset 4px 0 0 var(--teal); padding-left: 14px; }
@@ -190,7 +204,7 @@
 
 /* cards */
 .cdx-deck-editor .L-cards { position: absolute; inset: 0; padding: 84px 56px 60px; display: flex; flex-direction: column; gap: 18px; }
-.cdx-deck-editor .L-cards h2 { font-size: calc(40px * var(--fontScale)); font-weight: 900; color: var(--ink); text-align: center; line-height: 1.05; min-height: 1em; }
+.cdx-deck-editor .L-cards h2 { font-size: calc(40px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--ink); text-align: center; line-height: 1.05; min-height: 1em; }
 .cdx-deck-editor .cardrow { flex: 1; display: flex; flex-wrap: wrap; gap: 22px; justify-content: center; align-items: stretch; align-content: stretch; }
 /* stack-axis toggle (card Ajustes): cards stack top-to-bottom as full-width LANDSCAPE
    bars that conform to the slide (flex 1 1 0 inside the bounded row, so they never
@@ -205,8 +219,8 @@
 /* A resized stack stores ONE main-axis size on its .cardrow (--cardw); every card
    in that row reads it, so the stack stays uniform and new cards inherit it. */
 .cdx-deck-editor .cardrow[style*="--cardw"] .card { flex: 0 0 var(--cardw); max-width: none; min-width: 0; }
-.cdx-deck-editor .card .c-title { font-size: calc(30px * var(--fontScale)); font-weight: 900; color: var(--teal-d); text-align: center; margin: auto 0; }
-.cdx-deck-editor .card .c-text { font-size: calc(22px * var(--fontScale)); color: var(--ink); line-height: 1.3; text-align: center; margin: auto 0; }
+.cdx-deck-editor .card .c-title { font-size: calc(30px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; color: var(--teal-d); text-align: center; margin: auto 0; }
+.cdx-deck-editor .card .c-text { font-size: calc(22px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink); line-height: 1.3; text-align: center; margin: auto 0; }
 .cdx-deck-editor .card .c-img { flex: 1; min-height: 120px; position: relative; border-radius: 12px; overflow: hidden; }
 .cdx-deck-editor .card .c-img .imgslot { position: absolute; inset: 0; }
 .cdx-deck-editor .cardctl { position: absolute; top: -12px; right: 8px; display: flex; gap: 4px; z-index: 6; }
@@ -237,8 +251,8 @@
 .cdx-deck-editor .asset.a-video { overflow: hidden; border-radius: 8px; }
 .cdx-deck-editor .asset.a-video video { height: 100%; object-fit: contain; background: #000; }
 .cdx-deck-editor .asset.a-photo img { border-radius: 10px; box-shadow: 0 8px 24px rgba(0, 0, 0, .28); }
-.cdx-deck-editor .atext { outline: none; font-size: calc(28px * var(--fontScale)); color: var(--ink); line-height: 1.3; min-width: 30px; }
-.cdx-deck-editor .atext.a-title { font-size: calc(52px * var(--fontScale)); font-weight: 900; }
+.cdx-deck-editor .atext { outline: none; font-size: calc(28px * var(--fontScale) * var(--fitScale, 1)); color: var(--ink); line-height: 1.3; min-width: 30px; }
+.cdx-deck-editor .atext.a-title { font-size: calc(52px * var(--fontScale) * var(--fitScale, 1)); font-weight: 900; }
 /* Free-placed list/card stack inserted via +Inserir: the slots list renders inside a
    movable .asset box (geometry lives on the asset). Reuses the base .topiclist look,
    just tightened for the smaller inserted box. */

@@ -12,7 +12,7 @@
   --teal: #14b8a6; --teal-d: #0d9488; --teal-l: #5eead4;
   --ink: #134e4a; --ink2: #115e59; --paper: #ffffff; --motif: #14b8a6;
   --fontScale: 1;
-  --canvas-w: 1280px; --canvas-h: 720px;
+  --canvas-w: 1280px; --canvas-h: 720px; --canvas-ar: 16 / 9;
 }
 
 /* Editor CHROME tokens — thin references to the SHARED Codex tokens

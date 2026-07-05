@@ -31,20 +31,27 @@
   --lab-font-mono: 'JetBrains Mono', ui-monospace, 'Cascadia Code', Consolas, monospace;
 
   /* ── Fluid type scale (shared across all labs) ───────────
-     clamp(phone-floor, fluid-vw, auditorium-max). The floor is the
-     phone-readable minimum; the max is the projector size. Labs
-     reference these tokens instead of hardcoding px, so a single
-     edit re-tunes every demo and mobile text never falls below the
-     floor. This replaces the per-lab @media overrides that used to
+     calc(clamp(phone-floor, fluid-vw, auditorium-max) * scale). The
+     floor is the phone-readable minimum; the max is the projector
+     size. Labs reference these tokens instead of hardcoding px, so a
+     single edit re-tunes every demo and mobile text never falls below
+     the floor. This replaces the per-lab @media overrides that used to
      shrink text to 12-13px just to fit a no-scroll stage — with the
      fixed-stage + internally-scrolling-panel model, the floor holds
-     and overflow scrolls inside the panel, not the page. */
-  --lab-fs-audience: clamp(22px, 2.6vw, 44px);  /* big focal labels / headlines */
-  --lab-fs-answer:   clamp(16px, 1.4vw, 23px);  /* model output, verdicts */
-  --lab-fs-doc:      clamp(15px, 1.4vw, 24px);  /* document body (petição, etc.) */
-  --lab-fs-body:     clamp(15px, 1.35vw, 22px); /* captions, explanatory prose */
-  --lab-fs-ui:       clamp(12px, 0.9vw, 15px);  /* small labels, chips, meta */
-  --lab-fs-btn:      clamp(14px, 1vw, 16px);    /* operator buttons */
+     and overflow scrolls inside the panel, not the page.
+
+     --lab-fs-scale is an operator-controlled multiplier (lab-controls.js,
+     A− / A+). Default 1. Persisted in localStorage['lab_fs_scale'] so a
+     room-tuned size survives a reload. Every token multiplies by it, so
+     one control resizes the whole lab. Floors bumped for phone-readable
+     defaults now that students open labs on their own devices. */
+  --lab-fs-scale: 1;
+  --lab-fs-audience: calc(clamp(24px, 2.6vw, 46px) * var(--lab-fs-scale));  /* big focal labels / headlines */
+  --lab-fs-answer:   calc(clamp(17px, 1.4vw, 24px) * var(--lab-fs-scale));  /* model output, verdicts */
+  --lab-fs-doc:      calc(clamp(17px, 1.4vw, 25px) * var(--lab-fs-scale));  /* document body (petição, etc.) */
+  --lab-fs-body:     calc(clamp(16px, 1.35vw, 22px) * var(--lab-fs-scale)); /* captions, explanatory prose */
+  --lab-fs-ui:       calc(clamp(13px, 0.9vw, 15px) * var(--lab-fs-scale));  /* small labels, chips, meta */
+  --lab-fs-btn:      calc(clamp(14px, 1vw, 16px) * var(--lab-fs-scale));    /* operator buttons */
 }
 
 [data-theme="dark"] {
@@ -207,4 +214,105 @@
   .lab-logo { height: 28px; }
   .lab-title { font-size: 18px; }
   .lab-title-sub { font-size: 11px; }
+}
+
+/* =========================================================
+   Operator text-size control (lab-controls.js)
+   A− / A+ cluster that nudges --lab-fs-scale. Mounts into a
+   [data-lab-fs-ctl] placeholder if the lab provides one (so it
+   sits with the other operator chrome), else floats fixed at
+   bottom-left. Operator-only: small, dim until hover.
+   ========================================================= */
+.lab-fs-ctl {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+.lab-fs-ctl--fixed {
+  position: fixed;
+  left: 0.6rem;
+  bottom: 0.6rem;
+  z-index: 40;
+  padding: 0.25rem 0.4rem;
+  border-radius: 999px;
+  background: color-mix(in srgb, var(--lab-surface) 88%, transparent);
+  border: 1.5px solid var(--lab-border);
+  opacity: 0.55;
+  transition: opacity 180ms;
+}
+.lab-fs-ctl--fixed:hover { opacity: 1; }
+.lab-fs-btn {
+  font-family: var(--lab-font-display);
+  font-size: var(--lab-fs-ui);
+  font-weight: 700;
+  line-height: 1;
+  min-width: 40px;
+  min-height: 40px;
+  padding: 0 0.5rem;
+  border-radius: 999px;
+  border: 1.5px solid var(--lab-border);
+  background: transparent;
+  color: var(--lab-text-dim);
+  cursor: pointer;
+  transition: border-color 150ms, color 150ms;
+}
+.lab-fs-btn:hover { border-color: var(--lab-focal); color: var(--lab-focal); }
+.lab-fs-val {
+  font-family: var(--lab-font-mono);
+  font-size: var(--lab-fs-ui);
+  color: var(--lab-text-muted);
+  min-width: 3.2em;
+  text-align: center;
+}
+@media (max-width: 700px) {
+  .lab-fs-btn { min-width: 44px; min-height: 44px; }
+}
+
+/* =========================================================
+   Mobile tab primitive (lab-tabs.js)
+   On phones (<=700px), a two-panel lab shows one panel at a
+   time behind a tab bar instead of squishing both. Panels are
+   direct children of [data-lab-tabs] marked [data-lab-tab="…"].
+   Desktop is untouched: the bar hides and the lab's own grid
+   drives the layout. Inactive panels carry [hidden]; the
+   !important rule is needed because a panel's own display (e.g.
+   .k3-bars { display:flex }) ties [hidden] on specificity and
+   would otherwise win on source order. */
+[data-lab-tab][hidden] { display: none !important; }
+.lab-tabs-bar { display: none; }
+@media (max-width: 700px) {
+  [data-lab-tabs].lab-tabs-active {
+    display: flex !important;
+    flex-direction: column;
+    gap: 0.5rem;
+    min-height: 0;
+  }
+  [data-lab-tabs].lab-tabs-active > [data-lab-tab] {
+    flex: 1 1 auto;
+    min-height: 0;
+  }
+  .lab-tabs-bar {
+    display: flex;
+    gap: 0.4rem;
+    flex: 0 0 auto;
+  }
+  .lab-tab-btn {
+    flex: 1 1 0;
+    min-height: 44px;
+    font-family: var(--lab-font-display);
+    font-size: var(--lab-fs-btn);
+    font-weight: 600;
+    letter-spacing: 0.02em;
+    border-radius: 999px;
+    border: 1.5px solid var(--lab-border);
+    background: transparent;
+    color: var(--lab-text-dim);
+    cursor: pointer;
+    transition: background 160ms, color 160ms, border-color 160ms;
+  }
+  .lab-tab-btn[aria-selected="true"] {
+    border-color: var(--lab-focal);
+    background: rgba(var(--lab-focal-rgb), 0.16);
+    color: var(--lab-focal);
+  }
 }

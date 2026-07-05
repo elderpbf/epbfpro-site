@@ -63,6 +63,10 @@ export function buildFilterHtml(opts) {
 
 // Render into opts.container and wire chip clicks to opts.onChange(slug | null).
 export function renderTypeFilter(opts) {
+  // The chips render straight into the caller's container (no flex wrapper is emitted),
+  // so mark it as the shared chip row: this levels the no-icon "Todos" chip with the
+  // icon-bearing type chips and spaces them, uniformly across every mount site.
+  opts.container.classList.add('cdx-tf-row');
   opts.container.innerHTML = buildFilterHtml(opts);
   opts.container.querySelectorAll('.ct-tf-chip').forEach((btn) => {
     btn.addEventListener('click', () => {

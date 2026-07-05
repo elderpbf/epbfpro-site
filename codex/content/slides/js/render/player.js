@@ -6,7 +6,7 @@ import * as registry from "../layouts/registry.js";
 import { maskOverlay, topicList } from "./helpers.js";
 import { cardList } from "./cardparts.js";
 import { DEFAULT_LOGO, resolveStyleObj } from "../core/schema.js";
-import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated } from "./animsteps.js";
+import { planSteps, seedBuild, parseListKey, listModeOf, isAnimated, keyOfList } from "./animsteps.js";
 import { t } from "../../../../js/i18n.js";
 
 export { DEFAULT_LOGO };
@@ -236,12 +236,21 @@ function blocksOf(stage) {
  * Returns the step count (the slide's max step). This is the ONE source of truth for
  * order + count; layouts emit content, never step-truth.
  */
-export function autoSteps(stage, build) {
+export function autoSteps(stage, build, buildFx) {
   const blocks = blocksOf(stage);
-  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build);
+  const { steps, count } = planSteps(blocks.map((b) => ({ list: b.list, key: b.key, def: b.def })), build, buildFx);
   blocks.forEach((b, i) => {
-    if (steps[i] > 0) { b.el.classList.add("reveal"); b.el.dataset.step = String(steps[i]); }
-    else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; }
+    if (steps[i] > 0) {
+      b.el.classList.add("reveal");
+      b.el.dataset.step = String(steps[i]);
+      // Phase 9: per-unit entrance effect (fade/slide/zoom) from slide.buildFx, keyed by the
+      // unit's build key (a singleton key, or the list's each:/unit: key). Absent -> the
+      // deck-wide entrance (#stage[data-anim]) still applies.
+      const uk = b.key || (b.list ? keyOfList(build, b.list) : null);
+      const meta = (uk && buildFx && buildFx[uk]) || null;
+      if (meta && meta.fx) b.el.dataset.fx = meta.fx; else delete b.el.dataset.fx;
+      if (meta && meta.dur) b.el.style.setProperty("--rvdur", meta.dur + "ms"); else b.el.style.removeProperty("--rvdur");
+    } else { b.el.classList.remove("reveal"); b.el.dataset.step = "0"; delete b.el.dataset.fx; b.el.style.removeProperty("--rvdur"); }
   });
   return count;
 }
@@ -343,4 +352,21 @@ export function fit(stagewrap, stagebox, stage, canvas, pad = 40) {
   }
   stage.style.transform = `scale(${s})`;
   return s;
+}
+
+/**
+ * Phase 8 reflow: shrink the slide's font to fit the canvas when flow content overflows.
+ * All slide font sizes are calc(... * var(--fontScale) * var(--fitScale, 1)), so setting
+ * --fitScale on the stage scales every text size uniformly, with no per-layout branching.
+ * Measures at natural size, then applies 1/overflow (floored at 0.5) in a single pass:
+ * font tracks height ~linearly for text, so one correction fits. Absolute assets keep
+ * their size (they are clamped separately, not reflowed).
+ */
+export function fitToCanvas(stage, canvas) {
+  if (!stage || !canvas) return 1;
+  stage.style.setProperty("--fitScale", "1"); // measure at natural (unfitted) size
+  const over = Math.max(stage.scrollWidth / canvas.w, stage.scrollHeight / canvas.h);
+  const k = over > 1.002 ? Math.max(0.5, 1 / over) : 1;
+  stage.style.setProperty("--fitScale", String(Math.round(k * 1000) / 1000));
+  return k;
 }

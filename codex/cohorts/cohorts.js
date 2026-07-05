@@ -9,6 +9,7 @@ import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { installResizer } from '../js/resizable.js';
+import { makeReorderable } from '../js/reorder.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as qrShare from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
@@ -55,6 +56,7 @@ let _expandedClient = null; // accordion: the one client group whose turmas are 
 let _turmas = [];        // ALL turmas across clients (merged Concept-A list)
 let _turmaSearch = '';   // live filter for the merged turma list
 let _turmaAulas = [];
+let _aulaReorderDestroy = null; // teardown for the aula-hub drag (shared js/reorder.js)
 let _relClientSlug = null;
 let _relTurmaSlug = null;
 let _cpSessions = [];
@@ -167,11 +169,12 @@ function _closeModal(bd) {
 // ── Typed-name delete confirmation modal ─────────────────────────────────────
 
 function _openDeleteConfirm(opts) {
-  // opts: { title, warningHtml, confirmName, onConfirm }
+  // opts: { title, warningHtml, extraHtml?, confirmName, onConfirm(flags) }
   const html =
     '<div class="cdx-modal" style="max-width:440px">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<div class="cdx-danger-zone">' + opts.warningHtml + '</div>' +
+      (opts.extraHtml || '') +
       '<div class="cdx-field" style="margin-top:1rem">' +
         '<label>' + _esc(t('cohorts.confirm_type_name')) + ' <strong>' + _esc(opts.confirmName) + '</strong></label>' +
         '<input type="text" id="cdx-del-confirm-input" autocomplete="off" placeholder="">' +
@@ -191,8 +194,12 @@ function _openDeleteConfirm(opts) {
   bd.querySelector('#cdx-del-cancel').addEventListener('click', () => _closeModal(bd));
   confirmBtn.addEventListener('click', () => {
     if (!matches()) return;
+    // Capture optional extra choices (e.g. "delete the linked session too") before the
+    // modal is torn down, then hand them to the caller.
+    const sessOpt = bd.querySelector('#cdx-del-session-opt');
+    const flags = { deleteSession: !!(sessOpt && sessOpt.checked) };
     _closeModal(bd);
-    opts.onConfirm();
+    opts.onConfirm(flags);
   });
 }
 
@@ -736,12 +743,22 @@ function _unarchiveTurma(clientSlug, turmaSlug) {
 // cascade drops every per-turma row (content, releases, aulas, participants,
 // sessions, forum); global library items and issued certificates are preserved.
 function _deleteTurma(turma) {
+  const sessCode = turma.classpulse_session_id || turma.access_code || null;
+  // A. One-way turma/session coupling: the turma owns an auto-created session; offer to
+  // delete it together (checked by default, since a kept session would be orphaned), but
+  // let the admin keep it if it doubles as a standalone Q&A.
+  const sessOpt = sessCode
+    ? '<label class="cdx-del-session-opt" style="display:flex;align-items:center;gap:.5rem;margin-top:.9rem;font-size:0.85rem;color:var(--text-secondary);cursor:pointer">' +
+        '<input type="checkbox" id="cdx-del-session-opt" checked> ' +
+        '<span>' + _esc(t('cohorts.delete_turma_session_opt')) + ' · <code>' + _esc(sessCode) + '</code></span></label>'
+    : '';
   _openDeleteConfirm({
     title: t('cohorts.delete_turma_btn'),
     warningHtml: '<p style="font-size:0.85rem;color:var(--text-secondary);margin:0">' + t('cohorts.delete_turma_warning') + '</p>',
+    extraHtml: sessOpt,
     confirmName: turma.name,
-    onConfirm() {
-      api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug }).then(() => {
+    onConfirm(flags) {
+      api.deleteTurma({ client_slug: turma.client_slug, slug: turma.slug, delete_session: !!(flags && flags.deleteSession) }).then(() => {
         toast.ok(t('cohorts.turma_deleted'));
         const wasSelected = _relClientSlug === turma.client_slug && _relTurmaSlug === turma.slug;
         _turmas = _turmas.filter((tm) => !(tm.client_slug === turma.client_slug && tm.slug === turma.slug));
@@ -843,6 +860,7 @@ function _openTurmaForm(turma) {
         '<div class="cdx-tf-section">' + t('cohorts.tf_section_links') + '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.field_whatsapp') + '</label>' +
           '<input type="text" id="cdx-tf-whatsapp" value="' + _esc(isEdit ? (turma.whatsapp_url || '') : '') + '" placeholder="https://chat.whatsapp.com/...">' +
+          '<small class="cdx-field-hint">' + t('cohorts.field_whatsapp_hint') + '</small>' +
         '</div>' +
         '<div class="cdx-field"><label>' + t('cohorts.field_classpulse') + '</label>' +
           '<select id="cdx-tf-classpulse">' + cpOptions + '</select>' +
@@ -920,6 +938,9 @@ function _openTurmaForm(turma) {
           // Keep the dossier pointed at the just-saved turma after the reload.
           _relClientSlug = _selectedClientSlug;
           _relTurmaSlug = isEdit ? turma.slug : slug;
+          // A new turma auto-creates its own session (codes redesign); drop the cached
+          // session list so the dossier's session select shows it right away, no F5. [item C]
+          if (!isEdit) { _cpSessions = []; _dossierDepsTried = false; }
           _loadAll();
         }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
     });
@@ -1932,38 +1953,18 @@ function _wireAulasHubList(turma) {
     if (row) _selectAula(turma, row.dataset.aulaId);
   });
 
-  // Drag-to-reorder. Blocked while an unsaved new aula exists (it can't take part in
-  // ordered_ids); the right-pane editor is no longer inline, so a list re-render does
-  // not drop any editor.
+  // Drag-to-reorder (shared js/reorder.js). Blocked while an unsaved new aula exists (a
+  // 'new' row can't take part in ordered_ids); the right-pane editor is no longer inline,
+  // so a list re-render does not drop any editor. Re-wired on each hub render, so tear the
+  // prior instance down first.
   const rowsEl = _q('cdx-aulas-hub-rows');
   if (!rowsEl) return;
-  let dragId = null;
-  rowsEl.addEventListener('dragstart', (e) => {
-    if (_turmaAulas.some((a) => a._isNew)) { e.preventDefault(); return; }
-    const row = e.target.closest('.cdx-aula-hub-row');
-    if (!row || !row.dataset.aulaId || row.dataset.aulaId === 'new') { e.preventDefault(); return; }
-    dragId = row.dataset.aulaId;
-    row.classList.add('is-dragging');
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-  });
-  rowsEl.addEventListener('dragover', (e) => {
-    if (dragId == null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  });
-  rowsEl.addEventListener('dragend', () => {
-    rowsEl.querySelectorAll('.is-dragging').forEach((r) => r.classList.remove('is-dragging'));
-    dragId = null;
-  });
-  rowsEl.addEventListener('drop', (e) => {
-    if (dragId == null) return;
-    e.preventDefault();
-    const row = e.target.closest('.cdx-aula-hub-row');
-    const tgtId = row ? row.dataset.aulaId : null;
-    const fromId = dragId;
-    dragId = null;
-    if (!tgtId || tgtId === fromId || tgtId === 'new') return;
-    _reorderAulas(turma, fromId, tgtId);
+  if (_aulaReorderDestroy) { _aulaReorderDestroy(); _aulaReorderDestroy = null; }
+  _aulaReorderDestroy = makeReorderable(rowsEl, {
+    itemSelector: '.cdx-aula-hub-row',
+    getId: (el) => el.dataset.aulaId,
+    canDrag: () => !_turmaAulas.some((a) => a._isNew),
+    onReorder: (ids) => _reorderAulasByIds(turma, ids),
   });
 }
 
@@ -1980,17 +1981,16 @@ function _selectAula(turma, aulaId) {
   _renderAulaDetail(turma);
 }
 
-// Move the dragged aula to the dropped-on aula's slot, renumber 1..N top-to-bottom
-// (optimistic), then persist. aula_number is the binding key for released content +
-// the lesson plan, so the worker remaps those in lockstep; on success we reload so the
-// per-aula counts reflect the remap, on failure we reload to discard the optimistic order.
-function _reorderAulas(turma, fromId, tgtId) {
-  const ids = _turmaAulas.map((a) => String(a.id));
-  const from = ids.indexOf(String(fromId));
-  const to = ids.indexOf(String(tgtId));
-  if (from === -1 || to === -1) return;
-  const moved = _turmaAulas.splice(from, 1)[0];
-  _turmaAulas.splice(to, 0, moved);
+// Apply the new aula order (from the shared reorder drag: the ids are the final DOM
+// order), renumber 1..N top-to-bottom (optimistic), then persist. aula_number is the
+// binding key for released content + the lesson plan, so the worker remaps those in
+// lockstep; on success we reload so the per-aula counts reflect the remap, on failure we
+// reload to discard the optimistic order.
+function _reorderAulasByIds(turma, ids) {
+  const byId = new Map(_turmaAulas.map((a) => [String(a.id), a]));
+  const next = ids.map((id) => byId.get(String(id))).filter(Boolean);
+  if (next.length !== _turmaAulas.length) return; // safety: a 'new'/unknown row slipped in
+  _turmaAulas = next;
   _turmaAulas.forEach((a, i) => { a.aula_number = i + 1; });
   _renderAulaHubRows();
   _renderAulaDetail(turma);
@@ -2180,6 +2180,7 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   cursos.unmount();
   _unmountAulaEmbeds();
+  if (_aulaReorderDestroy) { _aulaReorderDestroy(); _aulaReorderDestroy = null; }
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

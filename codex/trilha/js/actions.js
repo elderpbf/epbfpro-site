@@ -8,6 +8,14 @@ import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { openTrailLogin } from './gate.js';
+import { assetUrl } from '../../js/codex-api.js';
+
+// Stored asset paths (/r2/... attachment/pdf keys) are served by the codex-api
+// Worker, not the Pages origin, so an open-action href must go through assetUrl
+// (WORKER_URL). Full http(s) urls (external docs) pass through untouched.
+function _assetSrc(url) {
+  return /^https?:\/\//i.test(url || '') ? url : assetUrl(url || '');
+}
 
 export function getMeta(item) {
   if (!item || !item.meta_json) return {};
@@ -39,7 +47,7 @@ function makeActionBtn(action, extraClass) {
   let btn;
   if (action.kind === 'open') {
     btn = document.createElement('a');
-    btn.href = action.url;
+    btn.href = _assetSrc(action.url);
     btn.target = '_blank';
     btn.rel = 'noopener';
   } else {

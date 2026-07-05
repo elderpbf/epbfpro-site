@@ -16,22 +16,14 @@ test('live-host module satisfies the tab contract', async () => {
   assert.equal(typeof mod.unmount, 'function', 'exports unmount');
 });
 
-test('reorderByDrag moves the dragged question before the drop target in the full list', async () => {
-  const { reorderByDrag } = await import('../questions/live-host.js');
-  const list = [{ id: 1 }, { id: 2 }, { id: 3 }, { id: 4 }];
-  assert.deepEqual(reorderByDrag(list, 4, 2).map((q) => q.id), [1, 4, 2, 3], 'drag 4 before 2');
-  assert.deepEqual(reorderByDrag(list, 1, 3).map((q) => q.id), [2, 1, 3, 4], 'drag 1 before 3');
-  assert.deepEqual(reorderByDrag(list, 2, 2).map((q) => q.id), [1, 2, 3, 4], 'same target = no-op');
-  assert.deepEqual(reorderByDrag(list, 9, 2).map((q) => q.id), [1, 2, 3, 4], 'unknown drag id = no-op');
-  assert.deepEqual(list.map((q) => q.id), [1, 2, 3, 4], 'does not mutate the input');
-});
-
-test('live-host wires session reorder (drag rows -> persist bank order)', () => {
+test('live-host wires session reorder through the shared js/reorder.js', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /data-act="bank-reorder"/, 'renders the reorder toggle');
   assert.match(src, /draggable="true"/, 'rows become draggable in reorder mode');
   assert.match(src, /api\.reorder\(/, 'persists via reorder_questions');
-  assert.match(src, /export function reorderByDrag/, 'pure reorder helper is exported');
+  assert.match(src, /makeReorderable\(/, 'drag is delegated to the shared reorder module');
+  assert.match(src, /canDrag: \(\) => _bankReorder/, 'reorder gated to the toggle mode');
+  assert.match(src, /_persistBankOrder/, 'order-based persist (filter-safe reconstruction)');
 });
 
 test('live-host + live-qa obey the module source rules', () => {

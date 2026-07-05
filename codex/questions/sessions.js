@@ -85,9 +85,14 @@ function _card(s) {
   const live = open
     ? '<span class="cdx-live"><span class="cdx-live-dot"></span><span class="cdx-live-label">' + t('questions.sessions_live_label') + '</span></span>'
     : '';
+  // A turma-linked session is labeled "Cliente · Turma" (list_sessions joins the turma +
+  // client); a standalone (avulsa) Q&A session keeps its own title.
+  const title = (s.client_name && s.turma_name)
+    ? _esc(s.client_name) + ' · ' + _esc(s.turma_name)
+    : _esc(s.title || t('questions.sessions_untitled'));
   return '<div class="cdx-session-card' + sel + '" data-code="' + _esc(s.code) + '">' +
     '<div class="cdx-session-info">' +
-      '<div class="cdx-session-title">' + _esc(s.title || t('questions.sessions_untitled')) + '</div>' +
+      '<div class="cdx-session-title">' + title + '</div>' +
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +
     '</div>' +
     live +
@@ -221,6 +226,14 @@ async function _openStats(code) {
 // The host bar reveals an Excluir button on the session name and confirms there
 // (window.confirm); on confirm it calls back to _confirmDelete via onDelete.
 async function _confirmDelete(code) {
+  // A. Session↔turma alert: a session tied to a turma warns before deleting (the turma
+  // relies on it for access + Q&A); a standalone session deletes freely. The host bar
+  // already ran its generic confirm, so this only adds the turma-specific heads-up.
+  const linked = _sessions.find((x) => x.code === code);
+  if (linked && linked.turma_name) {
+    const label = (linked.client_name ? linked.client_name + ' · ' : '') + linked.turma_name;
+    if (!window.confirm(t('questions.sessions_delete_linked_warn') + '\n\n' + label)) return;
+  }
   let res;
   try { res = await api.deleteSession({ code }); } catch (e) { notice.internal(e); res = null; }
   if (!res || res.error) { toast.err(t('questions.sessions_delete_error')); _renderList(); return; }

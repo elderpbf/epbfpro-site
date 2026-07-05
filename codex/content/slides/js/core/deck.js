@@ -26,6 +26,7 @@ export function newDeck() {
   return {
     id: uid(),
     title: "Nova apresentação",
+    aspect: "16:9",
     canvas: { ...CANVAS },
     theme: { fontScale: 1, font: "roboto", accent: "#14b8a6", ink: "#134e4a", motif: "#14b8a6", anim: "fade-up", art: "circuito", texto: { papeis: {} } },
     logo: { ...DEFAULT_LOGO }, // deck-level: same position on every slide (single source: schema.js)

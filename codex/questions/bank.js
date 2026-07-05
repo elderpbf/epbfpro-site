@@ -18,6 +18,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
 import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
+import { makeReorderable } from '../js/reorder.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -34,7 +35,6 @@ let _confirmDelQ = null;
 let _searching = false;
 let _editBank = false;
 let _selected = new Set();
-let _dragId = null;
 let _bulkItems = [];
 let _orderProposed = [];      // e2: AI-proposed question id order under review
 let _orderDir = 'asc';        // e2: chosen ordering direction (asc = easy→hard)
@@ -505,7 +505,7 @@ async function _loadVariaveis() {
 function _selectVariaveis() {
   _variaveisView = true; _currentSet = null;
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected.clear(); _dragId = null; _classFilter = 'all';
+  _editBank = false; _selected.clear(); _classFilter = 'all';
   _renderSets();
   _loadVariaveis();
 }
@@ -525,7 +525,7 @@ function _selectSet(name) {
   _currentSet = name;
   _variaveisView = false; _classFilter = 'all';
   _renaming = false; _confirmDelSet = false; _confirmDelQ = null;
-  _editBank = false; _selected.clear(); _dragId = null;
+  _editBank = false; _selected.clear();
   _renderSets();
   _loadQuestions();
 }
@@ -533,7 +533,7 @@ function _selectSet(name) {
 // ---- Reorder / move mode ----
 function _toggleEditBank() {
   _editBank = !_editBank;
-  if (!_editBank) { _selected.clear(); _dragId = null; }
+  if (!_editBank) { _selected.clear(); }
   _renderConjunto();
 }
 
@@ -1241,7 +1241,7 @@ export function mount(viewEl, ctx) {
   _viewEl = viewEl;
   _currentSet = null; _banks = []; _questions = []; _editingOriginal = null;
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _editBank = false; _selected = new Set(); _bulkItems = [];
   _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
@@ -1529,35 +1529,24 @@ export function mount(viewEl, ctx) {
     else if (act === 'goto') { const set = btn.getAttribute('data-set'); _clearSearch(); _selectSet(set); }
   });
 
-  // Drag to reorder (delegated; only active in edit-bank mode).
+  // Drag to reorder (shared js/reorder.js). Only armed in edit-bank mode, which shows
+  // the full unfiltered set, so onReorder's ids are the whole list. Wired on the stable
+  // #cdx-bank-body; the rows live in the re-rendered .cdx-bank-qlist (resolved live).
   const bodyEl = viewEl.querySelector('#cdx-bank-body');
-  _on(bodyEl, 'dragstart', (e) => {
-    if (!_editBank) return;
-    const card = e.target.closest('.cdx-q'); if (!card) return;
-    _dragId = card.getAttribute('data-qid');
-    if (e.dataTransfer) e.dataTransfer.effectAllowed = 'move';
-  });
-  _on(bodyEl, 'dragover', (e) => {
-    if (!_editBank || _dragId == null) return;
-    e.preventDefault();
-    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-  });
-  _on(bodyEl, 'drop', async (e) => {
-    if (!_editBank || _dragId == null) return;
-    e.preventDefault();
-    const card = e.target.closest('.cdx-q');
-    const tgtId = card ? card.getAttribute('data-qid') : null;
-    const dragId = _dragId; _dragId = null;
-    if (!tgtId || tgtId === dragId) return;
-    const ids = _questions.map((q) => String(q.id));
-    const from = ids.indexOf(String(dragId));
-    const to = ids.indexOf(String(tgtId));
-    if (from === -1 || to === -1) return;
-    const moved = _questions.splice(from, 1)[0];
-    _questions.splice(to, 0, moved);
-    _renderConjunto();
-    try { await api.reorder({ list_name: _currentSet, ordered_ids: _questions.map((q) => q.id) }); } catch (err) { notice.internal(err); }
-  });
+  _cleanup.push(makeReorderable(bodyEl, {
+    listSelector: '.cdx-bank-qlist',
+    itemSelector: '.cdx-q',
+    getId: (el) => el.getAttribute('data-qid'),
+    canDrag: () => _editBank,
+    onReorder: async (ids) => {
+      const byId = new Map(_questions.map((q) => [String(q.id), q]));
+      const next = ids.map((id) => byId.get(String(id))).filter(Boolean);
+      if (next.length !== _questions.length) return; // safety: unexpected row set
+      _questions = next;
+      _renderConjunto();
+      try { await api.reorder({ list_name: _currentSet, ordered_ids: _questions.map((q) => q.id) }); } catch (err) { notice.internal(err); }
+    },
+  }));
 
   // Editor modal (delegated)
   _on(viewEl.querySelector('#cdx-bank-modal'), 'click', (e) => {
@@ -1674,7 +1663,7 @@ export function unmount() {
   _cleanup = [];
   _viewEl = null; _currentSet = null; _banks = []; _questions = [];
   _newSetActive = false; _renaming = false; _confirmDelSet = false; _confirmDelQ = null; _searching = false;
-  _editBank = false; _selected = new Set(); _dragId = null; _bulkItems = [];
+  _editBank = false; _selected = new Set(); _bulkItems = [];
   _orderProposed = []; _orderDir = 'asc';
   _hubTab = 'export'; _exportFormat = 'json'; _exportScope = 'current'; _exportChosen = new Set(); _exportCache = {}; _hubExportText = '';
   _importMode = 'text'; _importItems = []; _importTarget = '';
