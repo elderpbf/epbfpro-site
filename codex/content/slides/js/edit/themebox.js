@@ -90,14 +90,20 @@ function roleRow(app, role) {
 function build(app) {
   const box = el("div", "cdx-themebox");
 
-  // head
-  const head = el("div", "tb-head");
-  head.appendChild(el("span", "tb-title", t("slides.ed_theme")));
-  const x = el("button", "tb-x", "✕");
-  x.type = "button";
-  x.onclick = closeThemeBox;
-  head.appendChild(x);
-  box.appendChild(head);
+  // Proporção do deck (Phase 8): 16:9 / 4:3, two lit buttons. No header/close row here
+  // (click outside closes it, like the animation panel) — Élder asked to drop the
+  // "Tema" title + ✕ that used to sit in a bar over the panel.
+  const asp = el("section", "tb-sec");
+  asp.appendChild(el("div", "tb-sec-h", "Proporção"));
+  const aspRow = el("div", "tb-arts");
+  for (const a of ["16:9", "4:3"]) {
+    const b = el("button", "tb-art" + (a === (app.deck().aspect || "16:9") ? " on" : ""), a);
+    b.type = "button";
+    b.onclick = () => app.setAspect(a);
+    aspRow.appendChild(b);
+  }
+  asp.appendChild(aspRow);
+  box.appendChild(asp);
 
   // Predefinições (built-in preset swatches + the user's saved themes)
   const sp = section("slides.ed_presets");

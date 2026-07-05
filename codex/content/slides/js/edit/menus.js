@@ -28,7 +28,7 @@ export function insertMenu() {
 // fontValue: the EFFECTIVE scale the slider should show. In "slide" scope this is
 // the slide's per-slide override (player.effFontScale), not the deck default, so the
 // slider reflects what's actually applied (5b). Omitted -> falls back to the deck.
-export function appearanceMenu(theme, fontScope, fontValue, aspect) {
+export function appearanceMenu(theme, fontScope, fontValue) {
   return [
     // Predefinições: the seed colour swatches (teal/blue). Picking one applies the
     // whole colour bundle; the individual colour pickers below then fine-tune it.
@@ -55,14 +55,6 @@ export function appearanceMenu(theme, fontScope, fontValue, aspect) {
     { type: "color", id: "accent", labelKey: "slides.ed_accent", value: theme.accent, input(app, sel, v) { app.setTheme("accent", v); } },
     { type: "color", id: "ink", labelKey: "slides.ed_text_color", value: theme.ink, input(app, sel, v) { app.setTheme("ink", v); } },
     { type: "color", id: "motif", labelKey: "slides.ed_art", value: theme.motif, input(app, sel, v) { app.setTheme("motif", v); } },
-    { type: "sep" },
-    // Deck aspect ratio (Phase 8): 16:9 / 4:3. Two lit buttons; app.setAspect resizes the
-    // canvas + re-anchors absolute geometry. Symbols, so literal labels (no i18n key).
-    {
-      type: "choice", id: "aspect", value: aspect || "16:9",
-      options: [{ v: "16:9", label: "16:9" }, { v: "4:3", label: "4:3" }],
-      write(app, sel, v) { app.setAspect(v); },
-    },
   ];
 }
 

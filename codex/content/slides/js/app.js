@@ -462,7 +462,7 @@ export function mount(root, ctx = {}) {
       // seed the slider with the EFFECTIVE scale: the per-slide override in "slide"
       // scope, the deck default in "all" scope (5b).
       const fv = this.fontScope === "slide" ? player.effFontScale(this.deck(), this.cur()) : this.deck().theme.fontScale;
-      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv, this.deck().aspect), this._appearBtn);
+      this.select.openMenu(appearanceMenu(this.deck().theme, this.fontScope, fv), this._appearBtn);
     },
     reopenAppearance() { if (this._appearBtn) this.openAppearance(this._appearBtn); },
     // Phase 8: switch the deck aspect ratio (16:9 / 4:3). Sets deck.aspect + canvas and
@@ -482,7 +482,7 @@ export function mount(root, ctx = {}) {
       applyDeckTheme(this.deck(), this.stage);
       this.fit();
       this.renderSlide(); this.renderNav(); this.commit(); this.broadcast();
-      this.reopenAppearance(); // relight the active ratio in the open Tema menu
+      refreshThemeBox(this); // relight the active ratio in the open Tema box
     },
     // add-slide layout picker, opened into the context bar from the thumbnail-rail
     // "＋ slide" button (anchor null -> centered, since the rail sits left of the stage).
