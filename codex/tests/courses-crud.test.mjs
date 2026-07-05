@@ -19,12 +19,15 @@ test('BUG FIX: dossier-pane transparent rule is scoped to the DIRECT empty-state
   assert.ok(!/\.cdx-doss-pane:has\(\.cdx-placeholder\)\s*\{/.test(cohortsCss), 'no broad :has(.cdx-placeholder) that a nested loader placeholder would trip');
 });
 
-test('item 8/9: the cursos description is gone and "+ new" moved into the rail header', () => {
+test('item 8/9: no cursos description; the rail is the shared list-rail with a + add', () => {
   assert.ok(!/cursos_desc/.test(coursesSrc), 'no cursos_desc rendered');
   assert.ok(!/cdx-cursos-sub/.test(coursesSrc), 'no description subtitle');
-  assert.match(coursesSrc, /cdx-cursos-rail-h[\s\S]{0,240}cdx-cursos-add/, 'rail header carries the + add button');
-  assert.match(coursesSrc, /class="cdx-cursos-add" id="cdx-cursos-new"/, 'the add button is in the rail head');
-  assert.match(coursesSrc, />\+<\/button>/, 'the add control renders a bare +');
+  // The bespoke rail head/add markup moved into js/list-rail.js; Cursos now mounts the rail
+  // and passes a "+" add affordance that wires _onNewCourse (track-21 adoption).
+  assert.match(coursesSrc, /import \{ mountRail \} from '\.\.\/js\/list-rail\.js'/, 'imports the shared rail');
+  assert.match(coursesSrc, /mountRail\(/, 'mounts the shared rail');
+  assert.match(coursesSrc, /add:\s*\{\s*label:\s*'\+'/, 'add affordance is a + in the rail header');
+  assert.match(coursesSrc, /onAdd:\s*_onNewCourse/, 'add wires _onNewCourse');
 });
 
 test('item 3: an editable hint + a distinct fill (not pencil marks) signal the editable fields', () => {

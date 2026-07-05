@@ -19,6 +19,7 @@ import { courses as api, ai, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import {
@@ -34,6 +35,7 @@ let _course = null;        // full selected course (with ementa)
 let _ementa = emptyEmenta(); // working copy of the selected course's ementa
 let _aiMsgs = [];          // assistant chat history ({role, content}) for ai.chat
 let _apostilas = [];       // Conteúdo apostila sets, lazy-loaded for "De uma apostila"
+let _rail = null;          // the shared left-panel rail (js/list-rail.js); Cursos = 1st adopter
 
 const IDS = {
   rail:   'cdx-cursos-rail',
@@ -66,7 +68,7 @@ function _loadCourses() {
     const all = (d && d.courses) || [];
     _courses = all.filter((c) => c.status !== 'archived');
     _archived = all.filter((c) => c.status === 'archived');
-    _renderRail();
+    if (_rail) _rail.render();
     if (_selectedId == null && _courses.length) _selectCourse(_courses[0].id);
     else if (_selectedId == null) _renderMain();
   }).catch(() => {
@@ -75,61 +77,68 @@ function _loadCourses() {
   });
 }
 
-// One course row (rail). Archived rows are muted and carry an Unarchive button.
-function _railRow(c, archived) {
-  const on = c.id === _selectedId ? ' is-on' : '';
+// The rail is now the shared js/list-rail.js (Cursos = 1st adopter, track-21). Active courses
+// are the rows; archived courses sit in the rail FOOTER as a collapsed <details> (they carry
+// an Unarchive affordance, so they are rendered + wired here, not through the row renderer).
+// Reorder + sections are OFF here until the additive worker (sort_order + ct_course_sections)
+// lands (Phase B); flipping them on is a config change, no re-layout.
+function _courseRowMain(c) {
   const n = c.turma_count || 0;
   const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
   const hours = c.hours ? esc(c.hours) + ' · ' : '';
-  return (
-    '<div class="cdx-cursos-ri' + on + (archived ? ' is-archived' : '') + '" data-id="' + esc(String(c.id)) + '">' +
-      '<div class="cdx-cursos-ri-b">' +
-        '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
-        '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
-      '</div>' +
-      (archived
-        ? '<button type="button" class="cdx-cursos-unarch" data-unarch="' + esc(String(c.id)) + '" title="' + esc(t('cohorts.course_unarchive')) + '">' + esc(t('cohorts.course_unarchive')) + '</button>'
-        : '') +
-    '</div>'
-  );
+  return '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
+    '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>';
 }
 
-function _renderRail() {
+function _archivedFooterHtml() {
+  if (!_archived.length) return '';
+  return '<details class="cdx-cursos-arch">' +
+    '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
+    _archived.map((c) => {
+      const n = c.turma_count || 0;
+      const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
+      const hours = c.hours ? esc(c.hours) + ' · ' : '';
+      const on = c.id === _selectedId ? ' is-on' : '';
+      return '<div class="cdx-cursos-ri is-archived' + on + '" data-arch-id="' + esc(String(c.id)) + '">' +
+        '<div class="cdx-cursos-ri-b">' +
+          '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
+          '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
+        '</div>' +
+        '<button type="button" class="cdx-cursos-unarch" data-unarch="' + esc(String(c.id)) + '" title="' + esc(t('cohorts.course_unarchive')) + '">' + esc(t('cohorts.course_unarchive')) + '</button>' +
+      '</div>';
+    }).join('') +
+  '</details>';
+}
+
+function _buildRail() {
   const el = _q(IDS.rail);
   if (!el) return;
-  const head = '<div class="cdx-cursos-rail-h"><span>' + esc(t('cohorts.cursos_title')) + '</span>' +
-    '<button type="button" class="cdx-cursos-add" id="cdx-cursos-new" title="' + esc(t('cohorts.cursos_new')) + '" aria-label="' + esc(t('cohorts.cursos_new')) + '">+</button></div>';
-  let body;
-  if (!_courses.length && !_archived.length) {
-    body = '<div class="cdx-empty">' + esc(t('cohorts.cursos_none')) + '</div>';
-  } else {
-    body = _courses.map((c) => _railRow(c, false)).join('');
-    if (_archived.length) {
-      // Collapsed by default (Élder): a <details> the admin expands only when needed.
-      body += '<details class="cdx-cursos-arch">' +
-        '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
-        _archived.map((c) => _railRow(c, true)).join('') +
-      '</details>';
-    }
-  }
-  el.innerHTML = head + body;
-  const addBtn = _q('cdx-cursos-new');
-  if (addBtn) addBtn.addEventListener('click', _onNewCourse);
-  el.querySelectorAll('.cdx-cursos-ri').forEach((r) => {
-    r.addEventListener('click', (e) => {
-      if (e.target.closest('.cdx-cursos-unarch')) return; // the button has its own handler
-      _selectCourse(Number(r.dataset.id));
-    });
+  _rail = mountRail(el, {
+    title: t('cohorts.cursos_title'),
+    items: () => _courses,
+    getId: (c) => c.id,
+    renderRow: (c) => ({ main: _courseRowMain(c) }),
+    selectedId: () => _selectedId,
+    onSelect: (id) => _selectCourse(Number(id)),
+    add: { label: '+', title: t('cohorts.cursos_new'), onAdd: _onNewCourse },
+    footer: _archivedFooterHtml,
+    emptyText: t('cohorts.cursos_none'),
   });
-  el.querySelectorAll('.cdx-cursos-unarch').forEach((b) => {
-    b.addEventListener('click', (e) => { e.stopPropagation(); _onUnarchiveCourse(Number(b.dataset.unarch)); });
+  // Archived-footer actions: delegated on the rail container (persists across re-renders).
+  // The rail's own click handler ignores these (different classes: .cdx-cursos-* not .cdx-rail-*).
+  el.addEventListener('click', (e) => {
+    const un = e.target.closest('[data-unarch]');
+    if (un) { e.stopPropagation(); _onUnarchiveCourse(Number(un.getAttribute('data-unarch'))); return; }
+    const arch = e.target.closest('[data-arch-id]');
+    if (arch) _selectCourse(Number(arch.getAttribute('data-arch-id')));
   });
+  _rail.render();
 }
 
 function _selectCourse(id) {
   _selectedId = id;
   _aiMsgs = []; // fresh chat per course
-  _renderRail();
+  if (_rail) _rail.render();
   const el = _q(IDS.main);
   if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.loading')) + '</div>';
   api.get({ id }).then((d) => {
@@ -649,10 +658,12 @@ export function mount(viewEl) {
   _aiMsgs = [];
   _apostilas = [];
   _renderShell();
+  _buildRail();
   _loadCourses();
 }
 
 export function unmount() {
+  if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _courses = [];

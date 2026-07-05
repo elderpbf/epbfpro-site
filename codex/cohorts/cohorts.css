@@ -568,7 +568,9 @@
 .cdx-cursos-sub { margin: .25rem 0 0; font-size: .86rem; color: var(--text-secondary); max-width: 560px; }
 .cdx-cursos-work { display: grid; grid-template-columns: 210px 1fr; gap: 1.1rem; align-items: start; }
 /* rail */
-.cdx-cursos-rail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); overflow: hidden; }
+/* The rail is now the shared js/list-rail.js (.cdx-rail provides the chrome); this outer
+   grid cell is just the column. */
+.cdx-cursos-rail { min-width: 0; }
 .cdx-cursos-rail-h { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .8rem; border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
 .cdx-cursos-add { flex: 0 0 auto; border: none; background: var(--primary); color: var(--text-on-accent, #fff); width: 22px; height: 22px; border-radius: 6px; font-size: 1.15rem; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .cdx-cursos-add:hover { filter: brightness(1.08); }

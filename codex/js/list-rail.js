@@ -1,0 +1,233 @@
+// js/list-rail.js
+// The ONE standard left-panel rail for Codex. Full contract: manifest/architecture/
+// list-rail.md. Renders any left list with a FIXED layout; each consumer enables only the
+// capabilities it needs via config (select/add/reorder/sections/filter/width). The module
+// NEVER talks to the Worker — it calls back into the consumer (backend seam stays in
+// codex-api.js, ARCHITECTURE §3).
+//
+// Reorder uses POINTER EVENTS (pointerdown/move/up) with the grip as the drag handle, so it
+// works on touch AND mouse — the grip is a real handle on mobile too (unlike the HTML5-DnD
+// js/reorder.js, which is desktop-only and still serves the not-yet-migrated rails; see
+// architecture/list-rail.md §8).
+//
+//   const rail = mountRail(containerEl, {
+//     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
+//     selectedId:()=>id, onSelect:(id)=>{},
+//     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false},
+//     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
+//               onMoveItem:(itemId,secId,orderedIds)=>{}},
+//     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
+//     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max} | {mode:'autohide'},
+//     footer:()=>html,
+//   });
+//   rail.render();   // idempotent, after loads/mutations
+//   rail.destroy();  // on unmount
+import { esc } from './dom.js';
+import { installResizer } from './resizable.js';
+
+const GRIP = '⠿'; // ⠿ drag-handle glyph
+const DRAG_THRESHOLD = 4; // px before a press becomes a drag (lets a tap still select)
+
+export function mountRail(container, cfg) {
+  cfg = cfg || {};
+  const getId = cfg.getId || ((it) => it.id);
+  const readItems = () => (typeof cfg.items === 'function' ? cfg.items() : (cfg.items || []));
+  const sections = cfg.sections || null;
+  const reorder = cfg.reorder || null;
+  const filter = cfg.filter || null;
+  const add = cfg.add || null;
+
+  let resizerDestroy = null;
+  let drag = null;       // active pointer-drag state
+  let wired = false;     // delegated listeners attached once (survive re-renders)
+  let destroyed = false;
+
+  // ── markup ────────────────────────────────────────────────────────────────
+  function rowHtml(it) {
+    const id = getId(it);
+    const on = cfg.selectedId && String(cfg.selectedId()) === String(id);
+    const rc = cfg.renderRow ? cfg.renderRow(it) : { main: esc(String(id)) };
+    const grip = (reorder && !reorder.gated)
+      ? '<span class="cdx-rail-grip" aria-hidden="true" title="' + esc(cfg.dragHint || 'Arrastar para reordenar') + '">' + GRIP + '</span>'
+      : '';
+    return '<div class="cdx-rail-row' + (on ? ' is-on' : '') + '" data-id="' + esc(String(id)) + '">' +
+      grip +
+      '<div class="cdx-rail-main">' + (rc.main || '') + '</div>' +
+      (rc.act ? '<div class="cdx-rail-act">' + rc.act + '</div>' : '') +
+    '</div>';
+  }
+
+  function sectionHtml(sec, rows) {
+    const rid = 'sec-' + esc(String(sec.id));
+    return '<div class="cdx-rail-sec" data-sec="' + esc(String(sec.id)) + '">' +
+      '<div class="cdx-rail-sec-h" data-sec-toggle="' + esc(String(sec.id)) + '">' +
+        '<span class="cdx-rail-sec-caret" aria-hidden="true">▸</span>' +
+        '<span class="cdx-rail-sec-title">' + esc(sec.title || '') + '</span>' +
+        '<span class="cdx-rail-sec-count">' + rows.length + '</span>' +
+        (sections.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(sec.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(sec.id)) + '" title="Excluir">×</button></span>' : '') +
+      '</div>' +
+      '<div class="cdx-rail-seclist" data-seclist="' + esc(String(sec.id)) + '">' + rows.join('') + '</div>' +
+    '</div>';
+  }
+
+  function bodyHtml() {
+    const its = readItems();
+    if (!its.length) {
+      return '<div class="cdx-rail-empty">' + esc(cfg.emptyText || '') + '</div>';
+    }
+    if (!sections) {
+      return '<div class="cdx-rail-list" data-seclist="__flat">' + its.map(rowHtml).join('') + '</div>';
+    }
+    // grouped: one .cdx-rail-seclist per section (each is a drop container for cross-section
+    // drag), in the section list's order; items whose section is missing fall into a null bucket.
+    const list = (typeof sections.list === 'function' ? sections.list() : (sections.list || [])).slice();
+    const byId = new Map(list.map((s) => [String(s.id), s]));
+    const groups = new Map(list.map((s) => [String(s.id), []]));
+    const loose = [];
+    its.forEach((it) => {
+      const sid = sections.of ? sections.of(it) : null;
+      if (sid != null && groups.has(String(sid))) groups.get(String(sid)).push(rowHtml(it));
+      else loose.push(rowHtml(it));
+    });
+    let html = '';
+    if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.join('') + '</div>';
+    list.forEach((s) => { html += sectionHtml(s, groups.get(String(s.id)) || []); });
+    if (sections.editable) {
+      html += '<button type="button" class="cdx-rail-newsec" data-newsec>' + esc(cfg.newSectionLabel || '+ Nova seção') + '</button>';
+    }
+    return html;
+  }
+
+  function headHtml() {
+    const addBtn = add
+      ? '<button type="button" class="cdx-rail-add cdx-btn cdx-btn-sm" data-rail-add title="' + esc(add.title || add.label || '') + '" aria-label="' + esc(add.title || add.label || '') + '">' + esc(add.label || '+') + '</button>'
+      : '';
+    let filters = '';
+    if (filter && filter.chips && filter.chips.length) {
+      const active = filter.active ? filter.active() : null;
+      filters = '<div class="cdx-rail-filters">' + filter.chips.map((c) =>
+        '<button type="button" class="cdx-rail-chip' + (String(active) === String(c.key) ? ' is-on' : '') + '" data-rail-filter="' + esc(String(c.key)) + '">' +
+          esc(c.label) + (c.count != null ? ' <span class="cdx-rail-chip-n">' + c.count + '</span>' : '') +
+        '</button>'
+      ).join('') + '</div>';
+    }
+    return '<div class="cdx-rail-head"><span class="cdx-rail-title">' + esc(cfg.title || '') + '</span>' + addBtn + '</div>' + filters;
+  }
+
+  function render() {
+    if (destroyed) return;
+    container.innerHTML =
+      '<div class="cdx-rail">' +
+        headHtml() +
+        '<div class="cdx-rail-body">' + bodyHtml() + '</div>' +
+        (cfg.footer ? '<div class="cdx-rail-foot">' + cfg.footer() + '</div>' : '') +
+      '</div>';
+    if (!wired) { wire(); wired = true; }
+    ensureResizer();
+  }
+
+  // ── events (delegated on the container; survive innerHTML re-renders) ─────────
+  function onClick(e) {
+    if (e.target.closest('.cdx-rail-grip')) return; // grip is drag-only
+    const addBtn = e.target.closest('[data-rail-add]');
+    if (addBtn) { if (add && add.onAdd) add.onAdd(); return; }
+    const chip = e.target.closest('[data-rail-filter]');
+    if (chip) { if (filter && filter.onFilter) filter.onFilter(chip.getAttribute('data-rail-filter')); return; }
+    if (sections) {
+      const ren = e.target.closest('[data-sec-ren]');
+      if (ren) { if (sections.onRename) sections.onRename(ren.getAttribute('data-sec-ren')); return; }
+      const del = e.target.closest('[data-sec-del]');
+      if (del) { if (sections.onDelete) sections.onDelete(del.getAttribute('data-sec-del')); return; }
+      const tog = e.target.closest('[data-sec-toggle]');
+      if (tog) { tog.closest('.cdx-rail-sec').classList.toggle('is-collapsed'); return; }
+      if (e.target.closest('[data-newsec]')) { if (sections.onCreate) sections.onCreate(); return; }
+    }
+    const row = e.target.closest('.cdx-rail-row');
+    if (row && cfg.onSelect) cfg.onSelect(row.getAttribute('data-id'));
+  }
+
+  // Pointer-events drag: grip is the handle; works on touch + mouse.
+  function onPointerDown(e) {
+    if (!reorder || reorder.gated) return;
+    const grip = e.target.closest('.cdx-rail-grip');
+    if (!grip) return;
+    const row = grip.closest('.cdx-rail-row');
+    if (!row) return;
+    e.preventDefault();
+    drag = { row, id: row.getAttribute('data-id'), fromList: row.parentNode, startY: e.clientY, moved: false, pointerId: e.pointerId };
+    try { grip.setPointerCapture(e.pointerId); } catch (_) { /* older browsers */ }
+    drag.grip = grip;
+  }
+  function onPointerMove(e) {
+    if (!drag) return;
+    if (!drag.moved) {
+      if (Math.abs(e.clientY - drag.startY) < DRAG_THRESHOLD) return;
+      drag.moved = true;
+      drag.row.classList.add('is-dragging');
+    }
+    const under = document.elementFromPoint(e.clientX, e.clientY);
+    const overRow = under && under.closest ? under.closest('.cdx-rail-row') : null;
+    const overList = under && under.closest ? under.closest('[data-seclist]') : null;
+    if (overRow && overRow !== drag.row && container.contains(overRow)) {
+      const rect = overRow.getBoundingClientRect();
+      const after = (e.clientY - rect.top) > rect.height / 2;
+      overRow.parentNode.insertBefore(drag.row, after ? overRow.nextSibling : overRow);
+    } else if (overList && sections && overList !== drag.row.parentNode && container.contains(overList) && !overList.querySelector('.cdx-rail-row')) {
+      // dropping into an empty section list
+      overList.appendChild(drag.row);
+    }
+  }
+  function onPointerUp() {
+    if (!drag) return;
+    const d = drag; drag = null;
+    if (d.grip) { try { d.grip.releasePointerCapture(d.pointerId); } catch (_) { /* ignore */ } }
+    d.row.classList.remove('is-dragging');
+    if (!d.moved) return; // it was a press without movement, not a reorder
+    const nowList = d.row.parentNode;
+    const idsIn = (listEl) => Array.from(listEl.querySelectorAll(':scope > .cdx-rail-row')).map((r) => r.getAttribute('data-id'));
+    if (sections && nowList.getAttribute && nowList.getAttribute('data-seclist') && nowList !== d.fromList) {
+      const secId = nowList.getAttribute('data-seclist');
+      if (sections.onMoveItem) sections.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
+    } else if (reorder && reorder.onReorder) {
+      reorder.onReorder(idsIn(nowList));
+    } else if (sections && sections.onMoveItem) {
+      const secId = nowList.getAttribute('data-seclist');
+      sections.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
+    }
+  }
+
+  function wire() {
+    container.addEventListener('click', onClick);
+    container.addEventListener('pointerdown', onPointerDown);
+    container.addEventListener('pointermove', onPointerMove);
+    container.addEventListener('pointerup', onPointerUp);
+    container.addEventListener('pointercancel', onPointerUp);
+  }
+  function unwire() {
+    container.removeEventListener('click', onClick);
+    container.removeEventListener('pointerdown', onPointerDown);
+    container.removeEventListener('pointermove', onPointerMove);
+    container.removeEventListener('pointerup', onPointerUp);
+    container.removeEventListener('pointercancel', onPointerUp);
+  }
+
+  function ensureResizer() {
+    const w = cfg.width;
+    if (!w || w.mode !== 'resize' || resizerDestroy) return;
+    const grid = w.gridEl || container.parentNode;
+    if (!grid) return;
+    const d = installResizer(grid, { storeKey: w.storeKey, defaultPx: w.defaultPx, min: w.min, max: w.max });
+    resizerDestroy = (typeof d === 'function') ? d : null;
+    // width:autohide is C3 (clientes/turmas + sessões); not implemented here yet.
+  }
+
+  function destroy() {
+    destroyed = true;
+    unwire();
+    if (resizerDestroy) { try { resizerDestroy(); } catch (_) { /* ignore */ } resizerDestroy = null; }
+    drag = null;
+    if (container) container.innerHTML = '';
+  }
+
+  return { render, destroy, el: container };
+}
