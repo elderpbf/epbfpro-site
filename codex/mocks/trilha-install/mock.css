@@ -1,0 +1,112 @@
+/* Mock-only styling for the 3 trilha install-affordance options + the mock control panel.
+   The trilha chrome itself uses the REAL linked CSS (theme/tokens/trilha/cards/...); only
+   the NEW install variants and the mock harness controls live here. Tokens reused so the
+   variants match the theme in light and dark. */
+
+/* ── Mock control panel (clearly a harness control, not part of the trilha) ─────── */
+.mk-ctrl {
+  position: fixed; top: 10px; right: 10px; z-index: 9000;
+  display: flex; flex-direction: column; gap: .5rem;
+  padding: .7rem .8rem; border-radius: 12px;
+  background: rgba(20,24,40,.9); color: #fff; font: 500 12px/1.4 system-ui, sans-serif;
+  box-shadow: 0 6px 24px rgba(0,0,0,.35); max-width: 220px;
+}
+.mk-ctrl-title { font-weight: 700; opacity: .8; text-transform: uppercase; letter-spacing: .04em; font-size: 10px; }
+.mk-ctrl label { display: flex; align-items: center; gap: .45rem; cursor: pointer; }
+.mk-ctrl button {
+  background: #14b8a6; color: #fff; border: none; border-radius: 8px;
+  padding: .45rem .7rem; font: 600 12px system-ui, sans-serif; cursor: pointer;
+}
+.mk-ctrl button:hover { background: #0d9488; }
+.mk-ctrl .mk-ctrl-note { opacity: .7; font-size: 11px; font-weight: 400; }
+
+/* ── Live-question stand-in (represents the nexo takeover) ──────────────────────── */
+#cdx-tr-nexo-host { padding: 1rem; }
+.mk-q-card {
+  max-width: 640px; margin: 1.5rem auto; padding: 1.5rem 1.4rem;
+  background: var(--surface); border: 1px solid var(--border);
+  border-radius: 16px; box-shadow: var(--shadow);
+}
+.mk-q-live { display: flex; align-items: center; gap: .5rem; font-size: .8rem; font-weight: 700; color: var(--primary); text-transform: uppercase; letter-spacing: .04em; }
+.mk-q-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--primary); box-shadow: 0 0 0 0 var(--primary); animation: mk-pulse 1.6s infinite; }
+@keyframes mk-pulse { 0%{box-shadow:0 0 0 0 rgba(20,184,166,.5)} 70%{box-shadow:0 0 0 10px rgba(20,184,166,0)} 100%{box-shadow:0 0 0 0 rgba(20,184,166,0)} }
+.mk-q-text { margin: .8rem 0 1.1rem; font-size: 1.15rem; font-weight: 600; color: var(--text-primary); line-height: 1.4; }
+.mk-q-opts { display: flex; flex-direction: column; gap: .6rem; }
+.mk-q-opts button { text-align: left; padding: .8rem 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--background); color: var(--text-primary); font: 500 .95rem system-ui, sans-serif; cursor: pointer; }
+.mk-q-opts button:hover { border-color: var(--primary); }
+.mk-q-note { text-align: center; margin-top: 1rem; font-size: .78rem; color: var(--text-secondary); opacity: .8; }
+
+/* Shared logo bubble used by the variants. */
+.mk-logo { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
+.mk-logo--sm { width: 24px; height: 24px; border-radius: 6px; }
+
+/* ══ OPTION 1 · header chip + first-visit hint ═══════════════════════════════════ */
+.mk-chip {
+  display: inline-flex; align-items: center; gap: .35rem;
+  padding: .4rem .7rem; border-radius: 999px; border: 1px solid var(--primary);
+  background: var(--tint-primary-tx); color: var(--primary);
+  font: 700 .8rem system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+}
+.mk-chip:hover { background: var(--primary); color: #fff; }
+.mk-chip svg { width: 15px; height: 15px; }
+.mk-hint {
+  position: fixed; z-index: 8000; max-width: 230px;
+  padding: .7rem .85rem; border-radius: 12px;
+  background: var(--primary); color: #fff; font: 600 .82rem system-ui, sans-serif; line-height: 1.35;
+  box-shadow: 0 8px 26px rgba(0,0,0,.28);
+  transition: opacity .3s ease, transform .3s ease;
+}
+.mk-hint::after { content: ''; position: absolute; top: -7px; right: 22px; border: 7px solid transparent; border-top: 0; border-bottom-color: var(--primary); }
+.mk-hint.is-gone { opacity: 0; transform: translateY(-6px); pointer-events: none; }
+
+/* ══ OPTION 2 · hero strip that collapses into a client-box badge ═════════════════ */
+.mk-strip {
+  display: flex; align-items: center; gap: .85rem;
+  max-width: 860px; margin: -.3rem auto 1.1rem; padding: .7rem 1rem;
+  background: var(--surface); border: 1px solid var(--border); border-left: 4px solid var(--primary);
+  border-radius: 14px; box-shadow: var(--shadow);
+  overflow: hidden; transition: max-height .35s ease, opacity .3s ease, margin .35s ease, padding .35s ease;
+  max-height: 90px;
+}
+.mk-strip.is-collapsed { max-height: 0; opacity: 0; margin: 0 auto; padding: 0 1rem; border-width: 0 0 0 0; }
+.mk-strip-txt { display: flex; flex-direction: column; gap: .15rem; min-width: 0; }
+.mk-strip-title { font-weight: 700; font-size: .92rem; color: var(--text-primary); }
+.mk-strip-desc { font-size: .8rem; color: var(--text-secondary); }
+.mk-strip-btn, .mk-btn {
+  margin-left: auto; padding: .5rem 1rem; background: var(--primary); color: #fff;
+  border: none; border-radius: 10px; font: 600 .85rem system-ui, sans-serif; cursor: pointer; white-space: nowrap;
+}
+.mk-strip-btn:hover, .mk-btn:hover { background: var(--primary-dark); }
+.mk-strip-x { background: none; border: none; color: var(--text-secondary); font-size: 1.2rem; cursor: pointer; padding: 0 .2rem; }
+/* the docked badge on the client avatar */
+.cdx-tr-client-avatar { position: relative; }
+.mk-badge {
+  position: absolute; right: -6px; bottom: -6px; width: 26px; height: 26px; border-radius: 50%;
+  display: none; align-items: center; justify-content: center;
+  background: var(--primary); color: #fff; border: 2px solid var(--background); cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,.25);
+}
+.mk-badge svg { width: 14px; height: 14px; }
+.mk-badge.is-on { display: inline-flex; }
+
+/* ══ OPTION 3 · bottom snackbar that slides out to a floating icon ════════════════ */
+.mk-snack {
+  position: fixed; left: 50%; bottom: 16px; transform: translateX(-50%);
+  z-index: 8000; display: flex; align-items: center; gap: .75rem;
+  padding: .6rem .8rem .6rem .7rem; border-radius: 14px;
+  background: var(--surface); border: 1px solid var(--border); box-shadow: 0 10px 30px rgba(0,0,0,.22);
+  transition: transform .35s ease, opacity .3s ease; max-width: calc(100% - 24px);
+}
+.mk-snack.is-gone { transform: translate(-50%, 130%); opacity: 0; pointer-events: none; }
+.mk-snack-txt { font-weight: 700; font-size: .88rem; color: var(--text-primary); }
+.mk-fab {
+  position: fixed; right: 16px; bottom: 16px; z-index: 8000;
+  width: 48px; height: 48px; border-radius: 50%; border: none; cursor: pointer;
+  background: var(--primary); color: #fff; box-shadow: 0 6px 20px rgba(0,0,0,.28);
+  display: none; align-items: center; justify-content: center;
+}
+.mk-fab.is-on { display: inline-flex; }
+.mk-fab svg { width: 22px; height: 22px; }
+
+/* During the live-question state, the fixed bottom variants must retract. */
+body.mk-in-questao .mk-snack, body.mk-in-questao .mk-fab { display: none !important; }
