@@ -6,8 +6,9 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Temperatura · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<link rel="stylesheet" href="../css/labs.css?v=1.2">
 <script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -40,7 +41,9 @@
 
       position: relative;
       width: 100%;
-      height: 100vh;
+      /* dvh, not vh: on mobile the vh box sits behind the URL bar and hides
+         the operator button row. dvh tracks the visible viewport. */
+      height: 100dvh;
       overflow: hidden;
       display: grid;
       grid-template-rows: auto auto minmax(0, 1fr) auto auto;
@@ -52,46 +55,10 @@
       font-family: var(--font-display);
     }
 
-    /* ── Header (brand + title) — consistent across all labs ─ */
-    .k2-header {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      column-gap: 1.2rem;
-      align-items: center;
-    }
-    .k2-brand {
-      display: flex;
-      align-items: center;
-      min-width: 0;
-    }
-    .lab-logo {
-      height: clamp(40px, 5vh, 60px);
-      width: auto;
-      display: block;
-    }
-    .lab-logo--dark { display: none; }
-    [data-theme="dark"] .lab-logo--light { display: none; }
-    [data-theme="dark"] .lab-logo--dark { display: block; }
-    .k2-title {
-      margin: 0;
-      font-size: clamp(28px, 2.6vw, 44px);
-      font-weight: 800;
-      letter-spacing: -0.01em;
-      line-height: 1.05;
-    }
-    .k2-title-sub {
-      display: block;
-      font-size: clamp(14px, 1.1vw, 18px);
-      color: var(--text-dim);
-      font-weight: 400;
-      letter-spacing: 0.01em;
-      margin-top: 0.2rem;
-    }
-
     /* ── Section labels ───────────────────────────────────── */
     .k2-section-label {
       font-family: var(--font-mono);
-      font-size: clamp(12px, 0.9vw, 15px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       letter-spacing: 0.12em;
       text-transform: uppercase;
@@ -115,7 +82,7 @@
     }
     .k2-prompt-line {
       font-family: var(--font-mono);
-      font-size: clamp(28px, 2.6vw, 48px);
+      font-size: var(--lab-fs-audience);
       font-weight: 600;
       letter-spacing: 0.005em;
       color: var(--text);
@@ -167,7 +134,7 @@
       border: 2px solid var(--cool);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: clamp(20px, 1.5vw, 28px);
+      font-size: var(--lab-fs-answer);
       font-weight: 700;
       color: var(--cool);
       animation: k2-pop-in 380ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
@@ -205,7 +172,7 @@
       width: clamp(220px, 16vw, 320px);
       padding-right: 0.7rem;
       font-family: var(--font-mono);
-      font-size: clamp(17px, 1.4vw, 24px);
+      font-size: var(--lab-fs-body);
       font-weight: 600;
       color: var(--text);
       text-align: right;
@@ -252,7 +219,7 @@
       flex: 0 0 auto;
       width: clamp(68px, 5.2vw, 96px);
       font-family: var(--font-mono);
-      font-size: clamp(16px, 1.3vw, 22px);
+      font-size: var(--lab-fs-body);
       font-weight: 600;
       color: var(--text-dim);
       text-align: right;
@@ -287,7 +254,7 @@
     }
     .k2-temp-value {
       font-family: var(--font-mono);
-      font-size: clamp(44px, 5vw, 72px);
+      font-size: var(--lab-fs-audience);
       font-weight: 700;
       color: var(--warm);
       letter-spacing: -0.02em;
@@ -295,7 +262,7 @@
     }
     .k2-temp-desc {
       font-family: var(--font-display);
-      font-size: clamp(15px, 1.1vw, 20px);
+      font-size: var(--lab-fs-body);
       color: var(--text-dim);
       font-weight: 500;
       letter-spacing: 0.02em;
@@ -314,7 +281,7 @@
       display: flex;
       justify-content: space-between;
       font-family: var(--font-mono);
-      font-size: clamp(14px, 1vw, 18px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       opacity: 0.7;
       letter-spacing: 0.06em;
@@ -369,9 +336,12 @@
       gap: 0.45rem;
       padding: 0 0.2rem;
     }
+    /* The text-size control (A− / A+) is mounted by lab-controls.js into
+       this slot; on desktop it sits at the left of the operator bar. */
+    .k2-fs-slot { margin-right: auto; }
     .k2-btn {
       font-family: var(--font-display);
-      font-size: clamp(13px, 0.95vw, 15px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.38rem 1rem;
       border-radius: 999px;
@@ -436,22 +406,16 @@
         padding: 0.6rem 0.9rem 0.6rem;
         gap: 0.55rem;
       }
-      .k2-header { column-gap: 0.6rem; }
-      .lab-logo { height: clamp(28px, 9vw, 40px); }
-      .k2-title { font-size: 20px; }
-      .k2-title-sub { font-size: 12px; }
       .k2-prompt-wrap { padding: 0.55rem 0.9rem 0.7rem; }
-      .k2-prompt-line { font-size: 22px; line-height: 1.25; }
-      .k2-final-badge { font-size: 15px; padding: 0.35rem 0.85rem; margin-left: 0.5rem; }
+      .k2-final-badge { padding: 0.35rem 0.85rem; margin-left: 0.5rem; }
 
       .k2-bars { gap: 0.25rem; }
       .k2-bar { gap: 0.5rem; }
       .k2-bar-token {
         width: 130px;
         padding-right: 0.4rem;
-        font-size: 14px;
       }
-      .k2-bar-pct { width: 52px; font-size: 13px; }
+      .k2-bar-pct { width: 52px; }
       .k2-bar-track { min-height: 18px; max-height: 36px; height: 70%; }
 
       .k2-controls { padding: 0.4rem 0.7rem; }
@@ -465,16 +429,17 @@
         align-items: baseline;
         gap: 0.55rem;
       }
-      .k2-temp-value { font-size: 32px; }
-      .k2-temp-desc { font-size: 13px; }
-      .k2-temp-slider-row { gap: 0.2rem; }
-      .k2-temp-slider-label { font-size: 11px; }
+      /* Single-column grid on phone: force the slider row into track 1 so it
+         stacks BELOW the value+desc instead of landing in an implicit 2nd
+         column (grid-column:2 from the desktop rule) and overlapping. */
+      .k2-temp-slider-row { grid-column: 1; gap: 0.2rem; }
       .k2-temp-slider::-webkit-slider-thumb { width: 28px; height: 28px; }
       .k2-temp-slider::-moz-range-thumb { width: 28px; height: 28px; }
 
       .k2-button-bar { gap: 0.4rem; padding: 0; }
+      /* Text-size control gets its own centered row on phones. */
+      .k2-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
       .k2-btn {
-        font-size: 14px;
         padding: 0.65rem 0.5rem;
         flex: 1 1 calc(33.333% - 0.27rem);
         min-height: 44px;
@@ -484,11 +449,8 @@
     }
 
     @media (max-width: 400px) {
-      .k2-prompt-line { font-size: 19px; }
-      .k2-temp-value { font-size: 28px; }
-      .k2-bar-token { width: 110px; font-size: 13px; }
-      .k2-bar-pct { width: 46px; font-size: 12px; }
-      .k2-btn { font-size: 13px; padding: 0.6rem 0.3rem; }
+      .k2-bar-token { width: 110px; }
+      .k2-bar-pct { width: 46px; }
     }
 
     @media (max-height: 500px) and (orientation: landscape) {
@@ -496,21 +458,11 @@
         padding: 0.4rem 1rem 0.35rem;
         gap: 0.4rem;
       }
-      .lab-logo { height: 28px; }
-      .k2-title { font-size: 18px; }
-      .k2-title-sub { font-size: 11px; }
       .k2-prompt-wrap { padding: 0.4rem 0.9rem 0.5rem; }
-      .k2-prompt-line { font-size: 20px; }
       .k2-bars { gap: 0.2rem; }
-      .k2-bar-token { font-size: 14px; }
-      .k2-bar-pct { font-size: 13px; }
       .k2-bar-track { min-height: 16px; max-height: 30px; height: 70%; }
       .k2-controls { padding: 0.35rem 0.7rem; }
-      .k2-temp-value { font-size: 28px; }
-      .k2-temp-desc { font-size: 13px; }
-      .k2-temp-slider-label { font-size: 11px; }
       .k2-btn {
-        font-size: 12px;
         padding: 0.4rem 0.75rem;
         min-height: 32px;
       }
@@ -547,6 +499,7 @@
   </div>
 
   <div class="k2-button-bar">
+    <span class="k2-fs-slot" data-lab-fs-ctl></span>
     <button class="k2-btn k2-btn-toggle" id="k2-sobreajuste" aria-pressed="true"
             title="Sobreajuste: o modelo decorou a frase 'O rato roeu...' e sempre escolhe a palavra mais provável. Desligue para ver uma distribuição mais aberta com 'Eu gosto de...'">Sobreajuste</button>
     <button class="k2-btn k2-btn-reset" id="k2-reset" title="Voltar ao prompt inicial">Reiniciar</button>
