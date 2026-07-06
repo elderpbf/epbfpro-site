@@ -1,28 +1,41 @@
 // codex/trilha/js/install-prompt.js
-// "Salvar como app": a home-screen install affordance that opens as a full card and,
-// after a few seconds, shrinks to a small logo pill at the top of the trilha. Tapping
-// the pill re-expands it. Every page open starts expanded, then collapses.
+// "Salvar como app": a home-screen install affordance rendered as an EXTENSION OF THE
+// HERO — one continuous box, same width/surface, no divider (the hero grows upward to
+// hold the invite). It opens big and, on the first interaction (scroll/tap/key), shrinks
+// to a short strip (label + download glyph). It is PERSISTENT: no close button, it never
+// dismisses itself; it only self-hides once the app is installed (and returns if the app
+// is later uninstalled, since Chrome resumes firing beforeinstallprompt). The WHOLE bar
+// is the button — a tap anywhere installs.
+//
+// During a live question the trilha body is hidden by nexo.js (it toggles body.cdx-tr-live);
+// the bar hides with it and a centered pill takes over the topbar's empty middle. That swap
+// is pure CSS keyed off body.cdx-tr-live, so there is no ordering race with nexo — the bar
+// and the pill are both mounted here; the class decides which one shows.
 //
 // Platform behavior:
-//   - Android/desktop (beforeinstallprompt available): the native prompt via a button.
-//     No close button, once the app is installed the browser stops firing the event, so
-//     the affordance simply never shows again (self-hiding), and the small pill is harmless.
-//   - iOS Safari (no programmatic install, no install-state signal): a Share -> Adicionar
-//     à Tela de Início hint, WITH a close button (persisted), since we cannot auto-detect
-//     that it was installed. showInstallPrompt() brings it back after a dismiss.
+//   - Android/desktop (beforeinstallprompt available): tapping the bar/pill fires the native
+//     prompt. Once installed the event stops firing, so the affordance simply never returns.
+//   - iOS Safari (no programmatic install, no install-state signal): the expanded bar shows a
+//     Share -> "Adicionar à Tela de Início" hint; tapping a collapsed strip re-expands it.
 //
-// The beforeinstallprompt/appinstalled listeners live at MODULE TOP LEVEL so no early
-// event is missed. isStandalone/isIosSafari/isInstallAvailable are PURE and unit-pinned.
+// The beforeinstallprompt/appinstalled listeners live at MODULE TOP LEVEL so no early event
+// is missed. isStandalone/isIosSafari/isInstallAvailable are PURE and unit-pinned.
 import { t } from '../i18n.js';
 import { esc } from './utils.js';
 
 const DISMISS_KEY = 'trilha_install_v2_dismissed'; // v2: old auto-dismiss flags are ignored
-const COLLAPSE_MS = 5000;
 const LOGO_SRC = '/codex/trilha/icons/app-icon-192.png';
+
+// Download glyph (arrow into a tray) for the collapsed strip and the questions pill.
+const DL_GLYPH =
+  '<svg class="cdx-install-glyph-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
+    'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
+    '<path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>' +
+  '</svg>';
 
 // iOS Share glyph (box with an up arrow), matching the system affordance the hint names.
 const SHARE_GLYPH =
-  '<svg class="cdx-install-glyph" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
+  '<svg class="cdx-install-share-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
     'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
     '<path d="M12 15V3"/><path d="m8 7 4-4 4 4"/>' +
     '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>' +
@@ -78,7 +91,7 @@ export function isInstallAvailable(win) {
 }
 
 // Register the minimal service worker (scope /trilha/). Chrome fires beforeinstallprompt
-// ONLY when a SW with a fetch handler is present, so without this the install card never
+// ONLY when a SW with a fetch handler is present, so without this the install bar never
 // appears on Chrome. Idempotent; failures are non-fatal (browser-menu install still works).
 let _swTried = false;
 function registerSW(win) {
@@ -93,87 +106,137 @@ function registerSW(win) {
   } catch (e) { if (win.bsLog) win.bsLog('pwa: sw erro: ' + (e && e.message || e), 'error'); }
 }
 
-// Mount the install card (if installable and not previously dismissed). Idempotent.
+// First user interaction (scroll / pointer / key). Fires once, then self-removes. Returns a
+// disarm fn so a re-expand can re-arm a fresh collapse. Capture phase so a tap on the bar
+// still counts. Kept module-local (not exported) — the DOM path is verified on staging.
+function onFirstInteraction(win, fn) {
+  let done = false;
+  const run = () => { if (done) return; done = true; cleanup(); fn(); };
+  const cleanup = () => {
+    win.removeEventListener('scroll', run, true);
+    win.removeEventListener('pointerdown', run, true);
+    win.removeEventListener('keydown', run, true);
+  };
+  win.addEventListener('scroll', run, true);
+  win.addEventListener('pointerdown', run, true);
+  win.addEventListener('keydown', run, true);
+  return cleanup;
+}
+
+// The single live UI, module-scoped so a second init (or the gear "recover") re-expands the
+// existing bar instead of mounting a duplicate. Null until first render, and after teardown.
+let _ui = null;
+
+// Mount the install bar (if installable). Idempotent: a second call re-expands rather than
+// duplicating. Renders NOTHING if installed / standalone / not installable.
 export function initInstallPrompt(root, opts = {}) {
   const win = opts.win || (typeof window !== 'undefined' ? window : undefined);
   if (!win || !root) return;
   registerSW(win); // must run even if we don't render, so beforeinstallprompt can fire
   if (_installed || isStandalone(win)) return;
-  try { if (win.localStorage.getItem(DISMISS_KEY) === '1') return; } catch (_) { /* private mode */ }
 
-  const host = root.querySelector('.cdx-trilha-main') || root;
+  // Already mounted and still in the DOM → just bring it big again.
+  if (_ui && _ui.bar && _ui.bar.isConnected) { _ui.expand(); return; }
+  _ui = null;
+
   const doc = win.document;
-  let card = null;
-  let collapseTimer = null;
+  if (!doc) return;
+  const host = root.querySelector('.cdx-trilha-main') || root;
+  const hero = root.querySelector('.cdx-trilha-hero');
 
-  function scheduleCollapse() {
-    if (collapseTimer) win.clearTimeout(collapseTimer);
-    collapseTimer = win.setTimeout(() => { if (card) card.classList.add('is-collapsed'); }, COLLAPSE_MS);
+  let bar = null;
+  let pill = null;
+  let disarm = null;
+  let mode = 'prompt'; // 'prompt' (native) | 'ios'
+
+  function collapse() { if (bar) bar.classList.add('is-min'); }
+  function armCollapse() {
+    if (disarm) { disarm(); disarm = null; }
+    disarm = onFirstInteraction(win, collapse);
   }
-  function remove(persist) {
-    if (collapseTimer) { win.clearTimeout(collapseTimer); collapseTimer = null; }
-    if (card) { card.remove(); card = null; }
-    if (persist) { try { win.localStorage.setItem(DISMISS_KEY, '1'); } catch (_) { /* ignore */ } }
+  function expand() {
+    if (!bar) return;
+    bar.classList.remove('is-min');
+    armCollapse();
   }
 
-  function render(mode) {
-    if (card || isStandalone(win) || !doc) return;
-    const ios = (mode === 'ios');
-    const action = ios
-      ? '<p class="cdx-install-hint">' + SHARE_GLYPH + '<span>' + esc(t('install.ios_hint')) + '</span></p>'
-      : '<button type="button" class="cdx-install-btn">' + esc(t('install.btn')) + '</button>';
-    // Close (X) only where we cannot detect an install (iOS). On Android/desktop the
-    // affordance self-hides once installed, so no manual dismiss is needed.
-    const close = ios
-      ? '<button type="button" class="cdx-install-close" aria-label="' + esc(t('install.dismiss')) + '">&times;</button>'
-      : '';
-    card = doc.createElement('div');
-    card.className = 'cdx-install-card';
-    card.innerHTML =
+  // A tap anywhere on the bar/pill installs. On iOS there is no programmatic install, so a
+  // tap on a collapsed strip just re-expands to reveal the Share hint (the expanded bar
+  // carries the instructions); an expanded iOS bar tap is a no-op (nothing to fire).
+  function doInstall() {
+    if (mode === 'ios') { if (bar && bar.classList.contains('is-min')) expand(); return; }
+    if (!_deferred) { expand(); return; }
+    _deferred.prompt();
+    Promise.resolve(_deferred.userChoice).catch(() => {}).then(() => { _deferred = null; });
+  }
+
+  function teardown() {
+    if (disarm) { disarm(); disarm = null; }
+    if (bar) { bar.remove(); bar = null; }
+    if (pill) { pill.remove(); pill = null; }
+    if (hero) hero.classList.remove('cdx-install-joined');
+    _ui = null;
+  }
+
+  function render(m) {
+    if (bar || isStandalone(win)) return;
+    mode = m;
+    const ios = (m === 'ios');
+    const descHtml = ios
+      ? SHARE_GLYPH + '<span>' + esc(t('install.ios_hint')) + '</span>'
+      : esc(t('install.cta_desc'));
+    const cta = ios ? '' : '<span class="cdx-install-cta">' + esc(t('install.btn')) + '</span>';
+
+    bar = doc.createElement('div');
+    bar.className = 'cdx-install-bar';
+    bar.setAttribute('role', 'button');
+    bar.setAttribute('tabindex', '0');
+    bar.innerHTML =
       '<img class="cdx-install-logo" src="' + LOGO_SRC + '" alt="" width="40" height="40">' +
-      '<span class="cdx-install-pill-label">' + esc(t('install.pill')) + '</span>' +
       '<div class="cdx-install-body">' +
-        '<strong class="cdx-install-title">' + esc(t('install.cta_title')) + '</strong>' +
-        '<span class="cdx-install-desc">' + esc(t('install.cta_desc')) + '</span>' +
-        '<div class="cdx-install-actions">' + action + '</div>' +
-      '</div>' + close;
-    host.prepend(card);
+        '<span class="cdx-install-title">' + esc(t('install.cta_title')) + '</span>' +
+        '<span class="cdx-install-desc">' + descHtml + '</span>' +
+      '</div>' +
+      '<span class="cdx-install-minlabel">' + esc(t('install.pill')) + '</span>' +
+      cta +
+      '<span class="cdx-install-glyph">' + DL_GLYPH + '</span>';
+    host.prepend(bar);
+    if (hero) hero.classList.add('cdx-install-joined');
 
-    // Tapping the collapsed pill re-expands it (ignoring the X).
-    card.addEventListener('click', (e) => {
-      if (card.classList.contains('is-collapsed') && !e.target.closest('.cdx-install-close')) {
-        card.classList.remove('is-collapsed');
-        scheduleCollapse();
-      }
+    bar.addEventListener('click', doInstall);
+    bar.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); doInstall(); }
     });
-    const btn = card.querySelector('.cdx-install-btn');
-    if (btn) btn.addEventListener('click', async (e) => {
-      e.stopPropagation();
-      if (!_deferred) { remove(false); return; }
-      btn.disabled = true;
-      _deferred.prompt();
-      try { await _deferred.userChoice; } catch (_) { /* ignore */ }
-      _deferred = null;
-      remove(false); // appinstalled persists the dismissal if accepted
-    });
-    const x = card.querySelector('.cdx-install-close');
-    if (x) x.addEventListener('click', (e) => { e.stopPropagation(); remove(true); });
 
-    scheduleCollapse();
+    // Questions-state pill: centered over the topbar, shown only while body.cdx-tr-live
+    // (nexo's live-question takeover). Solid teal + white text for contrast in both themes.
+    pill = doc.createElement('button');
+    pill.type = 'button';
+    pill.className = 'cdx-install-qpill';
+    pill.innerHTML =
+      '<img class="cdx-install-qpill-logo" src="' + LOGO_SRC + '" alt="" width="20" height="20">' +
+      '<span>' + esc(t('install.pill')) + '</span>';
+    pill.addEventListener('click', doInstall);
+    doc.body.appendChild(pill);
+
+    _ui = { bar, pill, expand, teardown };
+    armCollapse();
   }
 
-  // On install, just hide (do NOT persist): once installed, Chrome stops firing
-  // beforeinstallprompt, so it won't reappear; and if the user later uninstalls, the
-  // invite should come back (a persisted flag would wrongly suppress it forever).
-  _onChange = (mode) => { if (mode === 'installed') remove(false); else if (!card) render('prompt'); };
+  // On install, tear down (do NOT persist a flag): once installed Chrome stops firing
+  // beforeinstallprompt so it won't reappear; and if the user later uninstalls, the invite
+  // should return (a persisted flag would wrongly suppress it forever).
+  _onChange = (m) => { if (m === 'installed') teardown(); else if (!bar) render('prompt'); };
 
   if (_deferred) render('prompt');
   else if (isIosSafari(win.navigator)) render('ios');
 }
 
-// Bring the card back after a dismiss (e.g. from a settings entry). Clears the flag.
+// Bring the invite back big (e.g. from the settings gear). Clears the legacy dismiss flag and
+// re-expands the existing bar, or mounts it if it isn't up yet.
 export function showInstallPrompt(root, opts = {}) {
   const win = opts.win || (typeof window !== 'undefined' ? window : undefined);
-  if (win) { try { win.localStorage.removeItem(DISMISS_KEY); } catch (_) { /* ignore */ } }
+  if (win) { try { win.localStorage.removeItem(DISMISS_KEY); } catch (_) { /* private mode */ } }
+  if (_ui && _ui.bar && _ui.bar.isConnected) { _ui.expand(); return; }
   initInstallPrompt(root, opts);
 }

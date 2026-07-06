@@ -90,6 +90,9 @@ function apply(data) {
 
 function mountAnswer(sessionCode) {
   HIDE_SELECTORS.forEach((sel) => document.querySelectorAll(sel).forEach((el) => el.classList.add(HIDDEN_CLS)));
+  // Signal the live-question state to the install affordance (install-prompt.js): pure CSS
+  // keyed off this class swaps the hero install bar for a centered pill over the topbar.
+  document.body.classList.add('cdx-tr-live');
   let host = document.getElementById(HOST_ID);
   if (!host) {
     host = document.createElement('div');
@@ -109,6 +112,7 @@ function unmountAnswer() {
   const host = document.getElementById(HOST_ID);
   if (host && host.parentNode) host.parentNode.removeChild(host);
   HIDE_SELECTORS.forEach((sel) => document.querySelectorAll(sel).forEach((el) => el.classList.remove(HIDDEN_CLS)));
+  document.body.classList.remove('cdx-tr-live'); // restore the hero install bar (see mountAnswer)
   _isMounted = false;
   _lastCode = null;
 }

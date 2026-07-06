@@ -38,3 +38,22 @@ test('install.* i18n keys exist in BOTH pt and en (module contract parity)', () 
     assert.ok(hits.length >= 2, `key ${k} must appear in both pt and en (found ${hits.length})`);
   }
 });
+
+// The hero-extension design (contract-by-source; the live DOM is verified on staging).
+test('install-prompt renders the joined hero bar + the questions pill', () => {
+  const src = read('../trilha/js/install-prompt.js');
+  assert.match(src, /cdx-install-bar/, 'the invite mounts as the hero-extension bar');
+  assert.match(src, /cdx-install-joined/, 'it joins the hero into one box');
+  assert.match(src, /cdx-install-qpill/, 'it mounts the questions-state pill');
+});
+
+// The live-question swap is pure CSS keyed off a single body class, so there is no ordering
+// race with nexo: nexo owns the class; trilha.css owns the bar<->pill swap. Pin both ends.
+test('nexo toggles body.cdx-tr-live and trilha.css swaps bar<->pill off it', () => {
+  const nexo = read('../trilha/js/nexo.js');
+  assert.match(nexo, /classList\.add\('cdx-tr-live'\)/, 'nexo adds the live class on mount');
+  assert.match(nexo, /classList\.remove\('cdx-tr-live'\)/, 'nexo removes it on unmount');
+  const css = read('../trilha/css/trilha.css');
+  assert.match(css, /body\.cdx-tr-live\s+\.cdx-install-bar\s*\{\s*display:\s*none/, 'live hides the bar');
+  assert.match(css, /body\.cdx-tr-live\s+\.cdx-install-qpill\s*\{\s*display:\s*inline-flex/, 'live shows the pill');
+});

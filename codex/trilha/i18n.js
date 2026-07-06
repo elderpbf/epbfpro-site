@@ -38,9 +38,9 @@ const pt = {
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Instalar app',
-  'install.cta_title':      'Leve sua trilha no celular',
-  'install.cta_desc':       'Instale a Trilha como app na tela inicial e abra num toque, sem navegador.',
-  'install.btn':            'Instalar app',
+  'install.cta_title':      'Instale a trilha no celular',
+  'install.cta_desc':       'Salve como app na tela inicial e abra num toque, sem navegador.',
+  'install.btn':            'Instalar',
   'install.ios_hint':       'Toque em Compartilhar e depois em "Adicionar à Tela de Início".',
   'install.dismiss':        'Dispensar',
   'login.entrar':           'Entrar',
@@ -199,9 +199,9 @@ const en = {
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Install app',
-  'install.cta_title':      'Take your trail on your phone',
-  'install.cta_desc':       'Install Trilha as an app on your home screen and open it in one tap, no browser.',
-  'install.btn':            'Install app',
+  'install.cta_title':      'Install the trail on your phone',
+  'install.cta_desc':       'Save it as an app on your home screen and open it in one tap, no browser.',
+  'install.btn':            'Install',
   'install.ios_hint':       'Tap Share, then "Add to Home Screen".',
   'install.dismiss':        'Dismiss',
   'login.entrar':           'Sign in',
