@@ -218,6 +218,41 @@
   border-color: var(--primary-dark);
 }
 
+/* Lab item (interactive demo). Shipped data, no body_md -- the affordance is
+   the whole content: a summary line + the button that opens the shared
+   fullscreen viewer (js/lab-viewer.js). */
+.ctr-lab-shell {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 10px;
+}
+.ctr-lab-summary {
+  margin: 0;
+  color: var(--text-secondary);
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+.ctr-lab-open-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 20px;
+  font: inherit;
+  font-size: 0.95rem;
+  font-weight: 600;
+  color: var(--surface);
+  background: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 8px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.ctr-lab-open-btn:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+}
+
 /* =========================================================
    Markdown body baseline (.ctr-prompt-body and verbatim)
    Used by every CTRenderer consumer. Consumer-scoped overrides

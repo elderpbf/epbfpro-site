@@ -1,0 +1,501 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sinapse · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k15-panel">
+  <style>
+    /* border-box everywhere, from the start (k1 taught this the hard way: a
+       width:100% child without it overflows the fixed stage on phone). */
+    .k15-panel, .k15-panel * { box-sizing: border-box; }
+
+    .k15-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --text-muted: var(--lab-text-muted);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --amber: #d4a017;
+      --amber-rgb: 212, 160, 23;
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 1rem 2rem 0.7rem;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Main area: phrase card + synapse viz + meter ──────── */
+    .k15-main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      min-height: 0;
+    }
+
+    .k15-phrase-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1.3rem;
+      text-align: center;
+    }
+    .k15-phrase-label {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0 0 0.35rem;
+      font-weight: 600;
+    }
+    .k15-phrase-text {
+      margin: 0;
+      font-size: var(--lab-fs-audience);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+      transition: color 320ms;
+    }
+    .k15-phrase-card.k15-phrase--variant .k15-phrase-text { color: var(--focal); }
+
+    /* ── Synapse visualization: two neurons + a weighted line ── */
+    .k15-viz-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 0;
+    }
+    .k15-viz {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Memorization meter + status ───────────────────────── */
+    .k15-meter-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .k15-meter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+    .k15-meter-label {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k15-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--focal);
+      transition: color 320ms;
+    }
+    .k15-meter-row.k15-meter--full .k15-meter-value { color: var(--bad); }
+    .k15-meter-bar {
+      position: relative;
+      height: 12px;
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .k15-meter-fill {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(var(--focal-rgb), 0.55), var(--focal));
+      border-radius: 999px;
+      transition: width 500ms cubic-bezier(0.22, 0.61, 0.36, 1), background 320ms;
+    }
+    .k15-meter-row.k15-meter--full .k15-meter-fill {
+      background: linear-gradient(90deg, rgba(var(--bad-rgb), 0.55), var(--bad));
+    }
+    .k15-status {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-style: italic;
+      min-height: 1.4em;
+    }
+    .k15-status.k15-status--overfit { color: var(--bad); font-style: normal; font-weight: 600; }
+    .k15-status.k15-status--ok { color: var(--good); font-style: normal; font-weight: 600; }
+
+    /* ── Operator buttons ───────────────────────────────────── */
+    .k15-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k15-fs-slot { margin-right: auto; }
+    .k15-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k15-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
+    .k15-btn-good {
+      border-color: var(--good);
+      background: rgba(34, 197, 94, 0.14);
+      color: var(--good);
+    }
+    .k15-btn-good:hover { background: rgba(34, 197, 94, 0.24); border-color: var(--good); color: var(--good); }
+    .k15-btn-bad {
+      border-color: var(--bad);
+      background: rgba(var(--bad-rgb), 0.12);
+      color: var(--bad);
+    }
+    .k15-btn-bad:hover { background: rgba(var(--bad-rgb), 0.22); border-color: var(--bad); color: var(--bad); }
+    .k15-btn-primary {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
+    }
+    .k15-btn-primary:hover:not(:disabled) {
+      background: rgba(var(--focal-rgb), 0.28);
+      border-color: var(--focal);
+      color: var(--focal);
+      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
+    }
+    .k15-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .k15-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
+
+    /* ── Responsive: phone / narrow portrait ───────────────── */
+    @media (max-width: 700px) {
+      .k15-panel { padding: 0.55rem 0.9rem 0.55rem; gap: 0.5rem; }
+      .k15-main { gap: 0.5rem; }
+      .k15-phrase-card { padding: 0.6rem 0.85rem; }
+      .k15-meter-bar { height: 10px; }
+
+      .k15-button-bar { gap: 0.4rem; padding: 0; }
+      .k15-btn {
+        padding: 0.6rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        min-width: 0;
+        text-align: center;
+      }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k15-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k15-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k15-btn { padding: 0.55rem 0.35rem; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k15-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
+      .k15-main { gap: 0.4rem; }
+      .k15-phrase-card { padding: 0.45rem 0.8rem; }
+      .k15-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header"
+       data-lab-title="Sinapse"
+       data-lab-subtitle="O acerto e o erro mudam o peso"></div>
+
+  <div class="k15-main">
+    <div class="k15-phrase-card" id="k15-phrase-card">
+      <p class="k15-phrase-label" id="k15-phrase-label">Frase reforçada</p>
+      <p class="k15-phrase-text" id="k15-phrase-text"></p>
+    </div>
+
+    <div class="k15-viz-wrap">
+      <svg class="k15-viz" id="k15-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="k15-meter-row" id="k15-meter-row">
+      <div class="k15-meter-head">
+        <span class="k15-meter-label">Memorização</span>
+        <span class="k15-meter-value" id="k15-meter-value">0%</span>
+      </div>
+      <div class="k15-meter-bar"><div class="k15-meter-fill" id="k15-meter-fill"></div></div>
+      <p class="k15-status" id="k15-status">Reforce ou enfraqueça a sinapse e observe o peso.</p>
+    </div>
+  </div>
+
+  <div class="k15-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k15-fs-slot" data-lab-fs-ctl></span>
+    <button class="k15-btn k15-btn-good" id="k15-reinforce">Reforçar (acertou)</button>
+    <button class="k15-btn k15-btn-bad" id="k15-weaken">Enfraquecer (errou)</button>
+    <button class="k15-btn k15-btn-primary" id="k15-variant" disabled>Testar com variação</button>
+    <button class="k15-btn" id="k15-reset">Reiniciar</button>
+  </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Peso, sinapse e sobreajuste">
+    <p>Um modelo de linguagem aprende ajustando <strong>pesos</strong> entre suas unidades internas, uma analogia direta com o <strong>neurônio biológico</strong>: cada vez que uma resposta é reforçada (o modelo "acertou"), a ligação entre as unidades envolvidas fica mais forte, mais “sinapse”. Cada erro a enfraquece.</p>
+    <p>O problema é a repetição em excesso: se o modelo vê e reforça a <strong>mesma frase exata</strong> muitas vezes, ele pode <strong>decorar a forma</strong> em vez de aprender o princípio por trás dela, é o <strong>sobreajuste</strong> (overfitting). Fica ótimo reconhecendo a frase idêntica, mas hesita diante da mesma ideia dita com outras palavras.</p>
+    <p>É parecido com o que acontece com a gente: ler uma frase muitas vezes fixa o texto exato, decoreba, não necessariamente o entendimento do princípio. Este laboratório usa como exemplo o caput do art. 5º da Constituição, uma frase que praticamente todo mundo decorou, exatamente para deixar essa diferença visível: entre lembrar as palavras e entender a ideia.</p>
+  </template>
+
+  <script>
+    (function () {
+      const root = document.querySelector('.k15-panel');
+      if (!root) return;
+
+      // ── Content: the reinforced clause + a paraphrase that keeps the SAME
+      // principle in different words (tests generalization, not memorization). ──
+      const ORIGINAL = 'Todos são iguais perante a lei, sem distinção de qualquer natureza.';
+      const VARIANT  = 'A lei deve tratar todas as pessoas de forma igual, não importa a diferença entre elas.';
+
+      // ── Constants ────────────────────────────────────────
+      const WEIGHT_STEP     = 0.16;
+      const OVERFIT_STEP    = 1;      // +1 per reinforcement toward the cap
+      const OVERFIT_CAP     = 6;      // reinforcements to reach 100% memorization
+      const OVERFIT_DECAY   = 2;      // an error costs more overfit than a reinforcement earns
+      const OVERFIT_HESITATE_AT = 0.7; // >= this: the model fumbles the paraphrase
+
+      // ── State ────────────────────────────────────────────
+      let weight   = 0.35;  // 0..1, drives the synapse's visual thickness/glow
+      let overfit  = 0;     // 0..1, drives the memorization meter
+      let showingVariant = false;
+
+      // ── DOM refs ─────────────────────────────────────────
+      const vizEl        = root.querySelector('#k15-viz');
+      const phraseCardEl = root.querySelector('#k15-phrase-card');
+      const phraseLabelEl= root.querySelector('#k15-phrase-label');
+      const phraseTextEl = root.querySelector('#k15-phrase-text');
+      const meterRowEl   = root.querySelector('#k15-meter-row');
+      const meterFillEl  = root.querySelector('#k15-meter-fill');
+      const meterValueEl = root.querySelector('#k15-meter-value');
+      const statusEl     = root.querySelector('#k15-status');
+      const reinforceBtn = root.querySelector('#k15-reinforce');
+      const weakenBtn    = root.querySelector('#k15-weaken');
+      const variantBtn   = root.querySelector('#k15-variant');
+      const resetBtn     = root.querySelector('#k15-reset');
+
+      function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+      // ── Synapse SVG (two neurons + a line whose width/glow encode weight) ──
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      function makeEl(tag, attrs) {
+        const el = document.createElementNS(SVG_NS, tag);
+        for (const k in attrs) el.setAttribute(k, attrs[k]);
+        return el;
+      }
+      let VB_W = 1000, VB_H = 400;
+      let leftCx, rightCx, cy, r;
+      let synapseLine, synapseGlowLine, leftNode, rightNode;
+
+      function computeGeometry() {
+        const rect = vizEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return false;
+        VB_W = Math.round(rect.width);
+        VB_H = Math.round(rect.height);
+        // Was capped mostly by width (0.07 * VB_W), which starves the circles on
+        // a narrow-but-TALL mobile viz area (a lot of empty vertical space above
+        // and below a tiny dumbbell). Let height carry more of the budget so the
+        // synapse fills the flexible middle row on any aspect ratio.
+        r = Math.min(VB_H * 0.18, VB_W * 0.16, 70);
+        leftCx = VB_W * 0.22;
+        rightCx = VB_W * 0.78;
+        cy = VB_H / 2;
+        return true;
+      }
+
+      function buildViz() {
+        if (!computeGeometry()) return;
+        vizEl.setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
+        vizEl.innerHTML = '';
+
+        const defs = makeEl('defs', {});
+        const glow = makeEl('filter', { id: 'k15-glow', x: '-60%', y: '-60%', width: '220%', height: '220%' });
+        glow.appendChild(makeEl('feGaussianBlur', { stdDeviation: '6', result: 'b' }));
+        const merge = makeEl('feMerge', {});
+        merge.appendChild(makeEl('feMergeNode', { in: 'b' }));
+        merge.appendChild(makeEl('feMergeNode', { in: 'SourceGraphic' }));
+        glow.appendChild(merge);
+        defs.appendChild(glow);
+        vizEl.appendChild(defs);
+
+        // Soft glow duplicate of the synapse line, widened + blurred underneath.
+        synapseGlowLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round', filter: 'url(#k15-glow)', opacity: '0.5',
+        });
+        vizEl.appendChild(synapseGlowLine);
+
+        synapseLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round',
+        });
+        vizEl.appendChild(synapseLine);
+
+        leftNode = makeEl('circle', { cx: leftCx, cy: cy, r: r, fill: 'var(--focal)' });
+        rightNode = makeEl('circle', { cx: rightCx, cy: cy, r: r, fill: 'var(--focal)' });
+        vizEl.appendChild(leftNode);
+        vizEl.appendChild(rightNode);
+
+        renderViz();
+      }
+
+      function renderViz() {
+        if (!synapseLine) return;
+        const w = 3 + weight * 22;           // stroke width: thin -> thick
+        const glowW = w + 10 + weight * 14;
+        const op = 0.35 + weight * 0.65;
+        synapseLine.setAttribute('stroke-width', String(w));
+        synapseLine.setAttribute('opacity', String(op));
+        synapseGlowLine.setAttribute('stroke-width', String(glowW));
+        synapseGlowLine.setAttribute('opacity', String(0.15 + weight * 0.35));
+      }
+
+      let resizeTimer = null;
+      const ro = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(buildViz, 80);
+      });
+      ro.observe(vizEl);
+
+      // ── Render (meter, status, phrase, buttons) ──────────
+      function render() {
+        renderViz();
+        meterFillEl.style.width = (overfit * 100).toFixed(0) + '%';
+        meterValueEl.textContent = Math.round(overfit * 100) + '%';
+        meterRowEl.classList.toggle('k15-meter--full', overfit >= 1);
+        variantBtn.disabled = overfit < 0.5;
+
+        if (!showingVariant) {
+          if (overfit >= 1) {
+            statusEl.textContent = 'Decorou. Teste com uma variação para ver se entendeu o princípio.';
+            statusEl.className = 'k15-status k15-status--overfit';
+          } else {
+            statusEl.textContent = 'Reforce ou enfraqueça a sinapse e observe o peso.';
+            statusEl.className = 'k15-status';
+          }
+        }
+      }
+
+      // ── Handlers ─────────────────────────────────────────
+      function reinforce() {
+        showingVariant = false;
+        phraseCardEl.classList.remove('k15-phrase--variant');
+        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseTextEl.textContent = ORIGINAL;
+        weight = clamp01(weight + WEIGHT_STEP);
+        overfit = clamp01(overfit + OVERFIT_STEP / OVERFIT_CAP);
+        render();
+      }
+      function weaken() {
+        showingVariant = false;
+        phraseCardEl.classList.remove('k15-phrase--variant');
+        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseTextEl.textContent = ORIGINAL;
+        weight = clamp01(weight - WEIGHT_STEP);
+        overfit = clamp01(overfit - (OVERFIT_DECAY * OVERFIT_STEP) / OVERFIT_CAP);
+        render();
+      }
+      function testVariant() {
+        showingVariant = true;
+        phraseCardEl.classList.add('k15-phrase--variant');
+        phraseLabelEl.textContent = 'Variação (mesma ideia, outras palavras)';
+        phraseTextEl.textContent = VARIANT;
+        if (overfit >= OVERFIT_HESITATE_AT) {
+          statusEl.textContent = 'O modelo hesita: reconhece a frase exata, mas não a mesma ideia dita de outro jeito.';
+          statusEl.className = 'k15-status k15-status--overfit';
+        } else {
+          statusEl.textContent = 'O modelo reconhece: mesmo princípio, mesmo com outras palavras.';
+          statusEl.className = 'k15-status k15-status--ok';
+        }
+      }
+      function reset() {
+        weight = 0.35;
+        overfit = 0;
+        showingVariant = false;
+        phraseCardEl.classList.remove('k15-phrase--variant');
+        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseTextEl.textContent = ORIGINAL;
+        render();
+      }
+
+      reinforceBtn.addEventListener('click', reinforce);
+      weakenBtn.addEventListener('click', weaken);
+      variantBtn.addEventListener('click', testVariant);
+      resetBtn.addEventListener('click', reset);
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      phraseTextEl.textContent = ORIGINAL;
+      buildViz();
+      render();
+    })();
+  </script>
+</section>
+</body>
+</html>

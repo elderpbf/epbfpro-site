@@ -16,6 +16,7 @@
 
 import { esc } from './dom.js';
 import { assetUrl } from './codex-api.js';
+import { openModal as _openLabViewer } from './lab-viewer.js';
 export { esc };
 
 // Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
@@ -48,6 +49,7 @@ export function dispatchType(type) {
   if (type === 'paper') return 'paper';
   if (type === 'model_info') return 'model_info';
   if (type === 'google_doc') return 'google_doc';
+  if (type === 'lab') return 'lab';
   return 'markdown';
 }
 
@@ -142,6 +144,23 @@ export function paperShellHtml(item, opts = {}) {
 
   return '<div class="ctr-affordance-row">' + affordanceBtnHtml(pdfUrl, 'Baixar PDF', opts.preview) + '</div>' +
     metaLine + abstractHtml + embedHtml;
+}
+
+// ── lab (interactive demo, iframed fullscreen via the shared lab-viewer) ─────
+// A lab item is shipped data, not authored content: no body_md, meta_json
+// carries { lab_key, url } (written by the backend's ct_ensure_lab_items, see
+// architecture/labs.md). The affordance opens the SAME fullscreen viewer the
+// admin preview uses (js/lab-viewer.js) -- one viewer, not a Trail-only fork.
+export function labHtml(item, opts = {}) {
+  const meta = _meta(item);
+  const key = meta.lab_key || String((meta.url || '').replace(/^\/codex\/labs\//, '').replace(/\/$/, ''));
+  const openBtn = (!opts.preview && key)
+    ? '<button type="button" class="ctr-lab-open-btn" data-lab-key="' + esc(key) + '">Abrir laboratório</button>'
+    : '';
+  return '<div class="ctr-lab-shell">' +
+    (item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '') +
+    openBtn +
+    '</div>';
 }
 
 // ── lazy marked.js loader (markdown types) ───────────────────────────────────
@@ -251,6 +270,12 @@ function renderMaterial(item, container, opts) {
   });
 }
 
+function renderLab(item, container, opts) {
+  container.innerHTML = labHtml(item, opts);
+  const btn = container.querySelector('.ctr-lab-open-btn');
+  if (btn) btn.addEventListener('click', () => _openLabViewer({ key: btn.getAttribute('data-lab-key'), title: item.title }));
+}
+
 function renderPaper(item, container, opts) {
   const md = item.body_md || '';
   if (md) {
@@ -281,6 +306,7 @@ export function renderItem(item, container, opts = {}) {
     case 'paper':      return renderPaper(item, container, opts);
     case 'model_info': return renderModelInfo(item, container, opts);
     case 'google_doc': return renderGoogleDoc(item, container, opts);
+    case 'lab':        return renderLab(item, container, opts);
     default:           return renderMarkdown(item, container, opts);
   }
 }

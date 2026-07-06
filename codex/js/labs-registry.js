@@ -64,6 +64,16 @@ export const LABS = [
     key: 'k14',
     title: 'Reforça ou enfraquece',
     summary: 'Acerto reforça o caminho no peso; erro o enfraquece'
+  },
+  {
+    key: 'k15',
+    title: 'Sinapse',
+    summary: 'Acerto e erro mudam o peso; repetição pode virar decoreba'
+  },
+  {
+    key: 'k16',
+    title: 'PDF: imagem ou texto?',
+    summary: 'Duas camadas de um PDF, e o que o OCR faz entre elas'
   }
 ];
 
