@@ -210,11 +210,14 @@ function _loadReleases(clientSlug, turmaSlug) {
   const lk = _q('cdx-releases-locked');
   if (lk) lk.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
 
-  Promise.all([
+  // track-34 §B: keep the Labs ct_items rows in sync BEFORE listing items, so a
+  // lab just enabled in Content > Labs shows up here without any manual step
+  // (silent, best-effort -- a failure here must not block the composer load).
+  contentApi.ensureLabItems().catch((e) => { notice.internal(_err(e)); }).then(() => Promise.all([
     contentApi.listItems(),
     cohortsApi.listTurmas({ client_slug: clientSlug }),
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }),
-  ]).then((results) => {
+  ])).then((results) => {
     _allItems = (results[0] && results[0].items) || [];
     _aulas = (results[2] && results[2].aulas) || [];
     const turma = ((results[1] && results[1].turmas) || []).find((tu) => tu.slug === turmaSlug);

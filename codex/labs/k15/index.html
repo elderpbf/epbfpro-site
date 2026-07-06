@@ -42,6 +42,8 @@
       --bad-rgb: var(--lab-bad-rgb);
       --amber: #d4a017;
       --amber-rgb: 212, 160, 23;
+      --param: var(--lab-context-b);
+      --param-rgb: var(--lab-context-b-rgb);
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
 
@@ -261,7 +263,7 @@
 
   <div class="k15-main">
     <div class="k15-phrase-card" id="k15-phrase-card">
-      <p class="k15-phrase-label" id="k15-phrase-label">Frase reforçada</p>
+      <p class="k15-phrase-label" id="k15-phrase-label">Art. 5º CF</p>
       <p class="k15-phrase-text" id="k15-phrase-text"></p>
     </div>
 
@@ -275,7 +277,7 @@
         <span class="k15-meter-value" id="k15-meter-value">0%</span>
       </div>
       <div class="k15-meter-bar"><div class="k15-meter-fill" id="k15-meter-fill"></div></div>
-      <p class="k15-status" id="k15-status">Reforce ou enfraqueça a sinapse e observe o peso.</p>
+      <p class="k15-status" id="k15-status"></p>
     </div>
   </div>
 
@@ -292,8 +294,8 @@
        "Entenda" button (lab-info.js). -->
   <template data-lab-info data-lab-info-title="Peso, sinapse e sobreajuste">
     <p>Um modelo de linguagem aprende ajustando <strong>pesos</strong> entre suas unidades internas, uma analogia direta com o <strong>neurônio biológico</strong>: cada vez que uma resposta é reforçada (o modelo "acertou"), a ligação entre as unidades envolvidas fica mais forte, mais “sinapse”. Cada erro a enfraquece.</p>
-    <p>O problema é a repetição em excesso: se o modelo vê e reforça a <strong>mesma frase exata</strong> muitas vezes, ele pode <strong>decorar a forma</strong> em vez de aprender o princípio por trás dela, é o <strong>sobreajuste</strong> (overfitting). Fica ótimo reconhecendo a frase idêntica, mas hesita diante da mesma ideia dita com outras palavras.</p>
-    <p>É parecido com o que acontece com a gente: ler uma frase muitas vezes fixa o texto exato, decoreba, não necessariamente o entendimento do princípio. Este laboratório usa como exemplo o caput do art. 5º da Constituição, uma frase que praticamente todo mundo decorou, exatamente para deixar essa diferença visível: entre lembrar as palavras e entender a ideia.</p>
+    <p>O problema é a repetição em excesso: um trecho que aparece o tempo todo nos dados de treino acaba com um peso muito mais forte do que um trecho raramente visto, mesmo que os dois sejam igualmente válidos, é o <strong>sobreajuste</strong> (overfitting) por frequência de exposição, não por compreensão.</p>
+    <p>Este laboratório compara o <strong>caput do art. 5º da Constituição</strong>, citado e recitado sem parar, com um artigo pouco usado, o <strong>art. 18 do ADCT</strong>. Reforce o primeiro repetidamente e veja como o "modelo" se sai ao encontrar o segundo, quase sem repertório para ele. Não é um julgamento sobre qual artigo importa mais, é sobre como a frequência de exposição, e não o entendimento, molda o peso.</p>
   </template>
 
   <script>
@@ -304,14 +306,15 @@
       // ── Content: the reinforced clause + a paraphrase that keeps the SAME
       // principle in different words (tests generalization, not memorization). ──
       const ORIGINAL = 'Todos são iguais perante a lei, sem distinção de qualquer natureza.';
-      const VARIANT  = 'A lei deve tratar todas as pessoas de forma igual, não importa a diferença entre elas.';
+      const VARIANT  = 'Ficam extintos os efeitos jurídicos de qualquer ato legislativo ou administrativo (...)';
 
       // ── Constants ────────────────────────────────────────
-      const WEIGHT_STEP     = 0.16;
+      const WEIGHT_STEP_UP   = 0.22;  // reinforcing thickens the synapse
+      const WEIGHT_STEP_DOWN = 0.34;  // weakening costs noticeably more
       const OVERFIT_STEP    = 1;      // +1 per reinforcement toward the cap
-      const OVERFIT_CAP     = 6;      // reinforcements to reach 100% memorization
-      const OVERFIT_DECAY   = 2;      // an error costs more overfit than a reinforcement earns
-      const OVERFIT_HESITATE_AT = 0.7; // >= this: the model fumbles the paraphrase
+      const OVERFIT_CAP     = 5;      // reinforcements to reach 100% memorization
+      const OVERFIT_DECAY   = 2.5;    // an error costs more overfit than a reinforcement earns
+      const OVERFIT_HESITATE_AT = 0.7; // >= this: the model fumbles the rare article
 
       // ── State ────────────────────────────────────────────
       let weight   = 0.35;  // 0..1, drives the synapse's visual thickness/glow
@@ -389,18 +392,44 @@
         });
         vizEl.appendChild(synapseLine);
 
-        leftNode = makeEl('circle', { cx: leftCx, cy: cy, r: r, fill: 'var(--focal)' });
-        rightNode = makeEl('circle', { cx: rightCx, cy: cy, r: r, fill: 'var(--focal)' });
+        leftNode = makeEl('circle', { cx: leftCx, cy: cy, r: r, fill: 'var(--param)' });
+        rightNode = makeEl('circle', { cx: rightCx, cy: cy, r: r, fill: 'var(--param)' });
         vizEl.appendChild(leftNode);
         vizEl.appendChild(rightNode);
+
+        // Labels: "Peso" above the line, "Parâmetro N" below each node.
+        const fs = Math.max(15, VB_H * 0.045);
+        const pesoLabel = makeEl('text', {
+          x: (leftCx + rightCx) / 2, y: cy - r - 14,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        pesoLabel.textContent = 'Peso';
+        vizEl.appendChild(pesoLabel);
+
+        const param1Label = makeEl('text', {
+          x: leftCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param1Label.textContent = 'Parâmetro 1';
+        vizEl.appendChild(param1Label);
+
+        const param2Label = makeEl('text', {
+          x: rightCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param2Label.textContent = 'Parâmetro 2';
+        vizEl.appendChild(param2Label);
 
         renderViz();
       }
 
       function renderViz() {
         if (!synapseLine) return;
-        const w = 3 + weight * 22;           // stroke width: thin -> thick
-        const glowW = w + 10 + weight * 14;
+        const w = 4 + weight * 40;           // stroke width: thin -> bem grossa
+        const glowW = w + 14 + weight * 20;
         const op = 0.35 + weight * 0.65;
         synapseLine.setAttribute('stroke-width', String(w));
         synapseLine.setAttribute('opacity', String(op));
@@ -425,10 +454,10 @@
 
         if (!showingVariant) {
           if (overfit >= 1) {
-            statusEl.textContent = 'Decorou. Teste com uma variação para ver se entendeu o princípio.';
+            statusEl.textContent = 'Decorou o Art. 5º de tanto repetir. Veja como ele se sai com um texto que quase não viu.';
             statusEl.className = 'k15-status k15-status--overfit';
           } else {
-            statusEl.textContent = 'Reforce ou enfraqueça a sinapse e observe o peso.';
+            statusEl.textContent = '';
             statusEl.className = 'k15-status';
           }
         }
@@ -438,31 +467,31 @@
       function reinforce() {
         showingVariant = false;
         phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseLabelEl.textContent = 'Art. 5º CF';
         phraseTextEl.textContent = ORIGINAL;
-        weight = clamp01(weight + WEIGHT_STEP);
+        weight = clamp01(weight + WEIGHT_STEP_UP);
         overfit = clamp01(overfit + OVERFIT_STEP / OVERFIT_CAP);
         render();
       }
       function weaken() {
         showingVariant = false;
         phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseLabelEl.textContent = 'Art. 5º CF';
         phraseTextEl.textContent = ORIGINAL;
-        weight = clamp01(weight - WEIGHT_STEP);
+        weight = clamp01(weight - WEIGHT_STEP_DOWN);
         overfit = clamp01(overfit - (OVERFIT_DECAY * OVERFIT_STEP) / OVERFIT_CAP);
         render();
       }
       function testVariant() {
         showingVariant = true;
         phraseCardEl.classList.add('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Variação (mesma ideia, outras palavras)';
+        phraseLabelEl.textContent = 'Art. 18 ADCT';
         phraseTextEl.textContent = VARIANT;
         if (overfit >= OVERFIT_HESITATE_AT) {
-          statusEl.textContent = 'O modelo hesita: reconhece a frase exata, mas não a mesma ideia dita de outro jeito.';
+          statusEl.textContent = 'O modelo mal reconhece: decorou o Art. 5º de tanto repetir, mas o Art. 18 do ADCT quase não apareceu nos dados.';
           statusEl.className = 'k15-status k15-status--overfit';
         } else {
-          statusEl.textContent = 'O modelo reconhece: mesmo princípio, mesmo com outras palavras.';
+          statusEl.textContent = 'O modelo ainda lida bem com o texto novo, não depende só da repetição de um único artigo.';
           statusEl.className = 'k15-status k15-status--ok';
         }
       }
@@ -471,7 +500,7 @@
         overfit = 0;
         showingVariant = false;
         phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Frase reforçada';
+        phraseLabelEl.textContent = 'Art. 5º CF';
         phraseTextEl.textContent = ORIGINAL;
         render();
       }

@@ -24,7 +24,6 @@ import { LABS } from '../js/labs-registry.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { mountRail } from '../js/list-rail.js';
 import { content as api } from '../js/codex-api.js';
-import * as toast from '../js/toast.js';
 import * as notice from '../js/notice.js';
 
 const LS_KEY = 'cv_labs_enabled';
@@ -185,7 +184,6 @@ function _render() {
       '<div class="cdx-labs-head">' +
         '<h2 class="cdx-labs-title">' + _esc(t('labs.title')) + '</h2>' +
         '<div class="cdx-labs-hint">' + _esc(t('labs.hint')) + '</div>' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="sync-releases">' + _esc(t('labs.sync_releases')) + '</button>' +
       '</div>' +
       '<div class="cdx-items-split cdx-labs-split">' +
         '<div class="cdx-items-list" id="cdx-labs-list"></div>' +
@@ -203,31 +201,23 @@ function _openFullscreen(key) {
   openLabViewer({ key, title: lab && lab.title });
 }
 
-// track-34 §B: one-time, idempotent bootstrap that upserts a real ct_items row
-// per registry lab (backend ct_ensure_lab_items), so Labs show up as a normal
-// section in the Liberações composer. Safe to click again after new labs are
-// added to the registry (existing ones are skipped server-side).
-function _syncReleases(btn) {
-  if (btn) btn.disabled = true;
-  api.ensureLabItems()
-    .then((d) => {
-      const n = (d && d.created && d.created.length) || 0;
-      toast.ok(n ? t('labs.sync_ok_new').replace('{n}', String(n)) : t('labs.sync_ok_none'));
-    })
-    .catch((e) => { notice.internal(e); })
-    .finally(() => { if (btn) btn.disabled = false; });
+// track-34 §B: idempotent bootstrap that upserts a real ct_items row per
+// registry lab (backend ct_ensure_lab_items), so Labs show up as a normal
+// section in the Liberações composer. Runs silently on mount -- enabling a
+// lab here must not require a separate manual sync step anywhere else.
+function _ensureLabItemsSilently() {
+  api.ensureLabItems().catch((e) => { notice.internal(e); });
 }
 
 export function mount(viewEl) {
   _viewEl = viewEl;
   _render();
+  _ensureLabItemsSilently();
 
   // Row selection is the rail's job (onSelect); the on/off switch is exempt via the rail's
   // rowSelectIgnore. Only the preview's fullscreen button is wired here.
   _onClick = (e) => {
     if (e.target.closest('[data-action="fullscreen"]')) { e.preventDefault(); if (_selectedKey) _openFullscreen(_selectedKey); return; }
-    const syncBtn = e.target.closest('[data-action="sync-releases"]');
-    if (syncBtn) { e.preventDefault(); _syncReleases(syncBtn); return; }
   };
   _onChange = (e) => {
     const input = e.target.closest('.cdx-lab-switch-input');

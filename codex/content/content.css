@@ -927,7 +927,6 @@
 .cdx-labs-head { display: flex; flex-direction: column; gap: 0.25rem; }
 .cdx-labs-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
 .cdx-labs-hint { color: var(--text-secondary); font-size: 0.9rem; max-width: 640px; }
-.cdx-labs-head .cdx-btn { align-self: flex-start; margin-top: 0.15rem; }
 .cdx-labs-split .cdx-item-info { flex: 1; min-width: 0; }
 /* The labs list adopts the shared list-rail (track-21). The rail owns the row shell, so a
    lab row's content sits inside .cdx-rail-main > .cdx-lab-rowwrap; the wrapper carries the

@@ -39,8 +39,7 @@
       --bad-rgb: var(--lab-bad-rgb);
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
-      --paper: #f4ecd8;
-      --paper-ink: #2a2620;
+      --font-serif: Georgia, 'Times New Roman', 'Liberation Serif', serif;
 
       position: relative;
       width: 100%;
@@ -54,8 +53,6 @@
       color: var(--text);
       font-family: var(--font-display);
     }
-    [data-theme="dark"] .k16-panel { --paper: #d8cdae; --paper-ink: #241f16; }
-
     .k16-main {
       display: grid;
       grid-template-rows: auto minmax(0, 1fr);
@@ -74,18 +71,19 @@
       padding: 0.5rem 0.7rem;
     }
     .k16-search-input {
-      flex: 1 1 auto;
-      min-width: 0;
+      flex: 0 0 auto;
+      width: 11ch;
       border: 1.5px solid var(--border);
       border-radius: 8px;
-      padding: 0.4rem 0.7rem;
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      color: var(--text);
+      padding: 0.4rem 0.5rem;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
       background: var(--bg);
+      text-align: center;
       outline: none;
+      cursor: default;
     }
-    .k16-search-input:focus { border-color: var(--focal); }
     .k16-search-btn {
       flex: 0 0 auto;
       font-family: var(--font-display);
@@ -100,14 +98,16 @@
     }
     .k16-search-btn:hover { background: rgba(var(--focal-rgb), 0.28); }
     .k16-search-status {
-      flex: 0 0 auto;
+      flex: 1 1 auto;
+      min-width: 0;
       font-family: var(--font-mono);
-      font-size: var(--lab-fs-ui);
+      font-size: calc(var(--lab-fs-body) * 1.3);
+      font-weight: 800;
+      text-align: center;
       color: var(--text-dim);
-      white-space: nowrap;
     }
-    .k16-search-status.k16-search--found { color: var(--good); font-weight: 700; }
-    .k16-search-status.k16-search--empty { color: var(--bad); font-weight: 700; }
+    .k16-search-status.k16-search--found { color: var(--good); }
+    .k16-search-status.k16-search--empty { color: var(--bad); }
 
     /* ── Page stage: two stacked layers, splittable ──────────── */
     .k16-stage-wrap {
@@ -153,19 +153,40 @@
       transition: opacity 320ms;
     }
 
-    /* Image layer: a faux-scanned page (paper tone + a faint grain). */
+    /* Image layer: a real legal document, white page + header + justified
+       body -- not a "scanned paper" mockup. Stays white/dark-ink in BOTH
+       app themes: it represents a printed page, not app chrome. */
     .k16-image-layer {
-      background:
-        repeating-linear-gradient(0deg, rgba(0,0,0,0.025) 0px, rgba(0,0,0,0.025) 1px, transparent 1px, transparent 3px),
-        var(--paper);
-      color: var(--paper-ink);
-      padding: 1.1rem 1.3rem;
-      font-family: var(--font-mono);
+      background: #ffffff;
+      color: #1c1c1c;
+      padding: 1.2rem 1.4rem 1.1rem;
+      font-family: var(--font-serif);
       z-index: 1;
+    }
+    .k16-image-header {
+      text-align: center;
+      margin: 0 0 0.9rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1.5px solid #ccc;
+    }
+    .k16-image-header-court {
+      margin: 0 0 0.15rem;
+      font-size: 0.72em;
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: #555;
+    }
+    .k16-image-header-proc {
+      margin: 0;
+      font-size: 0.82em;
+      font-weight: 700;
+      color: #1c1c1c;
     }
     .k16-image-line {
       font-size: var(--lab-fs-doc);
-      line-height: 1.8;
+      line-height: 1.75;
+      text-align: justify;
     }
 
     /* Text layer: transparent overlay in normal mode (its only job is to be
@@ -193,14 +214,6 @@
       text-decoration-thickness: 1.5px;
       cursor: help;
     }
-    .k16-text-empty-note {
-      font-family: var(--font-display);
-      font-style: italic;
-      font-size: var(--lab-fs-body);
-      color: var(--text-dim);
-      opacity: 0;
-      transition: opacity 320ms;
-    }
 
     /* Ver camadas: physically separate the two sheets. Both layers are
        full-size (inset:0), so a small translate alone barely shows two
@@ -214,16 +227,21 @@
       transform: scale(0.78) translate(-20%, -10%) rotate(-3deg);
       box-shadow: -6px 10px 22px rgba(0,0,0,0.28);
     }
+    /* Fixed light tint (not a theme var): this sheet is frosted PAPER, same
+       reasoning as the image layer's fixed white -- in dark mode a
+       theme-colored glass over the white document below turned into a
+       muddy grey smudge instead of a translucent sheet. */
     .k16-stage.k16-split .k16-text-layer {
       transform: scale(0.78) translate(20%, 13%) rotate(3deg);
       box-shadow: 6px 10px 22px rgba(0,0,0,0.24);
-      background: color-mix(in srgb, var(--surface) 96%, transparent);
-      border: 1.5px dashed var(--border);
-      color: var(--text);
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+      color: #1c1c1c;
       pointer-events: auto;
     }
     .k16-stage.k16-split .k16-layer-tag { opacity: 1; }
-    .k16-stage.k16-split .k16-text-layer.k16-text--empty .k16-text-empty-note { opacity: 1; }
 
     /* OCR scan line, sweeps top -> bottom over the image layer while running. */
     .k16-scanline {
@@ -326,9 +344,8 @@
 
   <div class="k16-main">
     <div class="k16-search-row">
-      <input class="k16-search-input" id="k16-search-input" type="text"
-             placeholder="Buscar no documento... (ex.: audiência)" autocomplete="off">
-      <button class="k16-search-btn" id="k16-search-btn">Buscar</button>
+      <input class="k16-search-input" id="k16-search-input" type="text" value="" readonly tabindex="-1" aria-hidden="true">
+      <button class="k16-search-btn" id="k16-search-btn">Pesquisar "citação do réu"</button>
       <span class="k16-search-status" id="k16-search-status"></span>
     </div>
 
@@ -338,11 +355,23 @@
 
         <div class="k16-layer k16-image-layer" id="k16-image-layer">
           <span class="k16-layer-tag">Camada de imagem</span>
+          <div class="k16-image-header">
+            <p class="k16-image-header-court">Poder Judiciário</p>
+            <p class="k16-image-header-proc">Processo nº 0801234-56.2026.8.05.0080</p>
+          </div>
         </div>
 
-        <div class="k16-layer k16-text-layer k16-text--empty" id="k16-text-layer">
+        <div class="k16-layer k16-text-layer" id="k16-text-layer">
           <span class="k16-layer-tag">Camada de texto</span>
-          <span class="k16-text-empty-note">(sem texto — ainda não passou OCR)</span>
+          <!-- Invisible spacer matching the image layer's header height, so
+               this layer's lines stay vertically aligned with the image's
+               (needed for search <mark> highlights to land on the right
+               spot, and for the OCR reveal to track the real text). The
+               OCR text itself never gets a header -- that's the point. -->
+          <div class="k16-image-header" style="visibility: hidden;">
+            <p class="k16-image-header-court">Poder Judiciário</p>
+            <p class="k16-image-header-proc">Processo nº 0801234-56.2026.8.05.0080</p>
+          </div>
         </div>
       </div>
     </div>
@@ -386,6 +415,7 @@
         'Cumpra-se.',
       ];
       const OCR_ERROR_WORD = 'cornparecirnento';
+      const SEARCH_QUERY = 'citação do réu';
 
       // ── DOM refs ─────────────────────────────────────────
       const stageEl      = root.querySelector('#k16-stage');
@@ -402,6 +432,9 @@
       let ocrDone = false;
       let ocrRunning = false;
       let split = false;
+      let typewriterTimers = [];
+      let pendingTypewriters = 0;
+      let sweepDone = false;
 
       // ── Build the two layers' line spans (image = always the true text) ──
       let imageLineEls = [];
@@ -428,17 +461,19 @@
 
       function clearTextLines() {
         textLineEls.forEach((el) => { el.innerHTML = ''; });
-        textLayerEl.classList.add('k16-text--empty');
       }
 
       // ── OCR sweep: the scanline travels top->bottom over ~2.1s; as it
-      // crosses each line's vertical position, that line's OCR'd text is
-      // revealed into the text layer -- "real time", not an instant swap. ──
+      // crosses each line's vertical position, that line's OCR'd text starts
+      // typing in character-by-character (not an instant line swap) -- the
+      // point is to show OCR reads one character at a time, not a whole
+      // line at once. ──
       function runOcr() {
         if (ocrRunning || ocrDone) return;
         ocrRunning = true;
         ocrBtn.disabled = true;
-        textLayerEl.classList.remove('k16-text--empty');
+        sweepDone = false;
+        pendingTypewriters = 0;
         scanlineEl.classList.add('k16-scan-active');
 
         const stageRect = stageEl.getBoundingClientRect();
@@ -461,24 +496,55 @@
         const DURATION = 2100;
         const start = performance.now();
 
-        function revealLine(i) {
-          const text = LINES_OCR[i];
-          const el = textLineEls[i];
-          if (text.indexOf(OCR_ERROR_WORD) === -1) {
-            el.textContent = text;
+        // Renders `text` up to character `upTo`, wrapping the error word in
+        // its warning span as soon as typing reaches it (not only at the end).
+        function renderPartial(el, text, upTo, errIdx) {
+          el.textContent = '';
+          if (errIdx === -1 || upTo <= errIdx) {
+            el.appendChild(document.createTextNode(text.slice(0, upTo)));
             return;
           }
-          const idx = text.indexOf(OCR_ERROR_WORD);
-          const before = text.slice(0, idx);
-          const after = text.slice(idx + OCR_ERROR_WORD.length);
-          el.textContent = '';
-          if (before) el.appendChild(document.createTextNode(before));
+          el.appendChild(document.createTextNode(text.slice(0, errIdx)));
+          const errEnd = errIdx + OCR_ERROR_WORD.length;
           const mark = document.createElement('span');
           mark.className = 'k16-ocr-error';
           mark.title = 'OCR reconheceu errado (era "comparecimento")';
-          mark.textContent = OCR_ERROR_WORD;
-          el.appendChild(mark);
-          if (after) el.appendChild(document.createTextNode(after));
+          if (upTo <= errEnd) {
+            mark.textContent = text.slice(errIdx, upTo);
+            el.appendChild(mark);
+          } else {
+            mark.textContent = OCR_ERROR_WORD;
+            el.appendChild(mark);
+            el.appendChild(document.createTextNode(text.slice(errEnd, upTo)));
+          }
+        }
+
+        function startTypewriter(i) {
+          const text = LINES_OCR[i];
+          const el = textLineEls[i];
+          const errIdx = text.indexOf(OCR_ERROR_WORD);
+          let upTo = 0;
+          pendingTypewriters++;
+          const timer = setInterval(() => {
+            upTo++;
+            renderPartial(el, text, upTo, errIdx);
+            if (upTo >= text.length) {
+              clearInterval(timer);
+              typewriterTimers = typewriterTimers.filter((t) => t !== timer);
+              pendingTypewriters--;
+              maybeFinishOcr();
+            }
+          }, 16);
+          typewriterTimers.push(timer);
+        }
+
+        function maybeFinishOcr() {
+          if (!sweepDone || pendingTypewriters > 0) return;
+          scanlineEl.classList.remove('k16-scan-active');
+          ocrRunning = false;
+          ocrDone = true;
+          searchStatus.textContent = '';
+          searchStatus.className = 'k16-search-status';
         }
 
         function tick(now) {
@@ -487,17 +553,14 @@
           const y = sweepStart + frac * sweepRange;
           scanlineEl.style.top = y + 'px';
           lineTops.forEach((top, i) => {
-            if (!revealed[i] && y >= top) { revealed[i] = true; revealLine(i); }
+            if (!revealed[i] && y >= top) { revealed[i] = true; startTypewriter(i); }
           });
           if (frac < 1) {
             requestAnimationFrame(tick);
           } else {
-            lineTops.forEach((top, i) => { if (!revealed[i]) { revealed[i] = true; revealLine(i); } });
-            scanlineEl.classList.remove('k16-scan-active');
-            ocrRunning = false;
-            ocrDone = true;
-            searchStatus.textContent = '';
-            searchStatus.className = 'k16-search-status';
+            lineTops.forEach((top, i) => { if (!revealed[i]) { revealed[i] = true; startTypewriter(i); } });
+            sweepDone = true;
+            maybeFinishOcr();
           }
         }
         requestAnimationFrame(tick);
@@ -509,7 +572,7 @@
       }
 
       function doSearch() {
-        const qRaw = searchInput.value.trim();
+        searchInput.value = SEARCH_QUERY;
         // Clear previous highlights first.
         textLineEls.forEach((el) => {
           el.querySelectorAll('mark').forEach((m) => {
@@ -517,13 +580,12 @@
           });
           el.normalize();
         });
-        if (!qRaw) { searchStatus.textContent = ''; searchStatus.className = 'k16-search-status'; return; }
         if (!ocrDone) {
           searchStatus.textContent = '0 resultados';
           searchStatus.className = 'k16-search-status k16-search--empty';
           return;
         }
-        const q = qRaw.toLowerCase();
+        const q = SEARCH_QUERY.toLowerCase();
         let count = 0;
         textLineEls.forEach((el) => {
           const text = el.textContent;
@@ -557,6 +619,10 @@
       }
 
       function reset() {
+        typewriterTimers.forEach((t) => clearInterval(t));
+        typewriterTimers = [];
+        pendingTypewriters = 0;
+        sweepDone = false;
         ocrDone = false;
         ocrRunning = false;
         split = false;
@@ -574,7 +640,6 @@
       ocrBtn.addEventListener('click', runOcr);
       resetBtn.addEventListener('click', reset);
       searchBtn.addEventListener('click', doSearch);
-      searchInput.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSearch(); });
 
       // ── Theme sync ───────────────────────────────────────
       window.addEventListener('storage', e => {
