@@ -217,3 +217,104 @@ html, body {
 /* ── Tab panels ──────────────────────────────────────────── */
 .cdx-trilha-tabcontent { min-height: 20rem; }
 .cdx-trilha-panel { animation: cdx-tr-fade-in 0.25s ease both; }
+
+/* ── "Salvar como app" install bar (install-prompt.js) ───── */
+/* An EXTENSION OF THE HERO: the same box grows upward to hold the invite — same width and
+   surface, no divider, only the outer corners rounded. The brand accent moves to the top of
+   the whole box. Opens big, then collapses to a short strip (label + glyph) on first
+   interaction; the WHOLE bar is the install button. Reuses shared tokens so light+dark follow
+   the theme. */
+.cdx-install-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.85rem;
+  margin: 1rem 0 0;
+  padding: 1.15rem 1.75rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-bottom: none;
+  border-radius: 20px 20px 0 0;
+  cursor: pointer;
+  animation: cdx-tr-fade-in 0.25s ease both;
+  transition: padding 0.25s ease;
+}
+.cdx-install-bar:hover { border-color: var(--primary); }
+.cdx-install-logo { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
+.cdx-install-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
+.cdx-install-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
+.cdx-install-desc { display: flex; align-items: center; gap: 0.4rem; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.4; }
+.cdx-install-share-svg { width: 0.95rem; height: 0.95rem; flex-shrink: 0; color: var(--primary); }
+/* CTA is a visual affordance only — the whole bar handles the tap. */
+.cdx-install-cta {
+  margin-left: auto;
+  flex-shrink: 0;
+  padding: 0.5rem 1rem;
+  background: var(--primary);
+  color: #fff;
+  border-radius: 10px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  white-space: nowrap;
+}
+.cdx-install-bar:hover .cdx-install-cta { background: var(--primary-dark); }
+/* Collapsed-only bits: a short label + a download glyph in a tinted circle. */
+.cdx-install-minlabel { display: none; font-size: 0.9rem; font-weight: 700; color: var(--text-primary); white-space: nowrap; }
+.cdx-install-glyph {
+  display: none;
+  margin-left: auto;
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  align-items: center;
+  justify-content: center;
+  background: var(--tint-primary-tx);
+  color: var(--primary);
+}
+.cdx-install-glyph-svg { width: 16px; height: 16px; }
+
+/* Collapsed: a shorter strip — short label + glyph, no desc, no CTA. */
+.cdx-install-bar.is-min { padding: 0.35rem 1.75rem; }
+.cdx-install-bar.is-min .cdx-install-title,
+.cdx-install-bar.is-min .cdx-install-desc,
+.cdx-install-bar.is-min .cdx-install-cta { display: none; }
+.cdx-install-bar.is-min .cdx-install-minlabel { display: inline; }
+.cdx-install-bar.is-min .cdx-install-glyph { display: inline-flex; }
+.cdx-install-bar.is-min .cdx-install-logo { width: 22px; height: 22px; border-radius: 7px; }
+
+/* The hero becomes the bottom half of the same box: flush to the strip, no top rounding or
+   border. The hero keeps its top teal accent (::after) at the seam — the accent that reads as
+   the join between the invite strip and the hero. */
+.cdx-trilha-hero.cdx-install-joined {
+  margin-top: 0;
+  border-top: none;
+  border-top-left-radius: 0;
+  border-top-right-radius: 0;
+}
+
+/* Questions state (body.cdx-tr-live, set by nexo.js during a live question): the bar is gone
+   and a pill lands in the topbar's empty middle. Solid teal + WHITE text — readable in light
+   AND dark (teal-on-teal-tint failed contrast). The pill IS the install button. */
+.cdx-install-qpill {
+  display: none;
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 8500;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.32rem 0.8rem 0.32rem 0.38rem;
+  border: none;
+  border-radius: 999px;
+  background: var(--primary);
+  color: #fff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  font-family: inherit;
+  cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0, 0, 0, 0.2);
+}
+.cdx-install-qpill:hover { background: var(--primary-dark); }
+.cdx-install-qpill-logo { width: 20px; height: 20px; border-radius: 5px; }
+body.cdx-tr-live .cdx-install-bar { display: none; }
+body.cdx-tr-live .cdx-install-qpill { display: inline-flex; }

@@ -1,13 +1,15 @@
 // edit/animpanel.js — the "Animação" panel: entrance type + the reveal list + Preview.
 // Opened from the chrome "Animação" button, like the Tema box. It lists EVERY animatable
-// unit with its true state (so it matches reality): a deck (a whole list) shows two toggle
-// buttons "item a item" / "tudo junto" (the selected one is its mode; neither selected =
-// off); a singleton shows one "Animar" toggle (active = animated). Animated units come
-// first, in reveal order, and reorder by drag (grab handle) or ▲▼; off units follow,
-// dimmed. "Ligar todos / Desligar todos" flips everything. Preview steps THIS slide in the
-// editor (app.startPreview); while previewing the panel collapses to just a Parar button so
-// the slide is visible. Everything writes through app.anim* (materializes slide.build on
-// first edit) and the panel re-renders itself after each change.
+// unit with its true state (so it matches reality). To keep each row compact the on/off and
+// the entrance effect fold into droplists: a singleton shows ONE droplist (Off / Surgir /
+// Fade / Deslizar / Zoom) whose closed button reads "Animar" when off and the effect name
+// otherwise, plus a ＋junto glyph (enter with the previous unit); a deck shows a mode droplist
+// (Off / item a item / tudo junto) plus, when on, the same effect droplist. "Surgir" is the
+// default entrance (the deck-wide rise+fade). Animated units come first, in reveal order, and
+// reorder by DRAG (grab handle) only; off units follow, dimmed. "Ligar todos / Desligar todos"
+// flips everything. Preview steps THIS slide in the editor (app.startPreview); while previewing
+// the panel collapses to just a Parar button so the slide is visible. Everything writes through
+// app.anim* (materializes slide.build on first edit) and the panel re-renders after each change.
 import { t } from "../../../../js/i18n.js";
 
 let panel = null;
@@ -35,23 +37,56 @@ function unitKey(u) {
   return u.kind === "deck" ? (u.mode === "unit" ? "unit:" : "each:") + u.list : u.key;
 }
 
-// One row. `onList` is the current ordered ON units (for reorder math); `i` is this unit's
-// index within it (or -1 when the unit is off, so it carries no reorder controls).
-function unitRow(app, u, onList, i) {
+// A compact custom dropdown: a button reading `btnLabel` that opens a menu of [value,label]
+// options; picking one calls onPick(value). The panel rebuilds itself after each change
+// (app._afterAnim), so we don't persist menu state — a rebuild closes it. Opening one closes
+// the other menus in the same panel. Custom (not a native <select>) because the closed button
+// must read differently from its option ("Off" in the list, "Animar" on the button).
+function dropdown(cls, btnLabel, options, current, onPick) {
+  const wrap = el("div", "ap-dd" + (cls ? " " + cls : ""));
+  const b = el("button", "ap-ddbtn", btnLabel);
+  b.type = "button";
+  const menu = el("div", "ap-ddmenu");
+  menu.hidden = true;
+  options.forEach(([v, lbl]) => {
+    const o = el("button", "ap-ddopt" + (v === current ? " on" : ""), lbl);
+    o.type = "button";
+    o.onclick = (e) => { e.stopPropagation(); onPick(v); };
+    menu.appendChild(o);
+  });
+  b.onclick = (e) => {
+    e.stopPropagation();
+    const box = wrap.closest(".cdx-animpanel");
+    if (box) box.querySelectorAll(".ap-ddmenu").forEach((m) => { if (m !== menu) m.hidden = true; });
+    menu.hidden = !menu.hidden;
+  };
+  wrap.appendChild(b);
+  wrap.appendChild(menu);
+  return wrap;
+}
+
+// Entrance effects (labels literal, as the Phase 9 fx buttons they replace were). "surgir" =
+// the default rise+fade (the deck-wide entrance), i.e. an ON unit with no explicit fx override.
+const FX_OPTS = [["surgir", "Surgir"], ["fade", "Fade"], ["slide", "Deslizar"], ["zoom", "Zoom"]];
+const FX_LABEL = { surgir: "Surgir", fade: "Fade", slide: "Deslizar", zoom: "Zoom" };
+
+// One row. `onList` is the current ordered ON units (for the drag reorder math).
+function unitRow(app, u, onList) {
   const on = u.on;
+  const key = unitKey(u);
   const row = el("div", "ap-row" + (u.kind === "deck" ? " ap-deck" : "") + (on ? "" : " ap-offrow"));
   if (on) {
     row.draggable = true;
-    row.dataset.key = unitKey(u);
-    row.ondragstart = (e) => { dragKey = unitKey(u); try { e.dataTransfer.effectAllowed = "move"; } catch (_) {} };
+    row.dataset.key = key;
+    row.ondragstart = (e) => { dragKey = key; try { e.dataTransfer.effectAllowed = "move"; } catch (_) {} };
     row.ondragover = (e) => { e.preventDefault(); row.classList.add("ap-over"); };
     row.ondragleave = () => row.classList.remove("ap-over");
     row.ondrop = (e) => {
       e.preventDefault();
       row.classList.remove("ap-over");
-      if (dragKey == null || dragKey === unitKey(u)) return;
+      if (dragKey == null || dragKey === key) return;
       const keys = onList.map(unitKey).filter((k) => k !== dragKey);
-      keys.splice(keys.indexOf(unitKey(u)), 0, dragKey); // drop BEFORE this row
+      keys.splice(keys.indexOf(key), 0, dragKey); // drop BEFORE this row
       dragKey = null;
       app.animReorder(keys);
     };
@@ -63,46 +98,39 @@ function unitRow(app, u, onList, i) {
   row.appendChild(el("span", "ap-label", u.label));
 
   const ctl = el("span", "ap-ctl");
+  const meta = (app.cur().buildFx && app.cur().buildFx[key]) || {};
+  const fx = meta.fx || "";
+
   if (u.kind === "deck") {
-    ctl.appendChild(btn("ap-m", t("slides.ed_anim_each"), u.mode === "each",
-      () => app.animListMode(u.list, u.mode === "each" ? "none" : "each")));
-    ctl.appendChild(btn("ap-m", t("slides.ed_anim_unit"), u.mode === "unit",
-      () => app.animListMode(u.list, u.mode === "unit" ? "none" : "unit")));
+    // Mode droplist: Off / item a item / tudo junto. Closed button reads "Animar" when off.
+    const mode = u.mode || "none";
+    const modeLbl = mode === "each" ? t("slides.ed_anim_each")
+      : mode === "unit" ? t("slides.ed_anim_unit") : t("slides.ed_animate");
+    ctl.appendChild(dropdown("ap-mode", modeLbl,
+      [["none", "Off"], ["each", t("slides.ed_anim_each")], ["unit", t("slides.ed_anim_unit")]],
+      mode, (v) => app.animListMode(u.list, v)));
+    // Effect droplist (only when animated); a deck's timing (each/unit) is separate from its effect.
+    if (on) ctl.appendChild(dropdown("ap-fxdd", FX_LABEL[fx || "surgir"], FX_OPTS, fx || "surgir",
+      (v) => app.animFx(key, v === "surgir" ? null : v)));
   } else {
-    ctl.appendChild(btn("ap-m", t("slides.ed_animate"), on,
-      () => app.animToggle(u.key, !on)));
+    // Singleton: ONE droplist folding on/off + effect. Off → "Animar"; else the effect name.
+    const cur = on ? (fx || "surgir") : "off";
+    const btnLbl = on ? FX_LABEL[fx || "surgir"] : t("slides.ed_animate");
+    ctl.appendChild(dropdown("ap-fxdd", btnLbl, [["off", "Off"], ...FX_OPTS], cur, (v) => {
+      if (v === "off") { if (on) app.animToggle(u.key, false); return; }
+      if (v === "surgir") { if (on) app.animFx(u.key, null); else app.animToggle(u.key, true); return; }
+      if (!on) app.animToggle(u.key, true);
+      app.animFx(u.key, v);
+    }));
+    // ＋junto: a glyph toggle (ON singletons only), orthogonal to the effect.
+    if (on) {
+      const w = meta.timing === "with";
+      const j = btn("ap-with", "⇤", w, () => app.animTiming(u.key, w ? "after" : "with"));
+      j.title = "Entra junto com o item anterior (mesmo clique)";
+      ctl.appendChild(j);
+    }
   }
   row.appendChild(ctl);
-
-  // Phase 9: per-unit entrance effect (ON units only). Fade / Deslizar / Zoom; the active
-  // one is lit, re-click clears it (back to the deck-wide entrance).
-  if (on) {
-    const meta = (app.cur().buildFx && app.cur().buildFx[unitKey(u)]) || {};
-    const cur = meta.fx || "";
-    const fx = el("span", "ap-fx");
-    [["fade", "Fade"], ["slide", "Deslizar"], ["zoom", "Zoom"]].forEach(([v, lbl]) =>
-      fx.appendChild(btn("ap-fxb", lbl, cur === v, () => app.animFx(unitKey(u), cur === v ? null : v))));
-    // Phase 9 timing: a singleton can enter WITH the previous unit (same click).
-    if (u.kind === "single") {
-      const w = meta.timing === "with";
-      fx.appendChild(btn("ap-fxb ap-with", "＋junto", w, () => app.animTiming(unitKey(u), w ? "after" : "with")));
-    }
-    row.appendChild(fx);
-  }
-
-  const ord = el("span", "ap-ord");
-  if (on) {
-    const move = (dir) => {
-      const keys = onList.map(unitKey);
-      const j = i + dir;
-      if (j < 0 || j >= keys.length) return;
-      [keys[i], keys[j]] = [keys[j], keys[i]];
-      app.animReorder(keys);
-    };
-    ord.appendChild(btn("ap-mv", "▲", false, () => move(-1)));
-    ord.appendChild(btn("ap-mv", "▼", false, () => move(1)));
-  }
-  row.appendChild(ord);
   return row;
 }
 
@@ -153,7 +181,7 @@ function build(app) {
   const onList = units.filter((u) => u.on);
   const list = el("div", "ap-list");
   if (!units.length) list.appendChild(el("div", "ap-empty", t("slides.ed_anim_empty")));
-  else units.forEach((u) => list.appendChild(unitRow(app, u, onList, u.on ? onList.indexOf(u) : -1)));
+  else units.forEach((u) => list.appendChild(unitRow(app, u, onList)));
   ord.appendChild(list);
   box.appendChild(ord);
 

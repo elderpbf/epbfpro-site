@@ -18,7 +18,7 @@ import { renderItem } from '../js/item-render.js';
 import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 import { openModal, closeModal } from '../js/modal.js';
-import { makeReorderable } from '../js/reorder.js';
+import { mountRail } from '../js/list-rail.js';
 import { markChanges, DIFF_OPEN, DIFF_CLOSE } from '../js/text-diff.js';
 
 // Word-diff highlight helpers: wrap only the runs that differ from the live value in a
@@ -43,7 +43,7 @@ let _selectedId = null;       // selected section id (live item id OR draft row 
 let _detailCache = new Map(); // live item id -> full item (with body_md)
 let _types = [];
 let _tags = [];
-let _reorderDestroy = null;   // teardown for the shared drag-reorder wiring
+let _rail = null;             // the shared left-panel rail (js/list-rail.js); the section list
 
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
@@ -230,7 +230,7 @@ function _openApostila(id, name) {
 }
 
 function _backToLibrary() {
-  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
+  if (_rail) { _rail.destroy(); _rail = null; }
   _setId = null;
   _selectedId = null;
   _renderShell();
@@ -293,62 +293,66 @@ function _startDraft() {
   }).catch((err) => notice.internal(_err(err)));
 }
 
-// ── Shared list render (live rows OR draft rows) ─────────────────────────────
+// ── Shared list render (live rows OR draft rows), now the shared list-rail ────
+// The section list adopts js/list-rail.js (track-21 rollout). The rail lives INSIDE
+// #cdx-apostila-list (which keeps its .cdx-items-list class, so the mobile drawer at
+// codex.css:194 still applies). The draft-START state (no working copy yet) is not a
+// row list, so it bypasses the rail with its own CTA; every row state is the rail.
+function _sectionRowMain(it) {
+  const pos = _mode === 'draft' ? it.position : it.set_position;
+  // A small badge flags new/edited sections; the actual changed TEXT is highlighted in
+  // the preview (right pane), not the row itself.
+  const badge = (_mode === 'draft' && it.status && it.status !== 'unchanged')
+    ? '<span class="cdx-apostila-badge cdx-apostila-badge--' + it.status + '">' + t('apostila.status_' + it.status) + '</span>'
+    : '';
+  return '<span class="cdx-apostila-pos">' + _esc(pos != null ? pos : '') + '</span>' +
+    '<div class="cdx-item-info">' +
+      '<div class="cdx-item-title">' + _esc(it.title || '') + badge + '</div>' +
+      '<div class="cdx-item-sub">' + _esc((it.summary && it.summary.trim()) ? it.summary : t('apostila.no_summary')) + '</div>' +
+    '</div>';
+}
+
+function _removedFooterHtml() {
+  if (!(_mode === 'draft' && _draft && _draft.removed && _draft.removed.length)) return '';
+  return '<div class="cdx-apostila-removed"><div class="cdx-apostila-removed-title">' + t('apostila.removed_title') + '</div>' +
+    _draft.removed.map((r) => '<div class="cdx-apostila-removed-row">' + _esc(r.title || '') + '</div>').join('') + '</div>';
+}
+
+function _buildRail() {
+  const el = _q('cdx-apostila-list');
+  if (!el) return;
+  _rail = mountRail(el, {
+    title: '',
+    items: () => (_mode === 'draft' ? (_draft && _draft.sections) || [] : _live),
+    getId: (it) => it.id,
+    renderRow: (it) => ({ main: _sectionRowMain(it) }),
+    selectedId: () => _selectedId,
+    onSelect: (id) => { _selectedId = Number(id); _rail.render(); _renderPreview(); },
+    add: { label: '+', title: t('apostila.add_section'), onAdd: _addSection },
+    dragHint: t('apostila.drag_hint'),
+    emptyText: t('apostila.no_sections'),
+    footer: _removedFooterHtml,
+    reorder: { onReorder: _onReorder },
+  });
+}
+
 function _renderList() {
   const el = _q('cdx-apostila-list');
   if (!el) return;
-
+  // Draft-start (no working copy) is a CTA, not a list, so render it directly (no rail).
   if (_mode === 'draft' && (!_draft || !_draft.exists)) {
+    if (_rail) { _rail.destroy(); _rail = null; }
     el.innerHTML =
       '<div class="cdx-apostila-draftstart">' +
         '<p class="cdx-helper-text">' + t('apostila.draft_none') + '</p>' +
         '<button class="cdx-btn cdx-btn-primary" data-act="start">' + t('apostila.draft_start') + '</button>' +
       '</div>';
+    const start = el.querySelector('[data-act="start"]');
+    if (start) start.addEventListener('click', _startDraft);
     return;
   }
-
-  const rows = _mode === 'draft' ? _draft.sections : _live;
-  const addBtn = '<button class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-apostila-add" data-act="add">' + t('apostila.add_section') + '</button>';
-
-  if (!rows.length) {
-    el.innerHTML = addBtn + '<div class="cdx-empty">' + t('apostila.no_sections') + '</div>';
-    return;
-  }
-
-  const rowsHtml = rows.map((it, i) => {
-    const id = it.id;
-    const pos = _mode === 'draft' ? it.position : it.set_position;
-    const active = Number(id) === Number(_selectedId);
-    // A small badge flags new/edited sections in the list; the actual changed TEXT is
-    // highlighted in the preview (right pane), not the row itself.
-    const badge = (_mode === 'draft' && it.status && it.status !== 'unchanged')
-      ? '<span class="cdx-apostila-badge cdx-apostila-badge--' + it.status + '">' + t('apostila.status_' + it.status) + '</span>'
-      : '';
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-id="' + _esc(id) + '" draggable="true">' +
-      '<span class="cdx-apostila-grip" title="' + t('apostila.drag_hint') + '">⠿</span>' +
-      '<span class="cdx-apostila-pos">' + _esc(pos || (i + 1)) + '</span>' +
-      '<div class="cdx-item-info">' +
-        '<div class="cdx-item-title">' + _esc(it.title || '') + badge + '</div>' +
-        '<div class="cdx-item-sub">' + _esc((it.summary && it.summary.trim()) ? it.summary : t('apostila.no_summary')) + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
-
-  let removedHtml = '';
-  if (_mode === 'draft' && _draft.removed && _draft.removed.length) {
-    removedHtml = '<div class="cdx-apostila-removed"><div class="cdx-apostila-removed-title">' + t('apostila.removed_title') + '</div>' +
-      _draft.removed.map((r) => '<div class="cdx-apostila-removed-row">' + _esc(r.title || '') + '</div>').join('') + '</div>';
-  }
-
-  el.innerHTML = addBtn + rowsHtml + removedHtml;
-}
-
-function _onListClick(e) {
-  const act = (e.target.closest('[data-act]') || {}).dataset ? e.target.closest('[data-act]').dataset.act : null;
-  if (act === 'start') return _startDraft();
-  if (act === 'add') return _addSection();
-  const row = e.target.closest('.cdx-item-row');
-  if (row) { _selectedId = Number(row.dataset.id); _renderList(); _renderPreview(); }
+  if (!_rail) _buildRail();
+  _rail.render();
 }
 
 // ── Preview pane (renders the selected section + its actions) ────────────────
@@ -654,13 +658,9 @@ function _renderShell() {
   _q('cdx-apostila-back').addEventListener('click', _backToLibrary);
   _q('cdx-apostila-rename').addEventListener('click', () => _renameApostila(_sets.find((s) => Number(s.id) === Number(_setId)) || { id: _setId, name: _setName }));
   _q('cdx-apostila-modes').addEventListener('click', (e) => { const b = e.target.closest('[data-mode]'); if (b) _setMode(b.dataset.mode); });
-  _q('cdx-apostila-list').addEventListener('click', _onListClick);
-  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
-  _reorderDestroy = makeReorderable(_q('cdx-apostila-list'), {
-    itemSelector: '.cdx-item-row',
-    getId: (el) => el.dataset.id,
-    onReorder: _onReorder,
-  });
+  // The section list is the shared list-rail (built lazily by _renderList / _loadMode).
+  // The DOM was just rebuilt, so drop any prior rail (its container is gone).
+  if (_rail) { _rail.destroy(); _rail = null; }
   _q('cdx-apostila-preview').addEventListener('click', _onPreviewClick);
   _q('cdx-apostila-converge').addEventListener('click', () => _converge(false));
   _q('cdx-apostila-discard').addEventListener('click', _discard);
@@ -690,7 +690,7 @@ export function mount(viewEl, ctx) {
 }
 
 export function unmount() {
-  if (_reorderDestroy) { _reorderDestroy(); _reorderDestroy = null; }
+  if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _setId = null; _selectedId = null; _draft = null;

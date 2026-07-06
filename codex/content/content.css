@@ -120,6 +120,11 @@
   border-color: var(--cdx-card-sel-border);
   box-shadow: inset 3px 0 0 var(--codex-content);
 }
+/* Items adopts the shared list-rail (track-21): the row content sits in .cdx-items-rowwrap
+   (the check + icon + info). Preview selection is the rail's is-on; the BULK is-selected can't
+   live on the rail row, so it rides the wrapper and a :has() rule paints the whole row. */
+.cdx-items-split .cdx-items-rowwrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+.cdx-items-split .cdx-rail-row:has(.cdx-items-rowwrap.is-selected) { background: var(--cdx-card-sel-bg); }
 
 /* ── Preview pane ────────────────────────────────────────────────────────── */
 .cdx-item-preview {
@@ -777,6 +782,15 @@
   border: 1px solid var(--cdx-chip-border);
   color: var(--text-secondary);
 }
+/* The Conteúdo master-detail lists (apostila/presets/drive/labs/items/tarefas) adopt the
+   shared list-rail (track-21). The rail brings its own box (surface/border/radius), so any
+   .cdx-items-list that HOSTS a rail goes bare (else double-box); tabs not yet ported keep
+   the plain .cdx-items-list box untouched (the :has guard only matches ported lists). The
+   mobile drawer (codex.css:194) keeps its position:fixed; only the desktop chrome drops.
+   The rail owns the row shell, so each tab's row content (pos/icon + info) sits inside
+   .cdx-rail-main and lays out horizontally like the old .cdx-item-row did. */
+.cdx-items-list:has(> .cdx-rail) { background: transparent; border: 0; border-radius: 0; padding: 0; }
+.cdx-items-list .cdx-rail-main { display: flex; align-items: center; gap: 0.6rem; }
 
 /* ── Apostila redesign: library, modes, working copy ─────────────────────── */
 .cdx-apostila-lib { display: flex; flex-direction: column; gap: 0.6rem; }
@@ -914,7 +928,11 @@
 .cdx-labs-title { margin: 0; font-size: 1.4rem; color: var(--text-primary); }
 .cdx-labs-hint { color: var(--text-secondary); font-size: 0.9rem; max-width: 640px; }
 .cdx-labs-split .cdx-item-info { flex: 1; min-width: 0; }
-.cdx-labs-split .cdx-item-row.is-off { opacity: 0.5; }
+/* The labs list adopts the shared list-rail (track-21). The rail owns the row shell, so a
+   lab row's content sits inside .cdx-rail-main > .cdx-lab-rowwrap; the wrapper carries the
+   is-off dim (the rail row itself can't) and lays out icon + info + switch horizontally. */
+.cdx-labs-split .cdx-lab-rowwrap { flex: 1; min-width: 0; display: flex; align-items: center; gap: 0.6rem; }
+.cdx-labs-split .cdx-lab-rowwrap.is-off { opacity: 0.5; }
 .cdx-lab-icon { color: var(--codex-content); font-size: 1.2rem; }
 
 /* On/off switch (ported value-for-value from the legacy ct-lab-switch). */

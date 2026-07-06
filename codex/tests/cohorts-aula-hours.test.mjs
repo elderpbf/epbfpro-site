@@ -44,7 +44,8 @@ test('the dossier fields are inline-editable and auto-save on blur/change', () =
   assert.match(src, /editSelect\('course_id'/, 'course is an editable select');
   assert.match(src, /editText\('display_name'/, 'display_name is editable (was modal-only)');
   assert.match(src, /editText\('whatsapp_url'/, 'whatsapp is editable (was modal-only)');
-  assert.match(src, /editSelect\('classpulse_session_id'/, 'classpulse is editable (was modal-only)');
+  assert.match(src, /data-edit-field="classpulse_session_id"/, 'classpulse is an editable auto-saving select');
+  assert.match(src, /cdx-doss-session-go/, 'the session cell shares its space with a shortcut to the connected session');
   assert.match(src, /editSelect\('format'/, 'format is an editable select');
   assert.match(src, /editText\('place'/, 'place is editable');
   assert.match(src, /isSelect \? 'change' : 'blur'/, 'selects save on change, inputs on blur');

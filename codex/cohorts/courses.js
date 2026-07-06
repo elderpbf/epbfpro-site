@@ -19,6 +19,7 @@ import { courses as api, ai, content as contentApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import {
@@ -34,6 +35,8 @@ let _course = null;        // full selected course (with ementa)
 let _ementa = emptyEmenta(); // working copy of the selected course's ementa
 let _aiMsgs = [];          // assistant chat history ({role, content}) for ai.chat
 let _apostilas = [];       // Conteúdo apostila sets, lazy-loaded for "De uma apostila"
+let _rail = null;          // the shared left-panel rail (js/list-rail.js); Cursos = 1st adopter
+let _sections = [];        // ct_course_sections (rail groups); [] until the admin creates one
 
 const IDS = {
   rail:   'cdx-cursos-rail',
@@ -66,70 +69,187 @@ function _loadCourses() {
     const all = (d && d.courses) || [];
     _courses = all.filter((c) => c.status !== 'archived');
     _archived = all.filter((c) => c.status === 'archived');
-    _renderRail();
+    if (_rail) _rail.render();
     if (_selectedId == null && _courses.length) _selectCourse(_courses[0].id);
     else if (_selectedId == null) _renderMain();
   }).catch(() => {
     const el = _q(IDS.rail);
     if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error_loading')) + '</div>';
   });
+  _loadSections();
 }
 
-// One course row (rail). Archived rows are muted and carry an Unarchive button.
-function _railRow(c, archived) {
-  const on = c.id === _selectedId ? ' is-on' : '';
+// Course sections (the rail's collapsible groups). Loaded alongside the courses; reloaded
+// after any section CRUD. A load failure leaves the flat list (no-section) working.
+function _loadSections() {
+  api.listSections().then((d) => {
+    _sections = (d && d.sections) || [];
+    if (_rail) _rail.render();
+  }).catch((err) => { if (window.bsLog) window.bsLog('cursos sections: ' + (err && err.message || err), 'error'); });
+}
+
+// Optimistic local model updates so a later _rail.render() matches what the drag already did
+// in the DOM (list-rail moved the nodes; we mirror it in _courses). sort_order is per-bucket;
+// the rail re-groups by section_id, so a stable sort by sort_order preserves within-bucket order.
+function _applyCourseOrder(ids) {
+  ids.forEach((id, i) => { const c = _courses.find((x) => String(x.id) === String(id)); if (c) c.sort_order = i; });
+  _courses.sort((a, b) => (a.sort_order == null ? 1e9 : a.sort_order) - (b.sort_order == null ? 1e9 : b.sort_order));
+}
+function _applyCourseSection(courseId, sectionId, ids) {
+  const moved = _courses.find((x) => x.id === courseId);
+  if (moved) moved.section_id = sectionId;
+  _applyCourseOrder(ids);
+}
+
+// The rail is now the shared js/list-rail.js (Cursos = 1st adopter, track-21). Active courses
+// are the rows; archived courses sit in the rail FOOTER as a collapsed <details> (they carry
+// an Unarchive affordance, so they are rendered + wired here, not through the row renderer).
+// Reorder + sections are OFF here until the additive worker (sort_order + ct_course_sections)
+// lands (Phase B); flipping them on is a config change, no re-layout.
+function _courseRowMain(c) {
   const n = c.turma_count || 0;
   const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
   const hours = c.hours ? esc(c.hours) + ' · ' : '';
-  return (
-    '<div class="cdx-cursos-ri' + on + (archived ? ' is-archived' : '') + '" data-id="' + esc(String(c.id)) + '">' +
-      '<div class="cdx-cursos-ri-b">' +
-        '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
-        '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
-      '</div>' +
-      (archived
-        ? '<button type="button" class="cdx-cursos-unarch" data-unarch="' + esc(String(c.id)) + '" title="' + esc(t('cohorts.course_unarchive')) + '">' + esc(t('cohorts.course_unarchive')) + '</button>'
-        : '') +
-    '</div>'
-  );
+  return '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
+    '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>';
 }
 
-function _renderRail() {
+function _archivedFooterHtml() {
+  if (!_archived.length) return '';
+  return '<details class="cdx-cursos-arch">' +
+    '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
+    _archived.map((c) => {
+      const n = c.turma_count || 0;
+      const turmas = n === 1 ? '1 ' + t('cohorts.turma_singular') : n + ' ' + t('cohorts.turma_plural');
+      const hours = c.hours ? esc(c.hours) + ' · ' : '';
+      const on = c.id === _selectedId ? ' is-on' : '';
+      return '<div class="cdx-cursos-ri is-archived' + on + '" data-arch-id="' + esc(String(c.id)) + '">' +
+        '<div class="cdx-cursos-ri-b">' +
+          '<div class="cdx-cursos-ri-t">' + esc(c.title) + '</div>' +
+          '<div class="cdx-cursos-ri-m">' + hours + esc(turmas) + '</div>' +
+        '</div>' +
+        '<button type="button" class="cdx-cursos-unarch" data-unarch="' + esc(String(c.id)) + '" title="' + esc(t('cohorts.course_unarchive')) + '">' + esc(t('cohorts.course_unarchive')) + '</button>' +
+      '</div>';
+    }).join('') +
+  '</details>';
+}
+
+function _buildRail() {
   const el = _q(IDS.rail);
   if (!el) return;
-  const head = '<div class="cdx-cursos-rail-h"><span>' + esc(t('cohorts.cursos_title')) + '</span>' +
-    '<button type="button" class="cdx-cursos-add" id="cdx-cursos-new" title="' + esc(t('cohorts.cursos_new')) + '" aria-label="' + esc(t('cohorts.cursos_new')) + '">+</button></div>';
-  let body;
-  if (!_courses.length && !_archived.length) {
-    body = '<div class="cdx-empty">' + esc(t('cohorts.cursos_none')) + '</div>';
-  } else {
-    body = _courses.map((c) => _railRow(c, false)).join('');
-    if (_archived.length) {
-      // Collapsed by default (Élder): a <details> the admin expands only when needed.
-      body += '<details class="cdx-cursos-arch">' +
-        '<summary class="cdx-cursos-arch-h">' + esc(t('cohorts.course_archived_section')) + ' (' + _archived.length + ')</summary>' +
-        _archived.map((c) => _railRow(c, true)).join('') +
-      '</details>';
-    }
-  }
-  el.innerHTML = head + body;
-  const addBtn = _q('cdx-cursos-new');
-  if (addBtn) addBtn.addEventListener('click', _onNewCourse);
-  el.querySelectorAll('.cdx-cursos-ri').forEach((r) => {
-    r.addEventListener('click', (e) => {
-      if (e.target.closest('.cdx-cursos-unarch')) return; // the button has its own handler
-      _selectCourse(Number(r.dataset.id));
-    });
+  _rail = mountRail(el, {
+    title: t('cohorts.cursos_title'),
+    items: () => _courses,
+    getId: (c) => c.id,
+    renderRow: (c) => ({ main: _courseRowMain(c) }),
+    selectedId: () => _selectedId,
+    onSelect: (id) => _selectCourse(Number(id)),
+    add: { label: '+', title: t('cohorts.cursos_new'), onAdd: _onNewCourse },
+    dragHint: t('cohorts.course_drag_hint'),
+    newSectionLabel: t('cohorts.course_section_new_btn'),
+    footer: _archivedFooterHtml,
+    emptyText: t('cohorts.cursos_none'),
+    // Reorder within a bucket (grip drag). Optimistic local + persist; reload reverts on error.
+    reorder: {
+      onReorder: (ids) => {
+        _applyCourseOrder(ids);
+        api.reorder({ ordered_ids: ids.map(Number) }).catch((err) => {
+          notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); _loadCourses();
+        });
+      },
+    },
+    // Groups + drag between groups (like the Tarefas sub-tab).
+    sections: {
+      of: (c) => c.section_id,
+      list: () => _sections,
+      editable: true,
+      onCreate: _onCreateSection,
+      onRename: (id) => _onRenameSection(Number(id)),
+      onDelete: (id) => _onDeleteSection(Number(id)),
+      onMoveItem: (courseId, secId, ids) => {
+        const sid = secId == null ? null : Number(secId);
+        _applyCourseSection(Number(courseId), sid, ids);
+        api.setSection({ course_id: Number(courseId), section_id: sid, ordered_ids: ids.map(Number) }).catch((err) => {
+          notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); _loadCourses();
+        });
+      },
+    },
   });
-  el.querySelectorAll('.cdx-cursos-unarch').forEach((b) => {
-    b.addEventListener('click', (e) => { e.stopPropagation(); _onUnarchiveCourse(Number(b.dataset.unarch)); });
+  // Archived-footer actions: delegated on the rail container (persists across re-renders).
+  // The rail's own click handler ignores these (different classes: .cdx-cursos-* not .cdx-rail-*).
+  el.addEventListener('click', (e) => {
+    const un = e.target.closest('[data-unarch]');
+    if (un) { e.stopPropagation(); _onUnarchiveCourse(Number(un.getAttribute('data-unarch'))); return; }
+    const arch = e.target.closest('[data-arch-id]');
+    if (arch) _selectCourse(Number(arch.getAttribute('data-arch-id')));
+  });
+  _rail.render();
+}
+
+// ── Section CRUD (rail groups) ──────────────────────────────────────────────────
+// A shared name-input modal for create/rename; a confirm for delete (courses are
+// orphaned to "sem seção", never removed — the worker guards that).
+function _openSectionNameModal(titleText, initial, onOk) {
+  const html =
+    '<div class="cdx-modal" style="max-width:420px">' +
+      '<div class="cdx-modal-title">' + esc(titleText) + '</div>' +
+      '<input class="cdx-doss-edit" id="cdx-cursec-name" type="text" value="' + esc(initial || '') + '" placeholder="' + esc(t('cohorts.course_section_name_ph')) + '" style="width:100%;margin:.2rem 0 1.2rem">' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-cursec-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" id="cdx-cursec-ok">' + esc(t('cohorts.save')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  const input = bd.querySelector('#cdx-cursec-name');
+  if (input) setTimeout(() => { input.focus(); input.select(); }, 0);
+  const submit = () => {
+    const v = (input.value || '').trim();
+    if (!v) { toast.err(t('cohorts.course_section_name_required')); return; }
+    closeModal(bd); onOk(v);
+  };
+  bd.querySelector('#cdx-cursec-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-cursec-ok').addEventListener('click', submit);
+  if (input) input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+}
+
+function _onCreateSection() {
+  _openSectionNameModal(t('cohorts.course_section_new'), '', (name) => {
+    api.createSection({ name }).then(() => { toast.ok(t('cohorts.course_section_created')); _loadSections(); })
+      .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)));
+  });
+}
+
+function _onRenameSection(id) {
+  const sec = _sections.find((s) => s.id === id);
+  _openSectionNameModal(t('cohorts.course_section_rename'), sec ? sec.name : '', (name) => {
+    api.renameSection({ id, name }).then(() => { toast.ok(t('cohorts.course_section_renamed')); _loadSections(); })
+      .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)));
+  });
+}
+
+function _onDeleteSection(id) {
+  const html =
+    '<div class="cdx-modal" style="max-width:420px">' +
+      '<div class="cdx-modal-title">' + esc(t('cohorts.course_section_delete_title')) + '</div>' +
+      '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_section_delete_msg')) + '</p>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" id="cdx-cursec-del-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-danger" id="cdx-cursec-del-ok">' + esc(t('cohorts.course_section_delete')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  bd.querySelector('#cdx-cursec-del-cancel').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('#cdx-cursec-del-ok').addEventListener('click', () => {
+    closeModal(bd);
+    api.deleteSection({ id }).then(() => { toast.ok(t('cohorts.course_section_deleted')); _loadCourses(); })
+      .catch((err) => notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)));
   });
 }
 
 function _selectCourse(id) {
   _selectedId = id;
   _aiMsgs = []; // fresh chat per course
-  _renderRail();
+  if (_rail) _rail.render();
   const el = _q(IDS.main);
   if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.loading')) + '</div>';
   api.get({ id }).then((d) => {
@@ -649,10 +769,12 @@ export function mount(viewEl) {
   _aiMsgs = [];
   _apostilas = [];
   _renderShell();
+  _buildRail();
   _loadCourses();
 }
 
 export function unmount() {
+  if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _courses = [];

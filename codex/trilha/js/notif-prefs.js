@@ -57,7 +57,7 @@ function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').r
 //   onChange : called after a toggle, with the new prefs (so the bell re-filters)
 //   turmas   : the OTHER turmas on this device ({ name, client, url, clientSlug, turmaSlug }),
 //              the "trocar de turma" list; onForget(clientSlug, turmaSlug) removes a saved one
-export function createNotifSettings({ initials, turmaKey, onChange, onLogout, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
+export function createNotifSettings({ initials, turmaKey, onChange, onLogout, onInstallApp, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-ns-wrap';
 
@@ -100,6 +100,7 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, sh
           '<div class="cdx-ns-opts">' + optsHtml() + '</div>'
         : '') +
       turmasHtml() +
+      (onInstallApp ? '<button type="button" class="cdx-ns-install">' + escAttr(t('install.pill')) + '</button>' : '') +
       (onLogout ? '<button type="button" class="cdx-ns-logout">' + escAttr(t('login.logout')) + '</button>' : '') +
     '</div>';
 
@@ -125,6 +126,9 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, sh
   function close() { panel.hidden = true; document.removeEventListener('click', onOutside, true); }
   function onOutside(e) { if (!wrap.contains(e.target)) close(); }
   btn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); if (panel.hidden) open(); else close(); });
+
+  const installBtn = wrap.querySelector('.cdx-ns-install');
+  if (installBtn && onInstallApp) installBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onInstallApp(); });
 
   const logoutBtn = wrap.querySelector('.cdx-ns-logout');
   if (logoutBtn && onLogout) logoutBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onLogout(); });

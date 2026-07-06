@@ -6,9 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Perdido no meio · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -49,45 +50,13 @@
       height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
-    }
-
-    /* ── Question card ───────────────────────────────────── */
-    .k4-question {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      padding: 0.85rem 1.3rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
-    }
-    .k4-question-q {
-      font-family: var(--font-display);
-      font-style: italic;
-      font-size: var(--lab-fs-doc);
-      font-weight: 600;
-      letter-spacing: -0.005em;
-      line-height: 1.2;
-      margin: 0;
-      color: var(--text);
-    }
-    .k4-question-hint {
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      color: var(--text-dim);
-      line-height: 1.3;
-      margin: 0;
-    }
-    .k4-answer-key {
-      color: var(--good);
-      font-weight: 700;
     }
 
     /* ── Main area: accuracy + context bar + curve + response ── */
@@ -388,29 +357,19 @@
        their own phone floors), so these blocks only touch LAYOUT: padding,
        grid, tap targets, positioning. */
     @media (max-width: 700px) {
-      /* k4 is content-heavy (question + size selector + context bar + curve +
-         response). On a phone that does not fit one 100dvh screen, so here the
-         stage stops being fixed and the page scrolls — the auditorium
-         no-scroll model only applies on the wide stage. */
+      /* Fixed stage on phone too (no page scroll) — same app-fit model as the
+         other labs. The removed question box is what used to force scrolling;
+         with it gone the pieces fit one 100dvh screen. */
       .k4-panel {
-        height: auto;
-        min-height: 100dvh;
-        overflow: visible;
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
+        padding: 0.5rem 0.9rem 0.5rem;
+        gap: 0.4rem;
       }
-      .k4-question {
-        padding: 0.55rem 0.9rem;
-        gap: 0.3rem;
-      }
-      .k4-question-q { line-height: 1.25; }
-      .k4-question-hint { line-height: 1.35; }
 
-      .k4-main { gap: 0.6rem; }
+      .k4-main { gap: 0.45rem; }
       .k4-size-row {
         flex-direction: column;
         align-items: stretch;
-        gap: 0.4rem;
+        gap: 0.3rem;
       }
       .k4-size-label {
         text-align: center;
@@ -423,44 +382,56 @@
         gap: 0.3rem;
       }
       .k4-size-btn {
-        padding: 0.45rem 0.7rem;
+        padding: 0.4rem 0.7rem;
         flex: 1 1 calc(50% - 0.15rem);
         min-width: 0;
-        min-height: 38px;
+        min-height: 40px;
         text-align: center;
       }
 
       /* Extra top room so the needle tag (absolutely positioned above the
          bar) clears the size-selector buttons, which wrap to two rows here. */
-      .k4-ctx-section { gap: 0.35rem; margin-top: 2.6rem; }
-      .k4-ctx-bar { height: 56px; }
+      .k4-ctx-section { gap: 0.3rem; margin-top: 2.4rem; }
+      .k4-ctx-bar { height: 46px; }
       .k4-needle-tag {
-        padding: 0.25rem 0.65rem;
-        top: -42px;
+        padding: 0.22rem 0.6rem;
+        top: -40px;
       }
-      .k4-scale {
-        padding: 0 0.2rem;
-      }
+      .k4-scale { padding: 0 0.2rem; }
 
+      /* Curve and response share the remaining height (both can shrink), so
+         the stage never overflows. The response card scrolls internally if an
+         answer is long — the page itself does not scroll. */
       .k4-bottom {
         grid-template-columns: 1fr;
-        grid-template-rows: minmax(140px, 1fr) auto;
-        gap: 0.55rem;
+        grid-template-rows: minmax(0, 1.15fr) minmax(0, 1fr);
+        gap: 0.4rem;
       }
       .k4-curve-title,
-      .k4-response-title { margin: 0 0 0.3rem; }
-      .k4-response-card { padding: 0.7rem 0.9rem; gap: 0.35rem; }
-      .k4-response-answer { line-height: 1.3; }
+      .k4-response-title { margin: 0 0 0.2rem; }
+      .k4-response-card { padding: 0.6rem 0.8rem; gap: 0.3rem; }
+      .k4-response-answer { line-height: 1.25; }
 
-      .k4-button-bar { gap: 0.4rem; padding: 0; }
-      /* Text-size control gets its own centered row on phones. */
+      .k4-button-bar { gap: 0.35rem; padding: 0; }
       .k4-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
       .k4-btn {
-        padding: 0.65rem 0.5rem;
+        padding: 0.5rem 0.5rem;
         flex: 1 1 calc(50% - 0.2rem);
         min-height: 44px;
         min-width: 0;
         text-align: center;
+      }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, the actions keep their grid
+         below. Same layout in every lab. */
+      .k4-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k4-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
       }
     }
 
@@ -473,10 +444,6 @@
       .k4-panel {
         padding: 0.4rem 1rem 0.35rem;
         gap: 0.4rem;
-      }
-      .k4-question {
-        padding: 0.4rem 0.9rem;
-        gap: 0.2rem;
       }
       .k4-main { gap: 0.5rem; }
       .k4-size-btn {
@@ -499,15 +466,6 @@
   <div class="lab-header"
        data-lab-title="Perdido no meio"
        data-lab-subtitle="Acurácia ao longo do processo"></div>
-
-  <div class="k4-question">
-    <p class="k4-question-q">
-      "Em que data o réu foi intimado da sentença neste processo?"
-    </p>
-    <p class="k4-question-hint">
-      A informação — <span class="k4-answer-key">15 de março de 2024</span> — está em algum trecho do processo abaixo. Arraste a agulha para mover a posição do ato e veja como a resposta do modelo muda. Quanto maior o processo, mais profunda a zona morta no meio.
-    </p>
-  </div>
 
   <div class="k4-main">
     <div class="k4-size-row" role="radiogroup" aria-label="Tamanho do processo">
@@ -569,17 +527,26 @@
       <div class="k4-response">
         <h2 class="k4-response-title">Resposta do modelo</h2>
         <div class="k4-response-card k4-response--empty" id="k4-response">
-          Clique em "Perguntar ao modelo" para ver a resposta a partir desta posição.
+          Pergunte ao modelo.
         </div>
       </div>
     </div>
   </div>
 
   <div class="k4-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k4-fs-slot" data-lab-fs-ctl></span>
     <button class="k4-btn k4-btn-primary" id="k4-ask">Perguntar ao modelo</button>
     <button class="k4-btn" id="k4-reset">Reiniciar</button>
   </div>
+
+  <!-- Theory that the app-fit rule keeps off the stage; surfaced by the
+       shared "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Por que o modelo se perde no meio?">
+    <p>Um modelo de linguagem <strong>não lê o processo com atenção uniforme</strong>. Ele recupera muito bem o que está no <strong>começo</strong> e no <strong>fim</strong> do texto, mas a precisão despenca para o que está no <strong>meio</strong>.</p>
+    <p>É a <strong>“zona morta no meio”</strong> (o efeito <em>lost in the middle</em>): quanto maior o processo, mais funda fica essa zona, e maior a chance de o modelo perder um ato, uma data ou uma intimação que esteja no centro dos autos.</p>
+    <p>Na prática, a mesma intimação é fácil de achar numa petição curta e pode <strong>sumir</strong> no meio de um processo monstro. O que decide não é só <em>se</em> a informação está nos autos, mas <em>onde</em> ela está.</p>
+  </template>
 
   <script>
     (function() {
@@ -739,16 +706,16 @@
         let answer, verdict;
         if (zone === 'high') {
           answer = 'O réu foi intimado da sentença em 15 de março de 2024.';
-          verdict = 'Resposta correta. O ato estava perto da borda do processo e o modelo localizou sem dificuldade.';
+          verdict = 'Resposta correta.';
           card.classList.add('k4-response--high');
         } else if (zone === 'mid') {
           answer = 'Acredito que a intimação tenha ocorrido em 15 de março de 2024 (?).';
-          verdict = 'Recuperação incerta. O ato está se afastando da borda e o modelo já hesita.';
+          verdict = 'Recuperação incerta.';
           card.classList.add('k4-response--mid');
         } else {
           answer = LOW_ANSWERS[lowAnswerIdx % LOW_ANSWERS.length];
           lowAnswerIdx += 1;
-          verdict = 'Modelo perdeu o ato no meio do processo. Quanto maior o processo, maior essa zona morta.';
+          verdict = 'O modelo perdeu o ato no meio.';
           card.classList.add('k4-response--low');
         }
 
@@ -768,7 +735,7 @@
         lowAnswerIdx = 0;
         responseEl.classList.remove('k4-response--high', 'k4-response--mid', 'k4-response--low');
         responseEl.classList.add('k4-response--empty');
-        responseEl.innerHTML = 'Clique em "Perguntar ao modelo" para ver a resposta a partir desta posição.';
+        responseEl.innerHTML = 'Pergunte ao modelo.';
         render();
       }
 

@@ -24,6 +24,10 @@
 # Entrada manual: reivindica o literal antes da regra generica de codigo
 /trilha/entrar          /trilha/entrar                 200
 
+# Service worker (PWA): reivindica o literal antes da regra de codigo, senao /trilha/sw.js
+# casaria /trilha/:code e serviria o index.html no lugar do arquivo (quebra o registro do SW).
+/trilha/sw.js           /trilha/sw.js                  200
+
 # Deep link cliente/turma -> index.html (servido na raiz /trilha/)
 /trilha/:client/:turma  /trilha/?c=:client&t=:turma    200
 

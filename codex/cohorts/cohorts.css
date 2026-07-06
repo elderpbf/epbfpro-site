@@ -358,8 +358,14 @@
 }
 @media (max-width: 980px) { .cdx-aulas-hub { grid-template-columns: 1fr; } }
 
-/* Left: the aula list (.cdx-pane gives it the surface/border/radius). */
+/* Left: the aula list. It adopts the shared list-rail (track-21), which brings its own
+   box (surface/border/radius) + grip, so the pane goes bare here (no .cdx-pane), like
+   Cursos' .cdx-cursos-rail wrapper. */
 .cdx-aulas-hub-list { display: flex; flex-direction: column; min-height: 0; }
+/* The rail owns the row shell; the aula-number chip + info sit inside .cdx-rail-main. */
+.cdx-aulas-hub-list .cdx-rail-main { display: flex; align-items: center; gap: 0.55rem; }
+/* Outros bucket rides the rail footer, which already carries a border-top. */
+.cdx-rail-foot .cdx-aulas-hub-outros { border-top: 0; }
 .cdx-aulas-hub-lh {
   display: flex; align-items: center; justify-content: space-between; gap: 0.5rem;
   padding: 0.55rem 0.7rem; border-bottom: 1px solid var(--border);
@@ -568,7 +574,9 @@
 .cdx-cursos-sub { margin: .25rem 0 0; font-size: .86rem; color: var(--text-secondary); max-width: 560px; }
 .cdx-cursos-work { display: grid; grid-template-columns: 210px 1fr; gap: 1.1rem; align-items: start; }
 /* rail */
-.cdx-cursos-rail { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; box-shadow: 0 6px 22px var(--shadow); overflow: hidden; }
+/* The rail is now the shared js/list-rail.js (.cdx-rail provides the chrome); this outer
+   grid cell is just the column. */
+.cdx-cursos-rail { min-width: 0; }
 .cdx-cursos-rail-h { display: flex; align-items: center; justify-content: space-between; gap: .5rem; padding: .5rem .8rem; border-bottom: 1px solid var(--border); font-size: .7rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; }
 .cdx-cursos-add { flex: 0 0 auto; border: none; background: var(--primary); color: var(--text-on-accent, #fff); width: 22px; height: 22px; border-radius: 6px; font-size: 1.15rem; line-height: 1; padding: 0; cursor: pointer; display: inline-flex; align-items: center; justify-content: center; }
 .cdx-cursos-add:hover { filter: brightness(1.08); }
@@ -714,6 +722,12 @@ details.cdx-cursos-arch[open] > .cdx-cursos-arch-h::before { transform: rotate(9
 .cdx-doss-edit:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px var(--tint-primary); }
 .cdx-doss-fact--edit { padding-bottom: .55rem; }
 .cdx-doss-fact--edit .cdx-doss-edit { font-size: .85rem; font-weight: 600; margin-top: .05rem; }
+/* The ClassPulse session fact shares its cell: the select shrinks to make room for the
+   shortcut button that jumps to the connected session (Perguntas tab). */
+.cdx-doss-session-row { display: flex; align-items: stretch; gap: .3rem; margin-top: .05rem; }
+.cdx-doss-session-row .cdx-doss-edit { flex: 1 1 auto; min-width: 0; margin-top: 0; }
+.cdx-doss-session-go { flex: 0 0 auto; display: inline-flex; align-items: center; justify-content: center; padding: 0 .5rem; line-height: 1; text-decoration: none; }
+.cdx-doss-session-go.is-disabled { opacity: .4; pointer-events: none; }
 .cdx-doss-title-edit {
   font-size: 1.25rem; font-weight: 700; border: 1px solid transparent; background: transparent;
   padding: .1rem .3rem; margin: -.1rem -.3rem; border-radius: 6px;

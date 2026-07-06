@@ -19,11 +19,13 @@ import * as itemCreator from './item-creator.js';
 import { renderItem } from '../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
+let _rail = null;                // the item grid is the shared list-rail (js/list-rail.js)
 let _items = [];
 let _types = [];
 let _tags = [];
@@ -190,15 +192,15 @@ function _renderShell() {
               _SORT_ICON + '<span class="cdx-items-sortlabel" id="cdx-items-sortlabel"></span>' +
             '</button>' +
           '</div>' +
-          '<div class="cdx-items-list" id="cdx-items-grid">' +
-            '<div class="cdx-empty">' + t('content.loading') + '</div>' +
-          '</div>' +
+          '<div class="cdx-items-list" id="cdx-items-grid"></div>' +
         '</div>' +
         '<div class="cdx-item-preview" id="cdx-item-preview">' +
           '<div class="cdx-preview-empty">' + t('content.preview_empty') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
 
   _q('cdx-btn-new-item').addEventListener('click', _newItem);
   _q('cdx-btn-manage-tags').addEventListener('click', _openTagManager);
@@ -218,8 +220,7 @@ function _renderShell() {
       _renderItems();
     });
   }
-  // Delegated listeners survive innerHTML re-renders of the list / preview.
-  _q('cdx-items-grid').addEventListener('click', _onListClick);
+  // The grid is the list-rail (selection via onSelect); only the preview is wired here.
   _q('cdx-item-preview').addEventListener('click', _onPreviewClick);
 }
 
@@ -282,36 +283,24 @@ function _visibleItems() {
   return _applySearchSort(applyTypeFilter(library, _selectedTypeFilter));
 }
 
+// The item grid adopts the shared list-rail (track-21). Two interaction modes ride ONE rail:
+// normal (single-select for the preview, rail's is-on) and bulk select (multi via the check;
+// onSelect routes by _selectMode). The rail row can't carry is-selected, so the bulk state
+// lives on the inner .cdx-items-rowwrap (+ a :has() rule paints the whole row). Type-filter
+// chips stay full-width ABOVE the split (Élder), so they are NOT the rail's filter capability.
 function _renderItems() {
   const library = filterLibraryItems(_items);
   _renderFilter(library);
-  const grid = _q('cdx-items-grid');
   const split = _q('cdx-items-split');
   if (split) split.classList.toggle('is-bulk', _selectMode);
-  if (!grid) return;
-  if (!library.length) {
-    _selectedId = null;
-    grid.innerHTML = '<div class="cdx-empty">' + t('content.empty_library') + '</div>';
-    _renderPreview(null);
-    return;
-  }
-  const filtered = _applySearchSort(applyTypeFilter(library, _selectedTypeFilter));
-  if (!filtered.length) {
-    _selectedId = null;
-    grid.innerHTML = '<div class="cdx-empty">' + t((_itemSearch || '').trim() ? 'content.empty_search' : 'content.empty_filter') + '</div>';
-    _renderPreview(null);
-    return;
-  }
-  _selectedId = resolveSelection(filtered, _selectedId);
-  grid.innerHTML = filtered.map(_renderRow).join('');
-  if (_selectMode) _renderPreview(null);
-  else _showPreview(_selectedId);
+  if (_selectMode) { if (_rail) _rail.render(); _renderPreview(null); return; }
+  _selectedId = resolveSelection(_visibleItems(), _selectedId);
+  _showPreview(_selectedId);  // sets selection, repaints the rail (is-on), loads the preview
 }
 
-function _renderRow(item) {
+function _itemRowMain(item) {
   const meta = _typeMeta(item.type);
   const selected = _selectedIds.has(Number(item.id));
-  const active = !_selectMode && Number(item.id) === Number(_selectedId);
   const setBadge = item.set_id
     ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
     : '';
@@ -319,8 +308,7 @@ function _renderRow(item) {
     ? '<span class="cdx-item-check' + (selected ? ' is-checked' : '') + '" aria-hidden="true"></span>'
     : '';
   return (
-    '<div class="cdx-item-row' + (selected ? ' is-selected' : '') + (active ? ' is-active' : '') +
-        '" data-item-id="' + _esc(item.id) + '">' +
+    '<div class="cdx-items-rowwrap' + (selected ? ' is-selected' : '') + '">' +
       checkHtml +
       '<span class="cdx-item-type-icon">' + meta.iconHtml + '</span>' +
       '<div class="cdx-item-info">' +
@@ -331,17 +319,31 @@ function _renderRow(item) {
   );
 }
 
+function _buildRail() {
+  const el = _q('cdx-items-grid');
+  if (!el) return;
+  _rail = mountRail(el, {
+    title: '',
+    items: () => _visibleItems(),
+    getId: (it) => it.id,
+    renderRow: (it) => ({ main: _itemRowMain(it) }),
+    selectedId: () => (_selectMode ? null : _selectedId),
+    onSelect: (id) => { const n = Number(id); if (_selectMode) _toggleSelection(n); else _showPreview(n); },
+    emptyText: () => {
+      if (!filterLibraryItems(_items).length) return t('content.empty_library');
+      return (_itemSearch || '').trim() ? t('content.empty_search') : t('content.empty_filter');
+    },
+  });
+}
+
 // ── Preview pane (master-detail) ─────────────────────────────────────────────
 // Set the active selection, highlight its row, and render the preview. The full
 // item (with body_md) comes from getItem and is cached; the light list item is
 // shown immediately as a header while the body loads.
 function _showPreview(id) {
   _selectedId = id == null ? null : Number(id);
-  if (_viewEl) {
-    _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
-      r.classList.toggle('is-active', Number(r.dataset.itemId) === Number(_selectedId));
-    });
-  }
+  // Row highlight (is-on) is the rail's job now; repaint it from selectedId().
+  if (_rail) _rail.render();
   if (_selectedId == null) { _renderPreview(null); return; }
   const cached = _detailCache.get(_selectedId);
   if (cached) { _renderPreview(cached); return; }
@@ -413,17 +415,6 @@ function _renderFilter(library) {
   });
 }
 
-// ── List + preview interaction (delegated) ──────────────────────────────────
-// List click: in select mode toggle the checkbox; otherwise select the item for
-// the preview pane (the editor opens from the preview's Editar button, not here).
-function _onListClick(e) {
-  const row = e.target.closest('.cdx-item-row');
-  if (!row) return;
-  const id = Number(row.dataset.itemId);
-  if (_selectMode) { _toggleSelection(id); return; }
-  _showPreview(id);
-}
-
 // Preview actions operate on the currently selected item.
 function _onPreviewClick(e) {
   const btn = e.target.closest('[data-pv-action]');
@@ -453,13 +444,8 @@ function _exitSelectMode() {
 function _toggleSelection(id) {
   if (_selectedIds.has(id)) _selectedIds.delete(id);
   else _selectedIds.add(id);
-  const row = _viewEl.querySelector('.cdx-item-row[data-item-id="' + id + '"]');
-  if (row) {
-    const on = _selectedIds.has(id);
-    row.classList.toggle('is-selected', on);
-    const chk = row.querySelector('.cdx-item-check');
-    if (chk) chk.classList.toggle('is-checked', on);
-  }
+  // Repaint the row's check + is-selected via the rail (the state lives on .cdx-items-rowwrap).
+  if (_rail) _rail.render();
   _updateBulkBar();
 }
 
@@ -886,6 +872,7 @@ export function mount(viewEl, ctx) {
 }
 
 export function unmount() {
+  if (_rail) { _rail.destroy(); _rail = null; }
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   _selectedId = null;

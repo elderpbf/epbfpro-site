@@ -19,6 +19,7 @@
 // codex-api `drive` facade, never callWorker directly.
 import { drive as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { openModal as openDriveModal } from '../js/drive-viewer.js';
@@ -30,6 +31,7 @@ let _lastSync = null;
 let _selectedId = null;   // selected root folder id
 let _editing = null;      // null | {} (add) | folder (edit)
 let _syncing = false;
+let _rail = null;         // the left folder list is the shared list-rail (js/list-rail.js)
 let _onClick = null;
 let _onSubmit = null;
 
@@ -86,27 +88,35 @@ function _renderStatus() {
   if (ls) ls.textContent = _lastSync ? t('drive.last_sync') + new Date(_lastSync).toLocaleString('pt-BR') : t('drive.never_synced');
 }
 
-// ── Left list: configured folders ────────────────────────────────────────────
+// ── Left list: configured folders (shared list-rail, track-21) ───────────────
+// Select-only (no drag). The "+ nova pasta" is the rail's add; a folder row shows the
+// icon + name + folder-id/count. The rail owns the row shell + selection.
+function _folderRowMain(root, idx) {
+  const count = _filesForRoot(root, idx === 0).length;
+  return '<span class="cdx-item-type-icon cdx-drive-icon">&#9698;</span>' +
+    '<div class="cdx-item-info">' +
+      '<div class="cdx-item-title">' + _esc(root.name || '') + '</div>' +
+      '<div class="cdx-item-sub"><code class="cdx-drive-fid">' + _esc(root.folder_id || '') + '</code> &middot; ' + _countLabel(count) + '</div>' +
+    '</div>';
+}
+
+function _buildRail() {
+  const el = _q('#cdx-drive-list');
+  if (!el) return;
+  _rail = mountRail(el, {
+    title: '',
+    items: () => _folders,
+    getId: (f) => f.id,
+    renderRow: (root) => ({ main: _folderRowMain(root, _folders.indexOf(root)) }),
+    selectedId: () => (_editing === null ? _selectedId : null),
+    onSelect: (id) => { _editing = null; _selectedId = Number(id); _rail.render(); _renderPreview(); },
+    add: { label: '+', title: t('drive.add_folder'), onAdd: () => { _editing = {}; _selectedId = null; _rail.render(); _renderPreview(); } },
+    emptyText: t('drive.no_folders'),
+  });
+}
+
 function _renderList() {
-  const list = _q('#cdx-drive-list');
-  if (!list) return;
-  const add = '<button type="button" class="cdx-btn cdx-btn-sm cdx-drive-add" data-action="add">' + _esc(t('drive.add_folder')) + '</button>';
-  if (!_folders.length) {
-    list.innerHTML = add + '<div class="cdx-empty">' + _esc(t('drive.no_folders')) + '</div>';
-    return;
-  }
-  const rows = _folders.map((root, idx) => {
-    const count = _filesForRoot(root, idx === 0).length;
-    const active = root.id === _selectedId && _editing === null;
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-folder-id="' + _esc(root.id) + '">' +
-        '<span class="cdx-item-type-icon cdx-drive-icon">&#9698;</span>' +
-        '<div class="cdx-item-info">' +
-          '<div class="cdx-item-title">' + _esc(root.name || '') + '</div>' +
-          '<div class="cdx-item-sub"><code class="cdx-drive-fid">' + _esc(root.folder_id || '') + '</code> &middot; ' + _countLabel(count) + '</div>' +
-        '</div>' +
-      '</div>';
-  }).join('');
-  list.innerHTML = add + rows;
+  if (_rail) _rail.render();
 }
 
 // ── Right pane: empty | folder files | editor ────────────────────────────────
@@ -281,6 +291,8 @@ function _render() {
         '<div class="cdx-item-preview" id="cdx-drive-preview"></div>' +
       '</div>' +
     '</div>';
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
   _renderStatus();
   _renderList();
   _renderPreview();
@@ -296,7 +308,6 @@ export function mount(viewEl) {
     if (actBtn) {
       const act = actBtn.getAttribute('data-action');
       if (act === 'sync') { if (!_syncing) _runSync(); return; }
-      if (act === 'add') { _editing = {}; _selectedId = null; _renderList(); _renderPreview(); return; }
       if (act === 'editor-cancel') { _editing = null; _renderPreview(); _renderList(); return; }
       if (act === 'edit') { const r = _folders.find((f) => f.id === _selectedId); if (r) { _editing = r; _renderPreview(); } return; }
       if (act === 'delete') { const r = _folders.find((f) => f.id === _selectedId); if (r) _deleteFolder(r); return; }
@@ -307,12 +318,8 @@ export function mount(viewEl) {
       if (item) openDriveModal(item);
       return;
     }
-    const row = e.target.closest('.cdx-item-row');
-    if (row && row.dataset.folderId) {
-      _editing = null;
-      _selectedId = Number(row.dataset.folderId);
-      _renderList(); _renderPreview();
-    }
+    // Folder-row selection is handled by the list-rail (onSelect); the "+ nova pasta" add
+    // is the rail's add button. Only the sync/editor buttons + file rows are wired here.
   };
   _onSubmit = (e) => {
     const form = e.target.closest('.cdx-drive-editor');
@@ -329,6 +336,7 @@ export function mount(viewEl) {
 }
 
 export function unmount() {
+  if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) {
     if (_onClick) _viewEl.removeEventListener('click', _onClick);
     if (_onSubmit) _viewEl.removeEventListener('submit', _onSubmit);

@@ -6,9 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Temperatura · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -183,9 +184,9 @@
       flex: 1 1 auto;
       min-width: 0;
       position: relative;
-      height: 80%;
-      min-height: 22px;
-      max-height: 64px;
+      height: 64%;
+      min-height: 18px;
+      max-height: 51px;
       background: color-mix(in srgb, var(--text) 6%, transparent);
       border-radius: 8px;
       overflow: hidden;
@@ -335,6 +336,7 @@
       align-items: center;
       gap: 0.45rem;
       padding: 0 0.2rem;
+      flex-wrap: wrap;
     }
     /* The text-size control (A− / A+) is mounted by lab-controls.js into
        this slot; on desktop it sits at the left of the operator bar. */
@@ -403,20 +405,20 @@
     /* ── Responsive: phone / narrow portrait ─────────────── */
     @media (max-width: 700px) {
       .k2-panel {
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
+        padding: 0.5rem 0.9rem 0.5rem;
+        gap: 0.4rem;
       }
-      .k2-prompt-wrap { padding: 0.55rem 0.9rem 0.7rem; }
+      .k2-prompt-wrap { padding: 0.5rem 0.9rem 0.55rem; }
       .k2-final-badge { padding: 0.35rem 0.85rem; margin-left: 0.5rem; }
 
-      .k2-bars { gap: 0.25rem; }
+      .k2-bars { gap: 0.2rem; }
       .k2-bar { gap: 0.5rem; }
       .k2-bar-token {
         width: 130px;
         padding-right: 0.4rem;
       }
       .k2-bar-pct { width: 52px; }
-      .k2-bar-track { min-height: 18px; max-height: 36px; height: 70%; }
+      .k2-bar-track { min-height: 15px; max-height: 29px; height: 56%; }
 
       .k2-controls { padding: 0.4rem 0.7rem; }
       .k2-temp-block {
@@ -446,6 +448,17 @@
         min-width: 0;
         text-align: center;
       }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k2-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k2-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
 
     @media (max-width: 400px) {
@@ -460,7 +473,7 @@
       }
       .k2-prompt-wrap { padding: 0.4rem 0.9rem 0.5rem; }
       .k2-bars { gap: 0.2rem; }
-      .k2-bar-track { min-height: 16px; max-height: 30px; height: 70%; }
+      .k2-bar-track { min-height: 13px; max-height: 24px; height: 56%; }
       .k2-controls { padding: 0.35rem 0.7rem; }
       .k2-btn {
         padding: 0.4rem 0.75rem;
@@ -499,12 +512,21 @@
   </div>
 
   <div class="k2-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k2-fs-slot" data-lab-fs-ctl></span>
     <button class="k2-btn k2-btn-toggle" id="k2-sobreajuste" aria-pressed="true"
             title="Sobreajuste: o modelo decorou a frase 'O rato roeu...' e sempre escolhe a palavra mais provável. Desligue para ver uma distribuição mais aberta com 'Eu gosto de...'">Sobreajuste</button>
     <button class="k2-btn k2-btn-reset" id="k2-reset" title="Voltar ao prompt inicial">Reiniciar</button>
     <button class="k2-btn k2-btn-sample" id="k2-sample">Selecionar</button>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Temperatura: do previsível ao criativo">
+    <p>A cada palavra, o modelo não escolhe uma “certa”. Ele calcula a <strong>probabilidade</strong> de várias palavras seguintes e <strong>sorteia</strong> entre elas.</p>
+    <p>A <strong>temperatura</strong> regula esse sorteio. <strong>Baixa</strong> (perto de 0): ele quase sempre pega a mais provável, respostas previsíveis e repetíveis. <strong>Alta</strong> (perto de 2): achata as probabilidades, respostas variadas e criativas, mas mais sujeitas a erro.</p>
+    <p>Não existe temperatura “certa”: para uma <strong>minuta jurídica</strong> você quer baixa (consistente e fiel ao texto); para <strong>gerar ideias</strong>, mais alta. A mesma pergunta dá respostas diferentes só mudando esse ajuste.</p>
+  </template>
 
   <script>
     (function() {

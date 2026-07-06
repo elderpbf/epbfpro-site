@@ -18,6 +18,7 @@ import { renderWall } from './wall.js';
 import { renderSimpleWall } from './wall-simple.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
+import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
@@ -127,6 +128,10 @@ export async function mount(root, ctx = {}) {
       const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
       if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
       onHashChange();
+      // "Salvar como app": offer a home-screen install on the timeline only (never on the
+      // login wall), and only when the turma enables it (per-turma flag, DEFAULT-ON).
+      // Self-guards further: no-op if installed, not installable, or previously dismissed.
+      if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
     }
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
@@ -320,6 +325,11 @@ function renderHeaderActions() {
         turmas: others,
         onForget: (c, tt) => forgetTurma(c, tt),
         onChange: () => { if (bell) bell.refresh(); },
+        // iOS recover: a dismissed student can bring the install invite back (only meaningful
+        // when the turma enables the prompt). No-op on platforms where it isn't installable.
+        onInstallApp: (data.turma && data.turma.app_install_prompt !== 0)
+          ? (() => showInstallPrompt(_root, { win: _win }))
+          : undefined,
         onLogout: () => {
           clearToken(state.clientSlug, state.turmaSlug);
           if (typeof location !== 'undefined' && location.reload) location.reload();

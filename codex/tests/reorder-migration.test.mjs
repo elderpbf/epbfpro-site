@@ -19,10 +19,28 @@ test('reorder.js exposes the shared capabilities every hand-rolled copy needed',
   assert.match(src, /opts\.listSelector/, 'listSelector (rows nested under a stable container) supported');
 });
 
-test('the migrated admin drags all route through the shared js/reorder.js', () => {
-  for (const f of ['cohorts/cohorts.js', 'questions/bank.js', 'questions/live-host.js', 'content/apostila.js']) {
+// Phase A moved every hand-rolled drag onto the shared js/reorder.js. Phase C (track-21)
+// then moves each rail onto the list-rail module, whose drag is Pointer-Events based
+// (mobile-capable) and lives INSIDE the module — so a migrated surface no longer imports
+// makeReorderable, it mounts the rail. Either way the invariant holds: NO surface
+// hand-rolls a dragstart listener. Move a surface from PENDING to MIGRATED as it adopts
+// the rail; when PENDING empties, js/reorder.js is retired (architecture/list-rail.md §8).
+const PENDING_ON_REORDER_JS = ['questions/bank.js', 'questions/live-host.js'];
+const MIGRATED_TO_LIST_RAIL = ['content/apostila.js', 'cohorts/cohorts.js'];
+
+test('rails still on js/reorder.js use the shared helper (no hand-rolled dragstart)', () => {
+  for (const f of PENDING_ON_REORDER_JS) {
     const src = read(f);
     assert.match(src, /import \{ makeReorderable \} from '\.\.\/js\/reorder\.js'/, f + ' imports makeReorderable');
+    assert.ok(!RAW_DRAG.test(src), f + ' has no hand-rolled dragstart listener');
+  }
+});
+
+test('rails migrated to the list-rail module mount it (Pointer-Events drag, no dragstart)', () => {
+  for (const f of MIGRATED_TO_LIST_RAIL) {
+    const src = read(f);
+    assert.match(src, /import \{ mountRail \} from '\.\.\/js\/list-rail\.js'/, f + ' imports mountRail');
+    assert.ok(!/makeReorderable/.test(src), f + ' no longer wires makeReorderable');
     assert.ok(!RAW_DRAG.test(src), f + ' has no hand-rolled dragstart listener');
   }
 });

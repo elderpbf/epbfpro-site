@@ -6,10 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Janela de contexto · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-tabs.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -380,6 +381,17 @@
       }
       /* Text-size control gets its own centered row on phones. */
       .k3-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k3-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k3-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
 
     @media (max-height: 500px) and (orientation: landscape) {
@@ -454,12 +466,21 @@
   </div>
 
   <div class="k3-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k3-fs-slot" data-lab-fs-ctl></span>
     <button class="k3-btn k3-btn-action" id="k3-add-turn">+ Turno (~7,5k)</button>
     <button class="k3-btn k3-btn-action" id="k3-add-pdf">+ PDF (24k)</button>
     <button class="k3-btn" id="k3-compact">Compactar histórico</button>
     <button class="k3-btn" id="k3-reset">Reiniciar</button>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="O que é a janela de contexto?">
+    <p>Tudo que o modelo “enxerga” de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em> (pedaços de palavra). Aqui, 128.000.</p>
+    <p>Tudo disputa esse mesmo espaço: as instruções do sistema, o histórico da conversa, os PDFs anexados e o <strong>espaço que sobra para a resposta</strong>. Cada anexo ou turno novo come um pedaço.</p>
+    <p>Quando a janela enche, não sobra espaço para responder: o modelo “esquece” o começo ou trava. <strong>Compactar</strong> (resumir) libera espaço. Por isso conversas longas ou muitos anexos degradam a resposta, não é preguiça, é falta de espaço.</p>
+  </template>
 
   <script>
     (function() {

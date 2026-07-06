@@ -17,6 +17,7 @@ import { apps as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { assetUrl } from '../js/codex-api.js';
+import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { esc as _esc } from '../js/dom.js';
@@ -27,6 +28,7 @@ let _viewEl = null;
 let _apps = [];
 let _selectedKey = null;
 let _benefits = [];   // working benefits list for the selected app's editor
+let _rail = null;     // the left app list is the shared list-rail (js/list-rail.js)
 
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
@@ -60,26 +62,35 @@ function _appIconHtml(app) {
   return '<span class="cdx-app-icon-ph">' + glyphSvg('grid', { size: 18 }) + '</span>';
 }
 
-// ── Left list ────────────────────────────────────────────────────────────────
-function _renderList() {
+// ── Left list (shared list-rail, track-21) ───────────────────────────────────
+// Select-only (apps are a fixed registry: no add, no drag). The rail owns the row shell
+// + selection; renderRow returns the icon + name/off-badge + app_key.
+function _appRowMain(a) {
+  const off = !a.enabled;
+  return '<span class="cdx-item-type-icon">' + _appIconHtml(a) + '</span>' +
+    '<div class="cdx-item-info">' +
+      '<div class="cdx-item-title">' + _esc(a.name || a.app_key) +
+        (off ? ' <span class="cdx-app-off-badge">' + t('apps.disabled_badge') + '</span>' : '') + '</div>' +
+      '<div class="cdx-item-sub">' + _esc(a.app_key) + '</div>' +
+    '</div>';
+}
+
+function _buildRail() {
   const el = _q('cdx-apps-list');
   if (!el) return;
-  if (!_apps.length) {
-    el.innerHTML = '<div class="cdx-empty">' + t('apps.empty') + '</div>';
-    return;
-  }
-  el.innerHTML = _apps.map((a) => {
-    const active = a.app_key === _selectedKey;
-    const off = !a.enabled;
-    return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-key="' + _esc(a.app_key) + '">' +
-      '<span class="cdx-item-type-icon">' + _appIconHtml(a) + '</span>' +
-      '<div class="cdx-item-info">' +
-        '<div class="cdx-item-title">' + _esc(a.name || a.app_key) +
-          (off ? ' <span class="cdx-app-off-badge">' + t('apps.disabled_badge') + '</span>' : '') + '</div>' +
-        '<div class="cdx-item-sub">' + _esc(a.app_key) + '</div>' +
-      '</div>' +
-    '</div>';
-  }).join('');
+  _rail = mountRail(el, {
+    title: '',
+    items: () => _apps,
+    getId: (a) => a.app_key,
+    renderRow: (a) => ({ main: _appRowMain(a) }),
+    selectedId: () => _selectedKey,
+    onSelect: (key) => { _selectedKey = key; _rail.render(); _renderDetail(); },
+    emptyText: t('apps.empty'),
+  });
+}
+
+function _renderList() {
+  if (_rail) _rail.render();
 }
 
 // ── Right pane: the edit form ─────────────────────────────────────────────────
@@ -219,14 +230,6 @@ function _save() {
     });
 }
 
-function _onListClick(e) {
-  const row = e.target.closest('.cdx-item-row');
-  if (!row) return;
-  _selectedKey = row.getAttribute('data-key');
-  _renderList();
-  _renderDetail();
-}
-
 // ── Load ──────────────────────────────────────────────────────────────────────
 function _reload() {
   return api.list().then((d) => {
@@ -249,15 +252,14 @@ function _renderShell() {
         '<h2 class="cdx-presets-title">' + t('apps.title') + '</h2>' +
       '</div>' +
       '<div class="cdx-items-split" id="cdx-apps-split">' +
-        '<div class="cdx-items-list" id="cdx-apps-list">' +
-          '<div class="cdx-empty">' + t('content.loading') + '</div>' +
-        '</div>' +
+        '<div class="cdx-items-list" id="cdx-apps-list"></div>' +
         '<div class="cdx-item-preview" id="cdx-apps-detail">' +
           '<div class="cdx-preview-empty">' + t('apps.select') + '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
-  _q('cdx-apps-list').addEventListener('click', _onListClick);
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
   const detail = _q('cdx-apps-detail');
   detail.addEventListener('click', _onDetailClick);
   detail.addEventListener('input', _onDetailInput);
@@ -274,6 +276,7 @@ export function mount(viewEl) {
 }
 
 export function unmount() {
+  if (_rail) { _rail.destroy(); _rail = null; }
   _apps = [];
   _selectedKey = null;
   _benefits = [];

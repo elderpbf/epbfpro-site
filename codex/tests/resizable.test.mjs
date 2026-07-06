@@ -1,8 +1,10 @@
 // Source-contract for the draggable panel dividers (js/resizable.js). One shared
 // helper, persisted to localStorage via the --cdx-rz-w CSS var, reused by the
 // Liberações/Tarefas split. (Cohorts moved its CLIENTES nav to the auto-hide rail,
-// mirroring Questions, so it no longer installs the resizer.) Pins the clamp math
-// + that both split consumers install it, plus the CSS hooks (grip, Clientes title).
+// mirroring Questions; and its Aulas-hub resizer now rides the shared list-rail's
+// width:resize capability, track-21, so cohorts no longer imports installResizer
+// directly.) Pins the clamp math + that both split consumers install it, plus the CSS
+// hooks (grip, Clientes title).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -39,10 +41,12 @@ test('the split surfaces install the shared resizer (no duplicated drag code)', 
   }
   assert.match(releasesJs, /cdx-releases-split'[\s\S]{0,80}cdx_rz_releases_split|cdx_rz_releases_split/, 'releases installs on its split');
   assert.match(tarefasJs, /cdx_rz_tarefas_split/, 'tarefas installs on its split');
-  // The CLIENTES nav is the auto-hide rail (no resizer there), but the Aulas hub IS
-  // a resizable list | detail split, so cohorts installs the shared resizer on it.
-  assert.match(cohortsJs, /import \{ installResizer \} from '\.\.\/js\/resizable\.js'/, 'cohorts imports the resizer (not just calls it)');
-  assert.match(cohortsJs, /installResizer\(_q\('cdx-aulas-hub'\)/, 'cohorts installs the resizer on the aula hub');
+  // The CLIENTES nav is the auto-hide rail (no resizer there). The Aulas hub IS a
+  // resizable list | detail split, but it now adopts the shared list-rail (track-21),
+  // so the resizer is wired through the rail's width:resize capability — the module
+  // imports the ONE shared installResizer, cohorts just configures the storeKey.
+  assert.match(read('../js/list-rail.js'), /import \{ installResizer \} from '\.\/resizable\.js'/, 'list-rail wires the ONE shared resizer');
+  assert.match(cohortsJs, /storeKey:\s*'cdx_rz_aulas_hub'/, 'cohorts drives the aula-hub resize via the rail width capability');
   assert.match(cohortsJs, /cdx-sm--open/, 'cohorts still wires the auto-hide rail');
 });
 

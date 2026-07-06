@@ -117,6 +117,14 @@ pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; paddi
 }
 .cdx-ns-logout:hover { background: rgba(220, 38, 38, 0.07); }
 
+/* "Instalar app" recover row (brings the dismissed install invite back — iOS). */
+.cdx-ns-install {
+  width: 100%; padding: .7rem 1rem; border: none; border-top: 1px solid var(--border);
+  background: none; color: var(--primary); font-family: inherit; font-size: .86rem; font-weight: 700;
+  text-align: left; cursor: pointer;
+}
+.cdx-ns-install:hover { background: var(--tint-primary-tx); }
+
 /* "Trocar de turma" list inside the settings panel (Idea A). */
 .cdx-ns-turmas { border-top: 1px solid var(--border); padding: .35rem .4rem; }
 .cdx-ns-turma { display: flex; align-items: center; gap: .3rem; }
