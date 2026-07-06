@@ -59,10 +59,13 @@
 .mk-o1.is-min .mk-logo { width: 22px; height: 22px; }
 /* hero becomes the bottom half of the same box: no top rounding/border, flush to the strip */
 .cdx-trilha-hero.mk-hero-joined { margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
-/* questions-state pill in the topbar's existing space (the pill IS the button; not hidden in questão) */
-.mk-q-pill { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .65rem .3rem .35rem; border-radius: 999px;
-  border: 1px solid var(--primary); background: var(--tint-primary-tx); color: var(--primary); font: 700 .8rem system-ui, sans-serif; cursor: pointer; }
-.mk-q-pill:hover { background: var(--primary); color: #fff; }
+/* questions-state pill: centered over the topbar's empty middle. Solid teal + WHITE text
+   (readable in light AND dark; the old teal-on-teal-tint failed contrast). The pill IS the button. */
+.mk-q-pill { position: fixed; top: 12px; left: 50%; transform: translateX(-50%); z-index: 8500;
+  display: inline-flex; align-items: center; gap: .4rem; padding: .32rem .8rem .32rem .38rem; border-radius: 999px;
+  border: none; background: var(--primary); color: #fff; font: 700 .82rem system-ui, sans-serif; cursor: pointer;
+  box-shadow: 0 4px 14px rgba(0,0,0,.2); }
+.mk-q-pill:hover { background: var(--primary-dark); }
 .mk-q-pill .mk-logo { width: 20px; height: 20px; border-radius: 5px; }
 
 /* 2 · Detached banner above hero -> pill in the topbar */

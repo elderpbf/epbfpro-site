@@ -147,10 +147,9 @@ function opt1() {
     collapse: () => b.classList.add('is-min'),
     expand: () => b.classList.remove('is-min'),
     onQuestao: (on) => {
-      const right = document.getElementById('mk-ph-right');
       if (on) {
         if (!qpill) { qpill = el('button', 'mk-q-pill', logoImg('mk-logo--sm') + '<span>Instalar app</span>'); qpill.addEventListener('click', doInstall); }
-        right.insertBefore(qpill, right.firstChild);
+        document.body.appendChild(qpill); // fixed + centered via CSS, over the topbar's empty middle
       } else if (qpill) { qpill.remove(); }
     },
     onRemove: () => { hero.classList.remove('mk-hero-joined'); if (qpill) qpill.remove(); }
