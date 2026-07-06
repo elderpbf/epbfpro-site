@@ -38,20 +38,32 @@
 .mk-btn { padding: .5rem 1rem; background: var(--primary); color: #fff; border: none; border-radius: 10px; font: 600 .85rem system-ui, sans-serif; cursor: pointer; white-space: nowrap; }
 .mk-btn:hover { background: var(--primary-dark); }
 
-/* 1 · TRUE hero extension: same width as the hero, same surface, NO divider between them,
-   only the outer corners rounded. The hero box literally grows upward to hold the invite. */
-.mk-o1 { display: flex; align-items: center; gap: .85rem; margin: 1rem 0 0; padding: 1.2rem 1.75rem;
+/* 1 · TRUE hero extension: same width/surface as the hero, NO divider, outer corners
+   rounded. The WHOLE bar is the install button (cursor:pointer + click). */
+.mk-o1 { display: flex; align-items: center; gap: .85rem; margin: 1rem 0 0; padding: 1.15rem 1.75rem;
   background: var(--surface); border: 1px solid var(--border); border-bottom: none; border-radius: 20px 20px 0 0;
-  transition: padding .3s ease; }
+  cursor: pointer; transition: padding .25s ease; }
+.mk-o1:hover { border-color: var(--primary); }
 .mk-o1-txt { display: flex; flex-direction: column; gap: .15rem; }
 .mk-o1-title { font-weight: 700; font-size: .95rem; color: var(--text-primary); }
 .mk-o1-desc { font-size: .82rem; color: var(--text-secondary); }
-.mk-o1 .mk-btn { margin-left: auto; }
-.mk-o1.is-min { padding: .5rem 1.75rem; }               /* collapsed = a thin strip on top */
-.mk-o1.is-min .mk-o1-desc { display: none; }
+.mk-o1-minlabel { display: none; font-weight: 700; font-size: .9rem; color: var(--text-primary); }
+.mk-o1-cta { margin-left: auto; padding: .5rem 1rem; background: var(--primary); color: #fff; border-radius: 10px; font: 600 .85rem system-ui, sans-serif; }
+.mk-o1-glyph { display: none; margin-left: auto; width: 30px; height: 30px; border-radius: 50%; align-items: center; justify-content: center; background: var(--tint-primary-tx); color: var(--primary); }
+.mk-o1-glyph svg { width: 16px; height: 16px; }
+/* collapsed = shorter strip: short label + glyph, no desc, no text button */
+.mk-o1.is-min { padding: .35rem 1.75rem; }
+.mk-o1.is-min .mk-o1-title, .mk-o1.is-min .mk-o1-desc, .mk-o1.is-min .mk-o1-cta { display: none; }
+.mk-o1.is-min .mk-o1-minlabel { display: inline; }
+.mk-o1.is-min .mk-o1-glyph { display: inline-flex; }
 .mk-o1.is-min .mk-logo { width: 22px; height: 22px; }
 /* hero becomes the bottom half of the same box: no top rounding/border, flush to the strip */
 .cdx-trilha-hero.mk-hero-joined { margin-top: 0; border-top: none; border-top-left-radius: 0; border-top-right-radius: 0; }
+/* questions-state pill in the topbar's existing space (the pill IS the button; not hidden in questão) */
+.mk-q-pill { display: inline-flex; align-items: center; gap: .35rem; padding: .3rem .65rem .3rem .35rem; border-radius: 999px;
+  border: 1px solid var(--primary); background: var(--tint-primary-tx); color: var(--primary); font: 700 .8rem system-ui, sans-serif; cursor: pointer; }
+.mk-q-pill:hover { background: var(--primary); color: #fff; }
+.mk-q-pill .mk-logo { width: 20px; height: 20px; border-radius: 5px; }
 
 /* 2 · Detached banner above hero -> pill in the topbar */
 .mk-o2 { display: flex; align-items: center; gap: .85rem; max-width: 520px; margin: 1rem auto -.2rem; padding: .8rem 1rem;

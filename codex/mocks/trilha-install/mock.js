@@ -123,17 +123,38 @@ let armCleanup = null;
 function el(tag, cls, html) { const n = document.createElement(tag); if (cls) n.className = cls; if (html != null) n.innerHTML = html; return n; }
 
 // 1 · TRUE hero extension: the hero box grows UPWARD to hold the install info (one
-// continuous box, same width, no divider). Collapsed = a thin strip on top, still part
-// of the same box (hero drops its top rounding/border via .mk-hero-joined).
+// continuous box, same width, no divider). The WHOLE bar installs (not just a button).
+// Collapsed = a shorter strip: short label + a download glyph. During questions the bar
+// is gone but a pill lands in the topbar's existing space (the pill is the button).
 function opt1() {
   const hero = document.querySelector('.cdx-trilha-hero');
   hero.classList.add('mk-hero-joined');
+  const doInstall = () => alert('Aqui instalaria (Android) / mostraria a dica do iPhone.');
   const b = el('div', 'mk-o1',
-    logoImg() + '<div class="mk-o1-txt"><span class="mk-o1-title">Leve a trilha da TJSE no celular</span>' +
-    '<span class="mk-o1-desc">Abra num toque, sem navegador.</span></div>' + BTN);
+    logoImg() +
+    '<div class="mk-o1-txt">' +
+      '<span class="mk-o1-title">Instale a trilha no celular</span>' +
+      '<span class="mk-o1-desc">Salve como app na tela inicial e abra num toque, sem navegador.</span>' +
+      '<span class="mk-o1-minlabel">Instalar app</span>' +
+    '</div>' +
+    '<span class="mk-o1-cta">Instalar</span>' +
+    '<span class="mk-o1-glyph">' + DL_SVG + '</span>');
+  b.addEventListener('click', doInstall);
   hero.parentNode.insertBefore(b, hero);
-  return { nodes: [b], collapse: () => b.classList.add('is-min'), expand: () => b.classList.remove('is-min'),
-    onRemove: () => hero.classList.remove('mk-hero-joined') };
+  let qpill = null;
+  return {
+    nodes: [b],
+    collapse: () => b.classList.add('is-min'),
+    expand: () => b.classList.remove('is-min'),
+    onQuestao: (on) => {
+      const right = document.getElementById('mk-ph-right');
+      if (on) {
+        if (!qpill) { qpill = el('button', 'mk-q-pill', logoImg('mk-logo--sm') + '<span>Instalar app</span>'); qpill.addEventListener('click', doInstall); }
+        right.insertBefore(qpill, right.firstChild);
+      } else if (qpill) { qpill.remove(); }
+    },
+    onRemove: () => { hero.classList.remove('mk-hero-joined'); if (qpill) qpill.remove(); }
+  };
 }
 // 2 · Detached banner above hero -> pill in topbar
 function opt2() {
