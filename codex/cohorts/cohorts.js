@@ -1211,6 +1211,21 @@ function _renderDossier(turma) {
     _TF_FORMATS.map((k) => '<option value="' + k + '"' + (turma.format === k ? ' selected' : '') + '>' + _esc(t('cohorts.fmt_' + k)) + '</option>').join('');
   const cpOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
     (_cpSessions || []).map((s) => '<option value="' + _esc(s.id) + '"' + (String(turma.classpulse_session_id || '') === String(s.id) ? ' selected' : '') + '>' + _esc(s.name) + '</option>').join('');
+  // The ClassPulse session fact shares its cell with a shortcut that jumps straight to the
+  // connected session (Perguntas tab, deep-linked ?session=<code>). The session id IS the
+  // session code (list_sessions/cp_get_live_session alias them), so it deep-links directly.
+  const sessGoHref = (id) => '/codex/?tab=questions&session=' + encodeURIComponent(id);
+  const classpulseFact =
+    '<div class="cdx-doss-fact cdx-doss-fact--edit cdx-doss-fact--session">' +
+      '<label>' + _esc(t('cohorts.field_classpulse')) + '</label>' +
+      '<div class="cdx-doss-session-row">' +
+        '<select class="cdx-doss-edit" data-edit-field="classpulse_session_id">' + cpOpts + '</select>' +
+        '<a class="cdx-btn cdx-btn-sm cdx-doss-session-go' + (turma.classpulse_session_id ? '' : ' is-disabled') + '"' +
+          (turma.classpulse_session_id ? ' href="' + _esc(sessGoHref(turma.classpulse_session_id)) + '"' : ' aria-disabled="true"') +
+          ' title="' + _esc(t(turma.classpulse_session_id ? 'cohorts.session_open_title' : 'cohorts.session_none_title')) + '"' +
+          ' aria-label="' + _esc(t(turma.classpulse_session_id ? 'cohorts.session_open_title' : 'cohorts.session_none_title')) + '">&#8599;</a>' +
+      '</div>' +
+    '</div>';
   const ph = _turmaPhase(turma);
   const archived = turma.status === 'archived';
   const url = turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
@@ -1265,7 +1280,7 @@ function _renderDossier(turma) {
           editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
           '<div class="cdx-doss-sep" role="separator"></div>' +
           editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
-          editSelect('classpulse_session_id', t('cohorts.field_classpulse'), cpOpts) +
+          classpulseFact +
           trailCard +
         '</div>' +
         '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
@@ -1325,6 +1340,26 @@ function _renderDossier(turma) {
   }));
 
   _wireDossierInlineEdit(el, turma);
+  // Keep the "go to connected session" shortcut in sync when the session select changes,
+  // before any re-render (the inline-edit auto-save updates turma but doesn't repaint here).
+  const _sessSel = el.querySelector('.cdx-doss-fact--session select');
+  const _sessGo = el.querySelector('.cdx-doss-session-go');
+  if (_sessSel && _sessGo) _sessSel.addEventListener('change', () => {
+    const v = _sessSel.value;
+    if (v) {
+      _sessGo.setAttribute('href', sessGoHref(v));
+      _sessGo.classList.remove('is-disabled');
+      _sessGo.removeAttribute('aria-disabled');
+      _sessGo.setAttribute('title', t('cohorts.session_open_title'));
+      _sessGo.setAttribute('aria-label', t('cohorts.session_open_title'));
+    } else {
+      _sessGo.removeAttribute('href');
+      _sessGo.classList.add('is-disabled');
+      _sessGo.setAttribute('aria-disabled', 'true');
+      _sessGo.setAttribute('title', t('cohorts.session_none_title'));
+      _sessGo.setAttribute('aria-label', t('cohorts.session_none_title'));
+    }
+  });
   // Acesso section: the per-turma gating switches, mounted from the shared access
   // panel (same component the Alunos tab uses, so the logic lives in one place).
   const accEl = el.querySelector('#cdx-doss-acesso');

@@ -225,7 +225,6 @@ html, body {
    interaction; the WHOLE bar is the install button. Reuses shared tokens so light+dark follow
    the theme. */
 .cdx-install-bar {
-  position: relative;
   display: flex;
   align-items: center;
   gap: 0.85rem;
@@ -235,19 +234,11 @@ html, body {
   border: 1px solid var(--border);
   border-bottom: none;
   border-radius: 20px 20px 0 0;
-  overflow: hidden;
   cursor: pointer;
   animation: cdx-tr-fade-in 0.25s ease both;
   transition: padding 0.25s ease;
 }
 .cdx-install-bar:hover { border-color: var(--primary); }
-.cdx-install-bar::after {
-  content: '';
-  position: absolute;
-  top: 0; left: 0; right: 0;
-  height: 3px;
-  background: linear-gradient(90deg, var(--primary), transparent);
-}
 .cdx-install-logo { width: 40px; height: 40px; border-radius: 10px; flex-shrink: 0; }
 .cdx-install-body { display: flex; flex-direction: column; gap: 0.15rem; min-width: 0; }
 .cdx-install-title { font-size: 0.95rem; font-weight: 700; color: var(--text-primary); }
@@ -291,14 +282,14 @@ html, body {
 .cdx-install-bar.is-min .cdx-install-logo { width: 22px; height: 22px; border-radius: 7px; }
 
 /* The hero becomes the bottom half of the same box: flush to the strip, no top rounding or
-   border, and its own top accent is suppressed (the bar carries the accent now). */
+   border. The hero keeps its top teal accent (::after) at the seam — the accent that reads as
+   the join between the invite strip and the hero. */
 .cdx-trilha-hero.cdx-install-joined {
   margin-top: 0;
   border-top: none;
   border-top-left-radius: 0;
   border-top-right-radius: 0;
 }
-.cdx-trilha-hero.cdx-install-joined::after { display: none; }
 
 /* Questions state (body.cdx-tr-live, set by nexo.js during a live question): the bar is gone
    and a pill lands in the topbar's empty middle. Solid teal + WHITE text — readable in light

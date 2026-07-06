@@ -379,6 +379,8 @@ export default {
   'cohorts.field_whatsapp':         'WhatsApp do grupo (URL)',
   'cohorts.field_whatsapp_hint':    'opcional',
   'cohorts.field_classpulse':       'Sessão ClassPulse',
+  'cohorts.session_open_title':     'Abrir a sessão conectada a esta turma',
+  'cohorts.session_none_title':     'Nenhuma sessão conectada a esta turma',
   'cohorts.field_trail':            'Link da Trilha',
 
   // Cohorts — aulas

@@ -379,6 +379,8 @@ export default {
   'cohorts.field_whatsapp':         'WhatsApp group URL',
   'cohorts.field_whatsapp_hint':    'optional',
   'cohorts.field_classpulse':       'ClassPulse session',
+  'cohorts.session_open_title':     'Open the session connected to this turma',
+  'cohorts.session_none_title':     'No session connected to this turma',
   'cohorts.field_trail':            'Trail link',
 
   // Cohorts — aulas (lessons)
