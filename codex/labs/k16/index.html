@@ -156,27 +156,46 @@
       font-family: var(--font-serif);
       z-index: 1;
     }
-    .k16-image-header {
-      font-size: calc(1.3rem * var(--lab-fs-scale));
-      text-align: center;
-      margin: 0 0 0.9rem;
-      padding-bottom: 0.6rem;
-      border-bottom: 1.5px solid #ccc;
+    /* Badge (brasão): a decorative graphic, image layer ONLY -- OCR reads
+       text pixels, not raster art, so it never has a text-layer counterpart.
+       Absolutely positioned so it takes no block-flow space, keeping the
+       header's box height/width identical between the two layers (the
+       invariant that keeps search-marks and the OCR reveal aligned). */
+    .k16-badge {
+      position: absolute;
+      top: 1.15rem;
+      left: 1.4rem;
+      width: 2.1em;
+      height: 2.1em;
+      color: #7a7a7a;
+      pointer-events: none;
     }
-    .k16-image-header-court {
+    .k16-badge svg { width: 100%; height: 100%; }
+
+    /* Header text lines: NOT a fixed pre-filled block anymore -- they are two
+       more entries in the same OCR reveal pipeline as the body (so the
+       letterhead's WORDS come through OCR; only the badge graphic above
+       doesn't). Colors are layer-scoped so the text-layer copy inherits its
+       ancestor's transparent (invisible until revealed), exactly like body
+       lines -- a hardcoded color here would defeat that. */
+    .k16-header-court {
       margin: 0 0 0.15rem;
-      font-size: 0.72em;
+      font-size: calc(1.3rem * var(--lab-fs-scale) * 0.72);
       font-weight: 700;
       letter-spacing: 0.06em;
       text-transform: uppercase;
-      color: #555;
+      text-align: center;
     }
-    .k16-image-header-proc {
-      margin: 0;
-      font-size: 0.82em;
+    .k16-header-proc {
+      margin: 0 0 0.9rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1.5px solid transparent;
+      font-size: calc(1.3rem * var(--lab-fs-scale) * 0.82);
       font-weight: 700;
-      color: #1c1c1c;
+      text-align: center;
     }
+    .k16-image-layer .k16-header-court { color: #555; }
+    .k16-image-layer .k16-header-proc { color: #1c1c1c; border-bottom-color: #ccc; }
     /* Bigger than the shared --lab-fs-doc token on purpose: in every OTHER
        lab that token sizes a document glimpsed alongside other content;
        here the document IS the whole demo, it needs to read like an actual
@@ -185,6 +204,24 @@
       font-size: calc(1.3rem * var(--lab-fs-scale));
       line-height: 1.7;
       text-align: justify;
+    }
+
+    /* Signature: the one line where the two layers DELIBERATELY diverge in
+       font. It's short and never wraps, so the two-layer alignment invariant
+       (same font/padding above) doesn't apply here -- and a real signature is
+       handwritten (image layer: a script font), while OCR output is always
+       typed characters (text layer: the normal serif), never cursive itself.
+       OCR badly misreads elaborate handwriting, so its "reading" of this line
+       is garbled nonsense, not a clean transcription like the body text. */
+    .k16-signature-line {
+      margin-top: 1rem;
+      font-size: calc(1.5rem * var(--lab-fs-scale));
+      line-height: 1.3;
+      text-align: right;
+    }
+    .k16-image-layer .k16-signature-line {
+      font-family: 'Brush Script MT', 'Segoe Script', cursive;
+      font-style: italic;
     }
 
     /* Text layer: transparent overlay in normal mode (its only job is to be
@@ -313,8 +350,11 @@
       .k16-search-row { padding: 0.4rem 0.55rem; flex-wrap: wrap; }
       .k16-search-status { flex: 1 0 100%; text-align: center; }
       .k16-image-layer, .k16-text-layer { padding: 0.65rem 0.8rem; }
-      .k16-image-header { font-size: calc(1.05rem * var(--lab-fs-scale)); margin: 0 0 0.5rem; padding-bottom: 0.4rem; }
+      .k16-badge { width: 1.5em; height: 1.5em; top: 0.6rem; left: 0.7rem; }
+      .k16-header-court { font-size: calc(1.05rem * var(--lab-fs-scale) * 0.72); }
+      .k16-header-proc { font-size: calc(1.05rem * var(--lab-fs-scale) * 0.82); margin: 0 0 0.5rem; padding-bottom: 0.4rem; }
       .k16-image-line, .k16-text-line { font-size: calc(1.05rem * var(--lab-fs-scale)); line-height: 1.4; }
+      .k16-signature-line { font-size: calc(1.15rem * var(--lab-fs-scale)); margin-top: 0.4rem; }
       .k16-stage.k16-split .k16-image-layer { transform: scale(0.78) translate(-16%, -9%) rotate(-2.4deg); }
       .k16-stage.k16-split .k16-text-layer { transform: scale(0.78) translate(16%, 12%) rotate(2.2deg); }
 
@@ -361,27 +401,27 @@
 
     <div class="k16-stage-wrap">
       <div class="k16-stage" id="k16-stage">
-        <div class="k16-scanline" id="k16-scanline"></div>
-
         <div class="k16-layer k16-image-layer" id="k16-image-layer">
           <span class="k16-layer-tag">Camada de imagem</span>
-          <div class="k16-image-header">
-            <p class="k16-image-header-court">Polícia Civil &mdash; Delegacia de Polícia</p>
-            <p class="k16-image-header-proc">Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080</p>
-          </div>
+          <!-- Brasão: a decorative graphic, image layer only -- OCR reads
+               text pixels, not raster art, so this never OCRs (the header
+               WORDS beside it do -- see the JS reveal pipeline below). -->
+          <span class="k16-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l7 3v6c0 5-3.2 8.5-7 10-3.8-1.5-7-5-7-10V5z"/>
+              <path d="M9.5 12l1.8 1.8L4 10"/>
+            </svg>
+          </span>
+          <!-- Scanline lives INSIDE the image layer now (not a stage-level
+               sibling): as a child it inherits this layer's own transform, so
+               it tilts together with the sheet once "Ver camadas" rotates it
+               -- previously it stayed a flat horizontal line across the whole
+               stage regardless of the page's rotation. -->
+          <div class="k16-scanline" id="k16-scanline"></div>
         </div>
 
         <div class="k16-layer k16-text-layer" id="k16-text-layer">
           <span class="k16-layer-tag">Camada de texto</span>
-          <!-- Invisible spacer matching the image layer's header height, so
-               this layer's lines stay vertically aligned with the image's
-               (needed for search <mark> highlights to land on the right
-               spot, and for the OCR reveal to track the real text). The
-               OCR text itself never gets a header -- that's the point. -->
-          <div class="k16-image-header" style="visibility: hidden;">
-            <p class="k16-image-header-court">Polícia Civil &mdash; Delegacia de Polícia</p>
-            <p class="k16-image-header-proc">Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080</p>
-          </div>
         </div>
       </div>
     </div>
@@ -414,23 +454,43 @@
       // by a lawyer/judge is usually born digital (already searchable), so it
       // is a poor example of "why this scan isn't searchable". Police reports
       // are the realistic case -- typically produced on paper and scanned.
-      // The image layer shows the TRUE printed text; the OCR'd text layer
-      // deliberately misreads one word ("comparecimento" -> "cornparecirnento",
-      // the classic rn/m confusion) so the audience sees OCR is fallible.
-      const LINES_TRUE = [
-        'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o comparecimento do investigado.',
-        'Foi dado conhecimento ao investigado sobre a citação do réu para a audiência de instrução e julgamento.',
-        'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.',
-        'Nada mais havendo, lavrou-se o presente termo, que vai assinado.',
+      // The image layer shows the TRUE printed/handwritten content; the OCR'd
+      // text layer deliberately misreads two things: one printed word (the
+      // classic rn/m confusion) and the entire handwritten signature (OCR
+      // barely copes with elaborate cursive at all, unlike printed text).
+      //
+      // REVEAL drives BOTH layers uniformly: index 0-1 are the letterhead (its
+      // WORDS go through OCR same as the body; only the badge graphic next to
+      // it doesn't -- graphics have no characters to read), 2-5 are the body,
+      // 6 is the signature. `errWord` marks a single misread word inside an
+      // otherwise-correct line; `wholeLineError` marks a line OCR gets
+      // entirely wrong (the signature).
+      const REVEAL = [
+        { cls: 'k16-header-court', true: 'Polícia Civil — Delegacia de Polícia', ocr: 'Polícia Civil — Delegacia de Polícia' },
+        { cls: 'k16-header-proc', true: 'Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080', ocr: 'Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080' },
+        {
+          cls: 'k16-image-line',
+          true: 'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o comparecimento do investigado.',
+          ocr: 'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o cornparecirnento do investigado.',
+          errWord: 'cornparecirnento',
+          errTitle: 'OCR reconheceu errado (era "comparecimento")',
+        },
+        {
+          cls: 'k16-image-line',
+          true: 'Nesta oportunidade, foram lidos os direitos constitucionais ao investigado, na forma da lei.',
+          ocr: 'Nesta oportunidade, foram lidos os direitos constitucionais ao investigado, na forma da lei.',
+        },
+        { cls: 'k16-image-line', true: 'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.', ocr: 'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.' },
+        { cls: 'k16-image-line', true: 'Nada mais havendo, lavrou-se o presente termo, que vai assinado.', ocr: 'Nada mais havendo, lavrou-se o presente termo, que vai assinado.' },
+        {
+          cls: 'k16-signature-line',
+          true: 'Marcos A. Ferreira',
+          ocr: 'Marcoo /}. Fcrreira',
+          wholeLineError: true,
+          errTitle: 'OCR não reconhece bem letra cursiva, muito menos uma assinatura rebuscada',
+        },
       ];
-      const LINES_OCR = [
-        'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o cornparecirnento do investigado.',
-        'Foi dado conhecimento ao investigado sobre a citação do réu para a audiência de instrução e julgamento.',
-        'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.',
-        'Nada mais havendo, lavrou-se o presente termo, que vai assinado.',
-      ];
-      const OCR_ERROR_WORD = 'cornparecirnento';
-      const SEARCH_QUERY = 'citação do réu';
+      const SEARCH_QUERY = 'lidos os direitos';
 
       // ── DOM refs ─────────────────────────────────────────
       const stageEl      = root.querySelector('#k16-stage');
@@ -453,26 +513,22 @@
 
       // ── Build the two layers' line spans (image = always the true text) ──
       let imageLineEls = [];
-      function buildImageLines() {
-        LINES_TRUE.forEach((line, i) => {
-          const p = document.createElement('div');
-          p.className = 'k16-image-line';
-          p.textContent = line;
-          imageLayerEl.appendChild(p);
-          imageLineEls.push(p);
-        });
-      }
       let textLineEls = [];
-      function buildTextLines() {
-        LINES_TRUE.forEach(() => {
-          const p = document.createElement('div');
-          p.className = 'k16-text-line';
-          textLayerEl.appendChild(p);
-          textLineEls.push(p);
+      function buildLines() {
+        REVEAL.forEach((item) => {
+          const img = document.createElement(item.cls === 'k16-image-line' ? 'div' : 'p');
+          img.className = item.cls;
+          img.textContent = item.true;
+          imageLayerEl.appendChild(img);
+          imageLineEls.push(img);
+
+          const txt = document.createElement(item.cls === 'k16-image-line' ? 'div' : 'p');
+          txt.className = item.cls;
+          textLayerEl.appendChild(txt);
+          textLineEls.push(txt);
         });
       }
-      buildImageLines();
-      buildTextLines();
+      buildLines();
 
       function clearTextLines() {
         textLineEls.forEach((el) => { el.innerHTML = ''; });
@@ -491,58 +547,70 @@
         pendingTypewriters = 0;
         scanlineEl.classList.add('k16-scan-active');
 
-        const stageRect = stageEl.getBoundingClientRect();
-        // Measured from the IMAGE line elements, not the text ones: the image
-        // layer always shows its full, real text so its line positions are
-        // stable for the whole sweep. The text layer starts empty and GROWS
-        // as lines are revealed (a wrapped line adds height), so trigger
-        // positions based on it would drift out from under the scanline.
-        const lineTops = imageLineEls.map((el) => el.getBoundingClientRect().top - stageRect.top);
+        // Measured via offsetTop/offsetHeight (layout-relative, PRE-transform),
+        // not getBoundingClientRect (viewport-relative, POST-transform): once
+        // "Ver camadas" rotates the sheet, a rotated element's bounding-client
+        // rect is an axis-aligned box that no longer matches its real local Y
+        // position, so the old viewport-based math put the scanline in the
+        // wrong place mid-sweep whenever OCR ran while split. offsetTop is
+        // immune to any transform on the element or its ancestors, so this
+        // works identically split or not. Measured from the IMAGE line
+        // elements, not the text ones: the image layer always shows its full,
+        // real text so its line positions are stable for the whole sweep. The
+        // text layer starts empty and GROWS as lines are revealed (a wrapped
+        // line adds height), so trigger positions based on it would drift out
+        // from under the scanline.
+        const lineTops = imageLineEls.map((el) => el.offsetTop);
         // Sweep only the vertical span the document text actually occupies,
         // not the whole (often much taller) stage box: a short doc otherwise
         // reveals almost everything in the first instant, leaving a long,
         // pointless glide over empty page below it -- the opposite of "real
         // time" reveal the operator asked for.
-        const lastRect = imageLineEls[imageLineEls.length - 1].getBoundingClientRect();
+        const lastEl = imageLineEls[imageLineEls.length - 1];
         const sweepStart = Math.max(0, lineTops[0] - 14);
-        const sweepEnd = Math.min(stageRect.height, (lastRect.bottom - stageRect.top) + 14);
+        const sweepEnd = Math.min(imageLayerEl.offsetHeight, lastEl.offsetTop + lastEl.offsetHeight + 14);
         const sweepRange = Math.max(1, sweepEnd - sweepStart);
-        const revealed = new Array(LINES_OCR.length).fill(false);
+        const revealed = new Array(REVEAL.length).fill(false);
         const DURATION = 2100;
         const start = performance.now();
 
-        // Renders `text` up to character `upTo`, wrapping the error word in
-        // its warning span as soon as typing reaches it (not only at the end).
-        function renderPartial(el, text, upTo, errIdx) {
+        // Renders `text` up to character `upTo`, wrapping the error span in
+        // its warning mark as soon as typing reaches it (not only at the
+        // end). `errStart`/`errLen` cover both cases: a single misread word
+        // inside an otherwise-correct line, or (errStart=0, errLen=text.length)
+        // a whole line OCR gets entirely wrong (the signature).
+        function renderPartial(el, text, upTo, errStart, errLen, errTitle) {
           el.textContent = '';
-          if (errIdx === -1 || upTo <= errIdx) {
+          if (errStart === -1 || upTo <= errStart) {
             el.appendChild(document.createTextNode(text.slice(0, upTo)));
             return;
           }
-          el.appendChild(document.createTextNode(text.slice(0, errIdx)));
-          const errEnd = errIdx + OCR_ERROR_WORD.length;
+          el.appendChild(document.createTextNode(text.slice(0, errStart)));
+          const errEnd = errStart + errLen;
           const mark = document.createElement('span');
           mark.className = 'k16-ocr-error';
-          mark.title = 'OCR reconheceu errado (era "comparecimento")';
+          mark.title = errTitle;
           if (upTo <= errEnd) {
-            mark.textContent = text.slice(errIdx, upTo);
+            mark.textContent = text.slice(errStart, upTo);
             el.appendChild(mark);
           } else {
-            mark.textContent = OCR_ERROR_WORD;
+            mark.textContent = text.slice(errStart, errEnd);
             el.appendChild(mark);
             el.appendChild(document.createTextNode(text.slice(errEnd, upTo)));
           }
         }
 
         function startTypewriter(i) {
-          const text = LINES_OCR[i];
+          const item = REVEAL[i];
+          const text = item.ocr;
           const el = textLineEls[i];
-          const errIdx = text.indexOf(OCR_ERROR_WORD);
+          const errStart = item.errWord ? text.indexOf(item.errWord) : (item.wholeLineError ? 0 : -1);
+          const errLen = item.errWord ? item.errWord.length : (item.wholeLineError ? text.length : 0);
           let upTo = 0;
           pendingTypewriters++;
           const timer = setInterval(() => {
             upTo++;
-            renderPartial(el, text, upTo, errIdx);
+            renderPartial(el, text, upTo, errStart, errLen, item.errTitle);
             if (upTo >= text.length) {
               clearInterval(timer);
               typewriterTimers = typewriterTimers.filter((t) => t !== timer);

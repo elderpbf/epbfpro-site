@@ -79,7 +79,7 @@ export const LABS = [
   {
     key: 'k15',
     title: 'Sinapse',
-    summary: 'Acerto e erro mudam o peso; repetição pode virar decoreba',
+    summary: 'Repetição fortalece o peso, até virar decoreba',
     emoji: '🧠'
   },
   {
@@ -87,6 +87,12 @@ export const LABS = [
     title: 'PDF: imagem ou texto?',
     summary: 'Duas camadas de um PDF, e o que o OCR faz entre elas',
     emoji: '📄'
+  },
+  {
+    key: 'k17',
+    title: 'Preferência',
+    summary: 'Humano prefere uma resposta a outra; a preferida reforça o peso',
+    emoji: '👍'
   }
 ];
 
