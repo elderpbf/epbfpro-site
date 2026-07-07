@@ -341,7 +341,9 @@
         // a narrow-but-TALL mobile viz area (a lot of empty vertical space above
         // and below a tiny dumbbell). Let height carry more of the budget so the
         // synapse fills the flexible middle row on any aspect ratio.
-        r = Math.min(VB_H * 0.18, VB_W * 0.16, 70);
+        // Diameter cut 30% on phone feedback (2026-07-07): scale every term
+        // (including the px cap) by 0.7 so it stays proportional at any size.
+        r = Math.min(VB_H * 0.126, VB_W * 0.112, 49);
         leftCx = VB_W * 0.22;
         rightCx = VB_W * 0.78;
         cy = VB_H / 2;

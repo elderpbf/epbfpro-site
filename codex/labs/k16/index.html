@@ -352,6 +352,14 @@
     @media (max-width: 700px) {
       .k16-panel { padding: 0.55rem 0.7rem 0.55rem; gap: 0.45rem; }
       .k16-main { gap: 0.45rem; }
+      /* Split mode's scale+translate spreads the two layers past the stage's
+         own edges (fine on desktop, where the wrap is much wider than the
+         720px-capped stage) -- on phone the stage fills the wrap edge to
+         edge, so the spread got clipped by overflow:hidden above, cutting
+         a lateral sliver off each rotated page. This padding gives the
+         spread room; it also narrows the stage a touch, which shrinks the
+         translate distances (a % of the stage's own width) right along with it. */
+      .k16-stage-wrap { padding-inline: 16px; }
       .k16-search-row { padding: 0.4rem 0.55rem; flex-wrap: wrap; }
       .k16-search-status { flex: 1 0 100%; text-align: center; }
       .k16-image-layer, .k16-text-layer { padding: 0.65rem 0.8rem; }
