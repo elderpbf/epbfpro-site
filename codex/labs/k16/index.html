@@ -121,6 +121,11 @@
       height: 100%;
       max-height: 100%;
     }
+    /* A non-OCR'd scan is a flat picture -- there is no text to select, so
+       dragging over it must do nothing (like a real scanned PDF). Lifted only
+       once OCR has run (k16-ocr-done, toggled in JS), matching a real PDF
+       viewer where the recovered text becomes selectable/copyable. */
+    .k16-stage:not(.k16-ocr-done) { user-select: none; }
     .k16-layer {
       position: absolute;
       inset: 0;
@@ -626,6 +631,7 @@
           scanlineEl.classList.remove('k16-scan-active');
           ocrRunning = false;
           ocrDone = true;
+          stageEl.classList.add('k16-ocr-done');
           searchStatus.textContent = '';
           searchStatus.className = 'k16-search-status';
         }
@@ -710,6 +716,7 @@
         ocrRunning = false;
         split = false;
         stageEl.classList.remove('k16-split');
+        stageEl.classList.remove('k16-ocr-done');
         scanlineEl.classList.remove('k16-scan-active');
         scanlineEl.style.top = '0px';
         ocrBtn.disabled = false;

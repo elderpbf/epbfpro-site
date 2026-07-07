@@ -294,16 +294,32 @@
       // ── Content: candidate responses to the SAME fixed question, varying
       // in quality. There is no "correct" answer being tracked -- whichever
       // gets marked "Melhor" is what the weight follows, purely a human call.
+      //
+      // Deliberately NOT alternating good/bad one-by-one: rating that pattern
+      // honestly (Melhor, Pior, Melhor, Pior...) cancels out to a permanent
+      // 0%, which looked like the demo was broken. Grouped instead as 3 good
+      // + 1 weak, repeated -- 9 good / 3 weak across all 12. Training here
+      // is meant to look REASONABLE, not a runaway sobreajuste like k15: a
+      // full honest pass nets +9-3 = 6 steps of 12 (PREF_CAP below), landing
+      // right at 50% instead of pinning at an extreme.
       const RESPONSES = [
         'Sim: você tem direito a aviso prévio, 13º e férias proporcionais, multa de 40% do FGTS, além do seguro-desemprego se atendidos os requisitos.',
-        'Ah, depende, cada caso é um caso, melhor perguntar pra outra pessoa.',
         'Sim, e recomendo reunir a carteira assinada e os holerites para conferir as verbas rescisórias com um advogado.',
+        'Você tem direito às verbas rescisórias: aviso prévio, saldo de salário, 13º e férias proporcionais, além da multa de 40% sobre o FGTS.',
+        'Ah, depende, cada caso é um caso, melhor perguntar pra outra pessoa.',
+        'Correto, a dispensa sem justa causa garante o saque do FGTS com a multa de 40% e, se você atender aos requisitos, o seguro-desemprego.',
+        'Sim. Vale conferir se a empresa pagou corretamente o aviso prévio e depositou a multa rescisória do FGTS.',
+        'Tem sim: além das verbas rescisórias, você pode ter direito ao seguro-desemprego, dependendo do seu histórico de contribuições.',
         'Não tenho certeza não, isso aí é bem complicado.',
+        'Sim, você tem direito a receber as verbas da rescisão; recomendo levar os documentos a um advogado para conferir os valores.',
+        'Correto, é seu direito receber o aviso prévio, 13º e férias proporcionais, e sacar o FGTS com a multa de 40%.',
+        'Sim, tem direito às verbas rescisórias e, dependendo do caso, ao seguro-desemprego; vale revisar o termo de rescisão com atenção.',
+        'Não sei te dizer, isso não é bem comigo não.',
       ];
 
       // ── Constants ────────────────────────────────────────
       const PREF_STEP = 1;
-      const PREF_CAP  = 5; // clicks to reach 100% either direction
+      const PREF_CAP  = RESPONSES.length; // one honest pass through ALL responses = the intended +6/12 = 50%
 
       // ── State ────────────────────────────────────────────
       let pref = 0;    // 0..1, drives line thickness + meter (no "correct" target)
