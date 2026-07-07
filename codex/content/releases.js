@@ -13,6 +13,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
+import { isLabEnabled, labIcon, labOrderIndex } from '../js/labs-registry.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -166,6 +167,39 @@ function _fmtDate(iso) {
 function _typeIcon(slug) {
   const ty = _types.find((x) => x.slug === slug);
   return ty && ty.icon;
+}
+
+// Labs are ct_items rows, but the on/off toggle (Content > Labs) is purely
+// client-side (labs-registry.isLabEnabled, localStorage). Cross-reference by
+// meta_json.lab_key to know which registry entry a given row is.
+function _labKeyOf(item) {
+  if (!item || item.type !== 'lab') return null;
+  try {
+    const meta = typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json;
+    return (meta && meta.lab_key) || null;
+  } catch (e) { return null; }
+}
+// A disabled lab that was never released anywhere just clutters the "add"
+// pool -- hide it. One already bound to an aula stays visible so the admin
+// can still see/unrelease it (hiding it would make it unmanageable).
+function _isVisibleLab(item) {
+  if (item.type !== 'lab') return true;
+  const key = _labKeyOf(item);
+  if (!key || isLabEnabled(key)) return true;
+  return _released.indexOf(Number(item.id)) !== -1;
+}
+// The per-row glyph for a lab item is its own emoji (labs-registry.labIcon),
+// not the generic "Lab" type glyph every other lab would otherwise share.
+function _rowGlyph(item, groupGlyph) {
+  if (item.type !== 'lab') return groupGlyph;
+  const key = _labKeyOf(item);
+  return key ? typeIconHtml(labIcon(key), { size: 15 }) : groupGlyph;
+}
+// Lab rows within a Labs group follow the Content > Labs drag order
+// (labs-registry.labOrderIndex) so the composer matches the admin's own
+// ordering there; every other type keeps the backend's own row order.
+function _sortLabsByOrder(items) {
+  return items.slice().sort((a, b) => labOrderIndex(_labKeyOf(a)) - labOrderIndex(_labKeyOf(b)));
 }
 // Count-chip / row glyph. Apostila + outros are section pseudo-types (fixed
 // glyph); real slugs (tarefa, drive_file) draw their ct_types.icon.
@@ -569,7 +603,7 @@ function _renderAulaComposer(container, aula) {
 
   const tarefaItems = _allItems.filter(_isTarefa);
   const driveItems = _allItems.filter(_isDrive);
-  const outrosItems = _allItems.filter(_isOutros);
+  const outrosItems = _allItems.filter(_isOutros).filter(_isVisibleLab);
 
   // Apostila rows render inline (the set-position prefix isn't in _rowHtml), but
   // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
@@ -600,7 +634,8 @@ function _renderAulaComposer(container, aula) {
   ];
   _groupByType(outrosItems).forEach((g) => {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
-    const rows = g.items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), glyph, _releasedElsewhere(i.id, aulaNum))).join('');
+    const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
+    const rows = items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), _rowGlyph(i, glyph), _releasedElsewhere(i.id, aulaNum))).join('');
     sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length, rowsHtml: rows });
   });
   if (driveItems.length) {
@@ -621,17 +656,20 @@ function _renderOutrosComposer(container) {
     if (_released.indexOf(Number(i.id)) === -1) return true;
     return !(_releasedMeta[i.id] || {}).aula_number;
   });
-  const standalone = eligible.filter((i) => !_isDrive(i));
+  const standalone = eligible.filter((i) => !_isDrive(i)).filter(_isVisibleLab);
   const driveItems = eligible.filter(_isDrive);
 
   // R3: por tipo here too. Empty bucket keeps a single placeholder section.
   const sections = standalone.length
-    ? _groupByType(standalone).map((g) => ({
-        key: 'type-' + g.type,
-        label: _typeLabel(g.type),
-        count: g.items.length,
-        rowsHtml: g.items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join(''),
-      }))
+    ? _groupByType(standalone).map((g) => {
+        const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
+        return {
+          key: 'type-' + g.type,
+          label: _typeLabel(g.type),
+          count: g.items.length,
+          rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })))).join(''),
+        };
+      })
     : [{ key: 'outros', label: t('releases.section_outros_solo'), count: 0, rowsHtml: '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>' }];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);

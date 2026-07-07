@@ -92,7 +92,7 @@
       color: var(--text);
       transition: color 320ms;
     }
-    .k15-phrase-card.k15-phrase--variant .k15-phrase-text { color: var(--focal); }
+    .k15-phrase-card.k15-phrase--memorized .k15-phrase-text { color: var(--bad); }
 
     /* ── Synapse visualization: two neurons + a weighted line ── */
     .k15-viz-wrap {
@@ -163,7 +163,6 @@
       min-height: 1.4em;
     }
     .k15-status.k15-status--overfit { color: var(--bad); font-style: normal; font-weight: 600; }
-    .k15-status.k15-status--ok { color: var(--good); font-style: normal; font-weight: 600; }
 
     /* ── Operator buttons ───────────────────────────────────── */
     .k15-button-bar {
@@ -202,18 +201,6 @@
       color: var(--bad);
     }
     .k15-btn-bad:hover { background: rgba(var(--bad-rgb), 0.22); border-color: var(--bad); color: var(--bad); }
-    .k15-btn-primary {
-      border-color: var(--focal);
-      background: rgba(var(--focal-rgb), 0.16);
-      color: var(--focal);
-      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
-    }
-    .k15-btn-primary:hover:not(:disabled) {
-      background: rgba(var(--focal-rgb), 0.28);
-      border-color: var(--focal);
-      color: var(--focal);
-      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
-    }
     .k15-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .k15-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
 
@@ -286,7 +273,6 @@
     <span class="k15-fs-slot" data-lab-fs-ctl></span>
     <button class="k15-btn k15-btn-good" id="k15-reinforce">Reforçar (acertou)</button>
     <button class="k15-btn k15-btn-bad" id="k15-weaken">Enfraquecer (errou)</button>
-    <button class="k15-btn k15-btn-primary" id="k15-variant" disabled>Testar com variação</button>
     <button class="k15-btn" id="k15-reset">Reiniciar</button>
   </div>
 
@@ -294,8 +280,8 @@
        "Entenda" button (lab-info.js). -->
   <template data-lab-info data-lab-info-title="Peso, sinapse e sobreajuste">
     <p>Um modelo de linguagem aprende ajustando <strong>pesos</strong> entre suas unidades internas, uma analogia direta com o <strong>neurônio biológico</strong>: cada vez que uma resposta é reforçada (o modelo "acertou"), a ligação entre as unidades envolvidas fica mais forte, mais “sinapse”. Cada erro a enfraquece.</p>
-    <p>O problema é a repetição em excesso: um trecho que aparece o tempo todo nos dados de treino acaba com um peso muito mais forte do que um trecho raramente visto, mesmo que os dois sejam igualmente válidos, é o <strong>sobreajuste</strong> (overfitting) por frequência de exposição, não por compreensão.</p>
-    <p>Este laboratório compara o <strong>caput do art. 5º da Constituição</strong>, citado e recitado sem parar, com um artigo pouco usado, o <strong>art. 18 do ADCT</strong>. Reforce o primeiro repetidamente e veja como o "modelo" se sai ao encontrar o segundo, quase sem repertório para ele. Não é um julgamento sobre qual artigo importa mais, é sobre como a frequência de exposição, e não o entendimento, molda o peso.</p>
+    <p>O problema é a repetição em excesso: reforçar demais um único trecho faz o modelo deixar de generalizar a ideia por trás dele e passar a <strong>decorar a forma exata</strong>, é o <strong>sobreajuste</strong> (overfitting). Ele fica ótimo repetindo aquela frase específica, mas isso não significa que entendeu o princípio.</p>
+    <p>Este laboratório mostra isso com uma única frase, o caput do art. 5º da Constituição: a cada reforço, o que o "modelo" lembra se aproxima mais do texto literal, até ficar palavra por palavra idêntico no sobreajuste máximo. As versões intermediárias são uma criação didática para visualizar essa aproximação, não trechos reais de nada, só o quanto pode variar entre "lembrar a ideia" e "decorar a forma exata". Enfraquecer o peso faz o caminho inverso: a lembrança volta a se afastar do texto exato.</p>
   </template>
 
   <script>
@@ -303,28 +289,36 @@
       const root = document.querySelector('.k15-panel');
       if (!root) return;
 
-      // ── Content: the reinforced clause + a paraphrase that keeps the SAME
-      // principle in different words (tests generalization, not memorization). ──
-      const ORIGINAL = 'Todos são iguais perante a lei, sem distinção de qualquer natureza.';
-      const VARIANT  = 'Ficam extintos os efeitos jurídicos de qualquer ato legislativo ou administrativo (...)';
+      // ── Content: a single passage recalled with increasing accuracy. Stage 0
+      // is a loose, garbled "recollection"; each stage moves closer to the
+      // literal caput; the last stage IS the literal text -- there is no
+      // separate "variant" comparison, the phrase itself converges. These
+      // in-between stages are a didactic invention for this lab, not real
+      // excerpts of anything (said explicitly in "Entenda" too). ──
+      const STAGES = [
+        'Ninguém pode ser tratado de forma diferente por causa de quem é.',
+        'Todo mundo deve ser tratado igual pela lei, não importa a diferença.',
+        'Todas as pessoas são iguais diante da lei, sem distinção de tipo algum.',
+        'Todos são iguais ante a lei, sem distinção de qualquer espécie.',
+        'Todos são iguais perante a lei, sem distinção de qualquer tipo.',
+        'Todos são iguais perante a lei, sem distinção de qualquer natureza.', // literal caput
+      ];
 
       // ── Constants ────────────────────────────────────────
-      const WEIGHT_STEP_UP   = 0.22;  // reinforcing thickens the synapse
-      const WEIGHT_STEP_DOWN = 0.34;  // weakening costs noticeably more
-      const OVERFIT_STEP    = 1;      // +1 per reinforcement toward the cap
-      const OVERFIT_CAP     = 5;      // reinforcements to reach 100% memorization
-      const OVERFIT_DECAY   = 2.5;    // an error costs more overfit than a reinforcement earns
-      const OVERFIT_HESITATE_AT = 0.7; // >= this: the model fumbles the rare article
+      const OVERFIT_STEP  = 1;    // +1 per reinforcement toward the cap
+      const OVERFIT_CAP   = STAGES.length - 1; // reinforcements to reach 100% (1 stage per step)
+      const OVERFIT_DECAY = 2.5;  // an error costs more overfit than a reinforcement earns
 
       // ── State ────────────────────────────────────────────
-      let weight   = 0.35;  // 0..1, drives the synapse's visual thickness/glow
-      let overfit  = 0;     // 0..1, drives the memorization meter
-      let showingVariant = false;
+      // A SINGLE variable drives everything (line thickness, meter, phrase
+      // stage) -- an earlier version split this into "weight" (thickness) and
+      // "overfit" (meter) with different step sizes, so they drifted apart and
+      // the line stopped growing well before the meter reached 100%.
+      let overfit = 0; // 0..1
 
       // ── DOM refs ─────────────────────────────────────────
       const vizEl        = root.querySelector('#k15-viz');
       const phraseCardEl = root.querySelector('#k15-phrase-card');
-      const phraseLabelEl= root.querySelector('#k15-phrase-label');
       const phraseTextEl = root.querySelector('#k15-phrase-text');
       const meterRowEl   = root.querySelector('#k15-meter-row');
       const meterFillEl  = root.querySelector('#k15-meter-fill');
@@ -332,7 +326,6 @@
       const statusEl     = root.querySelector('#k15-status');
       const reinforceBtn = root.querySelector('#k15-reinforce');
       const weakenBtn    = root.querySelector('#k15-weaken');
-      const variantBtn   = root.querySelector('#k15-variant');
       const resetBtn     = root.querySelector('#k15-reset');
 
       function clamp01(v) { return Math.max(0, Math.min(1, v)); }
@@ -428,13 +421,13 @@
 
       function renderViz() {
         if (!synapseLine) return;
-        const w = 4 + weight * 40;           // stroke width: thin -> bem grossa
-        const glowW = w + 14 + weight * 20;
-        const op = 0.35 + weight * 0.65;
+        const w = 4 + overfit * 40;           // stroke width: thin -> bem grossa
+        const glowW = w + 14 + overfit * 20;
+        const op = 0.35 + overfit * 0.65;
         synapseLine.setAttribute('stroke-width', String(w));
         synapseLine.setAttribute('opacity', String(op));
         synapseGlowLine.setAttribute('stroke-width', String(glowW));
-        synapseGlowLine.setAttribute('opacity', String(0.15 + weight * 0.35));
+        synapseGlowLine.setAttribute('opacity', String(0.15 + overfit * 0.35));
       }
 
       let resizeTimer = null;
@@ -444,70 +437,45 @@
       });
       ro.observe(vizEl);
 
-      // ── Render (meter, status, phrase, buttons) ──────────
+      function stageIndexFor(o) {
+        return Math.min(STAGES.length - 1, Math.max(0, Math.round(o * (STAGES.length - 1))));
+      }
+
+      // ── Render (meter, status, phrase stage) ──────────────
       function render() {
         renderViz();
         meterFillEl.style.width = (overfit * 100).toFixed(0) + '%';
         meterValueEl.textContent = Math.round(overfit * 100) + '%';
-        meterRowEl.classList.toggle('k15-meter--full', overfit >= 1);
-        variantBtn.disabled = overfit < 0.5;
+        const memorized = overfit >= 1;
+        meterRowEl.classList.toggle('k15-meter--full', memorized);
+        phraseTextEl.textContent = STAGES[stageIndexFor(overfit)];
+        phraseCardEl.classList.toggle('k15-phrase--memorized', memorized);
 
-        if (!showingVariant) {
-          if (overfit >= 1) {
-            statusEl.textContent = 'Decorou o Art. 5º de tanto repetir. Veja como ele se sai com um texto que quase não viu.';
-            statusEl.className = 'k15-status k15-status--overfit';
-          } else {
-            statusEl.textContent = '';
-            statusEl.className = 'k15-status';
-          }
+        if (memorized) {
+          statusEl.textContent = 'Decorou: de tanto repetir, a frase lembrada ficou idêntica ao texto real.';
+          statusEl.className = 'k15-status k15-status--overfit';
+        } else {
+          statusEl.textContent = '';
+          statusEl.className = 'k15-status';
         }
       }
 
       // ── Handlers ─────────────────────────────────────────
       function reinforce() {
-        showingVariant = false;
-        phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Art. 5º CF';
-        phraseTextEl.textContent = ORIGINAL;
-        weight = clamp01(weight + WEIGHT_STEP_UP);
         overfit = clamp01(overfit + OVERFIT_STEP / OVERFIT_CAP);
         render();
       }
       function weaken() {
-        showingVariant = false;
-        phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Art. 5º CF';
-        phraseTextEl.textContent = ORIGINAL;
-        weight = clamp01(weight - WEIGHT_STEP_DOWN);
         overfit = clamp01(overfit - (OVERFIT_DECAY * OVERFIT_STEP) / OVERFIT_CAP);
         render();
       }
-      function testVariant() {
-        showingVariant = true;
-        phraseCardEl.classList.add('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Art. 18 ADCT';
-        phraseTextEl.textContent = VARIANT;
-        if (overfit >= OVERFIT_HESITATE_AT) {
-          statusEl.textContent = 'O modelo mal reconhece: decorou o Art. 5º de tanto repetir, mas o Art. 18 do ADCT quase não apareceu nos dados.';
-          statusEl.className = 'k15-status k15-status--overfit';
-        } else {
-          statusEl.textContent = 'O modelo ainda lida bem com o texto novo, não depende só da repetição de um único artigo.';
-          statusEl.className = 'k15-status k15-status--ok';
-        }
-      }
       function reset() {
-        weight = 0.35;
         overfit = 0;
-        showingVariant = false;
-        phraseCardEl.classList.remove('k15-phrase--variant');
-        phraseLabelEl.textContent = 'Art. 5º CF';
-        phraseTextEl.textContent = ORIGINAL;
         render();
       }
 
       reinforceBtn.addEventListener('click', reinforce);
       weakenBtn.addEventListener('click', weaken);
-      variantBtn.addEventListener('click', testVariant);
       resetBtn.addEventListener('click', reset);
 
       // ── Theme sync ───────────────────────────────────────
@@ -520,7 +488,6 @@
       });
 
       // ── Init ─────────────────────────────────────────────
-      phraseTextEl.textContent = ORIGINAL;
       buildViz();
       render();
     })();

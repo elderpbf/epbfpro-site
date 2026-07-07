@@ -20,7 +20,8 @@
 // reflected in the Lessons sidebar and the Presets picker. Filtering stays
 // read-time in every consumer, so disabling is instant and reversible.
 import { t } from '../js/i18n.js';
-import { LABS } from '../js/labs-registry.js';
+import { orderedLabs, labIcon, setLabOrder } from '../js/labs-registry.js';
+import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { mountRail } from '../js/list-rail.js';
 import { content as api } from '../js/codex-api.js';
@@ -56,7 +57,8 @@ function _setEnabled(key, on) {
 }
 
 function _labs() {
-  return Array.isArray(LABS) ? LABS : null;
+  const labs = orderedLabs();
+  return Array.isArray(labs) ? labs : null;
 }
 function _labByKey(key) {
   const labs = _labs();
@@ -76,15 +78,15 @@ function _switchHtml(on) {
     '</label>';
 }
 
-// The left labs list adopts the shared list-rail (track-21). Select-only (no drag); the
-// rail owns the row shell + selection. renderRow returns the inner content, wrapped in
+// The left labs list adopts the shared list-rail (track-21): the rail owns the row shell,
+// selection AND drag-to-reorder (the grip). renderRow returns the inner content, wrapped in
 // .cdx-lab-rowwrap which carries the is-off dim (the rail row itself can't take is-off).
 // The on/off switch lives in the row (always visible) and is exempt from selection via
 // the rail's rowSelectIgnore, so toggling it never reloads the preview iframe.
 function _labRowMain(lab) {
   const on = _isEnabled(lab.key);
   return '<div class="cdx-lab-rowwrap' + (on ? '' : ' is-off') + '">' +
-      '<span class="cdx-item-type-icon cdx-lab-icon">&#9672;</span>' +
+      '<span class="cdx-item-type-icon cdx-lab-icon">' + typeIconHtml(labIcon(lab.key), { size: 16 }) + '</span>' +
       '<div class="cdx-item-info">' +
         '<div class="cdx-item-title">' + _esc(lab.title) + '</div>' +
         '<div class="cdx-item-sub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) +
@@ -127,6 +129,9 @@ function _buildRail() {
     selectedId: () => _selectedKey,
     onSelect: (key) => { _selectedKey = key; _rail.render(); _renderPreview(); },
     rowSelectIgnore: '.cdx-lab-switch',
+    // Order is registry-wide (labs-registry.setLabOrder), not local UI state, so
+    // Presets/Lessons/Liberações inherit the same order via orderedLabs() too.
+    reorder: { onReorder: (keys) => { setLabOrder(keys); _rail.render(); } },
   });
 }
 

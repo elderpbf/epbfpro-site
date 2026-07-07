@@ -17,6 +17,10 @@ function setEnabledMap(obj) {
   if (obj == null) _store.delete('cv_labs_enabled');
   else _store.set('cv_labs_enabled', typeof obj === 'string' ? obj : JSON.stringify(obj));
 }
+function setOrder(arr) {
+  if (arr == null) _store.delete('cv_labs_order');
+  else _store.set('cv_labs_order', JSON.stringify(arr));
+}
 
 const reg = await import('../js/labs-registry.js');
 
@@ -111,5 +115,61 @@ test('findItem ignores the enabled map (resolution is independent of visibility)
   // only the picker/index lists honour isLabEnabled via getAllItems.
   setEnabledMap({ k1: false });
   assert.ok(reg.findItem('lab:k1'), 'disabled lab still resolves by id');
+  setEnabledMap(null);
+});
+
+test('labIcon returns the per-lab emoji, falling back to the flask glyph', () => {
+  assert.equal(reg.labIcon('k15'), '🧠');
+  assert.equal(reg.labIcon('k16'), '📄');
+  assert.equal(reg.labIcon('nope'), 'glyph:flask', 'unknown key falls back to the flask glyph');
+});
+
+test('findItem / getAllItems carry type_icon = labIcon(key)', () => {
+  setEnabledMap(null);
+  assert.equal(reg.findItem('lab:k15').type_icon, '🧠');
+  const items = reg.getAllItems();
+  assert.ok(items.every((i) => i.type_icon === reg.labIcon(i.id.slice(4))), 'every synthetic item carries its own icon');
+});
+
+test('orderedLabs defaults to registry order (no stored order)', () => {
+  setOrder(null);
+  assert.deepEqual(reg.orderedLabs().map((l) => l.key), EXPECTED_KEYS);
+});
+
+test('orderedLabs honours a stored order, appending labs missing from it', () => {
+  setOrder(['k16', 'k1']);
+  const keys = reg.orderedLabs().map((l) => l.key);
+  assert.deepEqual(keys.slice(0, 2), ['k16', 'k1'], 'stored order wins for the labs it names');
+  assert.deepEqual(keys.slice(2), EXPECTED_KEYS.filter((k) => k !== 'k16' && k !== 'k1'), 'the rest keep registry order');
+  setOrder(null);
+});
+
+test('orderedLabs drops stale keys no longer in the registry', () => {
+  setOrder(['ghost', 'k2', 'k1']);
+  assert.deepEqual(reg.orderedLabs().map((l) => l.key).slice(0, 2), ['k2', 'k1']);
+  setOrder(null);
+});
+
+test('labOrderIndex mirrors orderedLabs, -1 for an unknown key', () => {
+  setOrder(['k16', 'k1']);
+  assert.equal(reg.labOrderIndex('k16'), 0);
+  assert.equal(reg.labOrderIndex('k1'), 1);
+  assert.equal(reg.labOrderIndex('ghost'), -1);
+  setOrder(null);
+});
+
+test('setLabOrder persists to the same cv_labs_order key orderedLabs reads', () => {
+  reg.setLabOrder(['k4', 'k3']);
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_order')), ['k4', 'k3']);
+  assert.deepEqual(reg.orderedLabs().map((l) => l.key).slice(0, 2), ['k4', 'k3']);
+  setOrder(null);
+});
+
+test('getAllItems follows the stored order (filtered to enabled labs)', () => {
+  setEnabledMap({ k1: false });
+  setOrder(['k16', 'k1', 'k2']);
+  const ids = reg.getAllItems().map((i) => i.id);
+  assert.deepEqual(ids.slice(0, 2), ['lab:k16', 'lab:k2'], 'k1 stays disabled-hidden even though it is in the stored order');
+  setOrder(null);
   setEnabledMap(null);
 });

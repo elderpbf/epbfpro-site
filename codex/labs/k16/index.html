@@ -64,46 +64,39 @@
     .k16-search-row {
       display: flex;
       align-items: center;
-      gap: 0.5rem;
+      gap: 0.6rem;
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 0.5rem 0.7rem;
+      padding: 0.6rem 1rem;
     }
-    .k16-search-input {
+    .k16-search-icon {
       flex: 0 0 auto;
-      width: 11ch;
-      border: 1.5px solid var(--border);
-      border-radius: 8px;
-      padding: 0.4rem 0.5rem;
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-ui);
+      width: 1.35em;
+      height: 1.35em;
+      display: flex;
       color: var(--text-dim);
-      background: var(--bg);
-      text-align: center;
+    }
+    .k16-search-icon svg { width: 100%; height: 100%; }
+    .k16-search-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      color: var(--text);
+      padding: 0.3rem 0;
       outline: none;
       cursor: default;
     }
-    .k16-search-btn {
-      flex: 0 0 auto;
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-btn);
-      font-weight: 600;
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      border: 1.5px solid var(--focal);
-      background: rgba(var(--focal-rgb), 0.16);
-      color: var(--focal);
-      cursor: pointer;
-    }
-    .k16-search-btn:hover { background: rgba(var(--focal-rgb), 0.28); }
+    .k16-search-input::placeholder { color: var(--text-dim); }
     .k16-search-status {
-      flex: 1 1 auto;
-      min-width: 0;
+      flex: 0 0 auto;
       font-family: var(--font-mono);
-      font-size: calc(var(--lab-fs-body) * 1.3);
+      font-size: calc(var(--lab-fs-body) * 1.05);
       font-weight: 800;
-      text-align: center;
+      white-space: nowrap;
       color: var(--text-dim);
     }
     .k16-search-status.k16-search--found { color: var(--good); }
@@ -164,6 +157,7 @@
       z-index: 1;
     }
     .k16-image-header {
+      font-size: calc(1.3rem * var(--lab-fs-scale));
       text-align: center;
       margin: 0 0 0.9rem;
       padding-bottom: 0.6rem;
@@ -183,26 +177,40 @@
       font-weight: 700;
       color: #1c1c1c;
     }
+    /* Bigger than the shared --lab-fs-doc token on purpose: in every OTHER
+       lab that token sizes a document glimpsed alongside other content;
+       here the document IS the whole demo, it needs to read like an actual
+       page of text, not a caption-sized preview. */
     .k16-image-line {
-      font-size: var(--lab-fs-doc);
-      line-height: 1.75;
+      font-size: calc(1.3rem * var(--lab-fs-scale));
+      line-height: 1.7;
       text-align: justify;
     }
 
     /* Text layer: transparent overlay in normal mode (its only job is to be
        SELECTABLE/SEARCHABLE, matched line-for-line with the image); becomes
        a visible "sheet" once split via Ver camadas. */
+    /* Same font-family + padding as .k16-image-layer, ON PURPOSE: this layer
+       overlays transparently on top of the image in normal (non-split) mode,
+       and marks/underlines are positioned by the browser's own text wrap --
+       if the two layers wrap the same paragraph differently (they did, when
+       this used a mono font against the image's serif), a search <mark> or
+       the OCR-error underline lands over the WRONG part of the visible text
+       below. Switched to mono only once physically split (below), where the
+       sheet is its own separate object and the mismatch no longer matters --
+       and looks right anyway ("just characters", no formatting survived). */
     .k16-text-layer {
-      padding: 1.1rem 1.3rem;
-      font-family: var(--font-mono);
+      padding: 1.2rem 1.4rem 1.1rem;
+      font-family: var(--font-serif);
       color: transparent;
       background: transparent;
       z-index: 2;
       pointer-events: none;
     }
     .k16-text-line {
-      font-size: var(--lab-fs-doc);
-      line-height: 1.8;
+      font-size: calc(1.3rem * var(--lab-fs-scale));
+      line-height: 1.7;
+      text-align: justify;
     }
     .k16-text-line mark {
       background: rgba(var(--focal-rgb), 0.45);
@@ -239,6 +247,7 @@
       -webkit-backdrop-filter: blur(10px) saturate(140%);
       border: 1.5px solid rgba(255, 255, 255, 0.55);
       color: #1c1c1c;
+      font-family: var(--font-mono);
       pointer-events: auto;
     }
     .k16-stage.k16-split .k16-layer-tag { opacity: 1; }
@@ -303,8 +312,9 @@
       .k16-main { gap: 0.45rem; }
       .k16-search-row { padding: 0.4rem 0.55rem; flex-wrap: wrap; }
       .k16-search-status { flex: 1 0 100%; text-align: center; }
-      .k16-image-layer, .k16-text-layer { padding: 0.8rem 0.9rem; }
-      .k16-image-line, .k16-text-line { font-size: var(--lab-fs-body); line-height: 1.65; }
+      .k16-image-layer, .k16-text-layer { padding: 0.65rem 0.8rem; }
+      .k16-image-header { font-size: calc(1.05rem * var(--lab-fs-scale)); margin: 0 0 0.5rem; padding-bottom: 0.4rem; }
+      .k16-image-line, .k16-text-line { font-size: calc(1.05rem * var(--lab-fs-scale)); line-height: 1.4; }
       .k16-stage.k16-split .k16-image-layer { transform: scale(0.78) translate(-16%, -9%) rotate(-2.4deg); }
       .k16-stage.k16-split .k16-text-layer { transform: scale(0.78) translate(16%, 12%) rotate(2.2deg); }
 
@@ -344,8 +354,8 @@
 
   <div class="k16-main">
     <div class="k16-search-row">
-      <input class="k16-search-input" id="k16-search-input" type="text" value="" readonly tabindex="-1" aria-hidden="true">
-      <button class="k16-search-btn" id="k16-search-btn">Pesquisar "citação do réu"</button>
+      <span class="k16-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input class="k16-search-input" id="k16-search-input" type="text" value="" readonly tabindex="-1" placeholder="Buscar no documento">
       <span class="k16-search-status" id="k16-search-status"></span>
     </div>
 
@@ -356,8 +366,8 @@
         <div class="k16-layer k16-image-layer" id="k16-image-layer">
           <span class="k16-layer-tag">Camada de imagem</span>
           <div class="k16-image-header">
-            <p class="k16-image-header-court">Poder Judiciário</p>
-            <p class="k16-image-header-proc">Processo nº 0801234-56.2026.8.05.0080</p>
+            <p class="k16-image-header-court">Polícia Civil &mdash; Delegacia de Polícia</p>
+            <p class="k16-image-header-proc">Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080</p>
           </div>
         </div>
 
@@ -369,8 +379,8 @@
                spot, and for the OCR reveal to track the real text). The
                OCR text itself never gets a header -- that's the point. -->
           <div class="k16-image-header" style="visibility: hidden;">
-            <p class="k16-image-header-court">Poder Judiciário</p>
-            <p class="k16-image-header-proc">Processo nº 0801234-56.2026.8.05.0080</p>
+            <p class="k16-image-header-court">Polícia Civil &mdash; Delegacia de Polícia</p>
+            <p class="k16-image-header-proc">Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080</p>
           </div>
         </div>
       </div>
@@ -382,6 +392,7 @@
     <span class="k16-fs-slot" data-lab-fs-ctl></span>
     <button class="k16-btn" id="k16-split">Ver camadas</button>
     <button class="k16-btn k16-btn-primary" id="k16-ocr">Passar OCR</button>
+    <button class="k16-btn" id="k16-search-btn">Pesquisar</button>
     <button class="k16-btn" id="k16-reset">Reiniciar</button>
   </div>
 
@@ -399,20 +410,24 @@
       if (!root) return;
 
       // ── Document content ─────────────────────────────────
+      // A police-authored record, not a judge's despacho: a petition written
+      // by a lawyer/judge is usually born digital (already searchable), so it
+      // is a poor example of "why this scan isn't searchable". Police reports
+      // are the realistic case -- typically produced on paper and scanned.
       // The image layer shows the TRUE printed text; the OCR'd text layer
       // deliberately misreads one word ("comparecimento" -> "cornparecirnento",
       // the classic rn/m confusion) so the audience sees OCR is fallible.
       const LINES_TRUE = [
-        'Vistos.',
-        'Defiro o pedido de citação do réu para comparecimento em audiência de conciliação.',
-        'Intimem-se as partes na forma da lei.',
-        'Cumpra-se.',
+        'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o comparecimento do investigado.',
+        'Foi dado conhecimento ao investigado sobre a citação do réu para a audiência de instrução e julgamento.',
+        'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.',
+        'Nada mais havendo, lavrou-se o presente termo, que vai assinado.',
       ];
       const LINES_OCR = [
-        'Vistos.',
-        'Defiro o pedido de citação do réu para cornparecirnento em audiência de conciliação.',
-        'Intimem-se as partes na forma da lei.',
-        'Cumpra-se.',
+        'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o cornparecirnento do investigado.',
+        'Foi dado conhecimento ao investigado sobre a citação do réu para a audiência de instrução e julgamento.',
+        'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.',
+        'Nada mais havendo, lavrou-se o presente termo, que vai assinado.',
       ];
       const OCR_ERROR_WORD = 'cornparecirnento';
       const SEARCH_QUERY = 'citação do réu';
