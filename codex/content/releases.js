@@ -601,7 +601,6 @@ function _renderAulaComposer(container, aula) {
   if (!aula) return;
   const aulaNum = aula.aula_number;
 
-  const tarefaItems = _allItems.filter(_isTarefa);
   const driveItems = _allItems.filter(_isDrive);
   const outrosItems = _allItems.filter(_isOutros).filter(_isVisibleLab);
 
@@ -621,16 +620,13 @@ function _renderAulaComposer(container, aula) {
       }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
-  const tarefaGlyph = _countGlyph('tarefa', 15);
-  const tarefaRows = tarefaItems.length
-    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph, _releasedElsewhere(i.id, aulaNum))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
-
-  // R3: lay the item list out por tipo. Apostila + Tarefas keep their own sections;
-  // the former single "Outros" bucket splits into one section per item type.
+  // R3: lay the item list out por tipo. Tarefas are released via the Tarefas
+  // sub-tab now (content/tarefas.js owns create+release / remove+unrelease for
+  // that type), so this composer no longer offers a Tarefas section -- Apostila
+  // keeps its own section, the former single "Outros" bucket splits into one
+  // section per remaining item type.
   const sections = [
     { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
-    { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
   ];
   _groupByType(outrosItems).forEach((g) => {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
@@ -646,7 +642,7 @@ function _renderAulaComposer(container, aula) {
 
   _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
-    _saveAula(container, aulaNum, { tarefaItems, outrosItems, driveItems }));
+    _saveAula(container, aulaNum, { outrosItems, driveItems }));
 }
 
 function _renderOutrosComposer(container) {
@@ -695,7 +691,6 @@ function _saveAula(container, aulaNum, pools) {
   btn.textContent = t('releases.saving');
   const selectedIds = _checkedIds(container);
   const poolIds = _apostilaItems.map((i) => Number(i.id))
-    .concat(pools.tarefaItems.map((i) => Number(i.id)))
     .concat(pools.outrosItems.map((i) => Number(i.id)))
     .concat((pools.driveItems || []).map((i) => Number(i.id)));
   // #23: additive, checking ADDS this aula, unchecking REMOVES it (no longer moves).

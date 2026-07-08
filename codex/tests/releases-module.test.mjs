@@ -82,7 +82,7 @@ test('#23: the composer saves via setAulas (multi) and reads aula_numbers', () =
 test('#22: the apostila pool also carries the "já na aula N" marker', () => {
   // The apostila rows render inline (not via _rowHtml), so the elsewhere marker must
   // be wired into that branch explicitly — pool="apostila" + _releasedElsewhere + note.
-  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('const tarefaGlyph'));
+  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('// R3: lay the item list out por tipo'));
   assert.match(apostilaBlock, /data-pool="apostila"/, 'still the apostila pool');
   assert.match(apostilaBlock, /_releasedElsewhere\(i\.id, aulaNum\)/, 'apostila checks released-elsewhere');
   assert.match(apostilaBlock, /is-already-released/, 'apostila greys out when bound elsewhere');
