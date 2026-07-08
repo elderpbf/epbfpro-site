@@ -88,7 +88,6 @@
       color: var(--text);
       padding: 0.3rem 0;
       outline: none;
-      cursor: default;
     }
     .k16-search-input::placeholder { color: var(--text-dim); }
     .k16-search-status {
@@ -408,7 +407,7 @@
   <div class="k16-main">
     <div class="k16-search-row">
       <span class="k16-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
-      <input class="k16-search-input" id="k16-search-input" type="text" value="" readonly tabindex="-1" placeholder="Buscar no documento">
+      <input class="k16-search-input" id="k16-search-input" type="text" value="" placeholder="Buscar no documento">
       <span class="k16-search-status" id="k16-search-status"></span>
     </div>
 
@@ -503,7 +502,10 @@
           errTitle: 'OCR não reconhece bem letra cursiva, muito menos uma assinatura rebuscada',
         },
       ];
-      const SEARCH_QUERY = 'lidos os direitos';
+      // The button's job is just to fill+run this one canonical query; the
+      // box itself is free-type live search (see runSearch/input listener
+      // below) -- both paths share the same runSearch function.
+      const SEARCH_QUERY = 'investigado';
 
       // ── DOM refs ─────────────────────────────────────────
       const stageEl      = root.querySelector('#k16-stage');
@@ -640,8 +642,9 @@
           ocrRunning = false;
           ocrDone = true;
           stageEl.classList.add('k16-ocr-done');
-          searchStatus.textContent = '';
-          searchStatus.className = 'k16-search-status';
+          // Whatever's already typed in the box (typed while OCR was still
+          // running) gets a fresh run now that there's text to find it in.
+          runSearch(searchInput.value);
         }
 
         function tick(now) {
@@ -668,8 +671,10 @@
         stageEl.classList.toggle('k16-split', split);
       }
 
-      function doSearch() {
-        searchInput.value = SEARCH_QUERY;
+      // Live search: runs on every keystroke in the box AND when "Pesquisar"
+      // fills the box with SEARCH_QUERY -- one function, two triggers.
+      function runSearch(rawQuery) {
+        const q = (rawQuery || '').trim().toLowerCase();
         // Clear previous highlights first.
         textLineEls.forEach((el) => {
           el.querySelectorAll('mark').forEach((m) => {
@@ -677,24 +682,24 @@
           });
           el.normalize();
         });
+        if (!q) {
+          searchStatus.textContent = '';
+          searchStatus.className = 'k16-search-status';
+          return;
+        }
         if (!ocrDone) {
           searchStatus.textContent = '0 resultados';
           searchStatus.className = 'k16-search-status k16-search--empty';
           return;
         }
-        const q = SEARCH_QUERY.toLowerCase();
         let count = 0;
         textLineEls.forEach((el) => {
           const text = el.textContent;
           const lower = text.toLowerCase();
           if (lower.indexOf(q) === -1) return;
-          // Rebuild this line's text with <mark> around each case-insensitive match.
-          let out = '';
-          let rest = text;
-          let restLower = lower;
           let offset = 0;
           let pos;
-          while ((pos = restLower.indexOf(q, offset)) !== -1) {
+          while ((pos = lower.indexOf(q, offset)) !== -1) {
             count++;
             offset = pos + q.length;
           }
@@ -737,7 +742,12 @@
       splitBtn.addEventListener('click', toggleSplit);
       ocrBtn.addEventListener('click', runOcr);
       resetBtn.addEventListener('click', reset);
-      searchBtn.addEventListener('click', doSearch);
+      searchInput.addEventListener('input', () => runSearch(searchInput.value));
+      searchBtn.addEventListener('click', () => {
+        searchInput.value = SEARCH_QUERY;
+        runSearch(SEARCH_QUERY);
+        searchInput.focus();
+      });
 
       // ── Theme sync ───────────────────────────────────────
       window.addEventListener('storage', e => {

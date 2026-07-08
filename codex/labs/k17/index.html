@@ -85,14 +85,52 @@
       margin: 0 0 0.5rem;
       line-height: 1.3;
     }
+    /* Stack every candidate response in the SAME grid cell (grid-area 1/1):
+       an auto-sized grid row/cell takes the max size of everything placed in
+       it, visible or not (visibility:hidden still participates in layout,
+       unlike display:none) -- so the card reserves the tallest candidate's
+       height with zero JS measurement, and stays correct across any width,
+       A-/A+ font-scale, or theme change automatically. Only the active
+       response is visibility:visible; the rest are invisible but still
+       sizing the row. */
+    .k17-phrase-text-stack {
+      display: grid;
+    }
     .k17-phrase-text {
+      grid-area: 1 / 1;
       margin: 0;
       font-size: calc(var(--lab-fs-audience) * 0.82);
       font-weight: 700;
       line-height: 1.3;
       color: var(--text);
+      visibility: hidden;
+    }
+    .k17-phrase-text.k17-phrase-text--active {
+      visibility: visible;
       transition: color 320ms;
     }
+
+    /* Verdict badge: appears after each "Treinar" click, word only, colored
+       by outcome. Fixed min-height so its own empty->populated transition
+       doesn't add another layout jump on top of the one this box already
+       fixes above. */
+    .k17-verdict {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      /* line-height pinned (not "normal") so an empty badge and a populated
+         one compute to the exact same box -- "normal" measures taller than
+         1.4em for this font once there's an actual glyph line, which caused
+         a ~4px jump the first time a verdict appeared. */
+      line-height: 1.4;
+      height: 1.4em;
+      text-align: center;
+    }
+    .k17-verdict--good { color: var(--good); }
+    .k17-verdict--bad { color: var(--bad); }
 
     /* ── Synapse visualization: two neurons + a weighted line ── */
     .k17-viz-wrap {
@@ -190,18 +228,18 @@
       color: var(--text-dim);
     }
     .k17-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
-    .k17-btn-good {
-      border-color: var(--good);
-      background: rgba(34, 197, 94, 0.14);
-      color: var(--good);
+    .k17-btn-primary {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
     }
-    .k17-btn-good:hover { background: rgba(34, 197, 94, 0.24); border-color: var(--good); color: var(--good); }
-    .k17-btn-bad {
-      border-color: var(--bad);
-      background: rgba(var(--bad-rgb), 0.12);
-      color: var(--bad);
+    .k17-btn-primary:hover {
+      background: rgba(var(--focal-rgb), 0.28);
+      border-color: var(--focal);
+      color: var(--focal);
+      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
     }
-    .k17-btn-bad:hover { background: rgba(var(--bad-rgb), 0.22); border-color: var(--bad); color: var(--bad); }
     .k17-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .k17-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
 
@@ -253,7 +291,8 @@
   <div class="k17-main">
     <div class="k17-phrase-card" id="k17-phrase-card">
       <p class="k17-phrase-label">Cliente pergunta: "Fui demitido sem justa causa, tenho direito a alguma coisa?"</p>
-      <p class="k17-phrase-text" id="k17-phrase-text"></p>
+      <p class="k17-verdict" id="k17-verdict"></p>
+      <div class="k17-phrase-text-stack" id="k17-phrase-text-stack"></div>
     </div>
 
     <div class="k17-viz-wrap">
@@ -273,8 +312,7 @@
   <div class="k17-button-bar">
     <span data-lab-info-ctl></span>
     <span class="k17-fs-slot" data-lab-fs-ctl></span>
-    <button class="k17-btn k17-btn-good" id="k17-better">Melhor</button>
-    <button class="k17-btn k17-btn-bad" id="k17-worse">Pior</button>
+    <button class="k17-btn k17-btn-primary" id="k17-train">Treinar</button>
     <button class="k17-btn" id="k17-reset">Reiniciar</button>
   </div>
 
@@ -282,8 +320,8 @@
        "Entenda" button (lab-info.js). -->
   <template data-lab-info data-lab-info-title="Preferência humana e pós-treino">
     <p>Depois do treinamento inicial (aprender a prever texto), existe uma etapa de <strong>pós-treino</strong> que ensina o modelo a se comportar como um assistente: ser útil, claro e educado. Essa etapa usa <strong>preferência humana</strong>, não repetição de um texto certo: para a mesma pergunta, humanos comparam respostas diferentes e dizem qual preferem.</p>
-    <p>Cada vez que uma resposta é marcada como <strong>"Melhor"</strong>, o peso que leva o modelo a produzir respostas daquele estilo fica mais forte; cada <strong>"Pior"</strong> o enfraquece. Não existe uma resposta "correta" fixa como no laboratório Sinapse, aqui o peso segue o gosto de quem está avaliando.</p>
-    <p>É bem diferente do sobreajuste por repetição: lá, ver o MESMO texto várias vezes faz o modelo decorá-lo. Aqui, comparar respostas DIFERENTES ensina um estilo geral (ser claro, completo, educado), não uma frase específica.</p>
+    <p>Cada clique em <strong>"Treinar"</strong> simula uma rodada de avaliação: uma resposta candidata aparece, é julgada como <strong>"Melhor"</strong> (reforça o peso) ou <strong>"Pior"</strong> (enfraquece), e o peso se ajusta. Não existe uma resposta "correta" fixa como no laboratório Sinapse, aqui o peso segue o padrão de qualidade das respostas comparadas.</p>
+    <p>Um treinamento por preferência bem calibrado não dispara para um extremo: ele converge para um ponto de equilíbrio e se estabiliza ali (aqui, entre 40% e 60%). É o contraste com o sobreajuste do Sinapse: lá, repetir o MESMO texto faz o peso estourar para 100%; aqui, comparar respostas DIFERENTES ensina um estilo geral que se mantém estável.</p>
   </template>
 
   <script>
@@ -291,52 +329,69 @@
       const root = document.querySelector('.k17-panel');
       if (!root) return;
 
-      // ── Content: candidate responses to the SAME fixed question, varying
-      // in quality. There is no "correct" answer being tracked -- whichever
-      // gets marked "Melhor" is what the weight follows, purely a human call.
-      //
-      // Deliberately NOT alternating good/bad one-by-one: rating that pattern
-      // honestly (Melhor, Pior, Melhor, Pior...) cancels out to a permanent
-      // 0%, which looked like the demo was broken. Grouped instead as 3 good
-      // + 1 weak, repeated -- 9 good / 3 weak across all 12. Training here
-      // is meant to look REASONABLE, not a runaway sobreajuste like k15: a
-      // full honest pass nets +9-3 = 6 steps of 12 (PREF_CAP below), landing
-      // right at 50% instead of pinning at an extreme.
-      const RESPONSES = [
+      // ── Content: candidate responses to the SAME fixed question, split by
+      // quality. GOOD is what a "Melhor" verdict shows, WEAK is what "Pior"
+      // shows -- the label always matches the text on screen (never a green
+      // "Melhor" over a bad answer), because the training step picks the
+      // response FROM the pool that matches the direction it already decided
+      // (see trainStep below), not the other way around.
+      const GOOD_RESPONSES = [
         'Sim: você tem direito a aviso prévio, 13º e férias proporcionais, multa de 40% do FGTS, além do seguro-desemprego se atendidos os requisitos.',
         'Sim, e recomendo reunir a carteira assinada e os holerites para conferir as verbas rescisórias com um advogado.',
         'Você tem direito às verbas rescisórias: aviso prévio, saldo de salário, 13º e férias proporcionais, além da multa de 40% sobre o FGTS.',
-        'Ah, depende, cada caso é um caso, melhor perguntar pra outra pessoa.',
         'Correto, a dispensa sem justa causa garante o saque do FGTS com a multa de 40% e, se você atender aos requisitos, o seguro-desemprego.',
         'Sim. Vale conferir se a empresa pagou corretamente o aviso prévio e depositou a multa rescisória do FGTS.',
         'Tem sim: além das verbas rescisórias, você pode ter direito ao seguro-desemprego, dependendo do seu histórico de contribuições.',
-        'Não tenho certeza não, isso aí é bem complicado.',
         'Sim, você tem direito a receber as verbas da rescisão; recomendo levar os documentos a um advogado para conferir os valores.',
         'Correto, é seu direito receber o aviso prévio, 13º e férias proporcionais, e sacar o FGTS com a multa de 40%.',
         'Sim, tem direito às verbas rescisórias e, dependendo do caso, ao seguro-desemprego; vale revisar o termo de rescisão com atenção.',
+      ];
+      const WEAK_RESPONSES = [
+        'Ah, depende, cada caso é um caso, melhor perguntar pra outra pessoa.',
+        'Não tenho certeza não, isso aí é bem complicado.',
         'Não sei te dizer, isso não é bem comigo não.',
       ];
+      const RESPONSES = GOOD_RESPONSES.concat(WEAK_RESPONSES);
+      // Index pools into RESPONSES (built once, not per click): GOOD_RESPONSES
+      // occupies [0, GOOD_RESPONSES.length), WEAK_RESPONSES fills the rest.
+      const GOOD_IDX = GOOD_RESPONSES.map((_, i) => i);
+      const WEAK_IDX = WEAK_RESPONSES.map((_, i) => GOOD_RESPONSES.length + i);
 
       // ── Constants ────────────────────────────────────────
-      const PREF_STEP = 1;
-      const PREF_CAP  = RESPONSES.length; // one honest pass through ALL responses = the intended +6/12 = 50%
+      const PREF_STEP = 1 / 12;   // same resolution as the old two-button version
+      const BAND_LOW  = 0.4;
+      const BAND_HIGH = 0.6;
 
       // ── State ────────────────────────────────────────────
-      let pref = 0;    // 0..1, drives line thickness + meter (no "correct" target)
-      let respIdx = 0;
+      let pref = 0;           // 0..1, drives line thickness + meter
+      let bandLocked = false; // true once pref first lands inside [BAND_LOW, BAND_HIGH] -- from then on every step is forced to stay inside it
+      let activeIdx = 0;      // index into RESPONSES currently shown
+      let lastIdx = -1;       // avoids showing the exact same response twice in a row
+      let verdict = null;     // 'good' | 'bad' | null (null = no click yet)
 
       // ── DOM refs ─────────────────────────────────────────
-      const vizEl        = root.querySelector('#k17-viz');
-      const phraseTextEl = root.querySelector('#k17-phrase-text');
-      const meterRowEl   = root.querySelector('#k17-meter-row');
-      const meterFillEl  = root.querySelector('#k17-meter-fill');
-      const meterValueEl = root.querySelector('#k17-meter-value');
-      const statusEl     = root.querySelector('#k17-status');
-      const betterBtn    = root.querySelector('#k17-better');
-      const worseBtn     = root.querySelector('#k17-worse');
-      const resetBtn     = root.querySelector('#k17-reset');
+      const vizEl         = root.querySelector('#k17-viz');
+      const verdictEl      = root.querySelector('#k17-verdict');
+      const phraseStackEl = root.querySelector('#k17-phrase-text-stack');
+      const meterRowEl    = root.querySelector('#k17-meter-row');
+      const meterFillEl   = root.querySelector('#k17-meter-fill');
+      const meterValueEl  = root.querySelector('#k17-meter-value');
+      const statusEl      = root.querySelector('#k17-status');
+      const trainBtn      = root.querySelector('#k17-train');
+      const resetBtn      = root.querySelector('#k17-reset');
 
       function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+      // Every candidate response is rendered once, stacked in the same grid
+      // cell (see .k17-phrase-text-stack CSS) -- only one is ever visible,
+      // but all 12 sizing the row is what keeps the card from jumping.
+      const phraseEls = RESPONSES.map((text, i) => {
+        const p = document.createElement('p');
+        p.className = 'k17-phrase-text';
+        p.textContent = text;
+        phraseStackEl.appendChild(p);
+        return p;
+      });
 
       // ── Synapse SVG (two neurons + a line whose width/glow encode weight) ──
       const SVG_NS = 'http://www.w3.org/2000/svg';
@@ -441,22 +496,31 @@
       });
       ro.observe(vizEl);
 
-      // ── Render (meter, status, current candidate response) ────
+      // ── Render (meter, status, active candidate response, verdict badge) ──
       function render() {
         renderViz();
         meterFillEl.style.width = (pref * 100).toFixed(0) + '%';
         meterValueEl.textContent = Math.round(pref * 100) + '%';
-        const aligned = pref >= 1;
-        const misaligned = pref <= 0;
-        meterRowEl.classList.toggle('k17-meter--full', aligned);
-        phraseTextEl.textContent = RESPONSES[respIdx];
+        meterRowEl.classList.toggle('k17-meter--full', bandLocked);
 
-        if (aligned) {
-          statusEl.textContent = 'Alinhado: o peso passou a favorecer respostas como as marcadas "Melhor".';
+        phraseEls.forEach((el, i) => {
+          el.classList.toggle('k17-phrase-text--active', i === activeIdx);
+        });
+
+        if (verdict === 'good') {
+          verdictEl.textContent = 'Melhor';
+          verdictEl.className = 'k17-verdict k17-verdict--good';
+        } else if (verdict === 'bad') {
+          verdictEl.textContent = 'Pior';
+          verdictEl.className = 'k17-verdict k17-verdict--bad';
+        } else {
+          verdictEl.textContent = '';
+          verdictEl.className = 'k17-verdict';
+        }
+
+        if (bandLocked) {
+          statusEl.textContent = 'Convergiu: o peso estabilizou entre 40% e 60%, sem disparar para um extremo.';
           statusEl.className = 'k17-status k17-status--aligned';
-        } else if (misaligned) {
-          statusEl.textContent = 'Peso zerado: nenhuma preferência reforçada ainda.';
-          statusEl.className = 'k17-status k17-status--misaligned';
         } else {
           statusEl.textContent = '';
           statusEl.className = 'k17-status';
@@ -464,27 +528,50 @@
       }
 
       // ── Handlers ─────────────────────────────────────────
-      function nextResponse() {
-        respIdx = (respIdx + 1) % RESPONSES.length;
+      // Picks a random response from `pool`, avoiding an immediate repeat of
+      // the response just shown (so consecutive same-direction clicks don't
+      // look frozen).
+      function pickResponse(pool) {
+        if (pool.length === 1) return pool[0];
+        let idx;
+        do { idx = pool[Math.floor(Math.random() * pool.length)]; }
+        while (idx === lastIdx);
+        return idx;
       }
-      function better() {
-        pref = clamp01(pref + PREF_STEP / PREF_CAP);
-        nextResponse();
-        render();
-      }
-      function worse() {
-        pref = clamp01(pref - PREF_STEP / PREF_CAP);
-        nextResponse();
-        render();
-      }
-      function reset() {
-        pref = 0;
-        respIdx = 0;
+
+      // One button, smart direction: random good/bad UNTIL the weight first
+      // lands inside [40%,60%] -- from that point on, forced to stay inside
+      // the band forever (a random pick that would breach it gets flipped).
+      // The response shown always matches the verdict (good pool for a
+      // "Melhor" step, weak pool for "Pior"), so the label never contradicts
+      // the text on screen.
+      function train() {
+        let goUp = Math.random() < 0.5;
+        if (bandLocked) {
+          const nextUp = clamp01(pref + PREF_STEP);
+          const nextDown = clamp01(pref - PREF_STEP);
+          if (goUp && nextUp > BAND_HIGH) goUp = false;
+          else if (!goUp && nextDown < BAND_LOW) goUp = true;
+        }
+        pref = clamp01(pref + (goUp ? PREF_STEP : -PREF_STEP));
+        if (!bandLocked && pref >= BAND_LOW && pref <= BAND_HIGH) bandLocked = true;
+
+        activeIdx = pickResponse(goUp ? GOOD_IDX : WEAK_IDX);
+        lastIdx = activeIdx;
+        verdict = goUp ? 'good' : 'bad';
         render();
       }
 
-      betterBtn.addEventListener('click', better);
-      worseBtn.addEventListener('click', worse);
+      function reset() {
+        pref = 0;
+        bandLocked = false;
+        activeIdx = 0;
+        lastIdx = -1;
+        verdict = null;
+        render();
+      }
+
+      trainBtn.addEventListener('click', train);
       resetBtn.addEventListener('click', reset);
 
       // ── Theme sync ───────────────────────────────────────
