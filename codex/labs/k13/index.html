@@ -6,8 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Três velocidades · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script src="../js/lab-tabs.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -22,6 +25,8 @@
 <body class="lab-page">
 <section class="k13-panel">
   <style>
+    .k13-panel, .k13-panel * { box-sizing: border-box; }
+
     .k13-panel {
       --bg: var(--lab-bg);
       --text: var(--lab-text);
@@ -44,33 +49,17 @@
 
       position: relative;
       width: 100%;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto auto minmax(0, 1fr);
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 0.6rem;
-      padding: 1rem 2rem 0.9rem;
-      box-sizing: border-box;
+      padding: 1rem 2rem 0.7rem;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
     }
     [data-theme="dark"] .k13-panel { --gold: #facc15; }
-
-    .k13-caption {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--cool);
-      border-radius: 10px;
-      padding: 0.55rem 1rem;
-    }
-    .k13-caption p {
-      margin: 0;
-      font-size: clamp(16px, 1.35vw, 22px);
-      line-height: 1.42;
-      font-style: italic;
-    }
-    .k13-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
 
     /* Scenario selector + question on one band */
     .k13-controls {
@@ -78,6 +67,7 @@
       grid-template-columns: auto minmax(0, 1fr);
       align-items: stretch;
       gap: 0.7rem;
+      min-height: 0;
     }
     .k13-scenarios {
       display: flex;
@@ -87,7 +77,7 @@
     }
     .k13-sc-label {
       font-family: var(--font-mono);
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       letter-spacing: 0.06em;
       text-transform: uppercase;
@@ -96,7 +86,7 @@
     .k13-sc-row { display: flex; gap: 0.4rem; flex-wrap: wrap; }
     .k13-sc-btn {
       font-family: var(--font-display);
-      font-size: clamp(14px, 1.1vw, 18px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.45rem 1rem;
       border-radius: 999px;
@@ -123,7 +113,7 @@
       min-width: 0;
     }
     .k13-q-inner {
-      font-size: clamp(16px, 1.45vw, 23px);
+      font-size: var(--lab-fs-body);
       line-height: 1.35;
       color: var(--text);
     }
@@ -136,7 +126,8 @@
     }
     .k13-q .qt { font-style: italic; }
 
-    /* Three lanes */
+    /* Three lanes -- data-lab-tabs turns this into one-panel-at-a-time on
+       phone (lab-tabs.js); desktop keeps the 3-col grid untouched. */
     .k13-cols {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -162,7 +153,7 @@
     [data-theme="dark"] .k13-col.is-fit { box-shadow: 0 0 18px rgba(250,204,21,0.24); }
     .k13-col-name {
       margin: 0;
-      font-size: clamp(20px, 1.9vw, 32px);
+      font-size: var(--lab-fs-audience);
       font-weight: 800;
       letter-spacing: 0.03em;
       line-height: 1.05;
@@ -171,7 +162,7 @@
     .k13-col--rac  .k13-col-name { color: var(--cool); }
     .k13-col--ag   .k13-col-name { color: var(--warm); }
     .k13-col-sub {
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       font-style: italic;
       margin-top: -0.2rem;
@@ -183,17 +174,17 @@
       padding: 0.45rem 0.65rem;
     }
     .k13-plan-label {
-      font-size: clamp(11px, 0.82vw, 13px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--cool);
       font-weight: 700;
     }
-    .k13-plan ol { margin: 0.25rem 0 0 0; padding-left: 1.2rem; font-size: clamp(13px, 1.0vw, 16px); line-height: 1.4; }
+    .k13-plan ol { margin: 0.25rem 0 0 0; padding-left: 1.2rem; font-size: var(--lab-fs-ui); line-height: 1.4; }
     .k13-plan li { margin: 0.12rem 0; }
     .k13-tools { display: flex; flex-wrap: wrap; gap: 0.3rem; align-items: center; }
     .k13-tools-label {
-      font-size: clamp(11px, 0.82vw, 13px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--warm);
@@ -202,7 +193,7 @@
     }
     .k13-tool {
       font-family: var(--font-mono);
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       background: rgba(var(--warm-rgb), 0.12);
       border: 1px solid rgba(var(--warm-rgb), 0.34);
       color: var(--warm);
@@ -210,7 +201,7 @@
       border-radius: 6px;
     }
     .k13-response {
-      font-size: clamp(15px, 1.3vw, 22px);
+      font-size: var(--lab-fs-answer);
       line-height: 1.5;
       color: var(--text);
       flex: 1;
@@ -222,7 +213,7 @@
     .k13-chip {
       align-self: flex-start;
       font-family: var(--font-mono);
-      font-size: clamp(12px, 1.0vw, 16px);
+      font-size: var(--lab-fs-ui);
       padding: 0.22rem 0.7rem;
       border-radius: 999px;
       letter-spacing: 0.04em;
@@ -232,43 +223,46 @@
     .k13-chip.over  { background: rgba(var(--warm-rgb), 0.16); color: var(--warm); border: 1px solid var(--warm); }
     .k13-chip.under { background: rgba(var(--bad-rgb), 0.16); color: var(--bad); border: 1px solid var(--bad); }
 
+    /* ── Operator bar ─────────────────────────────────────── */
+    .k13-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k13-fs-slot { margin-right: auto; }
+
     /* Responsive */
     @media (max-width: 700px) {
-      .k13-panel { padding: 0.6rem 0.9rem 0.7rem; gap: 0.5rem; grid-template-rows: auto auto auto minmax(0,1fr); }
-      .k13-caption p { font-size: 14px; line-height: 1.35; }
-      .k13-caption { padding: 0.4rem 0.75rem; }
+      .k13-panel { padding: 0.6rem 0.9rem 0.55rem; gap: 0.5rem; }
       .k13-controls { grid-template-columns: 1fr; gap: 0.5rem; }
       .k13-q { padding: 0.55rem 0.85rem; }
-      .k13-q-inner { font-size: 15.5px; }
-      .k13-cols { grid-template-columns: 1fr; gap: 0.5rem; overflow-y: auto; }
       .k13-col { padding: 0.65rem 0.75rem; }
-      .k13-col-name { font-size: 20px; }
-      .k13-response { font-size: 15.5px; }
-      .k13-sc-btn { font-size: 14px; padding: 0.55rem 0.8rem; min-height: 44px; flex: 1 1 calc(33% - 0.3rem); text-align: center; }
-    }
-    @media (max-width: 400px) {
-      .k13-col-name { font-size: 19px; }
-      .k13-response { font-size: 15px; }
-      .k13-q-inner { font-size: 15px; }
+      .k13-sc-btn { padding: 0.6rem 0.5rem; min-height: 44px; flex: 1 1 calc(33% - 0.3rem); text-align: center; }
+
+      .k13-button-bar { gap: 0.4rem; padding: 0; }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar. */
+      .k13-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k13-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
     @media (max-height: 500px) and (orientation: landscape) {
-      .k13-panel { padding: 0.4rem 1rem 0.4rem; gap: 0.4rem; }
-      .k13-caption p { font-size: 13px; line-height: 1.3; }
-      .k13-caption { padding: 0.3rem 0.65rem; }
-      .k13-q-inner { font-size: 15px; }
-      .k13-col-name { font-size: 19px; }
-      .k13-response { font-size: 14.5px; }
-      .k13-sc-btn { font-size: 13px; padding: 0.4rem 0.8rem; }
+      .k13-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
     }
   </style>
 
   <div class="lab-header"
        data-lab-title="Três velocidades"
        data-lab-subtitle="Não é corrida de tempo, é qual formato cabe na pergunta"></div>
-
-  <div class="k13-caption">
-    <p>A <b>mesma pergunta</b> entra nas três. O tradicional responde do que sabe. O raciocínio planeja antes. O agêntico planeja <b>e usa ferramentas</b>. Troque o tipo de pergunta e veja qual formato <b>cabe</b>, não qual é mais rápido.</p>
-  </div>
 
   <div class="k13-controls">
     <div class="k13-scenarios">
@@ -284,21 +278,21 @@
     </div>
   </div>
 
-  <div class="k13-cols">
-    <div class="k13-col k13-col--trad" data-lane="trad">
+  <div class="k13-cols" data-lab-tabs data-lab-tab-default="Tradicional">
+    <div class="k13-col k13-col--trad" data-lane="trad" data-lab-tab="Tradicional">
       <h3 class="k13-col-name">TRADICIONAL</h3>
       <div class="k13-col-sub">responde do que sabe, pode pular etapas</div>
       <div class="k13-response" id="k13-trad"></div>
       <span class="k13-chip" id="k13-trad-chip"></span>
     </div>
-    <div class="k13-col k13-col--rac" data-lane="rac">
+    <div class="k13-col k13-col--rac" data-lane="rac" data-lab-tab="Raciocínio">
       <h3 class="k13-col-name">RACIOCÍNIO</h3>
       <div class="k13-col-sub">planeja antes, sem acesso externo</div>
       <div class="k13-plan" id="k13-rac-plan" style="display:none;"></div>
       <div class="k13-response" id="k13-rac"></div>
       <span class="k13-chip" id="k13-rac-chip"></span>
     </div>
-    <div class="k13-col k13-col--ag" data-lane="ag">
+    <div class="k13-col k13-col--ag" data-lane="ag" data-lab-tab="Agêntico">
       <h3 class="k13-col-name">AGÊNTICO</h3>
       <div class="k13-col-sub">planeja e usa ferramentas: arquivos, web</div>
       <div class="k13-plan" id="k13-ag-plan" style="display:none;"></div>
@@ -307,6 +301,19 @@
       <span class="k13-chip" id="k13-ag-chip"></span>
     </div>
   </div>
+
+  <div class="k13-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k13-fs-slot" data-lab-fs-ctl></span>
+  </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Três velocidades: tradicional, raciocínio e agêntico">
+    <p>Nem todo modelo de IA responde do mesmo jeito. O modo <strong>tradicional</strong> responde direto do que já sabe, sem parar para planejar. O modo <strong>raciocínio</strong> monta um plano antes de responder, mas não sai do próprio conhecimento. O modo <strong>agêntico</strong> planeja E usa ferramentas externas (arquivos, buscas, scripts) para executar o plano.</p>
+    <p>A pergunta "qual é o melhor" não faz sentido sozinha: o que importa é qual formato <strong>cabe</strong> no tipo de pergunta. Uma pergunta factual seca não precisa de plano nem de ferramenta, e usar raciocínio ou agente ali é exagero. Uma conta com várias etapas (como somar prazos e suspensões) pede raciocínio. Uma pergunta que exige ler arquivos anexados só o agêntico consegue responder sem inventar.</p>
+    <p>Troque o tipo de pergunta acima e compare as três respostas lado a lado: o chip embaixo de cada uma mostra se aquele formato "cabe", "é exagero" ou "fica curto" para aquela pergunta específica.</p>
+  </template>
 
   <script>
     (function() {
