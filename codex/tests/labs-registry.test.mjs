@@ -42,11 +42,11 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   assert.equal(byKey.k1.summary, 'Contexto reescreve significado');
   assert.equal(byKey.k10.title, 'Cápsula do GPT');
   assert.equal(byKey.k13.summary, 'Tradicional, raciocínio e agêntico são formatos diferentes');
-  assert.equal(byKey.k15.title, 'Sinapse');
+  assert.equal(byKey.k15.title, 'Sobreajuste');
   assert.equal(byKey.k15.summary, 'Repetição fortalece o peso, até virar decoreba');
-  assert.equal(byKey.k16.title, 'PDF: imagem ou texto?');
+  assert.equal(byKey.k16.title, 'PDF e OCR');
   assert.equal(byKey.k16.summary, 'Duas camadas de um PDF, e o que o OCR faz entre elas');
-  assert.equal(byKey.k17.title, 'Preferência');
+  assert.equal(byKey.k17.title, 'Treinamento');
   assert.equal(byKey.k17.summary, 'Humano prefere uma resposta a outra; a preferida reforça o peso');
 });
 

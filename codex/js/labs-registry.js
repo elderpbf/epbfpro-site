@@ -72,19 +72,19 @@ export const LABS = [
   },
   {
     key: 'k15',
-    title: 'Sinapse',
+    title: 'Sobreajuste',
     summary: 'Repetição fortalece o peso, até virar decoreba',
     emoji: '🧠'
   },
   {
     key: 'k16',
-    title: 'PDF: imagem ou texto?',
+    title: 'PDF e OCR',
     summary: 'Duas camadas de um PDF, e o que o OCR faz entre elas',
     emoji: '📄'
   },
   {
     key: 'k17',
-    title: 'Preferência',
+    title: 'Treinamento',
     summary: 'Humano prefere uma resposta a outra; a preferida reforça o peso',
     emoji: '👍'
   }

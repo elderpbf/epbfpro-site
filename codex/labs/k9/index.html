@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Petição envenenada · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.4">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-info.js?v=1.0" defer></script>
@@ -439,7 +439,7 @@
     <div class="k9-actions">
       <span data-lab-fs-ctl></span>
       <button class="lab-btn lab-btn--primary" id="k9-ask" type="button">Pedir análise</button>
-      <button class="lab-btn" id="k9-clean" type="button">Higienizar e reanalisar</button>
+      <button class="lab-btn" id="k9-clean" type="button" disabled>Higienizar e reanalisar</button>
       <button class="lab-btn" id="k9-reset" type="button">Reiniciar</button>
     </div>
   </div>
@@ -462,12 +462,37 @@
 
       // ── DOM refs ────────────────────────────────────────
       const panel   = document.querySelector('.k9-panel');
+      const mainEl  = document.querySelector('.k9-main');
       const askBtn  = document.getElementById('k9-ask');
       const cleanBtn = document.getElementById('k9-clean');
       const resetBtn = document.getElementById('k9-reset');
       const modeBtns = document.querySelectorAll('.k9-mode-btn');
       const verdict = document.getElementById('k9-verdict');
       const body    = document.getElementById('k9-body');
+
+      // On phone, "Documento" and "Análise" are one-panel-at-a-time tabs
+      // (lab-tabs.js). Clicking an action button whose RESULT lives on the
+      // other tab used to leave the operator staring at an unchanged screen,
+      // having to guess they must switch tabs by hand -- exactly the "many
+      // clicks, back and forth" friction reported from phone testing. Auto-
+      // flip to "Análise" the moment there's something new to see there.
+      // Guarded by lab-tabs-active (only added by lab-tabs.js at <=700px) so
+      // this never touches the desktop 2-col layout, where both panels are
+      // already visible and .show() would wrongly hide one of them.
+      function focusAnalise() {
+        if (mainEl.classList.contains('lab-tabs-active') && window.LabTabs) {
+          window.LabTabs.show(mainEl, 'Análise');
+        }
+      }
+      // Mirror for the document side: the hidden payloads live in the petição,
+      // so toggling "Olhos do modelo" while parked on the Análise tab would
+      // otherwise reveal red-on-yellow text the operator can't see. Flip back
+      // to Documento so the reveal is actually on screen.
+      function focusDocumento() {
+        if (mainEl.classList.contains('lab-tabs-active') && window.LabTabs) {
+          window.LabTabs.show(mainEl, 'Documento');
+        }
+      }
 
       // ── Analysis copy ───────────────────────────────────
       // The poisoned analysis is deliberately *competent-looking* — it produces
@@ -521,6 +546,9 @@
             b.setAttribute('aria-checked', String(active));
           });
           panel.classList.toggle('k9-view-modelo', mode === 'modelo');
+          // The payloads are in the petição -- show it so the reveal lands
+          // on screen instead of behind the Análise tab (phone only).
+          focusDocumento();
         });
       });
 
@@ -558,9 +586,11 @@
         // First click runs the poisoned analysis. If the user has already
         // higienizado, "Pedir análise" re-shows the clean analysis alone
         // (so the operator can return to it without resetting).
-        if (hasClean) { showClean(); return; }
+        if (hasClean) { showClean(); focusAnalise(); return; }
         hasAsked = true;
+        cleanBtn.disabled = false;
         showPoisoned();
+        focusAnalise();
       });
 
       cleanBtn.addEventListener('click', () => {
@@ -571,11 +601,13 @@
           el.style.display = 'none';
         });
         showClean();
+        focusAnalise();
       });
 
       resetBtn.addEventListener('click', () => {
         hasAsked = false;
         hasClean = false;
+        cleanBtn.disabled = true;
         document.querySelectorAll('.k9-payload').forEach(el => {
           el.style.display = '';
         });

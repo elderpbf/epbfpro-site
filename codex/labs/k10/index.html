@@ -6,11 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Cápsula do GPT · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.4">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-info.js?v=1.0" defer></script>
-<script src="../js/lab-tabs.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -329,19 +328,39 @@
     /* Responsive */
     @media (max-width: 700px) {
       .k10-panel { padding: 0.5rem 0.9rem 0.5rem; gap: 0.4rem; }
-      /* The Projeto side (title + badge + a 4-chip pinned banner) is taller
-         than the Chat avulso side (title + badge + one placeholder line).
-         Rather than precisely budget each sub-row for both, let the whole
-         side scroll as one block on phone -- only .k10-convos had its own
-         internal scroll before, which left the head+pinned rows free to
-         overflow the tab panel's fixed height into the totals row below. */
-      .k10-side { display: block; overflow-y: auto; padding: 0.55rem 0.7rem; gap: 0.3rem; }
+      /* The lesson IS the contrast between the two sides, so hiding one
+         behind a tab (the old data-lab-tabs split) forced the operator to
+         toggle back and forth after every "Próximo caso" click just to see
+         both sides react -- the reported friction. Keep the two columns
+         SIDE BY SIDE even on phone (narrower), so avulso-vs-projeto stays a
+         direct visual comparison, and let the whole .k10-main scroll as one
+         block instead of each column scrolling on its own (the old
+         nested-scroll split). A single click updates both columns at once
+         and the always-visible totals below quantify the gap. */
+      .k10-main {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        overflow-y: auto;
+        align-items: start;
+      }
+      .k10-side {
+        display: flex;
+        flex-direction: column;
+        overflow-y: visible;
+        padding: 0.5rem 0.55rem;
+      }
       .k10-convos { overflow-y: visible; }
-      /* Title+badge share of a row squeezes the longer "Projeto ..." title
-         into 2-3 lines at phone width. Stack instead of sharing the row. */
-      .k10-side-head { flex-direction: column; align-items: flex-start; gap: 0.3rem; }
-      .k10-pinned, .k10-no-pinned { margin-top: 0.4rem; }
-      .k10-convos { margin-top: 0.4rem; }
+      /* Title+badge stack (narrow columns can't fit them on one row). */
+      .k10-side-head { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+      .k10-side-title { font-size: var(--lab-fs-body); }
+      /* The status badge is nowrap for the desktop pill; in a narrow phone
+         column that clips it ("RECOLA O SETUP A CA…"). Let it wrap. */
+      .k10-side-badge { white-space: normal; }
+      .k10-pinned, .k10-no-pinned { margin-top: 0.3rem; }
+      .k10-convos { margin-top: 0.3rem; }
+      /* Chips wrap within the narrow column; keep them compact. */
+      .k10-chip { font-size: var(--lab-fs-ui); padding: 0.15rem 0.45rem; }
+      .k10-pinned-chips { gap: 0.25rem; }
       /* Totals is a secondary summary, not the main interactive stage --
          compress hard on phone: 2-up grid (was 1-col stack of 3, the
          tallest single contributor to a page that must fit 100dvh) and the
@@ -383,9 +402,9 @@
        data-lab-title="Cápsula do GPT"
        data-lab-subtitle="Um projeto guarda o setup de um tipo de peça e serve a todos os casos"></div>
 
-  <div class="k10-main" data-lab-tabs data-lab-tab-default="Chat avulso">
+  <div class="k10-main">
     <!-- LEFT: chat avulso, re-pastes the whole setup for every new case -->
-    <div class="k10-side k10-side--vanilla" data-lab-tab="Chat avulso">
+    <div class="k10-side k10-side--vanilla">
       <div class="k10-side-head">
         <h2 class="k10-side-title">Chat avulso</h2>
         <span class="k10-side-badge">recola o setup a cada caso</span>
@@ -395,7 +414,7 @@
     </div>
 
     <!-- RIGHT: projeto por tipo de peça, setup pinned once, rides every case -->
-    <div class="k10-side k10-side--gpt" data-lab-tab="Projeto">
+    <div class="k10-side k10-side--gpt">
       <div class="k10-side-head">
         <h2 class="k10-side-title">Projeto "Contestação cível"</h2>
         <span class="k10-side-badge" style="color: var(--cool); border-color: var(--cool);">setup pinado uma vez</span>
@@ -563,8 +582,14 @@
         attachV += SETUP.length;
         turnIdx += 1;
         refreshTotals();
+        // Desktop: each .k10-convos scrolls internally -> jump to the newest.
+        // Mobile: .k10-convos overflow is visible (the whole .k10-main
+        // scrolls), so these are no-ops there; scroll the fresh case into the
+        // .k10-main viewport instead so the new row is always on screen.
         convosV.scrollTop = convosV.scrollHeight;
         convosP.scrollTop = convosP.scrollHeight;
+        const freshV = convosV.querySelector('.k10-convo[data-i="' + i + '"]');
+        if (freshV && freshV.scrollIntoView) freshV.scrollIntoView({ block: 'nearest' });
         if (turnIdx >= CASES.length) nextBtn.setAttribute('disabled', 'true');
       }
 
