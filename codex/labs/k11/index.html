@@ -6,8 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Confiança vs Fundamento · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<link rel="stylesheet" href="../css/labs.css?v=1.4">
 <script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script src="../js/lab-tabs.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -22,6 +25,8 @@
 <body class="lab-page">
 <section class="k11-panel">
   <style>
+    .k11-panel, .k11-panel * { box-sizing: border-box; }
+
     .k11-panel {
       --bg: var(--lab-bg);
       --text: var(--lab-text);
@@ -43,33 +48,20 @@
 
       position: relative;
       width: 100%;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
-      box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
     }
 
-    .k11-caption {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--cool);
-      border-radius: 10px;
-      padding: 0.6rem 1rem;
-    }
-    .k11-caption p {
-      margin: 0;
-      font-size: clamp(16px, 1.35vw, 22px);
-      line-height: 1.45;
-      font-style: italic;
-    }
-    .k11-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
-
+    /* Two panels: source petição / pills+answer. data-lab-tabs turns this
+       into one-panel-at-a-time on phone (lab-tabs.js); desktop keeps the
+       2-col grid untouched. */
     .k11-main {
       display: grid;
       grid-template-columns: minmax(0, 1.05fr) minmax(0, 1fr);
@@ -90,7 +82,7 @@
       min-height: 0;
     }
     .k11-source-head {
-      font-size: clamp(12px, 0.9vw, 15px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       color: #8a6a2a;
@@ -98,7 +90,7 @@
       font-family: var(--font-mono);
     }
     .k11-source-hint {
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       color: #7a7568;
       font-style: italic;
       margin: 0.1rem 0 0.6rem 0;
@@ -106,7 +98,7 @@
     .k11-source p {
       margin: 0.4rem 0;
       font-family: Georgia, "Times New Roman", serif;
-      font-size: clamp(16px, 1.45vw, 23px);
+      font-size: var(--lab-fs-doc);
       line-height: 1.5;
       text-align: justify;
     }
@@ -135,6 +127,8 @@
       display: flex;
       flex-direction: column;
       gap: 0.4rem;
+      overflow-y: auto;
+      min-height: 0;
     }
     .k11-pill {
       display: flex;
@@ -150,17 +144,18 @@
       text-align: left;
       font-family: var(--font-display);
       color: var(--text);
+      flex: 0 0 auto;
     }
     .k11-pill:hover { border-color: var(--cool); transform: translateY(-1px); }
     .k11-pill.is-active { background: rgba(var(--cool-rgb), 0.14); border-color: var(--cool); }
     .k11-pill-q {
-      font-size: clamp(16px, 1.45vw, 23px);
+      font-size: var(--lab-fs-body);
       font-weight: 600;
       line-height: 1.25;
     }
     .k11-pill-mark {
       font-family: var(--font-mono);
-      font-size: clamp(10px, 0.78vw, 12px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.06em;
       text-transform: uppercase;
       padding: 0.18rem 0.55rem;
@@ -205,11 +200,12 @@
       display: grid;
       place-items: center;
       font-family: var(--font-mono);
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       font-weight: 700;
+      flex: 0 0 auto;
     }
     .k11-answer-label {
-      font-size: clamp(12px, 0.95vw, 16px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -218,7 +214,7 @@
     .k11-stamp {
       margin-left: auto;
       font-family: var(--font-mono);
-      font-size: clamp(10px, 0.8vw, 12px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       font-weight: 800;
@@ -232,7 +228,7 @@
 
     .k11-answer-body { flex: 1; overflow-y: auto; min-height: 0; }
     .k11-answer {
-      font-size: clamp(17px, 1.5vw, 26px);
+      font-size: var(--lab-fs-answer);
       line-height: 1.55;
       color: var(--text);
       margin: 0;
@@ -264,7 +260,7 @@
       margin-top: 0.7rem;
       align-self: flex-start;
       font-family: var(--font-display);
-      font-size: clamp(13px, 0.95vw, 15px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.4rem 0.9rem;
       border-radius: 999px;
@@ -283,7 +279,7 @@
       border: 1.5px solid var(--bad);
       border-radius: 8px;
       font-family: var(--font-mono);
-      font-size: clamp(13px, 1.0vw, 16px);
+      font-size: var(--lab-fs-ui);
       line-height: 1.4;
       color: var(--bad);
     }
@@ -302,16 +298,21 @@
       display: inline-flex;
       align-items: center;
       gap: 0.5rem;
-      font-size: clamp(13px, 1.0vw, 16px);
+      font-size: var(--lab-fs-btn);
       color: var(--text-dim);
       cursor: pointer;
       user-select: none;
     }
     .k11-toggle input { width: 20px; height: 20px; accent-color: var(--focal); cursor: pointer; }
     .k11-toggle b { color: var(--text); font-weight: 700; }
+    .k11-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.45rem;
+    }
     .k11-btn {
       font-family: var(--font-display);
-      font-size: clamp(13px, 0.95vw, 15px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.4rem 1rem;
       border-radius: 999px;
@@ -325,32 +326,48 @@
 
     /* Responsive */
     @media (max-width: 700px) {
-      .k11-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
-      .k11-caption p { font-size: 13px; line-height: 1.4; }
-      .k11-caption { padding: 0.45rem 0.8rem; }
-      .k11-main { grid-template-columns: 1fr; grid-template-rows: minmax(150px, 0.9fr) minmax(0, 1.1fr); gap: 0.6rem; }
-      .k11-source { padding: 0.7rem 0.9rem; }
-      .k11-source p { font-size: 16px; line-height: 1.45; }
-      .k11-pill-q { font-size: 16px; }
-      .k11-answer { font-size: 17px; line-height: 1.45; }
-      .k11-button-bar { flex-direction: column; align-items: stretch; gap: 0.45rem; }
-      .k11-toggle { justify-content: center; }
-      .k11-btn { font-size: 13px; padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
-    }
-    @media (max-width: 400px) {
-      .k11-source p { font-size: 12.5px; }
-      .k11-pill-q { font-size: 13px; }
-      .k11-answer { font-size: 14px; }
-      .k11-btn { font-size: 12.5px; }
+      .k11-panel { padding: 0.55rem 0.9rem 0.5rem; gap: 0.5rem; }
+      /* .k11-right's 2-row grid (auto pills + minmax(0,1fr) answer) works on
+         desktop where the tab gets the full viewport height, but on phone
+         the "Pergunta" tab's whole budget is much tighter: 5 pills alone
+         can eat nearly all of it, squeezing the answer to near-unusable
+         (tried capping just .k11-pills with max-height first -- still left
+         the answer with too little room, and stacking two separately
+         scrolling regions inside one tab is a confusing nested-scroll UX
+         anyway). Simpler and robust regardless of content length: let the
+         whole tab scroll as one block, so pills + answer flow naturally
+         and whichever combination is too tall scrolls together. */
+      .k11-right { display: flex; flex-direction: column; overflow-y: auto; gap: 0.7rem; }
+      /* flex-shrink:0 on both -- default flex-shrink:1 would let the flex
+         layout shrink these boxes to jointly fit .k11-right's bounded
+         height, and since their own overflow is now visible (not auto),
+         the content would spill out past the shrunk box instead of the
+         container scrolling, which is what caused .k11-answer-wrap to
+         visually overlap and steal clicks from .k11-pills above it. */
+      .k11-pills { overflow-y: visible; flex: 0 0 auto; }
+      .k11-answer-wrap { overflow: visible; flex: 0 0 auto; }
+      .k11-answer-body { overflow-y: visible; }
+
+      .k11-button-bar { flex-direction: column; align-items: stretch; gap: 0.4rem; }
+      .k11-toggle { justify-content: center; order: 1; }
+      .k11-actions { order: 2; justify-content: center; }
+      .k11-btn { padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the bar. Width is automatic (align-items:stretch
+         on the column-direction bar) -- see k10 for why flex:1 1 100% would
+         be wrong here (it targets height, not width, in a column container). */
+      .k11-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+      }
+      .k11-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
     @media (max-height: 500px) and (orientation: landscape) {
       .k11-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
-      .k11-caption p { font-size: 12px; line-height: 1.35; }
-      .k11-caption { padding: 0.35rem 0.7rem; }
       .k11-source { padding: 0.6rem 0.8rem; }
-      .k11-source p { font-size: 13px; }
-      .k11-answer { font-size: 14px; }
-      .k11-btn { font-size: 12px; padding: 0.4rem 0.75rem; min-height: 32px; }
     }
   </style>
 
@@ -358,12 +375,8 @@
        data-lab-title="Confiança vs Fundamento"
        data-lab-subtitle="O tom é o mesmo; o que muda é se a fonte cobre a pergunta"></div>
 
-  <div class="k11-caption">
-    <p>A petição da esquerda é a <b>única fonte</b>. Pergunte algo que ela responde &rarr; resposta ancorada num parágrafo. Pergunte <b>além do que ela cobre</b> &rarr; o modelo inventa com a mesma firmeza, em vez de admitir que não sabe.</p>
-  </div>
-
-  <div class="k11-main">
-    <div class="k11-source" id="k11-source">
+  <div class="k11-main" data-lab-tabs data-lab-tab-default="Fonte">
+    <div class="k11-source" id="k11-source" data-lab-tab="Fonte">
       <div class="k11-source-head">Fonte · petição trabalhista</div>
       <p class="k11-source-hint">fixa e não-editável, esta é toda a informação disponível ao modelo</p>
       <p data-pp="1"><span class="pp">¶1</span> O Reclamante, José da Silva, foi admitido em 14/02/2020 e demitido sem justa causa em 28/03/2024, com último salário de R$ 3.200,00.</p>
@@ -375,7 +388,7 @@
       <p data-pp="7"><span class="pp">¶7</span> Requer-se a aplicação da Súmula 338 do TST quanto ao ônus da prova da jornada de trabalho.</p>
     </div>
 
-    <div class="k11-right">
+    <div class="k11-right" data-lab-tab="Pergunta">
       <div class="k11-pills" id="k11-pills">
         <button class="k11-pill" data-q="valor" type="button">
           <span class="k11-pill-q">Qual o valor da causa?</span>
@@ -415,12 +428,24 @@
   </div>
 
   <div class="k11-button-bar">
+    <span data-lab-info-ctl></span>
     <label class="k11-toggle">
       <input type="checkbox" id="k11-naosei">
       <span>Permitir <b>"não sei"</b> (modelo pode abster-se)</span>
     </label>
-    <button class="k11-btn" id="k11-reset" type="button">Limpar</button>
+    <div class="k11-actions">
+      <span data-lab-fs-ctl></span>
+      <button class="k11-btn" id="k11-reset" type="button">Limpar</button>
+    </div>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Confiança não é fundamento">
+    <p>Quando um modelo de IA responde, o <strong>tom da resposta</strong> não diz nada sobre se ela é verdadeira. Uma resposta correta e uma resposta inventada podem soar igualmente confiantes, com a mesma firmeza, os mesmos conectivos seguros.</p>
+    <p>Neste laboratório, a petição ao lado é a <strong>única fonte</strong> disponível ao modelo. Perguntas que ela cobre geram respostas <strong>ancoradas</strong> num parágrafo específico (destacado em verde na fonte). Perguntas fora do que ela cobre geram respostas <strong>fabricadas</strong>: o modelo inventa uma convenção coletiva, ou resume uma súmula do TST que nem existe, com a mesma confiança de antes.</p>
+    <p>A caixa <strong>"Permitir 'não sei'"</strong> simula um modelo instruído a admitir quando não tem base para responder, em vez de sempre entregar algo. Compare as duas versões: o problema nunca foi o modelo "mentir de propósito", foi ele nunca ter sido forçado a admitir os limites do que sabe.</p>
+  </template>
 
   <script>
     (function() {
