@@ -71,12 +71,6 @@ export const LABS = [
     emoji: '⚡'
   },
   {
-    key: 'k14',
-    title: 'Reforça ou enfraquece',
-    summary: 'Acerto reforça o caminho no peso; erro o enfraquece',
-    emoji: '🔗'
-  },
-  {
     key: 'k15',
     title: 'Sinapse',
     summary: 'Repetição fortalece o peso, até virar decoreba',
