@@ -34,11 +34,10 @@ import {
 import { downloadCertsPdf, renderCertsPdfBase64 } from './cert-pdf.js';
 import { sendEmail, renderEmailHtml, loadLogoAttachment, LOGO_CID } from '../js/codex-email.js';
 
-// TEMP (testing): send cert e-mails from the Resend sandbox sender, which needs no
-// domain setup but only DELIVERS to the Resend account owner's own address. Switch
-// to 'PensoIA <certificados@pensoia.com>' once pensoia.com is verified in Resend
-// (the DNS records are pending). See SCRATCH / the email task.
-const CERT_FROM = 'PensoIA <onboarding@resend.dev>';
+// Cert e-mails leave from the shared e-mail module's canonical sender (the Worker's
+// DEFAULT_FROM = no-reply@pensoia.com, authenticated in Brevo + verified in Resend, with
+// Brevo->Resend fallback). We pass no `from` override, so there is one sender of record
+// for every Codex e-mail; do NOT re-add a per-caller `from` here.
 
 // Re-export the registries so the catalog UI (and tests) read them from the face.
 export { CERT_TEMPLATES, CERT_THEMES } from './cert-render.js';
@@ -95,7 +94,7 @@ let _turmaIndex = {};       // String(turma_id) -> turma row
 let _turmasByClient = {};   // client_slug -> [turma rows]
 let _issueParticipants = [];
 let _issueSelectedIds = new Set();
-// Emissão dashboard (ported from backstage/mocks/emissao/a3.html): sortable table
+// Emissão dashboard (ported from the backstage repo's mocks/emissao/a3.html): sortable table
 // with a header select-all, KPI cards as status filters, and a bulk-action bar.
 let _sortKey = 'created';   // code | holder | client | turma | course | issued | status | created
 let _sortDir = 'desc';      // 'asc' | 'desc'
@@ -958,7 +957,7 @@ function _copyValidarUrl(code) {
 
 function _revokeConfirm(code) {
   const html =
-    '<div class="cdx-modal" style="max-width:400px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(t('certificates.revoke_title')) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.revoke_msg').replace('{code}', code)) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -995,7 +994,7 @@ function _bulkDeleteConfirm(codes) {
   const msg = t('certificates.bulk_delete_msg').replace('{n}', String(deletable.length)) +
     (blocked > 0 ? ' ' + t('certificates.bulk_delete_blocked_note').replace('{n}', String(blocked)) : '');
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(t('certificates.bulk_delete_title')) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(msg) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -1085,7 +1084,6 @@ async function _sendOne(cert) {
     if (logoAtt) attachments.push(logoAtt);
     const res = await sendEmail({
       to: cert.email,
-      from: CERT_FROM,
       subject: 'Seu certificado: ' + (cert.course_title || 'PensoIA'),
       html: _certEmailHtml(cert, validarUrl, logoAtt ? LOGO_CID : null),
       attachments,
@@ -1660,7 +1658,7 @@ function _confirmEmptyFields(bd) {
   if (!empty.length) return Promise.resolve(true);
   return new Promise((resolve) => {
     const html =
-      '<div class="cdx-modal" style="max-width:440px">' +
+      '<div class="cdx-modal cdx-modal--md">' +
         '<div class="cdx-modal-title">' + esc(t('certificates.issue_empty_title')) + '</div>' +
         '<p style="margin:0 0 .6rem;font-size:0.88rem;color:var(--text-secondary)">' + esc(t('certificates.issue_empty_msg')) + '</p>' +
         '<ul class="cdx-cert-empty-list">' + empty.map((n) => '<li>' + esc(n) + '</li>').join('') + '</ul>' +

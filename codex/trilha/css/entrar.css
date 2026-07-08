@@ -1,5 +1,5 @@
 /* codex/trilha/css/entrar.css — the student entry surface at pensoia.com/trilha.
-   Ported value-for-value from the approved mock backstage/mocks/trilha-login/d.html
+   Ported value-for-value from the approved mock the backstage repo's mocks/trilha-login/d.html
    (lg-* -> cdx-entrar-*); theme tokens only, so light/dark follow. Model: enter the
    last class (the Continuar banner) with the código + e-mail paths always open;
    choosing e-mail hides the código card and focuses the e-mailed code. */

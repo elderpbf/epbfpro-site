@@ -91,8 +91,7 @@ function build(app) {
   const box = el("div", "cdx-themebox");
 
   // Proporção do deck (Phase 8): 16:9 / 4:3, two lit buttons. No header/close row here
-  // (click outside closes it, like the animation panel) — Élder asked to drop the
-  // "Tema" title + ✕ that used to sit in a bar over the panel.
+  // (click outside closes it, like the animation panel).
   const asp = el("section", "tb-sec");
   asp.appendChild(el("div", "tb-sec-h", "Proporção"));
   const aspRow = el("div", "tb-arts");

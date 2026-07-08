@@ -158,6 +158,13 @@
   box-shadow: 0 12px 48px var(--shadow);
   box-sizing: border-box;
 }
+/* Named modal widths (replaces ad-hoc inline max-width across the tabs). Tiers round UP
+   from the old per-modal pixel values, so no modal is ever narrower than before. A modal
+   with no tier keeps the base 460px. */
+.cdx-modal--sm { max-width: 420px; }
+.cdx-modal--md { max-width: 460px; }
+.cdx-modal--lg { max-width: 520px; }
+.cdx-modal--xl { max-width: 560px; }
 
 .cdx-modal-title {
   font-size: 1.05rem;

@@ -1,5 +1,5 @@
 /* codex/trilha/css/forum.css
-   Fórum tab (per-turma discussion board). Ported from backstage/mocks/trilha-forum/a1.html
+   Fórum tab (per-turma discussion board). Ported from the backstage repo's mocks/trilha-forum/a1.html
    (Opção 1, approved). All colours via theme tokens so dark mode comes for free; the few
    purpose-specific tints carry a [data-theme="dark"] override. Prefix: cdx-fr-. */
 

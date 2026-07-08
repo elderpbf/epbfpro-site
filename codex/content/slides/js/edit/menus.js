@@ -21,9 +21,8 @@ export function insertMenu() {
   }));
 }
 
-// The +slide picker is no longer a context-bar menu: it is a modal of live preview
-// cards (edit/addslide.js), which unifies built-in and saved layouts as one concept.
-// addSlideMenu / templateMenu were retired with that move.
+// The +slide picker is a modal of live preview cards (edit/addslide.js), which unifies
+// built-in and saved layouts as one concept.
 
 // fontValue: the EFFECTIVE scale the slider should show. In "slide" scope this is
 // the slide's per-slide override (player.effFontScale), not the deck default, so the

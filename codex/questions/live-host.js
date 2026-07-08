@@ -148,7 +148,7 @@ function _composerCardMarkup() {
   // Two ways to launch, mutually exclusive: "Do banco" (the default, primary path)
   // and "Nova pergunta" (the deliberate one). Bank mode reads audience FIRST, then
   // a conjunto, then type chips; the audience governs which questions even show
-  // (bankVisible) and how variable {{...}} morph. See backstage/mocks/codex-bank-picker.html.
+  // (bankVisible) and how variable {{...}} morph. See the backstage repo's mocks/codex-bank-picker.html.
   return '<div class="cdx-host-card" id="cdx-launch-card">' +
     '<div class="cdx-host-card-title">' + _esc(t('questions.host_launch')) + '</div>' +
     '<div class="cdx-seg cdx-bank-mode" id="cdx-launch-mode" role="tablist">' +

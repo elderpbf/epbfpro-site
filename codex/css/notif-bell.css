@@ -1,7 +1,7 @@
 /* codex/css/notif-bell.css
    Shared notification bell (js/notif-bell.js), used on BOTH the Codex topbar and the
    Trilha header, so it lives in its own file linked by both pages. Ported from the
-   approved sino mock (backstage/mocks/codex-forum/sino.html, S2): badge in the button's
+   approved sino mock (the backstage repo's mocks/codex-forum/sino.html, S2): badge in the button's
    top-right CORNER, grouped dropdown. All colours via theme tokens. Prefix: cdx-bell-. */
 
 .cdx-bell-wrap { position: relative; display: inline-flex; }

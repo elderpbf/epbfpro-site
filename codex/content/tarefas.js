@@ -342,7 +342,7 @@ function _saveTarefa(container, item) {
 // which wiped the tarefa from every turma at once (the per-turma delete bug).
 function _deleteTarefa(item) {
   const html =
-    '<div class="cdx-modal" style="max-width:460px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + t('tarefas.remove_title') + '</div>' +
       '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.remove_warning') + '</p>' +
       '<p class="cdx-tarefa-delete-quote">' + _esc(item.title) + '</p>' +
@@ -546,7 +546,7 @@ function _deleteSubmission(sid, itemId) {
 
 function _openConfirmSimple(message, onConfirm) {
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<p style="margin:0 0 1.2rem;font-size:0.9rem;color:var(--text-primary)">' + _esc(message) + '</p>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
@@ -608,7 +608,7 @@ function _copyFallback(text, flash) {
 function _openNew() {
   if (!_client || !_turma) { toast.err(t('tarefas.select_turma_first')); return; }
   const html =
-    '<div class="cdx-modal" style="max-width:520px">' +
+    '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + t('tarefas.new_title') + '</div>' +
       '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
         '<input type="text" data-fld="title" placeholder="' + _esc(t('tarefas.new_title_placeholder')) + '"></div>' +
@@ -822,7 +822,7 @@ function _removeFromTurma(id) {
   api.listSubmissions({ item_id: id, client_slug: _client, turma_slug: _turma }).then((res) => {
     if (((res && res.submissions) || []).length > 0) { toast.err(t('tarefas.remove_has_answers')); return; }
     const item = _items.find((i) => Number(i.id) === Number(id)) || {};
-    const html = '<div class="cdx-modal" style="max-width:460px">' +
+    const html = '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + t('tarefas.remove_title') + '</div>' +
       '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.remove_warning') + '</p>' +
       '<p class="cdx-tarefa-delete-quote">' + _esc(item.title || '') + '</p>' +
@@ -1230,7 +1230,7 @@ function _deleteFromBank(itemId) {
 // it from each first. No delete path here, that is the whole point of the guard.
 function _openReleasedBlock(title, turmaLabels) {
   const list = turmaLabels.map((l) => '<li>' + _esc(l) + '</li>').join('');
-  const html = '<div class="cdx-modal" style="max-width:480px">' +
+  const html = '<div class="cdx-modal cdx-modal--lg">' +
     '<div class="cdx-modal-title">' + t('tarefas.delete_bank_blocked_title') + '</div>' +
     '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_bank_blocked_body') + '</p>' +
     '<p class="cdx-tarefa-delete-quote">' + _esc(title) + '</p>' +
@@ -1248,7 +1248,7 @@ function _renameSection(secId, curName) {
   });
 }
 function _deleteSection(secId, name) {
-  const html = '<div class="cdx-modal" style="max-width:440px">' +
+  const html = '<div class="cdx-modal cdx-modal--md">' +
     '<div class="cdx-modal-title">' + t('tarefas.section_delete_title') + '</div>' +
     '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.section_delete_warning') + '</p>' +
     '<p class="cdx-tarefa-delete-quote">' + _esc(name || '') + '</p>' +
@@ -1266,7 +1266,7 @@ function _deleteSection(secId, name) {
 // Delete-from-bank guard: retype the tarefa title (case-insensitive) to confirm, since it
 // removes the tarefa from EVERY turma, not just this one.
 function _openTitleConfirm(title, onOk) {
-  const html = '<div class="cdx-modal" style="max-width:480px">' +
+  const html = '<div class="cdx-modal cdx-modal--lg">' +
     '<div class="cdx-modal-title">' + t('tarefas.delete_bank_title') + '</div>' +
     '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.delete_bank_warning') + '</p>' +
     '<p class="cdx-tarefa-delete-quote">' + _esc(title) + '</p>' +
@@ -1286,7 +1286,7 @@ function _openTitleConfirm(title, onOk) {
 }
 
 function _openPrompt(label, initial, onOk) {
-  const html = '<div class="cdx-modal" style="max-width:420px">' +
+  const html = '<div class="cdx-modal cdx-modal--sm">' +
     '<div class="cdx-modal-title">' + _esc(label) + '</div>' +
     '<div class="cdx-field"><input type="text" class="cdx-prompt-input" value="' + _esc(initial || '') + '"></div>' +
     '<div class="cdx-modal-actions">' +

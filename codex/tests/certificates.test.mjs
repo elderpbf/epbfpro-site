@@ -406,7 +406,7 @@ describe('generateQrDataUrl', () => {
   });
 });
 
-// ── Emissão dashboard port (backstage/mocks/emissao/a3.html → cdx-emissao-*) ───
+// ── Emissão dashboard port (the backstage repo's mocks/emissao/a3.html → cdx-emissao-*) ───
 // Source-contract test: pins the A3 port. The Emitidos status <select> is gone,
 // replaced by clickable KPI cards; the table gains a header select-all + sortable
 // headers + a bulk-action bar; the 'signed' lifecycle is wired through the facade.
@@ -458,8 +458,11 @@ describe('Emissão dashboard port (source contract)', () => {
     assert.ok(src.includes("t('certificates.send_no_email')"), 'guards a missing recipient e-mail');
     assert.ok(src.includes("t('certificates.send_only_issued_signed')"), 'guards the lifecycle status');
     assert.ok(api.includes('cert_mark_sent'), 'facade still exposes cert_mark_sent');
-    assert.ok(src.includes('from: CERT_FROM'), 'cert e-mail sets an explicit sender');
-    assert.ok(src.includes('onboarding@resend.dev'), 'sandbox sender (delivers to the account owner) until pensoia.com is verified');
+    // Sender: NO per-caller `from` override. Cert e-mail leaves from the shared module's
+    // canonical sender (the worker's DEFAULT_FROM = no-reply@pensoia.com, authenticated in
+    // Brevo + verified in Resend). Guard against a regression that re-hardcodes a sender.
+    assert.ok(!src.includes('from: CERT_FROM'), 'cert e-mail does NOT hardcode a sender (uses the shared default)');
+    assert.ok(!src.includes('onboarding@resend.dev'), 'no Resend sandbox sender (it only delivers to the account owner)');
   });
   test('the cert e-mail is ALWAYS PT-BR and uses the shared branded shell (not the admin UI locale)', () => {
     // Copy is hardcoded PT-BR, never via t() (which follows the panel language).

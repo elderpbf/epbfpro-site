@@ -170,7 +170,7 @@ function _closeModal(bd) {
 function _openDeleteConfirm(opts) {
   // opts: { title, warningHtml, extraHtml?, confirmName, onConfirm(flags) }
   const html =
-    '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<div class="cdx-danger-zone">' + opts.warningHtml + '</div>' +
       (opts.extraHtml || '') +
@@ -207,7 +207,7 @@ function _openDeleteConfirm(opts) {
 function _openArchiveConfirm(opts) {
   // opts: { title, message, onConfirm }
   const html =
-    '<div class="cdx-modal" style="max-width:400px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -548,7 +548,7 @@ function _openClientForm(client) {
     : '';
 
   const html =
-    '<div class="cdx-modal" style="max-width:500px">' +
+    '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + (isEdit ? t('cohorts.edit_client') : t('cohorts.new_client_title')) + '</div>' +
       '<div class="cdx-field"><label>' + t('cohorts.field_name_internal') + '</label>' +
         '<input type="text" id="cdx-cf-name" value="' + _esc(isEdit ? client.name : '') + '" placeholder="' + t('cohorts.field_name_placeholder') + '">' +
@@ -1016,7 +1016,7 @@ function _openParticipantsHelp() {
 // refreshed on save. (Mock B+C2: the "+ Adicionar" header button.)
 function _openAddParticipant(turma) {
   const html =
-    '<div class="cdx-modal" style="max-width:480px">' +
+    '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + _esc(t('cohorts.participants_add')) + '</div>' +
       '<div class="cdx-field">' +
         '<label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
@@ -1098,7 +1098,7 @@ function _openImportParticipants(turma) {
 
 function _openParticipantEditModal(participant, onSaved) {
   const html =
-    '<div class="cdx-modal" style="max-width:480px">' +
+    '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + t('cohorts.participant_edit_title') + '</div>' +
       '<div class="cdx-field"><label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
         '<input type="text" id="cdx-pe-name" value="' + _esc(participant.name) + '">' +
