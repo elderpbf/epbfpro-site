@@ -652,7 +652,7 @@
   .cdx-field-row { flex-direction: column; gap: 0; }
 }
 
-/* ── Emissão dashboard (ported from backstage/mocks/emissao/a3.html) ──────────
+/* ── Emissão dashboard (ported from the backstage repo's mocks/emissao/a3.html) ──────────
    Conceito C: faixa de KPIs (clicáveis = filtro de status) + tabela densa
    ordenável com select-all no header + barra de ações em massa. Cores de status:
    amber (aguardando assinatura) / blue (aguardando envio) / green / red. */

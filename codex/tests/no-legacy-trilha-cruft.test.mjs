@@ -36,8 +36,8 @@ test('the legacy trilha/css tree is gone', () => {
 });
 
 test('no live Trail page references the legacy /trilha/js or /trilha/css paths', () => {
-  // The live entry pages (both synced trees) must load only /codex/trilha/ assets.
-  const pages = ['../../trilha/index.html', '../../trilha/validar.html', '../trilha/index.html', '../trilha/validar.html'];
+  // The live entry pages must load only /codex/trilha/ assets.
+  const pages = ['../../trilha/index.html', '../../trilha/validar.html'];
   for (const p of pages) {
     const html = read(p);
     assert.ok(!/=["']\/trilha\/js\//.test(html), `${p} still references /trilha/js/`);

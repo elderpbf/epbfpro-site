@@ -102,8 +102,8 @@ const allJs = walkJs(ROOT);
 // (js/worker-call.js). Joined into one corpus for the string-match below.
 const indexHtml = [
   read('../index.html'),
-  read('../trilha/index.html'),
-  read('../trilha/validar.html'),
+  read('../../trilha/index.html'),
+  read('../../trilha/validar.html'),
 ].join('\n');
 
 // ── Test 1: no orphaned shared module ────────────────────────────────────────

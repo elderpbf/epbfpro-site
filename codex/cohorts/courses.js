@@ -5,7 +5,7 @@
 // them; see cohorts.js). Backend: codex-api courses facade (ct_*_course).
 //
 // This module owns the Cursos sub-view only; cohorts.js routes ctx.sub === 'cursos'
-// here via mount()/unmount(). Layout mirrors backstage/mocks/curso/b2.html:
+// here via mount()/unmount(). Layout mirrors the backstage repo's mocks/curso/b2.html:
 // page header, course-switcher rail, course data on top, full-width ementa editor.
 //
 // AI assistant: the conversational panel (the "C" of the B+C hybrid) talks to the
@@ -191,7 +191,7 @@ function _buildRail() {
 // orphaned to "sem seção", never removed — the worker guards that).
 function _openSectionNameModal(titleText, initial, onOk) {
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(titleText) + '</div>' +
       '<input class="cdx-doss-edit" id="cdx-cursec-name" type="text" value="' + esc(initial || '') + '" placeholder="' + esc(t('cohorts.course_section_name_ph')) + '" style="width:100%;margin:.2rem 0 1.2rem">' +
       '<div class="cdx-modal-actions">' +
@@ -229,7 +229,7 @@ function _onRenameSection(id) {
 
 function _onDeleteSection(id) {
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(t('cohorts.course_section_delete_title')) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_section_delete_msg')) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -645,7 +645,7 @@ function _saveEmenta() {
 function _onArchiveCourse() {
   if (!_course) return;
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(t('cohorts.course_archive_title')) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_archive_msg')) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -700,7 +700,7 @@ function _onDeleteCourse() {
   const n = _courseTurmaCount();
   if (n > 0) { notice.warn(t('cohorts.course_delete_in_use').replace('{n}', String(n))); return; }
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + esc(t('cohorts.course_delete_title')) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:.88rem;color:var(--text-secondary)">' + esc(t('cohorts.course_delete_msg')) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -733,7 +733,7 @@ function _onDeleteCourse() {
 // Paste-and-structure (heuristic v1). Replaces or appends to the current ementa.
 function _openPasteModal() {
   const html =
-    '<div class="cdx-modal" style="max-width:560px">' +
+    '<div class="cdx-modal cdx-modal--xl">' +
       '<div class="cdx-modal-title">' + esc(t('cohorts.ementa_paste_title')) + '</div>' +
       '<p class="cdx-helper-text">' + esc(t('cohorts.ementa_paste_hint')) + '</p>' +
       '<textarea id="cdx-cur-paste-text" rows="10" class="cdx-cursos-paste-ta" placeholder="' + esc(t('cohorts.ementa_paste_ph')) + '"></textarea>' +

@@ -84,7 +84,7 @@ import { openModal, closeModal } from '../js/modal.js';
 function _openConfirm(opts) {
   const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -289,7 +289,7 @@ function _renderPreview() {
 function _openRename() {
   const editing = !_creating && _selectedId != null;
   const html =
-    '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + t('presets.name_label') + '</div>' +
       '<div class="cdx-field">' +
         '<input id="cdx-preset-rename" type="text" maxlength="120" value="' + _esc(_editName) + '" placeholder="' + _esc(t('presets.name_placeholder')) + '">' +

@@ -112,7 +112,7 @@ import { openModal, closeModal } from '../js/modal.js';
 function _openConfirm(opts) {
   const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -128,7 +128,7 @@ function _openConfirm(opts) {
 // Single-field prompt modal (no window.prompt). opts: { title, label, value, onSubmit }
 function _openPrompt(opts) {
   const html =
-    '<div class="cdx-modal" style="max-width:420px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<div class="cdx-field"><label>' + _esc(opts.label || '') + '</label>' +
         '<input type="text" data-fld="value" value="' + _esc(opts.value || '') + '">' +
@@ -629,7 +629,7 @@ async function _tagsByLabels(labels) {
 function _openTypeCreateForm(callback) {
   let chosenIcon = GLYPH_PREFIX + 'file-text';
   const html =
-    '<div class="cdx-modal" style="max-width:380px">' +
+    '<div class="cdx-modal cdx-modal--sm">' +
       '<div class="cdx-modal-title">' + t('content.new_type_title') + '</div>' +
       '<div class="cdx-field"><label>' + t('content.type_name') + '</label>' +
         '<input type="text" data-fld="label" placeholder="' + t('content.type_name_placeholder') + '"></div>' +
@@ -676,7 +676,7 @@ function _openGlyphPicker(currentIcon, onPick) {
       '" data-glyph="' + _esc(k) + '" title="' + _esc(k) + '">' + glyphSvg(k, { size: 22 }) + '</button>'
   ).join('');
   const html =
-    '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + t('content.pick_glyph') + '</div>' +
       '<div class="cdx-glyph-grid">' + grid + '</div>' +
       '<div class="cdx-modal-actions">' +
@@ -696,7 +696,7 @@ function _openGlyphPicker(currentIcon, onPick) {
 // ── Types manager modal (glyph / rename / delete; create via the inline form) ──
 function _openTypeManager() {
   const html =
-    '<div class="cdx-modal" style="max-width:560px">' +
+    '<div class="cdx-modal cdx-modal--xl">' +
       '<div class="cdx-modal-title">' + t('content.types_title') + '</div>' +
       '<div class="cdx-type-manager-actions">' +
         '<button class="cdx-btn cdx-btn-primary cdx-btn-sm" data-act="new">' + t('content.new_type_btn') + '</button>' +
@@ -779,7 +779,7 @@ function _openTypeManager() {
 // ── Tags manager modal ──────────────────────────────────────────────────────
 function _openTagManager() {
   const html =
-    '<div class="cdx-modal" style="max-width:520px">' +
+    '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + t('content.tags_title') + '</div>' +
       '<div class="cdx-tag-manager-create">' +
         '<input type="text" data-fld="new" placeholder="' + t('content.tag_new_placeholder') + '">' +

@@ -55,7 +55,7 @@ test('forum i18n keys exist in pt + en', () => {
   }
 });
 test('the trilha page wires the forum panel + tab', () => {
-  const src = read('../trilha/index.html');
+  const src = read('../../trilha/index.html');
   assert.match(src, /data-panel="forum"/, 'has the forum panel');
   assert.match(src, /id="cdx-tr-forum-root"/, 'has the forum mount');
   assert.match(src, /data-tab="forum"/, 'has the forum tab button');

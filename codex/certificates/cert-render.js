@@ -1,6 +1,6 @@
 // certificates/cert-render.js
 // Certificate renderer: the 7 fixed FRONT templates + 1 shared BACK (verso),
-// ported from the approved mocks (backstage/mocks/certificate/*). The render
+// ported from the approved mocks (the backstage repo's mocks/certificate/*). The render
 // functions are PURE (data in, HTML string out) and emit placeholders for the
 // brand logo and the QR code, so they unit-test under node --test with zero
 // dependencies. hydrate() (browser only) fills those placeholders using the
@@ -243,8 +243,7 @@ function backHtml(d) {
   const mods = d.modules.map(function (m) {
     return '<div class="ci"><div class="n">' + m.n + '</div><div><h4>' + m.t + '</h4><p>' + m.d + '</p></div></div>';
   }).join('');
-  // The code appears once on the back, in the QR vcard at the bottom. The old
-  // top "Código …" line next to the logo was a duplicate — removed.
+  // The code appears once on the back, in the QR vcard at the bottom.
   return '<div class="bhead">'
       + '<div class="ht"><div class="kicker">Conteúdo Programático</div><h2 class="title">' + d.course + '.</h2></div>'
       + '<div class="hc"><span class="bmark" data-logo="light"></span></div>'

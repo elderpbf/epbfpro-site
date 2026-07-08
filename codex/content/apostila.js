@@ -51,7 +51,7 @@ function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 function _openConfirm(opts) {
   const cls = opts.danger ? ' cdx-btn-danger-solid' : ' cdx-btn-primary';
   const html =
-    '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<p style="margin:0 0 1.2rem;font-size:0.88rem;color:var(--text-secondary)">' + _esc(opts.message) + '</p>' +
       '<div class="cdx-modal-actions">' +
@@ -67,7 +67,7 @@ function _openConfirm(opts) {
 // Simple single-field prompt (create / rename apostila).
 function _openPrompt(opts) {
   const html =
-    '<div class="cdx-modal" style="max-width:440px">' +
+    '<div class="cdx-modal cdx-modal--md">' +
       '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
       '<div class="cdx-field"><label>' + _esc(opts.label) + '</label>' +
         '<input type="text" data-fld="v" value="' + _esc(opts.value || '') + '"></div>' +

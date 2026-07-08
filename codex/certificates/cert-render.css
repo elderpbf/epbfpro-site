@@ -1,6 +1,6 @@
 /* certificates/cert-render.css
    Visual layer for the 7 certificate fronts + the shared back (verso).
-   Geometry ported verbatim from the approved mocks (backstage/mocks/certificate/).
+   Geometry ported verbatim from the approved mocks (the backstage repo's mocks/certificate/).
    Everything is scoped under .cdx-cert-page so it never leaks into Codex.
 
    The renderer (cert-render.js) emits:

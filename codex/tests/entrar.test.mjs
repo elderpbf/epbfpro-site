@@ -9,8 +9,7 @@ import { fileURLToPath } from 'node:url';
 import { readCode, buildTurmaUrl } from '../trilha/js/entrar.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
-const html = read('../trilha/entrar.html');
-const served = read('../../trilha/entrar.html');
+const html = read('../../trilha/entrar.html');
 const css = read('../trilha/css/entrar.css');
 const js = read('../trilha/js/entrar.js');
 const redirects = read('../../_redirects');
@@ -84,16 +83,14 @@ test('entrar auto-enters a valid device session (no Continuar banner, no hub)', 
   assert.ok(!/callWorker\s*\(/.test(js), 'never calls callWorker directly');
 });
 
-test('entrar.html hosts the código + e-mail entry, no Continuar banner, no hub (both copies in sync)', () => {
+test('entrar.html hosts the código + e-mail entry, no Continuar banner, no hub', () => {
   assert.match(html, /id="cdx-entrar-email"/, 'e-mail container present');
   assert.match(html, /id="cdx-entrar-form"/, 'código form present');
   assert.ok(!/id="cdx-entrar-cont"/.test(html), 'the Continuar banner is gone');
   assert.ok(!/id="cdx-entrar-hub"/.test(html), 'the hub container is gone');
-  assert.equal(served, html, 'served copy still matches the source copy');
 });
 
-test('the served copy is in sync and the code route serves the student page in place', () => {
-  assert.equal(served, html, 'Site/trilha/entrar.html matches the source copy');
+test('the code route serves the student page in place', () => {
   // Inversion: /trilha/<code> now serves the student area (the code is the resting URL),
   // NOT the entrar page. The routing lives in _redirects (Cloudflare Pages), .htaccess is dead.
   assert.match(redirects, /\/trilha\/:code\s+\/trilha\/\?code=:code\s+200/, '/trilha/<code> serves the student area in place');

@@ -4,10 +4,9 @@
 // string via t(). Two panes inside #codex-view: a left sidebar navigator and a
 // main content view.
 //
-// Batch 1: sidebar + reading-controls parity.
-// Batch 2 (this layer): focus mode (F key + edge hot-zones), presets loader,
-// Labs section, Perguntas live card, context-menu + editing (via item-form.js),
-// breadcrumb merged into the bottom bar.
+// Provides: sidebar + reading-controls, focus mode (F key + edge hot-zones), presets
+// loader, Labs section, Perguntas live card, context-menu + inline editing (item-form.js),
+// and a bottom-bar breadcrumb.
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.BS_GOOGLE     (../backstage/js/bs-google.js)

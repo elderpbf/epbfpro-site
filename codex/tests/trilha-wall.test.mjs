@@ -68,7 +68,7 @@ test('wall.css scopes the phone hero overrides to the wall (not a global hero re
 });
 
 // ── wall.css linked in BOTH hand-synced index.html copies ────────────────────
-for (const rel of [['..', 'trilha', 'index.html'], ['..', '..', 'trilha', 'index.html']]) {
+for (const rel of [['..', '..', 'trilha', 'index.html']]) {
   const path = join(__dirname, ...rel);
   test(`wall.css is linked in ${rel.join('/')}`, () => {
     const html = readFileSync(path, 'utf8');
