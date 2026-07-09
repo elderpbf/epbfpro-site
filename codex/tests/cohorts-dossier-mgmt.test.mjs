@@ -117,6 +117,31 @@ test('labs3: the dossier shows the 4-digit access code (click-to-copy) and the t
   }
 });
 
+test('labs3 rodada 3: the roster connection mark is ✓ acessou / ✕ não acessou with recency, not the ambiguous ● / ⚠', () => {
+  // Élder 2026-07-09: the old ● read like the legend's • "não logou"; the ⚠ (e-mail não
+  // confirmado) was a different axis that misfired as an alarm. Now one axis, two explicit
+  // marks, plus how long ago the last access was.
+  assert.match(cohortsJs, /import \{ relTime \} from '\.\.\/js\/rel-time\.js'/, 'imports the relative-time helper');
+  const pRow = cohortsJs.slice(cohortsJs.indexOf('function _pRow'), cohortsJs.indexOf('function _pSep'));
+  assert.match(pRow, /cdx-prow-conn ok"[^>]*>✓/, 'connected renders a ✓');
+  assert.match(pRow, /cdx-prow-conn no"[^>]*>✕/, 'not-accessed renders a ✕');
+  assert.match(pRow, /relTime\(p\.last_access_at\)/, 'accessed rows show the last-access recency');
+  assert.ok(!/cdx-prow-online/.test(pRow), 'the old ● online dot is gone from the row');
+  assert.ok(!/cdx-prow-warn/.test(pRow), 'the ⚠ e-mail-unverified mark is out of the row');
+  // Legend matches the row exactly: ✓ + ✕, no phantom • / ⚠.
+  const legStart = cohortsJs.indexOf('function _openParticipantsHelp');
+  const legend = cohortsJs.slice(legStart, legStart + 2000);
+  assert.match(legend, /cdx-prow-conn ok">✓/, 'legend connected = ✓');
+  assert.match(legend, /cdx-prow-conn no">✕/, 'legend not-accessed = ✕');
+  assert.ok(!/cdx-prow-conn">•/.test(legend), 'no phantom • waiting row');
+  assert.ok(!/cdx-prow-warn">⚠/.test(legend), 'no ⚠ unverified row in the legend');
+  for (const k of ['cohorts.conn_accessed', 'cohorts.conn_never', 'cohorts.phelp_never']) {
+    const re = new RegExp("'" + k.replace(/\./g, '\\.') + "'");
+    assert.match(ptJs, re, `${k} in pt`);
+    assert.match(enJs, re, `${k} in en`);
+  }
+});
+
 test('Batch B i18n keys exist in both pt and en', () => {
   for (const k of [
     'cohorts.doss_liberacoes', 'cohorts.doss_tarefas',
