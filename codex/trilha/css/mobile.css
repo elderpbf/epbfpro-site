@@ -58,4 +58,11 @@
   }
   .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-meta { padding: 0.55rem 0.7rem; }
   .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-expanded { padding: 0.85rem 0.75rem; }
+  /* Shrink the lab flask badge to fit the compact 26px zone. */
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-lab-flask {
+    width: 13px; height: 13px; right: 0; bottom: 0;
+  }
+  .cdx-trilha-page:has(.cdx-tr-tl-row.is-open) .cdx-tr-card.open .cdx-tr-sub-zone--lab .cdx-tr-lab-flask svg {
+    width: 8px; height: 8px;
+  }
 }

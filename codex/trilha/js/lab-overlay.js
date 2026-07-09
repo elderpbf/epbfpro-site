@@ -12,8 +12,8 @@
 // the expanded item, from meta_json. If NO key can be resolved we leave the item
 // untouched (fail open) -- an overlay must never make a released lab disappear.
 //
-// Icon is intentionally NOT overlaid: the per-type glyph (glyph:flask from
-// ct_types) stays; per-lab glyphs are a separate, pending step.
+// The icon is also overlaid: each lab gets its per-lab glyph (labIcon) in place of
+// the shared per-type glyph:flask; sub.js adds the small flask family badge on top.
 import { findItem } from '../../js/labs-registry.js';
 
 function labKeyOf(item) {
@@ -40,6 +40,7 @@ export function overlayLabItem(item) {
   item.summary = reg.summary;
   item.description = reg.description || '';
   item.objective = reg.objective || '';
+  if (reg.type_icon) item.type_icon = reg.type_icon; // per-lab glyph, not the shared flask
   return true;
 }
 

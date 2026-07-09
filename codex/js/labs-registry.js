@@ -168,12 +168,18 @@ function _enabledLabs() {
   return orderedLabs().filter(function (l) { return isLabEnabled(l.key); });
 }
 
-// The icon convention shared with js/glyphs.js's iconHtml(): an emoji char, or
-// 'glyph:<key>' for the shared library. Falls back to the flask glyph for any
-// lab that hasn't been given an emoji yet.
+// Per-lab glyph from the shared library (js/glyphs.js), each chosen to echo the
+// lab's old emoji (🧩→puzzle, 💊→pill, 🎭→mask, 🧠→brain, 👍→thumbs-up …) so it
+// reads the same but renders crisply everywhere. The Trail pairs this glyph with a
+// small flask badge as the "family" marker. Unknown key -> the generic flask.
+const LAB_GLYPH = {
+  k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
+  k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
+  k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
+};
+
 export function labIcon(key) {
-  const lab = LABS.find((l) => l.key === key);
-  return (lab && lab.emoji) || 'glyph:flask';
+  return LAB_GLYPH[key] || 'glyph:flask';
 }
 
 // Build the synthetic item shape the renderers expect.

@@ -118,15 +118,15 @@ test('findItem ignores the enabled map (resolution is independent of visibility)
   setEnabledMap(null);
 });
 
-test('labIcon returns the per-lab emoji, falling back to the flask glyph', () => {
-  assert.equal(reg.labIcon('k15'), '🧠');
-  assert.equal(reg.labIcon('k16'), '📄');
+test('labIcon returns the per-lab glyph (echoing the emoji), falling back to the flask glyph', () => {
+  assert.equal(reg.labIcon('k15'), 'glyph:brain');
+  assert.equal(reg.labIcon('k16'), 'glyph:file-text');
   assert.equal(reg.labIcon('nope'), 'glyph:flask', 'unknown key falls back to the flask glyph');
 });
 
 test('findItem / getAllItems carry type_icon = labIcon(key)', () => {
   setEnabledMap(null);
-  assert.equal(reg.findItem('lab:k15').type_icon, '🧠');
+  assert.equal(reg.findItem('lab:k15').type_icon, 'glyph:brain');
   const items = reg.getAllItems();
   assert.ok(items.every((i) => i.type_icon === reg.labIcon(i.id.slice(4))), 'every synthetic item carries its own icon');
 });
