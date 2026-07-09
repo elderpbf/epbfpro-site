@@ -35,6 +35,18 @@ const pt = {
   'apps.windows_only':      'Por enquanto este app é só para Windows.',
   'page.wa_group':          'Grupo no WhatsApp',
   'page.footer':            'Feito com PensoIA',
+  // Support contact (shared support-contact.js): footer strip + highlight card on the
+  // login/código/registro/bloqueado/erro screens, and a link to the full /suporte hub.
+  'support.title':          'Precisa de ajuda?',
+  'support.highlight_body': 'Fale direto com a gente pelo WhatsApp ou e-mail.',
+  'support.whatsapp':       'WhatsApp',
+  'support.email':          'E-mail',
+  'support.more':           'Ver todas as formas de ajuda',
+  'support.msg_context':    'Olá, preciso de ajuda para acessar a trilha de {client} · {turma}.',
+  'support.msg_named':      'Olá, sou {name} e preciso de ajuda para acessar a trilha de {client} · {turma}.',
+  'support.msg_generic':    'Olá, preciso de ajuda para acessar minha trilha na PensoIA.',
+  'support.mail_subject_context': 'Ajuda - {client} · {turma}',
+  'support.mail_subject_generic': 'Ajuda - Trilha PensoIA',
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Instalar app',
@@ -196,6 +208,18 @@ const en = {
   'apps.windows_only':      'This app is Windows-only for now.',
   'page.wa_group':          'WhatsApp group',
   'page.footer':            'Made with PensoIA',
+  // Support contact (shared support-contact.js): footer strip + highlight card on the
+  // login/code/register/blocked/error screens, and a link to the full /suporte hub.
+  'support.title':          'Need help?',
+  'support.highlight_body': 'Reach us directly on WhatsApp or e-mail.',
+  'support.whatsapp':       'WhatsApp',
+  'support.email':          'E-mail',
+  'support.more':           'See all ways to get help',
+  'support.msg_context':    'Hi, I need help accessing the {client} · {turma} trail.',
+  'support.msg_named':      'Hi, I\'m {name} and I need help accessing the {client} · {turma} trail.',
+  'support.msg_generic':    'Hi, I need help accessing my PensoIA trail.',
+  'support.mail_subject_context': 'Help - {client} · {turma}',
+  'support.mail_subject_generic': 'Help - PensoIA Trail',
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Install app',

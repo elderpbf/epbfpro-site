@@ -95,7 +95,7 @@ header.plp-sc .plp-bar{padding:9px clamp(22px,3.5vw,52px)}
 .plp-pill svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
 .plp-cta.plp-eq{height:39px;box-sizing:border-box;padding:0 16px;border:1px solid transparent;border-radius:12px;font-size:.85rem}
 .plp-cta.plp-eq svg{width:16px;height:16px}
-@media(max-width:560px){.plp-brand img{height:28px}.plp-cta .plp-t{display:none}.plp-pill .plp-t{display:none}}
+@media(max-width:560px){.plp-brand img{height:28px}.plp-ctrl{gap:6px}.plp-cta .plp-t,.plp-pill .plp-t{display:none}.plp-pill,.plp-cta.plp-eq{padding:0;width:39px;justify-content:center}}
 
 /* ===== hero (chamada primeiro, sem foto) ===== */
 .plp-hero{position:relative;min-height:100vh;display:flex;align-items:center;justify-content:center;text-align:center;background:var(--hero);overflow:hidden;padding:120px 0 90px}

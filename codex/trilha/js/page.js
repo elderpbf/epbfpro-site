@@ -19,6 +19,7 @@ import { renderSimpleWall } from './wall-simple.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
+import { mountFooter, mountHighlight, contextFromState } from './support-contact.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
@@ -149,6 +150,7 @@ export async function mount(root, ctx = {}) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
     showError(root, map, t);
+    mountHighlight(root.querySelector('#cdx-tr-error-support'), contextFromState(state));
   }
 }
 
@@ -183,6 +185,8 @@ function renderHero(root) {
 
   const titleBase = turma.display_name || turma.name;
   if (titleBase && typeof document !== 'undefined') document.title = titleBase + ' · PensoIA';
+
+  mountFooter(root.querySelector('#cdx-tr-support-footer'), contextFromState(state));
 }
 
 // Inject the header actions (login/logout pill, plus the WhatsApp group pill when
