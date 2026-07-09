@@ -12,6 +12,7 @@ import { injectActionButton } from './actions.js';
 import { trail } from './api.js';
 import { renderItem } from '../../js/item-render.js';
 import { interceptItemOpen } from './gate.js';
+import { overlayLabItem } from './lab-overlay.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -103,6 +104,9 @@ export async function toggleSub(sub, item, opts = {}) {
       session_token: state.sessionToken,
       _silent: true,
     });
+    // Lab content (title/summary/description/objective) comes from the code
+    // registry, not the seeded DB copy -- overlay the fetched item before render.
+    overlayLabItem(data.item);
     exp.innerHTML = '';
     renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);
