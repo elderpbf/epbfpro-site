@@ -59,6 +59,7 @@
   .sf-submit:hover { background:#17a94f; }
   .sf-submit:disabled { opacity:.6; cursor:default; }
   .sf-status { margin:12px 0 0; font-size:.85rem; color:var(--text-secondary); text-align:center; }
+  .sf-card.sf-sent .sf-title { text-align:center; margin-right:0; }
 </style>
 </head>
 <body>
@@ -285,6 +286,7 @@
       var sfForm = document.getElementById('sf-form');
       var sfStatus = document.getElementById('sf-status');
       var sfSubmit = document.getElementById('sf-submit');
+      var sfCard = modal ? modal.querySelector('.sf-card') : null;
 
       function setText(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
       function applyFormLang() {
@@ -300,11 +302,11 @@
         applyFormLang();
         if (sfForm) sfForm.hidden = false;   // reset from a previous successful send
         if (sfStatus) sfStatus.textContent = '';
+        if (sfCard) sfCard.classList.remove('sf-sent');
         var nameEl = document.getElementById('sf-name');
         if (nameEl && !nameEl.value && nome) nameEl.value = nome;
         modal.hidden = false;
-        var em = document.getElementById('sf-email');
-        if (em) setTimeout(function () { try { em.focus(); } catch (_) {} }, 40);
+        if (nameEl) setTimeout(function () { try { nameEl.focus(); } catch (_) {} }, 40);
       }
       function closeForm() { if (modal) modal.hidden = true; }
 
@@ -332,6 +334,7 @@
           var msg = (document.getElementById('sf-msg').value || '').trim();
           var name = (document.getElementById('sf-name').value || '').trim();
           var company = (document.getElementById('sf-company').value || ''); // honeypot
+          if (!name) { sfStatus.textContent = en2 ? 'Please enter your name.' : 'Digite o seu nome.'; return; }
           if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { sfStatus.textContent = en2 ? 'Please enter a valid e-mail.' : 'Digite um e-mail válido.'; return; }
           if (!msg) { sfStatus.textContent = en2 ? 'Please write a message.' : 'Escreva uma mensagem.'; return; }
           sfSubmit.disabled = true;
@@ -341,7 +344,7 @@
             body: JSON.stringify({ action: 'support_contact', name: name, email: email, message: msg, source: source, client: client, turma: turma, company: company })
           }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
             sfSubmit.disabled = false;
-            if (d && d.ok) { sfForm.hidden = true; setText('sf-title', en2 ? '✓ Sent!' : '✓ Enviado!'); sfStatus.textContent = en2 ? 'We\'ll get back to you soon.' : 'Retornamos em breve.'; }
+            if (d && d.ok) { sfForm.hidden = true; if (sfCard) sfCard.classList.add('sf-sent'); setText('sf-title', en2 ? '✓ Sent!' : '✓ Enviado!'); sfStatus.textContent = en2 ? 'We\'ll get back to you soon.' : 'Retornamos em breve.'; }
             else { sfStatus.textContent = en2 ? 'Could not send. Try again or use WhatsApp.' : 'Não deu para enviar. Tente de novo ou use o WhatsApp.'; }
           }).catch(function () {
             sfSubmit.disabled = false;
