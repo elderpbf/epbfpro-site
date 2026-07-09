@@ -229,9 +229,37 @@
 }
 .ctr-lab-summary {
   margin: 0;
+  color: var(--text-primary);
+  font-weight: 600;
+  font-size: 0.98rem;
+  line-height: 1.45;
+}
+.ctr-lab-desc {
+  margin: 0;
   color: var(--text-secondary);
-  font-size: 0.95rem;
-  line-height: 1.5;
+  font-size: 0.9rem;
+  line-height: 1.55;
+}
+.ctr-lab-objective {
+  margin: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 8px;
+  color: var(--text-primary);
+  font-size: 0.9rem;
+  line-height: 1.45;
+}
+.ctr-lab-obj-label {
+  flex: 0 0 auto;
+  font-size: 0.66rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--primary);
+  border: 1px solid var(--primary);
+  border-radius: 999px;
+  padding: 1px 9px;
 }
 .ctr-lab-open-btn {
   display: inline-flex;

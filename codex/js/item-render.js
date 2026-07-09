@@ -155,12 +155,17 @@ export function labHtml(item, opts = {}) {
   const meta = _meta(item);
   const key = meta.lab_key || String((meta.url || '').replace(/^\/codex\/labs\//, '').replace(/\/$/, ''));
   const openBtn = (!opts.preview && key)
-    ? '<button type="button" class="ctr-lab-open-btn" data-lab-key="' + esc(key) + '">Abrir laboratório</button>'
+    ? '<button type="button" class="ctr-lab-open-btn" data-lab-key="' + esc(key) + '">Abrir</button>'
     : '';
-  return '<div class="ctr-lab-shell">' +
-    (item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '') +
-    openBtn +
-    '</div>';
+  // A lab card explains itself in three beats (Élder): a one-line "o que é"
+  // (summary), a short description, and the objective. All three come from the
+  // code registry via the Trail overlay (lab-overlay.js), so they never go stale.
+  const oneLine = item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '';
+  const desc = item.description ? '<p class="ctr-lab-desc">' + esc(item.description) + '</p>' : '';
+  const objective = item.objective
+    ? '<p class="ctr-lab-objective"><span class="ctr-lab-obj-label">Objetivo</span>' + esc(item.objective) + '</p>'
+    : '';
+  return '<div class="ctr-lab-shell">' + oneLine + desc + objective + openBtn + '</div>';
 }
 
 // ── lazy marked.js loader (markdown types) ───────────────────────────────────

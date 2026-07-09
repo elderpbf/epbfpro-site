@@ -20,6 +20,7 @@ import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
 import { mountEntry, contextFromState } from './support-contact.js';
+import { overlayLabItems } from './lab-overlay.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
@@ -94,6 +95,10 @@ export async function mount(root, ctx = {}) {
       _admin: state.isAdmin,
       _silent: true,
     });
+    // Lab items are shipped artifacts: derive their title/summary/description/
+    // objective from the code registry (single source), not the seeded DB copy,
+    // and drop labs retired from the registry. See lab-overlay.js.
+    overlayLabItems(state.data);
     const loading = root.querySelector('.cdx-trilha-loading');
     const main = root.querySelector('.cdx-trilha-main');
     if (loading) loading.hidden = true;
