@@ -168,7 +168,7 @@
     <div class="sup-bar-inner">
       <span class="sup-bar-lead" data-sup-lead>Não resolveu? Fale com a gente:</span>
       <a class="sup-btn sup-btn-wa" data-sup-wa href="https://wa.me/5579998014253" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87z"/></svg>WhatsApp</a>
-      <a class="sup-btn sup-btn-mail" data-sup-mail href="mailto:contato@pensoia.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg>E-mail</a>
+      <a class="sup-btn sup-btn-mail" data-sup-mail href="mailto:contato@pensoia.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg><span class="sup-mail-label">E-mail</span></a>
     </div>
   </div>
 
@@ -240,6 +240,21 @@
       // The legal lang toggle flips <html lang>; keep the message in sync.
       var langBtn = document.getElementById('langToggle');
       if (langBtn) langBtn.addEventListener('click', function () { setTimeout(refresh, 0); });
+
+      // A mailto: link silently does NOTHING on a desktop with no default mail app.
+      // So the e-mail button ALSO copies the address and confirms it, so the click
+      // always gives feedback (the native compose still opens where a client exists).
+      document.querySelectorAll('[data-sup-mail]').forEach(function (a) {
+        a.addEventListener('click', function () {
+          try { if (navigator.clipboard) navigator.clipboard.writeText(MAIL); } catch (_) {}
+          var label = a.querySelector('.sup-mail-label');
+          if (!label) return;
+          var prev = label.getAttribute('data-label') || label.textContent;
+          label.setAttribute('data-label', prev);
+          label.textContent = (lang === 'en' ? 'Copied!' : 'Copiado!');
+          setTimeout(function () { label.textContent = prev; }, 1600);
+        });
+      });
 
       // ?service= opens + scrolls to the matching FAQ block.
       var service = (params.get('service') || '').trim().toLowerCase();
