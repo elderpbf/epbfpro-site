@@ -43,6 +43,20 @@ test('labs preserves the shared state + registry contract', () => {
   assert.ok(!/window\.CVLabViewer\b/.test(src), 'no longer reads the backstage CVLabViewer global');
 });
 
+test('labs list rail supports drag-to-reorder, propagated via labs-registry', () => {
+  const src = read('../content/labs.js');
+  assert.match(src, /import \{ orderedLabs, labIcon, setLabOrder \} from '\.\.\/js\/labs-registry\.js'/, 'reads the ordered/emoji registry API');
+  assert.match(src, /reorder:\s*\{\s*onReorder:/, 'enables the rail reorder config');
+  assert.match(src, /setLabOrder\(keys\)/, 'persists the drop order via the registry, not local state');
+  assert.ok(!/window\.CTLabsPanel/.test(src), 'still no legacy global (regression guard)');
+});
+
+test('labs list rows show the per-lab emoji instead of a fixed diamond glyph', () => {
+  const src = read('../content/labs.js');
+  assert.ok(!/&#9672;/.test(src), 'no more hardcoded diamond glyph');
+  assert.match(src, /typeIconHtml\(labIcon\(lab\.key\), \{ size: 16 \}\)/, 'row icon resolves per-lab via labIcon');
+});
+
 test('labs strings route through t() in both dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;

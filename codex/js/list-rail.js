@@ -122,6 +122,11 @@ export function mountRail(container, cfg) {
 
   function render() {
     if (destroyed) return;
+    // A full innerHTML replace tears down and recreates .cdx-rail-body, so the
+    // browser forgets its scroll offset on every render() -- jarring for a long
+    // list (e.g. labs) when render() runs on every selection. Carry it over.
+    const prevBody = container.querySelector('.cdx-rail-body');
+    const prevScroll = prevBody ? prevBody.scrollTop : 0;
     container.innerHTML =
       '<div class="cdx-rail">' +
         headHtml() +
@@ -130,6 +135,8 @@ export function mountRail(container, cfg) {
       '</div>';
     if (!wired) { wire(); wired = true; }
     ensureResizer();
+    const newBody = container.querySelector('.cdx-rail-body');
+    if (newBody) newBody.scrollTop = prevScroll;
   }
 
   // ── events (delegated on the container; survive innerHTML re-renders) ─────────

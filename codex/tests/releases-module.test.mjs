@@ -82,7 +82,7 @@ test('#23: the composer saves via setAulas (multi) and reads aula_numbers', () =
 test('#22: the apostila pool also carries the "já na aula N" marker', () => {
   // The apostila rows render inline (not via _rowHtml), so the elsewhere marker must
   // be wired into that branch explicitly — pool="apostila" + _releasedElsewhere + note.
-  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('const tarefaGlyph'));
+  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('// R3: lay the item list out por tipo'));
   assert.match(apostilaBlock, /data-pool="apostila"/, 'still the apostila pool');
   assert.match(apostilaBlock, /_releasedElsewhere\(i\.id, aulaNum\)/, 'apostila checks released-elsewhere');
   assert.match(apostilaBlock, /is-already-released/, 'apostila greys out when bound elsewhere');
@@ -106,4 +106,70 @@ test('R2: mark-aula-happened control sets happened_on to the scheduled day via a
       assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
     }
   }
+});
+
+test('track-34: the Labs group shows each lab\'s own emoji, ordered per Content > Labs drag order', () => {
+  assert.match(relSrc, /import \{ isLabEnabled, labIcon, labOrderIndex \} from '\.\.\/js\/labs-registry\.js'/, 'imports the icon + order readers alongside the enabled flag');
+  assert.match(relSrc, /function _rowGlyph/, 'has the per-lab-icon override');
+  assert.match(relSrc, /labIcon\(key\)/, 'resolves the icon via labIcon, not the generic type glyph');
+  assert.match(relSrc, /function _sortLabsByOrder/, 'has the registry-order sort');
+  assert.match(relSrc, /labOrderIndex\(_labKeyOf\(a\)\) - labOrderIndex\(_labKeyOf\(b\)\)/, 'sorts by labOrderIndex');
+  assert.match(relSrc, /_sortLabsByOrder\(g\.items\)/, 'applies the sort to lab-typed groups');
+});
+
+test('labs3: each composer section header shows liberados/total for the aula', () => {
+  // The accordion renders "released/total" when a section carries releasedCount,
+  // and plain total otherwise (the no-lesson Outros placeholder).
+  assert.match(relSrc, /s\.releasedCount != null\s*\)\s*\?\s*\(s\.releasedCount \+ '\/' \+ s\.count\)/, 'renders released/total');
+  // Every real section (apostila, per-type, drive) in the aula composer sets releasedCount
+  // from the items bound to THIS aula.
+  const aulaBlock = relSrc.slice(relSrc.indexOf('function _renderAulaComposer'), relSrc.indexOf('function _renderOutrosComposer'));
+  assert.match(aulaBlock, /releasedCount: _apostilaItems\.filter\(\(i\) => _isBoundTo\(i\.id, aulaNum\)\)\.length/, 'apostila section counts what is bound to the aula');
+  assert.match(aulaBlock, /releasedCount: g\.items\.filter\(\(i\) => _isBoundTo\(i\.id, aulaNum\)\)\.length/, 'per-type section counts bound-to-aula');
+  assert.match(aulaBlock, /releasedCount: driveItems\.filter\(\(i\) => _isBoundTo\(i\.id, aulaNum\)\)\.length/, 'drive section counts bound-to-aula');
+  // The no-lesson Outros composer counts what is currently in Outros.
+  const outrosBlock = relSrc.slice(relSrc.indexOf('function _renderOutrosComposer'), relSrc.indexOf('// ── Save'));
+  assert.match(outrosBlock, /releasedCount: g\.items\.filter\(\(i\) => _inOutros\(i\.id\)\)\.length/, 'Outros counts in-Outros items');
+});
+
+test('labs3: every composer row has an eye preview that reuses the shared renderers, all types covered', () => {
+  // A preview button on every row (both _rowHtml and the inline apostila rows).
+  assert.match(relSrc, /function _previewBtnHtml/, 'has the eye-button builder');
+  assert.match(relSrc, /_previewBtnHtml\(item\.id\)/, '_rowHtml appends the eye button');
+  assert.match(relSrc, /_previewBtnHtml\(i\.id\)/, 'apostila inline rows append the eye button');
+  assert.match(relSrc, /glyphSvg\('eye'/, 'uses the eye glyph');
+  // Dispatch: labs -> the shared lab viewer, Drive -> the Drive viewer, else -> a modal
+  // rendering the item body via the shared item-render, so EVERY type is previewable.
+  assert.match(relSrc, /import \{ renderItem \} from '\.\.\/js\/item-render\.js'/, 'reuses the shared item renderer');
+  assert.match(relSrc, /import \{ openModal as openLabViewer \} from '\.\.\/js\/lab-viewer\.js'/, 'reuses the shared lab viewer');
+  assert.match(relSrc, /import \* as driveViewer from '\.\.\/js\/drive-viewer\.js'/, 'reuses the shared Drive viewer');
+  const pv = relSrc.slice(relSrc.indexOf('function _openItemPreview'), relSrc.indexOf('// ── Composer rendering'));
+  assert.match(pv, /item\.type === 'lab'/, 'labs open the lab viewer');
+  assert.match(pv, /item\.type === 'drive_file'/, 'Drive files open the Drive viewer');
+  assert.match(pv, /contentApi\.getItem/, 'fetches the full item (body_md) for the body types');
+  assert.match(pv, /renderItem\(full, host, \{ preview: true \}\)/, 'renders the body read-only');
+  // The click handler dismisses on any click ("clicar em qualquer lugar fecha").
+  assert.match(relSrc, /bd\.addEventListener\('click', \(\) => closeModal\(bd\)\)/, 'any click closes the preview');
+  // The eye click never toggles the checkbox.
+  assert.match(relSrc, /closest\('\.cdx-comp-preview'\)[\s\S]*?e\.preventDefault\(\); e\.stopPropagation\(\);/, 'eye click is intercepted before the checkbox toggles');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = readFileSync(new URL(lang, import.meta.url), 'utf8');
+    assert.ok(dict.includes("'releases.preview_title'"), lang + ' has releases.preview_title');
+  }
+  const css = readFileSync(new URL('../content/content.css', import.meta.url), 'utf8');
+  assert.match(css, /\.cdx-comp-preview\s*\{/, 'eye button is styled');
+  assert.match(css, /\.cdx-rel-preview-modal\s*\{/, 'preview modal is styled');
+});
+
+test('track-34: a disabled lab that was never released drops out of the pool (still shown if already released)', () => {
+  // The enabled toggle (Content > Labs) is client-side localStorage; the Labs
+  // ct_items rows themselves don't carry it, so the composer must cross
+  // reference labs-registry.isLabEnabled by meta_json.lab_key, not just render
+  // whatever ct_list_items returns.
+  assert.match(relSrc, /import \{ isLabEnabled, labIcon, labOrderIndex \} from '\.\.\/js\/labs-registry\.js'/, 'imports the enabled-flag reader');
+  assert.match(relSrc, /function _isVisibleLab/, 'has the enabled-flag filter');
+  assert.match(relSrc, /isLabEnabled\(key\)/, 'checks isLabEnabled by the cross-referenced key');
+  assert.match(relSrc, /_released\.indexOf\(Number\(item\.id\)\) !== -1/, 'a disabled lab already released stays visible');
+  assert.match(relSrc, /_isOutros\)\.filter\(_isVisibleLab\)/, 'aula composer applies the filter');
+  assert.match(relSrc, /_isDrive\(i\)\)\.filter\(_isVisibleLab\)/, 'outros composer applies the filter');
 });

@@ -16,6 +16,8 @@ import { esc, cooldownButton } from './utils.js';
 import { t } from '../i18n.js';
 import { createLoginFlow } from './student-login.js';
 import { getPresence, extractEnrollToken } from './student-session.js';
+import { entryHtml, contextFromState } from './support-contact.js';
+import { consentNoticeHtml } from './consent-notice.js';
 
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -142,7 +144,8 @@ function renderDenied(wall) {
       '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
       '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
       '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
-    '</div>';
+    '</div>' +
+    entryHtml(contextFromState(state), 'bloqueado');
 }
 
 function renderRegister(wall) {
@@ -156,7 +159,8 @@ function renderRegister(wall) {
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg"></div></div>' +
     '</div>' +
-    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>';
+    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>' +
+    entryHtml(contextFromState(state), 'registro');
 
   const cardEl = wall.querySelector('.cdx-en-reg');
   // Capture the QR/código enrollment token NOW: page.js strips ?et= from the URL right
@@ -206,7 +210,7 @@ function renderRegister(wall) {
         '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
         '<p class="cdx-en-nopass">' + esc(t('wall.nopass')) + '</p>' +
         '<p class="cdx-en-haveacct">' + esc(t('wall.have_account')) + '</p>' +
-        '<p class="cdx-en-consent">' + esc(t('login.consent_notice')) + '</p>' +
+        consentNoticeHtml() +
       '</div>';
     // On an error re-render, reveal the fields on mobile so the message is visible.
     if (flow.error) cardEl.classList.add('is-open');

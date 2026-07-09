@@ -12,14 +12,15 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css?v=2.3">
-<link rel="stylesheet" href="/css/legal.css?v=1">
+<link rel="stylesheet" href="/css/legal.css?v=2">
 </head>
 <body>
   <div class="legal-wrap">
     <div class="legal-top">
-      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
+      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.transp.svg" alt="PensoIA"></a>
       <div class="legal-actions">
         <a class="legal-back" href="/index.html" data-key="back">&larr; Voltar ao site</a>
+        <button class="legal-theme" id="legalTheme" aria-label="Alternar tema" title="Alternar claro/escuro">☾</button>
         <button class="legal-lang" id="langToggle">EN</button>
       </div>
     </div>
@@ -114,31 +115,6 @@
   </div>
 
   <script src="/js/consent.js?v=1"></script>
-  <script>
-    (function () {
-      // Follow the user's OS/browser light-mode preference, independent of any app theme.
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      function applyTheme() { document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light'); }
-      applyTheme();
-      mq.addEventListener('change', applyTheme);
-      var year = document.getElementById('currentYear');
-      if (year) year.textContent = new Date().getFullYear();
-
-      var current = localStorage.getItem('language') || 'pt-BR';
-      var blocks = document.querySelectorAll('[data-lang-block]');
-      var btn = document.getElementById('langToggle');
-      function apply(lang) {
-        document.documentElement.lang = lang;
-        blocks.forEach(function (b) { b.classList.toggle('active', b.getAttribute('data-lang-block') === lang); });
-        btn.textContent = lang === 'pt-BR' ? 'EN' : 'PT';
-      }
-      apply(current);
-      btn.addEventListener('click', function () {
-        current = current === 'pt-BR' ? 'en' : 'pt-BR';
-        localStorage.setItem('language', current);
-        apply(current);
-      });
-    })();
-  </script>
+  <script src="/js/legal.js?v=1"></script>
 </body>
 </html>

@@ -8,6 +8,7 @@
 .legal-actions{display:flex;gap:14px;align-items:center}
 .legal-back{font-size:.85rem;font-weight:600;color:var(--primary);text-decoration:none}
 .legal-lang{background:var(--surface);border:1px solid var(--accent);color:var(--text-primary);font-family:inherit;font-weight:600;font-size:.8rem;padding:7px 14px;border-radius:20px;cursor:pointer}
+.legal-theme{background:var(--surface);border:1px solid var(--accent);color:var(--text-primary);font-family:inherit;width:34px;height:34px;border-radius:20px;cursor:pointer;display:inline-grid;place-items:center;font-size:1rem;line-height:1}
 /* Title row: product pages put a product mark left of the H1; site pages omit it. */
 .legal-titlerow{display:flex;align-items:center;gap:16px;margin-bottom:8px}
 .legal-mark{height:52px;width:52px;border-radius:12px;flex-shrink:0}

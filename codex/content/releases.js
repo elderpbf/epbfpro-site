@@ -13,6 +13,11 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
+import { isLabEnabled, labIcon, labOrderIndex } from '../js/labs-registry.js';
+import { renderItem } from '../js/item-render.js';
+import { openModal, closeModal } from '../js/modal.js';
+import { openModal as openLabViewer } from '../js/lab-viewer.js';
+import * as driveViewer from '../js/drive-viewer.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -167,6 +172,39 @@ function _typeIcon(slug) {
   const ty = _types.find((x) => x.slug === slug);
   return ty && ty.icon;
 }
+
+// Labs are ct_items rows, but the on/off toggle (Content > Labs) is purely
+// client-side (labs-registry.isLabEnabled, localStorage). Cross-reference by
+// meta_json.lab_key to know which registry entry a given row is.
+function _labKeyOf(item) {
+  if (!item || item.type !== 'lab') return null;
+  try {
+    const meta = typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json;
+    return (meta && meta.lab_key) || null;
+  } catch (e) { return null; }
+}
+// A disabled lab that was never released anywhere just clutters the "add"
+// pool -- hide it. One already bound to an aula stays visible so the admin
+// can still see/unrelease it (hiding it would make it unmanageable).
+function _isVisibleLab(item) {
+  if (item.type !== 'lab') return true;
+  const key = _labKeyOf(item);
+  if (!key || isLabEnabled(key)) return true;
+  return _released.indexOf(Number(item.id)) !== -1;
+}
+// The per-row glyph for a lab item is its own emoji (labs-registry.labIcon),
+// not the generic "Lab" type glyph every other lab would otherwise share.
+function _rowGlyph(item, groupGlyph) {
+  if (item.type !== 'lab') return groupGlyph;
+  const key = _labKeyOf(item);
+  return key ? typeIconHtml(labIcon(key), { size: 15 }) : groupGlyph;
+}
+// Lab rows within a Labs group follow the Content > Labs drag order
+// (labs-registry.labOrderIndex) so the composer matches the admin's own
+// ordering there; every other type keeps the backend's own row order.
+function _sortLabsByOrder(items) {
+  return items.slice().sort((a, b) => labOrderIndex(_labKeyOf(a)) - labOrderIndex(_labKeyOf(b)));
+}
 // Count-chip / row glyph. Apostila + outros are section pseudo-types (fixed
 // glyph); real slugs (tarefa, drive_file) draw their ct_types.icon.
 function _countGlyph(kind, size) {
@@ -210,11 +248,14 @@ function _loadReleases(clientSlug, turmaSlug) {
   const lk = _q('cdx-releases-locked');
   if (lk) lk.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
 
-  Promise.all([
+  // track-34 §B: keep the Labs ct_items rows in sync BEFORE listing items, so a
+  // lab just enabled in Content > Labs shows up here without any manual step
+  // (silent, best-effort -- a failure here must not block the composer load).
+  contentApi.ensureLabItems().catch((e) => { notice.internal(_err(e)); }).then(() => Promise.all([
     contentApi.listItems(),
     cohortsApi.listTurmas({ client_slug: clientSlug }),
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }),
-  ]).then((results) => {
+  ])).then((results) => {
     _allItems = (results[0] && results[0].items) || [];
     _aulas = (results[2] && results[2].aulas) || [];
     const turma = ((results[1] && results[1].turmas) || []).find((tu) => tu.slug === turmaSlug);
@@ -450,6 +491,57 @@ function _toggleFresh(aulaNum, makeFresh) {
     .catch((err) => notice.internal(_err(err)));
 }
 
+// ── Item preview (the eye button on each composer row) ───────────────────────
+// A read-only peek at an item's rendered content, reusing the SAME renderers the
+// Trail + admin already use (js/item-render.js for body types, lab-viewer for
+// labs, drive-viewer for Drive files) so the admin sees exactly what the student
+// will. Every composer row carries one, so every type is previewable.
+function _previewBtnHtml(id) {
+  return '<button type="button" class="cdx-comp-preview" data-preview-id="' + _esc(id) +
+    '" title="' + _esc(t('releases.preview_title')) + '" aria-label="' + _esc(t('releases.preview_title')) + '">' +
+    glyphSvg('eye', { size: 15 }) + '</button>';
+}
+// The full item lives in one of the two composer pools (library items or the
+// course's apostila set); look it up by id across both.
+function _findItem(id) {
+  const n = Number(id);
+  return _allItems.find((i) => Number(i.id) === n) || _apostilaItems.find((i) => Number(i.id) === n) || null;
+}
+// Open the best-fit preview: labs -> the fullscreen lab viewer; Drive files -> the
+// Drive viewer; everything else -> a light "click anywhere to close" modal that
+// renders the item body (fetched full via ct_get_item so body_md is present).
+function _openItemPreview(id) {
+  const item = _findItem(id);
+  if (!item) return;
+  if (item.type === 'lab') {
+    const key = _labKeyOf(item);
+    if (key) openLabViewer({ key, title: item.title });
+    return;
+  }
+  if (item.type === 'drive_file') { driveViewer.openModal(item); return; }
+  const bd = openModal(
+    '<div class="cdx-modal cdx-modal--xl cdx-rel-preview-modal">' +
+      '<div class="cdx-preview-title">' + _esc(item.title || '') + '</div>' +
+      '<div class="cdx-preview-render" id="cdx-rel-preview-render"><div class="cdx-empty">' + t('content.loading') + '</div></div>' +
+    '</div>',
+    { disableBackdropClose: true }
+  );
+  // "clicar em qualquer lugar (inclusive no modal) fecha": any click dismisses.
+  bd.addEventListener('click', () => closeModal(bd));
+  contentApi.getItem({ id: item.id }).then((d) => {
+    const full = (d && d.item) || item;
+    const host = bd.querySelector('#cdx-rel-preview-render');
+    if (!host) return;
+    host.innerHTML = '';
+    try { renderItem(full, host, { preview: true }); }
+    catch (e) { host.textContent = full.body_md || ''; notice.internal(_err(e)); }
+  }).catch((e) => {
+    const host = bd.querySelector('#cdx-rel-preview-render');
+    if (host) host.innerHTML = '<div class="cdx-empty">' + _err(e) + '</div>';
+    notice.internal(_err(e));
+  });
+}
+
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
 function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
   // elsewhereAula: the OTHER aulas this item is bound to (#23 multi-aula). The row
@@ -464,6 +556,7 @@ function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
     '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
       (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
     '</span>' +
+    _previewBtnHtml(item.id) +
   '</label>';
 }
 
@@ -509,10 +602,13 @@ function _elsewhereLabel(aulas) {
 function _renderComposerAccordion(container, sections) {
   const groupsHtml = sections.map((s, idx) => {
     const open = idx === 0;
+    // Section count: "liberados/total" for an aula composer (s.releasedCount set),
+    // plain total otherwise (e.g. the no-lesson Outros placeholder).
+    const cnt = (s.releasedCount != null) ? (s.releasedCount + '/' + s.count) : s.count;
     return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
         '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
           '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
-          '<span class="cdx-picker-group-name">' + s.label + ' (' + s.count + ')</span>' +
+          '<span class="cdx-picker-group-name">' + s.label + ' (' + cnt + ')</span>' +
         '</button>' +
         '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
       '</div>';
@@ -543,6 +639,8 @@ function _wireComposerAccordion(container) {
   }
 
   list.addEventListener('click', (e) => {
+    const pv = e.target.closest('.cdx-comp-preview');
+    if (pv) { e.preventDefault(); e.stopPropagation(); _openItemPreview(pv.getAttribute('data-preview-id')); return; }
     const tgl = e.target.closest('[data-acc-toggle]');
     if (!tgl) return;
     if (search && search.value.trim()) return; // all expanded during a search
@@ -564,9 +662,8 @@ function _renderAulaComposer(container, aula) {
   if (!aula) return;
   const aulaNum = aula.aula_number;
 
-  const tarefaItems = _allItems.filter(_isTarefa);
   const driveItems = _allItems.filter(_isDrive);
-  const outrosItems = _allItems.filter(_isOutros);
+  const outrosItems = _allItems.filter(_isOutros).filter(_isVisibleLab);
 
   // Apostila rows render inline (the set-position prefix isn't in _rowHtml), but
   // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
@@ -580,35 +677,36 @@ function _renderAulaComposer(container, aula) {
           '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (checked ? ' checked' : '') + '>' +
           '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
             (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
-          '</span></label>';
+          '</span>' + _previewBtnHtml(i.id) + '</label>';
       }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
-  const tarefaGlyph = _countGlyph('tarefa', 15);
-  const tarefaRows = tarefaItems.length
-    ? tarefaItems.map((i) => _rowHtml(i, 'tarefa', _isBoundTo(i.id, aulaNum), tarefaGlyph, _releasedElsewhere(i.id, aulaNum))).join('')
-    : '<div class="cdx-comp-empty">' + t('releases.empty_tarefa') + '</div>';
-
-  // R3: lay the item list out por tipo. Apostila + Tarefas keep their own sections;
-  // the former single "Outros" bucket splits into one section per item type.
+  // R3: lay the item list out por tipo. Tarefas are released via the Tarefas
+  // sub-tab now (content/tarefas.js owns create+release / remove+unrelease for
+  // that type), so this composer no longer offers a Tarefas section -- Apostila
+  // keeps its own section, the former single "Outros" bucket splits into one
+  // section per remaining item type.
   const sections = [
-    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
-    { key: 'tarefa', label: t('releases.section_tarefas'), count: tarefaItems.length, rowsHtml: tarefaRows },
+    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length,
+      releasedCount: _apostilaItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: apostilaRows },
   ];
   _groupByType(outrosItems).forEach((g) => {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
-    const rows = g.items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), glyph, _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length, rowsHtml: rows });
+    const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
+    const rows = items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), _rowGlyph(i, glyph), _releasedElsewhere(i.id, aulaNum))).join('');
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
+      releasedCount: g.items.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: rows });
   });
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph, _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length,
+      releasedCount: driveItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: driveRows });
   }
 
   _renderComposerAccordion(container, sections);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
-    _saveAula(container, aulaNum, { tarefaItems, outrosItems, driveItems }));
+    _saveAula(container, aulaNum, { outrosItems, driveItems }));
 }
 
 function _renderOutrosComposer(container) {
@@ -618,22 +716,27 @@ function _renderOutrosComposer(container) {
     if (_released.indexOf(Number(i.id)) === -1) return true;
     return !(_releasedMeta[i.id] || {}).aula_number;
   });
-  const standalone = eligible.filter((i) => !_isDrive(i));
+  const standalone = eligible.filter((i) => !_isDrive(i)).filter(_isVisibleLab);
   const driveItems = eligible.filter(_isDrive);
 
   // R3: por tipo here too. Empty bucket keeps a single placeholder section.
   const sections = standalone.length
-    ? _groupByType(standalone).map((g) => ({
-        key: 'type-' + g.type,
-        label: _typeLabel(g.type),
-        count: g.items.length,
-        rowsHtml: g.items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), typeIconHtml(_typeIcon(i.type), { size: 15 }))).join(''),
-      }))
+    ? _groupByType(standalone).map((g) => {
+        const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
+        return {
+          key: 'type-' + g.type,
+          label: _typeLabel(g.type),
+          count: g.items.length,
+          releasedCount: g.items.filter((i) => _inOutros(i.id)).length,
+          rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })))).join(''),
+        };
+      })
     : [{ key: 'outros', label: t('releases.section_outros_solo'), count: 0, rowsHtml: '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>' }];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
-    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length,
+      releasedCount: driveItems.filter((i) => _inOutros(i.id)).length, rowsHtml: driveRows });
   }
 
   _renderComposerAccordion(container, sections);
@@ -654,7 +757,6 @@ function _saveAula(container, aulaNum, pools) {
   btn.textContent = t('releases.saving');
   const selectedIds = _checkedIds(container);
   const poolIds = _apostilaItems.map((i) => Number(i.id))
-    .concat(pools.tarefaItems.map((i) => Number(i.id)))
     .concat(pools.outrosItems.map((i) => Number(i.id)))
     .concat((pools.driveItems || []).map((i) => Number(i.id)));
   // #23: additive, checking ADDS this aula, unchecking REMOVES it (no longer moves).

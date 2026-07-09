@@ -10,6 +10,7 @@ import { t } from '../i18n.js';
 import { esc, cooldownButton } from './utils.js';
 import { createLoginFlow, validateEmail } from './student-login.js';
 import { getKnownTurmas, getToken, setToken, forgetTurma } from './student-session.js';
+import { mountEntry } from './support-contact.js';
 
 function applyI18n(root) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -220,6 +221,7 @@ function startEmail(emailEl, root) {
 
 export function start() {
   applyI18n(document);
+  mountEntry(document.getElementById('cdx-entrar-support'), {}, 'login');
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),

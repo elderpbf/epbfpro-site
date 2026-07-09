@@ -1,0 +1,485 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Sobreajuste · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k15-panel">
+  <style>
+    /* border-box everywhere, from the start (k1 taught this the hard way: a
+       width:100% child without it overflows the fixed stage on phone). */
+    .k15-panel, .k15-panel * { box-sizing: border-box; }
+
+    .k15-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --text-muted: var(--lab-text-muted);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --amber: #d4a017;
+      --amber-rgb: 212, 160, 23;
+      --param: var(--lab-context-b);
+      --param-rgb: var(--lab-context-b-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 1rem 2rem 0.7rem;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Main area: phrase card + synapse viz + meter ──────── */
+    .k15-main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      min-height: 0;
+    }
+
+    .k15-phrase-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1.3rem;
+      text-align: center;
+    }
+    .k15-phrase-label {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      margin: 0 0 0.35rem;
+      font-weight: 600;
+    }
+    .k15-phrase-text {
+      margin: 0;
+      font-size: var(--lab-fs-audience);
+      font-weight: 700;
+      line-height: 1.25;
+      color: var(--text);
+      transition: color 320ms;
+    }
+    .k15-phrase-card.k15-phrase--memorized .k15-phrase-text { color: var(--bad); }
+
+    /* ── Synapse visualization: two neurons + a weighted line ── */
+    .k15-viz-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 0;
+    }
+    .k15-viz {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Memorization meter + status ───────────────────────── */
+    .k15-meter-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .k15-meter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+    .k15-meter-label {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k15-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--focal);
+      transition: color 320ms;
+    }
+    .k15-meter-row.k15-meter--full .k15-meter-value { color: var(--bad); }
+    .k15-meter-bar {
+      position: relative;
+      height: 12px;
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .k15-meter-fill {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(var(--focal-rgb), 0.55), var(--focal));
+      border-radius: 999px;
+      transition: width 500ms cubic-bezier(0.22, 0.61, 0.36, 1), background 320ms;
+    }
+    .k15-meter-row.k15-meter--full .k15-meter-fill {
+      background: linear-gradient(90deg, rgba(var(--bad-rgb), 0.55), var(--bad));
+    }
+    .k15-status {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-style: italic;
+      min-height: 1.4em;
+    }
+    .k15-status.k15-status--overfit { color: var(--bad); font-style: normal; font-weight: 600; }
+
+    /* ── Operator buttons ───────────────────────────────────── */
+    .k15-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k15-fs-slot { margin-right: auto; }
+    .k15-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k15-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
+    .k15-btn-good {
+      border-color: var(--good);
+      background: rgba(34, 197, 94, 0.14);
+      color: var(--good);
+    }
+    .k15-btn-good:hover { background: rgba(34, 197, 94, 0.24); border-color: var(--good); color: var(--good); }
+    .k15-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .k15-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
+
+    /* ── Responsive: phone / narrow portrait ───────────────── */
+    @media (max-width: 700px) {
+      .k15-panel { padding: 0.55rem 0.9rem 0.55rem; gap: 0.5rem; }
+      .k15-main { gap: 0.5rem; }
+      .k15-phrase-card { padding: 0.6rem 0.85rem; }
+      .k15-meter-bar { height: 10px; }
+
+      .k15-button-bar { gap: 0.4rem; padding: 0; }
+      .k15-btn {
+        padding: 0.6rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        min-width: 0;
+        text-align: center;
+      }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k15-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k15-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k15-btn { padding: 0.55rem 0.35rem; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k15-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
+      .k15-main { gap: 0.4rem; }
+      .k15-phrase-card { padding: 0.45rem 0.8rem; }
+      .k15-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header"
+       data-lab-title="Sobreajuste"
+       data-lab-subtitle="Repetir demais fortalece o peso, até decorar"></div>
+
+  <div class="k15-main">
+    <div class="k15-phrase-card" id="k15-phrase-card">
+      <p class="k15-phrase-label" id="k15-phrase-label">Art. 5º CF</p>
+      <p class="k15-phrase-text" id="k15-phrase-text"></p>
+    </div>
+
+    <div class="k15-viz-wrap">
+      <svg class="k15-viz" id="k15-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="k15-meter-row" id="k15-meter-row">
+      <div class="k15-meter-head">
+        <span class="k15-meter-label">Memorização</span>
+        <span class="k15-meter-value" id="k15-meter-value">0%</span>
+      </div>
+      <div class="k15-meter-bar"><div class="k15-meter-fill" id="k15-meter-fill"></div></div>
+      <p class="k15-status" id="k15-status"></p>
+    </div>
+  </div>
+
+  <div class="k15-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k15-fs-slot" data-lab-fs-ctl></span>
+    <button class="k15-btn k15-btn-good" id="k15-reinforce">Reforçar</button>
+    <button class="k15-btn" id="k15-reset">Reiniciar</button>
+  </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Peso, sinapse e sobreajuste">
+    <p>Um modelo de linguagem aprende ajustando <strong>pesos</strong> entre suas unidades internas, uma analogia direta com o <strong>neurônio biológico</strong>: cada vez que o modelo é exposto de novo ao mesmo trecho, a ligação entre as unidades envolvidas fica mais forte, mais "sinapse". Não é uma questão de acertar ou errar, é repetição pura: quanto mais ele lê aquele trecho, mais o peso cresce.</p>
+    <p>O problema é a repetição em excesso: reforçar demais um único trecho faz o modelo deixar de generalizar a ideia por trás dele e passar a <strong>decorar a forma exata</strong>, é o <strong>sobreajuste</strong> (overfitting). Ele fica ótimo repetindo aquela frase específica, mas isso não significa que entendeu o princípio.</p>
+    <p>Este laboratório mostra isso com uma única frase, o caput do art. 5º da Constituição: a cada reforço (cada nova "leitura"), o que o "modelo" lembra se aproxima mais do texto literal, até ficar palavra por palavra idêntico no sobreajuste máximo. As versões intermediárias são uma criação didática para visualizar essa aproximação, não trechos reais de nada, só o quanto pode variar entre "lembrar a ideia" e "decorar a forma exata".</p>
+  </template>
+
+  <script>
+    (function () {
+      const root = document.querySelector('.k15-panel');
+      if (!root) return;
+
+      // ── Content: a single passage recalled with increasing accuracy. Stage 0
+      // is a loose, garbled "recollection"; each stage moves closer to the
+      // literal caput; the last stage IS the literal text -- there is no
+      // separate "variant" comparison, the phrase itself converges. These
+      // in-between stages are a didactic invention for this lab, not real
+      // excerpts of anything (said explicitly in "Entenda" too). ──
+      const STAGES = [
+        'Ninguém pode ser tratado de forma diferente por causa de quem é.',
+        'Todo mundo deve ser tratado igual pela lei, não importa a diferença.',
+        'Todas as pessoas são iguais diante da lei, sem distinção de tipo algum.',
+        'Todos são iguais ante a lei, sem distinção de qualquer espécie.',
+        'Todos são iguais perante a lei, sem distinção de qualquer tipo.',
+        'Todos são iguais perante a lei, sem distinção de qualquer natureza.', // literal caput
+      ];
+
+      // ── Constants ────────────────────────────────────────
+      const OVERFIT_STEP  = 1;    // +1 per reinforcement toward the cap
+      const OVERFIT_CAP   = STAGES.length - 1; // reinforcements to reach 100% (1 stage per step)
+
+      // ── State ────────────────────────────────────────────
+      // A SINGLE variable drives everything (line thickness, meter, phrase
+      // stage) -- an earlier version split this into "weight" (thickness) and
+      // "overfit" (meter) with different step sizes, so they drifted apart and
+      // the line stopped growing well before the meter reached 100%.
+      let overfit = 0; // 0..1
+
+      // ── DOM refs ─────────────────────────────────────────
+      const vizEl        = root.querySelector('#k15-viz');
+      const phraseCardEl = root.querySelector('#k15-phrase-card');
+      const phraseTextEl = root.querySelector('#k15-phrase-text');
+      const meterRowEl   = root.querySelector('#k15-meter-row');
+      const meterFillEl  = root.querySelector('#k15-meter-fill');
+      const meterValueEl = root.querySelector('#k15-meter-value');
+      const statusEl     = root.querySelector('#k15-status');
+      const reinforceBtn = root.querySelector('#k15-reinforce');
+      const resetBtn     = root.querySelector('#k15-reset');
+
+      function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+      // ── Synapse SVG (two neurons + a line whose width/glow encode weight) ──
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      function makeEl(tag, attrs) {
+        const el = document.createElementNS(SVG_NS, tag);
+        for (const k in attrs) el.setAttribute(k, attrs[k]);
+        return el;
+      }
+      let VB_W = 1000, VB_H = 400;
+      let leftCx, rightCx, cy, r;
+      let synapseLine, synapseGlowLine, leftNode, rightNode;
+
+      function computeGeometry() {
+        const rect = vizEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return false;
+        VB_W = Math.round(rect.width);
+        VB_H = Math.round(rect.height);
+        // Was capped mostly by width (0.07 * VB_W), which starves the circles on
+        // a narrow-but-TALL mobile viz area (a lot of empty vertical space above
+        // and below a tiny dumbbell). Let height carry more of the budget so the
+        // synapse fills the flexible middle row on any aspect ratio.
+        // Diameter cut 30% on phone feedback (2026-07-07): scale every term
+        // (including the px cap) by 0.7 so it stays proportional at any size.
+        r = Math.min(VB_H * 0.126, VB_W * 0.112, 49);
+        leftCx = VB_W * 0.22;
+        rightCx = VB_W * 0.78;
+        cy = VB_H / 2;
+        return true;
+      }
+
+      function buildViz() {
+        if (!computeGeometry()) return;
+        vizEl.setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
+        vizEl.innerHTML = '';
+
+        const defs = makeEl('defs', {});
+        const glow = makeEl('filter', { id: 'k15-glow', x: '-60%', y: '-60%', width: '220%', height: '220%' });
+        glow.appendChild(makeEl('feGaussianBlur', { stdDeviation: '6', result: 'b' }));
+        const merge = makeEl('feMerge', {});
+        merge.appendChild(makeEl('feMergeNode', { in: 'b' }));
+        merge.appendChild(makeEl('feMergeNode', { in: 'SourceGraphic' }));
+        glow.appendChild(merge);
+        defs.appendChild(glow);
+        vizEl.appendChild(defs);
+
+        // Soft glow duplicate of the synapse line, widened + blurred underneath.
+        synapseGlowLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round', filter: 'url(#k15-glow)', opacity: '0.5',
+        });
+        vizEl.appendChild(synapseGlowLine);
+
+        synapseLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round',
+        });
+        vizEl.appendChild(synapseLine);
+
+        leftNode = makeEl('circle', { cx: leftCx, cy: cy, r: r, fill: 'var(--param)' });
+        rightNode = makeEl('circle', { cx: rightCx, cy: cy, r: r, fill: 'var(--param)' });
+        vizEl.appendChild(leftNode);
+        vizEl.appendChild(rightNode);
+
+        // Labels: "Peso" above the line, "Parâmetro N" below each node.
+        const fs = Math.max(15, VB_H * 0.045);
+        const pesoLabel = makeEl('text', {
+          x: (leftCx + rightCx) / 2, y: cy - r - 14,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        pesoLabel.textContent = 'Peso';
+        vizEl.appendChild(pesoLabel);
+
+        const param1Label = makeEl('text', {
+          x: leftCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param1Label.textContent = 'Parâmetro 1';
+        vizEl.appendChild(param1Label);
+
+        const param2Label = makeEl('text', {
+          x: rightCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param2Label.textContent = 'Parâmetro 2';
+        vizEl.appendChild(param2Label);
+
+        renderViz();
+      }
+
+      function renderViz() {
+        if (!synapseLine) return;
+        const w = 4 + overfit * 40;           // stroke width: thin -> bem grossa
+        const glowW = w + 14 + overfit * 20;
+        const op = 0.35 + overfit * 0.65;
+        synapseLine.setAttribute('stroke-width', String(w));
+        synapseLine.setAttribute('opacity', String(op));
+        synapseGlowLine.setAttribute('stroke-width', String(glowW));
+        synapseGlowLine.setAttribute('opacity', String(0.15 + overfit * 0.35));
+      }
+
+      let resizeTimer = null;
+      const ro = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(buildViz, 80);
+      });
+      ro.observe(vizEl);
+
+      function stageIndexFor(o) {
+        return Math.min(STAGES.length - 1, Math.max(0, Math.round(o * (STAGES.length - 1))));
+      }
+
+      // ── Render (meter, status, phrase stage) ──────────────
+      function render() {
+        renderViz();
+        meterFillEl.style.width = (overfit * 100).toFixed(0) + '%';
+        meterValueEl.textContent = Math.round(overfit * 100) + '%';
+        const memorized = overfit >= 1;
+        meterRowEl.classList.toggle('k15-meter--full', memorized);
+        phraseTextEl.textContent = STAGES[stageIndexFor(overfit)];
+        phraseCardEl.classList.toggle('k15-phrase--memorized', memorized);
+
+        if (memorized) {
+          statusEl.textContent = 'Decorou: de tanto repetir, a frase lembrada ficou idêntica ao texto real.';
+          statusEl.className = 'k15-status k15-status--overfit';
+        } else {
+          statusEl.textContent = '';
+          statusEl.className = 'k15-status';
+        }
+      }
+
+      // ── Handlers ─────────────────────────────────────────
+      function reinforce() {
+        overfit = clamp01(overfit + OVERFIT_STEP / OVERFIT_CAP);
+        render();
+      }
+      function reset() {
+        overfit = 0;
+        render();
+      }
+
+      reinforceBtn.addEventListener('click', reinforce);
+      resetBtn.addEventListener('click', reset);
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      buildViz();
+      render();
+    })();
+  </script>
+</section>
+</body>
+</html>

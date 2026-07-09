@@ -188,3 +188,14 @@
    whatever container it renders into). Flex + align-items:center so the no-icon
    "Todos" chip lines up with the icon-bearing type chips, in every area. */
 .cdx-tf-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+
+/* ── CONSENT (LGPD) COLLAPSE ─────────────────────────────────────────────────*/
+/* consent-notice.js: a lean one-line consent + the full LGPD notice collapsed behind
+   a "Ver detalhes". Shared by the OTP wall, the simple-enroll wall and the login modal
+   so the disclosure looks identical everywhere it appears. */
+.cdx-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); }
+.cdx-consent > summary { cursor: pointer; list-style: none; font-size: .72rem; line-height: 1.5; color: var(--text-secondary); }
+.cdx-consent > summary::-webkit-details-marker { display: none; }
+.cdx-consent-more { font-weight: 700; text-decoration: underline; white-space: nowrap; }
+.cdx-consent[open] .cdx-consent-more { display: none; }
+.cdx-consent-full { margin: .6rem 0 0; font-size: .72rem; line-height: 1.55; color: var(--text-secondary); }

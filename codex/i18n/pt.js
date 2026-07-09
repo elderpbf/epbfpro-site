@@ -382,6 +382,9 @@ export default {
   'cohorts.session_open_title':     'Abrir a sessão conectada a esta turma',
   'cohorts.session_none_title':     'Nenhuma sessão conectada a esta turma',
   'cohorts.field_trail':            'Link da Trilha',
+  'cohorts.field_access_code':      'Código de acesso',
+  'cohorts.copy_code_title':        'Copiar o código',
+  'cohorts.code_copied':            'Código copiado!',
 
   // Cohorts — aulas
   'cohorts.loading_aulas':          'Carregando aulas...',
@@ -750,6 +753,7 @@ export default {
   'releases.turma_not_found': 'Turma não encontrada.',
   'releases.no_aulas':        'Nenhuma aula cadastrada. Adicione aulas na aba Turmas (editar turma).',
   'releases.empty_chip':      'vazio',
+  'releases.preview_title':   'Ver conteúdo',
   'releases.outros_label':    'Outros',
   'releases.outros_sub':      'Materiais sem aula',
   'releases.section_apostila':    'Conteúdo do curso',

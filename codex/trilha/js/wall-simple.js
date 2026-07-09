@@ -11,6 +11,8 @@ import { esc } from './utils.js';
 import { t } from '../i18n.js';
 import { trail } from './api.js';
 import * as sess from './student-session.js';
+import { entryHtml, contextFromState } from './support-contact.js';
+import { consentNoticeHtml } from './consent-notice.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -103,7 +105,8 @@ function renderDenied(wall) {
       '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
       '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
       '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
-    '</div>';
+    '</div>' +
+    entryHtml(contextFromState(state), 'bloqueado');
 }
 
 function renderSimpleRegister(wall) {
@@ -117,7 +120,8 @@ function renderSimpleRegister(wall) {
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg"></div></div>' +
     '</div>' +
-    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>';
+    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>' +
+    entryHtml(contextFromState(state), 'registro');
 
   const cardEl = wall.querySelector('.cdx-en-reg');
   renderCardForm(cardEl);
@@ -139,7 +143,7 @@ function renderCardForm(cardEl) {
       '</div>' +
       '<div class="cdx-en-error" aria-live="polite"></div>' +
       '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('simplewall.cta')) + '</button>' +
-      '<p class="cdx-en-consent">' + esc(t('login.consent_notice')) + '</p>' +
+      consentNoticeHtml() +
     '</div>';
 
   const toggle = cardEl.querySelector('[data-toggle-reg]');

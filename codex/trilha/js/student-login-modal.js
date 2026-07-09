@@ -10,6 +10,7 @@
 import { t } from '../i18n.js';
 import { createLoginFlow, flowOptsFrom } from './student-login.js';
 import { esc, cooldownButton } from './utils.js';
+import { consentNoticeHtml } from './consent-notice.js';
 
 // Map a flow error code to a student-facing message (display glue).
 function errorText(code, retryAfter) {
@@ -96,7 +97,7 @@ export function openLoginModal(opts = {}) {
       '<label class="tr-tarefa-field-label" for="tr-en-name">' + esc(t('login.name_label')) + '</label>' +
       '<input id="tr-en-name" type="text" class="tr-tarefa-name tr-en-name" placeholder="' + esc(t('login.name_placeholder')) + '" autocomplete="name">' +
       '<div class="tr-login-consent">' +
-        '<p class="tr-login-consent-notice">' + esc(t('login.consent_notice')) + '</p>' +
+        consentNoticeHtml() +
         '<label class="tr-login-consent-row">' +
           '<input type="checkbox" class="tr-en-consent">' +
           '<span>' + esc(t('login.consent_label')) + '</span>' +
@@ -235,7 +236,7 @@ export function openLoginModal(opts = {}) {
       '<label class="tr-tarefa-field-label" for="tr-login-name">' + esc(t('login.name_label')) + '</label>' +
       '<input id="tr-login-name" type="text" class="tr-tarefa-name tr-login-name" placeholder="' + esc(t('login.name_placeholder')) + '" autocomplete="name">' +
       '<div class="tr-login-consent">' +
-        '<p class="tr-login-consent-notice">' + esc(t('login.consent_notice')) + '</p>' +
+        consentNoticeHtml() +
         '<label class="tr-login-consent-row">' +
           '<input type="checkbox" class="tr-login-consent-cb">' +
           '<span>' + esc(t('login.consent_label')) + '</span>' +

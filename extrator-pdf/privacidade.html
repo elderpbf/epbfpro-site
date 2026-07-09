@@ -12,13 +12,16 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Comfortaa:wght@400;700&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="/css/style.css?v=2.3">
-<link rel="stylesheet" href="/css/legal.css?v=1">
+<link rel="stylesheet" href="/css/legal.css?v=2">
+<link rel="stylesheet" href="/css/support-entry.css?v=1">
 </head>
 <body>
   <div class="legal-wrap">
     <div class="legal-top">
-      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.navy.svg" alt="PensoIA"></a>
+      <a class="legal-logo" href="/index.html" aria-label="PensoIA"><img src="/images/brand/glyph-wordmark_bg.transp.svg" alt="PensoIA"></a>
       <div class="legal-actions">
+        <a class="psup-entry" href="/suporte.html?source=extrator-pdf&service=extrator-pdf"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg><span>Precisa de ajuda?</span></a>
+        <button class="legal-theme" id="legalTheme" aria-label="Alternar tema" title="Alternar claro/escuro">☾</button>
         <a class="legal-back" href="/index.html">&larr; Voltar ao site</a>
       </div>
     </div>
@@ -61,16 +64,6 @@
     </div>
   </div>
 
-  <script>
-    (function () {
-      // Follow the user's OS/browser light-mode preference, independent of any app theme. No cookies here.
-      var mq = window.matchMedia('(prefers-color-scheme: dark)');
-      function applyTheme() { document.documentElement.setAttribute('data-theme', mq.matches ? 'dark' : 'light'); }
-      applyTheme();
-      mq.addEventListener('change', applyTheme);
-      var year = document.getElementById('currentYear');
-      if (year) year.textContent = new Date().getFullYear();
-    })();
-  </script>
+  <script src="/js/legal.js?v=1"></script>
 </body>
 </html>
