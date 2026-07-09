@@ -90,15 +90,18 @@ export function aulaDateStatusKey(aula, today) {
   return { key: 'tbd', date: null };
 }
 
-// #23: additive multi-aula diff for one aula's composer. Checking an item ADDS this
-// aula to its bindings (instead of moving it); unchecking REMOVES this aula. Returns
-// the ids needing a first ct_release and the per-item new aula_numbers list to save.
-// `aulaNumbersOf(id)` yields the item's current bindings (array).
+// #23 + opção B: additive multi-aula diff for one aula's composer. Checking an item
+// ADDS this aula to its bindings; unchecking REMOVES it. Opção B (Élder 2026-07-09):
+// unchecking the aula UNRELEASES the item from the turma when nothing else holds it
+// (no other aula AND not pinned to Outros, the 0 sentinel). It never silently falls into
+// Outros; Outros is a manual placement only. Returns the ids needing a first ct_release,
+// the per-item new aula_numbers to save, and the ids to unrelease outright.
+// `aulaNumbersOf(id)` yields the item's current bindings (array, may include 0).
 export function diffAulaMultiSelection({ released, aulaNumbersOf, aulaNum, poolIds, selectedIds }) {
   const rel = new Set((released || []).map(Number));
   const sel = new Set((selectedIds || []).map(Number));
   const n = Number(aulaNum);
-  const toRelease = [], updates = [];
+  const toRelease = [], updates = [], toUnrelease = [];
   for (const raw of (poolIds || [])) {
     const id = Number(raw);
     const cur = (aulaNumbersOf(id) || []).map(Number);
@@ -108,25 +111,41 @@ export function diffAulaMultiSelection({ released, aulaNumbersOf, aulaNum, poolI
       if (!rel.has(id)) toRelease.push(id);
       updates.push({ id, aulaNumbers: [...new Set(cur.concat(n))].sort((a, b) => a - b) });
     } else if (!checked && hasN) {
-      updates.push({ id, aulaNumbers: cur.filter((x) => x !== n) });
+      const next = cur.filter((x) => x !== n);
+      if (next.length === 0) toUnrelease.push(id); // last placement gone -> unrelease from the turma
+      else updates.push({ id, aulaNumbers: next });
     }
   }
-  return { toRelease, updates };
+  return { toRelease, updates, toUnrelease };
 }
 
-// Diff the "Outros" (no-lesson) bucket: release newly checked items, unrelease
-// items unchecked that were sitting in Outros (no aula_number).
-export function diffOutrosSelection({ released, releasedMeta, poolIds, selectedIds }) {
+// Opção B: the "Outros" bucket is the 0 sentinel in the multi-aula model, so an item can
+// sit in Outros AND in real aulas at once. Checking here ADDS 0 to the bindings (releasing
+// first if brand-new); unchecking REMOVES 0, and if that was the item's last placement it
+// unreleases from the turma. `aulaNumbersOf(id)` yields current bindings (may include 0, or
+// be empty for legacy no-lesson rows, which count as already-in-Outros). Mirrors the aula
+// diff's shape: { toRelease, updates, toUnrelease }.
+export function diffOutrosSelection({ released, aulaNumbersOf, poolIds, selectedIds }) {
   const rel = new Set((released || []).map(Number));
   const sel = new Set((selectedIds || []).map(Number));
-  const toRelease = [], toUnrelease = [];
+  const toRelease = [], updates = [], toUnrelease = [];
   for (const raw of (poolIds || [])) {
     const id = Number(raw);
-    const inOtros = rel.has(id) && !(releasedMeta[id] || {}).aula_number;
-    if (sel.has(id) && !rel.has(id)) toRelease.push(id);
-    else if (!sel.has(id) && inOtros) toUnrelease.push(id);
+    const cur = (aulaNumbersOf(id) || []).map(Number);
+    const real = cur.filter((x) => x > 0);
+    // Already in Outros = explicit 0 pin, OR a legacy release with no real aula.
+    const inOtros = rel.has(id) && (cur.indexOf(0) !== -1 || real.length === 0);
+    const checked = sel.has(id);
+    if (checked && !inOtros) {
+      if (!rel.has(id)) toRelease.push(id);
+      updates.push({ id, aulaNumbers: [...new Set(cur.concat(0))].sort((a, b) => a - b) });
+    } else if (!checked && inOtros) {
+      const next = cur.filter((x) => x !== 0);
+      if (next.length === 0) toUnrelease.push(id); // Outros was its only home -> unrelease
+      else updates.push({ id, aulaNumbers: next });
+    }
   }
-  return { toRelease, toUnrelease };
+  return { toRelease, updates, toUnrelease };
 }
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
@@ -230,7 +249,11 @@ function _isBoundTo(id, aulaNum) {
     _aulaNumbersOf(id).map(String).indexOf(String(aulaNum)) !== -1;
 }
 function _inOutros(id) {
-  return _released.indexOf(Number(id)) !== -1 && _aulaNumbersOf(id).length === 0;
+  if (_released.indexOf(Number(id)) === -1) return false;
+  const nums = _aulaNumbersOf(id).map(Number);
+  // In Outros = pinned with the 0 sentinel (opção B) OR a legacy release with no aula
+  // binding at all (the old "no-lesson = Outros" rows, still honored without a migration).
+  return nums.indexOf(0) !== -1 || nums.filter((n) => n > 0).length === 0;
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -588,11 +611,19 @@ function _releasedElsewhere(id, aulaNum) {
   return others.length ? others : null;
 }
 
-// "já na aula 1" (one) or "já nas aulas 1, 3" (several).
+// The "already released elsewhere" marker. Opção B: 0 = Outros, so an item can be bound to
+// real aulas AND to Outros. Composes: "já na aula 1", "já em outros", "já em outros e na
+// aula 1", "já nas aulas 1, 3", "já em outros e nas aulas 1, 3".
 function _elsewhereLabel(aulas) {
-  const list = (Array.isArray(aulas) ? aulas : [aulas]).map(String);
-  if (list.length <= 1) return t('releases.already_aula').replace('{n}', list[0] || '');
-  return t('releases.already_aulas').replace('{ns}', list.join(', '));
+  const list = (Array.isArray(aulas) ? aulas : [aulas]).map(Number);
+  const outros = list.indexOf(0) !== -1;
+  const real = list.filter((n) => n > 0).sort((a, b) => a - b);
+  const parts = [];
+  if (outros) parts.push(t('releases.elsewhere_outros'));
+  if (real.length === 1) parts.push(t('releases.elsewhere_aula').replace('{n}', real[0]));
+  else if (real.length > 1) parts.push(t('releases.elsewhere_aulas').replace('{ns}', real.join(', ')));
+  if (!parts.length) return '';
+  return t('releases.elsewhere_prefix') + ' ' + parts.join(t('releases.elsewhere_join'));
 }
 
 // Render the item pools as one search + a single-open accordion of sections,
@@ -710,12 +741,11 @@ function _renderAulaComposer(container, aula) {
 }
 
 function _renderOutrosComposer(container) {
-  // Eligible: standalone items unreleased OR currently in Outros (no aula).
-  const eligible = _allItems.filter((i) => {
-    if (i.set_id || i.type === 'conteudo' || i.type === 'tarefa') return false;
-    if (_released.indexOf(Number(i.id)) === -1) return true;
-    return !(_releasedMeta[i.id] || {}).aula_number;
-  });
+  // Opção B: ANY standalone item is eligible for Outros, whether or not it is already in an
+  // aula. Pinning to Outros adds the 0 sentinel alongside its aula bindings, so an item can
+  // live in an aula AND in Outros at once. (Apostila / set-conteudo / tarefa are placed by
+  // their own surfaces, never here.)
+  const eligible = _allItems.filter((i) => !(i.set_id || i.type === 'conteudo' || i.type === 'tarefa'));
   const standalone = eligible.filter((i) => !_isDrive(i)).filter(_isVisibleLab);
   const driveItems = eligible.filter(_isDrive);
 
@@ -728,13 +758,13 @@ function _renderOutrosComposer(container) {
           label: _typeLabel(g.type),
           count: g.items.length,
           releasedCount: g.items.filter((i) => _inOutros(i.id)).length,
-          rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })))).join(''),
+          rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })), _releasedElsewhere(i.id, 0))).join(''),
         };
       })
     : [{ key: 'outros', label: t('releases.section_outros_solo'), count: 0, rowsHtml: '<div class="cdx-comp-empty">' + t('releases.empty_outros_solo') + '</div>' }];
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
-    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
+    const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph, _releasedElsewhere(i.id, 0))).join('');
     sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length,
       releasedCount: driveItems.filter((i) => _inOutros(i.id)).length, rowsHtml: driveRows });
   }
@@ -759,8 +789,9 @@ function _saveAula(container, aulaNum, pools) {
   const poolIds = _apostilaItems.map((i) => Number(i.id))
     .concat(pools.outrosItems.map((i) => Number(i.id)))
     .concat((pools.driveItems || []).map((i) => Number(i.id)));
-  // #23: additive, checking ADDS this aula, unchecking REMOVES it (no longer moves).
-  const { toRelease, updates } = diffAulaMultiSelection({
+  // #23 + opção B: checking ADDS this aula, unchecking REMOVES it; the last removal
+  // unreleases from the turma (never a silent fall into Outros).
+  const { toRelease, updates, toUnrelease } = diffAulaMultiSelection({
     released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
@@ -768,12 +799,19 @@ function _saveAula(container, aulaNum, pools) {
   Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
     .then(() => Promise.all(updates.map((u) =>
       api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
+    .then(() => Promise.all(toUnrelease.map((id) => api.unrelease(Object.assign({ item_id: id }, base)))))
     .then(() => {
       toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
       updates.forEach((u) => {
         const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
         m.aula_numbers = u.aulaNumbers;
-        m.aula_number = u.aulaNumbers.length ? u.aulaNumbers[0] : null; // primary (Trail back-compat)
+        const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0); // primary = lowest REAL aula
+        m.aula_number = realLeft.length ? realLeft[0] : null;
+      });
+      toUnrelease.forEach((id) => {
+        const idx = _released.indexOf(id);
+        if (idx !== -1) _released.splice(idx, 1);
+        delete _releasedMeta[id];
       });
       toast.ok(t('releases.saved'));
       _afterSave();
@@ -790,16 +828,26 @@ function _saveOutros(container, pools) {
   btn.textContent = t('releases.saving');
   const selectedIds = _checkedIds(container);
   const poolIds = pools.standalone.map((i) => Number(i.id)).concat((pools.driveItems || []).map((i) => Number(i.id)));
-  const { toRelease, toUnrelease } = diffOutrosSelection({
-    released: _released, releasedMeta: _releasedMeta, poolIds, selectedIds,
+  // Opção B: adding to Outros pins the 0 sentinel (releasing first if brand-new); removing
+  // it drops 0 and unreleases only when Outros was the item's last home. An item already in
+  // an aula stays released, gaining/losing just the Outros pin.
+  const { toRelease, updates, toUnrelease } = diffOutrosSelection({
+    released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
 
-  Promise.all(
-    toRelease.map((id) => api.release(Object.assign({ item_id: id }, base)))
-      .concat(toUnrelease.map((id) => api.unrelease(Object.assign({ item_id: id }, base))))
-  ).then(() => {
-    toRelease.forEach((id) => { _released.push(id); _releasedMeta[id] = { aula_number: null }; });
+  Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+    .then(() => Promise.all(updates.map((u) =>
+      api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
+    .then(() => Promise.all(toUnrelease.map((id) => api.unrelease(Object.assign({ item_id: id }, base)))))
+    .then(() => {
+    toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+    updates.forEach((u) => {
+      const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+      m.aula_numbers = u.aulaNumbers;
+      const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0);
+      m.aula_number = realLeft.length ? realLeft[0] : null;
+    });
     toUnrelease.forEach((id) => {
       const idx = _released.indexOf(id);
       if (idx !== -1) _released.splice(idx, 1);

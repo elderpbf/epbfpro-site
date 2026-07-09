@@ -6,7 +6,7 @@
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.CdxGlyphs (icon library)
 import { state } from './state.js';
-import { esc } from './utils.js';
+import { esc, isOutrosItem } from './utils.js';
 import { isFresh } from './freshness.js';
 import { appendFlatActionRow } from './actions.js';
 import { trail } from './api.js';
@@ -54,7 +54,7 @@ export function renderOutrosTab() {
   if (!listEl) return;
 
   const data = state.data || {};
-  const items = (data.items || []).filter((it) => it.aula_number == null && it.set_id == null && it.type !== 'tarefa');
+  const items = (data.items || []).filter(isOutrosItem);
   if (!items.length) {
     listEl.innerHTML = '<div class="cdx-tr-empty">Nenhum material avulso disponível ainda.</div>';
     return;

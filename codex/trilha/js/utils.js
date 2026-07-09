@@ -43,6 +43,17 @@ export function aulaStatus(aula, today = todayIso()) {
   return 'und';
 }
 
+// Is a released item an "Outros materiais" item? Opção B (Élder 2026-07-09): Outros is the
+// 0 sentinel in the multi-aula bindings, so an item pinned to Outros can ALSO live in a real
+// aula (it shows in both places). Falls back to the legacy "no aula at all" rows so pre-opção-B
+// releases keep showing without a data migration. Apostila (set_id) + tarefas are placed by
+// their own tabs, never here. Shared by the Outros tab (flat.js) and the tab-count (page.js).
+export function isOutrosItem(it) {
+  if (!it || it.set_id != null || it.type === 'tarefa') return false;
+  const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : [];
+  return nums.indexOf(0) !== -1 || it.aula_number == null;
+}
+
 export function parseTopics(raw) {
   if (!raw) return [];
   if (Array.isArray(raw)) return raw.map((t) => String(t).trim()).filter(Boolean);
