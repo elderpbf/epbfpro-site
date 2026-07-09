@@ -125,6 +125,11 @@
   color: var(--lab-focal);
   box-shadow: 0 0 16px rgba(var(--lab-focal-rgb), 0.3);
 }
+.lab-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  pointer-events: none;
+}
 @media (max-width: 700px) {
   .lab-btn { min-height: 48px; font-size: 15px; }
 }

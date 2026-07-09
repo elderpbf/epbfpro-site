@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>PDF e OCR · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k16-panel">
+  <style>
+    .k16-panel, .k16-panel * { box-sizing: border-box; }
+
+    .k16-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+      --font-serif: Georgia, 'Times New Roman', 'Liberation Serif', serif;
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.6rem;
+      padding: 1rem 2rem 0.7rem;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+    .k16-main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0.55rem;
+      min-height: 0;
+    }
+
+    /* ── Search row ─────────────────────────────────────────── */
+    .k16-search-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.6rem 1rem;
+    }
+    .k16-search-icon {
+      flex: 0 0 auto;
+      width: 1.35em;
+      height: 1.35em;
+      display: flex;
+      color: var(--text-dim);
+    }
+    .k16-search-icon svg { width: 100%; height: 100%; }
+    .k16-search-input {
+      flex: 1 1 auto;
+      min-width: 0;
+      border: none;
+      background: transparent;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      color: var(--text);
+      padding: 0.3rem 0;
+      outline: none;
+    }
+    .k16-search-input::placeholder { color: var(--text-dim); }
+    .k16-search-status {
+      flex: 0 0 auto;
+      font-family: var(--font-mono);
+      font-size: calc(var(--lab-fs-body) * 1.05);
+      font-weight: 800;
+      white-space: nowrap;
+      color: var(--text-dim);
+    }
+    .k16-search-status.k16-search--found { color: var(--good); }
+    .k16-search-status.k16-search--empty { color: var(--bad); }
+
+    /* ── Page stage: two stacked layers, splittable ──────────── */
+    .k16-stage-wrap {
+      position: relative;
+      min-height: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      /* Split-mode transforms shift+scale the two layers apart; this keeps
+         that spread inside the flexible middle row so it can never visually
+         crash into the fixed button bar below (the exact class of bug the
+         other labs were just fixed for). */
+      overflow: hidden;
+    }
+    .k16-stage {
+      position: relative;
+      width: min(100%, 720px);
+      height: 100%;
+      max-height: 100%;
+    }
+    /* A non-OCR'd scan is a flat picture -- there is no text to select, so
+       dragging over it must do nothing (like a real scanned PDF). Lifted only
+       once OCR has run (k16-ocr-done, toggled in JS), matching a real PDF
+       viewer where the recovered text becomes selectable/copyable. */
+    .k16-stage:not(.k16-ocr-done) { user-select: none; }
+    .k16-layer {
+      position: absolute;
+      inset: 0;
+      border-radius: 10px;
+      transition: transform 480ms cubic-bezier(0.22, 0.61, 0.36, 1), box-shadow 480ms;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+    .k16-layer-tag {
+      position: absolute;
+      top: -0.55em;
+      left: 0.9rem;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      padding: 0.1rem 0.55rem;
+      border-radius: 999px;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      color: var(--text-dim);
+      opacity: 0;
+      transition: opacity 320ms;
+    }
+
+    /* Image layer: a real legal document, white page + header + justified
+       body -- not a "scanned paper" mockup. Stays white/dark-ink in BOTH
+       app themes: it represents a printed page, not app chrome. */
+    .k16-image-layer {
+      background: #ffffff;
+      color: #1c1c1c;
+      padding: 1.2rem 1.4rem 1.1rem;
+      font-family: var(--font-serif);
+      z-index: 1;
+    }
+    /* Badge (brasão): a decorative graphic, image layer ONLY -- OCR reads
+       text pixels, not raster art, so it never has a text-layer counterpart.
+       Absolutely positioned so it takes no block-flow space, keeping the
+       header's box height/width identical between the two layers (the
+       invariant that keeps search-marks and the OCR reveal aligned). */
+    .k16-badge {
+      position: absolute;
+      top: 1.15rem;
+      left: 1.4rem;
+      width: 2.1em;
+      height: 2.1em;
+      color: #7a7a7a;
+      pointer-events: none;
+    }
+    .k16-badge svg { width: 100%; height: 100%; }
+
+    /* Header text lines: NOT a fixed pre-filled block anymore -- they are two
+       more entries in the same OCR reveal pipeline as the body (so the
+       letterhead's WORDS come through OCR; only the badge graphic above
+       doesn't). Colors are layer-scoped so the text-layer copy inherits its
+       ancestor's transparent (invisible until revealed), exactly like body
+       lines -- a hardcoded color here would defeat that. */
+    .k16-header-court {
+      margin: 0 0 0.15rem;
+      font-size: calc(1.3rem * var(--lab-fs-scale) * 0.72);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      text-align: center;
+    }
+    .k16-header-proc {
+      margin: 0 0 0.9rem;
+      padding-bottom: 0.6rem;
+      border-bottom: 1.5px solid transparent;
+      font-size: calc(1.3rem * var(--lab-fs-scale) * 0.82);
+      font-weight: 700;
+      text-align: center;
+    }
+    .k16-image-layer .k16-header-court { color: #555; }
+    .k16-image-layer .k16-header-proc { color: #1c1c1c; border-bottom-color: #ccc; }
+    /* Bigger than the shared --lab-fs-doc token on purpose: in every OTHER
+       lab that token sizes a document glimpsed alongside other content;
+       here the document IS the whole demo, it needs to read like an actual
+       page of text, not a caption-sized preview. */
+    .k16-image-line {
+      font-size: calc(1.3rem * var(--lab-fs-scale));
+      line-height: 1.7;
+      text-align: justify;
+    }
+
+    /* Signature: the one line where the two layers DELIBERATELY diverge in
+       font. It's short and never wraps, so the two-layer alignment invariant
+       (same font/padding above) doesn't apply here -- and a real signature is
+       handwritten (image layer: a script font), while OCR output is always
+       typed characters (text layer: the normal serif), never cursive itself.
+       OCR badly misreads elaborate handwriting, so its "reading" of this line
+       is garbled nonsense, not a clean transcription like the body text. */
+    .k16-signature-line {
+      margin-top: 1rem;
+      font-size: calc(1.5rem * var(--lab-fs-scale));
+      line-height: 1.3;
+      text-align: right;
+    }
+    .k16-image-layer .k16-signature-line {
+      font-family: 'Brush Script MT', 'Segoe Script', cursive;
+      font-style: italic;
+    }
+
+    /* Text layer: transparent overlay in normal mode (its only job is to be
+       SELECTABLE/SEARCHABLE, matched line-for-line with the image); becomes
+       a visible "sheet" once split via Ver camadas. */
+    /* Same font-family + padding as .k16-image-layer, ON PURPOSE: this layer
+       overlays transparently on top of the image in normal (non-split) mode,
+       and marks/underlines are positioned by the browser's own text wrap --
+       if the two layers wrap the same paragraph differently (they did, when
+       this used a mono font against the image's serif), a search <mark> or
+       the OCR-error underline lands over the WRONG part of the visible text
+       below. Switched to mono only once physically split (below), where the
+       sheet is its own separate object and the mismatch no longer matters --
+       and looks right anyway ("just characters", no formatting survived). */
+    .k16-text-layer {
+      padding: 1.2rem 1.4rem 1.1rem;
+      font-family: var(--font-serif);
+      color: transparent;
+      background: transparent;
+      z-index: 2;
+      pointer-events: none;
+    }
+    .k16-text-line {
+      font-size: calc(1.3rem * var(--lab-fs-scale));
+      line-height: 1.7;
+      text-align: justify;
+    }
+    .k16-text-line mark {
+      background: rgba(var(--focal-rgb), 0.45);
+      color: inherit;
+      border-radius: 2px;
+    }
+    .k16-ocr-error {
+      text-decoration: underline wavy var(--bad);
+      text-decoration-thickness: 1.5px;
+      cursor: help;
+    }
+
+    /* Ver camadas: physically separate the two sheets. Both layers are
+       full-size (inset:0), so a small translate alone barely shows two
+       sheets that size -- shrink them first (scale), THEN offset by a
+       percentage of their ORIGINAL box (CSS resolves translate %s against
+       the untransformed size, regardless of the scale() in the same
+       transform), so the two now-smaller sheets end up clearly apart with
+       visible gaps around each, not stacked almost exactly on top of
+       each other. */
+    .k16-stage.k16-split .k16-image-layer {
+      transform: scale(0.78) translate(-20%, -10%) rotate(-3deg);
+      box-shadow: -6px 10px 22px rgba(0,0,0,0.28);
+    }
+    /* Fixed light tint (not a theme var): this sheet is frosted PAPER, same
+       reasoning as the image layer's fixed white -- in dark mode a
+       theme-colored glass over the white document below turned into a
+       muddy grey smudge instead of a translucent sheet. */
+    .k16-stage.k16-split .k16-text-layer {
+      transform: scale(0.78) translate(20%, 13%) rotate(3deg);
+      box-shadow: 6px 10px 22px rgba(0,0,0,0.24);
+      background: rgba(255, 255, 255, 0.4);
+      backdrop-filter: blur(10px) saturate(140%);
+      -webkit-backdrop-filter: blur(10px) saturate(140%);
+      border: 1.5px solid rgba(255, 255, 255, 0.55);
+      color: #1c1c1c;
+      font-family: var(--font-mono);
+      pointer-events: auto;
+    }
+    .k16-stage.k16-split .k16-layer-tag { opacity: 1; }
+
+    /* OCR scan line, sweeps top -> bottom over the image layer while running. */
+    .k16-scanline {
+      position: absolute;
+      left: 0; right: 0;
+      height: 3px;
+      top: 0;
+      background: var(--focal);
+      box-shadow: 0 0 16px 4px rgba(var(--focal-rgb), 0.65);
+      opacity: 0;
+      z-index: 3;
+      pointer-events: none;
+    }
+    .k16-scanline.k16-scan-active { opacity: 1; }
+
+    /* ── Operator buttons ───────────────────────────────────── */
+    .k16-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k16-fs-slot { margin-right: auto; }
+    .k16-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k16-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
+    .k16-btn-primary {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
+    }
+    .k16-btn-primary:hover:not(:disabled) {
+      background: rgba(var(--focal-rgb), 0.28);
+      border-color: var(--focal);
+      color: var(--focal);
+      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
+    }
+    .k16-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .k16-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
+
+    /* ── Responsive: phone / narrow portrait ───────────────── */
+    @media (max-width: 700px) {
+      .k16-panel { padding: 0.55rem 0.7rem 0.55rem; gap: 0.45rem; }
+      .k16-main { gap: 0.45rem; }
+      /* Split mode's scale+translate spreads the two layers past the stage's
+         own edges (fine on desktop, where the wrap is much wider than the
+         720px-capped stage) -- on phone the stage fills the wrap edge to
+         edge, so the spread got clipped by overflow:hidden above, cutting
+         a lateral sliver off each rotated page. This padding gives the
+         spread room; it also narrows the stage a touch, which shrinks the
+         translate distances (a % of the stage's own width) right along with it. */
+      .k16-stage-wrap { padding-inline: 16px; }
+      .k16-search-row { padding: 0.4rem 0.55rem; flex-wrap: wrap; }
+      .k16-search-status { flex: 1 0 100%; text-align: center; }
+      .k16-image-layer, .k16-text-layer { padding: 0.65rem 0.8rem; }
+      .k16-badge { width: 1.5em; height: 1.5em; top: 0.6rem; left: 0.7rem; }
+      .k16-header-court { font-size: calc(1.05rem * var(--lab-fs-scale) * 0.72); }
+      .k16-header-proc { font-size: calc(1.05rem * var(--lab-fs-scale) * 0.82); margin: 0 0 0.5rem; padding-bottom: 0.4rem; }
+      .k16-image-line, .k16-text-line { font-size: calc(1.05rem * var(--lab-fs-scale)); line-height: 1.4; }
+      .k16-signature-line { font-size: calc(1.15rem * var(--lab-fs-scale)); margin-top: 0.4rem; }
+      .k16-stage.k16-split .k16-image-layer { transform: scale(0.78) translate(-16%, -9%) rotate(-2.4deg); }
+      .k16-stage.k16-split .k16-text-layer { transform: scale(0.78) translate(16%, 12%) rotate(2.2deg); }
+
+      .k16-button-bar { gap: 0.4rem; padding: 0; }
+      .k16-btn {
+        padding: 0.6rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        min-width: 0;
+        text-align: center;
+      }
+      .k16-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k16-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k16-btn { padding: 0.55rem 0.3rem; font-size: calc(var(--lab-fs-btn) * 0.92); }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k16-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
+      .k16-image-layer, .k16-text-layer { padding: 0.6rem 0.9rem; }
+      .k16-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header"
+       data-lab-title="PDF e OCR"
+       data-lab-subtitle="Duas camadas de um documento, e o que o OCR faz entre elas"></div>
+
+  <div class="k16-main">
+    <div class="k16-search-row">
+      <span class="k16-search-icon" aria-hidden="true"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="7"/><line x1="21" y1="21" x2="16.65" y2="16.65"/></svg></span>
+      <input class="k16-search-input" id="k16-search-input" type="text" value="" placeholder="Buscar no documento">
+      <span class="k16-search-status" id="k16-search-status"></span>
+    </div>
+
+    <div class="k16-stage-wrap">
+      <div class="k16-stage" id="k16-stage">
+        <div class="k16-layer k16-image-layer" id="k16-image-layer">
+          <span class="k16-layer-tag">Camada de imagem</span>
+          <!-- Brasão: a decorative graphic, image layer only -- OCR reads
+               text pixels, not raster art, so this never OCRs (the header
+               WORDS beside it do -- see the JS reveal pipeline below). -->
+          <span class="k16-badge" aria-hidden="true">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M12 2l7 3v6c0 5-3.2 8.5-7 10-3.8-1.5-7-5-7-10V5z"/>
+              <path d="M9.5 12l1.8 1.8L4 10"/>
+            </svg>
+          </span>
+          <!-- Scanline lives INSIDE the image layer now (not a stage-level
+               sibling): as a child it inherits this layer's own transform, so
+               it tilts together with the sheet once "Ver camadas" rotates it
+               -- previously it stayed a flat horizontal line across the whole
+               stage regardless of the page's rotation. -->
+          <div class="k16-scanline" id="k16-scanline"></div>
+        </div>
+
+        <div class="k16-layer k16-text-layer" id="k16-text-layer">
+          <span class="k16-layer-tag">Camada de texto</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="k16-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k16-fs-slot" data-lab-fs-ctl></span>
+    <button class="k16-btn" id="k16-split">Ver camadas</button>
+    <button class="k16-btn k16-btn-primary" id="k16-ocr">Passar OCR</button>
+    <button class="k16-btn" id="k16-search-btn">Pesquisar</button>
+    <button class="k16-btn" id="k16-reset">Reiniciar</button>
+  </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Por que a busca não acha no PDF digitalizado?">
+    <p>Um PDF pode ter até <strong>duas camadas</strong>: a <strong>imagem</strong> (os pixels, o que os olhos veem) e o <strong>texto</strong> (os caracteres reais, o que busca/cópia/leitura por IA enxergam). Num PDF nativo (nasceu digital) as duas coexistem alinhadas. Num PDF <strong>digitalizado</strong> (é uma foto de papel), a camada de texto simplesmente <strong>não existe</strong>.</p>
+    <p>É por isso que buscar ou copiar num digitalizado não funciona: não há nenhum caractere ali, só uma figura. O <strong>OCR</strong> (reconhecimento óptico de caracteres) é a ponte, ele "lê" a imagem e gera a camada de texto que faltava.</p>
+    <p>Mas o OCR não é perfeito: ele pode <strong>confundir caracteres parecidos</strong> (o clássico "rn" lido como "m"), gerando uma camada de texto com pequenos erros. Por isso um documento com OCR de baixa qualidade às vezes "quase" encontra o que você busca, mas erra a grafia exata.</p>
+  </template>
+
+  <script>
+    (function () {
+      const root = document.querySelector('.k16-panel');
+      if (!root) return;
+
+      // ── Document content ─────────────────────────────────
+      // A police-authored record, not a judge's despacho: a petition written
+      // by a lawyer/judge is usually born digital (already searchable), so it
+      // is a poor example of "why this scan isn't searchable". Police reports
+      // are the realistic case -- typically produced on paper and scanned.
+      // The image layer shows the TRUE printed/handwritten content; the OCR'd
+      // text layer deliberately misreads two things: one printed word (the
+      // classic rn/m confusion) and the entire handwritten signature (OCR
+      // barely copes with elaborate cursive at all, unlike printed text).
+      //
+      // REVEAL drives BOTH layers uniformly: index 0-1 are the letterhead (its
+      // WORDS go through OCR same as the body; only the badge graphic next to
+      // it doesn't -- graphics have no characters to read), 2-5 are the body,
+      // 6 is the signature. `errWord` marks a single misread word inside an
+      // otherwise-correct line; `wholeLineError` marks a line OCR gets
+      // entirely wrong (the signature).
+      const REVEAL = [
+        { cls: 'k16-header-court', true: 'Polícia Civil — Delegacia de Polícia', ocr: 'Polícia Civil — Delegacia de Polícia' },
+        { cls: 'k16-header-proc', true: 'Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080', ocr: 'Auto de Qualificação e Interrogatório nº 0801234-56.2026.8.05.0080' },
+        {
+          cls: 'k16-image-line',
+          true: 'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o comparecimento do investigado.',
+          ocr: 'Aos cinco dias do mês de julho de dois mil e vinte e seis, nesta Delegacia de Polícia, deu-se o cornparecirnento do investigado.',
+          errWord: 'cornparecirnento',
+          errTitle: 'OCR reconheceu errado (era "comparecimento")',
+        },
+        {
+          cls: 'k16-image-line',
+          true: 'Nesta oportunidade, foram lidos os direitos constitucionais ao investigado, na forma da lei.',
+          ocr: 'Nesta oportunidade, foram lidos os direitos constitucionais ao investigado, na forma da lei.',
+        },
+        { cls: 'k16-image-line', true: 'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.', ocr: 'O investigado declarou nada mais ter a aditar ao depoimento anteriormente prestado.' },
+        { cls: 'k16-image-line', true: 'Nada mais havendo, lavrou-se o presente termo, que vai assinado.', ocr: 'Nada mais havendo, lavrou-se o presente termo, que vai assinado.' },
+        {
+          cls: 'k16-signature-line',
+          true: 'Marcos A. Ferreira',
+          ocr: 'Marcoo /}. Fcrreira',
+          wholeLineError: true,
+          errTitle: 'OCR não reconhece bem letra cursiva, muito menos uma assinatura rebuscada',
+        },
+      ];
+      // The button's job is just to fill+run this one canonical query; the
+      // box itself is free-type live search (see runSearch/input listener
+      // below) -- both paths share the same runSearch function.
+      const SEARCH_QUERY = 'investigado';
+
+      // ── DOM refs ─────────────────────────────────────────
+      const stageEl      = root.querySelector('#k16-stage');
+      const imageLayerEl = root.querySelector('#k16-image-layer');
+      const textLayerEl  = root.querySelector('#k16-text-layer');
+      const scanlineEl   = root.querySelector('#k16-scanline');
+      const splitBtn     = root.querySelector('#k16-split');
+      const ocrBtn       = root.querySelector('#k16-ocr');
+      const resetBtn     = root.querySelector('#k16-reset');
+      const searchInput  = root.querySelector('#k16-search-input');
+      const searchBtn    = root.querySelector('#k16-search-btn');
+      const searchStatus = root.querySelector('#k16-search-status');
+
+      let ocrDone = false;
+      let ocrRunning = false;
+      let split = false;
+      let typewriterTimers = [];
+      let pendingTypewriters = 0;
+      let sweepDone = false;
+
+      // ── Build the two layers' line spans (image = always the true text) ──
+      let imageLineEls = [];
+      let textLineEls = [];
+      function buildLines() {
+        REVEAL.forEach((item) => {
+          const img = document.createElement(item.cls === 'k16-image-line' ? 'div' : 'p');
+          img.className = item.cls;
+          img.textContent = item.true;
+          imageLayerEl.appendChild(img);
+          imageLineEls.push(img);
+
+          const txt = document.createElement(item.cls === 'k16-image-line' ? 'div' : 'p');
+          txt.className = item.cls;
+          textLayerEl.appendChild(txt);
+          textLineEls.push(txt);
+        });
+      }
+      buildLines();
+
+      function clearTextLines() {
+        textLineEls.forEach((el) => { el.innerHTML = ''; });
+      }
+
+      // ── OCR sweep: the scanline travels top->bottom over ~2.1s; as it
+      // crosses each line's vertical position, that line's OCR'd text starts
+      // typing in character-by-character (not an instant line swap) -- the
+      // point is to show OCR reads one character at a time, not a whole
+      // line at once. ──
+      function runOcr() {
+        if (ocrRunning || ocrDone) return;
+        ocrRunning = true;
+        ocrBtn.disabled = true;
+        sweepDone = false;
+        pendingTypewriters = 0;
+        scanlineEl.classList.add('k16-scan-active');
+
+        // Measured via offsetTop/offsetHeight (layout-relative, PRE-transform),
+        // not getBoundingClientRect (viewport-relative, POST-transform): once
+        // "Ver camadas" rotates the sheet, a rotated element's bounding-client
+        // rect is an axis-aligned box that no longer matches its real local Y
+        // position, so the old viewport-based math put the scanline in the
+        // wrong place mid-sweep whenever OCR ran while split. offsetTop is
+        // immune to any transform on the element or its ancestors, so this
+        // works identically split or not. Measured from the IMAGE line
+        // elements, not the text ones: the image layer always shows its full,
+        // real text so its line positions are stable for the whole sweep. The
+        // text layer starts empty and GROWS as lines are revealed (a wrapped
+        // line adds height), so trigger positions based on it would drift out
+        // from under the scanline.
+        const lineTops = imageLineEls.map((el) => el.offsetTop);
+        // Sweep only the vertical span the document text actually occupies,
+        // not the whole (often much taller) stage box: a short doc otherwise
+        // reveals almost everything in the first instant, leaving a long,
+        // pointless glide over empty page below it -- the opposite of "real
+        // time" reveal the operator asked for.
+        const lastEl = imageLineEls[imageLineEls.length - 1];
+        const sweepStart = Math.max(0, lineTops[0] - 14);
+        const sweepEnd = Math.min(imageLayerEl.offsetHeight, lastEl.offsetTop + lastEl.offsetHeight + 14);
+        const sweepRange = Math.max(1, sweepEnd - sweepStart);
+        const revealed = new Array(REVEAL.length).fill(false);
+        const DURATION = 2100;
+        const start = performance.now();
+
+        // Renders `text` up to character `upTo`, wrapping the error span in
+        // its warning mark as soon as typing reaches it (not only at the
+        // end). `errStart`/`errLen` cover both cases: a single misread word
+        // inside an otherwise-correct line, or (errStart=0, errLen=text.length)
+        // a whole line OCR gets entirely wrong (the signature).
+        function renderPartial(el, text, upTo, errStart, errLen, errTitle) {
+          el.textContent = '';
+          if (errStart === -1 || upTo <= errStart) {
+            el.appendChild(document.createTextNode(text.slice(0, upTo)));
+            return;
+          }
+          el.appendChild(document.createTextNode(text.slice(0, errStart)));
+          const errEnd = errStart + errLen;
+          const mark = document.createElement('span');
+          mark.className = 'k16-ocr-error';
+          mark.title = errTitle;
+          if (upTo <= errEnd) {
+            mark.textContent = text.slice(errStart, upTo);
+            el.appendChild(mark);
+          } else {
+            mark.textContent = text.slice(errStart, errEnd);
+            el.appendChild(mark);
+            el.appendChild(document.createTextNode(text.slice(errEnd, upTo)));
+          }
+        }
+
+        function startTypewriter(i) {
+          const item = REVEAL[i];
+          const text = item.ocr;
+          const el = textLineEls[i];
+          const errStart = item.errWord ? text.indexOf(item.errWord) : (item.wholeLineError ? 0 : -1);
+          const errLen = item.errWord ? item.errWord.length : (item.wholeLineError ? text.length : 0);
+          let upTo = 0;
+          pendingTypewriters++;
+          const timer = setInterval(() => {
+            upTo++;
+            renderPartial(el, text, upTo, errStart, errLen, item.errTitle);
+            if (upTo >= text.length) {
+              clearInterval(timer);
+              typewriterTimers = typewriterTimers.filter((t) => t !== timer);
+              pendingTypewriters--;
+              maybeFinishOcr();
+            }
+          }, 16);
+          typewriterTimers.push(timer);
+        }
+
+        function maybeFinishOcr() {
+          if (!sweepDone || pendingTypewriters > 0) return;
+          scanlineEl.classList.remove('k16-scan-active');
+          ocrRunning = false;
+          ocrDone = true;
+          stageEl.classList.add('k16-ocr-done');
+          // Whatever's already typed in the box (typed while OCR was still
+          // running) gets a fresh run now that there's text to find it in.
+          runSearch(searchInput.value);
+        }
+
+        function tick(now) {
+          const elapsed = now - start;
+          const frac = Math.min(1, elapsed / DURATION);
+          const y = sweepStart + frac * sweepRange;
+          scanlineEl.style.top = y + 'px';
+          lineTops.forEach((top, i) => {
+            if (!revealed[i] && y >= top) { revealed[i] = true; startTypewriter(i); }
+          });
+          if (frac < 1) {
+            requestAnimationFrame(tick);
+          } else {
+            lineTops.forEach((top, i) => { if (!revealed[i]) { revealed[i] = true; startTypewriter(i); } });
+            sweepDone = true;
+            maybeFinishOcr();
+          }
+        }
+        requestAnimationFrame(tick);
+      }
+
+      function toggleSplit() {
+        split = !split;
+        stageEl.classList.toggle('k16-split', split);
+      }
+
+      // Live search: runs on every keystroke in the box AND when "Pesquisar"
+      // fills the box with SEARCH_QUERY -- one function, two triggers.
+      function runSearch(rawQuery) {
+        const q = (rawQuery || '').trim().toLowerCase();
+        // Clear previous highlights first.
+        textLineEls.forEach((el) => {
+          el.querySelectorAll('mark').forEach((m) => {
+            m.replaceWith(document.createTextNode(m.textContent));
+          });
+          el.normalize();
+        });
+        if (!q) {
+          searchStatus.textContent = '';
+          searchStatus.className = 'k16-search-status';
+          return;
+        }
+        if (!ocrDone) {
+          searchStatus.textContent = '0 resultados';
+          searchStatus.className = 'k16-search-status k16-search--empty';
+          return;
+        }
+        let count = 0;
+        textLineEls.forEach((el) => {
+          const text = el.textContent;
+          const lower = text.toLowerCase();
+          if (lower.indexOf(q) === -1) return;
+          let offset = 0;
+          let pos;
+          while ((pos = lower.indexOf(q, offset)) !== -1) {
+            count++;
+            offset = pos + q.length;
+          }
+          // Simple global replace preserving original casing via regex.
+          const escQ = q.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+          const re = new RegExp('(' + escQ + ')', 'ig');
+          el.innerHTML = _escapeHtml(text).replace(re, '<mark>$1</mark>');
+        });
+        if (count > 0) {
+          searchStatus.textContent = count + (count === 1 ? ' ocorrência' : ' ocorrências');
+          searchStatus.className = 'k16-search-status k16-search--found';
+        } else {
+          searchStatus.textContent = '0 resultados';
+          searchStatus.className = 'k16-search-status k16-search--empty';
+        }
+      }
+      function _escapeHtml(s) {
+        return s.replace(/[&<>"']/g, (c) => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+      }
+
+      function reset() {
+        typewriterTimers.forEach((t) => clearInterval(t));
+        typewriterTimers = [];
+        pendingTypewriters = 0;
+        sweepDone = false;
+        ocrDone = false;
+        ocrRunning = false;
+        split = false;
+        stageEl.classList.remove('k16-split');
+        stageEl.classList.remove('k16-ocr-done');
+        scanlineEl.classList.remove('k16-scan-active');
+        scanlineEl.style.top = '0px';
+        ocrBtn.disabled = false;
+        clearTextLines();
+        searchInput.value = '';
+        searchStatus.textContent = '';
+        searchStatus.className = 'k16-search-status';
+      }
+
+      splitBtn.addEventListener('click', toggleSplit);
+      ocrBtn.addEventListener('click', runOcr);
+      resetBtn.addEventListener('click', reset);
+      searchInput.addEventListener('input', () => runSearch(searchInput.value));
+      searchBtn.addEventListener('click', () => {
+        searchInput.value = SEARCH_QUERY;
+        runSearch(SEARCH_QUERY);
+        searchInput.focus();
+      });
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      clearTextLines();
+    })();
+  </script>
+</section>
+</body>
+</html>

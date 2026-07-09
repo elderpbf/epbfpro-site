@@ -82,7 +82,7 @@ test('#23: the composer saves via setAulas (multi) and reads aula_numbers', () =
 test('#22: the apostila pool also carries the "já na aula N" marker', () => {
   // The apostila rows render inline (not via _rowHtml), so the elsewhere marker must
   // be wired into that branch explicitly — pool="apostila" + _releasedElsewhere + note.
-  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('const tarefaGlyph'));
+  const apostilaBlock = relSrc.slice(relSrc.indexOf('const apostilaRows'), relSrc.indexOf('// R3: lay the item list out por tipo'));
   assert.match(apostilaBlock, /data-pool="apostila"/, 'still the apostila pool');
   assert.match(apostilaBlock, /_releasedElsewhere\(i\.id, aulaNum\)/, 'apostila checks released-elsewhere');
   assert.match(apostilaBlock, /is-already-released/, 'apostila greys out when bound elsewhere');
@@ -106,4 +106,26 @@ test('R2: mark-aula-happened control sets happened_on to the scheduled day via a
       assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
     }
   }
+});
+
+test('track-34: the Labs group shows each lab\'s own emoji, ordered per Content > Labs drag order', () => {
+  assert.match(relSrc, /import \{ isLabEnabled, labIcon, labOrderIndex \} from '\.\.\/js\/labs-registry\.js'/, 'imports the icon + order readers alongside the enabled flag');
+  assert.match(relSrc, /function _rowGlyph/, 'has the per-lab-icon override');
+  assert.match(relSrc, /labIcon\(key\)/, 'resolves the icon via labIcon, not the generic type glyph');
+  assert.match(relSrc, /function _sortLabsByOrder/, 'has the registry-order sort');
+  assert.match(relSrc, /labOrderIndex\(_labKeyOf\(a\)\) - labOrderIndex\(_labKeyOf\(b\)\)/, 'sorts by labOrderIndex');
+  assert.match(relSrc, /_sortLabsByOrder\(g\.items\)/, 'applies the sort to lab-typed groups');
+});
+
+test('track-34: a disabled lab that was never released drops out of the pool (still shown if already released)', () => {
+  // The enabled toggle (Content > Labs) is client-side localStorage; the Labs
+  // ct_items rows themselves don't carry it, so the composer must cross
+  // reference labs-registry.isLabEnabled by meta_json.lab_key, not just render
+  // whatever ct_list_items returns.
+  assert.match(relSrc, /import \{ isLabEnabled, labIcon, labOrderIndex \} from '\.\.\/js\/labs-registry\.js'/, 'imports the enabled-flag reader');
+  assert.match(relSrc, /function _isVisibleLab/, 'has the enabled-flag filter');
+  assert.match(relSrc, /isLabEnabled\(key\)/, 'checks isLabEnabled by the cross-referenced key');
+  assert.match(relSrc, /_released\.indexOf\(Number\(item\.id\)\) !== -1/, 'a disabled lab already released stays visible');
+  assert.match(relSrc, /_isOutros\)\.filter\(_isVisibleLab\)/, 'aula composer applies the filter');
+  assert.match(relSrc, /_isDrive\(i\)\)\.filter\(_isVisibleLab\)/, 'outros composer applies the filter');
 });
