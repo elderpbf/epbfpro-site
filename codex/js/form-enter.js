@@ -15,9 +15,14 @@ export function handleEnter(e) {
   var tag = e.target.tagName;
   if (tag === 'TEXTAREA' && e.shiftKey) return;
   if (tag !== 'INPUT' && tag !== 'TEXTAREA') return;
-  e.preventDefault();
   var parent = e.target.closest('.bs-field, .sd-section-body, .bs-auth-card, .host-card, .cp-create-session, form');
+  // Not a legacy surface (e.g. a cdx modal input): LEAVE the event untouched. Calling
+  // preventDefault() here unconditionally used to poison e.defaultPrevented, which the
+  // shared js/modal.js submit-on-Enter reads to avoid double-firing — so a blanket
+  // preventDefault silently disabled Enter->primary on every cdx modal. modal.js now
+  // owns Enter for those.
   if (!parent) return;
+  e.preventDefault(); // a matched legacy surface: suppress the native submit as before
   var btn = parent.querySelector('.bs-save-btn, .bs-auth-btn, .host-btn-primary, .cp-btn-primary, button[type="submit"]');
   if (btn && !btn.disabled) btn.click();
 }
