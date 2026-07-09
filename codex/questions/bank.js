@@ -410,16 +410,19 @@ function _qHeader() {
   '</div>';
 }
 
-// Move bar (shown in reorder/move mode once at least one question is selected).
+// Move/copy bar (shown in reorder/move mode once at least one question is
+// selected). One destination select drives both actions: Mover reassigns the
+// question to the target bank; Copiar keeps it in place and inserts a duplicate.
 function _moveBar() {
   if (!_editBank || _selected.size === 0) return '';
   const dests = _banks.filter((b) => b.list_name !== _currentSet);
   const opts = dests.map((b) => '<option value="' + _esc(b.list_name) + '">' + _esc(b.list_name) + '</option>').join('');
   return '<div class="cdx-bank-movebar">' +
-    '<span class="cdx-bank-movebar-count">' + t('questions.bank_move') + ' ' + _selected.size + ' ' + t('questions.bank_move_selected') + ':</span>' +
-    '<span>' + t('questions.bank_move_to') + '</span>' +
+    '<span class="cdx-bank-movebar-count">' + _selected.size + ' ' + t('questions.bank_move_selected') + '</span>' +
+    '<span>' + t('questions.bank_dest') + '</span>' +
     '<select class="cdx-select cdx-bank-move-dest">' + opts + '</select>' +
     '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="move-do" type="button">' + t('questions.bank_move') + '</button>' +
+    '<button class="cdx-btn cdx-btn-sm cdx-btn-primary" data-act="copy-do" type="button">' + t('questions.bank_copy_do') + '</button>' +
     '<button class="cdx-btn cdx-btn-sm" data-act="move-cancel" type="button">' + t('questions.bank_cancel') + '</button>' +
   '</div>';
 }
@@ -556,6 +559,35 @@ async function _moveSelected() {
   _selected.clear(); _editBank = false;
   await _loadSets();
   await _loadQuestions();
+}
+
+// Copy (not move): insert a duplicate of each selected question into the chosen
+// destination bank, leaving the source bank untouched. Faithful per-item
+// add_question (like _importSave), never add_questions_bulk, so max_select +
+// correct index-0 + audience all survive (Key Decision 2026-06-02: bulk drops
+// them). _toCanonical serializes every type (mc/tf/poll array, rating/numeric
+// {min,max}, open/wordcloud []) the way the Worker stores it.
+async function _copySelected() {
+  const sel = _q('.cdx-bank-move-dest');
+  const dest = sel ? sel.value : '';
+  if (!dest) return;
+  const copiers = _questions.filter((q) => _selected.has(String(q.id)));
+  if (!copiers.length) return;
+  for (const q of copiers) {
+    const c = _toCanonical(q);
+    try {
+      await api.addQuestion({
+        list_name: dest, question: c.question, type: c.type,
+        options: c.options, correct_answer: c.correct_answer,
+        max_select: (c.max_select != null ? c.max_select : 1),
+        audience: (c.audience != null ? c.audience : null),
+      });
+    } catch (e) { notice.internal(e); }
+  }
+  _selected.clear(); _editBank = false;
+  await _loadSets();
+  await _loadQuestions();
+  toast.ok(t('questions.bank_copy_done'));
 }
 
 // ---- Modal editor (reuses the shared composer + AI generate/improve) ----
@@ -1486,6 +1518,7 @@ export function mount(viewEl, ctx) {
       _renderConjunto();
     }
     else if (act === 'move-do') { await _moveSelected(); }
+    else if (act === 'copy-do') { await _copySelected(); }
     else if (act === 'move-cancel') { _selected.clear(); _renderConjunto(); }
     else if (act === 'edit') {
       const qid = btn.getAttribute('data-qid');
