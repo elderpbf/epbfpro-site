@@ -35,18 +35,10 @@ const pt = {
   'apps.windows_only':      'Por enquanto este app é só para Windows.',
   'page.wa_group':          'Grupo no WhatsApp',
   'page.footer':            'Feito com PensoIA',
-  // Support contact (shared support-contact.js): footer strip + highlight card on the
-  // login/código/registro/bloqueado/erro screens, and a link to the full /suporte hub.
+  // Support entry (shared support-contact.js): the "Precisa de ajuda?" pill label,
+  // rendered on the login/registro/bloqueado/erro/trilha screens. It links to /suporte
+  // (the one hub with channels + FAQ); the message copy now lives there, per origin.
   'support.title':          'Precisa de ajuda?',
-  'support.highlight_body': 'Fale direto com a gente pelo WhatsApp ou e-mail.',
-  'support.whatsapp':       'WhatsApp',
-  'support.email':          'E-mail',
-  'support.more':           'Ver todas as formas de ajuda',
-  'support.msg_context':    'Olá, preciso de ajuda para acessar a trilha de {client} · {turma}.',
-  'support.msg_named':      'Olá, sou {name} e preciso de ajuda para acessar a trilha de {client} · {turma}.',
-  'support.msg_generic':    'Olá, preciso de ajuda para acessar minha trilha na PensoIA.',
-  'support.mail_subject_context': 'Ajuda - {client} · {turma}',
-  'support.mail_subject_generic': 'Ajuda - Trilha PensoIA',
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Instalar app',
@@ -67,6 +59,10 @@ const pt = {
   'login.profile_desc':     'Falta só uma confirmação para liberar seu acesso.',
   'login.name_label':       'Seu nome completo',
   'login.name_placeholder': 'Como você quer ser identificado',
+  // Consent = a lean lead (always shown) + the full LGPD notice collapsed behind it
+  // (consent-notice.js). The person reads the detail only if they want.
+  'login.consent_lead':     'Ao entrar, você concorda com o tratamento dos seus dados para acessar sua trilha e emitir certificados, conforme a LGPD.',
+  'login.consent_more':     'Ver detalhes',
   'login.consent_notice':   'Ao entrar, você concorda que a EPBF Soluções em Tecnologia Ltda (CNPJ 65.254.064/0001-64), responsável pela plataforma PensoIA, trate seus dados pessoais (nome e e-mail, e o CPF apenas no momento de emitir o certificado) para identificar você, liberar o acesso à sua trilha e emitir certificados, conforme a Lei Geral de Proteção de Dados (LGPD, Lei nº 13.709/2018). Seus dados não são vendidos nem usados para marketing. Você pode pedir acesso, correção ou exclusão a qualquer momento pelo e-mail contato@pensoia.com.',
   'login.consent_label':    'Li e concordo com o tratamento dos meus dados.',
   'login.consent_required': 'É necessário concordar para continuar.',
@@ -208,18 +204,10 @@ const en = {
   'apps.windows_only':      'This app is Windows-only for now.',
   'page.wa_group':          'WhatsApp group',
   'page.footer':            'Made with PensoIA',
-  // Support contact (shared support-contact.js): footer strip + highlight card on the
-  // login/code/register/blocked/error screens, and a link to the full /suporte hub.
+  // Support entry (shared support-contact.js): the "Need help?" pill label, rendered on
+  // the login/register/blocked/error/trail screens. It links to /suporte (the one hub
+  // with channels + FAQ); the message copy now lives there, per origin.
   'support.title':          'Need help?',
-  'support.highlight_body': 'Reach us directly on WhatsApp or e-mail.',
-  'support.whatsapp':       'WhatsApp',
-  'support.email':          'E-mail',
-  'support.more':           'See all ways to get help',
-  'support.msg_context':    'Hi, I need help accessing the {client} · {turma} trail.',
-  'support.msg_named':      'Hi, I\'m {name} and I need help accessing the {client} · {turma} trail.',
-  'support.msg_generic':    'Hi, I need help accessing my PensoIA trail.',
-  'support.mail_subject_context': 'Help - {client} · {turma}',
-  'support.mail_subject_generic': 'Help - PensoIA Trail',
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Install app',
@@ -240,6 +228,8 @@ const en = {
   'login.profile_desc':     'Just one confirmation left to unlock your access.',
   'login.name_label':       'Your full name',
   'login.name_placeholder': 'How you would like to be identified',
+  'login.consent_lead':     'By signing in, you agree to the processing of your data to access your trail and issue certificates, under the LGPD.',
+  'login.consent_more':     'See details',
   'login.consent_notice':   'By signing in, you agree that EPBF Soluções em Tecnologia Ltda (CNPJ 65.254.064/0001-64), the controller behind the PensoIA platform, will process your personal data (name and email, and your CPF only when issuing a certificate) to identify you, grant access to your trail, and issue certificates, under Brazil\'s data protection law (LGPD, Law 13.709/2018). Your data is not sold or used for marketing. You may request access, correction, or deletion anytime at contato@pensoia.com.',
   'login.consent_label':    'I have read and agree to the processing of my data.',
   'login.consent_required': 'You must agree to continue.',
