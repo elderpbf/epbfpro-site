@@ -185,11 +185,11 @@
     <div class="sup-bar-inner">
       <span class="sup-bar-lead" data-sup-lead>Não resolveu? Fale com a gente:</span>
       <a class="sup-btn sup-btn-wa" data-sup-wa href="https://wa.me/5579998014253" target="_blank" rel="noopener"><svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="M.06 24l1.68-6.1A11.9 11.9 0 1 1 12 24a11.9 11.9 0 0 1-5.7-1.45L.06 24zM6.6 20.1l.36.2a9.9 9.9 0 1 0-3.4-3.3l.23.37-1 3.6 3.8-.87z"/></svg>WhatsApp</a>
-      <a class="sup-btn sup-btn-mail" data-sup-mail href="mailto:contato@pensoia.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg><span class="sup-mail-label">E-mail</span></a>
+      <a class="sup-btn sup-btn-mail" data-sup-mail href="mailto:suporte@pensoia.com"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="2" y="4" width="20" height="16" rx="2"/><path d="m22 6-10 7L2 6"/></svg><span class="sup-mail-label">E-mail</span></a>
     </div>
   </div>
 
-  <!-- E-mail form: works on any device; sends via codex-api to contato@pensoia.com. -->
+  <!-- E-mail form: works on any device; sends via codex-api to suporte@pensoia.com. -->
   <div class="sf-modal" id="sf-modal" hidden>
     <div class="sf-card" role="dialog" aria-modal="true" aria-labelledby="sf-title">
       <button class="sf-close" id="sf-close" type="button" aria-label="Fechar">&times;</button>
@@ -214,7 +214,7 @@
     // ?source=<origin> (+ client/turma/nome when logged in). The message talks about
     // WHAT they're doing, never "help with PensoIA" (nobody needs help with the brand).
     (function () {
-      var WA = '5579998014253', MAIL = 'contato@pensoia.com';
+      var WA = '5579998014253', MAIL = 'suporte@pensoia.com';
       var params; try { params = new URLSearchParams(location.search); } catch (_) { params = null; }
       if (!params) return;
       var source = (params.get('source') || '').trim().toLowerCase();
