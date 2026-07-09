@@ -12,6 +12,7 @@
 let _overlay = null;
 let _onKey = null;
 let _stylesInjected = false;
+let _dimTimer = null;
 
 function _injectStylesOnce() {
   if (_stylesInjected) return;
@@ -35,9 +36,10 @@ function _injectStylesOnce() {
       'border-radius:50%;background:rgba(0,0,0,0.65);color:#fff;border:0;' +
       'cursor:pointer;font-size:22px;line-height:1;display:flex;' +
       'align-items:center;justify-content:center;z-index:2;' +
-      'transition:background 160ms,transform 120ms;' +
+      'transition:background 160ms,transform 120ms,opacity 480ms ease;' +
     '}' +
-    '.cv-lab-viewer-close:hover{background:rgba(0,0,0,0.9);transform:scale(1.05);}';
+    '.cv-lab-viewer-close:hover{background:rgba(0,0,0,0.9);transform:scale(1.05);}' +
+    '.cv-lab-viewer-close.is-dim{opacity:0.3;}';
   const style = document.createElement('style');
   style.setAttribute('data-cv-lab-viewer', '1');
   style.textContent = css;
@@ -46,6 +48,7 @@ function _injectStylesOnce() {
 
 export function close() {
   if (!_overlay) return;
+  if (_dimTimer) { clearTimeout(_dimTimer); _dimTimer = null; }
   if (_onKey) {
     document.removeEventListener('keydown', _onKey);
     _onKey = null;
@@ -102,4 +105,12 @@ export function openModal(opts) {
 
   document.body.appendChild(_overlay);
   document.body.classList.add('cv-lab-viewer-open');
+
+  // Mobile-only: the close chip enters opaque, waits, then dims so it stops sitting
+  // over the demo (Élder). It stays a live tap target; Esc and backdrop still close.
+  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
+    _dimTimer = setTimeout(function () {
+      if (_overlay) closeBtn.classList.add('is-dim');
+    }, 2500);
+  }
 }
