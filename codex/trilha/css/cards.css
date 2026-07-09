@@ -264,6 +264,23 @@
 .cdx-tr-sub-zone--tarefa   { background: var(--task); }
 .cdx-tr-sub-zone svg { display: block; width: 22px; height: 22px; }
 
+/* Lab family badge: a small flask over the per-lab glyph, so every lab reads as
+   one set while keeping its own icon. */
+.cdx-tr-sub-zone--lab { position: relative; }
+.cdx-tr-lab-flask {
+  position: absolute;
+  right: 3px;
+  bottom: 3px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.32);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.cdx-tr-sub-zone--lab .cdx-tr-lab-flask svg { width: 11px; height: 11px; }
+
 .cdx-tr-sub-meta {
   flex: 1;
   padding: 0.6rem 0.85rem;

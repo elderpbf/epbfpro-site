@@ -9,6 +9,7 @@ import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
+import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 
 // Stored asset paths (/r2/... attachment/pdf keys) are served by the codex-api
 // Worker, not the Pages origin, so an open-action href must go through assetUrl
@@ -30,6 +31,12 @@ export function getItemAction(item) {
   if (item.type === 'tarefa') {
     if (hasSubmittedTarefa(item.id)) return { kind: 'submitted', label: 'Resposta enviada', shortLabel: 'Enviada', icon: 'check' };
     return { kind: 'submit', label: 'Enviar resposta', shortLabel: 'Enviar', icon: 'send', item };
+  }
+  // A lab is an interactive demo, not a download: its action opens the shared
+  // fullscreen viewer (js/lab-viewer.js), keyed by lab_key from meta_json.
+  if (item.type === 'lab') {
+    const key = meta.lab_key || String((meta.url || '').replace(/^\/codex\/labs\//, '').replace(/\/$/, ''));
+    if (key) return { kind: 'lab-open', label: 'Abrir', shortLabel: 'Abrir', key, icon: 'external' };
   }
   if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
   if (meta.attachment_url) {
@@ -77,6 +84,7 @@ export function injectActionButton(sub, item, opts = {}) {
     if (e && e.stopPropagation) e.stopPropagation();
     if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
     else if (action.kind === 'submit') { if (e && e.preventDefault) e.preventDefault(); openTarefaSubmit(action.item, sub, opts); }
+    else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
   });
   actionsEl.appendChild(btn);
 }
@@ -115,6 +123,7 @@ export function appendFlatActionRow(body, item) {
   btn.addEventListener('click', (e) => {
     if (e && e.stopPropagation) e.stopPropagation();
     if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
+    else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
   });
   row.appendChild(btn);
   body.appendChild(row);

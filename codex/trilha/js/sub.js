@@ -12,6 +12,7 @@ import { injectActionButton } from './actions.js';
 import { trail } from './api.js';
 import { renderItem } from '../../js/item-render.js';
 import { interceptItemOpen } from './gate.js';
+import { overlayLabItem } from './lab-overlay.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -22,9 +23,11 @@ export function buildSub(item, opts = {}) {
   sub.setAttribute('role', 'button');
   sub.setAttribute('tabindex', '0');
 
+  const isLab = item.type === 'lab';
   let zoneClass = 'cdx-tr-sub-zone';
   if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
   else if (opts.isApostila) zoneClass += ' cdx-tr-sub-zone--apostila';
+  else if (isLab) zoneClass += ' cdx-tr-sub-zone--lab';
 
   // A content item's icon comes from its type (item.type_icon: a "glyph:<key>"
   // resolved to an SVG by the Codex glyph library) rendered through CdxGlyphs.
@@ -36,6 +39,11 @@ export function buildSub(item, opts = {}) {
     iconHtml = window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 });
   } else {
     iconHtml = esc(item.type_icon || '•');
+  }
+  // A lab wears a family marker over its per-lab glyph: a small flask badge in the
+  // corner, so labs read as one set even while each keeps its own icon.
+  if (isLab && window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function') {
+    iconHtml += '<span class="cdx-tr-lab-flask">' + window.CdxGlyphs.iconHtml('glyph:flask', { size: 12 }) + '</span>';
   }
   const typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
   const novoPill = isFresh(item) ? '<span class="cdx-tr-novo-pill">NOVO</span>' : '';
@@ -103,6 +111,9 @@ export async function toggleSub(sub, item, opts = {}) {
       session_token: state.sessionToken,
       _silent: true,
     });
+    // Lab content (title/summary/description/objective) comes from the code
+    // registry, not the seeded DB copy -- overlay the fetched item before render.
+    overlayLabItem(data.item);
     exp.innerHTML = '';
     renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);

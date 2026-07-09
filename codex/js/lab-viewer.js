@@ -38,7 +38,7 @@ function _injectStylesOnce() {
       'align-items:center;justify-content:center;z-index:2;' +
       'transition:background 160ms,transform 120ms,opacity 480ms ease;' +
     '}' +
-    '.cv-lab-viewer-close:hover{background:rgba(0,0,0,0.9);transform:scale(1.05);}' +
+    '.cv-lab-viewer-close:hover{background:rgba(0,0,0,0.9);transform:scale(1.05);opacity:1;}' +
     '.cv-lab-viewer-close.is-dim{opacity:0.3;}';
   const style = document.createElement('style');
   style.setAttribute('data-cv-lab-viewer', '1');
@@ -106,11 +106,10 @@ export function openModal(opts) {
   document.body.appendChild(_overlay);
   document.body.classList.add('cv-lab-viewer-open');
 
-  // Mobile-only: the close chip enters opaque, waits, then dims so it stops sitting
-  // over the demo (Élder). It stays a live tap target; Esc and backdrop still close.
-  if (typeof window !== 'undefined' && window.matchMedia && window.matchMedia('(max-width: 720px)').matches) {
-    _dimTimer = setTimeout(function () {
-      if (_overlay) closeBtn.classList.add('is-dim');
-    }, 2500);
-  }
+  // The close chip enters opaque, waits, then dims to translucent so it stops
+  // sitting over the demo (Élder). It stays a live target; on desktop a hover
+  // brings it back to full opacity; Esc and backdrop still close.
+  _dimTimer = setTimeout(function () {
+    if (_overlay) closeBtn.classList.add('is-dim');
+  }, 2500);
 }
