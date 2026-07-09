@@ -750,6 +750,7 @@ export default {
   'releases.turma_not_found': 'Cohort not found.',
   'releases.no_aulas':        'No lessons yet. Add lessons in the Cohorts tab (edit cohort).',
   'releases.empty_chip':      'empty',
+  'releases.preview_title':   'Preview',
   'releases.outros_label':    'Other',
   'releases.outros_sub':      'Materials without a lesson',
   'releases.section_apostila':    'Course content',
