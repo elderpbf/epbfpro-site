@@ -14,6 +14,10 @@ import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
 import { isLabEnabled, labIcon, labOrderIndex } from '../js/labs-registry.js';
+import { renderItem } from '../js/item-render.js';
+import { openModal, closeModal } from '../js/modal.js';
+import { openModal as openLabViewer } from '../js/lab-viewer.js';
+import * as driveViewer from '../js/drive-viewer.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -487,6 +491,57 @@ function _toggleFresh(aulaNum, makeFresh) {
     .catch((err) => notice.internal(_err(err)));
 }
 
+// ── Item preview (the eye button on each composer row) ───────────────────────
+// A read-only peek at an item's rendered content, reusing the SAME renderers the
+// Trail + admin already use (js/item-render.js for body types, lab-viewer for
+// labs, drive-viewer for Drive files) so the admin sees exactly what the student
+// will. Every composer row carries one, so every type is previewable.
+function _previewBtnHtml(id) {
+  return '<button type="button" class="cdx-comp-preview" data-preview-id="' + _esc(id) +
+    '" title="' + _esc(t('releases.preview_title')) + '" aria-label="' + _esc(t('releases.preview_title')) + '">' +
+    glyphSvg('eye', { size: 15 }) + '</button>';
+}
+// The full item lives in one of the two composer pools (library items or the
+// course's apostila set); look it up by id across both.
+function _findItem(id) {
+  const n = Number(id);
+  return _allItems.find((i) => Number(i.id) === n) || _apostilaItems.find((i) => Number(i.id) === n) || null;
+}
+// Open the best-fit preview: labs -> the fullscreen lab viewer; Drive files -> the
+// Drive viewer; everything else -> a light "click anywhere to close" modal that
+// renders the item body (fetched full via ct_get_item so body_md is present).
+function _openItemPreview(id) {
+  const item = _findItem(id);
+  if (!item) return;
+  if (item.type === 'lab') {
+    const key = _labKeyOf(item);
+    if (key) openLabViewer({ key, title: item.title });
+    return;
+  }
+  if (item.type === 'drive_file') { driveViewer.openModal(item); return; }
+  const bd = openModal(
+    '<div class="cdx-modal cdx-modal--xl cdx-rel-preview-modal">' +
+      '<div class="cdx-preview-title">' + _esc(item.title || '') + '</div>' +
+      '<div class="cdx-preview-render" id="cdx-rel-preview-render"><div class="cdx-empty">' + t('content.loading') + '</div></div>' +
+    '</div>',
+    { disableBackdropClose: true }
+  );
+  // "clicar em qualquer lugar (inclusive no modal) fecha": any click dismisses.
+  bd.addEventListener('click', () => closeModal(bd));
+  contentApi.getItem({ id: item.id }).then((d) => {
+    const full = (d && d.item) || item;
+    const host = bd.querySelector('#cdx-rel-preview-render');
+    if (!host) return;
+    host.innerHTML = '';
+    try { renderItem(full, host, { preview: true }); }
+    catch (e) { host.textContent = full.body_md || ''; notice.internal(_err(e)); }
+  }).catch((e) => {
+    const host = bd.querySelector('#cdx-rel-preview-render');
+    if (host) host.innerHTML = '<div class="cdx-empty">' + _err(e) + '</div>';
+    notice.internal(_err(e));
+  });
+}
+
 // ── Composer rendering (collapsible accordion, like the Presets picker) ──────
 function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
   // elsewhereAula: the OTHER aulas this item is bound to (#23 multi-aula). The row
@@ -501,6 +556,7 @@ function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
     '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
       (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
     '</span>' +
+    _previewBtnHtml(item.id) +
   '</label>';
 }
 
@@ -546,10 +602,13 @@ function _elsewhereLabel(aulas) {
 function _renderComposerAccordion(container, sections) {
   const groupsHtml = sections.map((s, idx) => {
     const open = idx === 0;
+    // Section count: "liberados/total" for an aula composer (s.releasedCount set),
+    // plain total otherwise (e.g. the no-lesson Outros placeholder).
+    const cnt = (s.releasedCount != null) ? (s.releasedCount + '/' + s.count) : s.count;
     return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
         '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
           '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
-          '<span class="cdx-picker-group-name">' + s.label + ' (' + s.count + ')</span>' +
+          '<span class="cdx-picker-group-name">' + s.label + ' (' + cnt + ')</span>' +
         '</button>' +
         '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
       '</div>';
@@ -580,6 +639,8 @@ function _wireComposerAccordion(container) {
   }
 
   list.addEventListener('click', (e) => {
+    const pv = e.target.closest('.cdx-comp-preview');
+    if (pv) { e.preventDefault(); e.stopPropagation(); _openItemPreview(pv.getAttribute('data-preview-id')); return; }
     const tgl = e.target.closest('[data-acc-toggle]');
     if (!tgl) return;
     if (search && search.value.trim()) return; // all expanded during a search
@@ -616,7 +677,7 @@ function _renderAulaComposer(container, aula) {
           '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (checked ? ' checked' : '') + '>' +
           '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
             (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
-          '</span></label>';
+          '</span>' + _previewBtnHtml(i.id) + '</label>';
       }).join('')
     : '<div class="cdx-comp-empty">' + t('releases.empty_apostila') + '</div>';
 
@@ -626,18 +687,21 @@ function _renderAulaComposer(container, aula) {
   // keeps its own section, the former single "Outros" bucket splits into one
   // section per remaining item type.
   const sections = [
-    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length, rowsHtml: apostilaRows },
+    { key: 'apostila', label: t('releases.section_apostila'), count: _apostilaItems.length,
+      releasedCount: _apostilaItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: apostilaRows },
   ];
   _groupByType(outrosItems).forEach((g) => {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
     const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
     const rows = items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), _rowGlyph(i, glyph), _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length, rowsHtml: rows });
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
+      releasedCount: g.items.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: rows });
   });
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _isBoundTo(i.id, aulaNum), driveGlyph, _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length,
+      releasedCount: driveItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: driveRows });
   }
 
   _renderComposerAccordion(container, sections);
@@ -663,6 +727,7 @@ function _renderOutrosComposer(container) {
           key: 'type-' + g.type,
           label: _typeLabel(g.type),
           count: g.items.length,
+          releasedCount: g.items.filter((i) => _inOutros(i.id)).length,
           rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })))).join(''),
         };
       })
@@ -670,7 +735,8 @@ function _renderOutrosComposer(container) {
   if (driveItems.length) {
     const driveGlyph = _countGlyph('drive_file', 15);
     const driveRows = driveItems.map((i) => _rowHtml(i, 'drive', _inOutros(i.id), driveGlyph)).join('');
-    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length, rowsHtml: driveRows });
+    sections.push({ key: 'drive', label: t('releases.section_drive'), count: driveItems.length,
+      releasedCount: driveItems.filter((i) => _inOutros(i.id)).length, rowsHtml: driveRows });
   }
 
   _renderComposerAccordion(container, sections);

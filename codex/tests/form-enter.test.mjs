@@ -58,10 +58,13 @@ test('non-Enter keys are ignored', () => {
   assert.equal(btn.clicks, 0);
 });
 
-test('no enclosing form-parent: nothing is clicked', () => {
+test('no enclosing form-parent: the event is left untouched (modal.js owns it)', () => {
+  // A cdx modal input matches no legacy parent. form-enter must NOT preventDefault
+  // here — doing so poisoned e.defaultPrevented and disabled the shared modal.js
+  // submit-on-Enter. It now leaves the event alone for modal.js to handle.
   const e = ev('Enter', 'INPUT', { hasParent: false });
   handleEnter(e);
-  assert.equal(e.prevented(), true, 'still suppresses the default Enter');
+  assert.equal(e.prevented(), false, 'default NOT suppressed for a non-legacy input');
 });
 
 test('a disabled submit button is not clicked', () => {
