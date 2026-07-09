@@ -43,6 +43,22 @@
   .sup-btn-mail { background:transparent; color:var(--text-primary); border:1px solid var(--accent) }
   .sup-btn-mail:hover { border-color:var(--primary); color:var(--primary) }
   @media (max-width:600px){ .sup-bar-lead{ margin-right:0; width:100%; text-align:center } .sup-bar-inner{ gap:8px } .legal-wrap{ padding-bottom:150px } }
+
+  /* E-mail form modal (works on any device; sends via codex-api). */
+  .sf-modal { position:fixed; inset:0; z-index:50; display:flex; align-items:center; justify-content:center; padding:20px; background:rgba(0,0,0,.45); }
+  .sf-modal[hidden] { display:none; }
+  .sf-card { width:100%; max-width:440px; background:var(--surface); border:1px solid var(--accent); border-radius:16px; padding:24px; position:relative; box-shadow:0 24px 60px -20px rgba(0,0,0,.5); }
+  .sf-close { position:absolute; top:10px; right:14px; background:none; border:none; font-size:1.7rem; line-height:1; color:var(--text-secondary); cursor:pointer; }
+  .sf-title { margin:0 24px 6px 0; font-size:1.15rem; color:var(--text-primary); }
+  .sf-label { display:block; font-size:.8rem; font-weight:600; color:var(--text-secondary); margin:12px 0 5px; }
+  .sf-input { width:100%; box-sizing:border-box; padding:11px 13px; border:1px solid var(--accent); border-radius:10px; background:transparent; color:var(--text-primary); font:400 .95rem 'Inter',sans-serif; }
+  .sf-input:focus { outline:none; border-color:var(--primary); }
+  .sf-textarea { resize:vertical; min-height:96px; }
+  .sf-hp { position:absolute; left:-9999px; width:1px; height:1px; opacity:0; }
+  .sf-submit { margin-top:16px; width:100%; padding:13px; border:none; border-radius:11px; background:#1fbe5d; color:#fff; font:700 1rem 'Inter'; cursor:pointer; }
+  .sf-submit:hover { background:#17a94f; }
+  .sf-submit:disabled { opacity:.6; cursor:default; }
+  .sf-status { margin:12px 0 0; font-size:.85rem; color:var(--text-secondary); text-align:center; }
 </style>
 </head>
 <body>
@@ -172,6 +188,25 @@
     </div>
   </div>
 
+  <!-- E-mail form: works on any device; sends via codex-api to contato@pensoia.com. -->
+  <div class="sf-modal" id="sf-modal" hidden>
+    <div class="sf-card" role="dialog" aria-modal="true" aria-labelledby="sf-title">
+      <button class="sf-close" id="sf-close" type="button" aria-label="Fechar">&times;</button>
+      <h2 class="sf-title" id="sf-title">Fale com a gente por e-mail</h2>
+      <form id="sf-form" novalidate>
+        <label class="sf-label" id="sf-l-name" for="sf-name">Nome</label>
+        <input class="sf-input" id="sf-name" type="text" autocomplete="name">
+        <label class="sf-label" id="sf-l-email" for="sf-email">Seu e-mail</label>
+        <input class="sf-input" id="sf-email" type="email" autocomplete="email">
+        <label class="sf-label" id="sf-l-msg" for="sf-msg">Mensagem</label>
+        <textarea class="sf-input sf-textarea" id="sf-msg" rows="4"></textarea>
+        <input class="sf-hp" id="sf-company" name="company" tabindex="-1" autocomplete="off" aria-hidden="true" placeholder="Company">
+        <button class="sf-submit" id="sf-submit" type="submit">Enviar</button>
+      </form>
+      <p class="sf-status" id="sf-status" aria-live="polite"></p>
+    </div>
+  </div>
+
   <script src="/js/legal.js?v=1"></script>
   <script>
     // Origin-aware pre-fill. The support entry that brought the person here passes
@@ -237,24 +272,81 @@
         });
       }
       refresh();
-      // The legal lang toggle flips <html lang>; keep the message in sync.
+      // The legal lang toggle flips <html lang>; keep the message + form in sync.
       var langBtn = document.getElementById('langToggle');
-      if (langBtn) langBtn.addEventListener('click', function () { setTimeout(refresh, 0); });
+      if (langBtn) langBtn.addEventListener('click', function () { setTimeout(function () { refresh(); applyFormLang(); }, 0); });
 
-      // A mailto: link silently does NOTHING on a desktop with no default mail app.
-      // So the e-mail button ALSO copies the address and confirms it, so the click
-      // always gives feedback (the native compose still opens where a client exists).
+      // ── E-mail: mailto on mobile, form on desktop ──────────────────────────────
+      // Élder: on desktop mailto often no-ops (no default mail app), so the e-mail button
+      // opens the form. On mobile mailto reliably opens the mail app, so we let it; a SECOND
+      // tap within 10s means it didn't open, so then we fall back to the form.
+      var WORKER = 'https://codex-api.pensoia.workers.dev';
+      var modal = document.getElementById('sf-modal');
+      var sfForm = document.getElementById('sf-form');
+      var sfStatus = document.getElementById('sf-status');
+      var sfSubmit = document.getElementById('sf-submit');
+
+      function setText(id, txt) { var el = document.getElementById(id); if (el) el.textContent = txt; }
+      function applyFormLang() {
+        var en2 = (lang === 'en');
+        setText('sf-title', en2 ? 'Send us an e-mail' : 'Fale com a gente por e-mail');
+        setText('sf-l-name', en2 ? 'Name' : 'Nome');
+        setText('sf-l-email', en2 ? 'Your e-mail' : 'Seu e-mail');
+        setText('sf-l-msg', en2 ? 'Message' : 'Mensagem');
+        if (sfSubmit && !sfSubmit.disabled) sfSubmit.textContent = en2 ? 'Send' : 'Enviar';
+      }
+      function openForm() {
+        if (!modal) return;
+        applyFormLang();
+        var nameEl = document.getElementById('sf-name');
+        if (nameEl && !nameEl.value && nome) nameEl.value = nome;
+        modal.hidden = false;
+        var em = document.getElementById('sf-email');
+        if (em) setTimeout(function () { try { em.focus(); } catch (_) {} }, 40);
+      }
+      function closeForm() { if (modal) modal.hidden = true; }
+
+      var isMobile = false;
+      try { isMobile = window.matchMedia('(pointer: coarse)').matches; } catch (_) {}
+      if (!isMobile) isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent || '');
+      var lastMailTap = 0;
       document.querySelectorAll('[data-sup-mail]').forEach(function (a) {
-        a.addEventListener('click', function () {
-          try { if (navigator.clipboard) navigator.clipboard.writeText(MAIL); } catch (_) {}
-          var label = a.querySelector('.sup-mail-label');
-          if (!label) return;
-          var prev = label.getAttribute('data-label') || label.textContent;
-          label.setAttribute('data-label', prev);
-          label.textContent = (lang === 'en' ? 'Copied!' : 'Copiado!');
-          setTimeout(function () { label.textContent = prev; }, 1600);
+        a.addEventListener('click', function (e) {
+          if (!isMobile) { e.preventDefault(); openForm(); return; }
+          var now = Date.now();
+          if (now - lastMailTap < 10000) { e.preventDefault(); lastMailTap = 0; openForm(); return; }
+          lastMailTap = now; // first tap: let the native mailto try to open
         });
       });
+
+      if (modal && sfForm) {
+        modal.addEventListener('click', function (e) { if (e.target === modal) closeForm(); });
+        var cb = document.getElementById('sf-close'); if (cb) cb.addEventListener('click', closeForm);
+        document.addEventListener('keydown', function (e) { if (e.key === 'Escape' && !modal.hidden) closeForm(); });
+        sfForm.addEventListener('submit', function (e) {
+          e.preventDefault();
+          var en2 = (lang === 'en');
+          var email = (document.getElementById('sf-email').value || '').trim();
+          var msg = (document.getElementById('sf-msg').value || '').trim();
+          var name = (document.getElementById('sf-name').value || '').trim();
+          var company = (document.getElementById('sf-company').value || ''); // honeypot
+          if (!/^[^@\s]+@[^@\s]+\.[^@\s]+$/.test(email)) { sfStatus.textContent = en2 ? 'Please enter a valid e-mail.' : 'Digite um e-mail válido.'; return; }
+          if (!msg) { sfStatus.textContent = en2 ? 'Please write a message.' : 'Escreva uma mensagem.'; return; }
+          sfSubmit.disabled = true;
+          sfStatus.textContent = en2 ? 'Sending…' : 'Enviando…';
+          fetch(WORKER, {
+            method: 'POST', headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'support_contact', name: name, email: email, message: msg, source: source, client: client, turma: turma, company: company })
+          }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
+            sfSubmit.disabled = false;
+            if (d && d.ok) { sfForm.hidden = true; sfStatus.textContent = en2 ? 'Sent! We\'ll get back to you soon.' : 'Enviado! Retornamos em breve.'; }
+            else { sfStatus.textContent = en2 ? 'Could not send. Try again or use WhatsApp.' : 'Não deu para enviar. Tente de novo ou use o WhatsApp.'; }
+          }).catch(function () {
+            sfSubmit.disabled = false;
+            sfStatus.textContent = en2 ? 'Could not send. Try again or use WhatsApp.' : 'Não deu para enviar. Tente de novo ou use o WhatsApp.';
+          });
+        });
+      }
 
       // ?service= opens + scrolls to the matching FAQ block.
       var service = (params.get('service') || '').trim().toLowerCase();
