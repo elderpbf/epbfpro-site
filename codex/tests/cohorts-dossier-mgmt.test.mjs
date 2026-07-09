@@ -95,6 +95,25 @@ test('per-turma remove unreleases (never a global delete); delete-from-bank is s
   assert.ok(!/_removeFromTurma[\s\S]{0,300}api\.deleteItem\(/.test(tarefasJs), 'per-turma remove never calls global deleteItem');
 });
 
+test('labs3: the dossier shows the 4-digit access code (click-to-copy) and the trail card uses the SHORT /trilha/<code> URL', () => {
+  // The trail card + refresh now prefer the canonical short URL (code IS the URL,
+  // Élder 2026-07-04), falling back to the legacy ?k= token form only when code-less.
+  assert.match(cohortsJs, /function _codeUrl\(code\)\s*\{\s*return _baseUrl\(\) \+ '\/trilha\/' \+ code;/, 'has the short-URL builder');
+  assert.match(cohortsJs, /function _trailUrl\(turma\)\s*\{[\s\S]*?if \(turma\.access_code\) return _codeUrl\(turma\.access_code\);/, 'prefers the access_code short URL');
+  assert.match(cohortsJs, /const url = _trailUrl\(turma\);/, 'the dossier trail card builds its URL via _trailUrl');
+  assert.match(cohortsJs, /_refreshDossierTrail[\s\S]{0,220}const url = _trailUrl\(turma\);/, 'the token-rotation refresh also uses _trailUrl');
+  // The bare code is shown as a click-to-copy chip.
+  assert.match(cohortsJs, /const code = turma\.access_code \|\| null;/, 'reads the access_code');
+  assert.match(cohortsJs, /data-doss="copycode" data-code="/, 'renders the click-to-copy code chip');
+  assert.match(cohortsJs, /else if \(a === 'copycode'\) _copyCode\(b\.dataset\.code\);/, 'wires the copy-code action');
+  assert.match(cohortsJs, /function _copyCode\(code\)[\s\S]{0,200}clipboard\.writeText\(code\)/, 'copies the bare digits, not the URL');
+  for (const k of ['cohorts.field_access_code', 'cohorts.copy_code_title', 'cohorts.code_copied']) {
+    const re = new RegExp("'" + k.replace(/\./g, '\\.') + "'");
+    assert.match(ptJs, re, `${k} in pt`);
+    assert.match(enJs, re, `${k} in en`);
+  }
+});
+
 test('Batch B i18n keys exist in both pt and en', () => {
   for (const k of [
     'cohorts.doss_liberacoes', 'cohorts.doss_tarefas',

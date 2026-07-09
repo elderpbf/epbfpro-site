@@ -859,6 +859,16 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-trail-acts { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .05rem; }
 .cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
 .cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
+/* Access-code fact card: the bare 4-digit /trilha code, click-to-copy. */
+.cdx-doss-fact--code .cdx-doss-code {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: 1.15rem; font-weight: 700; letter-spacing: .14em;
+  color: var(--text-primary); background: var(--cdx-chip-bg);
+  border: 1px solid var(--cdx-chip-border); border-radius: 8px;
+  padding: .25rem .55rem; cursor: pointer; margin-top: .05rem;
+  transition: background 120ms, border-color 120ms;
+}
+.cdx-doss-fact--code .cdx-doss-code:hover { background: var(--cdx-card-hover-bg); border-color: var(--primary); }
 
 /* ── Dossier: participant inline list ──────────────────────────────────────── */
 

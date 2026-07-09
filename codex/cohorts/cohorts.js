@@ -97,6 +97,17 @@ function _baseUrl() {
 function _turmaUrl(clientSlug, turmaSlug, token) {
   return _baseUrl() + '/trilha/' + clientSlug + '/' + turmaSlug + '?k=' + token;
 }
+// The canonical SHORT trail URL (Élder 2026-07-04): the 4-digit code IS the URL at
+// rest (/trilha/<código>). Preferred over the legacy ?k= token form whenever the
+// turma has its access_code (every turma gets one, migration 0021/0022); the long
+// token form stays the fallback for any code-less legacy row.
+function _codeUrl(code) {
+  return _baseUrl() + '/trilha/' + code;
+}
+function _trailUrl(turma) {
+  if (turma.access_code) return _codeUrl(turma.access_code);
+  return turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
+}
 
 function _iconSrc(iconPath) {
   if (!iconPath) return null;
@@ -703,11 +714,14 @@ function _refreshDossierHeader(turma) {
 }
 
 // Update the dossier Trilha card (copy URL + open link) after a token rotation.
+// Prefers the SHORT /trilha/<código> URL (stable across token rotations) when the
+// turma has an access_code, matching the trail card built in _renderDossier.
 function _refreshDossierTrail(turma) {
-  if (_dossierTurma !== turma || !turma.token) return;
+  if (_dossierTurma !== turma) return;
   const el = _q('cdx-turma-dossier');
   if (!el) return;
-  const url = _turmaUrl(turma.client_slug, turma.slug, turma.token);
+  const url = _trailUrl(turma);
+  if (!url) return;
   const copyBtn = el.querySelector('[data-doss="copyurl"]');
   if (copyBtn) copyBtn.dataset.url = url;
   const qrBtn = el.querySelector('[data-doss="qrshare"]');
@@ -793,6 +807,13 @@ function _copyUrl(url) {
   navigator.clipboard.writeText(url)
     .then(() => toast.info(t('cohorts.link_copied')))
     .catch(() => toast.err(t('cohorts.copy_failed') + ': ' + url));
+}
+
+// Copy just the bare 4-digit access code (the number a student types at /trilha).
+function _copyCode(code) {
+  navigator.clipboard.writeText(code)
+    .then(() => toast.info(t('cohorts.code_copied')))
+    .catch(() => toast.err(t('cohorts.copy_failed') + ': ' + code));
 }
 
 // ── Turma form ────────────────────────────────────────────────────────────────
@@ -1228,7 +1249,16 @@ function _renderDossier(turma) {
     '</div>';
   const ph = _turmaPhase(turma);
   const archived = turma.status === 'archived';
-  const url = turma.token ? _turmaUrl(turma.client_slug, turma.slug, turma.token) : null;
+  // 3d: the trail card now carries the SHORT /trilha/<código> URL (falls back to the
+  // legacy token URL only for a code-less legacy turma).
+  const url = _trailUrl(turma);
+  // The bare 4-digit access code the student types at /trilha; click copies the digits.
+  const code = turma.access_code || null;
+  const codeCard = code
+    ? '<div class="cdx-doss-fact cdx-doss-fact--code"><label>' + _esc(t('cohorts.field_access_code')) + '</label>' +
+        '<button type="button" class="cdx-doss-code" data-doss="copycode" data-code="' + _esc(code) + '" title="' + _esc(t('cohorts.copy_code_title')) + '" aria-label="' + _esc(t('cohorts.copy_code_title')) + '">' + _esc(code) + '</button>' +
+      '</div>'
+    : '';
   const trailCard =
     '<div class="cdx-doss-fact cdx-doss-fact--trail"><label>' + _esc(t('cohorts.field_trail')) + '</label>' +
     (url
@@ -1281,6 +1311,7 @@ function _renderDossier(turma) {
           '<div class="cdx-doss-sep" role="separator"></div>' +
           editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
           classpulseFact +
+          codeCard +
           trailCard +
         '</div>' +
         '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
@@ -1326,6 +1357,7 @@ function _renderDossier(turma) {
     else if (a === 'delete') _deleteTurma(turma);
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
+    else if (a === 'copycode') _copyCode(b.dataset.code);
     else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url });
   }));
 

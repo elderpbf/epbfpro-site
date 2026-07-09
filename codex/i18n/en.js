@@ -382,6 +382,9 @@ export default {
   'cohorts.session_open_title':     'Open the session connected to this turma',
   'cohorts.session_none_title':     'No session connected to this turma',
   'cohorts.field_trail':            'Trail link',
+  'cohorts.field_access_code':      'Access code',
+  'cohorts.copy_code_title':        'Copy the code',
+  'cohorts.code_copied':            'Code copied!',
 
   // Cohorts — aulas (lessons)
   'cohorts.loading_aulas':          'Loading lessons...',
