@@ -1252,12 +1252,12 @@ function _renderDossier(turma) {
   // 3d: the trail card now carries the SHORT /trilha/<código> URL (falls back to the
   // legacy token URL only for a code-less legacy turma).
   const url = _trailUrl(turma);
-  // The bare 4-digit access code the student types at /trilha; click copies the digits.
+  // The bare 4-digit access code the student types at /trilha; rendered as a button
+  // INSIDE the trail card's action row (next to the QR button, with the others), click
+  // copies the digits — not a separate fact box.
   const code = turma.access_code || null;
-  const codeCard = code
-    ? '<div class="cdx-doss-fact cdx-doss-fact--code"><label>' + _esc(t('cohorts.field_access_code')) + '</label>' +
-        '<button type="button" class="cdx-doss-code" data-doss="copycode" data-code="' + _esc(code) + '" title="' + _esc(t('cohorts.copy_code_title')) + '" aria-label="' + _esc(t('cohorts.copy_code_title')) + '">' + _esc(code) + '</button>' +
-      '</div>'
+  const codeBtn = code
+    ? '<button type="button" class="cdx-btn cdx-btn-sm cdx-doss-code-btn" data-doss="copycode" data-code="' + _esc(code) + '" title="' + _esc(t('cohorts.copy_code_title')) + '" aria-label="' + _esc(t('cohorts.copy_code_title')) + '">' + _esc(code) + '</button>'
     : '';
   const trailCard =
     '<div class="cdx-doss-fact cdx-doss-fact--trail"><label>' + _esc(t('cohorts.field_trail')) + '</label>' +
@@ -1267,6 +1267,7 @@ function _renderDossier(turma) {
           '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
+          codeBtn +
         '</div>'
       : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
     '</div>';
@@ -1311,7 +1312,6 @@ function _renderDossier(turma) {
           '<div class="cdx-doss-sep" role="separator"></div>' +
           editText('whatsapp_url', t('cohorts.field_whatsapp'), turma.whatsapp_url, 'https://chat.whatsapp.com/...') +
           classpulseFact +
-          codeCard +
           trailCard +
         '</div>' +
         '<div class="cdx-doss-subhead">' + _esc(t('cohorts.sec_access')) + '</div>' +
