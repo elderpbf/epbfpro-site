@@ -358,14 +358,19 @@
       const WEAK_IDX = WEAK_RESPONSES.map((_, i) => GOOD_RESPONSES.length + i);
 
       // ── Constants ────────────────────────────────────────
-      const PREF_STEP = 1 / 12;   // same resolution as the old two-button version
+      // Two step sizes on purpose. The CLIMB is coarse (~8%) so the weight
+      // rises fast and visibly to the band -- an "estabelecido" training run,
+      // not the old 50/50 walk that could take ~50 clicks. Once inside the
+      // band the step drops to a fine 3% so repeated clicks actually WANDER
+      // across 70-90% (72, 75, 78, 81, ...) instead of ping-ponging between
+      // the same two values (the "só sobe/desce" Élder flagged).
+      const CLIMB_STEP = 1 / 12;  // ~8.3% per click while climbing
+      const BAND_STEP  = 0.03;    // fine 3% wander once stabilized
       const BAND_LOW  = 0.7;
       const BAND_HIGH = 0.9;
-      // Established, not a coin flip: before the band is first reached, "Melhor"
-      // outcomes are heavily favored so the climb reads as a real training run
-      // (an early version was 50/50, which could take ~50 clicks to reach 50%
-      // by chance -- not "estabelecido"). Some down-clicks still land, for a
-      // noisy-but-clearly-upward feel, but the trend to ~80% is fast and reliable.
+      // Before the band is first reached, "Melhor" outcomes are heavily
+      // favored so the climb reads as a real training run. Some down-clicks
+      // still land, for a noisy-but-clearly-upward feel.
       const CLIMB_UP_CHANCE = 0.82;
 
       // ── State ────────────────────────────────────────────
@@ -525,7 +530,7 @@
         }
 
         if (bandLocked) {
-          statusEl.textContent = 'Convergiu: o peso estabilizou entre 70% e 90%, sem disparar para 100%.';
+          statusEl.textContent = 'Convergiu: o peso estabilizou.';
           statusEl.className = 'k17-status k17-status--aligned';
         } else {
           statusEl.textContent = '';
@@ -553,14 +558,16 @@
       // "Melhor" step, weak pool for "Pior"), so the label never contradicts
       // the text on screen.
       function train() {
+        // Coarse climb step until stabilized, fine wander step once in-band.
+        const step = bandLocked ? BAND_STEP : CLIMB_STEP;
         let goUp = Math.random() < (bandLocked ? 0.5 : CLIMB_UP_CHANCE);
         if (bandLocked) {
-          const nextUp = clamp01(pref + PREF_STEP);
-          const nextDown = clamp01(pref - PREF_STEP);
+          const nextUp = clamp01(pref + step);
+          const nextDown = clamp01(pref - step);
           if (goUp && nextUp > BAND_HIGH) goUp = false;
           else if (!goUp && nextDown < BAND_LOW) goUp = true;
         }
-        pref = clamp01(pref + (goUp ? PREF_STEP : -PREF_STEP));
+        pref = clamp01(pref + (goUp ? step : -step));
         if (!bandLocked && pref >= BAND_LOW && pref <= BAND_HIGH) bandLocked = true;
 
         activeIdx = pickResponse(goUp ? GOOD_IDX : WEAK_IDX);
