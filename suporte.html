@@ -298,6 +298,8 @@
       function openForm() {
         if (!modal) return;
         applyFormLang();
+        if (sfForm) sfForm.hidden = false;   // reset from a previous successful send
+        if (sfStatus) sfStatus.textContent = '';
         var nameEl = document.getElementById('sf-name');
         if (nameEl && !nameEl.value && nome) nameEl.value = nome;
         modal.hidden = false;
@@ -339,7 +341,7 @@
             body: JSON.stringify({ action: 'support_contact', name: name, email: email, message: msg, source: source, client: client, turma: turma, company: company })
           }).then(function (r) { return r.json().catch(function () { return {}; }); }).then(function (d) {
             sfSubmit.disabled = false;
-            if (d && d.ok) { sfForm.hidden = true; sfStatus.textContent = en2 ? 'Sent! We\'ll get back to you soon.' : 'Enviado! Retornamos em breve.'; }
+            if (d && d.ok) { sfForm.hidden = true; setText('sf-title', en2 ? '✓ Sent!' : '✓ Enviado!'); sfStatus.textContent = en2 ? 'We\'ll get back to you soon.' : 'Retornamos em breve.'; }
             else { sfStatus.textContent = en2 ? 'Could not send. Try again or use WhatsApp.' : 'Não deu para enviar. Tente de novo ou use o WhatsApp.'; }
           }).catch(function () {
             sfSubmit.disabled = false;
