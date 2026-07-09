@@ -269,3 +269,29 @@ test('e2: propose-order has a direction toggle, generates and applies via reorde
     assert.ok(!dict.includes("'questions.bank_complexify'"), lang + ' dropped complexify keys');
   }
 });
+
+// Copy questions between banks: the move bar carries a Copiar action next to
+// Mover, driven by the same destination select. Copy must be a FAITHFUL per-item
+// add_question (preserves max_select / correct index-0 / audience), never the
+// lossy add_questions_bulk path (Key Decision 2026-06-02).
+test('bank can copy selected questions to another bank via faithful per-item add_question', () => {
+  const src = read('../questions/bank.js');
+  assert.match(src, /data-act="copy-do"/, 'move bar renders a Copiar action');
+  const start = src.indexOf('async function _copySelected');
+  assert.ok(start > 0, '_copySelected handler exists');
+  const fn = src.slice(start, start + 900);
+  assert.match(fn, /api\.addQuestion\(/, 'copy inserts each question via add_question');
+  assert.ok(!/addQuestionsBulk/.test(fn), 'copy does not use the lossy bulk path');
+  assert.match(fn, /_toCanonical\(/, 'copy serializes each question canonically (all types)');
+  assert.match(fn, /max_select:/, 'copy carries max_select');
+  assert.match(fn, /audience:/, 'copy carries the audience tag');
+  // Copy leaves the source intact: no updateQuestion/new_list_name and no delete.
+  assert.ok(!/new_list_name/.test(fn), 'copy never reassigns (that is Mover)');
+  assert.ok(!/deleteQuestion/.test(fn), 'copy never removes the source question');
+  for (const lang of ['../i18n/pt.js', '../i18n/en.js']) {
+    const dict = read(lang);
+    for (const k of ['questions.bank_copy_do', 'questions.bank_dest', 'questions.bank_copy_done']) {
+      assert.ok(dict.includes("'" + k + "'"), lang + ' has ' + k);
+    }
+  }
+});
