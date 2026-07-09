@@ -15,6 +15,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
+import { relTime } from '../js/rel-time.js';
 import { isApprovalGated, groupParticipantsByStatus, sortByName, toolbarActions, actionEnabled, actionTargetStatus } from './participant-view.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
@@ -1021,8 +1022,7 @@ function _openParticipantsHelp() {
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
       row('<span class="cdx-prow-conn ok">✓</span>', t('cohorts.phelp_connected')) +
-      row('<span class="cdx-prow-conn">•</span>',    t('cohorts.phelp_waiting')) +
-      row('<span class="cdx-prow-warn">⚠</span>',    t('cohorts.phelp_unverified')) +
+      row('<span class="cdx-prow-conn no">✕</span>', t('cohorts.phelp_never')) +
 
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn cdx-btn-primary" id="cdx-phelp-close">' + _esc(t('cohorts.close')) + '</button>' +
@@ -1513,18 +1513,27 @@ function _pAvatar(p, st, gated) {
 function _pRow(p, gated) {
   const st = p.access_status || 'pending';
   const online = (p.active_sessions || 0) > 0;
-  const unv = (p.email && !p.email_verified)
-    ? ' <span class="cdx-prow-warn" title="' + _esc(t('alunos.unverified')) + '">⚠</span>' : '';
-  const onlineDot = (gated && st === 'approved' && online)
-    ? ' <span class="cdx-prow-online" title="' + _esc(t('cohorts.conn_online')) + '">●</span>' : '';
+  // Connection mark, meaningful only once approved + gated. One axis, two explicit
+  // states: ✓ acessou (green, with how long ago it last logged in) vs ✕ nunca acessou
+  // (muted). Replaces the old ● (which read like the legend's • "não logou") and the
+  // ⚠ e-mail-não-confirmado, a different axis that misfired as an alarm (Élder 2026-07-09).
+  let conn = '';
+  if (gated && st === 'approved') {
+    if (online) {
+      const when = p.last_access_at ? ' <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>' : '';
+      conn = ' <span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span>' + when;
+    } else {
+      conn = ' <span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
+    }
+  }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
   return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '">' +
     '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
     _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(name) + onlineDot + '</div>' +
-      '<div class="cdx-prow-mail">' + _esc(p.email || '') + unv + '</div>' +
+      '<div class="cdx-prow-name">' + _esc(name) + conn + '</div>' +
+      '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
     '</div>' +
     badge +
     '<button type="button" class="cdx-prow-edit" data-edit title="' + _esc(t('cohorts.participant_edit_title')) + '">✎</button>' +

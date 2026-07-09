@@ -914,7 +914,9 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-warn { color: var(--cdx-warn); font-size: .8rem; }
 .cdx-prow-meta { display: flex; align-items: center; gap: .4rem; flex: 0 0 auto; }
 .cdx-prow-conn { font-size: .72rem; color: var(--text-secondary); white-space: nowrap; }
-.cdx-prow-conn.ok { color: var(--tint-success-tx); }
+.cdx-prow-conn.ok { color: var(--tint-success-tx); font-weight: 700; }
+.cdx-prow-conn.no { color: var(--text-secondary); opacity: .65; }
+.cdx-prow-when { font-size: .68rem; color: var(--text-secondary); white-space: nowrap; margin-left: .1rem; }
 .cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .cdx-prow-acts .cdx-btn { padding: .2rem .5rem; font-size: .72rem; }
 

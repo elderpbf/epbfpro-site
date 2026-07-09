@@ -5,7 +5,7 @@
 // are wired in as those slices land (Aulas / Apostila / Outros). resolveTab() is
 // pure (unit-tested); the DOM wiring is verified visually on staging.
 import { state } from './state.js';
-import { esc, showError } from './utils.js';
+import { esc, showError, isOutrosItem } from './utils.js';
 import { trail } from './api.js';
 import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
@@ -420,7 +420,7 @@ function renderTabs(root) {
   const data = state.data || {};
   const turma = data.turma || {};
   const items = data.items || [];
-  const outros = items.filter((it) => it.aula_number == null && it.set_id == null && it.type !== 'tarefa');
+  const outros = items.filter(isOutrosItem);
   const apostilaSet = data.apostila_set;
   const apostilaCount = apostilaSet ? items.filter((it) => it.set_id === apostilaSet.id).length : 0;
 

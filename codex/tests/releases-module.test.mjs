@@ -21,17 +21,23 @@ test('aulaDateStatusKey classifies lesson dates against today', () => {
   assert.equal(rel.aulaDateStatusKey({}, today).key, 'tbd', 'no dates = tbd');
 });
 
-test('diffOutrosSelection releases new picks and unreleases dropped Outros items', () => {
-  // item 1: not released, now checked -> release
-  // item 2: in Outros (released, no aula), now unchecked -> unrelease
-  // item 3: released to aula 4 (not Outros), unchecked -> untouched
-  const released = [2, 3];
-  const releasedMeta = { 2: { aula_number: null }, 3: { aula_number: 4 } };
+test('opção B: diffOutrosSelection pins/unpins the Outros sentinel (0) and unreleases the last home', () => {
+  // item 1: not released, checked -> first release + pin 0 (Outros only)
+  // item 2: legacy in-Outros (released, no aula), unchecked -> unrelease (Outros was its only home)
+  // item 3: released to aula 4 (not Outros), checked -> ADD 0 (now aula 4 AND Outros), still released
+  // item 5: already pinned to aula 4 AND Outros [4,0], still checked -> no change
+  const released = [2, 3, 5];
+  const bindings = { 2: [], 3: [4], 5: [4, 0] };
+  const aulaNumbersOf = (id) => bindings[id] || [];
   const out = rel.diffOutrosSelection({
-    released, releasedMeta, poolIds: [1, 2, 3], selectedIds: [1],
+    released, aulaNumbersOf, poolIds: [1, 2, 3, 5], selectedIds: [1, 3, 5],
   });
-  assert.deepEqual(out.toRelease, [1], 'unreleased+checked -> release');
-  assert.deepEqual(out.toUnrelease, [2], 'in-Outros+unchecked -> unrelease');
+  assert.deepEqual(out.toRelease, [1], 'unreleased+checked -> first release');
+  assert.deepEqual(out.toUnrelease, [2], 'Outros was its only home -> unrelease');
+  const byId = Object.fromEntries(out.updates.map((u) => [u.id, u.aulaNumbers]));
+  assert.deepEqual(byId[1], [0], 'new item pinned to Outros only');
+  assert.deepEqual(byId[3], [0, 4], 'aula item gains the Outros pin, kept in aula 4');
+  assert.equal(byId[5], undefined, 'already-in-Outros + still checked -> no change');
 });
 
 test('R3 + R1a: composer groups items por tipo and greys items already released to another aula', () => {
@@ -65,6 +71,15 @@ test('#23: an item can be bound to SEVERAL aulas (additive, not move)', async ()
   r = mod.diffAulaMultiSelection({ released: [], aulaNumbersOf: () => [], aulaNum: 2, poolIds: [9], selectedIds: [9] });
   assert.deepEqual(r.toRelease, [9], 'unreleased item gets a first ct_release');
   assert.deepEqual(r.updates[0], { id: 9, aulaNumbers: [2] });
+  // Opção B: unchecking the LAST aula (nothing else holds it) unreleases from the turma,
+  // it must NOT silently fall into Outros.
+  r = mod.diffAulaMultiSelection({ released: [7], aulaNumbersOf: (id) => (id === 7 ? [1] : []), aulaNum: 1, poolIds: [7], selectedIds: [] });
+  assert.deepEqual(r.toUnrelease, [7], 'last aula unchecked -> unrelease');
+  assert.equal(r.updates.length, 0, 'no leftover empty-aula update');
+  // But an item ALSO pinned to Outros (0) keeps its release when an aula is unchecked.
+  r = mod.diffAulaMultiSelection({ released: [7], aulaNumbersOf: (id) => (id === 7 ? [1, 0] : []), aulaNum: 1, poolIds: [7], selectedIds: [] });
+  assert.deepEqual(r.toUnrelease, [], 'still pinned to Outros -> not unreleased');
+  assert.deepEqual(r.updates[0], { id: 7, aulaNumbers: [0] }, 'aula 1 removed, Outros pin kept');
 });
 
 test('#23: the composer saves via setAulas (multi) and reads aula_numbers', () => {
