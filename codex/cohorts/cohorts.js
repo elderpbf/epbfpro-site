@@ -70,6 +70,13 @@ let _cleanup = []; // teardown functions pushed by mount
 // content counts; the rest is selection state for the list | detail split.
 let _turmaViewItems = []; // released items, for the aula count chips/badges
 let _turmaViewApps = [];  // granted apps (with aula_number), for the aula app chip
+// Notification deep-link (bell -> dossier), seeded from ctx in mount and consumed
+// ONCE on load: a tarefa-submission opens the turma on its aula's Tarefas sub-tab
+// focused on the item; a forum item opens the Fórum sub-tab. Each is cleared as it
+// is applied so a later manual navigation is never hijacked.
+let _deepDtab = null;   // 'aulas' | 'forum' | null
+let _deepAula = null;   // aula_number to auto-select
+let _deepItem = null;   // tarefa item_id to focus in the Tarefas pane
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
 let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
 let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false }; // which detail embed is live
@@ -324,7 +331,7 @@ function _loadAll() {
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
     if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
     _renderList();
-    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); }
+    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); _applyDeepDtab(); }
     else {
       // No deep-link: start with the rail pinned open and the dossiê showing the
       // empty prompt until Élder opens a turma (mirrors the Questions picker).
@@ -338,6 +345,17 @@ function _loadAll() {
     const el2 = _q(IDS.list);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
+}
+
+// Deep-link step 1: once the dossier is open, reveal the target sub-tab (aulas for a
+// tarefa submission, forum for a forum post) by activating its button. The aula
+// selection + tarefa focus follow when the aulas hub finishes loading (_applyDeepAula).
+function _applyDeepDtab() {
+  if (!_deepDtab) return;
+  const dtab = _deepDtab;
+  _deepDtab = null;
+  const btn = _viewEl && _viewEl.querySelector('.cdx-subtab[data-dtab="' + dtab + '"]');
+  if (btn) btn.click();
 }
 
 function _initials(name) {
@@ -1713,12 +1731,24 @@ function _loadTurmaAulas(turma) {
     _turmaAulas = (ad.aulas || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
     _turmaViewItems = (vd && vd.items) || [];
     _turmaViewApps = (vd && vd.apps) || [];
+    _applyDeepAula();
     _renderAulasHub(turma);
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
     const el2 = _q(IDS.aulasList);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
+}
+
+// Deep-link step 2: select the aula the notification points at and open its Tarefas
+// sub-tab, so _renderAulasHub keeps this selection instead of defaulting to the first
+// aula. _deepItem is left for _renderAulaPane to focus the exact tarefa. Consumed once.
+function _applyDeepAula() {
+  if (_deepAula == null) return;
+  const target = _deepAula;
+  _deepAula = null;
+  const aula = _turmaAulas.find((a) => Number(a.aula_number) === Number(target));
+  if (aula && aula.id != null) { _selectedAulaId = String(aula.id); _aulaTab = 'tarefas'; }
 }
 
 // Per-aula content counts, reusing the Liberações composer's own tally (exported
@@ -1945,8 +1975,12 @@ function _renderAulaPane(turma, aula) {
     return;
   }
   if (_aulaTab === 'tarefas') {
+    // Deep-link step 3: a pending _deepItem focuses that tarefa's answers on mount
+    // (consumed once, so a later manual tab switch mounts normally).
+    const focusItemId = (_deepItem != null ? _deepItem : undefined);
+    _deepItem = null;
     tarefasAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aulaNumber: aula.aula_number,
-      revealOn: !!turma.reveal_on_completion, aulaHappened: !!aula.happened_on, onChange });
+      revealOn: !!turma.reveal_on_completion, aulaHappened: !!aula.happened_on, onChange, focusItemId });
     _aulaEmbedMounted.tarefas = true;
     return;
   }
@@ -2217,8 +2251,11 @@ export function mount(viewEl, ctx) {
   _turmas = [];
   _turmaSearch = '';
   _turmaAulas = [];
-  _relClientSlug = null;
-  _relTurmaSlug = null;
+  _relClientSlug = (ctx && ctx.fclient) || null;
+  _relTurmaSlug = (ctx && ctx.fturma) || null;
+  _deepDtab = (ctx && ctx.fdtab) || null;
+  _deepAula = (ctx && ctx.faula != null && ctx.faula !== '') ? ctx.faula : null;
+  _deepItem = (ctx && ctx.fitem != null && ctx.fitem !== '') ? ctx.fitem : null;
   _cpSessions = [];
   _dossierTurma = null;
   _dossierDepsTried = false;
@@ -2241,6 +2278,7 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   cursos.unmount();
   _unmountAulaEmbeds();
+  _deepDtab = null; _deepAula = null; _deepItem = null;
   if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }
   _cleanup.forEach(fn => fn());
   _cleanup = [];

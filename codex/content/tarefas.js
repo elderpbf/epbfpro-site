@@ -40,6 +40,9 @@ let _cleanup = [];
 // the standalone Content-tab mount.
 let _lockedAula = null;  // aula number | null
 let _onChange = null;
+// Deep-link focus (from the notification bell): the tarefa item_id to open on load so
+// its answers surface immediately. Consumed once in _loadTarefas.
+let _focusItemId = null;
 // t1b authoring (aula-locked pane): the bank (all tarefa items + sections) loaded lazily
 // when ＋Adicionar opens; _adding toggles the inline add block; _addSel is the chosen bank
 // template ({kind:'bank',id} | {kind:'new'} | null); _editCard is the instance card whose
@@ -137,7 +140,15 @@ function _loadTarefas(clientSlug, turmaSlug) {
     // Aula-locked embed: only this aula's released tarefas.
     if (_lockedAula != null) {
       _items = _items.filter((i) => Number(i._aula_number) === Number(_lockedAula));
+      // Deep-link: open the targeted tarefa's card + answers on load, then scroll to it.
+      if (_focusItemId != null && _items.some((i) => Number(i.id) === _focusItemId)) _selectedId = _focusItemId;
       _renderLockedPane();
+      if (_focusItemId != null && Number(_selectedId) === _focusItemId) {
+        _loadSubmissions(_focusItemId);
+        const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + _focusItemId + '"]');
+        if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center' });
+        _focusItemId = null;
+      }
     } else {
       _renderList();
     }
@@ -1367,6 +1378,7 @@ export function mount(viewEl, ctx = {}) {
   _revealOn = !!ctx.revealOn;
   _aulaHappened = !!ctx.aulaHappened;
   _onChange = (typeof ctx.onChange === 'function') ? ctx.onChange : null;
+  _focusItemId = (ctx.focusItemId != null && ctx.focusItemId !== '') ? Number(ctx.focusItemId) : null;
   // Bank-only page (Content > Tarefas): render the always-open bank + editor, no turma/picker/split.
   if (_bankOnly) { _renderBankShell(); return; }
   _renderShell();
@@ -1400,6 +1412,7 @@ export function unmount() {
   _bankItems = [];
   _bankSections = [];
   _bankOnly = false;
+  _focusItemId = null;
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';
