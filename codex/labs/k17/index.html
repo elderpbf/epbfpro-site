@@ -1,0 +1,607 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Treinamento · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k17-panel">
+  <style>
+    /* border-box everywhere, from the start (k1 taught this the hard way: a
+       width:100% child without it overflows the fixed stage on phone). */
+    .k17-panel, .k17-panel * { box-sizing: border-box; }
+
+    .k17-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --text-muted: var(--lab-text-muted);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --param: var(--lab-context-b);
+      --param-rgb: var(--lab-context-b-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 1rem 2rem 0.7rem;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Main area: question+response card + synapse viz + meter ──────── */
+    .k17-main {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      min-height: 0;
+    }
+
+    /* Same card shape as k15's phrase card -- reused deliberately (this lab
+       is a direct copy of that mechanic, retargeted at preference instead of
+       repetition). The "label" row is the fixed question; the "text" row is
+       whichever candidate response is currently on screen. */
+    .k17-phrase-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1.3rem;
+      text-align: center;
+    }
+    .k17-phrase-label {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-style: italic;
+      margin: 0 0 0.5rem;
+      line-height: 1.3;
+    }
+    /* Stack every candidate response in the SAME grid cell (grid-area 1/1):
+       an auto-sized grid row/cell takes the max size of everything placed in
+       it, visible or not (visibility:hidden still participates in layout,
+       unlike display:none) -- so the card reserves the tallest candidate's
+       height with zero JS measurement, and stays correct across any width,
+       A-/A+ font-scale, or theme change automatically. Only the active
+       response is visibility:visible; the rest are invisible but still
+       sizing the row. */
+    .k17-phrase-text-stack {
+      display: grid;
+    }
+    .k17-phrase-text {
+      grid-area: 1 / 1;
+      margin: 0;
+      font-size: calc(var(--lab-fs-audience) * 0.82);
+      font-weight: 700;
+      line-height: 1.3;
+      color: var(--text);
+      visibility: hidden;
+    }
+    .k17-phrase-text.k17-phrase-text--active {
+      visibility: visible;
+      transition: color 320ms;
+    }
+
+    /* Verdict badge: appears after each "Treinar" click, word only, colored
+       by outcome. Fixed min-height so its own empty->populated transition
+       doesn't add another layout jump on top of the one this box already
+       fixes above. */
+    .k17-verdict {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      /* line-height pinned (not "normal") so an empty badge and a populated
+         one compute to the exact same box -- "normal" measures taller than
+         1.4em for this font once there's an actual glyph line, which caused
+         a ~4px jump the first time a verdict appeared. */
+      line-height: 1.4;
+      height: 1.4em;
+      text-align: center;
+    }
+    .k17-verdict--good { color: var(--good); }
+    .k17-verdict--bad { color: var(--bad); }
+
+    /* ── Synapse visualization: two neurons + a weighted line ── */
+    .k17-viz-wrap {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 0;
+      padding: 0;
+    }
+    .k17-viz {
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+
+    /* ── Alignment meter + status ───────────────────────── */
+    .k17-meter-row {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .k17-meter-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 0.6rem;
+    }
+    .k17-meter-label {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k17-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--focal);
+      transition: color 320ms;
+    }
+    .k17-meter-row.k17-meter--full .k17-meter-value { color: var(--good); }
+    .k17-meter-bar {
+      position: relative;
+      height: 12px;
+      background: color-mix(in srgb, var(--text) 8%, transparent);
+      border-radius: 999px;
+      overflow: hidden;
+    }
+    .k17-meter-fill {
+      position: absolute;
+      top: 0; bottom: 0; left: 0;
+      width: 0%;
+      background: linear-gradient(90deg, rgba(var(--focal-rgb), 0.55), var(--focal));
+      border-radius: 999px;
+      transition: width 500ms cubic-bezier(0.22, 0.61, 0.36, 1), background 320ms;
+    }
+    .k17-meter-row.k17-meter--full .k17-meter-fill {
+      background: linear-gradient(90deg, rgba(34, 197, 94, 0.55), var(--good));
+    }
+    .k17-status {
+      margin: 0;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-style: italic;
+      min-height: 1.4em;
+    }
+    .k17-status.k17-status--aligned { color: var(--good); font-style: normal; font-weight: 600; }
+    .k17-status.k17-status--misaligned { color: var(--bad); font-style: normal; font-weight: 600; }
+
+    /* ── Operator buttons ───────────────────────────────────── */
+    .k17-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k17-fs-slot { margin-right: auto; }
+    .k17-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k17-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
+    .k17-btn-primary {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
+    }
+    .k17-btn-primary:hover {
+      background: rgba(var(--focal-rgb), 0.28);
+      border-color: var(--focal);
+      color: var(--focal);
+      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
+    }
+    .k17-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .k17-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
+
+    /* ── Responsive: phone / narrow portrait ───────────────── */
+    @media (max-width: 700px) {
+      .k17-panel { padding: 0.55rem 0.9rem 0.55rem; gap: 0.5rem; }
+      .k17-main { gap: 0.5rem; }
+      .k17-phrase-card { padding: 0.6rem 0.85rem; }
+      .k17-phrase-text { font-size: calc(var(--lab-fs-audience) * 0.72); }
+      .k17-meter-bar { height: 10px; }
+
+      .k17-button-bar { gap: 0.4rem; padding: 0; }
+      .k17-btn {
+        padding: 0.6rem 0.5rem;
+        flex: 1 1 calc(50% - 0.2rem);
+        min-height: 44px;
+        min-width: 0;
+        text-align: center;
+      }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the operator bar, actions keep their grid below. */
+      .k17-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+        flex: 1 1 100%;
+      }
+      .k17-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
+    }
+
+    @media (max-width: 400px) {
+      .k17-btn { padding: 0.55rem 0.35rem; }
+    }
+
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k17-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
+      .k17-main { gap: 0.4rem; }
+      .k17-phrase-card { padding: 0.45rem 0.8rem; }
+      .k17-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header"
+       data-lab-title="Treinamento"
+       data-lab-subtitle="Não existe resposta certa fixa: o peso segue o que o humano prefere"></div>
+
+  <div class="k17-main">
+    <div class="k17-phrase-card" id="k17-phrase-card">
+      <p class="k17-phrase-label">Cliente pergunta: "Fui demitido sem justa causa, tenho direito a alguma coisa?"</p>
+      <p class="k17-verdict" id="k17-verdict"></p>
+      <div class="k17-phrase-text-stack" id="k17-phrase-text-stack"></div>
+    </div>
+
+    <div class="k17-viz-wrap">
+      <svg class="k17-viz" id="k17-viz" viewBox="0 0 1000 400" preserveAspectRatio="xMidYMid meet" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+
+    <div class="k17-meter-row" id="k17-meter-row">
+      <div class="k17-meter-head">
+        <span class="k17-meter-label">Alinhamento</span>
+        <span class="k17-meter-value" id="k17-meter-value">0%</span>
+      </div>
+      <div class="k17-meter-bar"><div class="k17-meter-fill" id="k17-meter-fill"></div></div>
+      <p class="k17-status" id="k17-status"></p>
+    </div>
+  </div>
+
+  <div class="k17-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k17-fs-slot" data-lab-fs-ctl></span>
+    <button class="k17-btn k17-btn-primary" id="k17-train">Treinar</button>
+    <button class="k17-btn" id="k17-reset">Reiniciar</button>
+  </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Preferência humana e pós-treino">
+    <p>Depois do treinamento inicial (aprender a prever texto), existe uma etapa de <strong>pós-treino</strong> que ensina o modelo a se comportar como um assistente: ser útil, claro e educado. Essa etapa usa <strong>preferência humana</strong>, não repetição de um texto certo: para a mesma pergunta, humanos comparam respostas diferentes e dizem qual preferem.</p>
+    <p>Cada clique em <strong>"Treinar"</strong> simula uma rodada de avaliação: uma resposta candidata aparece, é julgada como <strong>"Melhor"</strong> (reforça o peso) ou <strong>"Pior"</strong> (enfraquece), e o peso se ajusta. Não existe uma resposta "correta" fixa como no laboratório Sobreajuste, aqui o peso segue o padrão de qualidade das respostas comparadas.</p>
+    <p>Um treinamento por preferência bem calibrado sobe rápido no início (respostas boas reforçam mais do que as fracas enfraquecem) e depois se estabiliza num patamar alto sem disparar para 100% (aqui, entre 70% e 90%). É o contraste com o laboratório Sobreajuste: lá, repetir o MESMO texto faz o peso estourar para 100%; aqui, comparar respostas DIFERENTES ensina um estilo geral que se mantém estável, num nível alto mas não absoluto.</p>
+  </template>
+
+  <script>
+    (function () {
+      const root = document.querySelector('.k17-panel');
+      if (!root) return;
+
+      // ── Content: candidate responses to the SAME fixed question, split by
+      // quality. GOOD is what a "Melhor" verdict shows, WEAK is what "Pior"
+      // shows -- the label always matches the text on screen (never a green
+      // "Melhor" over a bad answer), because the training step picks the
+      // response FROM the pool that matches the direction it already decided
+      // (see trainStep below), not the other way around.
+      const GOOD_RESPONSES = [
+        'Sim: você tem direito a aviso prévio, 13º e férias proporcionais, multa de 40% do FGTS, além do seguro-desemprego se atendidos os requisitos.',
+        'Sim, e recomendo reunir a carteira assinada e os holerites para conferir as verbas rescisórias com um advogado.',
+        'Você tem direito às verbas rescisórias: aviso prévio, saldo de salário, 13º e férias proporcionais, além da multa de 40% sobre o FGTS.',
+        'Correto, a dispensa sem justa causa garante o saque do FGTS com a multa de 40% e, se você atender aos requisitos, o seguro-desemprego.',
+        'Sim. Vale conferir se a empresa pagou corretamente o aviso prévio e depositou a multa rescisória do FGTS.',
+        'Tem sim: além das verbas rescisórias, você pode ter direito ao seguro-desemprego, dependendo do seu histórico de contribuições.',
+        'Sim, você tem direito a receber as verbas da rescisão; recomendo levar os documentos a um advogado para conferir os valores.',
+        'Correto, é seu direito receber o aviso prévio, 13º e férias proporcionais, e sacar o FGTS com a multa de 40%.',
+        'Sim, tem direito às verbas rescisórias e, dependendo do caso, ao seguro-desemprego; vale revisar o termo de rescisão com atenção.',
+      ];
+      const WEAK_RESPONSES = [
+        'Ah, depende, cada caso é um caso, melhor perguntar pra outra pessoa.',
+        'Não tenho certeza não, isso aí é bem complicado.',
+        'Não sei te dizer, isso não é bem comigo não.',
+      ];
+      const RESPONSES = GOOD_RESPONSES.concat(WEAK_RESPONSES);
+      // Index pools into RESPONSES (built once, not per click): GOOD_RESPONSES
+      // occupies [0, GOOD_RESPONSES.length), WEAK_RESPONSES fills the rest.
+      const GOOD_IDX = GOOD_RESPONSES.map((_, i) => i);
+      const WEAK_IDX = WEAK_RESPONSES.map((_, i) => GOOD_RESPONSES.length + i);
+
+      // ── Constants ────────────────────────────────────────
+      // Two step sizes on purpose. The CLIMB is coarse (~8%) so the weight
+      // rises fast and visibly to the band -- an "estabelecido" training run,
+      // not the old 50/50 walk that could take ~50 clicks. Once inside the
+      // band the step drops to a fine 3% so repeated clicks actually WANDER
+      // across 70-90% (72, 75, 78, 81, ...) instead of ping-ponging between
+      // the same two values (the "só sobe/desce" Élder flagged).
+      const CLIMB_STEP = 1 / 12;  // ~8.3% per click while climbing
+      const BAND_STEP  = 0.03;    // fine 3% wander once stabilized
+      const BAND_LOW  = 0.7;
+      const BAND_HIGH = 0.9;
+      // Before the band is first reached, "Melhor" outcomes are heavily
+      // favored so the climb reads as a real training run. Some down-clicks
+      // still land, for a noisy-but-clearly-upward feel.
+      const CLIMB_UP_CHANCE = 0.82;
+
+      // ── State ────────────────────────────────────────────
+      let pref = 0;           // 0..1, drives line thickness + meter
+      let bandLocked = false; // true once pref first lands inside [BAND_LOW, BAND_HIGH] -- from then on every step is forced to stay inside it
+      let activeIdx = 0;      // index into RESPONSES currently shown
+      let lastIdx = -1;       // avoids showing the exact same response twice in a row
+      let verdict = null;     // 'good' | 'bad' | null (null = no click yet)
+
+      // ── DOM refs ─────────────────────────────────────────
+      const vizEl         = root.querySelector('#k17-viz');
+      const verdictEl      = root.querySelector('#k17-verdict');
+      const phraseStackEl = root.querySelector('#k17-phrase-text-stack');
+      const meterRowEl    = root.querySelector('#k17-meter-row');
+      const meterFillEl   = root.querySelector('#k17-meter-fill');
+      const meterValueEl  = root.querySelector('#k17-meter-value');
+      const statusEl      = root.querySelector('#k17-status');
+      const trainBtn      = root.querySelector('#k17-train');
+      const resetBtn      = root.querySelector('#k17-reset');
+
+      function clamp01(v) { return Math.max(0, Math.min(1, v)); }
+
+      // Every candidate response is rendered once, stacked in the same grid
+      // cell (see .k17-phrase-text-stack CSS) -- only one is ever visible,
+      // but all 12 sizing the row is what keeps the card from jumping.
+      const phraseEls = RESPONSES.map((text, i) => {
+        const p = document.createElement('p');
+        p.className = 'k17-phrase-text';
+        p.textContent = text;
+        phraseStackEl.appendChild(p);
+        return p;
+      });
+
+      // ── Synapse SVG (two neurons + a line whose width/glow encode weight) ──
+      const SVG_NS = 'http://www.w3.org/2000/svg';
+      function makeEl(tag, attrs) {
+        const el = document.createElementNS(SVG_NS, tag);
+        for (const k in attrs) el.setAttribute(k, attrs[k]);
+        return el;
+      }
+      let VB_W = 1000, VB_H = 400;
+      let leftCx, rightCx, cy, r;
+      let synapseLine, synapseGlowLine, leftNode, rightNode;
+
+      function computeGeometry() {
+        const rect = vizEl.getBoundingClientRect();
+        if (rect.width <= 0 || rect.height <= 0) return false;
+        VB_W = Math.round(rect.width);
+        VB_H = Math.round(rect.height);
+        // Diameter cut 30% on phone feedback (2026-07-07): scale every term
+        // (including the px cap) by 0.7 so it stays proportional at any size.
+        r = Math.min(VB_H * 0.126, VB_W * 0.112, 49);
+        leftCx = VB_W * 0.22;
+        rightCx = VB_W * 0.78;
+        cy = VB_H / 2;
+        return true;
+      }
+
+      function buildViz() {
+        if (!computeGeometry()) return;
+        vizEl.setAttribute('viewBox', `0 0 ${VB_W} ${VB_H}`);
+        vizEl.innerHTML = '';
+
+        const defs = makeEl('defs', {});
+        const glow = makeEl('filter', { id: 'k17-glow', x: '-60%', y: '-60%', width: '220%', height: '220%' });
+        glow.appendChild(makeEl('feGaussianBlur', { stdDeviation: '6', result: 'b' }));
+        const merge = makeEl('feMerge', {});
+        merge.appendChild(makeEl('feMergeNode', { in: 'b' }));
+        merge.appendChild(makeEl('feMergeNode', { in: 'SourceGraphic' }));
+        glow.appendChild(merge);
+        defs.appendChild(glow);
+        vizEl.appendChild(defs);
+
+        synapseGlowLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round', filter: 'url(#k17-glow)', opacity: '0.5',
+        });
+        vizEl.appendChild(synapseGlowLine);
+
+        synapseLine = makeEl('line', {
+          x1: leftCx, y1: cy, x2: rightCx, y2: cy,
+          stroke: 'var(--focal)', 'stroke-linecap': 'round',
+        });
+        vizEl.appendChild(synapseLine);
+
+        leftNode = makeEl('circle', { cx: leftCx, cy: cy, r: r, fill: 'var(--param)' });
+        rightNode = makeEl('circle', { cx: rightCx, cy: cy, r: r, fill: 'var(--param)' });
+        vizEl.appendChild(leftNode);
+        vizEl.appendChild(rightNode);
+
+        const fs = Math.max(15, VB_H * 0.045);
+        const pesoLabel = makeEl('text', {
+          x: (leftCx + rightCx) / 2, y: cy - r - 14,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        pesoLabel.textContent = 'Peso';
+        vizEl.appendChild(pesoLabel);
+
+        const param1Label = makeEl('text', {
+          x: leftCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param1Label.textContent = 'Parâmetro 1';
+        vizEl.appendChild(param1Label);
+
+        const param2Label = makeEl('text', {
+          x: rightCx, y: cy + r + 14 + fs,
+          'text-anchor': 'middle', fill: 'var(--text-dim)',
+          'font-family': 'var(--font-display)', 'font-weight': '600', 'font-size': String(fs),
+        });
+        param2Label.textContent = 'Parâmetro 2';
+        vizEl.appendChild(param2Label);
+
+        renderViz();
+      }
+
+      function renderViz() {
+        if (!synapseLine) return;
+        const w = 4 + pref * 40;
+        const glowW = w + 14 + pref * 20;
+        const op = 0.35 + pref * 0.65;
+        synapseLine.setAttribute('stroke-width', String(w));
+        synapseLine.setAttribute('opacity', String(op));
+        synapseGlowLine.setAttribute('stroke-width', String(glowW));
+        synapseGlowLine.setAttribute('opacity', String(0.15 + pref * 0.35));
+      }
+
+      let resizeTimer = null;
+      const ro = new ResizeObserver(() => {
+        clearTimeout(resizeTimer);
+        resizeTimer = setTimeout(buildViz, 80);
+      });
+      ro.observe(vizEl);
+
+      // ── Render (meter, status, active candidate response, verdict badge) ──
+      function render() {
+        renderViz();
+        meterFillEl.style.width = (pref * 100).toFixed(0) + '%';
+        meterValueEl.textContent = Math.round(pref * 100) + '%';
+        meterRowEl.classList.toggle('k17-meter--full', bandLocked);
+
+        phraseEls.forEach((el, i) => {
+          el.classList.toggle('k17-phrase-text--active', i === activeIdx);
+        });
+
+        if (verdict === 'good') {
+          verdictEl.textContent = 'Melhor';
+          verdictEl.className = 'k17-verdict k17-verdict--good';
+        } else if (verdict === 'bad') {
+          verdictEl.textContent = 'Pior';
+          verdictEl.className = 'k17-verdict k17-verdict--bad';
+        } else {
+          verdictEl.textContent = '';
+          verdictEl.className = 'k17-verdict';
+        }
+
+        if (bandLocked) {
+          statusEl.textContent = 'Convergiu: o peso estabilizou.';
+          statusEl.className = 'k17-status k17-status--aligned';
+        } else {
+          statusEl.textContent = '';
+          statusEl.className = 'k17-status';
+        }
+      }
+
+      // ── Handlers ─────────────────────────────────────────
+      // Picks a random response from `pool`, avoiding an immediate repeat of
+      // the response just shown (so consecutive same-direction clicks don't
+      // look frozen).
+      function pickResponse(pool) {
+        if (pool.length === 1) return pool[0];
+        let idx;
+        do { idx = pool[Math.floor(Math.random() * pool.length)]; }
+        while (idx === lastIdx);
+        return idx;
+      }
+
+      // One button, smart direction: heavily-favors-up UNTIL the weight first
+      // lands inside [70%,90%] -- from that point on, an even coin flip (a
+      // true equilibrium, exploring the whole band) that gets flipped
+      // whenever it would breach the band, so it never leaves [70%,90%].
+      // The response shown always matches the verdict (good pool for a
+      // "Melhor" step, weak pool for "Pior"), so the label never contradicts
+      // the text on screen.
+      function train() {
+        // Coarse climb step until stabilized, fine wander step once in-band.
+        const step = bandLocked ? BAND_STEP : CLIMB_STEP;
+        let goUp = Math.random() < (bandLocked ? 0.5 : CLIMB_UP_CHANCE);
+        if (bandLocked) {
+          const nextUp = clamp01(pref + step);
+          const nextDown = clamp01(pref - step);
+          if (goUp && nextUp > BAND_HIGH) goUp = false;
+          else if (!goUp && nextDown < BAND_LOW) goUp = true;
+        }
+        pref = clamp01(pref + (goUp ? step : -step));
+        if (!bandLocked && pref >= BAND_LOW && pref <= BAND_HIGH) bandLocked = true;
+
+        activeIdx = pickResponse(goUp ? GOOD_IDX : WEAK_IDX);
+        lastIdx = activeIdx;
+        verdict = goUp ? 'good' : 'bad';
+        render();
+      }
+
+      function reset() {
+        pref = 0;
+        bandLocked = false;
+        activeIdx = 0;
+        lastIdx = -1;
+        verdict = null;
+        render();
+      }
+
+      trainBtn.addEventListener('click', train);
+      resetBtn.addEventListener('click', reset);
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', e => {
+        if (e.key !== 'bs_theme') return;
+        const t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      buildViz();
+      render();
+    })();
+  </script>
+</section>
+</body>
+</html>

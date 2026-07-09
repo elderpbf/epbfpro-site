@@ -3,8 +3,11 @@
 // window globals at top level (only inside mount/handlers).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 const presets = await import('../content/presets.js');
+const src = fs.readFileSync(fileURLToPath(new URL('../content/presets.js', import.meta.url)), 'utf8');
 
 test('presets module satisfies the tab contract', () => {
   assert.equal(typeof presets.mount, 'function', 'exports mount(viewEl, ctx)');
@@ -31,6 +34,11 @@ test('groupPickerItems places each item in its first matching group', () => {
   assert.deepEqual(byKey.lab, ['lab:demo'], 'lab -> lab');
   assert.deepEqual(byKey.drive, [5], 'drive_file -> drive');
   assert.deepEqual(byKey.outros, [6], 'fallback -> outros');
+});
+
+test('track-34: a lab item\'s picker icon comes from its own type_icon (per-lab emoji), not a fixed flask glyph', () => {
+  assert.ok(!/glyphSvg\('flask'/.test(src), 'no more hardcoded flask glyph for every lab');
+  assert.match(src, /item\.type === 'lab'\) return typeIconHtml\(item\.type_icon/, 'lab items resolve icon from their own type_icon');
 });
 
 test('groupPickerItems returns only non-empty groups, in display order', () => {

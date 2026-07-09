@@ -3,12 +3,18 @@
 //
 //   openModal(html, opts): append a .cdx-modal-backdrop with the given inner html.
 //                            opts.disableBackdropClose (bool) disables click-outside.
-//                            Registers and self-removes its own Escape keydown listener.
+//                            opts.disableEnterSubmit (bool) disables Enter->primary.
+//                            Registers and self-removes its own key listener.
 //                            Returns the backdrop element.
-//   closeModal(bd): removes the backdrop (and its Escape listener).
+//   closeModal(bd): removes the backdrop (and its key listener).
 //
-// The Escape handler is stored on the backdrop element itself (_escHandler) so
+// The key handler is stored on the backdrop element itself (_escHandler) so
 // closeModal can always remove it without the caller tracking any cleanup array.
+// It covers BOTH Escape (close) and Enter (fire the modal's primary action, a
+// standardized submit-on-Enter so individual modals no longer wire their own —
+// track-21). Enter is skipped when a more specific handler already consumed it
+// (e.defaultPrevented, so a modal that DOES wire its own Enter never double-fires),
+// when focus is in a textarea (newline), or when there is no enabled primary button.
 
 export function openModal(html, opts) {
   opts = opts || {};
@@ -26,12 +32,23 @@ export function openModal(html, opts) {
   }
 
   const escHandler = (e) => {
-    if (e.key !== 'Escape') return;
-    // Only the topmost modal responds to Escape, so a nested picker/confirm
-    // closing does not also close the modal beneath it.
+    if (e.key !== 'Escape' && e.key !== 'Enter') return;
+    // Only the topmost modal responds, so a nested picker/confirm closing does not
+    // also close (or submit) the modal beneath it.
     const all = document.querySelectorAll('.cdx-modal-backdrop');
     if (all.length && all[all.length - 1] !== bd) return;
-    closeModal(bd);
+    if (e.key === 'Escape') { closeModal(bd); return; }
+    // Enter -> the modal's primary action (submit-on-Enter). Skip if a more specific
+    // handler already handled it, if the caller opted out, if focus is in a textarea
+    // (intentional newline), or if the target is outside this modal.
+    if (e.defaultPrevented || opts.disableEnterSubmit) return;
+    const el = e.target;
+    if (!bd.contains(el)) return;
+    const tag = el && el.tagName;
+    if (tag === 'TEXTAREA') return;
+    if (tag !== 'INPUT' && tag !== 'SELECT') return;
+    const btn = bd.querySelector('.cdx-btn-primary:not([disabled])');
+    if (btn) { e.preventDefault(); btn.click(); }
   };
   bd._escHandler = escHandler;
   bd._trigger = trigger;

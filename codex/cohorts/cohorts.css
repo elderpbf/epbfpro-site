@@ -859,6 +859,14 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-trail-acts { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .05rem; }
 .cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
 .cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
+/* Access code as a trail-row button: the bare 4-digit /trilha code, click-to-copy,
+   sitting in the trail card's action row alongside Copiar URL / open / regen / QR.
+   Inherits the small-button sizing from .cdx-doss-trail-acts .cdx-btn; here we just
+   give the digits a monospace, spaced, slightly larger treatment so they stand out. */
+.cdx-doss-code-btn {
+  font-family: ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+  font-size: .82rem; font-weight: 700; letter-spacing: .12em;
+}
 
 /* ── Dossier: participant inline list ──────────────────────────────────────── */
 

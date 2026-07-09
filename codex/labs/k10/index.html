@@ -6,8 +6,10 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Cápsula do GPT · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.1">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
 <script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -22,6 +24,8 @@
 <body class="lab-page">
 <section class="k10-panel">
   <style>
+    .k10-panel, .k10-panel * { box-sizing: border-box; }
+
     .k10-panel {
       --bg: var(--lab-bg);
       --text: var(--lab-text);
@@ -43,34 +47,20 @@
 
       position: relative;
       width: 100%;
-      height: 100vh;
+      height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto auto;
+      grid-template-rows: auto minmax(0, 1fr) auto auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
-      box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
     }
 
-    .k10-caption {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--cool);
-      border-radius: 10px;
-      padding: 0.6rem 1rem;
-    }
-    .k10-caption p {
-      margin: 0;
-      font-size: clamp(16px, 1.35vw, 22px);
-      line-height: 1.45;
-      font-style: italic;
-    }
-    .k10-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
-
-    /* Two columns: chat avulso vs projeto pinado */
+    /* Two columns: chat avulso vs projeto pinado. data-lab-tabs turns this
+       into one-panel-at-a-time on phone (lab-tabs.js); desktop keeps the
+       2-col grid untouched. */
     .k10-main {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -96,7 +86,7 @@
     }
     .k10-side-title {
       font-family: var(--font-display);
-      font-size: clamp(19px, 1.7vw, 28px);
+      font-size: var(--lab-fs-doc);
       font-weight: 800;
       margin: 0;
       letter-spacing: -0.005em;
@@ -105,7 +95,7 @@
     .k10-side--gpt .k10-side-title { color: var(--cool); }
     .k10-side-badge {
       font-family: var(--font-mono);
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       padding: 0.2rem 0.6rem;
@@ -128,7 +118,7 @@
     }
     .k10-pinned-label {
       font-family: var(--font-mono);
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       color: var(--cool);
       font-weight: 700;
@@ -147,7 +137,7 @@
       border-radius: 10px;
       padding: 0.55rem 0.75rem;
       color: var(--text-muted);
-      font-size: clamp(13px, 1.0vw, 16px);
+      font-size: var(--lab-fs-ui);
       font-style: italic;
       display: flex;
       align-items: center;
@@ -160,7 +150,7 @@
       gap: 0.25rem;
       background: rgba(var(--cool-rgb), 0.14);
       color: var(--cool);
-      font-size: clamp(13px, 1.05vw, 17px);
+      font-size: var(--lab-fs-ui);
       padding: 0.18rem 0.6rem;
       border-radius: 7px;
       font-family: var(--font-display);
@@ -205,14 +195,14 @@
     }
     .k10-convo-tag {
       font-family: var(--font-mono);
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       font-weight: 700;
       color: var(--text-dim);
       letter-spacing: 0.04em;
       white-space: nowrap;
     }
     .k10-convo-task {
-      font-size: clamp(15px, 1.25vw, 20px);
+      font-size: var(--lab-fs-body);
       font-weight: 700;
       color: var(--text);
       line-height: 1.25;
@@ -224,14 +214,14 @@
       align-items: center;
     }
     .k10-attach-tag {
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       color: var(--bad);
       font-style: italic;
       font-weight: 600;
       margin-right: 0.15rem;
     }
     .k10-reuse {
-      font-size: clamp(14px, 1.1vw, 18px);
+      font-size: var(--lab-fs-body);
       color: var(--good);
       font-style: italic;
       display: inline-flex;
@@ -252,7 +242,7 @@
       padding: 0.55rem 0.85rem;
     }
     .k10-total-label {
-      font-size: clamp(12px, 0.95vw, 15px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.06em;
       color: var(--text-dim);
       text-transform: uppercase;
@@ -267,18 +257,18 @@
     }
     .k10-total-val {
       font-family: var(--font-mono);
-      font-size: clamp(26px, 2.8vw, 44px);
+      font-size: var(--lab-fs-audience);
       font-weight: 800;
       line-height: 1.05;
     }
     .k10-total-val.bad { color: var(--bad); }
     .k10-total-val.good { color: var(--good); }
     .k10-total-vs {
-      font-size: clamp(13px, 1.0vw, 16px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
     }
     .k10-total-sub {
-      font-size: clamp(12px, 0.9vw, 15px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       font-style: italic;
       margin-top: 0.1rem;
@@ -295,19 +285,20 @@
     }
     .k10-counter {
       font-family: var(--font-mono);
-      font-size: clamp(13px, 1.05vw, 16px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       letter-spacing: 0.04em;
     }
     .k10-counter b { color: var(--text); font-weight: 700; }
     .k10-actions {
       display: inline-flex;
+      align-items: center;
       gap: 0.45rem;
       flex-wrap: wrap;
     }
     .k10-btn {
       font-family: var(--font-display);
-      font-size: clamp(13px, 0.95vw, 15px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.4rem 1rem;
       border-radius: 999px;
@@ -336,45 +327,80 @@
 
     /* Responsive */
     @media (max-width: 700px) {
-      .k10-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
-      .k10-caption p { font-size: 15px; line-height: 1.4; }
-      .k10-caption { padding: 0.45rem 0.8rem; }
-      .k10-main { grid-template-columns: 1fr; grid-template-rows: 1fr 1fr; gap: 0.55rem; }
-      .k10-side { padding: 0.6rem 0.75rem; gap: 0.4rem; }
-      .k10-side-title { font-size: 19px; }
-      .k10-convo-task { font-size: 16px; }
-      .k10-chip { font-size: 13px; padding: 0.15rem 0.5rem; }
-      .k10-totals { grid-template-columns: 1fr; gap: 0.4rem; }
-      .k10-total-val { font-size: 28px; }
-      .k10-button-bar { flex-direction: column-reverse; align-items: stretch; gap: 0.4rem; }
-      .k10-counter { text-align: center; font-size: 13px; }
-      .k10-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 0.4rem; }
-      .k10-btn { font-size: 13px; padding: 0.6rem 0.5rem; min-height: 44px; text-align: center; }
-    }
-    @media (max-width: 400px) {
-      .k10-side-title { font-size: 17px; }
-      .k10-convo-task { font-size: 15px; }
-      .k10-btn { font-size: 12.5px; padding: 0.55rem 0.4rem; }
+      .k10-panel { padding: 0.5rem 0.9rem 0.5rem; gap: 0.4rem; }
+      /* The lesson IS the contrast between the two sides, so hiding one
+         behind a tab (the old data-lab-tabs split) forced the operator to
+         toggle back and forth after every "Próximo caso" click just to see
+         both sides react -- the reported friction. Keep the two columns
+         SIDE BY SIDE even on phone (narrower), so avulso-vs-projeto stays a
+         direct visual comparison, and let the whole .k10-main scroll as one
+         block instead of each column scrolling on its own (the old
+         nested-scroll split). A single click updates both columns at once
+         and the always-visible totals below quantify the gap. */
+      .k10-main {
+        grid-template-columns: 1fr 1fr;
+        gap: 0.5rem;
+        overflow-y: auto;
+        align-items: start;
+      }
+      .k10-side {
+        display: flex;
+        flex-direction: column;
+        overflow-y: visible;
+        padding: 0.5rem 0.55rem;
+      }
+      .k10-convos { overflow-y: visible; }
+      /* Title+badge stack (narrow columns can't fit them on one row). */
+      .k10-side-head { flex-direction: column; align-items: flex-start; gap: 0.25rem; }
+      .k10-side-title { font-size: var(--lab-fs-body); }
+      /* The status badge is nowrap for the desktop pill; in a narrow phone
+         column that clips it ("RECOLA O SETUP A CA…"). Let it wrap. */
+      .k10-side-badge { white-space: normal; }
+      .k10-pinned, .k10-no-pinned { margin-top: 0.3rem; }
+      .k10-convos { margin-top: 0.3rem; }
+      /* Chips wrap within the narrow column; keep them compact. */
+      .k10-chip { font-size: var(--lab-fs-ui); padding: 0.15rem 0.45rem; }
+      .k10-pinned-chips { gap: 0.25rem; }
+      /* Totals is a secondary summary, not the main interactive stage --
+         compress hard on phone: 2-up grid (was 1-col stack of 3, the
+         tallest single contributor to a page that must fit 100dvh) and the
+         italic explanation line dropped (the number + label already carry
+         the point; the explanation is the kind of expository text the
+         app-fit rule keeps off a tight phone screen). */
+      .k10-totals { grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+      .k10-total-box:last-child { grid-column: 1 / -1; }
+      .k10-total-box { padding: 0.4rem 0.6rem; }
+      .k10-total-sub { display: none; }
+
+      .k10-button-bar { flex-direction: column; align-items: stretch; gap: 0.3rem; }
+      .k10-counter { order: 2; text-align: center; }
+      .k10-actions { order: 1; display: grid; grid-template-columns: 1fr 1fr; gap: 0.35rem; }
+      .k10-btn { padding: 0.5rem 0.5rem; min-height: 40px; text-align: center; }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
+         row at the top of the bar, actions keep their grid below. Width is
+         automatic here (align-items:stretch on the column-direction bar) --
+         unlike the row-direction bars in the other labs, "flex:1 1 100%"
+         would set the flex-basis on the wrong axis (height, not width) in a
+         column container and blow the element up to the bar's full height. */
+      .k10-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+      }
+      .k10-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+        min-height: 40px;
+      }
     }
     @media (max-height: 500px) and (orientation: landscape) {
       .k10-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
-      .k10-caption p { font-size: 14px; line-height: 1.35; }
-      .k10-caption { padding: 0.35rem 0.7rem; }
       .k10-side { padding: 0.55rem 0.7rem; gap: 0.35rem; }
-      .k10-side-title { font-size: 18px; }
-      .k10-convo-task { font-size: 15px; }
-      .k10-total-val { font-size: 26px; }
-      .k10-btn { font-size: 12px; padding: 0.4rem 0.75rem; min-height: 32px; }
     }
   </style>
 
   <div class="lab-header"
        data-lab-title="Cápsula do GPT"
        data-lab-subtitle="Um projeto guarda o setup de um tipo de peça e serve a todos os casos"></div>
-
-  <div class="k10-caption">
-    <p>Um projeto no ChatGPT não é por cliente, é por <b>tipo de tarefa</b>. Aqui, "Contestação cível, obrigações": o setup (instruções, modelo, checklist, súmulas) é montado <b>uma vez</b> e vale para todos os casos. No chat avulso, o mesmo setup é recolado caso a caso.</p>
-  </div>
 
   <div class="k10-main">
     <!-- LEFT: chat avulso, re-pastes the whole setup for every new case -->
@@ -436,13 +462,23 @@
   </div>
 
   <div class="k10-button-bar">
+    <span data-lab-info-ctl></span>
     <span class="k10-counter">caso <b id="k10-turn">0</b> de 5</span>
     <div class="k10-actions">
+      <span data-lab-fs-ctl></span>
       <button class="k10-btn k10-btn-primary" id="k10-next" type="button">Próximo caso</button>
       <button class="k10-btn" id="k10-all" type="button">Mostrar todos os casos</button>
       <button class="k10-btn" id="k10-reset" type="button">Reiniciar</button>
     </div>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Projeto vs. chat avulso">
+    <p>Um <strong>projeto</strong> no ChatGPT não é organizado por cliente, é organizado por <strong>tipo de tarefa</strong>. Aqui, "Contestação cível, obrigações": o setup que aquele tipo de peça sempre precisa (instruções de estilo, modelo-base, checklist de teses, súmulas de referência) é montado <strong>uma vez</strong> e vale para todos os casos daquele tipo, para sempre.</p>
+    <p>No chat avulso não existe esse lugar fixo: cada caso novo é uma conversa nova, sem memória do setup anterior. Então o mesmo conjunto de instruções e arquivos precisa ser <strong>recolado</strong>, caso a caso, mesmo quando o tipo de peça é idêntico ao do caso anterior.</p>
+    <p>Clique em "Próximo caso" e compare: do lado do chat avulso, cada caso novo recola os 4 itens do setup; do lado do projeto, cada caso novo só reaproveita o que já está pinado. Os totais embaixo mostram o custo disso acumulado.</p>
+  </template>
 
   <script>
     (function() {
@@ -546,8 +582,14 @@
         attachV += SETUP.length;
         turnIdx += 1;
         refreshTotals();
+        // Desktop: each .k10-convos scrolls internally -> jump to the newest.
+        // Mobile: .k10-convos overflow is visible (the whole .k10-main
+        // scrolls), so these are no-ops there; scroll the fresh case into the
+        // .k10-main viewport instead so the new row is always on screen.
         convosV.scrollTop = convosV.scrollHeight;
         convosP.scrollTop = convosP.scrollHeight;
+        const freshV = convosV.querySelector('.k10-convo[data-i="' + i + '"]');
+        if (freshV && freshV.scrollIntoView) freshV.scrollIntoView({ block: 'nearest' });
         if (turnIdx >= CASES.length) nextBtn.setAttribute('disabled', 'true');
       }
 

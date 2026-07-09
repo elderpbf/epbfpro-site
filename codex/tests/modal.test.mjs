@@ -27,6 +27,7 @@ class FakeElement {
     if (i >= 0) { this.children.splice(i, 1); c.parentNode = null; }
     return c;
   }
+  contains(c) { return this.children.includes(c); }
   // querySelector returns null (no focusable fields in test HTML, so autofocus is a no-op)
   querySelector() { return null; }
   querySelectorAll() { return []; }
@@ -121,6 +122,50 @@ test('non-Escape key does not close the modal', () => {
   bd._escHandler({ key: 'Enter' });
   assert.ok(bodyChildren.includes(bd), 'backdrop still present after non-Escape key');
   closeModal(bd);
+});
+
+test('track-21: Enter in an input fires the modal primary button (submit-on-Enter)', () => {
+  const bd = openModal('<div class="cdx-modal"><input><button class="cdx-btn-primary">OK</button></div>');
+  const input = new FakeElement('input');
+  bd.appendChild(input);                 // so bd.contains(input) is true
+  let clicked = 0, prevented = false;
+  bd.querySelector = (sel) => (sel === '.cdx-btn-primary:not([disabled])' ? { disabled: false, click() { clicked++; } } : null);
+  bd._escHandler({ key: 'Enter', target: input, preventDefault() { prevented = true; } });
+  assert.equal(clicked, 1, 'primary button clicked');
+  assert.ok(prevented, 'default prevented (no stray form submit / newline)');
+  assert.ok(bodyChildren.includes(bd), 'the button handler owns closing, not the key handler');
+  closeModal(bd);
+});
+
+test('track-21: Enter already handled elsewhere (defaultPrevented) does NOT double-fire', () => {
+  const bd = openModal('<div class="cdx-modal"><input></div>');
+  const input = new FakeElement('input');
+  bd.appendChild(input);
+  let clicked = 0;
+  bd.querySelector = () => ({ disabled: false, click() { clicked++; } });
+  bd._escHandler({ key: 'Enter', target: input, defaultPrevented: true, preventDefault() {} });
+  assert.equal(clicked, 0, 'a modal that wires its own Enter is not double-submitted');
+  closeModal(bd);
+});
+
+test('track-21: Enter is left alone in a textarea, and disableEnterSubmit opts out', () => {
+  const bd = openModal('<div class="cdx-modal"><textarea></textarea></div>');
+  const ta = new FakeElement('textarea');
+  bd.appendChild(ta);
+  let clicked = 0;
+  bd.querySelector = () => ({ disabled: false, click() { clicked++; } });
+  bd._escHandler({ key: 'Enter', target: ta, preventDefault() {} });
+  assert.equal(clicked, 0, 'textarea keeps its newline');
+  closeModal(bd);
+
+  const bd2 = openModal('<div class="cdx-modal"><input></div>', { disableEnterSubmit: true });
+  const inp = new FakeElement('input');
+  bd2.appendChild(inp);
+  let clicked2 = 0;
+  bd2.querySelector = () => ({ disabled: false, click() { clicked2++; } });
+  bd2._escHandler({ key: 'Enter', target: inp, preventDefault() {} });
+  assert.equal(clicked2, 0, 'disableEnterSubmit suppresses submit-on-Enter');
+  closeModal(bd2);
 });
 
 test('openModal sets backdrop innerHTML to the provided html', () => {

@@ -6,8 +6,11 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Petição envenenada · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.2">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
 <script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script src="../js/lab-tabs.js?v=1.0" defer></script>
 <script>
   (function() {
     try {
@@ -22,6 +25,8 @@
 <body class="lab-page">
 <section class="k9-panel">
   <style>
+    .k9-panel, .k9-panel * { box-sizing: border-box; }
+
     .k9-panel {
       --bg: var(--lab-bg);
       --text: var(--lab-text);
@@ -46,33 +51,17 @@
       height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
-      box-sizing: border-box;
       background: var(--bg);
       color: var(--text);
       font-family: var(--font-display);
     }
 
-    /* Caption — small italic explaining the aha */
-    .k9-caption {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-left: 4px solid var(--cool);
-      border-radius: 10px;
-      padding: 0.6rem 1rem;
-    }
-    .k9-caption p {
-      margin: 0;
-      font-size: var(--lab-fs-body);
-      line-height: 1.45;
-      color: var(--text);
-      font-style: italic;
-    }
-    .k9-caption b { color: var(--cool); font-style: normal; font-weight: 700; }
-
-    /* Main split: PDF + IA panel */
+    /* Main split: PDF + IA panel. data-lab-tabs turns this into
+       one-panel-at-a-time on phone (lab-tabs.js); desktop keeps the
+       2-col grid untouched. */
     .k9-main {
       display: grid;
       grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr);
@@ -103,20 +92,20 @@
     .k9-pdf h3 {
       text-align: center;
       margin: 0 0 0.2rem 0;
-      font-size: clamp(13px, 0.95vw, 16px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       font-weight: 700;
     }
     .k9-pdf .court {
       text-align: center;
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       color: #555;
       margin-bottom: 1rem;
     }
     .k9-pdf .section-title {
       font-weight: 700;
       margin: 0.9rem 0 0.35rem 0;
-      font-size: clamp(14px, 1.05vw, 18px);
+      font-size: var(--lab-fs-body);
       letter-spacing: 0.02em;
     }
     .k9-pdf p {
@@ -126,13 +115,13 @@
     .k9-pdf .sig {
       margin-top: 1.4rem;
       text-align: right;
-      font-size: clamp(12px, 0.9vw, 15px);
+      font-size: var(--lab-fs-ui);
       color: #444;
     }
     .k9-pdf .fictic {
       margin-top: 0.8rem;
       text-align: center;
-      font-size: clamp(11px, 0.8vw, 13px);
+      font-size: var(--lab-fs-ui);
       color: #c8331e;
       font-style: italic;
       letter-spacing: 0.04em;
@@ -183,12 +172,12 @@
       display: grid;
       place-items: center;
       font-family: var(--font-mono);
-      font-size: clamp(11px, 0.85vw, 14px);
+      font-size: var(--lab-fs-ui);
       font-weight: 700;
       letter-spacing: 0.05em;
     }
     .k9-ia-label {
-      font-size: clamp(12px, 0.95vw, 16px);
+      font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       letter-spacing: 0.04em;
       text-transform: uppercase;
@@ -196,7 +185,7 @@
     }
     .k9-ia-verdict {
       font-family: var(--font-mono);
-      font-size: clamp(11px, 0.85vw, 13px);
+      font-size: var(--lab-fs-ui);
       font-weight: 700;
       padding: 0.2rem 0.6rem;
       border-radius: 999px;
@@ -226,7 +215,7 @@
     .k9-ia-section { display: flex; flex-direction: column; gap: 0.3rem; }
     .k9-ia-section-title {
       font-family: var(--font-display);
-      font-size: clamp(11px, 0.85vw, 13px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.08em;
       text-transform: uppercase;
       color: var(--text-dim);
@@ -283,7 +272,7 @@
       padding: 0.2rem;
     }
     .k9-mode-label {
-      font-size: clamp(11px, 0.85vw, 13px);
+      font-size: var(--lab-fs-ui);
       letter-spacing: 0.06em;
       color: var(--text-dim);
       text-transform: uppercase;
@@ -292,7 +281,7 @@
     }
     .k9-mode-btn {
       font-family: var(--font-display);
-      font-size: clamp(13px, 0.95vw, 15px);
+      font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.35rem 0.9rem;
       border-radius: 999px;
@@ -320,9 +309,10 @@
        primitives from labs.css (finger-sized, 48px on phones). */
 
     /* Responsive */
-    /* Portrait phone: the stage stays fixed (header, caption, button
-       bar never move); the petição and the análise stack and scroll
-       INTERNALLY (a full petição can't fit a phone at readable size).
+    /* Portrait phone: the stage stays fixed (header, button bar never
+       move); the petição and the análise become one-panel-at-a-time tabs
+       (lab-tabs.js) instead of a half-height split (a full petição can't
+       fit a phone at readable size even scrolling two halves at once).
        No font shrinking — text holds at the shared --lab-fs-* floors
        (≥15px). Only layout and chrome are adapted here. */
     @media (max-width: 700px) {
@@ -333,14 +323,16 @@
         padding: 0.7rem 1rem 0.7rem;
         gap: 0.55rem;
       }
-      .k9-caption { padding: 0.5rem 0.85rem; }
-      .k9-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1.1fr) minmax(0, 1fr);
-        gap: 0.6rem;
-      }
       .k9-pdf { padding: 1rem 1.1rem; }
       .k9-ia { padding: 0.85rem 0.95rem; }
+      /* .k9-ia-verdict's text ("pedidos (b), (c) e (d) omitidos") is long
+         enough that the desktop 3-col grid (robot|label|verdict, verdict
+         nowrap) pushes it off the right edge of a phone-width panel. Let
+         robot+label share row 1 and verdict wrap to its own full-width
+         row 2 instead of fighting for horizontal room. */
+      .k9-ia-head { display: flex; flex-wrap: wrap; align-items: center; row-gap: 0.3rem; }
+      .k9-ia-label { flex: 1 1 auto; min-width: 0; }
+      .k9-ia-verdict { white-space: normal; flex: 1 1 100%; }
       .k9-button-bar {
         flex-direction: column;
         align-items: stretch;
@@ -356,7 +348,7 @@
         padding: 0.35rem 0.4rem;
       }
       .k9-mode-label { flex-basis: 100%; text-align: center; padding: 0 0 0.1rem; }
-      .k9-mode-btn { flex: 1 1 0; min-width: 0; font-size: 13px; padding: 0.55rem 0.5rem; min-height: 44px; }
+      .k9-mode-btn { flex: 1 1 0; min-width: 0; padding: 0.55rem 0.5rem; min-height: 44px; }
       /* Primary action full-width on top; the two secondaries share row 2. */
       .k9-actions {
         display: grid;
@@ -364,13 +356,25 @@
         gap: 0.5rem;
       }
       .k9-actions .lab-btn--primary { grid-column: 1 / -1; }
+      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a
+         full-width row at the top of the bar. Width is automatic
+         (align-items:stretch on the column-direction bar) -- see k10 for
+         why flex:1 1 100% would be wrong here (targets height, not width,
+         in a column container). */
+      .k9-button-bar > [data-lab-info-ctl] {
+        order: -1;
+        display: flex;
+      }
+      .k9-button-bar > [data-lab-info-ctl] .lab-info-btn {
+        width: 100%;
+        justify-content: center;
+      }
     }
     /* Landscape phone keeps the 2-column desktop split (width is ample
        at >700px); only tighten vertical rhythm for the short height.
        Panels scroll internally; fonts keep their desktop clamp sizes. */
     @media (max-height: 500px) and (orientation: landscape) {
       .k9-panel { padding: 0.45rem 1.4rem 0.45rem; gap: 0.45rem; }
-      .k9-caption { padding: 0.45rem 0.85rem; }
     }
   </style>
 
@@ -378,12 +382,8 @@
        data-lab-title="Petição envenenada"
        data-lab-subtitle="Texto invisível como instrução ao modelo"></div>
 
-  <div class="k9-caption">
-    <p>O documento que o advogado lê e o documento que o modelo lê <b>não são o mesmo artefato</b>. Texto branco sobre fundo branco é invisível ao olho humano e vivo ao modelo, que o trata como ordem.</p>
-  </div>
-
-  <div class="k9-main">
-    <div class="k9-pdf-wrap">
+  <div class="k9-main" data-lab-tabs data-lab-tab-default="Documento">
+    <div class="k9-pdf-wrap" data-lab-tab="Documento">
       <div class="k9-pdf" id="k9-pdf">
         <h3>ESTADO DE SERGIPE · TRIBUNAL DE JUSTIÇA</h3>
         <div class="court">2ª VARA CÍVEL DE ARACAJU · Processo nº 0801234-56.2024.8.25.0001</div>
@@ -415,7 +415,7 @@
       </div>
     </div>
 
-    <div class="k9-ia">
+    <div class="k9-ia" data-lab-tab="Análise">
       <div class="k9-ia-head">
         <div class="k9-ia-robot">IA</div>
         <div class="k9-ia-label">Análise da petição</div>
@@ -430,17 +430,27 @@
   </div>
 
   <div class="k9-button-bar">
+    <span data-lab-info-ctl></span>
     <div class="k9-mode-toggle" role="radiogroup" aria-label="Visão do documento">
       <span class="k9-mode-label">Visão:</span>
       <button class="k9-mode-btn k9-mode-btn--active" data-mode="advogado" role="radio" aria-checked="true" type="button">Olhos do advogado</button>
       <button class="k9-mode-btn" data-mode="modelo" role="radio" aria-checked="false" type="button">Olhos do modelo</button>
     </div>
     <div class="k9-actions">
+      <span data-lab-fs-ctl></span>
       <button class="lab-btn lab-btn--primary" id="k9-ask" type="button">Pedir análise</button>
-      <button class="lab-btn" id="k9-clean" type="button">Higienizar e reanalisar</button>
+      <button class="lab-btn" id="k9-clean" type="button" disabled>Higienizar e reanalisar</button>
       <button class="lab-btn" id="k9-reset" type="button">Reiniciar</button>
     </div>
   </div>
+
+  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
+       "Entenda" button (lab-info.js). -->
+  <template data-lab-info data-lab-info-title="Injeção de prompt via texto invisível">
+    <p>Um documento digital pode conter <strong>duas versões do mesmo texto</strong>: o que aparece na tela (cor da fonte igual à do fundo torna um trecho invisível ao olho humano) e o que o modelo lê (ele processa todo o texto do arquivo, inclusive o que está invisível visualmente). É o mesmo arquivo, mas não o mesmo artefato para cada leitor.</p>
+    <p>Nesta petição fictícia, três trechos escondidos em branco-sobre-branco dão instruções diretas ao modelo: omitir pedidos, ignorar documentos anexados, restringir a análise. Um advogado que cola essa peça numa IA sem desconfiar recebe uma análise que parece competente, mas foi silenciosamente manipulada pelo próprio documento que está analisando.</p>
+    <p>Alterne entre "Olhos do advogado" e "Olhos do modelo" para revelar o texto oculto, e compare a 1ª análise (envenenada) com a análise após "Higienizar" (texto oculto removido). É o mesmo tipo de ataque de <strong>injeção de prompt</strong> que afeta qualquer IA que processa documentos de terceiros sem verificação.</p>
+  </template>
 
   <script>
     (function() {
@@ -452,12 +462,37 @@
 
       // ── DOM refs ────────────────────────────────────────
       const panel   = document.querySelector('.k9-panel');
+      const mainEl  = document.querySelector('.k9-main');
       const askBtn  = document.getElementById('k9-ask');
       const cleanBtn = document.getElementById('k9-clean');
       const resetBtn = document.getElementById('k9-reset');
       const modeBtns = document.querySelectorAll('.k9-mode-btn');
       const verdict = document.getElementById('k9-verdict');
       const body    = document.getElementById('k9-body');
+
+      // On phone, "Documento" and "Análise" are one-panel-at-a-time tabs
+      // (lab-tabs.js). Clicking an action button whose RESULT lives on the
+      // other tab used to leave the operator staring at an unchanged screen,
+      // having to guess they must switch tabs by hand -- exactly the "many
+      // clicks, back and forth" friction reported from phone testing. Auto-
+      // flip to "Análise" the moment there's something new to see there.
+      // Guarded by lab-tabs-active (only added by lab-tabs.js at <=700px) so
+      // this never touches the desktop 2-col layout, where both panels are
+      // already visible and .show() would wrongly hide one of them.
+      function focusAnalise() {
+        if (mainEl.classList.contains('lab-tabs-active') && window.LabTabs) {
+          window.LabTabs.show(mainEl, 'Análise');
+        }
+      }
+      // Mirror for the document side: the hidden payloads live in the petição,
+      // so toggling "Olhos do modelo" while parked on the Análise tab would
+      // otherwise reveal red-on-yellow text the operator can't see. Flip back
+      // to Documento so the reveal is actually on screen.
+      function focusDocumento() {
+        if (mainEl.classList.contains('lab-tabs-active') && window.LabTabs) {
+          window.LabTabs.show(mainEl, 'Documento');
+        }
+      }
 
       // ── Analysis copy ───────────────────────────────────
       // The poisoned analysis is deliberately *competent-looking* — it produces
@@ -511,6 +546,9 @@
             b.setAttribute('aria-checked', String(active));
           });
           panel.classList.toggle('k9-view-modelo', mode === 'modelo');
+          // The payloads are in the petição -- show it so the reveal lands
+          // on screen instead of behind the Análise tab (phone only).
+          focusDocumento();
         });
       });
 
@@ -548,9 +586,11 @@
         // First click runs the poisoned analysis. If the user has already
         // higienizado, "Pedir análise" re-shows the clean analysis alone
         // (so the operator can return to it without resetting).
-        if (hasClean) { showClean(); return; }
+        if (hasClean) { showClean(); focusAnalise(); return; }
         hasAsked = true;
+        cleanBtn.disabled = false;
         showPoisoned();
+        focusAnalise();
       });
 
       cleanBtn.addEventListener('click', () => {
@@ -561,11 +601,13 @@
           el.style.display = 'none';
         });
         showClean();
+        focusAnalise();
       });
 
       resetBtn.addEventListener('click', () => {
         hasAsked = false;
         hasClean = false;
+        cleanBtn.disabled = true;
         document.querySelectorAll('.k9-payload').forEach(el => {
           el.style.display = '';
         });

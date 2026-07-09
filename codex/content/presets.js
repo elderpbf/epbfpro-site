@@ -65,10 +65,11 @@ import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
-// A synthetic 'lab' item keeps a fixed glyph (no real ct_types slug); every
-// other item resolves its type's stored glyph from the loaded ct_types.
+// A synthetic 'lab' item carries its own type_icon (labs-registry.labIcon: a
+// per-lab emoji, or the flask glyph for labs with none set yet); every other
+// item resolves its type's stored glyph from the loaded ct_types.
 function _itemIconHtml(item) {
-  if (item && item.type === 'lab') return glyphSvg('flask', { size: 16 });
+  if (item && item.type === 'lab') return typeIconHtml(item.type_icon, { size: 16 });
   const ty = _types.find((x) => x.slug === (item && item.type));
   return typeIconHtml(ty && ty.icon, { size: 16 });
 }

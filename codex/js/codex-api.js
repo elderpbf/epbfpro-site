@@ -249,6 +249,10 @@ export const content = {
   deleteItem:      (p) => call('ct_delete_item', p),        // { id }
   duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
   bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
+  // One-time, idempotent: upserts a real ct_items row per lab in the frontend
+  // registry (labs-registry.js) so Labs can be released via the normal
+  // Liberações flow (track-34 §B). Safe to call again after adding new labs.
+  ensureLabItems:  () => call('ct_ensure_lab_items', {}),
   uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
   ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),
