@@ -1554,8 +1554,20 @@ export function mount(viewEl, ctx) {
       const qid = btn.getAttribute('data-qid');
       const qq = _questions.find((x) => String(x.id) === String(qid));
       _confirmDelQ = null;
-      if (qq) { try { await api.deleteQuestion({ list_name: _currentSet, question: qq.question }); } catch (err) { notice.internal(err); } }
-      await _loadQuestions();
+      const bodyEl = _q('#cdx-bank-body');
+      const keepScroll = bodyEl ? bodyEl.scrollTop : 0;
+      let ok = false;
+      if (qq) {
+        let res; try { res = await api.deleteQuestion({ list_name: _currentSet, question: qq.question }); } catch (err) { notice.internal(err); res = null; }
+        ok = !!(res && !res.error);
+      }
+      // Deletion persisted server-side: drop the row from the local list and re-render in
+      // place (no refetch, no loading flash), mirroring the edit path. On failure keep the
+      // row (the error already surfaced) and just re-render to clear the confirm state.
+      if (ok) _questions = _questions.filter((x) => String(x.id) !== String(qid));
+      _renderConjunto();
+      const bodyEl2 = _q('#cdx-bank-body');
+      if (bodyEl2) bodyEl2.scrollTop = keepScroll;
       _loadSets();
     }
     else if (act === 'rename') { _renaming = true; _confirmDelSet = false; _renderConjunto(); }
