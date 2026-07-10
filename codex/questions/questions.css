@@ -343,6 +343,9 @@
 .cdx-bank-set:hover { background: var(--surface-hover, rgba(13, 148, 136, 0.08)); }
 .cdx-bank-set.active { background: var(--surface-hover, rgba(13, 148, 136, 0.12)); border-left-color: var(--primary); }
 .cdx-bank-set.is-dragging { opacity: .5; cursor: grabbing; }
+/* Drag grip: muted, appears on row hover; the whole row is draggable (shared reorder.js). */
+.cdx-bank-set-drag { color: var(--text-secondary); font-size: 1rem; line-height: 1; cursor: grab; user-select: none; flex-shrink: 0; opacity: 0; transition: opacity .12s; }
+.cdx-bank-set:hover .cdx-bank-set-drag, .cdx-bank-set.is-dragging .cdx-bank-set-drag { opacity: .7; }
 .cdx-bank-set-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-bank-set-count {
   flex-shrink: 0; font-size: 0.72rem; font-weight: 700; color: var(--text-secondary);

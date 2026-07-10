@@ -287,6 +287,7 @@ const _IMPORT_SYS =
 function _setRow(b) {
   const name = b.list_name;
   return '<button class="cdx-bank-set' + (name === _currentSet ? ' active' : '') + '" data-act="pick" data-set="' + _esc(name) + '" type="button" draggable="true">' +
+    '<span class="cdx-bank-set-drag" aria-hidden="true">⠿</span>' +
     '<span class="cdx-bank-set-name">' + _esc(name) + '</span>' +
     '<span class="cdx-bank-set-count">' + (b.count || 0) + '</span>' +
   '</button>';
