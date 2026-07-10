@@ -56,6 +56,10 @@ export default {
   'notif.title':      'Notifications',
   'notif.mark_all':   'Mark all as read',
   'notif.empty':      'Nothing new here.',
+  'notif.dismiss':    'Dismiss',
+  'notif.history':    'History',
+  'notif.tier_act':   'Actionable',
+  'notif.tier_dismiss': 'Dismissable',
 
   // Alunos (student access) admin section
   'alunos.title':        'Students',

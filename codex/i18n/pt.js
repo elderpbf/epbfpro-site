@@ -56,6 +56,10 @@ export default {
   'notif.title':      'Notificações',
   'notif.mark_all':   'Marcar todas como lidas',
   'notif.empty':      'Sem novidades por aqui.',
+  'notif.dismiss':    'Dispensar',
+  'notif.history':    'Histórico',
+  'notif.tier_act':   'Acionáveis',
+  'notif.tier_dismiss': 'Dispensáveis',
 
   // Alunos (student access) admin section
   'alunos.title':        'Alunos',
