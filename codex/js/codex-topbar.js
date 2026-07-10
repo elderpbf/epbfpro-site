@@ -430,6 +430,13 @@ export function init(opts) {
       if (item && item.client_slug && item.turma_slug) {
         url += '&fclient=' + encodeURIComponent(item.client_slug) +
                '&fturma=' + encodeURIComponent(item.turma_slug);
+        // A tarefa-submission notification deep-links straight to that tarefa in its
+        // aula (Cohorts opens the aula's Tarefas sub-tab on the item); a forum item
+        // keeps the plain client/turma (opens the Fórum sub-tab).
+        if (item.type === 'tarefa_submission') {
+          if (item.aula_number != null) url += '&faula=' + encodeURIComponent(item.aula_number);
+          if (item.item_id != null) url += '&fitem=' + encodeURIComponent(item.item_id);
+        }
       }
       location.href = url;
     },
