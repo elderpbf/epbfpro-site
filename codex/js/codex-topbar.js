@@ -423,7 +423,11 @@ export function init(opts) {
   const bell = createBell({
     role: 'admin',
     fetchNotifications: () => cohortsApi.forumNotifications(),
-    markSeen: () => cohortsApi.forumMarkSeen({}),
+    // Bell-open clears only the Dispensáveis tier (scope glance); "marcar tudo" clears
+    // everything (scope all); the × dismisses one Acionável by its stable notif_key.
+    markSeen: () => cohortsApi.forumMarkSeen({ scope: 'glance' }),
+    markAll: () => cohortsApi.forumMarkSeen({ scope: 'all' }),
+    dismissItem: (item) => cohortsApi.forumDismiss({ notif_key: item.notif_key, up_to_at: item.created_at }),
     onNavigate: (item) => {
       if (typeof location === 'undefined') return;
       let url = '/codex/?tab=cohorts';

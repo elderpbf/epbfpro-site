@@ -9,16 +9,17 @@
 // 'act' for the admin (or vice-versa) — e.g. a new forum question is just info
 // for a classmate but an action for the teacher.
 //
-// CURRENT STATE (lean, per Élder): every item is 'open' — the whole bell
-// self-dismisses on open, for both roles. The 'act' tier is a built-but-dormant
-// seam; add rules below (keyed on item.type / item.kind / item.mine + role) when
-// a needs-action notification actually lands. See manifest/ARCHITECTURE.md.
+// CURRENT STATE (Élder 2026-07-09): the admin bell splits into two tiers.
+//   ACT (Acionáveis) — needs the teacher to DO something, persists past open:
+//     * a tarefa submission (must be reviewed/graded)
+//     * a new forum thread (a student question to answer)
+//   OPEN (Dispensáveis) — a glance, clears on open:
+//     * a forum reply (informational)
+// The student bell stays all-OPEN for now (students only see forum activity).
 //
-// BACKEND NOTE: real 'act' persistence across sessions also needs a per-item
-// dismissal store in codex-api. Today "seen" is a single last_seen watermark
-// (ct_forum_seen) which can only mark everything-before-a-time as seen, so it
-// cannot hold "these dismissed, those still pending". While everything is 'open'
-// the watermark is enough; the per-item store is deferred until 'act' is used.
+// BACKEND: 'act' persistence is now backed by ct_notif_dismissed in codex-api
+// (dismissed one at a time via ct_forum_admin_dismiss); 'open' still clears via the
+// ct_forum_seen watermark (scope 'glance' on bell-open). See manifest/ARCHITECTURE.md.
 
 export const DISMISS_OPEN = 'open';
 export const DISMISS_ACT = 'act';
@@ -27,8 +28,9 @@ export const DISMISS_ACT = 'act';
 //   item: { type, kind?, mine?, ... } (the generic notification shape)
 //   role: 'student' | 'admin' (defaults to 'student')
 export function dismissalFor(item, role) {
-  // For now every notification is informational and clears on open, both roles.
-  // When an action-required notification exists, branch here on (item, role):
-  //   e.g. if (role === 'admin' && item.kind === 'new_thread') return DISMISS_ACT;
+  if (role === 'admin' && item) {
+    if (item.type === 'tarefa_submission') return DISMISS_ACT;
+    if (item.type === 'forum_post' && item.kind === 'new_thread') return DISMISS_ACT;
+  }
   return DISMISS_OPEN;
 }

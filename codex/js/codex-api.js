@@ -210,7 +210,8 @@ export const cohorts = {
   forumEditPost:     (p) => call('ct_forum_admin_edit_post', p),     // { post_id, body } -> { ok } (admin-authored posts only)
   // Cross-turma teacher notifications (the topbar bell).
   forumNotifications:(p) => call('ct_forum_admin_notifications', p), // -> { ok, count, items }
-  forumMarkSeen:     (p) => call('ct_forum_admin_mark_seen', p)      // { client_slug?, turma_slug? } -> { ok }
+  forumMarkSeen:     (p) => call('ct_forum_admin_mark_seen', p),     // { scope?: 'glance'|'all', client_slug?, turma_slug? } -> { ok } (glance = clears Dispensáveis on open; all = clears everything)
+  forumDismiss:      (p) => call('ct_forum_admin_dismiss', p)        // { notif_key, up_to_at } -> { ok } (dismiss ONE Acionável)
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a

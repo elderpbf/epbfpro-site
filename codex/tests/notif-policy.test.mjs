@@ -12,14 +12,22 @@ test('the tier tags are distinct string constants', () => {
   assert.notEqual(DISMISS_OPEN, DISMISS_ACT);
 });
 
-test('every notification is the dismiss-on-open tier for now, both roles', () => {
+test('admin tier split: submissions + new threads are ACT, replies + others are OPEN', () => {
+  assert.equal(dismissalFor({ type: 'tarefa_submission' }, 'admin'), DISMISS_ACT);
+  assert.equal(dismissalFor({ type: 'forum_post', kind: 'new_thread' }, 'admin'), DISMISS_ACT);
+  assert.equal(dismissalFor({ type: 'forum_post', kind: 'reply' }, 'admin'), DISMISS_OPEN);
+  assert.equal(dismissalFor({ type: 'whatever' }, 'admin'), DISMISS_OPEN);
+});
+
+test('the student bell stays all dismiss-on-open (incl. new threads)', () => {
   const items = [
     { type: 'forum_post', kind: 'reply', mine: true },
     { type: 'forum_post', kind: 'new_thread', mine: false },
+    { type: 'tarefa_submission' },
     { type: 'whatever' },
     {},
   ];
-  for (const role of ['student', 'admin', undefined]) {
+  for (const role of ['student', undefined]) {
     for (const it of items) {
       assert.equal(dismissalFor(it, role), DISMISS_OPEN, `${JSON.stringify(it)} @ ${role}`);
     }
