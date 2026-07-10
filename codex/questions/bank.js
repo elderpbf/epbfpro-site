@@ -594,11 +594,13 @@ async function _copySelected() {
 function _openModal(initial) {
   const modal = _q('#cdx-bank-modal');
   if (!modal) return;
-  _editingOriginal = initial ? initial.question : null;
   _q('.cdx-bank-modal-title').textContent = initial ? t('questions.bank_modal_edit') : t('questions.bank_modal_new');
   _q('.cdx-bank-modal-err').textContent = '';
   modal.hidden = false;
   _destroyComposer();
+  // Set _editingOriginal AFTER _destroyComposer (which resets it to null); otherwise an
+  // edit would save as a NEW question, since _saveQuestion routes update vs add on this.
+  _editingOriginal = initial ? initial.question : null;
   _composer = mountComposer(_q('#cdx-bank-composer'), initial || null);
 }
 
@@ -620,8 +622,29 @@ async function _saveQuestion() {
       : await api.addQuestion(Object.assign({ list_name: _currentSet }, payload));
   } catch (e) { notice.internal(e); res = null; }
   if (res && res.error) { if (errEl) errEl.textContent = t('questions.bank_save_error'); return; }
+  // Capture edit state BEFORE _closeModal (which nulls _editingOriginal via _destroyComposer).
+  const wasEdit = (_editingOriginal != null);
+  const origQ = _editingOriginal;
   _closeModal();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  const keepScroll = bodyEl ? bodyEl.scrollTop : 0;
+  if (wasEdit) {
+    // Edit already persisted server-side: patch the local list in place and re-render
+    // (no refetch, no loading flash), so the user continues where they were.
+    const idx = _questions.findIndex((q) => q.question === origQ);
+    if (idx >= 0) _questions[idx] = Object.assign({}, _questions[idx], {
+      question: payload.question, type: payload.type, options: payload.options,
+      correct_answer: (payload.correct_answer != null ? payload.correct_answer : ''),
+      max_select: (payload.max_select != null ? payload.max_select : 1),
+      audience: (payload.audience !== undefined ? payload.audience : _questions[idx].audience),
+    });
+    _renderConjunto();
+  } else {
+    // New question: refetch so the real id lands.
+    await _loadQuestions();
+  }
+  const bodyEl2 = _q('#cdx-bank-body');
+  if (bodyEl2) bodyEl2.scrollTop = keepScroll;
   _loadSets();
 }
 
