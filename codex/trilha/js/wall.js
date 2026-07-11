@@ -257,7 +257,7 @@ function renderRegister(wall) {
         '<p class="cdx-en-nopass cdx-en-hint">' + esc(t('login.not_received')) + '</p>' +
         '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
         // "Solicitar acesso" fallback (track-36 e): when the code just won't arrive, notify the
-        // instructor instead — records a pending request that surfaces in the admin bell/queue.
+        // instructor instead, recording a pending request that surfaces in the admin bell/queue.
         '<button type="button" class="cdx-en-resend" data-request-access>' + esc(t('login.request_access_cta')) + '</button>' +
       '</div>';
     const codeEl = cardEl.querySelector('#cdx-en-code');
@@ -283,7 +283,7 @@ function renderRegister(wall) {
       startCooldown(secs);
       cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
     });
-    // "Avisar o instrutor" (track-36 e): the code isn't coming — record a pending request and
+    // "Avisar o instrutor" (track-36 e): the code isn't coming, so record a pending request and
     // confirm inline. Idempotent server-side, so a double-tap is harmless.
     const reqBtn = cardEl.querySelector('[data-request-access]');
     if (reqBtn) reqBtn.addEventListener('click', async () => {

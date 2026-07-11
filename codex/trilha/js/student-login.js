@@ -82,16 +82,25 @@ async function safeCall(promise) {
 }
 
 // Server-side logout (track-36 d). The session cookie is HttpOnly, so clearing it needs a
-// server round-trip — dropping the local token alone leaves the cookie authenticating the
-// next request (the iOS-persistence path). So revoke server-side (which also clears the
-// cookie via Set-Cookie Max-Age=0), THEN drop the local token. Best-effort: a network blip
-// must NOT trap a student who tapped "Sair", so a failed call still clears local state.
-// Shared by the login pill + the settings box so the two never drift.
+// server round-trip, dropping the local token alone leaves the cookie authenticating the
+// next request (the iOS-persistence path). The ONE server call lives here so every logout
+// path (the awaited helper below + the flow's own logout) shares it and can never drift.
+// Best-effort: it awaits, then swallows any failure INTERNALLY (so a fire-and-forget caller
+// never triggers an unhandledrejection), because a network blip must not trap a student who
+// tapped "Sair". Returns a promise a caller may await (page.js awaits so the cookie is gone
+// before it reloads) or ignore (the flow clears local state immediately, server in the bg).
+async function serverLogout(token, api) {
+  if (!token) return;
+  try { await api.logout({ session_token: token }); } catch (_) { /* best-effort */ }
+}
+
+// The awaited logout used by the header (login pill + settings box): revoke + clear the
+// cookie server-side, THEN drop the local token, so a caller that awaits knows the cookie is
+// cleared before it reloads. Shared so the two header sites never drift.
 export async function logoutStudent(client, turma, opts = {}) {
   const api = opts.api || trail;
   const sess = opts.session || defaultSession;
-  const token = sess.getToken(client, turma);
-  if (token) { try { await api.logout({ session_token: token }); } catch (_) { /* best-effort */ } }
+  await serverLogout(sess.getToken(client, turma), api);
   sess.clearToken(client, turma);
 }
 
@@ -255,11 +264,12 @@ export function createLoginFlow(opts = {}) {
     },
 
     logout() {
-      // Best-effort server logout (revoke + clear the HttpOnly cookie). Fire-and-forget so the
-      // local state clears immediately; the cookie clear rides the response.
+      // Clear local state immediately (sync) so the UI updates now, and fire the SHARED server
+      // logout in the background (serverLogout swallows its own rejection, so this unawaited call
+      // is safe). Capture the token BEFORE clearing so the server still gets it.
       const token = sess.getToken(client, turma);
-      if (token) { try { api.logout({ session_token: token }); } catch (_) {} }
       sess.clearToken(client, turma);
+      serverLogout(token, api);
       this.state = 'anonymous';
       this.error = null;
       this.devCode = null;

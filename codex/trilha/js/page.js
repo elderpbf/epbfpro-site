@@ -233,7 +233,7 @@ function buildLoginPill() {
       // stays on screen, because the gate only re-checks on the next fetch, so
       // clearing the token alone left everything visible. Reload so the Trail
       // re-fetches as anonymous and the gate re-applies. Server round-trip first so
-      // the HttpOnly cookie is CLEARED (track-36 d) — else the next request re-auths from it.
+      // the HttpOnly cookie is CLEARED (track-36 d), else the next request re-auths from it.
       await logoutStudent(state.clientSlug, state.turmaSlug);
       if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
       refreshLoginPill();
