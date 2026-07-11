@@ -22,7 +22,7 @@
 <link rel="stylesheet" href="css/settings-drawer.css?v=1.2">
 <!-- Notification bell (.cdx-bell-*, pairs with js/notif-bell.js). Shared by the
      topbar (teacher) and the Trilha header (student). -->
-<link rel="stylesheet" href="css/notif-bell.css?v=1.5">
+<link rel="stylesheet" href="css/notif-bell.css?v=1.4">
 <!-- .ctr- item-render styles (Codex copy, pairs with js/item-render.js). Prefix-
      scoped, so they do not collide with Codex's cdx- styles. -->
 <link rel="stylesheet" href="css/item-render.css?v=1.0">
@@ -216,7 +216,7 @@
     const ctx = {};
     if (tab === 'cohorts' || tab === 'content' || tab === 'questions' || tab === 'certificates') ctx.sub = sub;
     // Fórum deep-link from the notification bell: open this turma's dossiê on the Fórum tab.
-    if (tab === 'cohorts') { ctx.fclient = params.get('fclient') || undefined; ctx.fturma = params.get('fturma') || undefined; ctx.faula = params.get('faula') || undefined; ctx.fitem = params.get('fitem') || undefined; ctx.fdtab = params.get('fclient') ? (params.get('faula') ? 'aulas' : 'forum') : undefined; }
+    if (tab === 'cohorts') { ctx.fclient = params.get('fclient') || undefined; ctx.fturma = params.get('fturma') || undefined; ctx.faula = params.get('faula') || undefined; ctx.fitem = params.get('fitem') || undefined; ctx.fdtab = params.get('fdtab') || (params.get('fclient') ? (params.get('faula') ? 'aulas' : 'forum') : undefined); }
     // Questions deep-link: ?session=<code> opens that session's live host directly
     // (the Lessons live card links here). The Sessions sub-tab reads ctx.session.
     if (tab === 'questions') ctx.session = params.get('session') || undefined;

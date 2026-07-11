@@ -87,21 +87,18 @@ test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
   }
 });
 
-// ── e-sino: inline "Aprovar" on a pending-student row (track-36 e) ────────────
-test('the bell offers a source-agnostic inline-action seam (itemAction), still facade-free', () => {
-  const src = read('../js/notif-bell.js');
-  assert.match(src, /itemAction/, 'accepts an injected per-item action');
-  assert.match(src, /data-bell-act/, 'renders + wires the inline action button');
-  assert.ok(!/codex-api\.js|callWorker|ct_set_participant|ct_forum/.test(src), 'no facade or action strings leak into the shared component');
-});
-test('the admin bell wires "Aprovar" for a pending student via the roster facade', () => {
+// ── e-sino: a pending student deep-links to the Participantes approval area ────
+// Élder: a notification NEVER acts inline — it LEADS the admin to the relevant area,
+// and the approval happens there (the dossiê Participantes sub-tab).
+test('the admin bell deep-links a pending student to the Participantes sub-tab', () => {
   const src = read('../js/codex-topbar.js');
-  assert.match(src, /itemAction:/, 'injects the inline action');
-  assert.match(src, /type !== 'student_pending'/, 'the action only applies to pending-student items');
-  assert.match(src, /setParticipantAccess\(\{[^}]*status: 'approved'/, 'approves via the roster facade');
+  assert.match(src, /type === 'student_pending'/, 'handles the pending-student item');
+  assert.match(src, /fdtab=participantes/, 'deep-links to the approval sub-tab');
 });
-test('notif.approve exists in the codex dictionaries (pt + en)', () => {
-  for (const f of ['../i18n/pt.js', '../i18n/en.js']) {
-    assert.ok(read(f).includes("'notif.approve'"), f + ' missing notif.approve');
-  }
+test('the bell has NO inline action (notifications lead to the area, not act in place)', () => {
+  assert.ok(!/itemAction|data-bell-act/.test(read('../js/notif-bell.js')), 'no inline action button in the shared bell');
+  assert.ok(!/itemAction|setParticipantAccess/.test(read('../js/codex-topbar.js')), 'the admin bell wires no inline approve');
+});
+test('index.html honours an explicit fdtab deep-link param (so the bell can target Participantes)', () => {
+  assert.match(read('../index.html'), /ctx\.fdtab = params\.get\('fdtab'\)/, 'reads an explicit fdtab');
 });
