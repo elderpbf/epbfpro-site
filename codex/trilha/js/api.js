@@ -36,6 +36,8 @@ export const trail = {
   logout:         (p) => call('student_logout', p),         // { session_token } -> { ok, clear_session_cookie }
   // "Solicitar acesso" (track-36 e): record a pending participant for the actionable admin bell.
   requestAccess:  (p) => call('student_request_access', p), // { client_slug, turma_slug, email, name? } -> { ok, requested, already_approved, blocked }
+  // Single "Entrar" in-room path (track-36 c/d): 12h provisional session while the window is open.
+  provisionalEnter: (p) => call('student_provisional_enter', p), // { client_slug, turma_slug, email, name?, et? } -> { ok, entered, provisional?, session_token? } | { error }
 
   // Fórum (Phase 8). Student face: all gated by a valid session token for the turma.
   // Notifications are computed server-side; the bell consumes forumNotifications /
