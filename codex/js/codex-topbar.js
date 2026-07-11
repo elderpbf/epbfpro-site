@@ -428,6 +428,18 @@ export function init(opts) {
     markSeen: () => cohortsApi.forumMarkSeen({ scope: 'glance' }),
     markAll: () => cohortsApi.forumMarkSeen({ scope: 'all' }),
     dismissItem: (item) => cohortsApi.forumDismiss({ notif_key: item.notif_key, up_to_at: item.created_at }),
+    // e-sino (track-36 e): a pending student in a gated turma carries an inline "Aprovar"
+    // that bulk-approves that turma's waiting cadastros (reuses ct_set_participant_access,
+    // the same action the Alunos tab uses). Approving self-resolves the row server-side.
+    itemAction: (item) => {
+      if (!item || item.type !== 'student_pending') return null;
+      const ids = item.participant_ids || [];
+      if (!ids.length) return null;
+      return {
+        label: t('notif.approve'),
+        run: () => cohortsApi.setParticipantAccess({ participant_ids: ids, status: 'approved' }),
+      };
+    },
     onNavigate: (item) => {
       if (typeof location === 'undefined') return;
       let url = '/codex/?tab=cohorts';

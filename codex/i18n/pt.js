@@ -57,6 +57,7 @@ export default {
   'notif.mark_all':   'Marcar todas como lidas',
   'notif.empty':      'Sem novidades por aqui.',
   'notif.dismiss':    'Dispensar',
+  'notif.approve':    'Aprovar',
   'notif.history':    'Histórico',
   'notif.tier_act':   'Acionáveis',
   'notif.tier_dismiss': 'Dispensáveis',

@@ -13,6 +13,7 @@
 //   ACT (Acionáveis) — needs the teacher to DO something, persists past open:
 //     * a tarefa submission (must be reviewed/graded)
 //     * a new forum thread (a student question to answer)
+//     * a pending student in a gated turma (must be approved — the e-sino, track-36 e)
 //   OPEN (Dispensáveis) — a glance, clears on open:
 //     * a forum reply (informational)
 // The student bell stays all-OPEN for now (students only see forum activity).
@@ -31,6 +32,7 @@ export function dismissalFor(item, role) {
   if (role === 'admin' && item) {
     if (item.type === 'tarefa_submission') return DISMISS_ACT;
     if (item.type === 'forum_post' && item.kind === 'new_thread') return DISMISS_ACT;
+    if (item.type === 'student_pending') return DISMISS_ACT;   // e-sino: approve or dismiss by hand
   }
   return DISMISS_OPEN;
 }

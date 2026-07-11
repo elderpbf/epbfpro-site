@@ -40,13 +40,17 @@ function groupItems(items) {
 //   markSeen:           () => Promise<any>   (bell-open: clears the OPEN/Dispensáveis tier)
 //   markAll:            () => Promise<any>   (optional; "marcar tudo": clears everything)
 //   dismissItem:        (item) => Promise<any> (optional; dismiss ONE ACT/Acionável)
+//   itemAction:         (item) => ({ label, run:()=>Promise }) | null (optional; an
+//                       inline action button on the row — e.g. "Aprovar" a pending
+//                       student. Kept source-agnostic: the caller decides which items
+//                       get an action and what it does. Runs, then drops the row.)
 //   onNavigate:         (item) => void   (the bell closes + marks seen first)
 //   t:                  (key) => string  (labels: notif.title / notif.mark_all / notif.empty
 //                                          / notif.dismiss / notif.history / notif.tier_act
 //                                          / notif.tier_dismiss)
 //   btnClass:           extra class for the button (defaults to the topbar icon button)
 //   role:               'student' | 'admin'
-export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
+export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, itemAction, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-bell-wrap';
   wrap.innerHTML =
@@ -107,6 +111,10 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     if (it.meta) metaBits.push(esc(it.meta));
     metaBits.push(esc(relTime(it.created_at, now)));
     const act = _isAct(it);
+    const action = itemAction ? itemAction(it) : null;
+    const actBtn = (action && action.label)
+      ? '<button type="button" class="cdx-bell-act" data-bell-act="' + idx + '">' + esc(action.label) + '</button>'
+      : '';
     const xBtn = (act && dismissItem)
       ? '<button type="button" class="cdx-bell-dismiss" data-bell-x="' + idx + '" aria-label="' + esc(t('notif.dismiss')) + '" title="' + esc(t('notif.dismiss')) + '">' + X_SVG + '</button>'
       : '';
@@ -116,6 +124,7 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
           '<span class="cdx-bell-ntext">' + esc(it.title) + '</span>' +
           '<span class="cdx-bell-nmeta">' + metaBits.join(' · ') + '</span>' +
         '</span>' +
+        actBtn +
         xBtn +
       '</a>';
   }
@@ -144,6 +153,28 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
         paint(_items);
         renderHist();
         if (dismissItem) Promise.resolve(dismissItem(it)).catch(() => {});
+      });
+    });
+    // Inline action button (e.g. "Aprovar"): run the caller's action, then drop the row
+    // (the source of truth changes server-side, so a refresh reconciles). On failure the
+    // button re-enables and the row stays, so nothing is silently lost.
+    list.querySelectorAll('[data-bell-act]').forEach((b) => {
+      b.addEventListener('click', (e) => {
+        if (e.stopPropagation) e.stopPropagation();
+        if (e.preventDefault) e.preventDefault();
+        const it = items[parseInt(b.getAttribute('data-bell-act'), 10)];
+        if (!it) return;
+        const action = itemAction && itemAction(it);
+        if (!action || typeof action.run !== 'function') return;
+        b.disabled = true;
+        Promise.resolve(action.run(it)).then(() => {
+          _histPush('act', it);
+          _items = _items.filter((i) => i !== it);
+          setBadge(_items.filter((i) => !i.seen).length);
+          paint(_items);
+          renderHist();
+          Promise.resolve(refresh()).catch(() => {});
+        }).catch(() => { b.disabled = false; });
       });
     });
     list.querySelectorAll('[data-bell-i]').forEach((a) => {

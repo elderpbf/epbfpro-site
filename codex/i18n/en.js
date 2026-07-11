@@ -57,6 +57,7 @@ export default {
   'notif.mark_all':   'Mark all as read',
   'notif.empty':      'Nothing new here.',
   'notif.dismiss':    'Dismiss',
+  'notif.approve':    'Approve',
   'notif.history':    'History',
   'notif.tier_act':   'Actionable',
   'notif.tier_dismiss': 'Dismissable',

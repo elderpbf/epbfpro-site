@@ -73,6 +73,19 @@ pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding:
 .cdx-bell-dismiss:hover { opacity: 1; background: rgba(20,184,166,.12); color: var(--text-primary); }
 .cdx-bell-dismiss svg { width: 13px; height: 13px; }
 
+/* Inline action button (e.g. "Aprovar" a pending student, the e-sino): a compact
+   accent pill for the positive action of an Acionável row. The teal --primary +
+   white reads identically in light and dark, so no per-theme override is needed. */
+.cdx-bell-act {
+  flex-shrink: 0; align-self: center;
+  padding: .28rem .62rem; border-radius: 7px;
+  background: var(--primary); border: none; cursor: pointer;
+  color: #fff; font-family: inherit; font-size: .74rem; font-weight: 700;
+  transition: filter .12s, opacity .12s;
+}
+.cdx-bell-act:hover { filter: brightness(1.07); }
+.cdx-bell-act:disabled { opacity: .55; cursor: default; }
+
 /* Collapsed history: a toggle at the panel foot revealing two named mini-tabs
    (Acionáveis / Dispensáveis) over what was already cleared this session. */
 .cdx-bell-hist { border-top: 1px solid var(--border); }

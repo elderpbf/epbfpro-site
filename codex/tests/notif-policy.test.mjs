@@ -12,9 +12,10 @@ test('the tier tags are distinct string constants', () => {
   assert.notEqual(DISMISS_OPEN, DISMISS_ACT);
 });
 
-test('admin tier split: submissions + new threads are ACT, replies + others are OPEN', () => {
+test('admin tier split: submissions + new threads + pending students are ACT, replies + others are OPEN', () => {
   assert.equal(dismissalFor({ type: 'tarefa_submission' }, 'admin'), DISMISS_ACT);
   assert.equal(dismissalFor({ type: 'forum_post', kind: 'new_thread' }, 'admin'), DISMISS_ACT);
+  assert.equal(dismissalFor({ type: 'student_pending' }, 'admin'), DISMISS_ACT);   // e-sino
   assert.equal(dismissalFor({ type: 'forum_post', kind: 'reply' }, 'admin'), DISMISS_OPEN);
   assert.equal(dismissalFor({ type: 'whatever' }, 'admin'), DISMISS_OPEN);
 });
@@ -24,6 +25,7 @@ test('the student bell stays all dismiss-on-open (incl. new threads)', () => {
     { type: 'forum_post', kind: 'reply', mine: true },
     { type: 'forum_post', kind: 'new_thread', mine: false },
     { type: 'tarefa_submission' },
+    { type: 'student_pending' },
     { type: 'whatever' },
     {},
   ];

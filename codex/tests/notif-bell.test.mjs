@@ -86,3 +86,22 @@ test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
     }
   }
 });
+
+// ── e-sino: inline "Aprovar" on a pending-student row (track-36 e) ────────────
+test('the bell offers a source-agnostic inline-action seam (itemAction), still facade-free', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /itemAction/, 'accepts an injected per-item action');
+  assert.match(src, /data-bell-act/, 'renders + wires the inline action button');
+  assert.ok(!/codex-api\.js|callWorker|ct_set_participant|ct_forum/.test(src), 'no facade or action strings leak into the shared component');
+});
+test('the admin bell wires "Aprovar" for a pending student via the roster facade', () => {
+  const src = read('../js/codex-topbar.js');
+  assert.match(src, /itemAction:/, 'injects the inline action');
+  assert.match(src, /type !== 'student_pending'/, 'the action only applies to pending-student items');
+  assert.match(src, /setParticipantAccess\(\{[^}]*status: 'approved'/, 'approves via the roster facade');
+});
+test('notif.approve exists in the codex dictionaries (pt + en)', () => {
+  for (const f of ['../i18n/pt.js', '../i18n/en.js']) {
+    assert.ok(read(f).includes("'notif.approve'"), f + ' missing notif.approve');
+  }
+});
