@@ -82,7 +82,7 @@ export const trail = {
 export { assetUrl };
 
 // Fail-open classifier (track-36 a). TRUE when an error code is a TRANSIENT server/network
-// hiccup that must NOT be read as "logged out" or "not approved" — the client keeps its
+// hiccup that must NOT be read as "logged out" or "not approved"; the client keeps its
 // current state and retries instead of walling/clearing the session (the "sumiu em minutos"
 // bug). FALSE for authoritative verdicts (needs_approval, not_found, forbidden, unauthorized,
 // email_not_enrolled, ...), which the caller acts on normally. The worker's own new soluço
