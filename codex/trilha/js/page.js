@@ -13,6 +13,7 @@ import { initials } from '../../js/initials.js';
 import { t, setLang } from '../i18n.js';
 import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
+import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
 import { renderSimpleWall } from './wall-simple.js';
@@ -226,13 +227,14 @@ function buildLoginPill() {
   btn.type = 'button';
   btn.className = 'ph-action-btn cdx-tr-login-pill';
   btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
-  btn.addEventListener('click', () => {
+  btn.addEventListener('click', async () => {
     if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
       // Logout must re-gate. Content already rendered for an approved session
       // stays on screen, because the gate only re-checks on the next fetch, so
       // clearing the token alone left everything visible. Reload so the Trail
-      // re-fetches as anonymous and the gate re-applies.
-      clearToken(state.clientSlug, state.turmaSlug);
+      // re-fetches as anonymous and the gate re-applies. Server round-trip first so
+      // the HttpOnly cookie is CLEARED (track-36 d) — else the next request re-auths from it.
+      await logoutStudent(state.clientSlug, state.turmaSlug);
       if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
       refreshLoginPill();
     } else {
@@ -360,8 +362,9 @@ function renderHeaderActions() {
         onInstallApp: (data.turma && data.turma.app_install_prompt !== 0)
           ? (() => showInstallPrompt(_root, { win: _win }))
           : undefined,
-        onLogout: () => {
-          clearToken(state.clientSlug, state.turmaSlug);
+        onLogout: async () => {
+          // Server round-trip first (track-36 d): clear the HttpOnly cookie + revoke, then reload.
+          await logoutStudent(state.clientSlug, state.turmaSlug);
           if (typeof location !== 'undefined' && location.reload) location.reload();
         },
         btnClass: 'ph-action-btn',

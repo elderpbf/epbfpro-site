@@ -45,6 +45,8 @@ function fakeApi(responses) {
     sessionCheck: make('sessionCheck'),
     enrollJoin: make('enrollJoin'),
     simpleEnroll: make('simpleEnroll'),
+    logout: make('logout'),
+    requestAccess: make('requestAccess'),
   };
 }
 
@@ -387,6 +389,40 @@ test('enrollJoin surfaces a closed/disabled error and stores no token', async ()
   await flow.enrollJoin('ana@test.com');
   assert.equal(flow.error, 'direct_access_disabled');
   assert.equal(sess.getToken('jfse', 'geral'), null);
+});
+
+// ── requestAccess (track-36 e) ───────────────────────────────────────────────
+
+test('requestAccess posts the bound turma + typed e-mail and flags requested', async () => {
+  api = fakeApi({ requestAccess: { ok: true, requested: true, already_approved: false, blocked: false } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  flow.email = 'ana@test.com';
+  await flow.requestAccess('Ana');
+  assert.equal(api.calls[0].name, 'requestAccess');
+  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'ana@test.com', name: 'Ana' });
+  assert.equal(flow.requested, true);
+  assert.equal(flow.requestBlocked, false);
+});
+
+test('requestAccess surfaces the blocked flag from the worker', async () => {
+  api = fakeApi({ requestAccess: { ok: true, requested: true, blocked: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  flow.email = 'no@test.com';
+  await flow.requestAccess('');
+  assert.equal(flow.requested, true);
+  assert.equal(flow.requestBlocked, true);
+  // No name -> the payload omits it.
+  assert.deepEqual(api.calls[0].params, { client_slug: 'jfse', turma_slug: 'geral', email: 'no@test.com' });
+});
+
+test('requestAccess needs a bound turma + a typed e-mail', async () => {
+  api = fakeApi({ requestAccess: { ok: true, requested: true } });
+  flow = createLoginFlow({ api, session: sess }); // unbound
+  flow.email = 'x@test.com';
+  await flow.requestAccess('X');
+  assert.equal(flow.error, 'error');
+  assert.equal(flow.requested, false);
+  assert.equal(api.calls.length, 0); // never reached the facade
 });
 
 // ── LGPD controller constants ────────────────────────────────────────────────

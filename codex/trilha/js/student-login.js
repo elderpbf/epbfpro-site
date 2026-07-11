@@ -81,6 +81,20 @@ async function safeCall(promise) {
   }
 }
 
+// Server-side logout (track-36 d). The session cookie is HttpOnly, so clearing it needs a
+// server round-trip — dropping the local token alone leaves the cookie authenticating the
+// next request (the iOS-persistence path). So revoke server-side (which also clears the
+// cookie via Set-Cookie Max-Age=0), THEN drop the local token. Best-effort: a network blip
+// must NOT trap a student who tapped "Sair", so a failed call still clears local state.
+// Shared by the login pill + the settings box so the two never drift.
+export async function logoutStudent(client, turma, opts = {}) {
+  const api = opts.api || trail;
+  const sess = opts.session || defaultSession;
+  const token = sess.getToken(client, turma);
+  if (token) { try { await api.logout({ session_token: token }); } catch (_) { /* best-effort */ } }
+  sess.clearToken(client, turma);
+}
+
 // Build a login flow. `client`/`turma` BIND it to one turma (the wall + the inline
 // gate + the modal): verify lands the student authenticated on that turma. OMITTING
 // them makes the flow turma-agnostic (the /trilha entry page): verify lands on the
@@ -221,7 +235,30 @@ export function createLoginFlow(opts = {}) {
       return this;
     },
 
+    // "Solicitar acesso" (track-36 e): the instructor-notify fallback for when the code never
+    // arrives or the validation window has closed. Records a PENDING request server-side
+    // (idempotent) so it surfaces in the admin approval queue + the actionable bell. Bound flow
+    // only (it needs the turma); uses the e-mail already typed on the register step.
+    async requestAccess(name) {
+      this.error = null;
+      this.requested = false;
+      if (!client || !turma || !this.email) { this.error = 'error'; return this; }
+      const payload = { client_slug: client, turma_slug: turma, email: this.email };
+      const cleanName = (name || '').trim();
+      if (cleanName) payload.name = cleanName;
+      const res = await safeCall(api.requestAccess(payload));
+      if (!res || !res.ok) { this.error = (res && res.error) || 'error'; return this; }
+      this.requested = true;
+      this.requestBlocked = !!res.blocked;
+      this.requestAlreadyApproved = !!res.already_approved;
+      return this;
+    },
+
     logout() {
+      // Best-effort server logout (revoke + clear the HttpOnly cookie). Fire-and-forget so the
+      // local state clears immediately; the cookie clear rides the response.
+      const token = sess.getToken(client, turma);
+      if (token) { try { api.logout({ session_token: token }); } catch (_) {} }
       sess.clearToken(client, turma);
       this.state = 'anonymous';
       this.error = null;
