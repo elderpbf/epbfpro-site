@@ -244,25 +244,6 @@ export function createLoginFlow(opts = {}) {
       return this;
     },
 
-    // "Solicitar acesso" (track-36 e): the instructor-notify fallback for when the code never
-    // arrives or the validation window has closed. Records a PENDING request server-side
-    // (idempotent) so it surfaces in the admin approval queue + the actionable bell. Bound flow
-    // only (it needs the turma); uses the e-mail already typed on the register step.
-    async requestAccess(name) {
-      this.error = null;
-      this.requested = false;
-      if (!client || !turma || !this.email) { this.error = 'error'; return this; }
-      const payload = { client_slug: client, turma_slug: turma, email: this.email };
-      const cleanName = (name || '').trim();
-      if (cleanName) payload.name = cleanName;
-      const res = await safeCall(api.requestAccess(payload));
-      if (!res || !res.ok) { this.error = (res && res.error) || 'error'; return this; }
-      this.requested = true;
-      this.requestBlocked = !!res.blocked;
-      this.requestAlreadyApproved = !!res.already_approved;
-      return this;
-    },
-
     logout() {
       // Clear local state immediately (sync) so the UI updates now, and fire the SHARED server
       // logout in the background (serverLogout swallows its own rejection, so this unawaited call
