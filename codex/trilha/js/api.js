@@ -80,3 +80,21 @@ export const trail = {
 };
 
 export { assetUrl };
+
+// Fail-open classifier (track-36 a). TRUE when an error code is a TRANSIENT server/network
+// hiccup that must NOT be read as "logged out" or "not approved" — the client keeps its
+// current state and retries instead of walling/clearing the session (the "sumiu em minutos"
+// bug). FALSE for authoritative verdicts (needs_approval, not_found, forbidden, unauthorized,
+// email_not_enrolled, ...), which the caller acts on normally. The worker's own new soluço
+// code is `server_busy`; the transport (worker-call.js) emits the http_5xx / network_error /
+// server_returned_html / json_parse_error / body_read_error / no_fetch family; and the legacy
+// generic worker crash is `Internal error`.
+export function isTransientError(code) {
+  if (!code) return false;
+  const c = String(code);
+  if (c === 'server_busy' || c === 'auth_unavailable' || c === 'Internal error') return true;
+  if (c === 'network_error' || c === 'no_fetch' || c === 'server_returned_html'
+      || c === 'json_parse_error' || c === 'body_read_error') return true;
+  if (/^http_5\d\d$/.test(c)) return true;
+  return false;
+}
