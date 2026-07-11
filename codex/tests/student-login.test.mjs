@@ -45,6 +45,9 @@ function fakeApi(responses) {
     sessionCheck: make('sessionCheck'),
     enrollJoin: make('enrollJoin'),
     simpleEnroll: make('simpleEnroll'),
+    provisionalEnter: make('provisionalEnter'),
+    authRequest: make('authRequest'),
+    authPoll: make('authPoll'),
     logout: make('logout'),
   };
 }
@@ -396,4 +399,87 @@ test('exports the LGPD controller identity', () => {
   assert.equal(CONTROLLER, 'EPBF Soluções em Tecnologia Ltda');
   assert.equal(CONTROLLER_CNPJ, '65.254.064/0001-64');
   assert.equal(CONTROLLER_CONTACT, 'contato@pensoia.com');
+});
+
+// ── track-36 single "Entrar" (email-first + validation/approval poll) ──────────
+
+test('entrar: an OPEN window enters immediately (provisional), no e-mail wait', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ provisionalEnter: { ok: true, entered: true, session_token: 'PROV', participant_id: 5, needs_profile: false } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', enrollToken: 'ET', api, session: sess });
+  await flow.entrar('aluno@test.com');
+  assert.equal(flow.state, 'authenticated');
+  assert.equal(sess.getToken('c', 't'), 'PROV');
+  assert.equal(api.calls[0].name, 'provisionalEnter');
+});
+
+test('entrar: a NEW e-mail off-window asks for the name (needName), sends ask_name', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ authRequest: { ok: true, needs_name: true } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });   // no enrollToken -> off-window
+  await flow.entrar('novo@test.com');
+  assert.equal(flow.state, 'needName');
+  const req = api.calls.find((x) => x.name === 'authRequest');
+  assert.equal(req.params.ask_name, true);
+  assert.equal(req.params.email, 'novo@test.com');
+});
+
+test('entrar: off-window with a name goes to validating and keeps the poll_token', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ authRequest: { ok: true, poll_token: 'POLL', dev_magic_token: 'LT' } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  await flow.entrar('novo@test.com', 'Maria');
+  assert.equal(flow.state, 'validating');
+  assert.equal(flow.pollToken, 'POLL');
+  assert.equal(flow.devMagicToken, 'LT');
+});
+
+test('pollValidation: stays validating until the link is clicked (waiting)', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ authRequest: { ok: true, poll_token: 'POLL' }, authPoll: { ok: true, status: 'waiting' } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  await flow.entrar('a@test.com', 'A');
+  await flow.pollValidation();
+  assert.equal(flow.state, 'validating');
+  assert.equal(sess.getToken('c', 't'), null);   // NO session before the click
+});
+
+test('pollValidation: a pending newcomer lands on pendingApproval with a (walled) session', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ authRequest: { ok: true, poll_token: 'POLL' }, authPoll: { ok: true, status: 'pending', session_token: 'S', participant_id: 9 } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  await flow.entrar('a@test.com', 'A');
+  await flow.pollValidation();
+  assert.equal(flow.state, 'pendingApproval');
+  assert.equal(sess.getToken('c', 't'), 'S');
+});
+
+test('pollValidation: an already-approved e-mail unlocks (authenticated) after the click', async () => {
+  const sess = fakeSession();
+  const api = fakeApi({ authRequest: { ok: true, poll_token: 'POLL' }, authPoll: { ok: true, status: 'approved', session_token: 'S' } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  await flow.entrar('a@test.com');
+  await flow.pollValidation();
+  assert.equal(flow.state, 'authenticated');
+  assert.equal(sess.getToken('c', 't'), 'S');
+});
+
+test('pollApproval: flips to authenticated once the instructor approves (access_status)', async () => {
+  const sess = fakeSession();
+  sess.setToken('c', 't', 'S');
+  const api = fakeApi({ sessionCheck: { ok: true, access_status: 'approved' } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  flow.state = 'pendingApproval';
+  await flow.pollApproval();
+  assert.equal(flow.state, 'authenticated');
+});
+
+test('pollApproval: stays pending while still not approved', async () => {
+  const sess = fakeSession();
+  sess.setToken('c', 't', 'S');
+  const api = fakeApi({ sessionCheck: { ok: true, access_status: 'pending' } });
+  const flow = createLoginFlow({ client: 'c', turma: 't', api, session: sess });
+  flow.state = 'pendingApproval';
+  await flow.pollApproval();
+  assert.equal(flow.state, 'pendingApproval');
 });

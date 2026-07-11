@@ -36,6 +36,15 @@ export const trail = {
   logout:         (p) => call('student_logout', p),         // { session_token } -> { ok, clear_session_cookie }
   // Single "Entrar" in-room path (track-36 c/d): 12h provisional session while the window is open.
   provisionalEnter: (p) => call('student_provisional_enter', p), // { client_slug, turma_slug, email, name?, et? } -> { ok, entered, provisional?, session_token? } | { error }
+  // Off-window "Entrar" (track-36 c/d): send the 15-min validation link + get a poll_token for THIS
+  // device. E-mail-first: pass ask_name so a NEW address returns { needs_name } to reveal the name.
+  authRequest: (p) => call('student_auth_request', p), // { client_slug, turma_slug, email, name?, ask_name? } -> { ok, needs_name? , poll_token?, dev_magic_token? } | { error }
+  // Magic-link return (track-36): the emailed validation link lands as ?lt=<token>; the page
+  // consumes it here to mark the e-mail validated + mint the session on the device that clicked.
+  authVerify: (p) => call('student_auth_verify', p), // { token, presence_token? } -> { ok, session_token, access } | { error }
+  // Cross-device poll (track-36 d): the device that typed the e-mail watches for the emailed link
+  // to be clicked. 'waiting' until clicked; then a session + the live access_status.
+  authPoll: (p) => call('student_auth_poll', p), // { poll_token } -> { ok, status:'waiting'|'approved'|'pending', session_token?, access_status? } | { error }
 
   // Fórum (Phase 8). Student face: all gated by a valid session token for the turma.
   // Notifications are computed server-side; the bell consumes forumNotifications /

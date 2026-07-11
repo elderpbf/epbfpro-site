@@ -125,6 +125,8 @@ export function createLoginFlow(opts = {}) {
     devCode: null,        // the on-screen code when no e-mail provider is wired (staging)
     turmas: null,         // the verify turma list (the hub on the entry page)
     participantId: null,
+    pollToken: null,      // track-36 d: the cross-device poll handle for the single "Entrar"
+    devMagicToken: null,  // dev/staging (no e-mail provider): the emailed token, surfaced to finish the flow
 
     isAuthenticated() { return sess.isLoggedIn(client, turma); },
 
@@ -227,6 +229,70 @@ export function createLoginFlow(opts = {}) {
       sess.setToken(client, turma, res.session_token);
       this.participantId = res.participant_id != null ? res.participant_id : null;
       this.state = res.needs_profile ? 'profile' : 'authenticated';
+      return this;
+    },
+
+    // ── track-36 single "Entrar" (the one screen, e-mail-first) ─────────────────
+    // One method drives the whole entry. In-room (a live window + código/QR token) mints
+    // IMMEDIATE provisional access (12h), zero e-mail wait. Off-window, it sends the 15-min
+    // validation link and gets a poll_token so THIS device can watch for the click (the laptop
+    // unlocks when the phone clicks). A brand-new e-mail with no name yet stops at 'needName' so
+    // the screen reveals the name field inline BEFORE anything is created.
+    async entrar(rawEmail, name) {
+      this.error = null;
+      const email = validateEmail(rawEmail);
+      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
+      this.email = email;
+      const cleanName = (name || '').trim();
+      // In-room first: a live window grants provisional access on the spot (approval via the
+      // window; validation deferred to the 3-day e-mail the worker fires). No poll needed.
+      if (enrollToken) {
+        const pe = await safeCall(api.provisionalEnter({ client_slug: client, turma_slug: turma, email, name: cleanName, et: enrollToken, k: opts.k, origin: opts.origin }));
+        if (pe && pe.ok && pe.entered && pe.session_token) {
+          sess.setToken(client, turma, pe.session_token);
+          this.participantId = pe.participant_id != null ? pe.participant_id : null;
+          this.state = pe.needs_profile ? 'profile' : 'authenticated';
+          return this;
+        }
+        // A blocked student can't force in; surface it. Otherwise (window closed) fall through.
+        if (pe && pe.error === 'access_blocked') { this.state = 'email'; this.error = 'access_blocked'; return this; }
+      }
+      // Off-window: send the validation link + get the poll handle. ask_name reveals the name
+      // field for a NEW address before creating the participant.
+      const res = await safeCall(api.authRequest({ client_slug: client, turma_slug: turma, email, name: cleanName, ask_name: true, k: opts.k, origin: opts.origin }));
+      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
+      if (res.needs_name) { this.state = 'needName'; return this; }
+      this.pollToken = res.poll_token || null;
+      this.devMagicToken = res.dev_magic_token || null; // staging only (no provider)
+      this.state = 'validating';
+      return this;
+    },
+
+    // One validation-poll tick (track-36 d). Before the emailed link is clicked it stays
+    // 'validating'. Once clicked (the e-mail is proven, maybe on another device), the worker
+    // hands THIS device a session: 'approved' → authenticated (caller reloads), 'pending' →
+    // 'pendingApproval' (validated, waiting on the instructor's e-sino approval).
+    async pollValidation() {
+      if (!this.pollToken) return this;
+      const res = await safeCall(api.authPoll({ poll_token: this.pollToken, _silent: true }));
+      if (!res || !res.ok || res.status === 'waiting') return this; // keep waiting (incl. transient errors)
+      if (res.session_token) {
+        sess.setToken(client, turma, res.session_token);
+        this.participantId = res.participant_id != null ? res.participant_id : null;
+      }
+      this.state = res.status === 'approved' ? 'authenticated' : 'pendingApproval';
+      return this;
+    },
+
+    // Poll after 'pendingApproval': the student is validated but not yet approved. Watch the
+    // live access_status (via the session minted at validation) until the instructor approves in
+    // the e-sino, then unlock. No "validate now" wall — validation already happened.
+    async pollApproval() {
+      const token = sess.getToken(client, turma);
+      if (!token) return this;
+      const res = await safeCall(api.sessionCheck({ session_token: token, _silent: true }));
+      if (!res || !res.ok) return this;
+      if (res.access_status === 'approved') this.state = 'authenticated';
       return this;
     },
 

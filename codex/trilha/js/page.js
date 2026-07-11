@@ -11,7 +11,7 @@ import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
 import { t, setLang } from '../i18n.js';
-import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
+import { extractEnrollToken, isLoggedIn, clearToken, getToken, setToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
 import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
@@ -85,6 +85,11 @@ export async function mount(root, ctx = {}) {
   }
 
   if (!state.clientSlug || !state.turmaSlug || !state.token) { showError(root, 'link_invalid', t); return; }
+
+  // Magic-link return (track-36): the emailed validation link lands here as ?lt=<token>. Consume
+  // it BEFORE fetching the view, so the session is set and content loads approved (or the pending
+  // wall shows). auth_verify marks the e-mail validated + mints the session on this device.
+  if (LOGIN_ENABLED) await consumeMagicToken(loc, api);
 
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
@@ -220,41 +225,10 @@ function renderHero(root) {
 // the turma has a whatsapp_url) into the pensoia-header .ph-right. Retries while
 // the header web component upgrades. The login pill always shows; its label tracks
 // the session and its click reads live state, so one handler serves both directions.
-let _loginPill = null;
-
-function buildLoginPill() {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'ph-action-btn cdx-tr-login-pill';
-  btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
-  btn.addEventListener('click', async () => {
-    if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
-      // Logout must re-gate. Content already rendered for an approved session
-      // stays on screen, because the gate only re-checks on the next fetch, so
-      // clearing the token alone left everything visible. Reload so the Trail
-      // re-fetches as anonymous and the gate re-applies. Server round-trip first so
-      // the HttpOnly cookie is CLEARED (track-36 d), else the next request re-auths from it.
-      await logoutStudent(state.clientSlug, state.turmaSlug);
-      if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
-      refreshLoginPill();
-    } else {
-      openLoginModal({
-        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-        presence: getPresence(state.clientSlug, state.turmaSlug),
-        // Simple-enroll turma: the pill opens the e-mail-only step, not the código flow.
-        simple: !!(((state.data || {}).access || {}).simple_enroll),
-        onAuthenticated: afterAuth,
-      });
-    }
-  });
-  return btn;
-}
-
-function refreshLoginPill() {
-  if (_loginPill) {
-    _loginPill.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
-  }
-}
+// track-36 c: the header login/logout pill was retired (the wall is the single Entrar screen;
+// logout lives in the settings box). refreshLoginPill is kept as an inert no-op so its call sites
+// (recheckAuth / afterAuth) stay simple — there is simply no pill to repaint anymore.
+function refreshLoginPill() { /* no pill to refresh (retired) */ }
 
 // Re-check auth on every page open. If we hold a session token but the server no longer
 // recognizes it (revoked/expired -> the gated turma view comes back 'anonymous'), clear
@@ -300,13 +274,10 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    // Login pill: ONLY for an ANONYMOUS student on a gated turma (a returning student who
-    // wants to log in instead of registering at the wall). When logged in, the logout lives
-    // inside the settings box (below), so there is no standalone "Sair" pill (Élder).
-    if (LOGIN_ENABLED && data.access && data.access.gated && !state.sessionToken) {
-      _loginPill = buildLoginPill();
-      prepend(_loginPill);
-    }
+    // The standalone "Entrar" pill was retired (track-36 c): the wall IS the single Entrar
+    // screen (e-mail-first), so a header pill duplicating it lost its purpose (Élder). An
+    // anonymous student on a gated turma just sees the wall. Logged-in logout lives in the
+    // settings box (below), so the header carries no login/logout pill either way.
 
     // Settings box (the initials avatar) whenever the student is logged in on a gated
     // turma: it carries the logout (ALWAYS) plus the notif prefs (only when the forum is
@@ -386,6 +357,32 @@ function avatarInitials(name) {
 // (register + access on the spot, no magic link) takes precedence, else enroll_prompt (the
 // magic-link request). The fixed ?k= link never reaches this path, so it stays prompt-free.
 // Strips et so a refresh can't replay it; returns true so the caller skips the magic path.
+// Magic-link return (track-36): consume ?lt=<token>. auth_verify marks the e-mail validated,
+// mints the session on THIS device, and (for an already-approved e-mail) unlocks durably. A
+// pending newcomer just gets a walled session and lands on the pending wall. The token is
+// single-use; strip it from the URL so a refresh can't replay it. Best-effort throughout — a
+// bad/expired link falls through to the wall rather than erroring.
+async function consumeMagicToken(loc, api) {
+  let lt = null;
+  try { lt = new URLSearchParams((loc && loc.search) || '').get('lt'); } catch (_) { lt = null; }
+  if (!lt) return;
+  try {
+    const res = await api.authVerify({
+      token: lt,
+      presence_token: getPresence(state.clientSlug, state.turmaSlug) || undefined,
+      _silent: true,
+    });
+    if (res && res.ok && res.session_token) setToken(state.clientSlug, state.turmaSlug, res.session_token);
+  } catch (_) { /* bad/expired link -> fall through to the wall */ }
+  try {
+    if (_win && _win.history && _win.history.replaceState) {
+      const u = new URL(_win.location.href);
+      u.searchParams.delete('lt');
+      _win.history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+    }
+  } catch (_) { /* strip is best-effort */ }
+}
+
 function handleEnrollReturn(loc) {
   const et = extractEnrollToken((loc && loc.search) || '');
   if (!et) return false;
