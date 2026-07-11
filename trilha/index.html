@@ -141,7 +141,10 @@
   window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already
   // defaults here; this stays as the explicit page-level override. Reversible.
-  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  // First-party API (track-36 b): the student face talks to api.pensoia.com (same worker as
+  // codex-api.workers.dev, kept alive for the extractor) so the login session cookie is
+  // first-party same-site and the iPhone stops dropping it.
+  window.WORKER_URL = 'https://api.pensoia.com';
   mount(document.getElementById('cdx-trilha-root'), {});
 </script>
 </body>

@@ -44,7 +44,8 @@
   import { mount } from '/codex/trilha/js/validar.js';
   // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already
   // defaults here; this stays as the explicit page-level override. Reversible.
-  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  // First-party API (track-36 b): api.pensoia.com, same worker as codex-api.workers.dev.
+  window.WORKER_URL = 'https://api.pensoia.com';
   mount(document.getElementById('cdx-trilha-view'), {});
 </script>
 </body>

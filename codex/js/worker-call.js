@@ -141,9 +141,12 @@ export async function callWorker(params, env = {}) {
 
   let resp;
   try {
+    // credentials:'include' so a first-party same-site session cookie (Domain=.pensoia.com,
+    // set by the worker at api.pensoia.com on login) is sent + stored (track-36 b). Harmless
+    // for the workers.dev base (no matching cookie); the CORS layer sets Allow-Credentials.
     resp = req.method === 'POST'
-      ? await fetchImpl(req.url, { method: 'POST', headers: req.headers, body: req.body, redirect: 'follow' })
-      : await fetchImpl(req.url, { headers: req.headers, redirect: 'follow' });
+      ? await fetchImpl(req.url, { method: 'POST', headers: req.headers, body: req.body, redirect: 'follow', credentials: 'include' })
+      : await fetchImpl(req.url, { headers: req.headers, redirect: 'follow', credentials: 'include' });
   } catch (netErr) {
     const netMsg = (netErr && netErr.message) ? netErr.message : String(netErr);
     _log('error', 'callWorker network error | action: ' + action + ' | ' + netMsg);

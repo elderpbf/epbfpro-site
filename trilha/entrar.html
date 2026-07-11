@@ -75,7 +75,9 @@
   import '/codex/trilha/js/pensoia-header.js'; // defines <pensoia-header> (cdx, correct light/dark logo)
   import { start } from '/codex/trilha/js/entrar.js';
 
-  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  // First-party API (track-36 b): api.pensoia.com is the same worker as codex-api.workers.dev
+  // (kept alive for the extractor), reached first-party so the login cookie is same-site.
+  window.WORKER_URL = 'https://api.pensoia.com';
   start();
 </script>
 </body>
