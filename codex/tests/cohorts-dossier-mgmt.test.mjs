@@ -35,6 +35,19 @@ test('the Aulas tab is the aula hub; Liberações + Tarefas are per-aula, not tu
   assert.match(cohortsJs, /data-aulatab="tarefas"/, 'per-aula Tarefas sub-tab');
 });
 
+test('the dossier remembers its active sub-tab across re-renders (deep-link survives the async deps reload)', () => {
+  // Regression: the shell used to hardcode `active` on Dados, so the async deps
+  // re-render reset the tab — a deep-link (e-sino → Participantes) flashed then fell
+  // back to Dados. The active tab is now state (_dossierDtab), rendered as active.
+  assert.match(cohortsJs, /let _dossierDtab/, 'the active sub-tab is module state');
+  assert.ok(!/class="cdx-subtab active" data-dtab="dados"/.test(cohortsJs), 'no hardcoded active tab in the shell');
+  assert.match(cohortsJs, /_tabCls\(/, 'the shell derives the active class from state');
+  assert.match(cohortsJs, /_dossierDtab = key/, 'a manual tab click updates the remembered tab');
+  assert.match(cohortsJs, /_dossierDtab = \(ctx && ctx\.fdtab\)/, 'a deep-link (fdtab) seeds the active sub-tab');
+  // index.html must forward an explicit fdtab so the bell can target Participantes.
+  assert.match(read('../index.html'), /ctx\.fdtab = params\.get\('fdtab'\)/, 'index.html honours an explicit fdtab');
+});
+
 test('cohorts reuses the existing modules, mounted aula-locked (no duplicated composer)', () => {
   assert.match(cohortsJs, /import \* as releasesAdmin from '\.\.\/content\/releases\.js'/, 'imports releases module');
   assert.match(cohortsJs, /import \* as tarefasAdmin from '\.\.\/content\/tarefas\.js'/, 'imports tarefas module');
