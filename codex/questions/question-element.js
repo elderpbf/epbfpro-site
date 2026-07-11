@@ -336,10 +336,22 @@ export class QuestionElement extends ElementBase {
       }
       countsStr += '|sr:' + (qToRender.show_results ? '1' : '0');
 
-      if (this._state !== newState || this._activeQId !== qToRender.id || this._lastAnsCountsStr !== countsStr) {
+      const idChanged = this._activeQId !== qToRender.id;
+      const stateChanged = this._state !== newState;
+      if (idChanged || stateChanged || this._lastAnsCountsStr !== countsStr) {
         this._activeQId = qToRender.id;
         this._lastAnsCountsStr = countsStr;
         this._state = newState;
+
+        // Vote integrity (track-36 g): a student's ACTIVE input (buttons / textarea)
+        // shows NO counts, so a peer's vote, a counts-only change on the SAME question
+        // while it is still ACTIVE, must NOT rebuild it, or the student's in-progress
+        // selection / multi-pick / typed text is wiped mid-answer (and a tap can land
+        // on the wrong option during the rebuild). Skip only the re-render in that one
+        // case; the tracking above is already updated, so the next real change (a new
+        // question id, or the question closing into REVEALED) still renders. Host and
+        // display DO re-render on every vote, since they show the live tally.
+        if (this._mode === 'student' && newState === 'ACTIVE' && !idChanged && !stateChanged) return;
 
         if (newState === 'ACTIVE') {
           if (typeof this.onActive === 'function') this.onActive(qToRender);

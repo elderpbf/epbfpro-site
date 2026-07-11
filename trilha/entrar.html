@@ -9,8 +9,9 @@
 <link rel="icon" type="image/svg+xml" href="/favicon.svg?v=2">
 <link rel="icon" type="image/x-icon" href="/favicon.ico?v=2">
 <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png?v=2">
-<link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png?v=2">
-<!-- PWA: "Salvar como app" (Trilha, Codex-owned manifest). -->
+<!-- PWA: "Salvar como app" (Trilha, Codex-owned manifest). The single apple-touch-icon is
+     the purpose-built Trilha app icon below (matches the manifest); the site-wide one was a
+     conflicting duplicate at the same 180x180 size (track-36 i). -->
 <link rel="manifest" href="/codex/trilha/manifest.webmanifest?v=1">
 <meta name="theme-color" content="#14b8a6">
 <meta name="mobile-web-app-capable" content="yes">
@@ -74,7 +75,9 @@
   import '/codex/trilha/js/pensoia-header.js'; // defines <pensoia-header> (cdx, correct light/dark logo)
   import { start } from '/codex/trilha/js/entrar.js';
 
-  window.WORKER_URL = 'https://codex-api.pensoia.workers.dev';
+  // First-party API (track-36 b): api.pensoia.com is the same worker as codex-api.workers.dev
+  // (kept alive for the extractor), reached first-party so the login cookie is same-site.
+  window.WORKER_URL = 'https://api.pensoia.com';
   start();
 </script>
 </body>

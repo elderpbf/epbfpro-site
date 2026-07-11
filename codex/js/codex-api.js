@@ -118,6 +118,7 @@ export const questions = {
   updateSet:       (p) => call('update_question_set', p),      // { original_name, new_name }
   deleteSet:       (p) => call('delete_question_set', p),      // { list_name }
   reorder:         (p) => call('reorder_questions', p),        // { list_name, ordered_ids }
+  reorderSets:     (p) => call('reorder_question_sets', p),    // { ordered_names }: drag order of the Conjuntos sidebar
   search:          (p) => call('search_questions', p),         // { q } (>= 2 chars)
   // Student Q&A (instructor side)
   toggleQa:               (p) => call('toggle_qa', p),                // { code, enabled }

@@ -6,7 +6,7 @@
 // pure (unit-tested); the DOM wiring is verified visually on staging.
 import { state } from './state.js';
 import { esc, showError, isOutrosItem } from './utils.js';
-import { trail } from './api.js';
+import { trail, isTransientError } from './api.js';
 import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
@@ -87,14 +87,7 @@ export async function mount(root, ctx = {}) {
 
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
-    state.data = await api.turmaView({
-      client_slug: state.clientSlug,
-      turma_slug: state.turmaSlug,
-      token: state.token,
-      session_token: state.sessionToken,
-      _admin: state.isAdmin,
-      _silent: true,
-    });
+    state.data = await fetchTurmaViewResilient(api);
     // Lab items are shipped artifacts: derive their title/summary/description/
     // objective from the code registry (single source), not the seeded DB copy,
     // and drop labs retired from the registry. See lab-overlay.js.
@@ -153,9 +146,37 @@ export async function mount(root, ctx = {}) {
     }
   } catch (err) {
     const code = (err && err.data && err.data.error) ? err.data.error : 'error';
+    // A transient server/network hiccup (already retried in fetchTurmaViewResilient) is NOT a
+    // bad link: DON'T map it to link_invalid (which reads as logged-out). Keep the held session
+    // and show the generic retryable error so a reload recovers, instead of tearing down the
+    // student's identity on a soluço (track-36 a, the "sumiu em minutos" class of failure).
     const map = (code === 'not_found' || code === 'forbidden' || code === 'unauthorized') ? 'link_invalid' : 'error';
     showError(root, map, t);
     mountEntry(root.querySelector('#cdx-tr-error-support'), contextFromState(state), 'erro');
+  }
+}
+
+// Load the turma view, riding out a transient server/network hiccup instead of failing the
+// whole page (fail-open, track-36 a). Retries a couple of times with a short backoff on a
+// transient error; a definitive error (bad link / needs_approval) throws straight through so
+// the caller handles it. Payload shape is unchanged from the original inline call.
+async function fetchTurmaViewResilient(api, attempt = 0) {
+  try {
+    return await api.turmaView({
+      client_slug: state.clientSlug,
+      turma_slug: state.turmaSlug,
+      token: state.token,
+      session_token: state.sessionToken,
+      _admin: state.isAdmin,
+      _silent: true,
+    });
+  } catch (err) {
+    const code = err && err.data && err.data.error;
+    if (isTransientError(code) && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 600 * (attempt + 1)));
+      return fetchTurmaViewResilient(api, attempt + 1);
+    }
+    throw err;
   }
 }
 

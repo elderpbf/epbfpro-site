@@ -1284,7 +1284,7 @@ function _renderDossier(turma) {
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="copyurl" data-url="' + _esc(url) + '">' + _esc(t('cohorts.copy_url')) + '</button>' +
           '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" data-code="' + _esc(code || '') + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
           codeBtn +
         '</div>'
       : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
@@ -1376,7 +1376,7 @@ function _renderDossier(turma) {
     else if (a === 'regen') _regenToken(turma.client_slug, turma.slug);
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
     else if (a === 'copycode') _copyCode(b.dataset.code);
-    else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url });
+    else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url, code: b.dataset.code || null });
   }));
 
   // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
@@ -1904,12 +1904,30 @@ function _renderAulaDetail(turma) {
   _unmountAulaEmbeds();
   if (_selectedAulaId === 'outros') {
     // Outros has no Dados/Tarefas; the whole detail is the no-aula release composer.
+    // On a reveal-on-completion turma, Outros is hidden from students until "Revelar"
+    // (ct_turmas.outros_revealed). The toggle only appears where pacing is on (Élder).
+    const revealBtn = turma.reveal_on_completion
+      ? '<button class="cdx-btn cdx-btn-sm' + (turma.outros_revealed ? '' : ' cdx-btn-primary') + '" data-act="toggle-outros" type="button">' +
+          _esc(t(turma.outros_revealed ? 'cohorts.outros_hide' : 'cohorts.outros_reveal')) + '</button>'
+      : '';
+    const revealHint = turma.reveal_on_completion
+      ? '<div class="cdx-aula-dh-sub cdx-outros-state">' + _esc(t(turma.outros_revealed ? 'cohorts.outros_state_on' : 'cohorts.outros_state_off')) + '</div>'
+      : '';
     detailEl.innerHTML =
       '<div class="cdx-aula-dh"><div class="cdx-aula-dh-main">' +
         '<h3 class="cdx-aula-dh-title">' + _esc(t('cohorts.aula_outros')) + '</h3>' +
         '<div class="cdx-aula-dh-sub">' + _esc(t('cohorts.aula_outros_sub')) + '</div>' +
-      '</div></div>' +
+        revealHint +
+      '</div>' + (revealBtn ? '<div class="cdx-aula-dh-actions">' + revealBtn + '</div>' : '') + '</div>' +
       '<div class="cdx-aula-pane" id="cdx-aula-pane"></div>';
+    const rb = detailEl.querySelector('[data-act="toggle-outros"]');
+    if (rb) rb.addEventListener('click', async () => {
+      const next = turma.outros_revealed ? 0 : 1;
+      rb.disabled = true;
+      let res; try { res = await api.updateTurmaMeta({ client_slug: turma.client_slug, slug: turma.slug, outros_revealed: next }); } catch (e) { notice.internal(e); res = null; }
+      if (res && !res.error) { turma.outros_revealed = next; _renderAulaDetail(turma); }
+      else { rb.disabled = false; notice.warn(t('cohorts.error')); }
+    });
     const paneEl = detailEl.querySelector('#cdx-aula-pane');
     releasesAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: 'outros', onChange: () => _refreshAulaCountsAfterEmbed(turma) });
     _aulaEmbedMounted.liberacoes = true;

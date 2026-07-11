@@ -94,6 +94,21 @@
 
 .qr-share-modal-img[hidden] { display: none; }
 
+/* The código (track-36 h): big spaced digits under the QR, matching the live session
+   screen so the dossier view carries the same code (scan OR type). */
+.qr-share-modal-code {
+  font-size: clamp(2.4rem, 6vmin, 4rem);
+  font-weight: 800;
+  letter-spacing: 0.28em;
+  text-indent: 0.28em; /* balance the trailing tracking so the digits stay centered */
+  color: var(--acc-teal, #14b8a6);
+  font-variant-numeric: tabular-nums;
+  text-align: center;
+  line-height: 1;
+}
+
+.qr-share-modal-code[hidden] { display: none; }
+
 .qr-share-modal-notice {
   max-width: clamp(280px, 60vmin, 560px);
   font-size: clamp(1rem, 2.4vmin, 1.3rem);

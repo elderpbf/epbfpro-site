@@ -412,6 +412,10 @@ export default {
   // Cohorts — aula hub (Layout A: list | detail with per-aula sub-tabs)
   'cohorts.aula_tab_dados':         'Details',
   'cohorts.aula_outros':            'Other (no lesson)',
+  'cohorts.outros_reveal':          'Reveal',
+  'cohorts.outros_hide':            'Hide',
+  'cohorts.outros_state_on':        'Visible to students.',
+  'cohorts.outros_state_off':       'Hidden until you reveal.',
   'cohorts.aula_outros_sub':        'Items released without a lesson.',
   'cohorts.aula_no_content':        'no content',
   'cohorts.aula_select_prompt':     'Select a lesson on the left.',

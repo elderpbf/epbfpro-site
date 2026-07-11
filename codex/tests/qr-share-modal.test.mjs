@@ -16,7 +16,7 @@ function makeChild() {
     getAttribute(k) { return this._attrs[k]; },
   };
 }
-const KNOWN = ['qr-share-modal-backdrop', 'qr-share-modal-close', 'qr-share-modal-title', 'qr-share-modal-img', 'qr-share-modal-notice'];
+const KNOWN = ['qr-share-modal-backdrop', 'qr-share-modal-close', 'qr-share-modal-title', 'qr-share-modal-img', 'qr-share-modal-code', 'qr-share-modal-notice'];
 function makeRoot() {
   const children = {};
   return {
@@ -54,6 +54,17 @@ test('open(joinUrl) renders the QR image from the qrserver API and the default t
 test('open accepts a custom title', () => {
   qr.open({ joinUrl: 'https://x.test/y', title: 'Aponte a câmera' });
   assert.equal(sel('qr-share-modal-title').textContent, 'Aponte a câmera');
+});
+
+// track-36 h: the QR view carries the turma's código so the dossier matches the session screen.
+test('open shows the código big when provided, hides it otherwise', () => {
+  qr.open({ joinUrl: 'https://x.test/y', code: '1561' });
+  assert.equal(sel('qr-share-modal-code').textContent, '1561', 'código shown');
+  assert.equal(sel('qr-share-modal-code').hidden, false, 'código visible');
+  // A later open WITHOUT a code hides the código again (no stale carry-over).
+  qr.open({ joinUrl: 'https://x.test/z' });
+  assert.equal(sel('qr-share-modal-code').textContent, '', 'código cleared');
+  assert.equal(sel('qr-share-modal-code').hidden, true, 'código hidden when absent');
 });
 
 test('open without a joinUrl shows the default notice, hides the image', () => {

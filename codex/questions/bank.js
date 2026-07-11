@@ -286,7 +286,8 @@ const _IMPORT_SYS =
 // ---- Sets sidebar ----
 function _setRow(b) {
   const name = b.list_name;
-  return '<button class="cdx-bank-set' + (name === _currentSet ? ' active' : '') + '" data-act="pick" data-set="' + _esc(name) + '" type="button">' +
+  return '<button class="cdx-bank-set' + (name === _currentSet ? ' active' : '') + '" data-act="pick" data-set="' + _esc(name) + '" type="button" draggable="true">' +
+    '<span class="cdx-bank-set-drag" aria-hidden="true">⠿</span>' +
     '<span class="cdx-bank-set-name">' + _esc(name) + '</span>' +
     '<span class="cdx-bank-set-count">' + (b.count || 0) + '</span>' +
   '</button>';
@@ -1481,6 +1482,24 @@ export function mount(viewEl, ctx) {
     if (e.key === 'Enter') { e.preventDefault(); _submitNewSet(); }
     if (e.key === 'Escape') { _newSetActive = false; _renderSets(); }
   });
+
+  // Drag-to-reorder the Conjuntos sidebar (shared js/reorder.js). Real set rows only
+  // (the synthetic Variáveis pseudo-conjunto is excluded); native DnD leaves click-to-pick
+  // intact. Persisted via reorder_question_sets so the order sticks across reloads.
+  _cleanup.push(makeReorderable(viewEl.querySelector('#cdx-bank-setlist'), {
+    itemSelector: '.cdx-bank-set:not(.cdx-bank-set--variaveis)',
+    getId: (el) => el.getAttribute('data-set'),
+    onReorder: async (names) => {
+      const ordered = names.filter(Boolean);
+      if (ordered.length !== _banks.length) return; // safety: unexpected row set
+      const byName = new Map(_banks.map((b) => [b.list_name, b]));
+      const next = ordered.map((n) => byName.get(n)).filter(Boolean);
+      if (next.length !== _banks.length) return;
+      _banks = next;
+      _renderSets();
+      try { await api.reorderSets({ ordered_names: ordered }); } catch (e) { notice.internal(e); }
+    },
+  }));
 
   // Sets header
   _on(viewEl.querySelector('.cdx-bank-sets-header'), 'click', (e) => {

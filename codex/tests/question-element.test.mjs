@@ -121,6 +121,50 @@ test('student mode does NOT reveal closed history (waits for the next active que
   } finally { h.restore(); }
 });
 
+// ── vote integrity: student input survives peer votes (track-36 g) ─────────────
+test('student ACTIVE input is NOT rebuilt on a peer vote (counts-only change)', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    let renders = 0;
+    const orig = el._renderQuestion.bind(el);
+    el._renderQuestion = (q, r) => { renders++; return orig(q, r); };
+
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: mc({ answer_counts: [1, 2] }), history: [] }));
+    await el._poll();
+    assert.equal(el.getState(), 'ACTIVE', 'state is ACTIVE');
+    assert.equal(renders, 1, 'the first active question renders the input once');
+
+    // A peer votes: SAME question, still active, only the tally changed → no rebuild
+    // (or the student's in-progress selection / typed text would be wiped mid-answer).
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: mc({ answer_counts: [5, 9] }), history: [] }));
+    await el._poll();
+    assert.equal(renders, 1, 'a peer vote does NOT rebuild the student input');
+
+    // A genuinely new question (id change) DOES re-render.
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: mc({ id: 'q2', answer_counts: [0, 0] }), history: [] }));
+    await el._poll();
+    assert.equal(renders, 2, 'a new active question re-renders');
+  } finally { h.restore(); }
+});
+
+test('host mode DOES re-render on every vote (the live tally must update)', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'host');
+    let renders = 0;
+    const orig = el._renderQuestion.bind(el);
+    el._renderQuestion = (q, r) => { renders++; return orig(q, r); };
+
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: mc({ answer_counts: [1, 2] }), history: [] }));
+    await el._poll();
+    assert.equal(renders, 1, 'first render');
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: mc({ answer_counts: [5, 9] }), history: [] }));
+    await el._poll();
+    assert.equal(renders, 2, 'host re-renders when the tally changes');
+  } finally { h.restore(); }
+});
+
 // ── source rules ──────────────────────────────────────────────────────────────
 test('render element + renderer obey the module source rules', () => {
   for (const rel of ['../questions/question-element.js', '../questions/question-render.js']) {

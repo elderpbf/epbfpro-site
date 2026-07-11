@@ -6,7 +6,24 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
 globalThis.callWorker = (payload) => payload;
-const { trail } = await import('../trilha/js/api.js');
+const { trail, isTransientError } = await import('../trilha/js/api.js');
+
+// track-36 a: fail-open classifier. TRUE = transient hiccup (keep state + retry, never
+// wall/logout); FALSE = an authoritative verdict the caller acts on.
+test('isTransientError treats server/network hiccups as transient', () => {
+  for (const c of ['server_busy', 'auth_unavailable', 'Internal error', 'network_error',
+    'no_fetch', 'server_returned_html', 'json_parse_error', 'body_read_error',
+    'http_500', 'http_503', 'http_599']) {
+    assert.equal(isTransientError(c), true, `${c} is transient`);
+  }
+});
+
+test('isTransientError treats authoritative verdicts as NOT transient', () => {
+  for (const c of ['needs_approval', 'not_found', 'forbidden', 'unauthorized',
+    'email_not_enrolled', 'needs_completion', 'http_400', 'http_404', 'http_429', '', null, undefined]) {
+    assert.equal(isTransientError(c), false, `${JSON.stringify(c)} is not transient`);
+  }
+});
 
 test('trail facade exposes every public method', () => {
   const expected = [
