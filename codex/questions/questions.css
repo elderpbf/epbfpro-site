@@ -1112,12 +1112,11 @@
 /* QR is always present; without a linked turma it reads as disabled (still clickable, explains why). */
 .cdx-host-qr { display: inline-flex; align-items: center; gap: 5px; }
 .cdx-host-qr.is-disabled { opacity: 0.45; }
-/* is-live = window open (countdown running, even if the QR is hidden on the display):
-   the button carries the time. is-on = the QR is actually projected: a stronger glow. */
-.cdx-host-qr.is-live { border-color: var(--success); color: var(--success); }
+/* is-live = the entry window is OPEN: the button is a clean color toggle (filled), no
+   visible timer (track-36 f-UI). is-on = the QR is actually projected: a stronger glow.
+   Tokens only, so the on-color follows the light/dark theme. */
+.cdx-host-qr.is-live { border-color: var(--success); color: var(--success); background: rgba(16,185,129,.14); }
 .cdx-host-qr.is-on { box-shadow: 0 0 0 2px rgba(16,185,129,.18); }
-.cdx-host-qr-rem { font-variant-numeric: tabular-nums; font-size: .78rem; font-weight: 600; }
-.cdx-host-qr-rem:empty { display: none; }
 
 /* Trilha modal */
 .cdx-trail-modal { position: fixed; inset: 0; background: rgba(0,0,0,.5); display: none; align-items: center; justify-content: center; z-index: 200; }

@@ -18,7 +18,7 @@ import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
-import { clockOffset, remainingSec, fmtRemain } from '../js/enroll-clock.js';
+import { clockOffset, remainingSec } from '../js/enroll-clock.js';
 import { isProjecting, toggleProjection } from '../js/enroll-control.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
@@ -124,8 +124,7 @@ function _barMarkup() {
       '</details>' +
       '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
       '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden aria-label="' + _esc(t('questions.host_qr')) + '" title="' + _esc(t('questions.host_qr')) + '">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg>' +
-        '<span class="cdx-host-qr-rem"></span></button>' +
+        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg></button>' +
       '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
       '<button class="cdx-btn cdx-btn-primary cdx-host-start" id="cdx-host-start" data-act="start" type="button" hidden>' + _esc(t('questions.host_start')) + '</button>' +
       '<button class="cdx-btn cdx-btn-danger cdx-host-stop" id="cdx-host-stop" data-act="stop" type="button" hidden>' + _esc(t('questions.host_stop')) + '</button>' +
@@ -403,15 +402,10 @@ function _paintEnrollBtn() {
   const open = !!(_enrollState && _enrollState.open);
   const projecting = isProjecting(_enrollState);
   qr.classList.toggle('is-on', projecting); // QR is projected on the display
-  qr.classList.toggle('is-live', open);     // window is open (countdown running) even if the QR is hidden
-  // Hover shows the access code, not just the word "QR" (Élder): "QR: 1561".
+  qr.classList.toggle('is-live', open);     // window is open (its color-toggle is ON) even if the QR is hidden
+  // No visible countdown on the button (Élder, track-36 f-UI): it's a clean color toggle.
+  // Hover still surfaces the access code so the host can read it out: "QR: 1561".
   qr.title = (open && _enrollState.access_code) ? ('QR: ' + _enrollState.access_code) : 'QR';
-  const rem = qr.querySelector('.cdx-host-qr-rem');
-  if (!rem) return;
-  if (open && _enrollState.enrollment_expires_at) {
-    const left = remainingSec(_enrollState.enrollment_expires_at, _enrollOffset, Math.floor(Date.now() / 1000));
-    rem.textContent = left > 0 ? fmtRemain(left) : '';
-  } else rem.textContent = '';
 }
 
 function _loadEnrollState() {
