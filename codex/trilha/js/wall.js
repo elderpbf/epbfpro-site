@@ -255,11 +255,13 @@ function renderRegister(wall) {
 
   // Validated, but a NEW student is pending the instructor's approval (the e-sino). No action for
   // the student here; the approval poll unlocks the page the moment Élder approves.
+  // Reuses the EXISTING pending message (renderPending / login.pending_*), not a new one — the
+  // poll unlocks this card in place when the instructor approves in the e-sino.
   function renderPendingApproval() {
     cardEl.innerHTML =
       '<div class="cdx-en-wait-ic" aria-hidden="true">⏳</div>' +
-      '<h3 class="cdx-en-card-h">' + esc(t('wall.pending_approval_h')) + '</h3>' +
-      '<p class="cdx-en-card-s">' + esc(t('wall.pending_approval_sub')) + '</p>';
+      '<h3 class="cdx-en-card-h">' + esc(t('login.pending_title')) + '</h3>' +
+      '<p class="cdx-en-card-s">' + esc(t('login.pending_body')) + '</p>';
   }
 
   // Drive the locked cadence for whichever poll the state calls for. A state change re-renders via

@@ -66,6 +66,14 @@
 .cdx-en-namefield.hidden { display: none; }
 /* Waiting states (check-your-e-mail / pending approval): a centred emoji glyph above the copy. */
 .cdx-en-wait-ic { font-size: 2.2rem; text-align: center; margin: .2rem 0 .5rem; }
+/* Magic-link confirmation overlay (track-36): shown ON TOP of the trilha for a recent link click.
+   Tokens carry the light/dark values. */
+.cdx-tr-validated { position: fixed; inset: 0; z-index: 300; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,.5); padding: 1.2rem; }
+.cdx-tr-validated-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; max-width: 380px; width: 100%; padding: 1.6rem 1.4rem; text-align: center; box-shadow: 0 18px 48px -22px var(--shadow); }
+.cdx-tr-validated-ic { width: 44px; height: 44px; margin: 0 auto .6rem; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 1.35rem; font-weight: 800; background: rgba(16,185,129,.14); color: var(--success); }
+.cdx-tr-validated-h { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .4rem; }
+.cdx-tr-validated-s { font-size: .85rem; color: var(--text-secondary); line-height: 1.5; margin: 0 0 1.1rem; }
+.cdx-tr-validated-cta { width: 100%; justify-content: center; }
 
 /* Collapse-to-button toggle: shown only when the layout is stacked (mobile).
    Look comes from tr-btn tr-btn-primary cdx-btn in JS; layout only kept here. */

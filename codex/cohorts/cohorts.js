@@ -1390,8 +1390,9 @@ function _renderDossier(turma) {
       .catch(() => { /* best-effort; the button still toggles on click */ });
   }
 
-  // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
-  // fires eagerly on mount, so switching is pure show/hide.
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. Loaders fire eagerly on
+  // mount, so switching is pure show/hide — EXCEPT Participantes, which we re-fetch on open so the
+  // list reflects live approvals/validations without a full-page refresh (cheap: one call, no poll).
   const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
   const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
   _dtabs.forEach((tab) => tab.addEventListener('click', () => {
@@ -1399,6 +1400,7 @@ function _renderDossier(turma) {
     _dossierDtab = key;   // remember it, so an async re-render (deps load) keeps this tab
     _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
     _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
+    if (key === 'participantes') _loadDossierParticipants(turma);
   }));
 
   _wireDossierInlineEdit(el, turma);

@@ -88,8 +88,10 @@ export async function mount(root, ctx = {}) {
 
   // Magic-link return (track-36): the emailed validation link lands here as ?lt=<token>. Consume
   // it BEFORE fetching the view, so the session is set and content loads approved (or the pending
-  // wall shows). auth_verify marks the e-mail validated + mints the session on this device.
-  if (LOGIN_ENABLED) await consumeMagicToken(loc, api);
+  // wall shows). auth_verify marks the e-mail validated + mints the session on this device. A
+  // RECENT click (the original "aguardando validação" page is likely still open, polling) gets a
+  // simple "return to your tab" overlay ON TOP of the trilha; a later click just opens the trilha.
+  const _magic = LOGIN_ENABLED ? await consumeMagicToken(loc, api) : null;
 
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
@@ -139,6 +141,9 @@ export async function mount(root, ctx = {}) {
       if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
     }
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
+    // A recent magic-link click: overlay the "validated, go back to your tab" card ON TOP of the
+    // now-rendered trilha (the original page unlocks itself via its poll). A stale click skipped this.
+    if (_magic && _magic.validated && _magic.recent) _showValidatedOverlay(root);
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER
     // handleEnrollReturn has consumed any ?et=. Skipped when we already entered via the code.
@@ -362,17 +367,26 @@ function avatarInitials(name) {
 // pending newcomer just gets a walled session and lands on the pending wall. The token is
 // single-use; strip it from the URL so a refresh can't replay it. Best-effort throughout — a
 // bad/expired link falls through to the wall rather than erroring.
+// A click within 15 min of the request means the original "aguardando validação" page is likely
+// still open + polling, so we overlay the confirmation instead of taking over the tab.
+const MAGIC_RECENT_SECONDS = 15 * 60;
+
 async function consumeMagicToken(loc, api) {
   let lt = null;
   try { lt = new URLSearchParams((loc && loc.search) || '').get('lt'); } catch (_) { lt = null; }
-  if (!lt) return;
+  if (!lt) return { validated: false, recent: false };
+  let validated = false, recent = false;
   try {
     const res = await api.authVerify({
       token: lt,
       presence_token: getPresence(state.clientSlug, state.turmaSlug) || undefined,
       _silent: true,
     });
-    if (res && res.ok && res.session_token) setToken(state.clientSlug, state.turmaSlug, res.session_token);
+    if (res && res.ok && res.session_token) {
+      setToken(state.clientSlug, state.turmaSlug, res.session_token);
+      validated = true;
+      recent = typeof res.link_age_seconds === 'number' && res.link_age_seconds <= MAGIC_RECENT_SECONDS;
+    }
   } catch (_) { /* bad/expired link -> fall through to the wall */ }
   try {
     if (_win && _win.history && _win.history.replaceState) {
@@ -381,6 +395,27 @@ async function consumeMagicToken(loc, api) {
       _win.history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
     }
   } catch (_) { /* strip is best-effort */ }
+  return { validated, recent };
+}
+
+// The magic-link confirmation overlay (track-36): rendered ON TOP of the trilha for a recent click.
+// It only says "validated, go back to the tab where you asked for access" (that page unlocks itself
+// via its poll), with a button to use THIS tab instead. A later click never sees it, landing straight
+// in the trilha.
+function _showValidatedOverlay(root) {
+  if (!root || root.querySelector('.cdx-tr-validated')) return;
+  const ov = document.createElement('div');
+  ov.className = 'cdx-tr-validated';
+  ov.innerHTML =
+    '<div class="cdx-tr-validated-card">' +
+      '<div class="cdx-tr-validated-ic" aria-hidden="true">✓</div>' +
+      '<h2 class="cdx-tr-validated-h">' + esc(t('login.validated_title')) + '</h2>' +
+      '<p class="cdx-tr-validated-s">' + esc(t('login.validated_body')) + '</p>' +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-tr-validated-cta">' + esc(t('login.validated_cta')) + '</button>' +
+    '</div>';
+  root.appendChild(ov);
+  const cta = ov.querySelector('.cdx-tr-validated-cta');
+  if (cta) cta.addEventListener('click', () => ov.remove());
 }
 
 function handleEnrollReturn(loc) {
