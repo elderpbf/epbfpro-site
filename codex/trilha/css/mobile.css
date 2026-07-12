@@ -27,13 +27,99 @@
   .cdx-tr-item-action .cdx-tr-ia-label-short { display: inline; }
   .cdx-tr-item-action { padding: 0.4rem 0.6rem; }
   .cdx-tr-item-action svg { width: 15px; height: 15px; }
+}
 
-  .cdx-tr-tab-btn { padding: 0.6rem 0.85rem; font-size: 0.8rem; }
+/* ── Bottom pill nav (mobile only): the tab bar detaches from the top underline
+   strip and floats as a rounded pill above the safe area, icon-over-label, the
+   active tab filled solid, the "flutuante" mock Élder picked (mocks/trilha-tabs/b2.html).
+   Desktop is UNCHANGED (still the top underline bar in trilha.css); only the ≤700px
+   layout/paint is overridden here, so no JS/markup change was needed, same buttons,
+   same click handlers, same .active class, just repainted. ─────────────────────── */
+@media (max-width: 700px) {
+  .cdx-trilha-page { padding-bottom: 5.5rem; }
+
+  .cdx-trilha-tabs {
+    position: fixed;
+    left: 12px;
+    right: 12px;
+    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    z-index: 40;
+    margin: 0;
+    padding: 6px;
+    gap: 2px;
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 26px;
+    box-shadow: 0 12px 30px var(--shadow, rgba(0, 0, 0, 0.18));
+  }
+  .cdx-trilha-tabs-left, .cdx-trilha-tabs-right {
+    display: contents; /* flattens both groups into one flex row on the nav */
+  }
+  .cdx-tr-tab-btn {
+    flex: 1 1 0;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 3px;
+    padding: 8px 2px 6px;
+    margin-bottom: 0;
+    border-bottom: none;
+    border-radius: 20px;
+    font-size: 0.62rem;
+    white-space: normal;
+    line-height: 1.15;
+  }
+  .cdx-tr-tab-btn.active {
+    background: var(--primary);
+    color: #fff;
+    border-bottom-color: transparent;
+  }
+  .cdx-tr-tab-btn::before {
+    content: '';
+    display: block;
+    width: 20px;
+    height: 20px;
+    background-color: currentColor;
+    -webkit-mask-repeat: no-repeat;
+    mask-repeat: no-repeat;
+    -webkit-mask-position: center;
+    mask-position: center;
+    -webkit-mask-size: contain;
+    mask-size: contain;
+  }
+  .cdx-tr-tab-btn[data-tab="aulas"]::before {
+    /* Byte-exact port of the mock's Aulas icon path (mocks/trilha-tabs/b2.html): M4 6h16M4 12h16M4 18h10. */
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h10'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h10'/%3E%3C/svg%3E");
+  }
+  .cdx-tr-tab-btn[data-tab="tarefas"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 11 12 14 22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 11 12 14 22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
+  }
+  .cdx-tr-tab-btn[data-tab="forum"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3Cline x1='8' y1='9' x2='16' y2='9'/%3E%3Cline x1='8' y1='13' x2='13' y2='13'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3Cline x1='8' y1='9' x2='16' y2='9'/%3E%3Cline x1='8' y1='13' x2='13' y2='13'/%3E%3C/svg%3E");
+  }
+  .cdx-tr-tab-btn[data-tab="apostila"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
+  }
+  .cdx-tr-tab-btn[data-tab="outros"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
+  }
+  .cdx-tr-tab-btn[data-tab="apps"]::before {
+    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7'/%3E%3Crect x='14' y='3' width='7' height='7'/%3E%3Crect x='14' y='14' width='7' height='7'/%3E%3Crect x='3' y='14' width='7' height='7'/%3E%3C/svg%3E");
+    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7'/%3E%3Crect x='14' y='3' width='7' height='7'/%3E%3Crect x='14' y='14' width='7' height='7'/%3E%3Crect x='3' y='14' width='7' height='7'/%3E%3C/svg%3E");
+  }
+
+  /* The back-to-timeline pill (focus mode) sits above the fixed nav, not under it. */
+  .cdx-tr-back-pill { margin-bottom: 0.75rem; }
 }
 
 @media (max-width: 360px) {
   .cdx-tr-client-name { font-size: 1.25rem; }
-  .cdx-tr-tab-btn { padding: 0.55rem 0.65rem; font-size: 0.75rem; }
+  .cdx-tr-tab-btn { font-size: 0.58rem; }
 }
 
 /* ── Focus mode (mobile only): single-open accordion ─────── */

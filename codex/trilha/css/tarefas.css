@@ -1,0 +1,132 @@
+/* =========================================================
+   Codex · Trilha · Tarefas tab (track-26 item 2). /port of the chosen
+   "flutuante" mock (backstage/mocks/trilha-tabs/b2.html): card shapes and
+   spacing copied verbatim, colors mapped onto the real theme tokens (never
+   the mock's hardcoded hex) so light+dark both follow the app theme.
+   ========================================================= */
+
+.cdx-tt-login,
+.cdx-tt-wrap .cdx-tr-empty { padding: 1.5rem 0; }
+
+.cdx-tt-head {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  margin-bottom: 1rem;
+}
+.cdx-tt-count {
+  font-size: 1.05rem;
+  color: var(--text-primary);
+  margin: 0;
+}
+.cdx-tt-pending-pill {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 20px;
+  padding: 0.15rem 0.6rem;
+}
+
+.cdx-tt-group { margin-bottom: 1.25rem; }
+.cdx-tt-group-label {
+  font-size: 0.7rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  font-weight: 600;
+  margin-bottom: 0.5rem;
+}
+
+.cdx-tt-card {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  overflow: hidden;
+  margin-bottom: 0.6rem;
+}
+.cdx-tt-top {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  padding: 0.75rem 0.9rem;
+}
+.cdx-tt-card[data-tt-open], .cdx-tt-top[data-tt-open] { cursor: pointer; }
+.cdx-tt-info { min-width: 0; }
+.cdx-tt-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+.cdx-tt-sub {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  margin-top: 0.1rem;
+}
+.cdx-tt-badge {
+  margin-left: auto;
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.25rem 0.6rem;
+  border-radius: 20px;
+  white-space: nowrap;
+}
+.cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }
+.cdx-tt-badge--sent     { color: var(--info); background: var(--info-bg); }
+.cdx-tt-badge--graded   { color: var(--success); background: var(--success-bg); }
+
+.cdx-tt-body {
+  padding: 0.1rem 0.9rem 0.9rem;
+  border-top: 1px dashed var(--border);
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.cdx-tt-field .cdx-tt-fl {
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  font-weight: 600;
+  margin-bottom: 0.2rem;
+}
+.cdx-tt-field .cdx-tt-fv {
+  font-size: 0.85rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  white-space: pre-wrap;
+}
+.cdx-tt-grade {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  background: var(--success-bg);
+  border: 1px solid var(--success);
+  border-radius: 10px;
+  padding: 0.55rem 0.75rem;
+}
+.cdx-tt-grade-num {
+  font-family: 'Comfortaa', cursive;
+  font-weight: 700;
+  font-size: 1.2rem;
+  color: var(--success);
+}
+.cdx-tt-grade-note {
+  font-size: 0.78rem;
+  color: var(--text-secondary);
+  line-height: 1.4;
+}
+.cdx-tt-gate {
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  font-style: italic;
+  padding-top: 0.15rem;
+  border-top: 1px dashed var(--border);
+}

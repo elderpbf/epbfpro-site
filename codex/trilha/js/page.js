@@ -27,7 +27,7 @@ import { overlayLabItems } from './lab-overlay.js';
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
 
-const PANELS = ['aulas', 'forum', 'apostila', 'outros', 'apps'];
+const PANELS = ['aulas', 'tarefas', 'forum', 'apostila', 'outros', 'apps'];
 
 // Which panel a location hash selects (default 'aulas').
 export function resolveTab(hash) {
@@ -517,9 +517,14 @@ function renderTabs(root) {
   const apostilaBtn = root.querySelector('#cdx-tr-tab-apostila');
   const forumBtn = root.querySelector('#cdx-tr-tab-forum');
   const appsBtn = root.querySelector('#cdx-tr-tab-apps');
+  const tarefasBtn = root.querySelector('#cdx-tr-tab-tarefas');
 
   // The Fórum tab shows only when the turma enabled it.
   if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
+
+  // The Tarefas tab shows only when at least one tarefa is revealed (same rule as
+  // Apostila/Outros below); the panel itself gates on login, like Fórum.
+  if (tarefasBtn) tarefasBtn.hidden = !items.some((it) => it.type === 'tarefa');
 
   // Aplicativos tab: shows only when the turma has at least one app whose lesson has
   // occurred (the backend already applied that happened-gate to data.apps). With exactly

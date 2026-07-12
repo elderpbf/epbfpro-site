@@ -34,7 +34,8 @@
 <link rel="stylesheet" href="/codex/css/notif-bell.css?v=1.4">
 <link rel="stylesheet" href="/codex/trilha/css/nexo.css?v=1.3">
 <link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.5">
-<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/tarefas.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.1">
 <link rel="stylesheet" href="/css/support-entry.css?v=1">
 
 <script src="/codex/js/debug.js?v=2.5"></script>
@@ -78,6 +79,7 @@
     <nav class="cdx-trilha-tabs" role="tablist">
       <div class="cdx-trilha-tabs-left">
         <button class="cdx-tr-tab-btn active" role="tab" data-tab="aulas" aria-selected="true" data-i18n="page.tab_aulas">Aulas</button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="tarefas" aria-selected="false" id="cdx-tr-tab-tarefas" data-i18n="page.tab_tarefas" hidden>Tarefas</button>
         <button class="cdx-tr-tab-btn" role="tab" data-tab="forum" aria-selected="false" id="cdx-tr-tab-forum" data-i18n="page.tab_forum" hidden>Fórum</button>
         <button class="cdx-tr-tab-btn" role="tab" data-tab="outros" aria-selected="false" id="cdx-tr-tab-outros" hidden>Outros materiais</button>
       </div>
@@ -93,6 +95,11 @@
       <div class="cdx-trilha-panel" data-panel="aulas">
         <button id="cdx-tr-back-pill" class="cdx-tr-back-pill" type="button">&lsaquo; Voltar à trilha</button>
         <div id="cdx-tr-aulas-timeline" class="cdx-tr-timeline"></div>
+      </div>
+
+      <!-- TAREFAS -->
+      <div class="cdx-trilha-panel" data-panel="tarefas" hidden>
+        <div id="cdx-tr-tarefas-root"></div>
       </div>
 
       <!-- FÓRUM -->
@@ -134,6 +141,7 @@
   import * as glyphs from '/codex/js/glyphs.js';
   import { mount } from '/codex/trilha/js/page.js';
   import '/codex/trilha/js/aulas.js'; // self-registers the 'aulas' panel renderer
+  import '/codex/trilha/js/tarefas.js'; // self-registers the 'tarefas' panel renderer
   import '/codex/trilha/js/forum.js'; // self-registers the 'forum' panel renderer
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
   import '/codex/trilha/js/apps.js';  // self-registers the 'apps' panel renderer

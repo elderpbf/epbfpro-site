@@ -29,6 +29,10 @@
   --success-bg: #ecfdf5;
   --error: #ef4444;
   --error-bg: #fef2f2;
+  --amber: #b45309;
+  --amber-bg: #fef3c7;
+  --info: #0369a1;
+  --info-bg: #e0f2fe;
   --option-hover-bg: #fdf6ec;
   --option-selected-bg: #fdf6ec;
   --status-live-bg: #1a3a1a;
@@ -64,6 +68,10 @@
   --success-bg: #064e3b;
   --error: #f87171;
   --error-bg: #7f1d1d;
+  --amber: #fbbf24;
+  --amber-bg: #451a03;
+  --info: #38bdf8;
+  --info-bg: #0c4a6e;
   --option-hover-bg: rgba(20, 184, 166, 0.15);
   --option-selected-bg: rgba(20, 184, 166, 0.25);
   --status-live-bg: #065f46;
