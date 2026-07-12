@@ -36,42 +36,50 @@
    layout/paint is overridden here, so no JS/markup change was needed, same buttons,
    same click handlers, same .active class, just repainted. ─────────────────────── */
 @media (max-width: 700px) {
-  .cdx-trilha-page { padding-bottom: 5.5rem; }
+  .cdx-trilha-page { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
 
   .cdx-trilha-tabs {
     position: fixed;
-    left: 12px;
-    right: 12px;
-    bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+    left: 0;
+    right: 0;
+    bottom: 0;
     z-index: 40;
     margin: 0;
-    padding: 6px;
-    gap: 2px;
+    padding: 5px 2px calc(5px + env(safe-area-inset-bottom, 0px));
+    gap: 0;
     background: var(--surface);
-    border: 1px solid var(--border);
-    border-radius: 26px;
-    box-shadow: 0 12px 30px var(--shadow, rgba(0, 0, 0, 0.18));
+    border: none;
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 14px var(--shadow, rgba(0, 0, 0, 0.12));
+    overflow: visible;
   }
   .cdx-trilha-tabs-left, .cdx-trilha-tabs-right {
     display: contents; /* flattens both groups into one flex row on the nav */
   }
   .cdx-tr-tab-btn {
     flex: 1 1 0;
+    min-width: 0;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
-    padding: 8px 2px 6px;
+    padding: 5px 2px;
     margin-bottom: 0;
     border-bottom: none;
-    border-radius: 20px;
+    border-radius: 10px;
+    font-size: 0; /* hide the long text node; the short label comes from ::after (data-short) */
+    color: var(--text-secondary);
+  }
+  .cdx-tr-tab-btn::after {
+    content: attr(data-short);
     font-size: 0.62rem;
-    white-space: normal;
-    line-height: 1.15;
+    font-weight: 600;
+    line-height: 1;
+    white-space: nowrap;
   }
   .cdx-tr-tab-btn.active {
-    background: var(--primary);
-    color: #fff;
+    color: var(--primary);
+    background: none;
     border-bottom-color: transparent;
   }
   .cdx-tr-tab-btn::before {
@@ -119,7 +127,7 @@
 
 @media (max-width: 360px) {
   .cdx-tr-client-name { font-size: 1.25rem; }
-  .cdx-tr-tab-btn { font-size: 0.58rem; }
+  .cdx-tr-tab-btn::after { font-size: 0.56rem; } /* tighter short label on the narrowest phones */
 }
 
 /* ── Focus mode (mobile only): single-open accordion ─────── */

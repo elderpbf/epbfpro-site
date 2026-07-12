@@ -24,21 +24,38 @@ export function countLabel(n) {
   return n + ' ' + (n === 1 ? t('tarefas.one') : t('tarefas.many'));
 }
 
-// Group tarefas by aula_number, most recent aula first; unbound (null) last.
-export function groupByAula(tarefas) {
-  const nums = [];
-  const byNum = new Map();
+// PURE. Sort tarefas by aula ascending (course order, matching the Aulas timeline); an unbound
+// tarefa (aula_number null) sorts last. Returns a copy.
+export function sortByAula(tarefas) {
+  return (tarefas || []).slice().sort((a, b) => {
+    const an = a.aula_number, bn = b.aula_number;
+    if (an == null && bn == null) return 0;
+    if (an == null) return 1;
+    if (bn == null) return -1;
+    return an - bn;
+  });
+}
+
+// PURE. True when at least one aula holds more than one tarefa. This is the trigger (Élder) for
+// switching from a plain flat list to status sections: don't add section headers until an aula
+// has real volume, otherwise they are just noise over single cards.
+export function anyAulaHasMultiple(tarefas) {
+  const counts = new Map();
   (tarefas || []).forEach((tf) => {
-    const key = tf.aula_number == null ? null : tf.aula_number;
-    if (!byNum.has(key)) { byNum.set(key, []); nums.push(key); }
-    byNum.get(key).push(tf);
+    const k = tf.aula_number == null ? 'null' : tf.aula_number;
+    counts.set(k, (counts.get(k) || 0) + 1);
   });
-  nums.sort((a, b) => {
-    if (a == null) return 1;
-    if (b == null) return -1;
-    return b - a;
-  });
-  return nums.map((n) => ({ aulaNumber: n, tarefas: byNum.get(n) }));
+  for (const n of counts.values()) if (n > 1) return true;
+  return false;
+}
+
+// PURE. Partition into the three status sections in action-first order (pending, then submitted,
+// then reviewed), each sorted by aula ascending. Empty sections are dropped.
+const STATUS_ORDER = ['a_enviar', 'enviada', 'corrigida'];
+export function statusGroups(tarefas) {
+  return STATUS_ORDER
+    .map((status) => ({ status, tarefas: sortByAula((tarefas || []).filter((tf) => tf.state === status)) }))
+    .filter((g) => g.tarefas.length);
 }
 
 // PURE. answer_json is always a JSON-encoded value (string | object); render it as text.
@@ -77,23 +94,35 @@ export async function renderMyTarefas(root) {
   paintList();
 }
 
+function statusLabel(status) {
+  if (status === 'a_enviar') return t('tarefas.section_pending');
+  if (status === 'enviada') return t('tarefas.section_sent');
+  return t('tarefas.section_graded');
+}
+
 function paintList() {
   if (!_tarefas.length) {
     _root.innerHTML = '<div class="cdx-tr-empty">' + esc(t('tarefas.empty')) + '</div>';
     return;
   }
+  const aulas = (state.data || {}).aulas || [];
   const pending = _tarefas.filter((tf) => tf.state === 'a_enviar').length;
-  const groups = groupByAula(_tarefas);
   let html = '<div class="cdx-tt-wrap">';
   html += '<div class="cdx-tt-head"><h2 class="cdx-tt-count">' + esc(countLabel(_tarefas.length)) + '</h2>';
   if (pending) html += '<span class="cdx-tt-pending-pill">' + pending + ' ' + esc(t('tarefas.pending_suffix')) + '</span>';
   html += '</div>';
-  const aulas = (state.data || {}).aulas || [];
-  groups.forEach((g) => {
-    html += '<div class="cdx-tt-group"><div class="cdx-tt-group-label">' + esc(aulaLabel(g.aulaNumber, aulas)) + '</div>';
-    g.tarefas.forEach((tf) => { html += cardHtml(tf); });
-    html += '</div>';
-  });
+  if (anyAulaHasMultiple(_tarefas)) {
+    // Enough volume: group into status sections (pending first), each in course order.
+    statusGroups(_tarefas).forEach((g) => {
+      html += '<div class="cdx-tt-section"><div class="cdx-tt-section-label">' + esc(statusLabel(g.status)) +
+        '<span class="cdx-tt-section-count">' + g.tarefas.length + '</span></div>';
+      g.tarefas.forEach((tf) => { html += cardHtml(tf, aulas); });
+      html += '</div>';
+    });
+  } else {
+    // Few tarefas: a plain flat list in course order, no section headers (Élder).
+    sortByAula(_tarefas).forEach((tf) => { html += cardHtml(tf, aulas); });
+  }
   html += '</div>';
   _root.innerHTML = html;
   wireList();
@@ -132,13 +161,16 @@ function bodyHtml(tarefa) {
   return html;
 }
 
-function cardHtml(tarefa) {
+function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
   const expandable = tarefa.state === 'corrigida';
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
     '<div class="cdx-tt-top"' + (tarefa.state !== 'enviada' ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
-      '<div class="cdx-tt-info"><div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
-      '<div class="cdx-tt-sub">' + esc(subHtml(tarefa, open)) + '</div></div>' +
+      '<div class="cdx-tt-info">' +
+        '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
+        '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
+        '<div class="cdx-tt-sub">' + esc(subHtml(tarefa, open)) + '</div>' +
+      '</div>' +
       badgeHtml(tarefa) +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +

@@ -543,7 +543,12 @@ function renderTabs(root) {
   }
   if (apostilaBtn) apostilaBtn.hidden = !apostilaCount;
 
+  // Short labels for the mobile fixed bottom nav (the full labels wrap at ≤700px). The CSS hides
+  // the button's text node and draws data-short via ::after; set it from i18n so pt/en both work.
   root.querySelectorAll('.cdx-tr-tab-btn').forEach((btn) => {
+    const key = 'page.tabshort_' + btn.dataset.tab;
+    const short = t(key);
+    if (short && short !== key) btn.setAttribute('data-short', short);
     btn.addEventListener('click', () => {
       if (_win) _win.location.hash = '#' + btn.dataset.tab;
       else onHashChange(btn.dataset.tab);

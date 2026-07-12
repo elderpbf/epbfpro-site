@@ -28,15 +28,37 @@
   padding: 0.15rem 0.6rem;
 }
 
-.cdx-tt-group { margin-bottom: 1.25rem; }
-.cdx-tt-group-label {
+/* Status section (only rendered when an aula has >1 tarefa; otherwise the list is flat). */
+.cdx-tt-section { margin-bottom: 1.25rem; }
+.cdx-tt-section-label {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
   font-size: 0.7rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-secondary);
-  opacity: 0.85;
-  font-weight: 600;
+  opacity: 0.9;
+  font-weight: 700;
   margin-bottom: 0.5rem;
+}
+.cdx-tt-section-count {
+  font-size: 0.65rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 20px;
+  padding: 0.05rem 0.45rem;
+}
+/* Per-card aula chip (replaces the old aula group header in the flat list). */
+.cdx-tt-aula {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  opacity: 0.8;
+  font-weight: 600;
+  margin-bottom: 0.15rem;
 }
 
 .cdx-tt-card {

@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { aulaLabel, countLabel, groupByAula, answerText } from '../trilha/js/tarefas.js';
+import { aulaLabel, countLabel, sortByAula, anyAulaHasMultiple, statusGroups, answerText } from '../trilha/js/tarefas.js';
 import { resolveTab } from '../trilha/js/page.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
@@ -27,22 +27,41 @@ test('aulaLabel: null (unbound) resolves to the "no aula" bucket', () => {
 test('countLabel: singular', () => assert.equal(countLabel(1), '1 tarefa'));
 test('countLabel: plural', () => assert.equal(countLabel(3), '3 tarefas'));
 
-// ── groupByAula (most recent aula first, unbound last) ───────────────────────
-test('groupByAula: orders aula groups descending, null bucket last', () => {
+// ── sortByAula (course order ascending, unbound last) ────────────────────────
+test('sortByAula: ascending by aula, null (unbound) last', () => {
   const tarefas = [
-    { item_id: 1, aula_number: 1 },
-    { item_id: 2, aula_number: 3 },
-    { item_id: 3, aula_number: null },
+    { item_id: 1, aula_number: 3 },
+    { item_id: 2, aula_number: null },
+    { item_id: 3, aula_number: 1 },
     { item_id: 4, aula_number: 2 },
   ];
-  const groups = groupByAula(tarefas);
-  assert.deepEqual(groups.map((g) => g.aulaNumber), [3, 2, 1, null]);
+  assert.deepEqual(sortByAula(tarefas).map((t) => t.item_id), [3, 4, 1, 2]);
 });
-test('groupByAula: keeps every tarefa for its aula group', () => {
-  const tarefas = [{ item_id: 1, aula_number: 1 }, { item_id: 2, aula_number: 1 }];
-  const groups = groupByAula(tarefas);
-  assert.equal(groups.length, 1);
-  assert.equal(groups[0].tarefas.length, 2);
+test('sortByAula: returns a copy, does not mutate the input', () => {
+  const tarefas = [{ item_id: 1, aula_number: 2 }, { item_id: 2, aula_number: 1 }];
+  const out = sortByAula(tarefas);
+  assert.notEqual(out, tarefas);
+  assert.equal(tarefas[0].item_id, 1); // original order untouched
+});
+
+// ── anyAulaHasMultiple (the flat-vs-sections trigger) ────────────────────────
+test('anyAulaHasMultiple: false when every aula has at most one tarefa', () => {
+  assert.equal(anyAulaHasMultiple([{ aula_number: 1 }, { aula_number: 2 }, { aula_number: null }]), false);
+});
+test('anyAulaHasMultiple: true when some aula holds two', () => {
+  assert.equal(anyAulaHasMultiple([{ aula_number: 1 }, { aula_number: 1 }, { aula_number: 2 }]), true);
+});
+
+// ── statusGroups (pending -> submitted -> reviewed, empty dropped, aula asc) ──
+test('statusGroups: orders sections pending, enviada, corrigida and drops empties', () => {
+  const tarefas = [
+    { item_id: 1, aula_number: 2, state: 'corrigida' },
+    { item_id: 2, aula_number: 1, state: 'a_enviar' },
+    { item_id: 3, aula_number: 3, state: 'a_enviar' },
+  ];
+  const groups = statusGroups(tarefas);
+  assert.deepEqual(groups.map((g) => g.status), ['a_enviar', 'corrigida']); // no 'enviada' section
+  assert.deepEqual(groups[0].tarefas.map((t) => t.item_id), [2, 3]); // pending, aula ascending
 });
 
 // ── answerText ────────────────────────────────────────────────────────────────
