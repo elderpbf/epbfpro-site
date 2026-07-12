@@ -20,15 +20,14 @@ import { errMsg as _err } from '../js/content-err.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { mountRail } from '../js/list-rail.js';
 import { markChanges, DIFF_OPEN, DIFF_CLOSE } from '../js/text-diff.js';
+import { markAddedInDom } from '../js/diff-dom.js';
 
-// Word-diff highlight helpers: wrap only the runs that differ from the live value in a
-// <mark>. For plain-text fields (title/summary) escape THEN swap the sentinels; for the
-// rendered body the caller swaps the sentinels on the post-render HTML.
+// Word-diff highlight for PLAIN-TEXT fields (title/summary): escape, then swap the sentinels
+// markChanges left around the changed runs for <mark>. The markdown BODY can't use this (a
+// sentinel breaks block parsing / an inline <mark> can't span blocks); it highlights on the
+// rendered DOM via _applyBodyDiff.
 function _diffText(oldStr, newStr) {
   return _esc(markChanges(oldStr, newStr)).split(DIFF_OPEN).join('<mark class="cdx-diff">').split(DIFF_CLOSE).join('</mark>');
-}
-function _swapDiffMarks(html) {
-  return String(html || '').split(DIFF_OPEN).join('<mark class="cdx-diff">').split(DIFF_CLOSE).join('</mark>');
 }
 
 // ── Module state ──────────────────────────────────────────────────────────────
@@ -420,15 +419,20 @@ function _renderBody(item, diffOldBody) {
   if (!host) return;
   const plain = () => { try { renderItem(item, host, {}); } catch (_) { host.textContent = item.body_md || ''; } };
   if (diffOldBody == null) { plain(); return; }
-  // Diff render: sentinel-wrap the changed words, render, then swap the sentinels for <mark>
-  // on the FINAL HTML. renderMarkdown is async until marked.js is loaded (it shows a
-  // "Carregando..." placeholder first), so the swap must run AFTER marked is present or it
-  // would land on the placeholder and the raw sentinels would survive un-highlighted.
+  // Diff render: render the NEW body clean, render the OLD body off-screen for its text, then
+  // highlight the added words on the rendered DOM (see _applyBodyDiff). renderMarkdown is
+  // async until marked.js loads (a "Carregando..." placeholder first), so wait for marked or
+  // the query for .ctr-prompt-body would miss and nothing would highlight.
   const doDiff = () => {
     try {
-      renderItem(Object.assign({}, item, { body_md: markChanges(diffOldBody, item.body_md || '') }), host, {});
-      host.innerHTML = _swapDiffMarks(host.innerHTML);
-    } catch (_) { plain(); }
+      renderItem(item, host, {});
+      const bodyEl = host.querySelector('.ctr-prompt-body');
+      if (!bodyEl) return;
+      const tmp = document.createElement('div');
+      renderItem(Object.assign({}, item, { body_md: diffOldBody || '' }), tmp, { preview: true });
+      const oldBody = tmp.querySelector('.ctr-prompt-body') || tmp;
+      markAddedInDom(bodyEl, oldBody.textContent || '');
+    } catch (err) { notice.internal(_err(err)); plain(); }
   };
   if (window.marked) { doDiff(); return; }
   const s = document.createElement('script');
