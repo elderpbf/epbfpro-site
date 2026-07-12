@@ -90,19 +90,9 @@ function benefitsHtml() {
   '</div>';
 }
 
-function roadmapHtml() {
-  const rows = wallRoadmapRows((state.data || {}).aulas);
-  if (!rows.length) return '';
-  return '<div class="cdx-en-road-h">' + esc(t('wall.roadmap_h')) + '</div>' +
-    '<div class="cdx-en-road">' +
-      rows.map((r) =>
-        '<div class="cdx-en-road-row">' +
-          '<span class="cdx-en-road-n">' + esc(String(r.number)) + '</span>' +
-          '<span class="cdx-en-road-t">' + esc(r.title) + '</span>' +
-          (r.date ? '<span class="cdx-en-road-d">' + esc(r.date) + '</span>' : '') +
-        '</div>').join('') +
-    '</div>';
-}
+// The aulas roadmap was removed from the login wall (Élder 2026-07-11): the wall shows
+// the benefits + register card only. wallRoadmapRows/shortDate stay (pure, unit-tested)
+// for any future surface that wants the compact roadmap.
 
 // Hide the timeline, mark the page so the scoped phone CSS applies, and render the
 // register (or the pending notice if the student already registered). The hero stays.
@@ -142,7 +132,6 @@ function renderRegister(wall) {
         '<h2 class="cdx-en-lead-h">' + esc(t('wall.lead_title')) + '</h2>' +
         '<p class="cdx-en-lead-s">' + esc(t('wall.lead_sub')) + '</p>' +
         benefitsHtml() +
-        roadmapHtml() +
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg is-open"></div></div>' +
     '</div>' +

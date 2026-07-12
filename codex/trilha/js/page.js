@@ -118,11 +118,13 @@ export async function mount(root, ctx = {}) {
         client_name: rc.display_name || rc.name || '', turma_name: rt.display_name || rt.name || '', k: state.token,
       });
     }
-    // A RECENT magic-link click (the original "aguardando validação" tab is likely still open,
-    // polling and about to unlock itself) shows the clean "e-mail validated" confirmation with the
-    // timeline HIDDEN, not the trail — "Abrir a trilha aqui" reveals it here on demand. Any other
-    // load (stale click, or none) renders the trail straight away.
-    if (_magic && _magic.validated && _magic.recent) renderValidatedNotice(root, loc);
+    // A RECENT magic-link click by an ALREADY-APPROVED student (the original "aguardando validação"
+    // tab is likely still open, polling and about to unlock itself) shows the clean "e-mail validated"
+    // confirmation with the timeline HIDDEN, not the trail — "Abrir a trilha aqui" reveals it on demand.
+    // A student who is validated but STILL PENDING has no access yet, so we do NOT offer that button:
+    // renderTrilhaView drops them straight on the "Acesso em análise" wall. Any other load renders the
+    // trail straight away.
+    if (_magic && _magic.validated && _magic.recent && !isWall((state.data || {}).access)) renderValidatedNotice(root, loc);
     else renderTrilhaView(root, loc);
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
@@ -265,12 +267,14 @@ function renderHeaderActions() {
     // anonymous student on a gated turma just sees the wall. Logged-in logout lives in the
     // settings box (below), so the header carries no login/logout pill either way.
 
-    // Settings box (the initials avatar) whenever the student is logged in on a gated
-    // turma: it carries the logout (ALWAYS) plus the notif prefs (only when the forum is
-    // on, the sole notification source today). The bell shows only with the forum. Header
-    // order: bell + theme toggle stay on the LEFT; the settings gear sits on the RIGHT,
-    // appended AFTER the theme toggle (Élder).
-    if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated) {
+    // Settings box (the initials avatar) + bell: shown ONLY when the student has COMPLETE access —
+    // approved AND e-mail-validated (Élder 2026-07-11). A just-requested/pending student (or a
+    // provisional, not-yet-validated one) holds a walled session but must NOT see the notif prefs /
+    // logout box for access they don't fully have yet. It carries the logout (ALWAYS) plus the notif
+    // prefs (only when the forum is on). Header order: bell + theme toggle on the LEFT; the settings
+    // gear on the RIGHT, appended AFTER the theme toggle (Élder).
+    if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated
+        && data.access.status === 'approved' && data.access.validated) {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
       let bell = null;
       if (data.turma && data.turma.forum_enabled) {

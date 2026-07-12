@@ -7,10 +7,11 @@
 // the e-mailed code is unmistakable.
 import { trail } from './api.js';
 import { t } from '../i18n.js';
-import { esc, cooldownButton } from './utils.js';
-import { createLoginFlow, validateEmail } from './student-login.js';
+import { esc } from './utils.js';
+import { validateEmail } from './student-login.js';
 import { getKnownTurmas, getToken, setToken, forgetTurma } from './student-session.js';
 import { mountEntry } from './support-contact.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 function applyI18n(root) {
   root.querySelectorAll('[data-i18n]').forEach((el) => { el.textContent = t(el.getAttribute('data-i18n')); });
@@ -105,16 +106,21 @@ async function autoEnter(els) {
   if (els.paths) els.paths.hidden = false;
 }
 
-// The e-mail -> OTP flow, rendered inline into the e-mail card. Turma-agnostic: the code
-// proves the address, verify returns every turma it belongs to (all remembered on this
-// device), then we enter the most relevant one — no hub.
+// The e-mail -> magic-link flow, rendered inline into the e-mail card (track-36: the OTP code is
+// retired on the landing; the e-mail now gets the same 15-min validation LINK the wall sends).
+// Turma-agnostic: the worker resolves the address's most-recent turma and we request the link for
+// it. This device polls its poll_token, so a click (here OR on the phone) advances this tab into
+// the turma; the turma page decides access (content / "Acesso em análise" / blocked).
 function startEmail(emailEl, root) {
   if (!emailEl) return;
-  const flow = createLoginFlow({}); // unbound -> verify lands on 'hub' with the turma list
-  let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
-  const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
+  let pollTimer = null;
+  const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
+  // The wall's locked cadence: 2s for the first ~6 calls, then 4/6/10/15s, capped ~30 (~5min).
+  const POLL_CADENCE = [2000, 2000, 2000, 2000, 2000, 2000, 4000, 6000, 10000, 15000];
+  const POLL_MAX = 30;
 
   function renderForm() {
+    clearPoll();
     if (root) root.classList.remove('cdx-entrar-step-code');
     emailEl.innerHTML =
       '<h2 class="cdx-entrar-card-h">' + esc(t('entrar.email_h')) + '</h2>' +
@@ -131,8 +137,7 @@ function startEmail(emailEl, root) {
       if (!email) { err.textContent = t('login.email_invalid'); return; }
       send.disabled = true;
       send.textContent = t('login.sending');
-      // 4a (Élder): e-mail-only fast path. If the address's most-recent turma is SIMPLE, the
-      // worker logs the student in here (no código) and we go straight into the trilha.
+      // e-mail-only fast path: a SIMPLE turma logs in here (no link) and we go straight in.
       let entry;
       try { entry = await trail.emailEntry({ email }); }
       catch (e) { entry = (e && e.data && typeof e.data === 'object') ? e.data : { error: 'error' }; }
@@ -142,15 +147,18 @@ function startEmail(emailEl, root) {
         location.href = buildTurmaUrl({ client_slug: tt.client_slug, turma_slug: tt.turma_slug, k: tt.token });
         return;
       }
-      // Not enrolled, or a hard error: surface it and stop (no código for an unknown e-mail).
-      if (!entry || (!entry.ok && entry.error)) {
+      // Not enrolled, or a hard error: surface it and stop (no link for an unknown e-mail).
+      if (!entry || (!entry.ok && entry.error) || !entry.turma) {
         err.textContent = entryErrorText((entry && entry.error) || 'error');
         send.disabled = false; send.textContent = t('login.enroll_cta'); return;
       }
-      // Enrolled but NOT a simple turma: fall back to the normal OTP código flow.
-      await flow.requestCode(email);
-      if (flow.state === 'code') { if (!flow.codeStillValid) startCooldown(60); renderCode(); return; }
-      err.textContent = entryErrorText(flow.error, flow.retryAfter);
+      // Enrolled (non-simple): send the 15-min validation LINK for the resolved turma.
+      const tt = entry.turma;
+      let res;
+      try { res = await trail.authRequest({ client_slug: tt.client_slug, turma_slug: tt.turma_slug, email, k: tt.token, origin: (typeof location !== 'undefined') ? location.origin : undefined }); }
+      catch (e) { res = (e && e.data && typeof e.data === 'object') ? e.data : { error: 'error' }; }
+      if (res && res.ok) { renderMagicSent(email, tt, res.poll_token, res.dev_magic_token); return; }
+      err.textContent = entryErrorText(res && res.error);
       send.disabled = false;
       send.textContent = t('login.enroll_cta');
     };
@@ -158,62 +166,53 @@ function startEmail(emailEl, root) {
     input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doSend(); });
   }
 
-  function renderCode() {
-    if (root) root.classList.add('cdx-entrar-step-code'); // hide the código card; focus the e-mailed code
-    const dev = flow.devCode
-      ? '<p class="cdx-entrar-dev"><strong>' + esc(t('login.dev_code')) + '</strong> ' + esc(flow.devCode) + '</p>'
+  // Link sent: "confira seu e-mail". This device polls its poll_token, so a click (here or on
+  // another device) advances this tab into the turma; "Já validei" re-checks NOW. A dev link shows
+  // on staging (no e-mail provider), exactly like the wall.
+  function renderMagicSent(email, turma, pollToken, devToken) {
+    if (root) root.classList.add('cdx-entrar-step-code'); // hide the código card; focus the e-mail step
+    const dev = devToken
+      ? '<p class="cdx-entrar-dev"><strong>' + esc(t('login.dev_link')) + '</strong> <a href="/trilha/' + esc(turma.client_slug) + '/' + esc(turma.turma_slug) + '?lt=' + esc(devToken) + '&k=' + esc(turma.token || '') + '">abrir link</a></p>'
       : '';
     emailEl.innerHTML =
-      '<h2 class="cdx-entrar-card-h">' + esc(t('login.code_title')) + '</h2>' +
-      '<p class="cdx-entrar-card-p">' + esc(t('entrar.code_sent')) + ' <strong>' + esc(flow.email || '') + '</strong>.</p>' +
-      '<div class="cdx-entrar-error cdx-entrar-email-error" aria-live="polite"></div>' +
-      '<input class="cdx-entrar-otp cdx-entrar-code-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
+      '<div class="cdx-entrar-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
+      '<h2 class="cdx-entrar-card-h">' + esc(t('wall.check_email_h')) + '</h2>' +
+      '<p class="cdx-entrar-card-p">' + esc(t('wall.check_email_sub')).replace('{email}', esc(email || '')) + '</p>' +
       dev +
-      '<p class="cdx-entrar-card-p cdx-entrar-hint">' + esc(t('login.not_received')) + '</p>' +
-      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-code-verify" type="button">' + esc(t('login.verify')) + '</button>' +
-      '<button class="cdx-entrar-link cdx-entrar-resend" type="button">' + esc(t('login.resend')) + '</button>' +
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-already" type="button">' + esc(t('wall.already_validated')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
-    const input = emailEl.querySelector('.cdx-entrar-code-input');
-    if (flow.devCode) input.value = flow.devCode;
-    const verify = emailEl.querySelector('.cdx-entrar-code-verify');
+    const already = emailEl.querySelector('.cdx-entrar-already');
     const back = emailEl.querySelector('.cdx-entrar-back');
-    const resend = emailEl.querySelector('.cdx-entrar-resend');
-    const err = emailEl.querySelector('.cdx-entrar-email-error');
-    // Reused-code hint: re-entering the e-mail didn't fire a new code — the old one works.
-    if (flow.codeStillValid) { err.classList.add('cdx-entrar-ok'); err.textContent = t('login.code_still_valid'); }
-    const doVerify = async () => {
-      err.textContent = '';
-      verify.disabled = true;
-      await flow.verifyCode(input.value);
-      if (flow.state === 'hub') {
-        const turmas = flow.turmas || [];
-        if (!turmas.length) { err.textContent = t('entrar.no_turmas'); verify.disabled = false; return; }
-        // No hub: enter the first turma (every turma was just remembered on this device,
-        // so switching to another happens inside the trilha).
-        location.href = buildTurmaUrl(turmas[0]);
-        return;
-      }
-      err.textContent = entryErrorText(flow.error, flow.retryAfter);
-      verify.disabled = false;
+
+    const goToTurma = (sessionToken) => {
+      clearPoll();
+      if (sessionToken) setToken(turma.client_slug, turma.turma_slug, sessionToken);
+      location.href = buildTurmaUrl({ client_slug: turma.client_slug, turma_slug: turma.turma_slug, k: turma.token });
     };
-    verify.addEventListener('click', doVerify);
-    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
-    back.addEventListener('click', () => { renderForm(); });
-    // Reenviar: re-request with the e-mail in the flow (no retype), gated to once a minute —
-    // the button counts down ("Reenviar em 59s…") and resumes across re-renders.
-    let cancelCd = cooldownButton(resend, Math.ceil((cooldownUntil - Date.now()) / 1000), t('login.resend'), t('login.resend_in'));
-    resend.addEventListener('click', async () => {
-      if (resend.disabled) return;
-      err.classList.remove('cdx-entrar-ok'); err.textContent = '';
-      await flow.requestCode(flow.email, { resend: true });
-      if (flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); return; }
-      cancelCd();
-      const secs = flow.retryAfter || 60;
-      if (!flow.retryAfter) { if (flow.devCode) input.value = flow.devCode; err.classList.add('cdx-entrar-ok'); err.textContent = t('login.resend_sent'); }
-      startCooldown(secs);
-      cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
+    // Ask the worker whether the link was clicked yet. 'waiting' = not clicked; anything else means
+    // the e-mail is proven (a session was minted for THIS device) -> enter the turma.
+    const checkOnce = async () => {
+      if (!pollToken) return false;
+      let res; try { res = await trail.authPoll({ poll_token: pollToken, _silent: true }); } catch (_) { res = null; }
+      if (res && res.ok && res.status && res.status !== 'waiting') { goToTurma(res.session_token); return true; }
+      return false;
+    };
+    if (pollToken) {
+      let i = 0;
+      const tick = async () => {
+        if (i >= POLL_MAX) return;
+        if (await checkOnce()) return;
+        i += 1;
+        pollTimer = setTimeout(tick, POLL_CADENCE[Math.min(i, POLL_CADENCE.length - 1)]);
+      };
+      pollTimer = setTimeout(tick, POLL_CADENCE[0]);
+    }
+    already.addEventListener('click', async () => {
+      already.disabled = true; already.textContent = t('login.sending');
+      const done = await checkOnce();
+      if (!done) { already.disabled = false; already.textContent = t('wall.already_validated'); }
     });
-    setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
+    back.addEventListener('click', () => { renderForm(); });
   }
 
   renderForm();
