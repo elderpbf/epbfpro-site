@@ -149,8 +149,6 @@ function _loadTarefas(clientSlug, turmaSlug) {
         if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center' });
         _focusItemId = null;
       }
-    } else {
-      _renderList();
     }
   }).catch((err) => {
     const msg = '<div class="cdx-empty">' + t('tarefas.error_loading') + ': ' + _esc((err && err.message) || err) + '</div>';
@@ -159,220 +157,12 @@ function _loadTarefas(clientSlug, turmaSlug) {
   });
 }
 
-// ── List ──────────────────────────────────────────────────────────────────────
-function _renderList() {
-  const listEl = _q('cdx-tarefas-list');
-  const metaEl = _q('cdx-tarefas-meta');
-  if (!listEl) return;
-  if (!_items.length) {
-    listEl.innerHTML = '<div class="cdx-empty">' + t('tarefas.empty') + '</div>';
-    if (metaEl) metaEl.innerHTML = '';
-    return;
-  }
-  if (metaEl) {
-    metaEl.textContent = _items.length + ' ' +
-      _plural(_items.length, t('tarefas.released_one'), t('tarefas.released_many'));
-  }
-  listEl.innerHTML = _items.map(_rowHtml).join('');
-  // Async per-row enrichment: where else the item is released + answer counts.
-  _items.forEach((item) => { _fetchItemTurmas(item.id); _prefetchSubmissionCount(item.id); });
-}
-
-function _rowHtml(item) {
-  const meta = parseMeta(item.meta_json);
-  const anonOk = !!meta.allow_anonymous;
-  const aulaLabel = (item._aula_number != null)
-    ? t('cohorts.aula_label') + ' ' + item._aula_number
-    : t('tarefas.no_aula');
-  const subCount = (_submissions[item.id] && _submissions[item.id].length) || 0;
-  const countCls = subCount === 0 ? 'cdx-tarefa-count is-zero' : 'cdx-tarefa-count';
-  const anonBlock = anonOk ? ''
-    : '<span class="cdx-tarefa-dot">·</span><span class="cdx-tarefa-anon-badge">' + t('tarefas.anon_required') + '</span>';
-  const active = Number(item.id) === Number(_selectedId);
-  return '<div class="cdx-item-row' + (active ? ' is-active' : '') + '" data-item-id="' + _esc(item.id) + '">' +
-    '<span class="cdx-item-type-icon cdx-tarefa-icon">' + glyphSvg('clipboard', { size: 18 }) + '</span>' +
-    '<div class="cdx-item-info">' +
-      '<div class="cdx-item-title">' + _esc(item.title) + '</div>' +
-      '<div class="cdx-item-sub cdx-tarefa-sub">' +
-        '<span>' + _esc(aulaLabel) + '</span>' +
-        '<span class="cdx-tarefa-dot">·</span>' +
-        '<span class="' + countCls + '" data-count="' + _esc(item.id) + '">' +
-          subCount + ' ' + _plural(subCount, t('tarefas.answer_one'), t('tarefas.answer_many')) +
-        '</span>' +
-        anonBlock +
-        '<span class="cdx-tarefa-dot">·</span>' +
-        '<span class="cdx-tarefa-reuse" data-reuse="' + _esc(item.id) + '">…</span>' +
-      '</div>' +
-    '</div>' +
-  '</div>';
-}
-
-function _fetchItemTurmas(itemId) {
-  if (_itemTurmas[itemId]) { _updateReuseLabel(itemId); return; }
-  api.listItemTurmas({ item_id: itemId }).then((res) => {
-    _itemTurmas[itemId] = (res && res.turmas) || [];
-    _updateReuseLabel(itemId);
-  }).catch(() => { _itemTurmas[itemId] = []; _updateReuseLabel(itemId); });
-}
-
-function _updateReuseLabel(itemId) {
-  const el = _viewEl && _viewEl.querySelector('.cdx-tarefa-reuse[data-reuse="' + itemId + '"]');
-  if (!el) return;
-  const others = (_itemTurmas[itemId] || []).filter((e) =>
-    !(e.client_slug === _client && e.turma_slug === _turma) && e.turma_status !== 'archived');
-  if (!others.length) {
-    el.textContent = t('tarefas.reuse_solo');
-    el.className = 'cdx-tarefa-reuse is-solo';
-  } else {
-    const labels = others.map((e) => e.client_display_name + ' · ' + e.turma_display_name).join(', ');
-    el.textContent = t('tarefas.reuse_also').replace('{labels}', labels);
-    el.className = 'cdx-tarefa-reuse is-multi';
-    el.title = labels;
-  }
-}
-
-function _prefetchSubmissionCount(itemId) {
-  api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
-    _submissions[itemId] = (res && res.submissions) || [];
-    _updateSubmissionCount(itemId);
-  }).catch((e) => { notice.internal(e); });
-}
-
 function _updateSubmissionCount(itemId) {
   const el = _viewEl && _viewEl.querySelector('.cdx-tarefa-count[data-count="' + itemId + '"]');
   if (!el) return;
   const cnt = (_submissions[itemId] || []).length;
   el.textContent = cnt + ' ' + _plural(cnt, t('tarefas.answer_one'), t('tarefas.answer_many'));
   el.classList.toggle('is-zero', cnt === 0);
-}
-
-// ── Selection: render the editor + answers into the right pane ────────────────
-function _onListClick(e) {
-  const row = e.target.closest('.cdx-item-row');
-  if (!row) return;
-  _select(Number(row.dataset.itemId));
-}
-
-function _select(itemId) {
-  _selectedId = itemId;
-  if (_viewEl) _viewEl.querySelectorAll('.cdx-item-row').forEach((r) => {
-    r.classList.toggle('is-active', Number(r.dataset.itemId) === Number(itemId));
-  });
-  _renderPreview();
-}
-
-// Right pane: the selected tarefa's editor stacked above its answers.
-function _renderPreview() {
-  const pane = _q('cdx-tarefas-preview');
-  if (!pane) return;
-  if (_selectedId == null) {
-    pane.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
-    return;
-  }
-  const itemId = _selectedId;
-  pane.innerHTML =
-    '<div class="cdx-preview-body cdx-tarefa-panes">' +
-      '<div class="cdx-tarefa-pane" data-pane="editor"><div class="cdx-empty">' + t('content.loading') + '</div></div>' +
-      '<div class="cdx-tarefa-pane" data-pane="resp"><div class="cdx-empty">' + t('tarefas.loading_answers') + '</div></div>' +
-    '</div>';
-  api.getItem({ id: itemId }).then((res) => {
-    if (Number(_selectedId) !== Number(itemId)) return;
-    const ed = pane.querySelector('[data-pane="editor"]');
-    if (ed) _renderEditor(ed, (res && res.item) || {});
-  }).catch(() => {
-    if (Number(_selectedId) !== Number(itemId)) return;
-    const ed = pane.querySelector('[data-pane="editor"]');
-    if (ed) ed.innerHTML = '<div class="cdx-empty">' + t('tarefas.error_content') + '</div>';
-  });
-  _loadSubmissions(itemId);
-}
-
-function _renderEditor(container, item) {
-  const meta = parseMeta(item.meta_json);
-  const fieldType = meta.field_type || 'text';
-  const allowAnon = !!meta.allow_anonymous;
-  const chips = _fields().map((f) => {
-    const cls = 'cdx-field-chip-btn' + (f.slug === fieldType ? ' is-active' : '') + (f.disabled ? ' is-disabled' : '');
-    const future = f.disabled ? '<span class="cdx-field-future">' + t('tarefas.field_future') + '</span>' : '';
-    return '<button type="button" class="' + cls + '" data-slug="' + _esc(f.slug) + '"' + (f.disabled ? ' disabled' : '') + '>' + _esc(f.label) + future + '</button>';
-  }).join('');
-
-  container.innerHTML =
-    '<h4 class="cdx-tarefa-pane-title">' + t('tarefas.content_title') + '</h4>' +
-    '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
-      '<input type="text" class="cdx-tf-title" value="' + _esc(item.title) + '"></div>' +
-    '<div class="cdx-field"><label>' + t('tarefas.instructions_label') + '</label>' +
-      '<textarea class="cdx-tf-body" rows="8">' + _esc(item.body_md || '') + '</textarea>' +
-      '<p class="cdx-helper-text">' + t('tarefas.instructions_hint') + '</p></div>' +
-    '<div class="cdx-field"><label>' + t('tarefas.field_type_label') + '</label>' +
-      '<div class="cdx-field-chips">' + chips + '</div>' +
-      '<p class="cdx-helper-text">' + t('tarefas.field_type_hint') + '</p></div>' +
-    '<label class="cdx-toggle-label">' +
-      '<span class="cdx-toggle"><input type="checkbox" class="cdx-tf-anon"' + (allowAnon ? ' checked' : '') + '><span class="cdx-toggle-slider"></span></span>' +
-      '<span class="cdx-toggle-text">' + t('tarefas.allow_anon') + '</span></label>' +
-    '<div class="cdx-tarefa-editor-actions">' +
-      '<button class="cdx-btn cdx-btn-primary cdx-tf-save">' + t('tarefas.save_changes') + '</button>' +
-      '<button class="cdx-btn cdx-tf-cancel">' + t('content.cancel') + '</button>' +
-      '<button class="cdx-btn cdx-btn-danger cdx-tf-delete">' + t('tarefas.remove_btn') + '</button>' +
-    '</div>';
-
-  container.querySelectorAll('.cdx-field-chip-btn:not(.is-disabled)').forEach((btn) => {
-    btn.addEventListener('click', () => {
-      container.querySelectorAll('.cdx-field-chip-btn').forEach((b) => { if (!b.disabled) b.classList.remove('is-active'); });
-      btn.classList.add('is-active');
-    });
-  });
-  container.querySelector('.cdx-tf-save').addEventListener('click', () => _saveTarefa(container, item));
-  container.querySelector('.cdx-tf-cancel').addEventListener('click', () => _renderPreview());
-  container.querySelector('.cdx-tf-delete').addEventListener('click', () => _deleteTarefa(item));
-}
-
-function _saveTarefa(container, item) {
-  const title = container.querySelector('.cdx-tf-title').value.trim();
-  const body = container.querySelector('.cdx-tf-body').value;
-  const anon = container.querySelector('.cdx-tf-anon').checked;
-  const activeChip = container.querySelector('.cdx-field-chip-btn.is-active');
-  const fieldType = activeChip ? activeChip.dataset.slug : 'text';
-  if (!title) { toast.err(t('editor.title_required')); return; }
-  const meta = parseMeta(item.meta_json);
-  meta.allow_anonymous = anon;
-  meta.field_type = fieldType;
-  api.updateItem({ id: item.id, title, body_md: body, meta_json: JSON.stringify(meta) }).then(() => {
-    toast.ok(t('tarefas.updated'));
-    item.title = title; item.body_md = body; item.meta_json = JSON.stringify(meta);
-    const lib = _items.find((i) => i.id === item.id);
-    if (lib) { lib.title = title; lib.meta_json = item.meta_json; }
-    // Refresh the row's visible title + anon badge by re-rendering the list head.
-    _renderList();
-  }).catch((err) => notice.internal(_err(err)));
-}
-
-// Per-turma removal: take the tarefa OUT of this turma (unrelease). The library item
-// and every other turma it's released to are untouched, re-releasing it in Liberações
-// brings it (and the stored answers) back. Replaces the old global ct_delete_item,
-// which wiped the tarefa from every turma at once (the per-turma delete bug).
-function _deleteTarefa(item) {
-  const html =
-    '<div class="cdx-modal cdx-modal--md">' +
-      '<div class="cdx-modal-title">' + t('tarefas.remove_title') + '</div>' +
-      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('tarefas.remove_warning') + '</p>' +
-      '<p class="cdx-tarefa-delete-quote">' + _esc(item.title) + '</p>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-danger-solid" data-act="ok">' + t('tarefas.remove_btn') + '</button>' +
-      '</div>' +
-    '</div>';
-  const bd = openModal(html);
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
-    relApi.unrelease({ item_id: item.id, client_slug: _client, turma_slug: _turma }).then(() => {
-      closeModal(bd);
-      toast.ok(t('tarefas.removed'));
-      if (Number(_selectedId) === Number(item.id)) _selectedId = null;
-      _loadTarefas(_client, _turma);
-      if (_onChange) _onChange();
-    }).catch((err) => notice.internal(_err(err)));
-  });
 }
 
 // ── Submissions (answers) ─────────────────────────────────────────────────────
@@ -613,54 +403,6 @@ function _copyFallback(text, flash) {
   try { document.execCommand('copy'); } catch (_) { /* ignore */ }
   document.body.removeChild(ta);
   flash();
-}
-
-// ── New tarefa ──────────────────────────────────────────────────────────────
-function _openNew() {
-  if (!_client || !_turma) { toast.err(t('tarefas.select_turma_first')); return; }
-  const html =
-    '<div class="cdx-modal cdx-modal--lg">' +
-      '<div class="cdx-modal-title">' + t('tarefas.new_title') + '</div>' +
-      '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
-        '<input type="text" data-fld="title" placeholder="' + _esc(t('tarefas.new_title_placeholder')) + '"></div>' +
-      // Aula-locked embed: the aula is fixed by the hub, so carry it hidden instead
-      // of asking again. Standalone: the optional aula-number field shows.
-      (_lockedAula != null
-        ? '<input type="hidden" data-fld="aula" value="' + _esc(String(_lockedAula)) + '">'
-        : '<div class="cdx-field"><label>' + t('tarefas.aula_optional') + '</label>' +
-            '<input type="number" data-fld="aula" placeholder="' + _esc(t('tarefas.aula_placeholder')) + '"></div>') +
-      '<div class="cdx-field"><label>' + t('tarefas.instructions_label') + '</label>' +
-        '<textarea data-fld="body" rows="6" placeholder="' + _esc(t('tarefas.new_body_placeholder')) + '"></textarea></div>' +
-      '<label class="cdx-toggle-label">' +
-        '<span class="cdx-toggle"><input type="checkbox" data-fld="anon"><span class="cdx-toggle-slider"></span></span>' +
-        '<span class="cdx-toggle-text">' + t('tarefas.allow_anon') + '</span></label>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('tarefas.create_release') + '</button>' +
-      '</div>' +
-    '</div>';
-  const bd = openModal(html, { disableBackdropClose: true });
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
-  bd.querySelector('[data-act="ok"]').addEventListener('click', function () {
-    const title = bd.querySelector('[data-fld="title"]').value.trim();
-    const body = bd.querySelector('[data-fld="body"]').value;
-    const aula = bd.querySelector('[data-fld="aula"]').value.trim();
-    const anon = bd.querySelector('[data-fld="anon"]').checked;
-    if (!title) { toast.err(t('editor.title_required')); return; }
-    const meta = { allow_anonymous: anon, field_type: 'text' };
-    const base = { client_slug: _client, turma_slug: _turma };
-    api.createItem({ type: 'tarefa', title, body_md: body, meta_json: JSON.stringify(meta) }).then((res) => {
-      const item = res && res.item;
-      return relApi.release(Object.assign({ item_id: item.id }, base)).then(() => {
-        if (aula) return relApi.setAula(Object.assign({ item_id: item.id, aula_number_or_null: parseInt(aula, 10) }, base));
-      });
-    }).then(() => {
-      closeModal(bd);
-      toast.ok(t('tarefas.created'));
-      _loadTarefas(_client, _turma);
-      if (_onChange) _onChange();
-    }).catch((err) => notice.internal(_err(err)));
-  });
 }
 
 // ══ t1b aula-locked pane: instance cards + inline editor + bank-add ═════════════
@@ -1320,27 +1062,6 @@ function _renderShell() {
     _viewEl.innerHTML = '<div class="cdx-tarefas cdx-tarefas--t1b"><div class="cdx-t1b-pane" id="cdx-t1b-pane"></div></div>';
     return;
   }
-  const toolbar =
-    '<div class="cdx-tarefas-toolbar">' +
-      '<h2 class="cdx-tarefas-title">' + t('tarefas.title') + '</h2>' +
-      '<button class="cdx-btn cdx-btn-primary" id="cdx-tarefa-new">' + t('tarefas.new_btn') + '</button>' +
-    '</div>';
-  _viewEl.innerHTML =
-    '<div class="cdx-tarefas">' +
-      toolbar +
-      '<div class="cdx-turma-picker" id="cdx-tar-picker"></div>' +
-      '<div class="cdx-tarefas-meta" id="cdx-tarefas-meta"></div>' +
-      '<div class="cdx-items-split cdx-tarefas-split" id="cdx-tarefas-split">' +
-        '<div class="cdx-items-list" id="cdx-tarefas-list">' +
-          '<div class="cdx-empty">' + t('tarefas.select_prompt') + '</div>' +
-        '</div>' +
-        '<div class="cdx-item-preview" id="cdx-tarefas-preview">' +
-          '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>' +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  _q('cdx-tarefa-new').addEventListener('click', _openNew);
-  _q('cdx-tarefas-list').addEventListener('click', _onListClick);
 }
 
 // Bank-only page shell (Content > Tarefas sub-tab): the bank panel + reusable editor, permanently
