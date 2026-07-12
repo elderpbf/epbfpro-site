@@ -639,7 +639,7 @@ function _openNew() {
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('tarefas.create_release') + '</button>' +
       '</div>' +
     '</div>';
-  const bd = openModal(html);
+  const bd = openModal(html, { disableBackdropClose: true });
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', function () {
     const title = bd.querySelector('[data-fld="title"]').value.trim();
@@ -1304,7 +1304,7 @@ function _openPrompt(label, initial, onOk) {
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.save') + '</button>' +
     '</div></div>';
-  const bd = openModal(html);
+  const bd = openModal(html, { disableBackdropClose: true });
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
     const v = (bd.querySelector('.cdx-prompt-input').value || '').trim();
