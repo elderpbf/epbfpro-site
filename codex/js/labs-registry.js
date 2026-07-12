@@ -116,6 +116,14 @@ export const LABS = [
     description: 'Quando um humano prefere uma resposta a outra, essa preferência reforça o peso na direção escolhida. O demo mostra o peso estabilizando conforme o treino avança.',
     objective: 'Ver como a preferência humana, repetida, molda o comportamento do modelo.',
     emoji: '👍'
+  },
+  {
+    key: 'k18',
+    title: 'Da pergunta à resposta',
+    summary: 'O caminho completo, do contexto à resposta',
+    description: 'Uma pergunta não vira resposta na hora. O demo percorre o caminho inteiro: o contexto sendo montado (sistema, Projeto/Gem, arquivos, histórico, ferramentas), o modelo raciocinando, chamando uma busca, o resultado voltando pra janela e, enfim, a resposta.',
+    objective: 'Ver o processo completo de uma resposta e como cada etapa gasta a janela de contexto.',
+    emoji: '🔄'
   }
 ];
 
@@ -176,6 +184,7 @@ const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
+  k18: 'glyph:activity',
 };
 
 export function labIcon(key) {
