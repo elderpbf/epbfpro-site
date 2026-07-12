@@ -17,6 +17,7 @@ import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
 import { renderSimpleWall } from './wall-simple.js';
+import { renderNoticePage } from './notice-page.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
@@ -89,8 +90,9 @@ export async function mount(root, ctx = {}) {
   // Magic-link return (track-36): the emailed validation link lands here as ?lt=<token>. Consume
   // it BEFORE fetching the view, so the session is set and content loads approved (or the pending
   // wall shows). auth_verify marks the e-mail validated + mints the session on this device. A
-  // RECENT click (the original "aguardando validação" page is likely still open, polling) gets a
-  // simple "return to your tab" overlay ON TOP of the trilha; a later click just opens the trilha.
+  // RECENT click (the original "aguardando validação" page is likely still open, polling and about
+  // to unlock itself) shows the clean "e-mail validated" confirmation with the timeline HIDDEN; a
+  // later click opens the trail directly.
   const _magic = LOGIN_ENABLED ? await consumeMagicToken(loc, api) : null;
 
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
@@ -116,34 +118,13 @@ export async function mount(root, ctx = {}) {
         client_name: rc.display_name || rc.name || '', turma_name: rt.display_name || rt.name || '', k: state.token,
       });
     }
-    // Upfront-gated + unapproved: render the wall instead of the timeline. Inline
-    // mode (and approved / open) renders the timeline as usual; the per-item gate in
-    // sub.js/flat.js handles inline opens.
-    if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
-      // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
-      // registers on the spot; every other gated turma keeps the original OTP wall.
-      if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
-      else renderWall(root);
-    } else {
-      renderTabs(root);
-      _onHash = () => onHashChange();
-      if (_win) _win.addEventListener('hashchange', _onHash);
-      // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab
-      // (forum.js reads the param and opens the thread). Only when the turma enabled
-      // the forum and the tab is therefore present.
-      const turma = (state.data || {}).turma || {};
-      const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
-      if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
-      onHashChange();
-      // "Salvar como app": offer a home-screen install on the timeline only (never on the
-      // login wall), and only when the turma enables it (per-turma flag, DEFAULT-ON).
-      // Self-guards further: no-op if installed, not installable, or previously dismissed.
-      if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
-    }
+    // A RECENT magic-link click (the original "aguardando validação" tab is likely still open,
+    // polling and about to unlock itself) shows the clean "e-mail validated" confirmation with the
+    // timeline HIDDEN, not the trail — "Abrir a trilha aqui" reveals it here on demand. Any other
+    // load (stale click, or none) renders the trail straight away.
+    if (_magic && _magic.validated && _magic.recent) renderValidatedNotice(root, loc);
+    else renderTrilhaView(root, loc);
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
-    // A recent magic-link click: overlay the "validated, go back to your tab" card ON TOP of the
-    // now-rendered trilha (the original page unlocks itself via its poll). A stale click skipped this.
-    if (_magic && _magic.validated && _magic.recent) _showValidatedOverlay(root);
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER
     // handleEnrollReturn has consumed any ?et=. Skipped when we already entered via the code.
@@ -368,7 +349,8 @@ function avatarInitials(name) {
 // single-use; strip it from the URL so a refresh can't replay it. Best-effort throughout — a
 // bad/expired link falls through to the wall rather than erroring.
 // A click within 15 min of the request means the original "aguardando validação" page is likely
-// still open + polling, so we overlay the confirmation instead of taking over the tab.
+// still open + polling, so this page shows the clean "e-mail validated" confirmation (timeline
+// hidden) instead of taking over the tab; a later click opens the trail directly.
 const MAGIC_RECENT_SECONDS = 15 * 60;
 
 async function consumeMagicToken(loc, api) {
@@ -398,24 +380,66 @@ async function consumeMagicToken(loc, api) {
   return { validated, recent };
 }
 
-// The magic-link confirmation overlay (track-36): rendered ON TOP of the trilha for a recent click.
-// It only says "validated, go back to the tab where you asked for access" (that page unlocks itself
-// via its poll), with a button to use THIS tab instead. A later click never sees it, landing straight
-// in the trilha.
-function _showValidatedOverlay(root) {
-  if (!root || root.querySelector('.cdx-tr-validated')) return;
-  const ov = document.createElement('div');
-  ov.className = 'cdx-tr-validated';
-  ov.innerHTML =
-    '<div class="cdx-tr-validated-card">' +
-      '<div class="cdx-tr-validated-ic" aria-hidden="true">✓</div>' +
-      '<h2 class="cdx-tr-validated-h">' + esc(t('login.validated_title')) + '</h2>' +
-      '<p class="cdx-tr-validated-s">' + esc(t('login.validated_body')) + '</p>' +
-      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-tr-validated-cta">' + esc(t('login.validated_cta')) + '</button>' +
-    '</div>';
-  root.appendChild(ov);
-  const cta = ov.querySelector('.cdx-tr-validated-cta');
-  if (cta) cta.addEventListener('click', () => ov.remove());
+// Render the actual trail: the timeline (approved / open) or the register-and-pending wall
+// (gated + unapproved). Extracted so the magic-link confirmation can DEFER it behind a button
+// ("Abrir a trilha aqui") instead of rendering it up front.
+function renderTrilhaView(root, loc) {
+  // Upfront-gated + unapproved: render the wall instead of the timeline. Inline mode (and
+  // approved / open) renders the timeline as usual; the per-item gate in sub.js/flat.js
+  // handles inline opens.
+  if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
+    // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
+    // registers on the spot; every other gated turma keeps the original OTP wall.
+    if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
+    else renderWall(root);
+  } else {
+    renderTabs(root);
+    _onHash = () => onHashChange();
+    if (_win) _win.addEventListener('hashchange', _onHash);
+    // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab (forum.js
+    // reads the param and opens the thread). Only when the turma enabled the forum.
+    const turma = (state.data || {}).turma || {};
+    const hasThreadLink = (() => { try { return !!new URLSearchParams((loc && loc.search) || '').get('thread'); } catch (_) { return false; } })();
+    if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
+    onHashChange();
+    // "Salvar como app": offer a home-screen install on the timeline only (never on the login
+    // wall), and only when the turma enables it (per-turma flag, DEFAULT-ON). Self-guards: no-op
+    // if installed, not installable, or previously dismissed.
+    if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
+  }
+}
+
+// Reveal the trail from behind the magic-link confirmation: drop the notice, unhide the timeline
+// shell, then render as usual. (A pending student's renderWall re-hides the shell and shows the
+// pending notice; an approved student sees the timeline.)
+function revealTrilha(root, loc) {
+  const main = root.querySelector('.cdx-trilha-main');
+  if (main) {
+    const wall = main.querySelector('.cdx-en-wall');
+    if (wall) wall.remove();
+    const tabs = main.querySelector('.cdx-trilha-tabs');
+    const content = main.querySelector('.cdx-trilha-tabcontent');
+    if (tabs) tabs.hidden = false;
+    if (content) content.hidden = false;
+  }
+  if (root.classList) root.classList.remove('cdx-tr-has-wall');
+  renderTrilhaView(root, loc);
+}
+
+// The magic-link "e-mail validated" confirmation (track-36). Reuses the shared full-page notice
+// (renderNoticePage / .cdx-en-pending), so the timeline stays HIDDEN behind a clean page — NOT a
+// modal over a rendered trail. Primary path: go back to the original tab, which unlocked itself via
+// its poll. Fallback (no original tab, e.g. clicked on the phone): "Abrir a trilha aqui" reveals
+// the trail on this device.
+function renderValidatedNotice(root, loc) {
+  renderNoticePage(root, {
+    glyph: 'check-circle',
+    cls: 'cdx-en-ok',
+    title: t('login.validated_title'),
+    body: t('login.validated_body'),
+    orLabel: t('login.validated_or'),
+    action: { label: t('login.validated_cta'), onClick: () => revealTrilha(root, loc) },
+  });
 }
 
 function handleEnrollReturn(loc) {

@@ -18,6 +18,8 @@ import { createLoginFlow } from './student-login.js';
 import { getPresence, extractEnrollToken } from './student-session.js';
 import { entryHtml, contextFromState } from './support-contact.js';
 import { consentNoticeHtml } from './consent-notice.js';
+import { mountNoticeSection, renderNoticeInto } from './notice-page.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -105,48 +107,27 @@ function roadmapHtml() {
 // Hide the timeline, mark the page so the scoped phone CSS applies, and render the
 // register (or the pending notice if the student already registered). The hero stays.
 export function renderWall(root) {
-  const main = root.querySelector('.cdx-trilha-main');
-  if (!main) return;
-  if (root.classList) root.classList.add('cdx-tr-has-wall');
-  const tabs = main.querySelector('.cdx-trilha-tabs');
-  const content = main.querySelector('.cdx-trilha-tabcontent');
-  if (tabs) tabs.hidden = true;
-  if (content) content.hidden = true;
-  let wall = main.querySelector('.cdx-en-wall');
-  if (!wall) {
-    wall = document.createElement('section');
-    // cdx-en-wall (NOT cdx-tr-wall): the tarefa modal's login overlay owns .cdx-tr-wall
-    // with display:flex, which leaked onto this section and turned the grid + questions
-    // line into side-by-side columns. The registration wall uses its own en- name.
-    wall.className = 'cdx-en-wall';
-    const footer = main.querySelector('.cdx-trilha-footer');
-    main.insertBefore(wall, footer || null);
-  }
+  // mountNoticeSection hides the timeline and returns the shared wall <section> — the same
+  // host the pending/denied notices use (notice-page.js), so the wall and every status
+  // screen sit in one place. The hero above stays.
+  const wall = mountNoticeSection(root);
+  if (!wall) return;
   const access = (state.data || {}).access || {};
   if (access.status === 'denied') { renderDenied(wall); return; }
   if (access.status === 'pending') { renderPending(wall); return; }
   renderRegister(wall);
 }
 
+// Registered but awaiting the instructor's approval: the shared full-page notice (clock glyph).
 function renderPending(wall) {
-  wall.innerHTML =
-    '<div class="cdx-en-pending">' +
-      '<div class="cdx-en-pending-icon" aria-hidden="true">⏳</div>' +
-      '<h2 class="cdx-en-pending-title">' + esc(t('login.pending_title')) + '</h2>' +
-      '<p class="cdx-en-pending-body">' + esc(t('login.pending_body')) + '</p>' +
-    '</div>';
+  renderNoticeInto(wall, { glyph: 'clock', title: t('login.pending_title'), body: t('login.pending_body') });
 }
 
 // Blocked (denied): the instructor cut this student off. Distinct from pending — no
-// "aguarde aprovação"; they stay out until unblocked. Mirrors the pending layout.
+// "aguarde aprovação"; they stay out until unblocked. Same notice layout + a support box.
 function renderDenied(wall) {
-  wall.innerHTML =
-    '<div class="cdx-en-pending cdx-en-denied">' +
-      '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
-      '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
-      '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
-    '</div>' +
-    entryHtml(contextFromState(state), 'bloqueado');
+  renderNoticeInto(wall, { glyph: 'ban', cls: 'cdx-en-denied', title: t('login.denied_title'), body: t('login.denied_body') });
+  wall.insertAdjacentHTML('beforeend', entryHtml(contextFromState(state), 'bloqueado'));
 }
 
 // The locked poll cadence (Élder): 2s for the first ~6 calls, then 4/6/10/15s, capped at ~30
@@ -239,7 +220,7 @@ function renderRegister(wall) {
       ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_link')) + '</strong> <a href="?lt=' + esc(flow.devMagicToken) + '&k=' + esc(state.token || '') + '">abrir link</a></p>'
       : '';
     cardEl.innerHTML =
-      '<div class="cdx-en-wait-ic" aria-hidden="true">✉️</div>' +
+      '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
       '<h3 class="cdx-en-card-h">' + esc(t('wall.check_email_h')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(t('wall.check_email_sub')).replace('{email}', esc(flow.email || '')) + '</p>' +
       dev +
@@ -259,7 +240,7 @@ function renderRegister(wall) {
   // poll unlocks this card in place when the instructor approves in the e-sino.
   function renderPendingApproval() {
     cardEl.innerHTML =
-      '<div class="cdx-en-wait-ic" aria-hidden="true">⏳</div>' +
+      '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('clock', { size: 34 }) + '</div>' +
       '<h3 class="cdx-en-card-h">' + esc(t('login.pending_title')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(t('login.pending_body')) + '</p>';
   }
