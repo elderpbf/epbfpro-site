@@ -1285,6 +1285,7 @@ function _renderDossier(turma) {
           '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" data-code="' + _esc(code || '') + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm cdx-doss-janela" data-doss="janela" data-cs="' + _esc(turma.client_slug) + '" data-slug="' + _esc(turma.slug) + '" title="' + _esc(t('cohorts.window_title')) + '">' + _esc(t('cohorts.window')) + '</button>' +
           codeBtn +
         '</div>'
       : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
@@ -1377,7 +1378,17 @@ function _renderDossier(turma) {
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
     else if (a === 'copycode') _copyCode(b.dataset.code);
     else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url, code: b.dataset.code || null });
+    else if (a === 'janela') _toggleDossierWindow(b);
   }));
+
+  // Paint the Janela (validation window) button from the live server state on mount. Separate
+  // from the QR modal (Élder): the QR button shows the code, this one opens/closes the window.
+  const _janelaBtn = el.querySelector('[data-doss="janela"]');
+  if (_janelaBtn) {
+    api.getEnrollment({ client_slug: _janelaBtn.dataset.cs, slug: _janelaBtn.dataset.slug })
+      .then((r) => { _janelaBtn.classList.toggle('is-open', !!(r && r.ok && r.open)); })
+      .catch(() => { /* best-effort; the button still toggles on click */ });
+  }
 
   // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
   // fires eagerly on mount, so switching is pure show/hide.
@@ -1496,6 +1507,25 @@ function _wireDossierInlineEdit(el, turma) {
   });
 }
 
+// Toggle the turma's validation window from the dossier (open/close). Acts, then re-reads the
+// authoritative state and repaints. Mirrors the session's Janela button; both drive ONE server
+// state (ct_open/close_enrollment), so they never diverge. Separate from the QR modal (Élder).
+function _toggleDossierWindow(btn) {
+  const cs = btn.dataset.cs, slug = btn.dataset.slug;
+  if (!cs || !slug) return;
+  const open = btn.classList.contains('is-open');
+  btn.disabled = true;
+  Promise.resolve(open ? api.closeEnrollment({ client_slug: cs, slug }) : api.openEnrollment({ client_slug: cs, slug }))
+    .then(() => api.getEnrollment({ client_slug: cs, slug }))
+    .then((r) => {
+      const nowOpen = !!(r && r.ok && r.open);
+      btn.classList.toggle('is-open', nowOpen);
+      toast.ok(nowOpen ? t('cohorts.window_opened') : t('cohorts.window_closed'));
+    })
+    .catch((e) => { if (window.bsLog) window.bsLog('cohorts: toggle window failed: ' + (e && e.message || e), 'error'); notice.internal(e); })
+    .finally(() => { btn.disabled = false; });
+}
+
 // ── Dossier participant list (B+C2): status separators + adaptive bulk toolbar ──
 // The pure rules (gating, grouping, action predicates) live in participant-view.js
 // and are unit-tested there; this section is the render + DOM wiring only.
@@ -1529,21 +1559,43 @@ function _pAvatar(p, st, gated) {
 // One selectable row. No per-row action buttons (B+C2): the whole row toggles its
 // checkbox; the only per-row control is the discreet edit ✎. The status badge shows
 // only when gated; the online dot only for an approved + connected person.
+// Seconds left on a provisional session (client clock; seconds of skew are immaterial for a 12h
+// window). 0 when there is no live session or it already lapsed.
+function _provRemaining(expiresAt) {
+  if (!expiresAt) return 0;
+  return Math.max(0, Number(expiresAt) - Math.floor(Date.now() / 1000));
+}
+// Compact remaining label: 5h / 42min / <1min.
+function _fmtDur(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return h + 'h';
+  if (m > 0) return m + 'min';
+  return '<1min';
+}
+
 function _pRow(p, gated) {
   const st = p.access_status || 'pending';
-  const online = (p.active_sessions || 0) > 0;
-  // Connection mark, meaningful only once approved + gated. One axis, two explicit
-  // states: ✓ acessou (green, with how long ago it last logged in) vs ✕ nunca acessou
-  // (muted). Replaces the old ● (which read like the legend's • "não logou") and the
-  // ⚠ e-mail-não-confirmado, a different axis that misfired as an alarm (Élder 2026-07-09).
+  // Two axes shown together (track-36, Élder): approval is the status badge (_pTag); here we show
+  // VALIDATION (e-mail confirmed?) + the relevant time — for a not-yet-validated (provisional)
+  // access, how much of the 12h is left; otherwise the last access. The validation chip is neutral
+  // info, NOT the ⚠ alarm that was retired 2026-07-09.
   let conn = '';
   if (gated && st === 'approved') {
-    if (online) {
-      const when = p.last_access_at ? ' <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>' : '';
-      conn = ' <span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span>' + when;
+    const validated = !!p.email_verified;
+    const valChip = validated
+      ? '<span class="cdx-prow-val ok" title="' + _esc(t('cohorts.pval_validated_t')) + '">' + _esc(t('cohorts.pval_validated')) + '</span>'
+      : '<span class="cdx-prow-val prov" title="' + _esc(t('cohorts.pval_unvalidated_t')) + '">' + _esc(t('cohorts.pval_unvalidated')) + '</span>';
+    const remain = validated ? 0 : _provRemaining(p.session_expires_at);
+    let when;
+    if (remain > 0) {
+      when = '<span class="cdx-prow-when prov">' + _esc(t('cohorts.pprov_expires').replace('{t}', _fmtDur(remain))) + '</span>';
+    } else if (p.last_access_at) {
+      when = '<span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span> <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>';
     } else {
-      conn = ' <span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
+      when = '<span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
     }
+    conn = ' ' + valChip + ' ' + when;
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);

@@ -119,7 +119,10 @@ test('labs3: the dossier shows the 4-digit access code (click-to-copy) and the t
   assert.match(cohortsJs, /const code = turma\.access_code \|\| null;/, 'reads the access_code');
   // The code is a BUTTON in the trail card's action row (next to QR), NOT a separate box.
   assert.match(cohortsJs, /class="cdx-btn cdx-btn-sm cdx-doss-code-btn" data-doss="copycode" data-code="/, 'code is a trail-row button');
-  assert.match(cohortsJs, /data-doss="qrshare"[\s\S]{0,400}codeBtn/, 'the code button sits with the trail actions, after QR');
+  // track-36: the Janela button (validation-window open/close) sits between the QR and the code,
+  // separate from the QR modal (Élder). Order in the trail-acts row: QR → Janela → code.
+  assert.match(cohortsJs, /data-doss="qrshare"[\s\S]{0,600}data-doss="janela"[\s\S]{0,400}codeBtn/, 'the code button sits with the trail actions, after QR + Janela');
+  assert.match(cohortsJs, /data-doss="janela"[\s\S]{0,200}cohorts\.window/, 'the Janela button carries the window label');
   assert.ok(!/cdx-doss-fact--code/.test(cohortsJs), 'no separate access-code fact box');
   assert.match(cohortsJs, /else if \(a === 'copycode'\) _copyCode\(b\.dataset\.code\);/, 'wires the copy-code action');
   assert.match(cohortsJs, /function _copyCode\(code\)[\s\S]{0,200}clipboard\.writeText\(code\)/, 'copies the bare digits, not the URL');

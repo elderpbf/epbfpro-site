@@ -247,13 +247,15 @@ export function createLoginFlow(opts = {}) {
       // In-room first: a live window grants provisional access on the spot (approval via the
       // window; validation deferred to the 3-day e-mail the worker fires). No poll needed.
       if (enrollToken) {
-        const pe = await safeCall(api.provisionalEnter({ client_slug: client, turma_slug: turma, email, name: cleanName, et: enrollToken, k: opts.k, origin: opts.origin }));
+        const pe = await safeCall(api.provisionalEnter({ client_slug: client, turma_slug: turma, email, name: cleanName, et: enrollToken, ask_name: true, k: opts.k, origin: opts.origin }));
         if (pe && pe.ok && pe.entered && pe.session_token) {
           sess.setToken(client, turma, pe.session_token);
           this.participantId = pe.participant_id != null ? pe.participant_id : null;
           this.state = pe.needs_profile ? 'profile' : 'authenticated';
           return this;
         }
+        // A NEW e-mail (no name yet) is asked for the name inline BEFORE it enters, even in-room.
+        if (pe && pe.needs_name) { this.state = 'needName'; return this; }
         // A blocked student can't force in; surface it. Otherwise (window closed) fall through.
         if (pe && pe.error === 'access_blocked') { this.state = 'email'; this.error = 'access_blocked'; return this; }
       }

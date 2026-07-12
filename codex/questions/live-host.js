@@ -19,7 +19,7 @@ import { register as registerQuestionEl, TAG as QTAG } from './question-element.
 import { createQaFeed } from './live-qa.js';
 import { t } from '../js/i18n.js';
 import { clockOffset, remainingSec } from '../js/enroll-clock.js';
-import { isProjecting, toggleProjection } from '../js/enroll-control.js';
+import { isProjecting } from '../js/enroll-control.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { resolveQuestion, isVariable, questionType, bankVisible, availableTypeFilters, audienceControlMode } from '../js/audiences.js';
@@ -123,6 +123,7 @@ function _barMarkup() {
         '</div>' +
       '</details>' +
       '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
+      '<button class="cdx-btn cdx-host-janela" id="cdx-host-janela" data-act="janela" type="button" hidden title="' + _esc(t('questions.host_window_title')) + '">' + _esc(t('questions.host_window')) + '</button>' +
       '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden aria-label="' + _esc(t('questions.host_qr')) + '" title="' + _esc(t('questions.host_qr')) + '">' +
         '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg></button>' +
       '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
@@ -306,13 +307,14 @@ function _applyHostedUI(open) {
 
 function _refreshShareSurface(open) {
   const hasTrail = !!_buildTrailUrl();
-  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr'), display = _q('#cdx-host-display');
-  // Trilha + QR + Display show regardless of session state: the trilha link and the
+  const trail = _q('#cdx-host-trail'), qr = _q('#cdx-host-qr'), display = _q('#cdx-host-display'), janela = _q('#cdx-host-janela');
+  // Trilha + Janela + QR + Display show regardless of session state: the trilha link and the
   // projector are useful BEFORE the session starts too (Élder 2026-06-19, so the QR
-  // can be shown while presenting the trilha, before opening the questions). Both
-  // Trilha and QR are ALWAYS visible; the QR needs a join URL (a linked turma), so
-  // without one it reads as disabled and clicking explains why (Élder 2026-06-06).
+  // can be shown while presenting the trilha, before opening the questions). All are
+  // ALWAYS visible; they need a join URL (a linked turma), so without one they read as
+  // disabled and clicking explains why (Élder 2026-06-06).
   if (trail) { trail.hidden = false; trail.classList.toggle('is-linked', !!_trailTurma); }
+  if (janela) { janela.hidden = false; janela.classList.toggle('is-disabled', !hasTrail); }
   if (qr) { qr.hidden = false; qr.classList.toggle('is-disabled', !hasTrail); }
   if (display) display.hidden = false;
   _paintEnrollBtn();
@@ -390,22 +392,32 @@ async function _unlinkTrail() {
   } catch (e) { notice.internal(e); }
 }
 
-// ── In-class enrollment window ──
-// The QR button toggles the SERVER enrollment window; the session display polls
-// the same state and shows the QR + countdown. One state, two surfaces, so they
-// can't diverge. The button itself just reflects open/closed + the time left.
+// ── In-class validation window + QR projection (TWO separate controls, Élder) ──
+// The server keeps two independent states: `open` (the validation window is live) and
+// `qr_shown` (the QR is projected on the display). The Janela button drives `open`
+// (open/close), the QR button drives `qr_shown` (project/un-project), so closing the
+// window and hiding the QR are distinct, and neither reads the other's colour.
 function _clearEnrollTimer() { if (_enrollTimer) { clearInterval(_enrollTimer); _enrollTimer = null; } }
 
 function _paintEnrollBtn() {
-  const qr = _q('#cdx-host-qr');
-  if (!qr) return;
   const open = !!(_enrollState && _enrollState.open);
   const projecting = isProjecting(_enrollState);
-  qr.classList.toggle('is-on', projecting); // QR is projected on the display
-  qr.classList.toggle('is-live', open);     // window is open (its color-toggle is ON) even if the QR is hidden
-  // No visible countdown on the button (Élder, track-36 f-UI): it's a clean color toggle.
-  // Hover still surfaces the access code so the host can read it out: "QR: 1561".
-  qr.title = (open && _enrollState.access_code) ? ('QR: ' + _enrollState.access_code) : 'QR';
+  const janela = _q('#cdx-host-janela');
+  if (janela) {
+    // The clean colour toggle (track-36 f-UI): green when the validation window is OPEN.
+    janela.classList.toggle('is-open', open);
+    janela.title = open ? t('questions.host_window_close') : t('questions.host_window_title');
+  }
+  const qr = _q('#cdx-host-qr');
+  if (qr) {
+    // The QR button reflects PROJECTION only (qr_shown), never the window. It projects the
+    // window's join QR, so it's idle while the window is closed (nothing valid to show).
+    qr.classList.toggle('is-on', projecting);
+    qr.classList.toggle('is-idle', !open);
+    qr.title = open
+      ? (_enrollState.access_code ? ('QR: ' + _enrollState.access_code) : 'QR')
+      : t('questions.host_qr_need_window');
+  }
 }
 
 function _loadEnrollState() {
@@ -427,13 +439,26 @@ function _loadEnrollState() {
   }).catch(() => {});
 }
 
-// Toggle the QR ON THE DISPLAY. Projecting -> un-project (the window STAYS open, the
-// countdown keeps running on this button). Not projecting -> open (mints a window only
-// if none is live; otherwise reuses it, no reset, no new link) and project the QR.
-async function _toggleEnroll() {
+// Open / close the VALIDATION WINDOW (the Janela button). Opening mints (or reuses) a live
+// window and auto-projects the QR; closing ends the window. Separate from the QR button, so
+// the window has its own control that actually CLOSES (Élder: the QR button only hid the QR).
+async function _toggleWindow() {
   if (!_trailTurma) { toast.info(t('questions.host_qr_no_turma')); return; }
   const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
-  try { await toggleProjection(cohorts, ids, _enrollState); }
+  const open = !!(_enrollState && _enrollState.open);
+  try { await (open ? cohorts.closeEnrollment(ids) : cohorts.openEnrollment(ids)); }
+  catch (e) { notice.internal(e); return; }
+  _loadEnrollState();
+}
+
+// Project / un-project the QR ON THE DISPLAY (the QR button). Pure projection toggle via
+// ct_set_enrollment_qr, and it never opens or closes the window (that's the Janela button). Idle
+// while the window is closed (there is no live join token to project yet).
+async function _toggleQr() {
+  if (!_trailTurma) { toast.info(t('questions.host_qr_no_turma')); return; }
+  if (!(_enrollState && _enrollState.open)) { toast.info(t('questions.host_qr_need_window')); return; }
+  const ids = { client_slug: _trailTurma.client_slug, slug: _trailTurma.turma_slug };
+  try { await cohorts.setEnrollmentQr({ ...ids, shown: isProjecting(_enrollState) ? 0 : 1 }); }
   catch (e) { notice.internal(e); return; }
   _loadEnrollState();
 }
@@ -1188,7 +1213,8 @@ export function mount(containerEl, ctx) {
       if (act === 'reveal-now') return _revealNow();
       if (act === 'sim-run') return _simulate();
       if (act === 'trail') { const m = _q('#cdx-trail-modal'); if (m) m.classList.add('open'); return; }
-      if (act === 'qr') return _toggleEnroll();
+      if (act === 'janela') return _toggleWindow();
+      if (act === 'qr') return _toggleQr();
       if (act === 'mode') { _setBankMode(btn.getAttribute('data-mode')); return; }
       if (act === 'bank-filter') { if (btn.disabled || btn.classList.contains('is-disabled')) return; _bankFilter = btn.getAttribute('data-f') || 'all'; _syncBankChips(); _renderBankList(); return; }
       if (act === 'bank-launch') { const q = _bankMap[btn.getAttribute('data-bank-i')]; if (q) _launchFromBank(q); return; }
