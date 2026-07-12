@@ -2228,14 +2228,18 @@ function _wireAulaDadosEditor(container, aula, turma) {
 
   if (saveBtn) saveBtn.addEventListener('click', () => {
     const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
+    const happVal = happInput.value || null;
+    // track-22.4: an aula can't be "occurred" without a planned date. When only
+    // happened_on is filled, mirror it into scheduled_for so the two never diverge.
+    const schedVal = (schedInput.value || null) || happVal;
     const payload = {
       client_slug: turma.client_slug,
       turma_slug: turma.slug,
       aula_number: aula.aula_number,
       title: titleInput.value.trim(),
       hours:            hoursVal,
-      scheduled_for:    schedInput.value || null,
-      happened_on:      happInput.value  || null,
+      scheduled_for:    schedVal,
+      happened_on:      happVal,
       rescheduled_from: rfromInput.value || null,
       rescheduled_note: rnoteInput.value.trim() || null,
     };
