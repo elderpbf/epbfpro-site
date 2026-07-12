@@ -12,12 +12,14 @@
 // wires the flow. The roadmap rows + compact date are the only data-derived bits,
 // kept pure and unit-tested (trilha-wall.test.mjs); the DOM is verified on staging.
 import { state } from './state.js';
-import { esc, cooldownButton } from './utils.js';
+import { esc } from './utils.js';
 import { t } from '../i18n.js';
 import { createLoginFlow } from './student-login.js';
 import { getPresence, extractEnrollToken } from './student-session.js';
 import { entryHtml, contextFromState } from './support-contact.js';
 import { consentNoticeHtml } from './consent-notice.js';
+import { mountNoticeSection, renderNoticeInto } from './notice-page.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
 
@@ -48,6 +50,7 @@ export function wallRoadmapRows(aulas) {
 function errorText(code, retryAfter) {
   if (!code) return '';
   if (code === 'email_invalid') return t('login.email_invalid');
+  if (code === 'access_blocked') return t('login.denied_body');
   if (code === 'rate_limited') return rateLimitedText(retryAfter);
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
@@ -87,66 +90,40 @@ function benefitsHtml() {
   '</div>';
 }
 
-function roadmapHtml() {
-  const rows = wallRoadmapRows((state.data || {}).aulas);
-  if (!rows.length) return '';
-  return '<div class="cdx-en-road-h">' + esc(t('wall.roadmap_h')) + '</div>' +
-    '<div class="cdx-en-road">' +
-      rows.map((r) =>
-        '<div class="cdx-en-road-row">' +
-          '<span class="cdx-en-road-n">' + esc(String(r.number)) + '</span>' +
-          '<span class="cdx-en-road-t">' + esc(r.title) + '</span>' +
-          (r.date ? '<span class="cdx-en-road-d">' + esc(r.date) + '</span>' : '') +
-        '</div>').join('') +
-    '</div>';
-}
+// The aulas roadmap was removed from the login wall (Élder 2026-07-11): the wall shows
+// the benefits + register card only. wallRoadmapRows/shortDate stay (pure, unit-tested)
+// for any future surface that wants the compact roadmap.
 
 // Hide the timeline, mark the page so the scoped phone CSS applies, and render the
 // register (or the pending notice if the student already registered). The hero stays.
 export function renderWall(root) {
-  const main = root.querySelector('.cdx-trilha-main');
-  if (!main) return;
-  if (root.classList) root.classList.add('cdx-tr-has-wall');
-  const tabs = main.querySelector('.cdx-trilha-tabs');
-  const content = main.querySelector('.cdx-trilha-tabcontent');
-  if (tabs) tabs.hidden = true;
-  if (content) content.hidden = true;
-  let wall = main.querySelector('.cdx-en-wall');
-  if (!wall) {
-    wall = document.createElement('section');
-    // cdx-en-wall (NOT cdx-tr-wall): the tarefa modal's login overlay owns .cdx-tr-wall
-    // with display:flex, which leaked onto this section and turned the grid + questions
-    // line into side-by-side columns. The registration wall uses its own en- name.
-    wall.className = 'cdx-en-wall';
-    const footer = main.querySelector('.cdx-trilha-footer');
-    main.insertBefore(wall, footer || null);
-  }
+  // mountNoticeSection hides the timeline and returns the shared wall <section> — the same
+  // host the pending/denied notices use (notice-page.js), so the wall and every status
+  // screen sit in one place. The hero above stays.
+  const wall = mountNoticeSection(root);
+  if (!wall) return;
   const access = (state.data || {}).access || {};
   if (access.status === 'denied') { renderDenied(wall); return; }
   if (access.status === 'pending') { renderPending(wall); return; }
   renderRegister(wall);
 }
 
+// Registered but awaiting the instructor's approval: the shared full-page notice (clock glyph).
 function renderPending(wall) {
-  wall.innerHTML =
-    '<div class="cdx-en-pending">' +
-      '<div class="cdx-en-pending-icon" aria-hidden="true">⏳</div>' +
-      '<h2 class="cdx-en-pending-title">' + esc(t('login.pending_title')) + '</h2>' +
-      '<p class="cdx-en-pending-body">' + esc(t('login.pending_body')) + '</p>' +
-    '</div>';
+  renderNoticeInto(wall, { glyph: 'clock', title: t('login.pending_title'), body: t('login.pending_body') });
 }
 
 // Blocked (denied): the instructor cut this student off. Distinct from pending — no
-// "aguarde aprovação"; they stay out until unblocked. Mirrors the pending layout.
+// "aguarde aprovação"; they stay out until unblocked. Same notice layout + a support box.
 function renderDenied(wall) {
-  wall.innerHTML =
-    '<div class="cdx-en-pending cdx-en-denied">' +
-      '<div class="cdx-en-pending-icon" aria-hidden="true">🚫</div>' +
-      '<h2 class="cdx-en-pending-title">' + esc(t('login.denied_title')) + '</h2>' +
-      '<p class="cdx-en-pending-body">' + esc(t('login.denied_body')) + '</p>' +
-    '</div>' +
-    entryHtml(contextFromState(state), 'bloqueado');
+  renderNoticeInto(wall, { glyph: 'ban', cls: 'cdx-en-denied', title: t('login.denied_title'), body: t('login.denied_body') });
+  wall.insertAdjacentHTML('beforeend', entryHtml(contextFromState(state), 'bloqueado'));
 }
+
+// The locked poll cadence (Élder): 2s for the first ~6 calls, then 4/6/10/15s, capped at ~30
+// calls (~5 min), then stop. Shared by both the validation poll and the approval poll.
+const POLL_CADENCE = [2000, 2000, 2000, 2000, 2000, 2000, 4000, 6000, 10000, 15000];
+const POLL_MAX = 30;
 
 function renderRegister(wall) {
   wall.innerHTML =
@@ -155,133 +132,121 @@ function renderRegister(wall) {
         '<h2 class="cdx-en-lead-h">' + esc(t('wall.lead_title')) + '</h2>' +
         '<p class="cdx-en-lead-s">' + esc(t('wall.lead_sub')) + '</p>' +
         benefitsHtml() +
-        roadmapHtml() +
       '</div>' +
-      '<div><div class="cdx-en-card cdx-en-reg"></div></div>' +
-    '</div>' +
-    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>' +
-    entryHtml(contextFromState(state), 'registro');
+      '<div><div class="cdx-en-card cdx-en-reg is-open"></div></div>' +
+    '</div>';
 
   const cardEl = wall.querySelector('.cdx-en-reg');
-  // Capture the QR/código enrollment token NOW: page.js strips ?et= from the URL right
-  // after the wall renders, so reading it here (and passing it through verify) lets the
-  // worker approve a student who entered with the class código via the inscription window.
+  // Capture the QR/código enrollment token NOW: page.js strips ?et= from the URL right after the
+  // wall renders, so reading it here lets the single "Entrar" grant IN-ROOM provisional access
+  // via the inscription window (student_provisional_enter) before falling back to the e-mail link.
   const enrollToken = (typeof location !== 'undefined') ? extractEnrollToken(location.search) : null;
   const flow = createLoginFlow({
     client: state.clientSlug,
     turma: state.turmaSlug,
     presence: getPresence(state.clientSlug, state.turmaSlug),
     enrollToken,
+    k: state.token,
+    origin: (typeof location !== 'undefined') ? location.origin : undefined,
   });
   let name = '';
-  let cooldownUntil = 0;  // Date.now() ms when "Reenviar" frees up again (60s gate)
-  const startCooldown = (s) => { cooldownUntil = Date.now() + Math.max(0, s) * 1000; };
+  let pollTimer = null;
+  const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
 
   function reload() {
     if (typeof location !== 'undefined' && typeof location.reload === 'function') location.reload();
   }
-  // The student typed their name up front (a1 collects it with the e-mail), so a
-  // fresh registration's profile step is satisfied here without a second screen.
+
+  // Route each flow state to its view. The name typed up front satisfies the profile step, so a
+  // fresh sign-up never needs a second screen.
   async function settle() {
-    if (flow.state === 'authenticated') { reload(); return; }
+    if (flow.state === 'authenticated') { clearPoll(); reload(); return; }
     if (flow.state === 'profile') { await flow.saveProfile(name, true); settle(); return; }
-    renderCard();
-  }
-  function renderCard() {
-    if (flow.state === 'code' || flow.state === 'verifying') renderCardCode();
-    else renderCardForm();
+    if (flow.state === 'validating') { renderValidating(); startPoll('validation'); return; }
+    if (flow.state === 'pendingApproval') { renderPendingApproval(); startPoll('approval'); return; }
+    renderCardForm(flow.state === 'needName');
   }
 
-  function renderCardForm() {
+  // The single Entrar card: one e-mail field. The name field is present but hidden until the
+  // worker says the address is NEW (needName), then revealed inline (no modal, same card).
+  function renderCardForm(revealName) {
     cardEl.innerHTML =
-      '<h3 class="cdx-en-card-h">' + esc(t('wall.card_h')) + '</h3>' +
-      '<p class="cdx-en-card-s">' + esc(t('wall.card_sub')) + '</p>' +
-      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-reg-toggle" data-toggle-reg aria-expanded="false">' + esc(t('wall.reg_toggle')) + '</button>' +
-      '<div class="cdx-en-reg-fields">' +
-        '<div class="cdx-en-field">' +
-          '<label class="cdx-en-label" for="cdx-en-name">' + esc(t('login.name_label')) + '</label>' +
-          '<input id="cdx-en-name" class="cdx-en-input" type="text" autocomplete="name" placeholder="' + esc(t('login.name_placeholder')) + '">' +
-        '</div>' +
-        '<div class="cdx-en-field">' +
-          '<label class="cdx-en-label" for="cdx-en-email">' + esc(t('login.email_label')) + '</label>' +
-          '<input id="cdx-en-email" class="cdx-en-input" type="email" autocomplete="email" inputmode="email" placeholder="' + esc(t('login.email_placeholder')) + '">' +
-        '</div>' +
-        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
-        '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('wall.cta')) + '</button>' +
-        '<p class="cdx-en-nopass">' + esc(t('wall.nopass')) + '</p>' +
-        '<p class="cdx-en-haveacct">' + esc(t('wall.have_account')) + '</p>' +
-        consentNoticeHtml() +
-      '</div>';
-    // On an error re-render, reveal the fields on mobile so the message is visible.
-    if (flow.error) cardEl.classList.add('is-open');
-    const toggle = cardEl.querySelector('[data-toggle-reg]');
-    toggle.addEventListener('click', () => {
-      cardEl.classList.add('is-open');
-      toggle.setAttribute('aria-expanded', 'true');
-      const first = cardEl.querySelector('.cdx-en-reg-fields input');
-      if (first) first.focus();
-    });
+      '<h3 class="cdx-en-card-h">' + esc(t('wall.entrar_h')) + '</h3>' +
+      '<p class="cdx-en-card-s">' + esc(revealName ? t('wall.entrar_name_sub') : t('wall.entrar_sub')) + '</p>' +
+      '<div class="cdx-en-field cdx-en-namefield' + (revealName ? '' : ' hidden') + '">' +
+        '<label class="cdx-en-label" for="cdx-en-name">' + esc(t('login.name_label')) + '</label>' +
+        '<input id="cdx-en-name" class="cdx-en-input" type="text" autocomplete="name" placeholder="' + esc(t('login.name_placeholder')) + '">' +
+      '</div>' +
+      '<div class="cdx-en-field">' +
+        '<label class="cdx-en-label" for="cdx-en-email">' + esc(t('login.email_label')) + '</label>' +
+        '<input id="cdx-en-email" class="cdx-en-input" type="email" autocomplete="email" inputmode="email" placeholder="' + esc(t('login.email_placeholder')) + '"' + (revealName ? ' readonly' : '') + '>' +
+      '</div>' +
+      '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(revealName ? t('wall.continuar') : t('wall.entrar_cta')) + '</button>' +
+      consentNoticeHtml();
     const nameEl = cardEl.querySelector('#cdx-en-name');
     const emailEl = cardEl.querySelector('#cdx-en-email');
     const cta = cardEl.querySelector('.cdx-en-cta');
+    if (flow.email && emailEl) emailEl.value = flow.email;
     if (name && nameEl) nameEl.value = name;
+    if (revealName && nameEl) setTimeout(() => { try { nameEl.focus(); } catch (_) {} }, 50);
     const submit = async () => {
-      name = (nameEl.value || '').trim();
-      cta.disabled = true;
-      cta.textContent = t('login.sending');
-      // Pass the name so save-on-submit persists the real name (not the e-mail placeholder).
-      await flow.requestCode(emailEl.value, { name });
-      if (flow.state === 'code' && !flow.codeStillValid) startCooldown(60); // a new code was just sent
+      name = nameEl ? (nameEl.value || '').trim() : '';
+      cta.disabled = true; cta.textContent = t('login.sending');
+      await flow.entrar(emailEl.value, name);
       settle();
     };
     cta.addEventListener('click', submit);
     emailEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+    if (nameEl) nameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
   }
 
-  function renderCardCode() {
-    const dev = flow.devCode
-      ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_code')) + '</strong> ' + esc(flow.devCode) + '</p>'
+  // Sent the link: "check your e-mail". "Já validei" re-checks NOW (covers the cross-device case:
+  // validated on the phone, unlock this device), and the locked cadence polls in the background.
+  function renderValidating() {
+    const dev = flow.devMagicToken
+      ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_link')) + '</strong> <a href="?lt=' + esc(flow.devMagicToken) + '&k=' + esc(state.token || '') + '">abrir link</a></p>'
       : '';
-    cardEl.classList.add('is-open');
     cardEl.innerHTML =
-      '<h3 class="cdx-en-card-h">' + esc(t('login.code_title')) + '</h3>' +
-      '<p class="cdx-en-card-s">' + esc(t('login.code_desc')) + '</p>' +
-      '<div class="cdx-en-code-fields">' +
-        '<div class="cdx-en-field">' +
-          '<label class="cdx-en-label" for="cdx-en-code">' + esc(t('login.code_label')) + '</label>' +
-          '<input id="cdx-en-code" class="cdx-en-input" type="text" maxlength="4" autocapitalize="characters" autocomplete="one-time-code" placeholder="' + esc(t('login.code_ph')) + '">' +
-        '</div>' +
-        dev +
-        '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
-        '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t('login.verify')) + '</button>' +
-        '<p class="cdx-en-nopass cdx-en-hint">' + esc(t('login.not_received')) + '</p>' +
-        '<button type="button" class="cdx-en-resend" data-resend>' + esc(t('login.resend')) + '</button>' +
-      '</div>';
-    const codeEl = cardEl.querySelector('#cdx-en-code');
-    if (flow.devCode) codeEl.value = flow.devCode;
-    const cta = cardEl.querySelector('.cdx-en-cta');
-    const errEl = cardEl.querySelector('.cdx-en-error');
-    // Reused-code hint: re-entering the e-mail didn't fire a new code, the old one still works.
-    if (flow.codeStillValid) { errEl.classList.add('cdx-en-ok'); errEl.textContent = t('login.code_still_valid'); }
-    const submit = async () => { cta.disabled = true; await flow.verifyCode(codeEl.value); settle(); };
-    cta.addEventListener('click', submit);
-    codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
-    // Reenviar: re-request with the e-mail already in the flow (no retype). Gated to once a
-    // minute — the button counts down ("Reenviar em 59s…") and resumes across re-renders.
-    const resend = cardEl.querySelector('[data-resend]');
-    let cancelCd = cooldownButton(resend, Math.ceil((cooldownUntil - Date.now()) / 1000), t('login.resend'), t('login.resend_in'));
-    resend.addEventListener('click', async () => {
-      if (resend.disabled) return;
-      await flow.requestCode(flow.email, { resend: true });
-      if (flow.error) { settle(); return; }                          // hour-cap / error -> form with the message
-      cancelCd();
-      const secs = flow.retryAfter || 60;                            // throttled -> wait; else a fresh 60s
-      if (!flow.retryAfter) { if (flow.devCode) codeEl.value = flow.devCode; errEl.classList.add('cdx-en-ok'); errEl.textContent = t('login.resend_sent'); }
-      startCooldown(secs);
-      cancelCd = cooldownButton(resend, secs, t('login.resend'), t('login.resend_in'));
+      '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
+      '<h3 class="cdx-en-card-h">' + esc(t('wall.check_email_h')) + '</h3>' +
+      '<p class="cdx-en-card-s">' + esc(t('wall.check_email_sub')).replace('{email}', esc(flow.email || '')) + '</p>' +
+      dev +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-already">' + esc(t('wall.already_validated')) + '</button>';
+    const already = cardEl.querySelector('.cdx-en-already');
+    already.addEventListener('click', async () => {
+      already.disabled = true; already.textContent = t('login.sending');
+      await flow.pollValidation();
+      already.disabled = false; already.textContent = t('wall.already_validated');
+      settle();
     });
-    setTimeout(() => { try { codeEl.focus(); } catch (_) {} }, 50);
   }
 
-  renderCard();
+  // Validated, but a NEW student is pending the instructor's approval (the e-sino). No action for
+  // the student here; the approval poll unlocks the page the moment Élder approves.
+  // Reuses the EXISTING pending message (renderPending / login.pending_*), not a new one — the
+  // poll unlocks this card in place when the instructor approves in the e-sino.
+  function renderPendingApproval() {
+    cardEl.innerHTML =
+      '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('clock', { size: 34 }) + '</div>' +
+      '<h3 class="cdx-en-card-h">' + esc(t('login.pending_title')) + '</h3>' +
+      '<p class="cdx-en-card-s">' + esc(t('login.pending_body')) + '</p>';
+  }
+
+  // Drive the locked cadence for whichever poll the state calls for. A state change re-renders via
+  // settle(); reaching POLL_MAX stops quietly (the "Já validei" button stays as the manual escape).
+  function startPoll(kind) {
+    clearPoll();
+    let i = 0;
+    const tick = async () => {
+      if (i >= POLL_MAX) return;
+      if (kind === 'validation') await flow.pollValidation(); else await flow.pollApproval();
+      if ((kind === 'validation' && flow.state !== 'validating') || (kind === 'approval' && flow.state === 'authenticated')) { settle(); return; }
+      i += 1;
+      pollTimer = setTimeout(tick, POLL_CADENCE[Math.min(i, POLL_CADENCE.length - 1)]);
+    };
+    pollTimer = setTimeout(tick, POLL_CADENCE[0]);
+  }
+
+  renderCardForm(false);
 }

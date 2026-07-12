@@ -81,6 +81,29 @@ async function safeCall(promise) {
   }
 }
 
+// Server-side logout (track-36 d). The session cookie is HttpOnly, so clearing it needs a
+// server round-trip, dropping the local token alone leaves the cookie authenticating the
+// next request (the iOS-persistence path). The ONE server call lives here so every logout
+// path (the awaited helper below + the flow's own logout) shares it and can never drift.
+// Best-effort: it awaits, then swallows any failure INTERNALLY (so a fire-and-forget caller
+// never triggers an unhandledrejection), because a network blip must not trap a student who
+// tapped "Sair". Returns a promise a caller may await (page.js awaits so the cookie is gone
+// before it reloads) or ignore (the flow clears local state immediately, server in the bg).
+async function serverLogout(token, api) {
+  if (!token) return;
+  try { await api.logout({ session_token: token }); } catch (_) { /* best-effort */ }
+}
+
+// The awaited logout used by the header (login pill + settings box): revoke + clear the
+// cookie server-side, THEN drop the local token, so a caller that awaits knows the cookie is
+// cleared before it reloads. Shared so the two header sites never drift.
+export async function logoutStudent(client, turma, opts = {}) {
+  const api = opts.api || trail;
+  const sess = opts.session || defaultSession;
+  await serverLogout(sess.getToken(client, turma), api);
+  sess.clearToken(client, turma);
+}
+
 // Build a login flow. `client`/`turma` BIND it to one turma (the wall + the inline
 // gate + the modal): verify lands the student authenticated on that turma. OMITTING
 // them makes the flow turma-agnostic (the /trilha entry page): verify lands on the
@@ -102,6 +125,8 @@ export function createLoginFlow(opts = {}) {
     devCode: null,        // the on-screen code when no e-mail provider is wired (staging)
     turmas: null,         // the verify turma list (the hub on the entry page)
     participantId: null,
+    pollToken: null,      // track-36 d: the cross-device poll handle for the single "Entrar"
+    devMagicToken: null,  // dev/staging (no e-mail provider): the emailed token, surfaced to finish the flow
 
     isAuthenticated() { return sess.isLoggedIn(client, turma); },
 
@@ -207,6 +232,72 @@ export function createLoginFlow(opts = {}) {
       return this;
     },
 
+    // ── track-36 single "Entrar" (the one screen, e-mail-first) ─────────────────
+    // One method drives the whole entry. In-room (a live window + código/QR token) mints
+    // IMMEDIATE provisional access (12h), zero e-mail wait. Off-window, it sends the 15-min
+    // validation link and gets a poll_token so THIS device can watch for the click (the laptop
+    // unlocks when the phone clicks). A brand-new e-mail with no name yet stops at 'needName' so
+    // the screen reveals the name field inline BEFORE anything is created.
+    async entrar(rawEmail, name) {
+      this.error = null;
+      const email = validateEmail(rawEmail);
+      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
+      this.email = email;
+      const cleanName = (name || '').trim();
+      // In-room first: a live window grants provisional access on the spot (approval via the
+      // window; validation deferred to the 3-day e-mail the worker fires). No poll needed.
+      if (enrollToken) {
+        const pe = await safeCall(api.provisionalEnter({ client_slug: client, turma_slug: turma, email, name: cleanName, et: enrollToken, ask_name: true, k: opts.k, origin: opts.origin }));
+        if (pe && pe.ok && pe.entered && pe.session_token) {
+          sess.setToken(client, turma, pe.session_token);
+          this.participantId = pe.participant_id != null ? pe.participant_id : null;
+          this.state = pe.needs_profile ? 'profile' : 'authenticated';
+          return this;
+        }
+        // A NEW e-mail (no name yet) is asked for the name inline BEFORE it enters, even in-room.
+        if (pe && pe.needs_name) { this.state = 'needName'; return this; }
+        // A blocked student can't force in; surface it. Otherwise (window closed) fall through.
+        if (pe && pe.error === 'access_blocked') { this.state = 'email'; this.error = 'access_blocked'; return this; }
+      }
+      // Off-window: send the validation link + get the poll handle. ask_name reveals the name
+      // field for a NEW address before creating the participant.
+      const res = await safeCall(api.authRequest({ client_slug: client, turma_slug: turma, email, name: cleanName, ask_name: true, k: opts.k, origin: opts.origin }));
+      if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
+      if (res.needs_name) { this.state = 'needName'; return this; }
+      this.pollToken = res.poll_token || null;
+      this.devMagicToken = res.dev_magic_token || null; // staging only (no provider)
+      this.state = 'validating';
+      return this;
+    },
+
+    // One validation-poll tick (track-36 d). Before the emailed link is clicked it stays
+    // 'validating'. Once clicked (the e-mail is proven, maybe on another device), the worker
+    // hands THIS device a session: 'approved' → authenticated (caller reloads), 'pending' →
+    // 'pendingApproval' (validated, waiting on the instructor's e-sino approval).
+    async pollValidation() {
+      if (!this.pollToken) return this;
+      const res = await safeCall(api.authPoll({ poll_token: this.pollToken, _silent: true }));
+      if (!res || !res.ok || res.status === 'waiting') return this; // keep waiting (incl. transient errors)
+      if (res.session_token) {
+        sess.setToken(client, turma, res.session_token);
+        this.participantId = res.participant_id != null ? res.participant_id : null;
+      }
+      this.state = res.status === 'approved' ? 'authenticated' : 'pendingApproval';
+      return this;
+    },
+
+    // Poll after 'pendingApproval': the student is validated but not yet approved. Watch the
+    // live access_status (via the session minted at validation) until the instructor approves in
+    // the e-sino, then unlock. No "validate now" wall — validation already happened.
+    async pollApproval() {
+      const token = sess.getToken(client, turma);
+      if (!token) return this;
+      const res = await safeCall(api.sessionCheck({ session_token: token, _silent: true }));
+      if (!res || !res.ok) return this;
+      if (res.access_status === 'approved') this.state = 'authenticated';
+      return this;
+    },
+
     async saveProfile(displayName, consent) {
       this.error = null;
       if (!consent) { this.error = 'consent_required'; return this; }
@@ -222,7 +313,12 @@ export function createLoginFlow(opts = {}) {
     },
 
     logout() {
+      // Clear local state immediately (sync) so the UI updates now, and fire the SHARED server
+      // logout in the background (serverLogout swallows its own rejection, so this unawaited call
+      // is safe). Capture the token BEFORE clearing so the server still gets it.
+      const token = sess.getToken(client, turma);
       sess.clearToken(client, turma);
+      serverLogout(token, api);
       this.state = 'anonymous';
       this.error = null;
       this.devCode = null;

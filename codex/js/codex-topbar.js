@@ -441,6 +441,10 @@ export function init(opts) {
           if (item.aula_number != null) url += '&faula=' + encodeURIComponent(item.aula_number);
           if (item.item_id != null) url += '&fitem=' + encodeURIComponent(item.item_id);
         }
+        // A pending-student notification (e-sino) deep-links to the turma's Participantes
+        // sub-tab, where approval happens (Élder: the notification LEADS to the area, it
+        // does not act inline).
+        if (item.type === 'student_pending') url += '&fdtab=participantes';
       }
       location.href = url;
     },

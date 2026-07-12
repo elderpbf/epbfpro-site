@@ -74,8 +74,10 @@ test('entrar auto-enters a valid device session (no Continuar banner, no hub)', 
   assert.match(js, /getKnownTurmas/, 'reads the device turma registry');
   assert.match(js, /sessionCheck\(/, 'validates the device session server-side before entering');
   assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
-  assert.match(js, /createLoginFlow/, 'drives the shared login controller for the e-mail path');
-  assert.match(js, /requestCode|verifyCode/, 'uses the OTP code flow (not the magic link)');
+  assert.match(js, /createLoginFlow/, 'drives the SHARED login flow (same module as the wall) — the two screens converge');
+  assert.match(js, /\.entrar\(/, 'runs the shared flow.entrar (the magic-link path), not a divergent impl');
+  assert.match(js, /pollValidation|pollApproval/, 'runs the shared validation + approval polls (aguardando aprovação), same as the wall');
+  assert.ok(!/requestCode|verifyCode/.test(js), 'the OTP code flow is retired on the landing (magic link via the shared flow)');
   assert.ok(!/clearToken\(/.test(js), 'a failed device-session check never deletes the token (a network blip must not strand a logged-in student on the registration screen)');
   assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
   assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');
@@ -110,7 +112,7 @@ test('entrar i18n keys exist in both pt and en', () => {
 });
 
 test('entrar i18n carries the new entry copy in both langs', () => {
-  assert.match(i18n, /'entrar\.email_lead':\s*'Enviaremos um código por e-mail para autenticar\.'/, 'pt e-mail copy (authenticate, not "4 letras / sem senha")');
+  assert.match(i18n, /'entrar\.email_lead':\s*'Enviaremos um link por e-mail para validar\.'/, 'pt e-mail copy (send a validation link, not a code)');
   for (const k of ['entrar.continue', 'entrar.eyebrow', 'entrar.email_h', 'entrar.code_sent', 'entrar.other_email']) {
     const count = (i18n.match(new RegExp("'" + k.replace('.', '\\.') + "'", 'g')) || []).length;
     assert.ok(count >= 2, `${k} present in pt + en`);

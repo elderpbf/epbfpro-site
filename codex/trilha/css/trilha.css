@@ -108,6 +108,9 @@ html, body {
   border: 1px dashed var(--border);
   border-radius: 14px;
 }
+/* "Precisa de ajuda?" sits just under the content (small gap, easy to find); the footer
+   below it keeps the larger gap so it reads as the page footer (Élder 2026-07-12). */
+.cdx-tr-support { margin-top: 1.25rem; text-align: center; }
 .cdx-trilha-footer {
   margin-top: 3.5rem;
   padding-top: 1.5rem;

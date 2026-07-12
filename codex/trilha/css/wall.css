@@ -62,6 +62,11 @@
   text-decoration: underline; text-underline-offset: 2px; }
 .cdx-en-resend:disabled { opacity: .55; cursor: default; }
 .cdx-en-consent { margin-top: 1rem; padding-top: .9rem; border-top: 1px dashed var(--border); font-size: .72rem; color: var(--text-secondary); line-height: 1.5; }
+/* track-36 single "Entrar": the name field is hidden until the worker says the e-mail is new. */
+.cdx-en-namefield.hidden { display: none; }
+/* Waiting states (check-your-e-mail / pending approval): a centred line glyph above the copy. */
+.cdx-en-wait-ic { text-align: center; margin: .2rem 0 .6rem; color: var(--text-secondary); }
+.cdx-en-wait-ic svg { display: inline-block; vertical-align: middle; }
 
 /* Collapse-to-button toggle: shown only when the layout is stacked (mobile).
    Look comes from tr-btn tr-btn-primary cdx-btn in JS; layout only kept here. */
@@ -121,6 +126,12 @@
 
 .cdx-en-pending { background: var(--surface); border: 1px solid var(--border); border-radius: 16px; padding: 2rem 1.5rem;
   text-align: center; max-width: 440px; margin: 1.5rem auto 0; box-shadow: 0 18px 48px -22px var(--shadow); }
-.cdx-en-pending-icon { font-size: 2rem; line-height: 1; margin-bottom: .6rem; }
+.cdx-en-pending-icon { line-height: 1; margin-bottom: .7rem; color: var(--text-secondary); }
+.cdx-en-pending-icon svg { display: inline-block; vertical-align: middle; }
 .cdx-en-pending-title { font-size: 1.1rem; font-weight: 800; color: var(--text-primary); margin: 0 0 .4rem; }
 .cdx-en-pending-body { font-size: .88rem; color: var(--text-secondary); line-height: 1.5; margin: 0; }
+/* Magic-link "e-mail validated" confirmation reuses this card (js: renderValidatedNotice):
+   green check via .cdx-en-ok, an "ou" separator, and the "Abrir a trilha aqui" fallback button. */
+.cdx-en-pending-or { font-size: .8rem; color: var(--text-secondary); margin: .95rem 0 .35rem; }
+.cdx-en-pending-cta { margin-top: .2rem; justify-content: center; }
+.cdx-en-pending.cdx-en-ok .cdx-en-pending-icon { color: var(--success); }

@@ -859,6 +859,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-doss-trail-acts { display: flex; gap: .3rem; flex-wrap: wrap; margin-top: .05rem; }
 .cdx-doss-trail-acts .cdx-btn { padding: .2rem .45rem; font-size: .72rem; }
 .cdx-doss-trail-na { font-size: .8rem; color: var(--text-secondary); }
+/* The Janela (validation window) button: a clean colour toggle, filled green when OPEN. */
+.cdx-doss-janela.is-open { border-color: var(--success); color: var(--success); background: rgba(16,185,129,.14); }
 /* Access code as a trail-row button: the bare 4-digit /trilha code, click-to-copy,
    sitting in the trail card's action row alongside Copiar URL / open / regen / QR.
    Inherits the small-button sizing from .cdx-doss-trail-acts .cdx-btn; here we just
@@ -917,6 +919,13 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-conn.ok { color: var(--tint-success-tx); font-weight: 700; }
 .cdx-prow-conn.no { color: var(--text-secondary); opacity: .65; }
 .cdx-prow-when { font-size: .68rem; color: var(--text-secondary); white-space: nowrap; margin-left: .1rem; }
+/* Validation axis (track-36): a neutral chip, NOT an alarm. ok = validated (green pill);
+   prov = not-yet-validated (grey pill). Tokens carry the light/dark values. */
+.cdx-prow-val { font-size: .64rem; font-weight: 700; padding: .05rem .32rem; border-radius: 4px; white-space: nowrap; }
+.cdx-prow-val.ok { background: var(--tint-success); color: var(--tint-success-tx); }
+.cdx-prow-val.prov { background: rgba(127,127,127,.14); color: var(--text-secondary); }
+/* The provisional-remaining time ("expira em 5h") reads as neutral emphasis, theme-adaptive. */
+.cdx-prow-when.prov { color: var(--text-primary); font-weight: 700; }
 .cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .cdx-prow-acts .cdx-btn { padding: .2rem .5rem; font-size: .72rem; }
 

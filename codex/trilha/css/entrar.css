@@ -59,6 +59,9 @@ body { font-family: 'Inter', sans-serif; background: var(--background); color: v
 .cdx-entrar-link:hover { color: var(--primary); }
 .cdx-entrar-dev { font-size: 0.85rem; color: var(--text-primary); margin-top: .5rem; }
 .cdx-entrar-dev strong { font-weight: 800; }
+/* "Confira seu e-mail" (magic-link sent): a centred line glyph above the copy, no emoji. */
+.cdx-entrar-wait-ic { text-align: center; margin: .2rem 0 .6rem; color: var(--text-secondary); }
+.cdx-entrar-wait-ic svg { display: inline-block; vertical-align: middle; }
 
 .cdx-entrar-note { font-size: 0.78rem; color: var(--text-secondary); margin-top: 1.8rem; padding-top: 18px; border-top: 1px solid var(--border); text-align: center; }   /* B6: --text-light → --text-secondary */
 

@@ -11,11 +11,13 @@ import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
 import { t, setLang } from '../i18n.js';
-import { extractEnrollToken, isLoggedIn, clearToken, getToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
+import { extractEnrollToken, isLoggedIn, clearToken, getToken, setToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
+import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
 import { renderSimpleWall } from './wall-simple.js';
+import { renderNoticePage } from './notice-page.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
@@ -85,6 +87,14 @@ export async function mount(root, ctx = {}) {
 
   if (!state.clientSlug || !state.turmaSlug || !state.token) { showError(root, 'link_invalid', t); return; }
 
+  // Magic-link return (track-36): the emailed validation link lands here as ?lt=<token>. Consume
+  // it BEFORE fetching the view, so the session is set and content loads approved (or the pending
+  // wall shows). auth_verify marks the e-mail validated + mints the session on this device. A
+  // RECENT click (the original "aguardando validação" page is likely still open, polling and about
+  // to unlock itself) shows the clean "e-mail validated" confirmation with the timeline HIDDEN; a
+  // later click opens the trail directly.
+  const _magic = LOGIN_ENABLED ? await consumeMagicToken(loc, api) : null;
+
   state.sessionToken = LOGIN_ENABLED ? getToken(state.clientSlug, state.turmaSlug) : null;
   try {
     state.data = await fetchTurmaViewResilient(api);
@@ -108,30 +118,14 @@ export async function mount(root, ctx = {}) {
         client_name: rc.display_name || rc.name || '', turma_name: rt.display_name || rt.name || '', k: state.token,
       });
     }
-    // Upfront-gated + unapproved: render the wall instead of the timeline. Inline
-    // mode (and approved / open) renders the timeline as usual; the per-item gate in
-    // sub.js/flat.js handles inline opens.
-    if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
-      // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
-      // registers on the spot; every other gated turma keeps the original OTP wall.
-      if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
-      else renderWall(root);
-    } else {
-      renderTabs(root);
-      _onHash = () => onHashChange();
-      if (_win) _win.addEventListener('hashchange', _onHash);
-      // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab
-      // (forum.js reads the param and opens the thread). Only when the turma enabled
-      // the forum and the tab is therefore present.
-      const turma = (state.data || {}).turma || {};
-      const hasThreadLink = (() => { try { return !!new URLSearchParams(loc.search || '').get('thread'); } catch (_) { return false; } })();
-      if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
-      onHashChange();
-      // "Salvar como app": offer a home-screen install on the timeline only (never on the
-      // login wall), and only when the turma enables it (per-turma flag, DEFAULT-ON).
-      // Self-guards further: no-op if installed, not installable, or previously dismissed.
-      if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
-    }
+    // A RECENT magic-link click by an ALREADY-APPROVED student (the original "aguardando validação"
+    // tab is likely still open, polling and about to unlock itself) shows the clean "e-mail validated"
+    // confirmation with the timeline HIDDEN, not the trail — "Abrir a trilha aqui" reveals it on demand.
+    // A student who is validated but STILL PENDING has no access yet, so we do NOT offer that button:
+    // renderTrilhaView drops them straight on the "Acesso em análise" wall. Any other load renders the
+    // trail straight away.
+    if (_magic && _magic.validated && _magic.recent && !isWall((state.data || {}).access)) renderValidatedNotice(root, loc);
+    else renderTrilhaView(root, loc);
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER
@@ -219,40 +213,10 @@ function renderHero(root) {
 // the turma has a whatsapp_url) into the pensoia-header .ph-right. Retries while
 // the header web component upgrades. The login pill always shows; its label tracks
 // the session and its click reads live state, so one handler serves both directions.
-let _loginPill = null;
-
-function buildLoginPill() {
-  const btn = document.createElement('button');
-  btn.type = 'button';
-  btn.className = 'ph-action-btn cdx-tr-login-pill';
-  btn.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
-  btn.addEventListener('click', () => {
-    if (isLoggedIn(state.clientSlug, state.turmaSlug)) {
-      // Logout must re-gate. Content already rendered for an approved session
-      // stays on screen, because the gate only re-checks on the next fetch, so
-      // clearing the token alone left everything visible. Reload so the Trail
-      // re-fetches as anonymous and the gate re-applies.
-      clearToken(state.clientSlug, state.turmaSlug);
-      if (typeof location !== 'undefined' && location.reload) { location.reload(); return; }
-      refreshLoginPill();
-    } else {
-      openLoginModal({
-        client: state.clientSlug, turma: state.turmaSlug, k: state.token,
-        presence: getPresence(state.clientSlug, state.turmaSlug),
-        // Simple-enroll turma: the pill opens the e-mail-only step, not the código flow.
-        simple: !!(((state.data || {}).access || {}).simple_enroll),
-        onAuthenticated: afterAuth,
-      });
-    }
-  });
-  return btn;
-}
-
-function refreshLoginPill() {
-  if (_loginPill) {
-    _loginPill.textContent = isLoggedIn(state.clientSlug, state.turmaSlug) ? t('login.logout') : t('login.entrar');
-  }
-}
+// track-36 c: the header login/logout pill was retired (the wall is the single Entrar screen;
+// logout lives in the settings box). refreshLoginPill is kept as an inert no-op so its call sites
+// (recheckAuth / afterAuth) stay simple — there is simply no pill to repaint anymore.
+function refreshLoginPill() { /* no pill to refresh (retired) */ }
 
 // Re-check auth on every page open. If we hold a session token but the server no longer
 // recognizes it (revoked/expired -> the gated turma view comes back 'anonymous'), clear
@@ -298,20 +262,19 @@ function renderHeaderActions() {
       prepend(wa);
     }
 
-    // Login pill: ONLY for an ANONYMOUS student on a gated turma (a returning student who
-    // wants to log in instead of registering at the wall). When logged in, the logout lives
-    // inside the settings box (below), so there is no standalone "Sair" pill (Élder).
-    if (LOGIN_ENABLED && data.access && data.access.gated && !state.sessionToken) {
-      _loginPill = buildLoginPill();
-      prepend(_loginPill);
-    }
+    // The standalone "Entrar" pill was retired (track-36 c): the wall IS the single Entrar
+    // screen (e-mail-first), so a header pill duplicating it lost its purpose (Élder). An
+    // anonymous student on a gated turma just sees the wall. Logged-in logout lives in the
+    // settings box (below), so the header carries no login/logout pill either way.
 
-    // Settings box (the initials avatar) whenever the student is logged in on a gated
-    // turma: it carries the logout (ALWAYS) plus the notif prefs (only when the forum is
-    // on, the sole notification source today). The bell shows only with the forum. Header
-    // order: bell + theme toggle stay on the LEFT; the settings gear sits on the RIGHT,
-    // appended AFTER the theme toggle (Élder).
-    if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated) {
+    // Settings box (the initials avatar) + bell: shown ONLY when the student has COMPLETE access —
+    // approved AND e-mail-validated (Élder 2026-07-11). A just-requested/pending student (or a
+    // provisional, not-yet-validated one) holds a walled session but must NOT see the notif prefs /
+    // logout box for access they don't fully have yet. It carries the logout (ALWAYS) plus the notif
+    // prefs (only when the forum is on). Header order: bell + theme toggle on the LEFT; the settings
+    // gear on the RIGHT, appended AFTER the theme toggle (Élder).
+    if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated
+        && data.access.status === 'approved' && data.access.validated) {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
       let bell = null;
       if (data.turma && data.turma.forum_enabled) {
@@ -360,8 +323,9 @@ function renderHeaderActions() {
         onInstallApp: (data.turma && data.turma.app_install_prompt !== 0)
           ? (() => showInstallPrompt(_root, { win: _win }))
           : undefined,
-        onLogout: () => {
-          clearToken(state.clientSlug, state.turmaSlug);
+        onLogout: async () => {
+          // Server round-trip first (track-36 d): clear the HttpOnly cookie + revoke, then reload.
+          await logoutStudent(state.clientSlug, state.turmaSlug);
           if (typeof location !== 'undefined' && location.reload) location.reload();
         },
         btnClass: 'ph-action-btn',
@@ -383,6 +347,105 @@ function avatarInitials(name) {
 // (register + access on the spot, no magic link) takes precedence, else enroll_prompt (the
 // magic-link request). The fixed ?k= link never reaches this path, so it stays prompt-free.
 // Strips et so a refresh can't replay it; returns true so the caller skips the magic path.
+// Magic-link return (track-36): consume ?lt=<token>. auth_verify marks the e-mail validated,
+// mints the session on THIS device, and (for an already-approved e-mail) unlocks durably. A
+// pending newcomer just gets a walled session and lands on the pending wall. The token is
+// single-use; strip it from the URL so a refresh can't replay it. Best-effort throughout — a
+// bad/expired link falls through to the wall rather than erroring.
+// A click within 15 min of the request means the original "aguardando validação" page is likely
+// still open + polling, so this page shows the clean "e-mail validated" confirmation (timeline
+// hidden) instead of taking over the tab; a later click opens the trail directly.
+const MAGIC_RECENT_SECONDS = 15 * 60;
+
+async function consumeMagicToken(loc, api) {
+  let lt = null;
+  try { lt = new URLSearchParams((loc && loc.search) || '').get('lt'); } catch (_) { lt = null; }
+  if (!lt) return { validated: false, recent: false };
+  let validated = false, recent = false;
+  try {
+    const res = await api.authVerify({
+      token: lt,
+      presence_token: getPresence(state.clientSlug, state.turmaSlug) || undefined,
+      _silent: true,
+    });
+    if (res && res.ok && res.session_token) {
+      setToken(state.clientSlug, state.turmaSlug, res.session_token);
+      validated = true;
+      recent = typeof res.link_age_seconds === 'number' && res.link_age_seconds <= MAGIC_RECENT_SECONDS;
+    }
+  } catch (_) { /* bad/expired link -> fall through to the wall */ }
+  try {
+    if (_win && _win.history && _win.history.replaceState) {
+      const u = new URL(_win.location.href);
+      u.searchParams.delete('lt');
+      _win.history.replaceState({}, '', u.pathname + (u.search || '') + (u.hash || ''));
+    }
+  } catch (_) { /* strip is best-effort */ }
+  return { validated, recent };
+}
+
+// Render the actual trail: the timeline (approved / open) or the register-and-pending wall
+// (gated + unapproved). Extracted so the magic-link confirmation can DEFER it behind a button
+// ("Abrir a trilha aqui") instead of rendering it up front.
+function renderTrilhaView(root, loc) {
+  // Upfront-gated + unapproved: render the wall instead of the timeline. Inline mode (and
+  // approved / open) renders the timeline as usual; the per-item gate in sub.js/flat.js
+  // handles inline opens.
+  if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
+    // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
+    // registers on the spot; every other gated turma keeps the original OTP wall.
+    if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
+    else renderWall(root);
+  } else {
+    renderTabs(root);
+    _onHash = () => onHashChange();
+    if (_win) _win.addEventListener('hashchange', _onHash);
+    // Deeplink: the notification bell emits ?thread=<id>. Land on the Fórum tab (forum.js
+    // reads the param and opens the thread). Only when the turma enabled the forum.
+    const turma = (state.data || {}).turma || {};
+    const hasThreadLink = (() => { try { return !!new URLSearchParams((loc && loc.search) || '').get('thread'); } catch (_) { return false; } })();
+    if (hasThreadLink && turma.forum_enabled && _win && _win.location) _win.location.hash = '#forum';
+    onHashChange();
+    // "Salvar como app": offer a home-screen install on the timeline only (never on the login
+    // wall), and only when the turma enables it (per-turma flag, DEFAULT-ON). Self-guards: no-op
+    // if installed, not installable, or previously dismissed.
+    if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
+  }
+}
+
+// Reveal the trail from behind the magic-link confirmation: drop the notice, unhide the timeline
+// shell, then render as usual. (A pending student's renderWall re-hides the shell and shows the
+// pending notice; an approved student sees the timeline.)
+function revealTrilha(root, loc) {
+  const main = root.querySelector('.cdx-trilha-main');
+  if (main) {
+    const wall = main.querySelector('.cdx-en-wall');
+    if (wall) wall.remove();
+    const tabs = main.querySelector('.cdx-trilha-tabs');
+    const content = main.querySelector('.cdx-trilha-tabcontent');
+    if (tabs) tabs.hidden = false;
+    if (content) content.hidden = false;
+  }
+  if (root.classList) root.classList.remove('cdx-tr-has-wall');
+  renderTrilhaView(root, loc);
+}
+
+// The magic-link "e-mail validated" confirmation (track-36). Reuses the shared full-page notice
+// (renderNoticePage / .cdx-en-pending), so the timeline stays HIDDEN behind a clean page — NOT a
+// modal over a rendered trail. Primary path: go back to the original tab, which unlocked itself via
+// its poll. Fallback (no original tab, e.g. clicked on the phone): "Abrir a trilha aqui" reveals
+// the trail on this device.
+function renderValidatedNotice(root, loc) {
+  renderNoticePage(root, {
+    glyph: 'check-circle',
+    cls: 'cdx-en-ok',
+    title: t('login.validated_title'),
+    body: t('login.validated_body'),
+    orLabel: t('login.validated_or'),
+    action: { label: t('login.validated_cta'), onClick: () => revealTrilha(root, loc) },
+  });
+}
+
 function handleEnrollReturn(loc) {
   const et = extractEnrollToken((loc && loc.search) || '');
   if (!et) return false;

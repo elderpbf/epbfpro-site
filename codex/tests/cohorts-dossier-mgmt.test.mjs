@@ -35,6 +35,19 @@ test('the Aulas tab is the aula hub; Liberações + Tarefas are per-aula, not tu
   assert.match(cohortsJs, /data-aulatab="tarefas"/, 'per-aula Tarefas sub-tab');
 });
 
+test('the dossier remembers its active sub-tab across re-renders (deep-link survives the async deps reload)', () => {
+  // Regression: the shell used to hardcode `active` on Dados, so the async deps
+  // re-render reset the tab — a deep-link (e-sino → Participantes) flashed then fell
+  // back to Dados. The active tab is now state (_dossierDtab), rendered as active.
+  assert.match(cohortsJs, /let _dossierDtab/, 'the active sub-tab is module state');
+  assert.ok(!/class="cdx-subtab active" data-dtab="dados"/.test(cohortsJs), 'no hardcoded active tab in the shell');
+  assert.match(cohortsJs, /_tabCls\(/, 'the shell derives the active class from state');
+  assert.match(cohortsJs, /_dossierDtab = key/, 'a manual tab click updates the remembered tab');
+  assert.match(cohortsJs, /_dossierDtab = \(ctx && ctx\.fdtab\)/, 'a deep-link (fdtab) seeds the active sub-tab');
+  // index.html must forward an explicit fdtab so the bell can target Participantes.
+  assert.match(read('../index.html'), /ctx\.fdtab = params\.get\('fdtab'\)/, 'index.html honours an explicit fdtab');
+});
+
 test('cohorts reuses the existing modules, mounted aula-locked (no duplicated composer)', () => {
   assert.match(cohortsJs, /import \* as releasesAdmin from '\.\.\/content\/releases\.js'/, 'imports releases module');
   assert.match(cohortsJs, /import \* as tarefasAdmin from '\.\.\/content\/tarefas\.js'/, 'imports tarefas module');
@@ -106,7 +119,10 @@ test('labs3: the dossier shows the 4-digit access code (click-to-copy) and the t
   assert.match(cohortsJs, /const code = turma\.access_code \|\| null;/, 'reads the access_code');
   // The code is a BUTTON in the trail card's action row (next to QR), NOT a separate box.
   assert.match(cohortsJs, /class="cdx-btn cdx-btn-sm cdx-doss-code-btn" data-doss="copycode" data-code="/, 'code is a trail-row button');
-  assert.match(cohortsJs, /data-doss="qrshare"[\s\S]{0,400}codeBtn/, 'the code button sits with the trail actions, after QR');
+  // track-36: the Janela button (validation-window open/close) sits between the QR and the code,
+  // separate from the QR modal (Élder). Order in the trail-acts row: QR → Janela → code.
+  assert.match(cohortsJs, /data-doss="qrshare"[\s\S]{0,600}data-doss="janela"[\s\S]{0,400}codeBtn/, 'the code button sits with the trail actions, after QR + Janela');
+  assert.match(cohortsJs, /data-doss="janela"[\s\S]{0,200}cohorts\.window/, 'the Janela button carries the window label');
   assert.ok(!/cdx-doss-fact--code/.test(cohortsJs), 'no separate access-code fact box');
   assert.match(cohortsJs, /else if \(a === 'copycode'\) _copyCode\(b\.dataset\.code\);/, 'wires the copy-code action');
   assert.match(cohortsJs, /function _copyCode\(code\)[\s\S]{0,200}clipboard\.writeText\(code\)/, 'copies the bare digits, not the URL');

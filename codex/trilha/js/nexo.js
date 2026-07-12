@@ -23,7 +23,7 @@ const HIDDEN_CLS      = 'cdx-tr-hidden-by-nexo';
 // The wall (.cdx-en-wall) is in the list so that on a gated turma the live-answer
 // takeover cleanly replaces the register wall (the live Q&A needs no login); the wall
 // is restored when the session closes. (#4: every gated turma now renders the wall.)
-const HIDE_SELECTORS  = ['.cdx-trilha-hero', '.cdx-trilha-tabs', '.cdx-trilha-tabcontent', '.cdx-trilha-footer', '.cdx-en-wall'];
+const HIDE_SELECTORS  = ['.cdx-trilha-hero', '.cdx-trilha-tabs', '.cdx-trilha-tabcontent', '.cdx-tr-support', '.cdx-trilha-footer', '.cdx-en-wall'];
 
 let _loc = null;
 let _timer = null;

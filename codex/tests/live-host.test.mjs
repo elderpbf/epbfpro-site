@@ -108,11 +108,14 @@ test('live-host wires lifecycle + Trilha + QR + AI through the facade/shared glo
   assert.match(src, /\.closeSession\s*\(/, 'Encerrar closes the session');
   assert.match(src, /\.lookupTurmaBySession\s*\(/, 'Trilha looks up the linked turma');
   assert.match(src, /\.updateTurmaMeta\s*\(/, 'Trilha links/unlinks via turma meta');
-  // The QR button toggles the projected QR through the SHARED enroll-control, so the
-  // panel and the display act identically (one server state, one toggle). The window
-  // stays open (the button never closes it), so it pops no panel-side QR modal.
-  assert.match(src, /from\s+['"]\.\.\/js\/enroll-control\.js['"]/, 'uses the shared enrollment-projection control');
-  assert.match(src, /toggleProjection\s*\(/, 'toggles the QR via the shared control (same code as the display)');
+  // TWO separate controls (track-36, Élder): the Janela button opens/closes the validation
+  // window (ct_open/close_enrollment); the QR button projects/un-projects it on the display
+  // (ct_set_enrollment_qr) via the SHARED enroll-control state, so panel + display act on ONE
+  // server state. Closing the window and hiding the QR are distinct.
+  assert.match(src, /from\s+['"]\.\.\/js\/enroll-control\.js['"]/, 'uses the shared enrollment-projection state helper');
+  assert.match(src, /\.openEnrollment\s*\(/, 'the Janela button opens the validation window');
+  assert.match(src, /\.closeEnrollment\s*\(/, 'the Janela button closes the validation window (a real close)');
+  assert.match(src, /\.setEnrollmentQr\s*\(/, 'the QR button projects/un-projects on the display');
   assert.match(src, /\.getEnrollment\s*\(/, 'reads the shared enrollment state');
   assert.match(src, /from\s+['"]\.\.\/js\/enroll-clock\.js['"]/, 'shows the server-anchored countdown on the panel');
   assert.ok(!/window\.QRShareModal\b/.test(src), 'no longer reads the backstage QRShareModal global');

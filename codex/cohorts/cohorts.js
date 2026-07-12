@@ -74,7 +74,10 @@ let _turmaViewApps = [];  // granted apps (with aula_number), for the aula app c
 // ONCE on load: a tarefa-submission opens the turma on its aula's Tarefas sub-tab
 // focused on the item; a forum item opens the Fórum sub-tab. Each is cleared as it
 // is applied so a later manual navigation is never hijacked.
-let _deepDtab = null;   // 'aulas' | 'forum' | null
+let _dossierDtab = 'dados';   // the ACTIVE dossier sub-tab, remembered across re-renders
+                              // (async deps re-render used to reset it) — 'dados' |
+                              // 'participantes' | 'aulas' | 'certs' | 'forum'. A deep-link
+                              // (ctx.fdtab) seeds it; a manual turma open resets it to 'dados'.
 let _deepAula = null;   // aula_number to auto-select
 let _deepItem = null;   // tarefa item_id to focus in the Tarefas pane
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
@@ -331,7 +334,7 @@ function _loadAll() {
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
     if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
     _renderList();
-    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); _applyDeepDtab(); }
+    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); }
     else {
       // No deep-link: start with the rail pinned open and the dossiê showing the
       // empty prompt until Élder opens a turma (mirrors the Questions picker).
@@ -345,17 +348,6 @@ function _loadAll() {
     const el2 = _q(IDS.list);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
   });
-}
-
-// Deep-link step 1: once the dossier is open, reveal the target sub-tab (aulas for a
-// tarefa submission, forum for a forum post) by activating its button. The aula
-// selection + tarefa focus follow when the aulas hub finishes loading (_applyDeepAula).
-function _applyDeepDtab() {
-  if (!_deepDtab) return;
-  const dtab = _deepDtab;
-  _deepDtab = null;
-  const btn = _viewEl && _viewEl.querySelector('.cdx-subtab[data-dtab="' + dtab + '"]');
-  if (btn) btn.click();
 }
 
 function _initials(name) {
@@ -1181,9 +1173,11 @@ function _openParticipantEditModal(participant, onSaved) {
 function _selectTurma(clientSlug, turmaSlug) {
   if (!clientSlug || !turmaSlug) return;
   if (clientSlug === _relClientSlug && turmaSlug === _relTurmaSlug) return;
-  // New turma: reset the aula hub selection so it opens on the first aula's Dados.
+  // New turma: reset the aula hub selection so it opens on the first aula's Dados, and
+  // the dossier sub-tab back to Dados (a manual open is not a deep-link).
   _selectedAulaId = null;
   _aulaTab = 'dados';
+  _dossierDtab = 'dados';
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
   try { localStorage.setItem('cdx_cohorts_last', clientSlug + '\n' + turmaSlug); } catch (_) {}  // reopen this turma after a refresh
@@ -1207,6 +1201,12 @@ function _fmtDateBr(iso) {
 function _renderDossier(turma) {
   const el = _q('cdx-turma-dossier');
   if (!el) return;
+  // The active sub-tab is state, not hardcoded, so an async re-render (deps load) keeps
+  // it — and a deep-link (e.g. the e-sino → Participantes) survives that re-render.
+  const _KNOWN_DTABS = ['dados', 'participantes', 'aulas', 'certs', 'forum'];
+  const _dt = _KNOWN_DTABS.indexOf(_dossierDtab) >= 0 ? _dossierDtab : 'dados';
+  const _tabCls = (k) => 'cdx-subtab' + (k === _dt ? ' active' : '');
+  const _panHide = (k) => (k === _dt ? '' : ' hidden');
   // Tear down any live aula embed before the dossier DOM is replaced (no leak across
   // turma switches / dossier re-renders).
   _unmountAulaEmbeds();
@@ -1285,6 +1285,7 @@ function _renderDossier(turma) {
           '<a class="cdx-btn cdx-btn-sm" href="' + _esc(url) + '" target="_blank" rel="noopener" title="' + _esc(t('cohorts.open_url')) + '">&#8599;</a>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="regen" title="' + _esc(t('cohorts.regen_token_title')) + '">&#8635;</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-doss="qrshare" data-url="' + _esc(url) + '" data-code="' + _esc(code || '') + '" title="' + _esc(t('cohorts.qr_title')) + '" aria-label="' + _esc(t('cohorts.qr_title')) + '">' + glyphSvg('qr', { size: 14 }) + '</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm cdx-doss-janela" data-doss="janela" data-cs="' + _esc(turma.client_slug) + '" data-slug="' + _esc(turma.slug) + '" title="' + _esc(t('cohorts.window_title')) + '">' + _esc(t('cohorts.window')) + '</button>' +
           codeBtn +
         '</div>'
       : '<span class="cdx-doss-trail-na">' + _esc(t('cohorts.url_unavailable')) + '</span>') +
@@ -1310,14 +1311,14 @@ function _renderDossier(turma) {
       // Container-only change: each panel keeps its exact inner content + ids, and
       // the loaders below still fire eagerly on mount (not lazy-on-tab-show). ──
       '<div class="cdx-subrow cdx-doss-tabs"><div class="cdx-substrip" role="tablist">' +
-        '<button type="button" class="cdx-subtab active" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
-        '<button type="button" class="cdx-subtab" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
+        '<button type="button" class="' + _tabCls('dados') + '" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
+        '<button type="button" class="' + _tabCls('participantes') + '" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
+        '<button type="button" class="' + _tabCls('aulas') + '" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
+        '<button type="button" class="' + _tabCls('certs') + '" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
+        '<button type="button" class="' + _tabCls('forum') + '" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
       '</div></div>' +
       // Dados panel = turma facts + Acesso (the short config block folds in here).
-      '<div class="cdx-doss-panel" data-dpanel="dados">' +
+      '<div class="cdx-doss-panel" data-dpanel="dados"' + _panHide('dados') + '>' +
         '<div class="cdx-doss-facts">' +
           editSelect('course_id', t('cohorts.tf_course'), courseOpts, 'cdx-doss-fact--course') +
           factId('cdx-doss-carga', t('cohorts.course_hours_label'), cargaDerived) +
@@ -1336,7 +1337,7 @@ function _renderDossier(turma) {
         '<div id="cdx-doss-acesso"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
       // Participantes panel (the roster/help controls move into a panel toolbar).
-      '<div class="cdx-doss-panel" data-dpanel="participantes" hidden>' +
+      '<div class="cdx-doss-panel" data-dpanel="participantes"' + _panHide('participantes') + '>' +
         '<div class="cdx-doss-panel-bar">' +
           '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button>' +
           '<span class="cdx-doss-sec-acts">' +
@@ -1349,16 +1350,16 @@ function _renderDossier(turma) {
       // Aulas panel = the aula HUB (Layout A): a resizable list | detail split. The
       // per-aula Liberações + Tarefas now live INSIDE each aula's detail (aula-locked
       // embeds), so the old turma-level Liberações/Tarefas sub-tabs were retired.
-      '<div class="cdx-doss-panel" data-dpanel="aulas" hidden>' +
+      '<div class="cdx-doss-panel" data-dpanel="aulas"' + _panHide('aulas') + '>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
       '</div>' +
       // Certificados panel.
-      '<div class="cdx-doss-panel" data-dpanel="certs" hidden>' +
+      '<div class="cdx-doss-panel" data-dpanel="certs"' + _panHide('certs') + '>' +
         '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
         '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
       // Fórum panel (Phase 4 fills the admin moderation view).
-      '<div class="cdx-doss-panel" data-dpanel="forum" hidden>' +
+      '<div class="cdx-doss-panel" data-dpanel="forum"' + _panHide('forum') + '>' +
         '<div id="cdx-doss-forum"><span class="cdx-empty">' + _esc(t('cohorts.doss_forum_empty')) + '</span></div>' +
       '</div>' +
     '</div>';
@@ -1377,16 +1378,29 @@ function _renderDossier(turma) {
     else if (a === 'copyurl') _copyUrl(b.dataset.url);
     else if (a === 'copycode') _copyCode(b.dataset.code);
     else if (a === 'qrshare') qrShare.open({ joinUrl: b.dataset.url, code: b.dataset.code || null });
+    else if (a === 'janela') _toggleDossierWindow(b);
   }));
 
-  // Per-turma sub-tab switching: show the picked panel, hide the rest. Every loader
-  // fires eagerly on mount, so switching is pure show/hide.
+  // Paint the Janela (validation window) button from the live server state on mount. Separate
+  // from the QR modal (Élder): the QR button shows the code, this one opens/closes the window.
+  const _janelaBtn = el.querySelector('[data-doss="janela"]');
+  if (_janelaBtn) {
+    api.getEnrollment({ client_slug: _janelaBtn.dataset.cs, slug: _janelaBtn.dataset.slug })
+      .then((r) => { _janelaBtn.classList.toggle('is-open', !!(r && r.ok && r.open)); })
+      .catch(() => { /* best-effort; the button still toggles on click */ });
+  }
+
+  // Per-turma sub-tab switching: show the picked panel, hide the rest. Loaders fire eagerly on
+  // mount, so switching is pure show/hide — EXCEPT Participantes, which we re-fetch on open so the
+  // list reflects live approvals/validations without a full-page refresh (cheap: one call, no poll).
   const _dtabs = el.querySelectorAll('.cdx-subtab[data-dtab]');
   const _dpanels = el.querySelectorAll('.cdx-doss-panel[data-dpanel]');
   _dtabs.forEach((tab) => tab.addEventListener('click', () => {
     const key = tab.dataset.dtab;
+    _dossierDtab = key;   // remember it, so an async re-render (deps load) keeps this tab
     _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
     _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
+    if (key === 'participantes') _loadDossierParticipants(turma);
   }));
 
   _wireDossierInlineEdit(el, turma);
@@ -1495,6 +1509,25 @@ function _wireDossierInlineEdit(el, turma) {
   });
 }
 
+// Toggle the turma's validation window from the dossier (open/close). Acts, then re-reads the
+// authoritative state and repaints. Mirrors the session's Janela button; both drive ONE server
+// state (ct_open/close_enrollment), so they never diverge. Separate from the QR modal (Élder).
+function _toggleDossierWindow(btn) {
+  const cs = btn.dataset.cs, slug = btn.dataset.slug;
+  if (!cs || !slug) return;
+  const open = btn.classList.contains('is-open');
+  btn.disabled = true;
+  Promise.resolve(open ? api.closeEnrollment({ client_slug: cs, slug }) : api.openEnrollment({ client_slug: cs, slug }))
+    .then(() => api.getEnrollment({ client_slug: cs, slug }))
+    .then((r) => {
+      const nowOpen = !!(r && r.ok && r.open);
+      btn.classList.toggle('is-open', nowOpen);
+      toast.ok(nowOpen ? t('cohorts.window_opened') : t('cohorts.window_closed'));
+    })
+    .catch((e) => { if (window.bsLog) window.bsLog('cohorts: toggle window failed: ' + (e && e.message || e), 'error'); notice.internal(e); })
+    .finally(() => { btn.disabled = false; });
+}
+
 // ── Dossier participant list (B+C2): status separators + adaptive bulk toolbar ──
 // The pure rules (gating, grouping, action predicates) live in participant-view.js
 // and are unit-tested there; this section is the render + DOM wiring only.
@@ -1528,21 +1561,43 @@ function _pAvatar(p, st, gated) {
 // One selectable row. No per-row action buttons (B+C2): the whole row toggles its
 // checkbox; the only per-row control is the discreet edit ✎. The status badge shows
 // only when gated; the online dot only for an approved + connected person.
+// Seconds left on a provisional session (client clock; seconds of skew are immaterial for a 12h
+// window). 0 when there is no live session or it already lapsed.
+function _provRemaining(expiresAt) {
+  if (!expiresAt) return 0;
+  return Math.max(0, Number(expiresAt) - Math.floor(Date.now() / 1000));
+}
+// Compact remaining label: 5h / 42min / <1min.
+function _fmtDur(sec) {
+  const h = Math.floor(sec / 3600);
+  const m = Math.floor((sec % 3600) / 60);
+  if (h > 0) return h + 'h';
+  if (m > 0) return m + 'min';
+  return '<1min';
+}
+
 function _pRow(p, gated) {
   const st = p.access_status || 'pending';
-  const online = (p.active_sessions || 0) > 0;
-  // Connection mark, meaningful only once approved + gated. One axis, two explicit
-  // states: ✓ acessou (green, with how long ago it last logged in) vs ✕ nunca acessou
-  // (muted). Replaces the old ● (which read like the legend's • "não logou") and the
-  // ⚠ e-mail-não-confirmado, a different axis that misfired as an alarm (Élder 2026-07-09).
+  // Two axes shown together (track-36, Élder): approval is the status badge (_pTag); here we show
+  // VALIDATION (e-mail confirmed?) + the relevant time — for a not-yet-validated (provisional)
+  // access, how much of the 12h is left; otherwise the last access. The validation chip is neutral
+  // info, NOT the ⚠ alarm that was retired 2026-07-09.
   let conn = '';
   if (gated && st === 'approved') {
-    if (online) {
-      const when = p.last_access_at ? ' <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>' : '';
-      conn = ' <span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span>' + when;
+    const validated = !!p.email_verified;
+    const valChip = validated
+      ? '<span class="cdx-prow-val ok" title="' + _esc(t('cohorts.pval_validated_t')) + '">' + _esc(t('cohorts.pval_validated')) + '</span>'
+      : '<span class="cdx-prow-val prov" title="' + _esc(t('cohorts.pval_unvalidated_t')) + '">' + _esc(t('cohorts.pval_unvalidated')) + '</span>';
+    const remain = validated ? 0 : _provRemaining(p.session_expires_at);
+    let when;
+    if (remain > 0) {
+      when = '<span class="cdx-prow-when prov">' + _esc(t('cohorts.pprov_expires').replace('{t}', _fmtDur(remain))) + '</span>';
+    } else if (p.last_access_at) {
+      when = '<span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span> <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>';
     } else {
-      conn = ' <span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
+      when = '<span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
     }
+    conn = ' ' + valChip + ' ' + when;
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
@@ -2271,7 +2326,7 @@ export function mount(viewEl, ctx) {
   _turmaAulas = [];
   _relClientSlug = (ctx && ctx.fclient) || null;
   _relTurmaSlug = (ctx && ctx.fturma) || null;
-  _deepDtab = (ctx && ctx.fdtab) || null;
+  _dossierDtab = (ctx && ctx.fdtab) || 'dados';   // deep-link (e-sino → participantes) seeds the sub-tab
   _deepAula = (ctx && ctx.faula != null && ctx.faula !== '') ? ctx.faula : null;
   _deepItem = (ctx && ctx.fitem != null && ctx.fitem !== '') ? ctx.fitem : null;
   _cpSessions = [];
@@ -2296,7 +2351,7 @@ export function mount(viewEl, ctx) {
 export function unmount() {
   cursos.unmount();
   _unmountAulaEmbeds();
-  _deepDtab = null; _deepAula = null; _deepItem = null;
+  _dossierDtab = 'dados'; _deepAula = null; _deepItem = null;
   if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }
   _cleanup.forEach(fn => fn());
   _cleanup = [];

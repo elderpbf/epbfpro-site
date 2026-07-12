@@ -86,3 +86,19 @@ test('notif i18n keys exist in codex + trilha dictionaries (pt + en)', () => {
     }
   }
 });
+
+// ── e-sino: a pending student deep-links to the Participantes approval area ────
+// Élder: a notification NEVER acts inline — it LEADS the admin to the relevant area,
+// and the approval happens there (the dossiê Participantes sub-tab).
+test('the admin bell deep-links a pending student to the Participantes sub-tab', () => {
+  const src = read('../js/codex-topbar.js');
+  assert.match(src, /type === 'student_pending'/, 'handles the pending-student item');
+  assert.match(src, /fdtab=participantes/, 'deep-links to the approval sub-tab');
+});
+test('the bell has NO inline action (notifications lead to the area, not act in place)', () => {
+  assert.ok(!/itemAction|data-bell-act/.test(read('../js/notif-bell.js')), 'no inline action button in the shared bell');
+  assert.ok(!/itemAction|setParticipantAccess/.test(read('../js/codex-topbar.js')), 'the admin bell wires no inline approve');
+});
+test('index.html honours an explicit fdtab deep-link param (so the bell can target Participantes)', () => {
+  assert.match(read('../index.html'), /ctx\.fdtab = params\.get\('fdtab'\)/, 'reads an explicit fdtab');
+});

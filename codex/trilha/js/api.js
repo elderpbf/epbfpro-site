@@ -31,6 +31,20 @@ export const trail = {
   otpVerify:      (p) => call('student_otp_verify', p),     // { email, code, client_slug?, turma_slug?, presence_token? } -> { ok, turmas:[{client_slug,turma_slug,client_name,turma_name,token,session_token,participant_id,needs_profile,access}] } | { error }
   profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }
   sessionCheck:   (p) => call('student_session_check', p),  // { session_token } -> { ok, participant_id, turma_id } | { error }
+  // Server-side logout (track-36 d): revoke the session + clear the HttpOnly cookie (which
+  // script can't touch). Always send credentials so the cookie is presented + cleared.
+  logout:         (p) => call('student_logout', p),         // { session_token } -> { ok, clear_session_cookie }
+  // Single "Entrar" in-room path (track-36 c/d): 12h provisional session while the window is open.
+  provisionalEnter: (p) => call('student_provisional_enter', p), // { client_slug, turma_slug, email, name?, et? } -> { ok, entered, provisional?, session_token? } | { error }
+  // Off-window "Entrar" (track-36 c/d): send the 15-min validation link + get a poll_token for THIS
+  // device. E-mail-first: pass ask_name so a NEW address returns { needs_name } to reveal the name.
+  authRequest: (p) => call('student_auth_request', p), // { client_slug, turma_slug, email, name?, ask_name? } -> { ok, needs_name? , poll_token?, dev_magic_token? } | { error }
+  // Magic-link return (track-36): the emailed validation link lands as ?lt=<token>; the page
+  // consumes it here to mark the e-mail validated + mint the session on the device that clicked.
+  authVerify: (p) => call('student_auth_verify', p), // { token, presence_token? } -> { ok, session_token, access } | { error }
+  // Cross-device poll (track-36 d): the device that typed the e-mail watches for the emailed link
+  // to be clicked. 'waiting' until clicked; then a session + the live access_status.
+  authPoll: (p) => call('student_auth_poll', p), // { poll_token } -> { ok, status:'waiting'|'approved'|'pending', session_token?, access_status? } | { error }
 
   // Fórum (Phase 8). Student face: all gated by a valid session token for the turma.
   // Notifications are computed server-side; the bell consumes forumNotifications /
