@@ -224,6 +224,8 @@ html, body {
   border-bottom-color: var(--primary);
   font-weight: 700;
 }
+/* Desktop top-tab strip is text-only; the inline icon is for the mobile bottom bar (mobile.css). */
+.cdx-tr-tab-ico { display: none; }
 
 /* ── Tab panels ──────────────────────────────────────────── */
 .cdx-trilha-tabcontent { min-height: 20rem; }

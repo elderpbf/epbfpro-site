@@ -530,15 +530,18 @@ function renderTabs(root) {
   // Aplicativos tab: shows only when the turma has at least one app whose lesson has
   // occurred (the backend already applied that happened-gate to data.apps). With exactly
   // one app the tab takes that app's name; with several it is the generic "Aplicativos".
+  // Each tab button now wraps its label in a .cdx-tr-tab-txt span (next to the inline SVG icon),
+  // so set the SPAN's text, never the button's textContent, which would wipe the icon.
+  const labelEl = (btn) => (btn && (btn.querySelector('.cdx-tr-tab-txt') || btn));
   const apps = data.apps || [];
   if (appsBtn) {
     appsBtn.hidden = !apps.length;
-    if (apps.length === 1 && apps[0].name) appsBtn.textContent = apps[0].name;
-    else appsBtn.textContent = t('page.tab_apps');
+    if (apps.length === 1 && apps[0].name) labelEl(appsBtn).textContent = apps[0].name;
+    else labelEl(appsBtn).textContent = t('page.tab_apps');
   }
 
   if (outrosBtn) {
-    if (outros.length) outrosBtn.textContent = t('page.tab_outros') + ' (' + outros.length + ')';
+    if (outros.length) labelEl(outrosBtn).textContent = t('page.tab_outros') + ' (' + outros.length + ')';
     outrosBtn.hidden = !outros.length;
   }
   if (apostilaBtn) apostilaBtn.hidden = !apostilaCount;

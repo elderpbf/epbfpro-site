@@ -29,28 +29,28 @@
   .cdx-tr-item-action svg { width: 15px; height: 15px; }
 }
 
-/* ── Bottom pill nav (mobile only): the tab bar detaches from the top underline
-   strip and floats as a rounded pill above the safe area, icon-over-label, the
-   active tab filled solid, the "flutuante" mock Élder picked (mocks/trilha-tabs/b2.html).
-   Desktop is UNCHANGED (still the top underline bar in trilha.css); only the ≤700px
-   layout/paint is overridden here, so no JS/markup change was needed, same buttons,
-   same click handlers, same .active class, just repainted. ─────────────────────── */
+/* ── Floating pill bottom nav (mobile only): the tab bar detaches from the top underline strip and
+   floats as a rounded pill lifted off the bottom edge, icon over a short label, the active tab a
+   filled teal capsule. Ported from the trilha-tabs mock (b2.html) Élder chose; the icons are the
+   inline SVGs in the markup (.cdx-tr-tab-ico), so their centering matches the mock exactly. Desktop
+   is UNCHANGED (top underline strip, icons hidden); only ≤700px is repainted. The full label span is
+   hidden and a short label is drawn from data-short so the pill stays compact even with six tabs. */
 @media (max-width: 700px) {
-  .cdx-trilha-page { padding-bottom: calc(60px + env(safe-area-inset-bottom, 0px)); }
+  .cdx-trilha-page { padding-bottom: calc(84px + env(safe-area-inset-bottom, 0px)); }
 
   .cdx-trilha-tabs {
     position: fixed;
-    left: 0;
-    right: 0;
-    bottom: 0;
+    left: 12px;
+    right: 12px;
+    bottom: calc(12px + env(safe-area-inset-bottom, 0px));
     z-index: 40;
     margin: 0;
-    padding: 5px 2px calc(5px + env(safe-area-inset-bottom, 0px));
-    gap: 0;
+    padding: 6px;
+    gap: 2px;
     background: var(--surface);
-    border: none;
-    border-top: 1px solid var(--border);
-    box-shadow: 0 -2px 14px var(--shadow, rgba(0, 0, 0, 0.12));
+    border: 1px solid var(--border);
+    border-radius: 24px;
+    box-shadow: 0 10px 28px var(--shadow, rgba(0, 0, 0, 0.16));
     overflow: visible;
   }
   .cdx-trilha-tabs-left, .cdx-trilha-tabs-right {
@@ -59,66 +59,41 @@
   .cdx-tr-tab-btn {
     flex: 1 1 0;
     min-width: 0;
+    display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
     gap: 3px;
-    padding: 5px 2px;
+    padding: 8px 2px;
     margin-bottom: 0;
-    border-bottom: none;
-    border-radius: 10px;
-    font-size: 0; /* hide the long text node; the short label comes from ::after (data-short) */
+    border: none;
+    border-radius: 18px;
+    font-size: 0; /* collapse the whitespace text node between the inline icon and the label */
     color: var(--text-secondary);
   }
+  .cdx-tr-tab-ico {
+    display: block;
+    width: 21px;
+    height: 21px;
+    fill: none;
+    stroke: currentColor;
+    stroke-width: 1.9;
+    stroke-linecap: round;
+    stroke-linejoin: round;
+    flex-shrink: 0;
+  }
+  .cdx-tr-tab-txt { display: none; } /* full label is desktop-only; mobile shows the ::after short */
   .cdx-tr-tab-btn::after {
     content: attr(data-short);
-    font-size: 0.62rem;
+    font-size: 0.6rem;
     font-weight: 600;
     line-height: 1;
     white-space: nowrap;
   }
   .cdx-tr-tab-btn.active {
-    color: var(--primary);
-    background: none;
+    background: var(--primary);
+    color: #fff;
     border-bottom-color: transparent;
-  }
-  .cdx-tr-tab-btn::before {
-    content: '';
-    display: block;
-    width: 20px;
-    height: 20px;
-    background-color: currentColor;
-    -webkit-mask-repeat: no-repeat;
-    mask-repeat: no-repeat;
-    -webkit-mask-position: center;
-    mask-position: center;
-    -webkit-mask-size: contain;
-    mask-size: contain;
-  }
-  .cdx-tr-tab-btn[data-tab="aulas"]::before {
-    /* Byte-exact port of the mock's Aulas icon path (mocks/trilha-tabs/b2.html): M4 6h16M4 12h16M4 18h10. */
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h10'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='1.9' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 6h16M4 12h16M4 18h10'/%3E%3C/svg%3E");
-  }
-  .cdx-tr-tab-btn[data-tab="tarefas"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 11 12 14 22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='9 11 12 14 22 4'/%3E%3Cpath d='M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11'/%3E%3C/svg%3E");
-  }
-  .cdx-tr-tab-btn[data-tab="forum"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3Cline x1='8' y1='9' x2='16' y2='9'/%3E%3Cline x1='8' y1='13' x2='13' y2='13'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z'/%3E%3Cline x1='8' y1='9' x2='16' y2='9'/%3E%3Cline x1='8' y1='13' x2='13' y2='13'/%3E%3C/svg%3E");
-  }
-  .cdx-tr-tab-btn[data-tab="apostila"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 19.5A2.5 2.5 0 0 1 6.5 17H20'/%3E%3Cpath d='M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z'/%3E%3C/svg%3E");
-  }
-  .cdx-tr-tab-btn[data-tab="outros"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z'/%3E%3C/svg%3E");
-  }
-  .cdx-tr-tab-btn[data-tab="apps"]::before {
-    -webkit-mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7'/%3E%3Crect x='14' y='3' width='7' height='7'/%3E%3Crect x='14' y='14' width='7' height='7'/%3E%3Crect x='3' y='14' width='7' height='7'/%3E%3C/svg%3E");
-    mask-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='black' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Crect x='3' y='3' width='7' height='7'/%3E%3Crect x='14' y='3' width='7' height='7'/%3E%3Crect x='14' y='14' width='7' height='7'/%3E%3Crect x='3' y='14' width='7' height='7'/%3E%3C/svg%3E");
   }
 
   /* The back-to-timeline pill (focus mode) sits above the fixed nav, not under it. */
