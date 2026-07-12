@@ -170,12 +170,14 @@ async function openSubmit(tarefa) {
     return;
   }
   if (!item) return;
+  const participant = (state.data || {}).participant || {};
   openTarefaSubmitModal({
     item,
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,
     token: state.token,
     sessionToken: state.sessionToken,
+    participantName: participant.display_name || participant.name || '', // logged-in: drops the name field
     onSubmitted: () => renderMyTarefas(_outerRoot),
   });
 }

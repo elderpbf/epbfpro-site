@@ -522,9 +522,10 @@ function renderTabs(root) {
   // The Fórum tab shows only when the turma enabled it.
   if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
 
-  // The Tarefas tab shows only when at least one tarefa is revealed (same rule as
-  // Apostila/Outros below); the panel itself gates on login, like Fórum.
-  if (tarefasBtn) tarefasBtn.hidden = !items.some((it) => it.type === 'tarefa');
+  // The Tarefas tab is per-student (your own submissions), so it needs a session: show it only
+  // when the student is logged in AND at least one tarefa is revealed. On an open turma (no
+  // session) it stays hidden, since "my tarefas" has no identity to resolve.
+  if (tarefasBtn) tarefasBtn.hidden = !(state.sessionToken && items.some((it) => it.type === 'tarefa'));
 
   // Aplicativos tab: shows only when the turma has at least one app whose lesson has
   // occurred (the backend already applied that happened-gate to data.apps). With exactly
