@@ -29,8 +29,10 @@ export function mountNoticeSection(root) {
     // display:flex, which leaked onto this section; the wall/notice uses its own en- name.
     wall = document.createElement('section');
     wall.className = 'cdx-en-wall';
-    const footer = main.querySelector('.cdx-trilha-footer');
-    main.insertBefore(wall, footer || null);
+    // Insert the wall as CONTENT: above the "Precisa de ajuda?" pill + the footer, so the
+    // support entry stays just under the content and the footer stays at the bottom.
+    const anchor = main.querySelector('#cdx-tr-support-footer') || main.querySelector('.cdx-trilha-footer');
+    main.insertBefore(wall, anchor || null);
   }
   wall.hidden = false;
   return wall;

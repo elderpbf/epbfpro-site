@@ -74,9 +74,10 @@ test('entrar auto-enters a valid device session (no Continuar banner, no hub)', 
   assert.match(js, /getKnownTurmas/, 'reads the device turma registry');
   assert.match(js, /sessionCheck\(/, 'validates the device session server-side before entering');
   assert.match(js, /location\.replace\(/, 'a valid session goes straight into its turma');
-  assert.match(js, /authRequest\(/, 'the e-mail path sends the 15-min validation LINK (track-36: the magic link is back)');
-  assert.match(js, /authPoll\(/, 'the device polls its poll_token so a click advances this tab into the turma');
-  assert.ok(!/requestCode|verifyCode/.test(js), 'the OTP code flow is retired on the landing (link, not code)');
+  assert.match(js, /createLoginFlow/, 'drives the SHARED login flow (same module as the wall) — the two screens converge');
+  assert.match(js, /\.entrar\(/, 'runs the shared flow.entrar (the magic-link path), not a divergent impl');
+  assert.match(js, /pollValidation|pollApproval/, 'runs the shared validation + approval polls (aguardando aprovação), same as the wall');
+  assert.ok(!/requestCode|verifyCode/.test(js), 'the OTP code flow is retired on the landing (magic link via the shared flow)');
   assert.ok(!/clearToken\(/.test(js), 'a failed device-session check never deletes the token (a network blip must not strand a logged-in student on the registration screen)');
   assert.match(js, /cdx-entrar-step-code/, 'choosing e-mail hides the código card (focus the e-mailed code)');
   assert.ok(!/renderContinue|cdx-entrar-cont/.test(js), 'the Continuar banner is gone');

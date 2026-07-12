@@ -134,8 +134,7 @@ function renderRegister(wall) {
         benefitsHtml() +
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg is-open"></div></div>' +
-    '</div>' +
-    '<p class="cdx-en-questions">' + esc(t('wall.q_lead')) + ' <b>' + esc(t('wall.q_bold')) + '</b> ' + esc(t('wall.q_tail')) + '</p>';
+    '</div>';
 
   const cardEl = wall.querySelector('.cdx-en-reg');
   // Capture the QR/código enrollment token NOW: page.js strips ?et= from the URL right after the
