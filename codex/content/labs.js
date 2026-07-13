@@ -252,13 +252,17 @@ function _switchMode(mode) {
   _selectedKey = _resolveSelection(_currentList(), null);
   if (_rail) { _rail.destroy(); _rail = null; }
   _buildRail();
+  _renderList();   // mountRail does not auto-render; paint the new mode's rows now
   _renderPreview();
 }
-// Archive (on=true) or restore (on=false) a lab, then refresh. Emptying the
-// drawer jumps back to the active list; the footer count re-renders with the rail.
+// Archive (on=true) or restore (on=false) a lab, then refresh. Archiving also
+// turns the lab off (an archived lab is put away); restoring turns it back on.
+// Emptying the drawer jumps back to the active list; the footer count re-renders
+// with the rail.
 function _archive(key, on) {
   if (!key) return;
   setLabArchived(key, on);
+  _setEnabled(key, !on);
   if (_mode === 'archived' && archivedLabs().length === 0) { _switchMode('active'); return; }
   _selectedKey = _resolveSelection(_currentList(), _selectedKey === key ? null : _selectedKey);
   if (_rail) _rail.render();

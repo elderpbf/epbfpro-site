@@ -74,4 +74,5 @@ test('labs supports archive: put-away drawer with restore, wired to the registry
   assert.match(src, /data-action="restore"/, 'archived rows/preview have a Restaurar action');
   assert.match(src, /data-action="show-archived"/, 'the labs list has a footer button that opens the Arquivados drawer');
   assert.match(src, /setLabArchived\(key,\s*(true|on)\)|setLabArchived\(key, on\)/, 'toggles archived state via the registry, not local UI state');
+  assert.match(src, /_setEnabled\(key,\s*!on\)/, 'archiving also disables the lab (restore re-enables it)');
 });
