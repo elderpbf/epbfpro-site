@@ -152,6 +152,12 @@
       opacity: 1;
       text-shadow: 0 1px 3px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.6);
     }
+    /* A block being folded by Compactar: it collapses to zero over the transition
+       (label fades so text doesn't jumble as it thins) and is then removed. */
+    .k18-block--leaving { overflow: hidden; pointer-events: none; z-index: 0; }
+    .k18-block--leaving .k18-block-label,
+    .k18-block--leaving .k18-block-tokens { opacity: 0; transition: opacity 200ms; }
+
     /* A new turn starts with a sky-blue user block; a hairline top rule doubles
        the visual turn boundary. */
     .k18-block--turnstart { box-shadow: inset 0 2px 0 rgba(255,255,255,0.55); }
@@ -398,8 +404,9 @@
       let stepPos = 0;         // steps revealed
       let compactedUntil = 0;  // 0 = none; else steps [SETUP_STEPS..compactedUntil) folded
       let fullScale = false;   // false = dynamic zoom, true = full 1M to scale
-      let zoomCeil = ZOOM_STEPS[0];  // dynamic zoom ceiling; only ever ratchets UP,
-                                     // so compaction and Voltar never rescale the bar
+      let zoomCeil = ZOOM_STEPS[0];  // dynamic zoom ceiling: ratchets UP as the window
+                                     // grows (so normal steps never rescale), and drops
+                                     // back on Compactar so the setup names are readable
       let processedFrozen = 0;       // reads already paid before the last compaction
       let compactBaseTok = 0;        // window baseline (setup + summary) after compaction
 
@@ -461,11 +468,25 @@
       // Reconcile the bar's children with the desired list (top→bottom), keyed by
       // id, so each block's element persists and its flex-basis TRANSITIONS.
       function reconcile(desired) {
-        const have = new Map();
-        Array.prototype.forEach.call(barsEl.children, (el) => have.set(el.dataset.key, el));
         const keep = new Set(desired.map((d) => d.key));
-        Array.prototype.slice.call(barsEl.children).forEach((el) => { if (!keep.has(el.dataset.key)) el.remove(); });
-        desired.forEach((d) => {
+        const have = new Map();
+        Array.prototype.forEach.call(barsEl.children, (el) => {
+          if (el.dataset.leaving !== '1') have.set(el.dataset.key, el);
+        });
+        // Blocks that are gone (the interactions folded by Compactar) must NOT snap
+        // out — that instant removal was what made compaction look like a full
+        // reload. Instead they collapse to zero height over the transition and are
+        // removed afterwards, so the interactions fold smoothly into the summary.
+        const leaving = [];
+        Array.prototype.slice.call(barsEl.children).forEach((el) => {
+          if (el.dataset.leaving !== '1' && !keep.has(el.dataset.key)) {
+            el.dataset.leaving = '1';
+            el.classList.add('k18-block--leaving');
+            leaving.push(el);
+          }
+        });
+        // Create or update every desired block (keyed, so its flex-basis animates).
+        const els = desired.map((d) => {
           let el = have.get(d.key);
           if (!el) {
             el = document.createElement('div');
@@ -476,10 +497,18 @@
           el.innerHTML = '<span class="k18-block-label">' + d.label + '</span>' +
             '<span class="k18-block-tokens">' + (d.tokens == null ? '' : fmt(d.tokens)) + '</span>';
           el._basis = (d.pct * 100).toFixed(2) + '%';
-          barsEl.appendChild(el);          // appendChild re-orders to desired sequence
+          return el;
         });
-        void barsEl.offsetHeight;          // reflow so the basis change animates
-        Array.prototype.forEach.call(barsEl.children, (el) => { el.style.flexBasis = el._basis; });
+        // Order the bar: top block (free) first, then the collapsing blocks in the
+        // place they already occupied, then the rest. appendChild moves each node to
+        // the end, so the final child order matches this sequence.
+        [els[0]].concat(leaving, els.slice(1)).forEach((el) => { if (el) barsEl.appendChild(el); });
+        void barsEl.offsetHeight;          // reflow so the basis changes animate
+        els.forEach((el) => { el.style.flexBasis = el._basis; });
+        leaving.forEach((el) => {
+          el.style.flexBasis = '0%';       // collapse away, then drop from the DOM
+          setTimeout(function () { if (el.parentNode) el.remove(); }, 820);
+        });
       }
 
       function render() {
@@ -558,6 +587,7 @@
         processedFrozen = computeProcessed();       // reads already paid stay paid
         compactedUntil = stepPos;                   // fold interactions into one summary
         compactBaseTok = SETUP_TOK + SUMMARY_TOK;   // smaller window for future reads
+        zoomCeil = dynamicZoom(SETUP_TOK + SUMMARY_TOK);  // re-zoom down so the setup names are readable again
         render();
       }
       function scale()   { fullScale = !fullScale; render(); }
