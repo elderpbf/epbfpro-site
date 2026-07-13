@@ -27,7 +27,6 @@ export function settingsHtml(turma) {
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-appinstall"' + (appInstall ? ' checked' : '') + '> <span>' + esc(t('alunos.app_install')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-authcode"' + (authCode ? ' checked' : '') + '> <span>' + esc(t('alunos.auth_code')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-emergency"' + (emergency ? ' checked' : '') + '> <span>' + esc(t('alunos.emergency')) + '</span></label>' +
-    '<div class="cdx-acc-row cdx-acc-reentry"><button type="button" class="cdx-btn cdx-acc-reentry-btn">' + esc(t('alunos.reentry_open')) + '</button> <span class="cdx-acc-reentry-status" aria-live="polite"></span></div>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
     '<span class="cdx-acc-msg" aria-live="polite"></span></div>' +
   '</div>';
@@ -81,37 +80,4 @@ export function wireSettings(scope, turma, opts) {
     }
     save.disabled = false;
   });
-
-  // Reentry window (feat/trilha-reentry): a time-boxed, self-closing window (server-capped 12h) that
-  // lets an approved+validated member re-enter by e-mail alone. Separate from Save (immediate open/close).
-  const reBtn = scope.querySelector('.cdx-acc-reentry-btn');
-  const reStatus = scope.querySelector('.cdx-acc-reentry-status');
-  if (reBtn) {
-    let reOpen = false;
-    const paint = (st) => {
-      reOpen = !!(st && st.open);
-      reBtn.textContent = reOpen ? t('alunos.reentry_close') : t('alunos.reentry_open');
-      reBtn.classList.toggle('cdx-acc-reentry-on', reOpen);
-      if (reStatus) {
-        if (reOpen && st.reentry_window_until && st.now) {
-          const mins = Math.max(0, Math.round((st.reentry_window_until - st.now) / 60));
-          reStatus.textContent = t('alunos.reentry_open_for').replace('{m}', String(mins));
-        } else { reStatus.textContent = ''; }
-      }
-    };
-    const refresh = async () => {
-      try { paint(await api.getReentry({ client_slug: opts.clientSlug, slug: opts.slug })); }
-      catch (e) { if (typeof window !== 'undefined' && window.bsLog) window.bsLog('reentry state: ' + (e && e.message || e), 'error'); }
-    };
-    reBtn.addEventListener('click', async () => {
-      reBtn.disabled = true;
-      try {
-        if (reOpen) await api.closeReentry({ client_slug: opts.clientSlug, slug: opts.slug });
-        else await api.openReentry({ client_slug: opts.clientSlug, slug: opts.slug });
-        await refresh();
-      } catch (e) { if (typeof window !== 'undefined' && window.bsLog) window.bsLog('reentry toggle: ' + (e && e.message || e), 'error'); }
-      reBtn.disabled = false;
-    });
-    refresh();
-  }
 }
