@@ -22,7 +22,7 @@ const TRAIL_SRCDOC =
   '<link rel="stylesheet" href="/codex/css/item-render.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/questions/questions.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.0">' +
-  '<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.0">' +
+  '<link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.1">' +
   '<link rel="stylesheet" href="/codex/trilha/css/nexo.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.0">' +
