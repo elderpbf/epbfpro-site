@@ -926,28 +926,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-val.prov { background: rgba(127,127,127,.14); color: var(--text-secondary); }
 /* The provisional-remaining time ("expira em 5h") reads as neutral emphasis, theme-adaptive. */
 .cdx-prow-when.prov { color: var(--text-primary); font-weight: 700; }
-/* "Dias até expirar" chip + hover popover (Élder 2026-07-13): the at-a-glance expiry, with
-   the rest of the participant dossier revealed on hover/focus. No modal, pure CSS. */
-.cdx-prow-exp {
-  position: relative; font-size: .64rem; font-weight: 700; padding: .05rem .32rem;
-  border-radius: 4px; white-space: nowrap; cursor: default; outline: none;
-  background: rgba(127,127,127,.14); color: var(--text-secondary);
-}
-.cdx-prow-exp--ok   { background: var(--tint-primary); color: var(--tint-primary-tx); }
-.cdx-prow-exp--soon { background: var(--tint-task);    color: var(--tint-task-tx); }
-.cdx-prow-exp--off  { background: rgba(127,127,127,.14); color: var(--text-secondary); opacity: .85; }
-.cdx-prow-pop {
-  display: none; position: absolute; z-index: 40; top: calc(100% + 6px); left: 0;
-  min-width: 190px; padding: .5rem .6rem; border-radius: 8px; cursor: default;
-  background: var(--surface); color: var(--text-primary);
-  border: 1px solid var(--border); box-shadow: 0 8px 24px var(--shadow);
-  font-size: .72rem; font-weight: 500; line-height: 1.5; text-align: left; white-space: nowrap;
-}
-.cdx-prow-exp:hover .cdx-prow-pop,
-.cdx-prow-exp:focus .cdx-prow-pop,
-.cdx-prow-exp:focus-within .cdx-prow-pop { display: block; }
-.cdx-pop-row { display: block; }
-.cdx-pop-row b { display: inline-block; min-width: 96px; color: var(--text-secondary); font-weight: 600; }
 .cdx-prow-acts { display: flex; gap: .3rem; flex: 0 0 auto; flex-wrap: wrap; }
 .cdx-prow-acts .cdx-btn { padding: .2rem .5rem; font-size: .72rem; }
 
