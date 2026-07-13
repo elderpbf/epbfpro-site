@@ -85,7 +85,7 @@
     .k18-meter-fill {
       position: absolute; top: 0; bottom: 0; left: 0; width: 100%;
       background: linear-gradient(90deg, rgba(var(--t-free-rgb), 0.55), var(--good));
-      border-radius: 999px; transition: width 500ms ease;
+      border-radius: 999px; transition: width 800ms cubic-bezier(0.22, 0.61, 0.36, 1);
     }
 
     /* ── Main 2-column area: window (bar) + legend ── */
@@ -125,7 +125,7 @@
       flex-grow: 0; flex-shrink: 1; min-height: 0; display: flex; align-items: center;
       justify-content: space-between; padding: 0 1.1rem; box-sizing: border-box;
       overflow: hidden; color: #fff; font-weight: 600;
-      transition: flex-basis 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
+      transition: flex-basis 800ms cubic-bezier(0.22, 0.61, 0.36, 1);
     }
     .k18-block-label {
       font-size: var(--lab-fs-body); letter-spacing: 0.02em;
@@ -283,14 +283,14 @@
     <button class="k18-btn" id="k18-back">◀ Voltar</button>
     <button class="k18-btn k18-btn-action" id="k18-next">Próxima etapa ▶</button>
     <button class="k18-btn" id="k18-compact">Compactar</button>
-    <button class="k18-btn k18-btn-toggle" id="k18-scale">Ver 1.000.000 inteiro</button>
+    <button class="k18-btn k18-btn-toggle" id="k18-scale">Mostrar 1M</button>
     <button class="k18-btn" id="k18-reset">Reiniciar</button>
   </div>
 
   <template data-lab-info data-lab-info-title="Como a janela de contexto se preenche">
     <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está em uso; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
-    <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e o <strong>documento</strong> que ele anexa; depois o modelo <strong>raciocina</strong> (custa milhares), <strong>chama ferramentas</strong> (a chamada em si custa quase nada, ~200), recebe o <strong>resultado</strong> e escreve a <strong>resposta</strong>. Cada novo pedaço se empilha, nada se apaga.</p>
-    <p>Por isso conversas longas vão ocupando a janela. <strong>Compactar</strong> resume tudo o que já passou num único bloco menor, liberando espaço. É assim que a janela funciona por dentro.</p>
+    <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e depois o <strong>documento</strong> que ele anexa; então o modelo <strong>raciocina</strong> (custa milhares), <strong>chama ferramentas</strong> (a chamada em si custa quase nada, ~200), recebe o <strong>resultado</strong> e escreve a <strong>resposta</strong>. Cada novo pedaço se empilha, nada se apaga.</p>
+    <p>Por isso conversas longas vão ocupando a janela. <strong>Compactar</strong> resume as interações que já passaram num único bloco menor (o setup fica de fora), liberando espaço. É assim que a janela funciona por dentro.</p>
   </template>
 
   <script>
@@ -302,23 +302,19 @@
       // (a few thousand tokens each) are legible; extends as the window fills.
       const ZOOM_STEPS = [50000, 80000, 130000, 200000, 300000, 500000, 1000000];
 
-      // The scripted conversation. Each STEP (one "Próxima etapa") reveals one
-      // or more blocks, in real chronological order. Types drive colour/label.
-      // turn: which conversation turn the block belongs to (for the turn rule).
+      // The scripted conversation. Each STEP (one "Próxima etapa") reveals its
+      // block(s), in real chronological order. STEP 0 is the setup and stays out
+      // of compaction. The user prompt and the document are separate steps.
       const STEPS = [
-        // setup loads first (one step)
         [ {t:'system', l:'Prompt do sistema', k:3000, turn:0},
           {t:'memory', l:'Memórias',          k:2000, turn:0},
           {t:'tools',  l:'Ferramentas',       k:2000, turn:0} ],
-        // 1st user interaction: prompt + attached document
-        [ {t:'user', l:'Prompt do usuário', k:600,   turn:1, start:true},
-          {t:'doc',  l:'Documento anexado', k:28000, turn:1} ],
-        // 1st model response
+        [ {t:'user', l:'Prompt do usuário', k:600, turn:1, start:true} ],
+        [ {t:'doc',  l:'Documento anexado', k:28000, turn:1} ],
         [ {t:'think',  l:'Raciocínio', k:5000, turn:1} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:1} ],
         [ {t:'result', l:'Resultado', k:6000, turn:1} ],
         [ {t:'answer', l:'Resposta', k:2500, turn:1} ],
-        // 2nd turn
         [ {t:'user', l:'Prompt do usuário', k:500, turn:2, start:true} ],
         [ {t:'think',  l:'Raciocínio', k:6000, turn:2} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:2} ],
@@ -326,7 +322,6 @@
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:2} ],
         [ {t:'result', l:'Resultado', k:7000, turn:2} ],
         [ {t:'answer', l:'Resposta', k:3000, turn:2} ],
-        // 3rd turn
         [ {t:'user', l:'Prompt do usuário', k:700, turn:3, start:true} ],
         [ {t:'think',  l:'Raciocínio', k:7000, turn:3} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:3} ],
@@ -335,15 +330,19 @@
         [ {t:'result', l:'Resultado', k:5000, turn:3} ],
         [ {t:'answer', l:'Resposta', k:4000, turn:3} ]
       ];
+      const SETUP_STEPS = 1;  // the first step (setup) is never compacted
+      // Stable id per event, so the DOM element for each block survives re-renders
+      // and its flex-basis animates instead of snapping.
+      var _id = 0;
+      STEPS.forEach(function (s) { s.forEach(function (ev) { ev.id = _id++; }); });
 
       // ── State ─────────────────────────────────────────────
       let stepPos = 0;         // steps revealed
-      let compactedSteps = 0;  // steps folded into a summary (from the start)
+      let compactedUntil = 0;  // 0 = none; else steps [SETUP_STEPS..compactedUntil) folded
       let fullScale = false;   // false = dynamic zoom, true = full 1M to scale
 
       // ── DOM ───────────────────────────────────────────────
       const windowEl = document.getElementById('k18-window');
-      const breakEl  = document.getElementById('k18-break');
       const barsEl   = document.getElementById('k18-bars');
       const fillEl   = document.getElementById('k18-fill');
       const freeEl   = document.getElementById('k18-free');
@@ -358,100 +357,102 @@
 
       const fmt = (n) => n.toLocaleString('pt-BR');
 
-      // Events shown individually (those after the compaction point, up to stepPos).
-      function shownEvents() {
+      function stepEvents(a, b) {
         const out = [];
-        for (let s = compactedSteps; s < stepPos; s++) {
-          for (const ev of STEPS[s]) out.push(ev);
-        }
+        for (let s = a; s < b; s++) for (const ev of STEPS[s]) out.push(ev);
         return out;
-      }
-      function usedTokens() {
-        let u = compactedSteps > 0 ? SUMMARY_TOK : 0;
-        for (const ev of shownEvents()) u += ev.k;
-        return u;
-      }
-      function turnsRevealed() {
-        let mx = 0;
-        for (let s = 0; s < stepPos; s++) for (const ev of STEPS[s]) if (ev.turn > mx) mx = ev.turn;
-        return mx;
       }
       function zoomFor(used) {
         if (fullScale) return TOTAL;
         for (const z of ZOOM_STEPS) if (used <= z * 0.8) return z;
         return TOTAL;
       }
+      function turnsRevealed() {
+        let mx = 0;
+        for (let s = 0; s < stepPos; s++) for (const ev of STEPS[s]) if (ev.turn > mx) mx = ev.turn;
+        return mx;
+      }
 
-      function blockHtml(cls, label, tokens, tiny, turnstart) {
-        const c = 'k18-block k18-block-' + cls + (tiny ? ' k18-block--tiny' : '') + (turnstart ? ' k18-block--turnstart' : '');
-        return '<div class="' + c + '" data-b>' +
-          '<span class="k18-block-label">' + label + '</span>' +
-          '<span class="k18-block-tokens">' + (tokens == null ? '' : fmt(tokens)) + '</span>' +
-        '</div>';
+      // Reconcile the bar's children with the desired list (top→bottom), keyed by
+      // id, so each block's element persists and its flex-basis TRANSITIONS.
+      function reconcile(desired) {
+        const have = new Map();
+        Array.prototype.forEach.call(barsEl.children, (el) => have.set(el.dataset.key, el));
+        const keep = new Set(desired.map((d) => d.key));
+        Array.prototype.slice.call(barsEl.children).forEach((el) => { if (!keep.has(el.dataset.key)) el.remove(); });
+        desired.forEach((d) => {
+          let el = have.get(d.key);
+          if (!el) {
+            el = document.createElement('div');
+            el.dataset.key = d.key;
+            el.style.flexBasis = '0%';     // new blocks grow in from zero
+          }
+          el.className = d.cls + (d.tiny ? ' k18-block--tiny' : '');
+          el.innerHTML = '<span class="k18-block-label">' + d.label + '</span>' +
+            '<span class="k18-block-tokens">' + (d.tokens == null ? '' : fmt(d.tokens)) + '</span>';
+          el._basis = (d.pct * 100).toFixed(2) + '%';
+          barsEl.appendChild(el);          // appendChild re-orders to desired sequence
+        });
+        void barsEl.offsetHeight;          // reflow so the basis change animates
+        Array.prototype.forEach.call(barsEl.children, (el) => { el.style.flexBasis = el._basis; });
       }
 
       function render() {
-        const events = shownEvents();
-        const used = usedTokens();
+        const setupEvents = stepPos >= SETUP_STEPS ? stepEvents(0, SETUP_STEPS) : [];
+        const shownStart = compactedUntil > 0 ? compactedUntil : SETUP_STEPS;
+        const interactions = stepEvents(shownStart, stepPos);
+        const summaryPresent = compactedUntil > SETUP_STEPS;
+
+        let used = summaryPresent ? SUMMARY_TOK : 0;
+        setupEvents.forEach((e) => (used += e.k));
+        interactions.forEach((e) => (used += e.k));
+
         const zoom = zoomFor(used);
         const free = Math.max(0, TOTAL - used);
         const headroom = Math.max(0, zoom - used);
-
         windowEl.classList.toggle('k18-window--full', zoom >= TOTAL);
 
-        // Build the bar top→bottom: free space, then newest→oldest, summary last.
-        let html = '';
-        // free space (no number: it's the zoomed headroom, not the true free)
-        const freePct = zoom > 0 ? headroom / zoom : 0;
-        html += '<div class="k18-block k18-block-free" style="flex-basis:' + (freePct * 100).toFixed(2) + '%">' +
-          '<span class="k18-block-label">Espaço para resposta</span>' +
-          '<span class="k18-block-tokens"></span></div>';
-        // shown events, newest first
-        for (let i = events.length - 1; i >= 0; i--) {
-          const ev = events[i];
+        // Desired blocks, top → bottom.
+        const desired = [];
+        desired.push({ key: 'free', cls: 'k18-block k18-block-free', label: 'Espaço para resposta', tokens: null, pct: zoom > 0 ? headroom / zoom : 0, tiny: false });
+        for (let i = interactions.length - 1; i >= 0; i--) {
+          const ev = interactions[i];
           const pct = ev.k / zoom;
-          const vis = Math.max(pct, 0.008);
-          const tiny = pct < PCT_HIDE_LABEL;
-          html += blockHtml(ev.t, ev.l, ev.k, tiny, ev.start).replace('data-b', 'data-b style="flex-basis:' + (vis * 100).toFixed(2) + '%"');
+          desired.push({ key: 'ev' + ev.id, cls: 'k18-block k18-block-' + ev.t + (ev.start ? ' k18-block--turnstart' : ''), label: ev.l, tokens: ev.k, pct: pct, tiny: pct < PCT_HIDE_LABEL });
         }
-        // summary at the very bottom
-        if (compactedSteps > 0) {
+        if (summaryPresent) {
           const pct = SUMMARY_TOK / zoom;
-          const tiny = pct < PCT_HIDE_LABEL;
-          html += blockHtml('summary', 'Resumo de compactação', SUMMARY_TOK, tiny, false)
-            .replace('data-b', 'data-b style="flex-basis:' + (Math.max(pct, 0.008) * 100).toFixed(2) + '%"');
+          desired.push({ key: 'summary', cls: 'k18-block k18-block-summary', label: 'Resumo de compactação', tokens: SUMMARY_TOK, pct: pct, tiny: pct < PCT_HIDE_LABEL });
         }
-        barsEl.innerHTML = html;
+        for (let i = setupEvents.length - 1; i >= 0; i--) {
+          const ev = setupEvents[i];
+          const pct = ev.k / zoom;
+          desired.push({ key: 'ev' + ev.id, cls: 'k18-block k18-block-' + ev.t, label: ev.l, tokens: ev.k, pct: pct, tiny: pct < PCT_HIDE_LABEL });
+        }
+        reconcile(desired);
 
-        // Meter + stats
         fillEl.style.width = ((free / TOTAL) * 100).toFixed(2) + '%';
         freeEl.textContent = fmt(free) + ' / ' + fmt(TOTAL);
         usedEl.textContent = fmt(used);
         turnsEl.textContent = String(turnsRevealed());
 
-        // Status hint
-        if (stepPos === 0) {
-          statusEl.innerHTML = 'Clique em <strong>Próxima etapa</strong> para carregar o setup.';
-        } else {
-          const last = STEPS[stepPos - 1][STEPS[stepPos - 1].length - 1];
-          statusEl.innerHTML = statusForType(last.t);
-        }
+        if (stepPos === 0) statusEl.innerHTML = 'Clique em <strong>Próxima etapa</strong> para carregar o setup.';
+        else { const last = STEPS[stepPos - 1][STEPS[stepPos - 1].length - 1]; statusEl.innerHTML = statusForType(last.t); }
 
-        // Buttons
-        backBtn.disabled = stepPos <= compactedSteps;
+        backBtn.disabled = stepPos <= (compactedUntil > 0 ? compactedUntil : 0);
         nextBtn.disabled = stepPos >= STEPS.length;
         nextBtn.textContent = stepPos >= STEPS.length ? 'Fim da conversa' : 'Próxima etapa ▶';
-        compactBtn.disabled = (stepPos - compactedSteps) < 2; // need something to fold
+        compactBtn.disabled = (stepPos - shownStart) < 2;
         scaleBtn.classList.toggle('k18-on', fullScale);
-        scaleBtn.textContent = fullScale ? 'Voltar ao zoom' : 'Ver 1.000.000 inteiro';
+        scaleBtn.textContent = fullScale ? 'Voltar ao zoom' : 'Mostrar 1M';
       }
 
       function statusForType(t) {
         switch (t) {
           case 'system': case 'memory': case 'tools':
             return 'Setup carregado: prompt do sistema, memórias e ferramentas já ocupam a janela.';
-          case 'user': return 'O usuário manda um <strong>prompt</strong> (e às vezes um documento). Cada coisa entra na janela.';
-          case 'doc':  return 'O <strong>documento</strong> anexado entra na janela. Arquivos costumam ser grandes.';
+          case 'user': return 'O usuário manda um <strong>prompt</strong>. Ele começa um novo turno da conversa.';
+          case 'doc':  return 'O usuário anexa um <strong>documento</strong>. Arquivos costumam ser grandes.';
           case 'think': return 'O modelo <strong>raciocina</strong>. O pensamento custa alguns milhares de tokens.';
           case 'call':  return 'O modelo <strong>chama uma ferramenta</strong>. A chamada em si custa pouquíssimo (~200).';
           case 'result': return 'O <strong>resultado</strong> da ferramenta volta e entra na janela.';
@@ -460,12 +461,11 @@
         }
       }
 
-      // ── Handlers ──────────────────────────────────────────
       function next()    { if (stepPos < STEPS.length) { stepPos++; render(); } }
-      function back()    { if (stepPos > compactedSteps) { stepPos--; render(); } }
-      function compact() { if (stepPos - compactedSteps >= 2) { compactedSteps = stepPos; render(); } }
+      function back()    { if (stepPos > (compactedUntil > 0 ? compactedUntil : 0)) { stepPos--; render(); } }
+      function compact() { const shownStart = compactedUntil > 0 ? compactedUntil : SETUP_STEPS; if (stepPos - shownStart >= 2) { compactedUntil = stepPos; render(); } }
       function scale()   { fullScale = !fullScale; render(); }
-      function reset()   { stepPos = 0; compactedSteps = 0; fullScale = false; render(); }
+      function reset()   { stepPos = 0; compactedUntil = 0; fullScale = false; render(); }
 
       nextBtn.addEventListener('click', next);
       backBtn.addEventListener('click', back);
