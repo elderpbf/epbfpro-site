@@ -150,6 +150,10 @@ function renderRegister(wall) {
     origin: (typeof location !== 'undefined') ? location.origin : undefined,
   });
   let name = '';
+  // The turma's per-turma e-mail login method (default 'magic'): 'magic' sends a validation
+  // link (the check-your-e-mail screen + poll); 'code' sends a 4-letter OTP the student types
+  // back (the code screen). Both mechanisms already live in the shared createLoginFlow.
+  const authMethod = (((state.data || {}).access || {}).email_auth_method === 'code') ? 'code' : 'magic';
   let pollTimer = null;
   const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
 
@@ -164,6 +168,7 @@ function renderRegister(wall) {
     if (flow.state === 'profile') { await flow.saveProfile(name, true); settle(); return; }
     if (flow.state === 'validating') { renderValidating(); startPoll('validation'); return; }
     if (flow.state === 'pendingApproval') { renderPendingApproval(); startPoll('approval'); return; }
+    if (flow.state === 'code') { renderCodeStep(); return; } // 'code' turma: type the emailed OTP
     renderCardForm(flow.state === 'needName');
   }
 
@@ -171,6 +176,11 @@ function renderRegister(wall) {
   // worker says the address is NEW (needName), then revealed inline (no modal, same card).
   function renderCardForm(revealName) {
     cardEl.classList.remove('cdx-en-wait');
+    // Both methods share ONE e-mail-first form: the name field is revealed inline only when the
+    // worker says the address is new (needName), for magic AND code alike. The single difference
+    // is which mechanism the submit fires (requestCode vs entrar) and, downstream, the validation
+    // screen it lands on (the emailed code vs the emailed link).
+    const codeMode = authMethod === 'code';
     cardEl.innerHTML =
       '<h3 class="cdx-en-card-h">' + esc(t('wall.entrar_h')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(revealName ? t('wall.entrar_name_sub') : t('wall.entrar_sub')) + '</p>' +
@@ -194,12 +204,52 @@ function renderRegister(wall) {
     const submit = async () => {
       name = nameEl ? (nameEl.value || '').trim() : '';
       cta.disabled = true; cta.textContent = t('login.sending');
-      await flow.entrar(emailEl.value, name);
+      if (codeMode) await flow.requestCode(emailEl.value, { name });
+      else await flow.entrar(emailEl.value, name);
       settle();
     };
     cta.addEventListener('click', submit);
     emailEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
     if (nameEl) nameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') submit(); });
+  }
+
+  // The 'code' turma's second step: the student types the 4-letter OTP the worker e-mailed.
+  // verifyCode exchanges (email, code) for the session (then the shared settle() lands them,
+  // via the profile step for a first-time consent). "Reenviar" re-requests with a cooldown.
+  function renderCodeStep() {
+    cardEl.classList.add('cdx-en-wait');
+    const dev = flow.devCode
+      ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_link')) + '</strong> ' + esc(flow.devCode) + '</p>'
+      : '';
+    cardEl.innerHTML =
+      '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
+      '<h3 class="cdx-en-card-h">' + esc(t('login.code_title')) + '</h3>' +
+      '<p class="cdx-en-card-s">' + esc(t('login.code_desc')) + '</p>' +
+      '<div class="cdx-en-field">' +
+        '<label class="cdx-en-label" for="cdx-en-code">' + esc(t('login.code_label')) + '</label>' +
+        '<input id="cdx-en-code" class="cdx-en-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '">' +
+      '</div>' +
+      dev +
+      '<div class="cdx-en-error' + (flow.codeStillValid ? ' cdx-en-ok' : '') + '" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : errorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta cdx-en-verify">' + esc(t('login.enroll_cta')) + '</button>' +
+      '<button type="button" class="cdx-en-resend">' + esc(t('login.resend')) + '</button>';
+    const codeEl = cardEl.querySelector('#cdx-en-code');
+    const verify = cardEl.querySelector('.cdx-en-verify');
+    const resend = cardEl.querySelector('.cdx-en-resend');
+    setTimeout(() => { try { codeEl.focus(); } catch (_) {} }, 50);
+    const doVerify = async () => {
+      verify.disabled = true; verify.textContent = t('login.sending');
+      await flow.verifyCode(codeEl.value);
+      settle();
+    };
+    verify.addEventListener('click', doVerify);
+    codeEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
+    resend.addEventListener('click', async () => {
+      resend.disabled = true;
+      await flow.requestCode(flow.email, { resend: true, name });
+      resend.disabled = false;
+      renderCodeStep();
+    });
   }
 
   // Sent the link: "check your e-mail". "Já validei" re-checks NOW (covers the cross-device case:

@@ -75,6 +75,7 @@ export default {
   'alunos.forum':        'Class forum',
   'alunos.reveal':       'Reveal content only when the lesson is done',
   'alunos.app_install':  'Offer the trail app install',
+  'alunos.auth_code':    'E-mail login by code (instead of the magic link)',
   'alunos.notifications':'Notifications (bell)',
   'alunos.save':         'Save',
   'alunos.saved':        'Saved.',

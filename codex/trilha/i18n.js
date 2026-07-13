@@ -91,6 +91,7 @@ const pt = {
   'login.enroll_cta':       'Entrar',
   // Student login — OTP code step
   'login.send_code':        'Enviar código',
+  'login.resend':           'Reenviar código',
   'login.code_title':       'Digite o código',
   'login.code_desc':        'Enviamos um código de 4 letras para o seu e-mail. Digite-o abaixo para entrar.',
   'login.code_label':       'Código de acesso',
@@ -307,6 +308,7 @@ const en = {
   'login.enroll_cta':       'Enter',
   // Student login — OTP code step
   'login.send_code':        'Send code',
+  'login.resend':           'Resend code',
   'login.code_title':       'Enter the code',
   'login.code_desc':        'We sent a 4-letter code to your e-mail. Enter it below to sign in.',
   'login.code_label':       'Access code',
