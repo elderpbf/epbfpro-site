@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="robots" content="noindex, nofollow">
-<title>Da pergunta à resposta · PensoLabs</title>
+<title>Janela de contexto · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
 <link rel="stylesheet" href="../css/labs.css?v=1.5">
 <script src="../js/lab-header.js?v=1.0" defer></script>
@@ -34,19 +34,23 @@
       --focal: var(--lab-focal);
       --focal-rgb: var(--lab-focal-rgb);
       --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
 
-      /* Category colors for the window blocks. Fixed (not theme-shifting) so a
-         category keeps ONE identity in light and dark; each is saturated enough
-         to carry white block text on either page theme. */
-      --cat-system:   #64748b;   /* slate  — prompt do sistema */
-      --cat-project:  #8b5cf6;   /* violet — instruções Projeto/Gem */
-      --cat-files:    #d4a017;   /* amber  — arquivos anexados */
-      --cat-history:  #3b82f6;   /* blue   — histórico */
-      --cat-tools:    #e11d48;   /* rose   — ferramentas (definições) */
-      --cat-rag:      #ea580c;   /* orange — resultado da busca/RAG */
-      --cat-answer:   #16a34a;   /* green  — a resposta gerada */
+      /* Category colors, picked so the stacked blocks each read distinct.
+         Fixed hexes (not theme-shifting) so each category keeps one identity
+         in light and dark; all carry white block text on either page theme. */
+      --cat-system:    #64748b;  /* slate  — prompt do sistema */
+      --cat-memory:    #8b5cf6;  /* violet — memórias */
+      --cat-tools:     #e11d48;  /* rose   — ferramentas (definições) */
+      --cat-files:     #d4a017;  /* amber  — arquivos anexados */
+      --cat-history:   #3b82f6;  /* blue   — histórico da conversa */
+      --cat-think:     #ea580c;  /* orange — raciocínio (custa milhares) */
+      --cat-call:      #db2777;  /* magenta— chamada de ferramenta (~200) */
+      --cat-result:    #0d9488;  /* teal   — resultado da busca / RAG */
+      --cat-answer:    #16a34a;  /* green  — a resposta */
       --cat-answer-rgb: 22, 163, 74;
 
       position: relative;
@@ -67,8 +71,7 @@
 
     /* The header (brand + title) is mounted by lab-header.js into the shared
        .lab-header placeholder and styled by labs.css. The meter is the
-       header's right-side widget (live "espaço para resposta"); only its own
-       styles live here. */
+       header's right-side widget; only its own styles live here. */
     .k18-meter {
       display: flex;
       flex-direction: column;
@@ -97,7 +100,10 @@
       color: var(--good);
       letter-spacing: -0.01em;
       white-space: nowrap;
+      transition: color 320ms;
     }
+    .k18-meter.k18-meter--low .k18-meter-value { color: #d4a017; }
+    .k18-meter.k18-meter--full .k18-meter-value { color: var(--bad); }
     .k18-meter-bar {
       position: relative;
       height: 10px;
@@ -113,163 +119,67 @@
         rgba(var(--cat-answer-rgb), 0.55),
         var(--good));
       border-radius: 999px;
-      transition: width 800ms cubic-bezier(0.22, 0.61, 0.36, 1);
+      transition: width 800ms cubic-bezier(0.22, 0.61, 0.36, 1),
+                  background 320ms;
+    }
+    .k18-meter.k18-meter--low .k18-meter-fill {
+      background: linear-gradient(90deg, rgba(212,160,23,0.5), #d4a017);
+    }
+    .k18-meter.k18-meter--full .k18-meter-fill {
+      background: linear-gradient(90deg, rgba(var(--bad-rgb), 0.55), var(--bad));
     }
 
-    /* ── Main 2-column area: pipeline (hero) left, window bar right ── */
+    /* ── Main 2-column area: bars on left, legend on right ── */
     .k18-main {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(300px, 38%);
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
       gap: 1.4rem;
       min-height: 0;
     }
 
-    /* ── Left: the response pipeline (the new part) ───────────
-       A vertical walk-through — Entrada → Etapas do modelo → Saída — that
-       the operator advances one discrete step at a time. Mirrors the k3
-       button model (discrete steps, no continuous animation). */
-    .k18-pipeline {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      gap: 0.7rem;
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-    }
-    .k18-ask {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: baseline;
-      gap: 0.5rem;
-      flex-wrap: wrap;
-      padding: 0.55rem 0.75rem;
-      border-radius: 10px;
-      background: color-mix(in srgb, var(--focal) 8%, transparent);
-      border: 1px solid rgba(var(--focal-rgb), 0.25);
-      font-size: var(--lab-fs-body);
-      color: var(--text);
-    }
-    .k18-ask-tag, .k18-answer-tag {
-      font-size: var(--lab-fs-ui);
-      font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
-    }
-    .k18-ask-tag { color: var(--focal); }
-
-    .k18-stages {
-      flex: 1 1 auto;
-      min-height: 0;
-      overflow-y: auto;
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.3rem;
-    }
-    .k18-stage-group {
-      font-size: var(--lab-fs-ui);
-      font-weight: 700;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
-      margin-top: 0.55rem;
-      padding-left: 0.1rem;
-    }
-    .k18-stage-group:first-child { margin-top: 0; }
-    .k18-stage {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr);
-      gap: 0.7rem;
-      align-items: start;
-      padding: 0.5rem 0.65rem;
-      border-radius: 10px;
-      border: 1.5px solid transparent;
-      transition: background 200ms, border-color 200ms, opacity 200ms;
-    }
-    .k18-stage-mark {
-      width: 1.9em;
-      height: 1.9em;
-      flex: 0 0 auto;
-      border-radius: 999px;
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      font-family: var(--font-mono);
-      font-weight: 700;
-      font-size: var(--lab-fs-ui);
-      border: 1.5px solid var(--border);
-      color: var(--text-dim);
-      background: transparent;
-      transition: background 200ms, border-color 200ms, color 200ms, box-shadow 200ms;
-    }
-    .k18-stage-body {
-      display: flex;
-      flex-direction: column;
-      gap: 0.15rem;
-      min-width: 0;
-    }
-    .k18-stage-title {
-      font-size: var(--lab-fs-body);
-      font-weight: 600;
-      color: var(--text);
-      transition: color 200ms;
-    }
-    .k18-stage-desc {
-      font-size: var(--lab-fs-ui);
-      color: var(--text-dim);
-      line-height: 1.35;
-    }
-    .k18-stage.is-pending { opacity: 0.5; }
-    .k18-stage.is-active {
-      background: rgba(var(--focal-rgb), 0.10);
-      border-color: rgba(var(--focal-rgb), 0.55);
-    }
-    .k18-stage.is-active .k18-stage-mark {
-      border-color: var(--focal);
-      color: #fff;
-      background: var(--focal);
-      box-shadow: 0 0 0 4px rgba(var(--focal-rgb), 0.18);
-    }
-    .k18-stage.is-active .k18-stage-title { color: var(--focal); }
-    .k18-stage.is-done .k18-stage-mark {
-      border-color: var(--good);
-      color: #fff;
-      background: var(--good);
-    }
-
-    .k18-answer {
-      flex: 0 0 auto;
-      display: none;
-      flex-direction: column;
-      gap: 0.3rem;
-      padding: 0.6rem 0.8rem;
-      border-radius: 10px;
-      background: rgba(var(--cat-answer-rgb), 0.10);
-      border: 1.5px solid rgba(var(--cat-answer-rgb), 0.4);
-    }
-    .k18-answer.is-shown { display: flex; animation: k18-fade 320ms ease-out 1; }
-    .k18-answer-tag { color: var(--good); }
-    .k18-answer p { margin: 0; font-size: var(--lab-fs-body); line-height: 1.4; color: var(--text); }
-    @keyframes k18-fade {
-      from { opacity: 0; transform: translateY(6px); }
-      to   { opacity: 1; transform: none; }
-    }
-
-    /* ── Right: the context window (the k3 bar, kept first-class) ──
-       Vertical stack of category blocks, anchored bottom (system at the
-       bottom, response space at the top). Each block's flex-basis is its
-       share of the 128k budget; 800ms transitions so the audience can watch
-       the window grow when the tool result lands. */
+    /* The window column: a broken-axis marker on top, the stacked bar below.
+       The bar is ZOOMED to a dynamic ceiling so the small process blocks stay
+       legible in a 1.000.000-token window; the marker says the window keeps
+       going above the zoom. */
     .k18-window {
       display: flex;
       flex-direction: column;
       min-height: 0;
-      gap: 0.6rem;
+      gap: 0;
     }
+
+    /* Broken-axis marker: sits above the bar, hidden when the zoom already
+       reaches the full window. Says "there is much more free space above,
+       up to 1.000.000, just not drawn to scale". */
+    .k18-break {
+      flex: 0 0 auto;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      height: 30px;
+      padding: 0 1.1rem;
+      box-sizing: border-box;
+      border-radius: 14px 14px 0 0;
+      border: 1.5px dashed var(--border);
+      border-bottom: none;
+      background: repeating-linear-gradient(
+        -45deg,
+        color-mix(in srgb, var(--text) 5%, transparent) 0 6px,
+        transparent 6px 12px);
+      color: var(--text-dim);
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      font-weight: 600;
+    }
+    .k18-break-dots { letter-spacing: 0.25em; font-weight: 700; }
+    .k18-break-ceil { font-family: var(--font-mono); }
+    .k18-window.k18-window--full .k18-break { display: none; }
+
+    /* Vertical stack of category blocks, anchored bottom (system at bottom,
+       response space at top). Each block's flex-basis is its share of the
+       ZOOM ceiling; transitions are 800ms so the audience can watch blocks
+       land and the response band shrink as the conversation grows. */
     .k18-bars {
       position: relative;
       flex: 1 1 auto;
@@ -277,9 +187,21 @@
       flex-direction: column;
       align-items: stretch;
       min-height: 0;
-      border-radius: 14px;
+      border-radius: 0 0 14px 14px;
       overflow: hidden;
       outline: 1.5px solid var(--border);
+      transition: outline-color 320ms, box-shadow 320ms;
+    }
+    .k18-window--full .k18-bars { border-radius: 14px; }
+    .k18-bars.k18-bars--full {
+      outline-color: var(--bad);
+      box-shadow: 0 0 22px rgba(var(--bad-rgb), 0.28);
+      animation: k18-flash 700ms ease-out 1;
+    }
+    @keyframes k18-flash {
+      0%   { box-shadow: 0 0 0 rgba(var(--bad-rgb), 0); }
+      40%  { box-shadow: 0 0 32px rgba(var(--bad-rgb), 0.55); }
+      100% { box-shadow: 0 0 22px rgba(var(--bad-rgb), 0.28); }
     }
     .k18-block {
       flex: 0 0 0;             /* JS sets flex-basis as percent */
@@ -287,7 +209,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 0 1rem;
+      padding: 0 1.1rem;
       box-sizing: border-box;
       transition: flex-basis 800ms cubic-bezier(0.22, 0.61, 0.36, 1),
                   background 320ms;
@@ -312,33 +234,121 @@
       padding-left: 0.5rem;
     }
     /* Hide labels when a block gets too short to read */
-    .k18-block--tiny .k18-block-label,
-    .k18-block--tiny .k18-block-tokens { opacity: 0; }
-    .k18-block--zero { flex-basis: 0 !important; padding: 0; }
+    .k18-block.k18-block--tiny .k18-block-label,
+    .k18-block.k18-block--tiny .k18-block-tokens { opacity: 0; }
+    .k18-block.k18-block--zero { flex-basis: 0 !important; padding: 0; }
 
-    .k18-block-system   { background: var(--cat-system); }
-    .k18-block-project  { background: var(--cat-project); }
-    .k18-block-files    { background: var(--cat-files); }
-    .k18-block-history  { background: var(--cat-history); }
-    .k18-block-tools    { background: var(--cat-tools); }
-    .k18-block-rag      { background: var(--cat-rag); }
+    .k18-block-system  { background: var(--cat-system); }
+    .k18-block-memory  { background: var(--cat-memory); }
+    .k18-block-tools   { background: var(--cat-tools); }
+    .k18-block-files   { background: var(--cat-files); }
+    .k18-block-history { background: var(--cat-history); }
+    .k18-block-think   { background: var(--cat-think); }
+    .k18-block-call    { background: var(--cat-call); }
+    .k18-block-result  { background: var(--cat-result); }
+    .k18-block-answer  { background: var(--cat-answer); }
     .k18-block-response {
       background: linear-gradient(180deg,
         rgba(var(--cat-answer-rgb), 0.55),
         rgba(var(--cat-answer-rgb), 0.28));
+      color: #fff;
     }
-    .k18-block-answer   { background: var(--cat-answer); }
+    .k18-block-response.k18-block-response--full {
+      background: linear-gradient(180deg, var(--bad), color-mix(in srgb, var(--bad) 70%, #000));
+    }
 
+    /* ── Legend / sidebar (the exact-number ledger) ────────── */
+    .k18-legend {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      min-width: 0;
+      min-height: 0;
+      gap: 0.5rem;
+    }
+    .k18-legend-title {
+      margin: 0;
+      font-size: var(--lab-fs-ui);
+      font-weight: 600;
+      letter-spacing: 0.1em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .k18-legend-list {
+      list-style: none;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      gap: 0.32rem;
+      min-height: 0;
+      overflow-y: auto;
+    }
+    .k18-legend-list li {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 0.6rem;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-body);
+      font-weight: 500;
+      color: var(--text);
+      transition: opacity 200ms;
+    }
+    .k18-legend-list li.k18-leg--off { opacity: 0.32; }
+    .k18-dot {
+      width: 14px;
+      height: 14px;
+      border-radius: 4px;
+      flex-shrink: 0;
+    }
+    .k18-dot-system  { background: var(--cat-system); }
+    .k18-dot-memory  { background: var(--cat-memory); }
+    .k18-dot-tools   { background: var(--cat-tools); }
+    .k18-dot-files   { background: var(--cat-files); }
+    .k18-dot-history { background: var(--cat-history); }
+    .k18-dot-think   { background: var(--cat-think); }
+    .k18-dot-call    { background: var(--cat-call); }
+    .k18-dot-result  { background: var(--cat-result); }
+    .k18-dot-answer  { background: var(--cat-answer); }
+    .k18-leg-val {
+      font-family: var(--font-mono);
+      font-weight: 600;
+      color: var(--text-dim);
+    }
+
+    .k18-turn-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding-top: 0.55rem;
+      border-top: 1px dashed var(--border);
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-body);
+      color: var(--text-dim);
+    }
+    .k18-turn-val {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--text);
+    }
     .k18-status {
-      flex: 0 0 auto;
+      margin-top: auto;
+      padding-top: 0.55rem;
       font-family: var(--font-display);
       font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       font-style: italic;
-      line-height: 1.35;
-      min-height: 2.4em;
+      line-height: 1.3;
     }
     .k18-status strong { color: var(--focal); font-style: normal; }
+    .k18-status.k18-status--ok { color: var(--good); }
+    .k18-status.k18-status--low { color: #d4a017; }
+    .k18-status.k18-status--full { color: var(--bad); font-style: normal; font-weight: 600; }
 
     /* ── Button bar (operator) ────────────────────────────── */
     .k18-button-bar {
@@ -349,8 +359,6 @@
       padding: 0 0.2rem;
       flex-wrap: wrap;
     }
-    /* The text-size control (A− / A+) is mounted by lab-controls.js into
-       this slot; on desktop it sits at the left of the operator bar. */
     .k18-fs-slot { margin-right: auto; }
     .k18-btn {
       font-family: var(--font-display);
@@ -383,30 +391,19 @@
     .k18-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
 
     /* ── Responsive: phone / narrow portrait ───────────────
-       Font sizing is handled by the shared --lab-fs-* tokens (which carry
-       their own phone floors), so these blocks only touch LAYOUT. The main
-       area switches to the shared mobile-tab primitive (lab-tabs.js), so the
-       .k18-main grid rule below is only a JS-off fallback that stacks the
-       two panels. */
+       The main area switches to the shared mobile-tab primitive (lab-tabs.js),
+       so the .k18-main grid rule below is only a JS-off fallback. */
     @media (max-width: 700px) {
-      .k18-panel {
-        padding: 0.6rem 0.9rem 0.6rem;
-        gap: 0.55rem;
-      }
-
+      .k18-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
       .k18-main {
         grid-template-columns: 1fr;
         grid-template-rows: minmax(0, 1fr) auto;
         gap: 0.55rem;
       }
-
-      .k18-pipeline { padding: 0.6rem 0.75rem; gap: 0.5rem; }
+      .k18-legend { padding: 0.55rem 0.75rem; gap: 0.35rem; }
+      .k18-legend-title { display: none; }
       .k18-block { padding: 0 0.7rem; }
-
-      .k18-button-bar {
-        gap: 0.4rem;
-        padding: 0;
-      }
+      .k18-button-bar { gap: 0.4rem; padding: 0; }
       .k18-btn {
         padding: 0.65rem 0.5rem;
         flex: 1 1 calc(50% - 0.2rem);
@@ -414,95 +411,100 @@
         min-width: 0;
         text-align: center;
       }
-      /* Text-size control gets its own centered row on phones. */
       .k18-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
-      /* A−/A+ is hidden on phone (shared rule); "Entenda" takes a full-width
-         row at the top of the operator bar, actions keep their grid below. */
-      .k18-button-bar > [data-lab-info-ctl] {
-        order: -1;
-        display: flex;
-        flex: 1 1 100%;
-      }
-      .k18-button-bar > [data-lab-info-ctl] .lab-info-btn {
-        width: 100%;
-        justify-content: center;
-      }
+      .k18-button-bar > [data-lab-info-ctl] { order: -1; display: flex; flex: 1 1 100%; }
+      .k18-button-bar > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
     }
 
     @media (max-height: 500px) and (orientation: landscape) {
-      .k18-panel {
-        padding: 0.4rem 1rem 0.35rem;
-        gap: 0.4rem;
-      }
+      .k18-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
       .k18-main { gap: 0.6rem; }
-      .k18-pipeline { padding: 0.5rem 0.75rem; gap: 0.45rem; }
+      .k18-legend { padding: 0.5rem 0.75rem; gap: 0.3rem; }
       .k18-btn { min-height: 32px; }
     }
   </style>
 
   <div class="lab-header"
-       data-lab-title="Da pergunta à resposta"
-       data-lab-subtitle="O caminho completo de um pedido, do contexto à resposta">
+       data-lab-title="Janela de contexto"
+       data-lab-subtitle="Tudo que ocupa a janela, do sistema à resposta">
     <div class="k18-meter" id="k18-meter">
       <div class="k18-meter-row">
         <span class="k18-meter-label">Espaço para resposta</span>
-        <span class="k18-meter-value" id="k18-response-display">128.000 / 128.000</span>
+        <span class="k18-meter-value" id="k18-response-display">1.000.000 / 1.000.000</span>
       </div>
       <div class="k18-meter-bar"><div class="k18-meter-fill" id="k18-meter-fill"></div></div>
     </div>
   </div>
 
-  <div class="k18-main" data-lab-tabs data-lab-tab-default="Pipeline">
-    <!-- LEFT: the response pipeline (the new part) -->
-    <section class="k18-pipeline" data-lab-tab="Pipeline">
-      <div class="k18-ask">
-        <span class="k18-ask-tag">Pergunta</span>
-        <span>Quais são os prazos do contrato que anexei?</span>
+  <div class="k18-main" data-lab-tabs data-lab-tab-default="Janela">
+    <div class="k18-window" id="k18-window" data-lab-tab="Janela">
+      <div class="k18-break" id="k18-break">
+        <span class="k18-break-dots">⋯</span>
+        <span>a janela continua até</span>
+        <span class="k18-break-ceil">1.000.000</span>
       </div>
-      <ol class="k18-stages" id="k18-stages"><!-- built by JS --></ol>
-      <div class="k18-answer" id="k18-answer">
-        <span class="k18-answer-tag">Resposta</span>
-        <p>“O contrato anexado tem prazo de 12 meses, renovável por igual período, com aviso prévio de 30 dias para não renovação (cláusula 8ª, confirmada no trecho recuperado pela busca).”</p>
-      </div>
-    </section>
-
-    <!-- RIGHT: the context window (the k3 bar, kept first-class) -->
-    <aside class="k18-window" data-lab-tab="Janela">
       <div class="k18-bars" id="k18-bars">
+        <div class="k18-block k18-block-response" data-cat="response">
+          <span class="k18-block-label">Espaço para resposta</span>
+          <span class="k18-block-tokens" data-tok></span>
+        </div>
         <div class="k18-block k18-block-answer" data-cat="answer">
           <span class="k18-block-label">Resposta</span>
-          <span class="k18-block-tokens" data-tok>0</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
-        <div class="k18-block k18-block-response" data-cat="response">
-          <span class="k18-block-label" data-lbl>Espaço para resposta</span>
-          <span class="k18-block-tokens" data-tok>128.000</span>
+        <div class="k18-block k18-block-result" data-cat="result">
+          <span class="k18-block-label">Resultado da busca (RAG)</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
-        <div class="k18-block k18-block-rag" data-cat="rag">
-          <span class="k18-block-label">Busca / RAG</span>
-          <span class="k18-block-tokens" data-tok>0</span>
+        <div class="k18-block k18-block-call" data-cat="call">
+          <span class="k18-block-label">Chamada de ferramenta</span>
+          <span class="k18-block-tokens" data-tok></span>
+        </div>
+        <div class="k18-block k18-block-think" data-cat="think">
+          <span class="k18-block-label">Raciocínio</span>
+          <span class="k18-block-tokens" data-tok></span>
+        </div>
+        <div class="k18-block k18-block-history" data-cat="history">
+          <span class="k18-block-label" id="k18-lbl-history">Histórico da conversa</span>
+          <span class="k18-block-tokens" data-tok></span>
+        </div>
+        <div class="k18-block k18-block-files" data-cat="files">
+          <span class="k18-block-label">Arquivos anexados</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
         <div class="k18-block k18-block-tools" data-cat="tools">
           <span class="k18-block-label">Ferramentas</span>
-          <span class="k18-block-tokens" data-tok>0</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
-        <div class="k18-block k18-block-history" data-cat="history">
-          <span class="k18-block-label">Histórico</span>
-          <span class="k18-block-tokens" data-tok>0</span>
-        </div>
-        <div class="k18-block k18-block-files" data-cat="files">
-          <span class="k18-block-label">Arquivos</span>
-          <span class="k18-block-tokens" data-tok>0</span>
-        </div>
-        <div class="k18-block k18-block-project" data-cat="project">
-          <span class="k18-block-label">Projeto / Gem</span>
-          <span class="k18-block-tokens" data-tok>0</span>
+        <div class="k18-block k18-block-memory" data-cat="memory">
+          <span class="k18-block-label">Memórias</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
         <div class="k18-block k18-block-system" data-cat="system">
-          <span class="k18-block-label">Sistema</span>
-          <span class="k18-block-tokens" data-tok>0</span>
+          <span class="k18-block-label">Prompt do sistema</span>
+          <span class="k18-block-tokens" data-tok></span>
         </div>
       </div>
-      <p class="k18-status" id="k18-status"></p>
+    </div>
+
+    <aside class="k18-legend" data-lab-tab="Composição">
+      <h2 class="k18-legend-title">Composição</h2>
+      <ul class="k18-legend-list" id="k18-legend-list">
+        <li data-leg="system"><span class="k18-dot k18-dot-system"></span> <span>Prompt do sistema</span>  <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="memory"><span class="k18-dot k18-dot-memory"></span> <span>Memórias</span>           <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="tools"><span class="k18-dot k18-dot-tools"></span>   <span>Ferramentas</span>        <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="files"><span class="k18-dot k18-dot-files"></span>   <span>Arquivos anexados</span>  <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="history"><span class="k18-dot k18-dot-history"></span> <span>Histórico da conversa</span> <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="think"><span class="k18-dot k18-dot-think"></span>   <span>Raciocínio</span>         <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="call"><span class="k18-dot k18-dot-call"></span>     <span>Chamada de ferramenta</span> <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="result"><span class="k18-dot k18-dot-result"></span> <span>Resultado (RAG)</span>    <span class="k18-leg-val" data-legval></span></li>
+        <li data-leg="answer"><span class="k18-dot k18-dot-answer"></span> <span>Resposta</span>           <span class="k18-leg-val" data-legval></span></li>
+      </ul>
+      <div class="k18-turn-row">
+        <span>Turnos na conversa</span>
+        <span class="k18-turn-val" id="k18-turn-count">0</span>
+      </div>
+      <p class="k18-status k18-status--ok" id="k18-status"></p>
     </aside>
   </div>
 
@@ -511,176 +513,205 @@
     <span class="k18-fs-slot" data-lab-fs-ctl></span>
     <button class="k18-btn" id="k18-back">◀ Voltar</button>
     <button class="k18-btn k18-btn-action" id="k18-next">Próxima etapa ▶</button>
+    <button class="k18-btn" id="k18-turn">+ Turno</button>
     <button class="k18-btn" id="k18-reset">Reiniciar</button>
   </div>
 
   <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
        "Entenda" button (lab-info.js). -->
-  <template data-lab-info data-lab-info-title="Da pergunta à resposta: o caminho completo">
-    <p>Quando você manda um pedido, o modelo não responde direto. Primeiro, tudo que ele precisa é reunido numa <strong>janela de contexto</strong>: o prompt do sistema, as instruções do Projeto/Gem, os arquivos anexados, o histórico da conversa e as ferramentas disponíveis.</p>
-    <p>Com a janela montada, começam as <strong>etapas do modelo</strong>: ele raciocina sobre o pedido e, quando falta informação, <strong>chama uma ferramenta</strong> (por exemplo, uma busca/RAG). O resultado <strong>volta pra dentro da janela</strong>, que cresce, e o espaço reservado para a resposta encolhe.</p>
-    <p>Só então o modelo escreve a <strong>resposta</strong>, que também ocupa lugar na janela. Por isso o processo inteiro, do contexto à ferramenta à resposta, disputa o mesmo orçamento de tokens. Ver o caminho completo explica por que anexos, histórico e buscas afetam o quanto sobra para responder.</p>
+  <template data-lab-info data-lab-info-title="O que ocupa a janela de contexto?">
+    <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está sendo usado; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
+    <p>No começo entram os insumos: <strong>prompt do sistema, memórias, ferramentas, arquivos e o histórico</strong> da conversa. Aí o modelo trabalha, e cada passo também ocupa a janela: o <strong>raciocínio</strong> custa alguns milhares de tokens; a <strong>chamada de ferramenta</strong> custa pouquíssimo (só a invocação, ~200); o <strong>resultado</strong> que volta e a <strong>resposta</strong> custam mais uns milhares.</p>
+    <p>Por isso o processo inteiro disputa o mesmo orçamento. Cada turno novo empilha mais histórico e mais raciocínio, e mesmo uma janela de 1.000.000 vai enchendo. É por isso que conversas longas e muitos anexos degradam a resposta: falta espaço, não é preguiça.</p>
   </template>
 
   <script>
     (function() {
-      // ── Token budget (same 128k window as k3) ────────────
-      const TOTAL = 128000;
-      const TOK = {
-        system:  8000,   // prompt do sistema
-        project: 6000,   // instruções de Projeto/Gem
-        files:   22000,  // arquivos anexados
-        history: 16000,  // histórico da conversa
-        tools:   6000,   // definições de ferramentas
-        rag:     20000,  // trecho recuperado pela busca (entra no meio do caminho)
-        answer:  14000   // a resposta gerada (ocupa o espaço reservado)
-      };
-      const PCT_HIDE_LABEL = 0.04;
+      // ── The window (fixed size, not drawn to scale) ──────
+      const TOTAL = 1000000;
 
-      // ── Pipeline stages (the temporal walk-through) ──────
-      // active index: -1 idle, 0..LAST. Each Próxima etapa advances one.
-      const STAGES = [
-        { group: 'Entrada',          title: 'Montar a janela',                desc: 'O prompt do sistema, as instruções de Projeto/Gem, os arquivos anexados, o histórico e as ferramentas disponíveis entram na janela de contexto.' },
-        { group: 'Etapas do modelo', title: 'O modelo raciocina',             desc: 'Ele lê tudo que está na janela, entende o pedido e percebe que precisa de informação que ainda não tem.' },
-        { group: 'Etapas do modelo', title: 'Chama uma ferramenta',           desc: 'Em vez de inventar, dispara uma busca (RAG) para recuperar o trecho que falta.' },
-        { group: 'Etapas do modelo', title: 'O resultado volta pro contexto', desc: 'O trecho recuperado entra na janela. Ela cresce e o espaço reservado para a resposta encolhe.' },
-        { group: 'Etapas do modelo', title: 'Raciocina de novo',              desc: 'Agora com a informação em mãos, o modelo decide o que responder.' },
-        { group: 'Saída',            title: 'Escreve a resposta',             desc: 'A resposta é gerada token a token e ocupa o espaço que estava reservado.' }
-      ];
-      const LAST = STAGES.length - 1; // 5
+      // Token cost of each piece. The teaching point lives in the contrast:
+      // the tool CALL is almost free (~200, just the invocation), while the
+      // model's RACIOCÍNIO costs a few thousand.
+      const TOK = {
+        system:  3000,
+        memory:  2000,
+        tools:   2000,
+        files:   30000,
+        history: 10000,   // base; grows with each extra turn
+        think:   6000,
+        call:    200,
+        result:  6000,
+        answer:  3000
+      };
+      const HIST_PER_TURN = 20000; // each extra conversation turn piles onto history
+      const PCT_LOW = 0.20;
+      const PCT_HIDE_LABEL = 0.035;
+
+      // Zoom ceilings the bar snaps through as usage climbs. The bar is drawn
+      // to the smallest ceiling that still leaves headroom, so the small
+      // process blocks stay legible in a 1M window; the "⋯" marker shows the
+      // window continues above the zoom until the ceiling reaches TOTAL.
+      const ZOOM_STEPS = [200000, 300000, 400000, 600000, 800000, 1000000];
+
+      // ── Insertion sequence (what "Próxima etapa" reveals) ─
+      // step 0 = empty window; each step lands the next piece(s). The inputs
+      // arrive together (montar contexto), then the model's process, then the
+      // answer — the same demo as before, just granular.
+      // step: 0 idle · 1 inputs · 2 +raciocínio · 3 +chamada · 4 +resultado · 5 +resposta
+      const LAST_STEP = 5;
 
       // ── State ────────────────────────────────────────────
-      let active = -1;
+      let step  = 0;
+      let turns = 0;
 
       // ── DOM refs ─────────────────────────────────────────
-      const stagesEl  = document.getElementById('k18-stages');
-      const answerEl  = document.getElementById('k18-answer');
-      const barsEl    = document.getElementById('k18-bars');
-      const statusEl  = document.getElementById('k18-status');
-      const meterFill = document.getElementById('k18-meter-fill');
-      const respDisp  = document.getElementById('k18-response-display');
-      const backBtn   = document.getElementById('k18-back');
-      const nextBtn   = document.getElementById('k18-next');
-      const resetBtn  = document.getElementById('k18-reset');
+      const windowEl    = document.getElementById('k18-window');
+      const breakEl      = document.getElementById('k18-break');
+      const barsEl       = document.getElementById('k18-bars');
+      const meterEl      = document.getElementById('k18-meter');
+      const meterFillEl  = document.getElementById('k18-meter-fill');
+      const respDispEl   = document.getElementById('k18-response-display');
+      const lblHistEl    = document.getElementById('k18-lbl-history');
+      const legendList   = document.getElementById('k18-legend-list');
+      const turnCountEl  = document.getElementById('k18-turn-count');
+      const statusEl     = document.getElementById('k18-status');
+      const backBtn      = document.getElementById('k18-back');
+      const nextBtn      = document.getElementById('k18-next');
+      const turnBtn      = document.getElementById('k18-turn');
+      const resetBtn     = document.getElementById('k18-reset');
 
-      // ── Formatting ───────────────────────────────────────
       function fmt(n) { return n.toLocaleString('pt-BR'); }
 
-      // ── Derived: window composition at a given step ──────
-      // Inputs land at "Montar a janela" (0). The RAG result joins only after
-      // "O resultado volta pro contexto" (3), which is what makes the window
-      // grow. The answer occupies space at "Escreve a resposta" (5).
-      function tokensFor(a) {
-        const t = { system: 0, project: 0, files: 0, history: 0, tools: 0, rag: 0, answer: 0 };
-        if (a >= 0) {
-          t.system = TOK.system; t.project = TOK.project; t.files = TOK.files;
-          t.history = TOK.history; t.tools = TOK.tools;
+      // ── Which categories are present at the current step ──
+      function tokensNow() {
+        const t = { system:0, memory:0, tools:0, files:0, history:0, think:0, call:0, result:0, answer:0 };
+        if (step >= 1) {
+          t.system = TOK.system; t.memory = TOK.memory; t.tools = TOK.tools;
+          t.files = TOK.files;   t.history = TOK.history + turns * HIST_PER_TURN;
         }
-        if (a >= 3) { t.rag = TOK.rag; }
-        if (a >= 5) { t.answer = TOK.answer; }
-        const used = t.system + t.project + t.files + t.history + t.tools + t.rag + t.answer;
-        t.response = Math.max(0, TOTAL - used);
+        if (step >= 2) t.think  = TOK.think;
+        if (step >= 3) t.call   = TOK.call;
+        if (step >= 4) t.result = TOK.result;
+        if (step >= 5) t.answer = TOK.answer;
         return t;
       }
 
-      function statusFor(a) {
-        switch (a) {
-          case -1: return 'Janela vazia. Clique em <strong>Próxima etapa</strong> para montar o contexto.';
-          case 0:  return 'Contexto montado: sistema, Projeto/Gem, arquivos, histórico e ferramentas ocupam a janela.';
-          case 1:  return 'O modelo lê a janela inteira e planeja a resposta.';
-          case 2:  return 'O modelo decide chamar uma ferramenta de busca (RAG).';
-          case 3:  return 'O resultado da busca entrou na janela. Ela cresceu, o espaço de resposta encolheu.';
-          case 4:  return 'Com a informação recuperada, o modelo raciocina de novo.';
-          case 5:  return 'A resposta é escrita e consome o espaço que estava reservado.';
-          default: return '';
-        }
+      function usedOf(t) {
+        return t.system + t.memory + t.tools + t.files + t.history +
+               t.think + t.call + t.result + t.answer;
       }
 
-      // ── Build the stage list once ────────────────────────
-      function buildStages() {
-        let html = '';
-        let lastGroup = null;
-        for (let i = 0; i < STAGES.length; i++) {
-          const s = STAGES[i];
-          if (s.group !== lastGroup) {
-            html += '<li class="k18-stage-group">' + s.group + '</li>';
-            lastGroup = s.group;
-          }
-          html += '<li class="k18-stage" data-i="' + i + '">' +
-            '<span class="k18-stage-mark">' + (i + 1) + '</span>' +
-            '<span class="k18-stage-body">' +
-              '<span class="k18-stage-title">' + s.title + '</span>' +
-              '<span class="k18-stage-desc">' + s.desc + '</span>' +
-            '</span>' +
-          '</li>';
+      // Smallest zoom ceiling that keeps ~20% headroom above what's used.
+      function zoomFor(used) {
+        for (let i = 0; i < ZOOM_STEPS.length; i++) {
+          if (used <= ZOOM_STEPS[i] * 0.8) return ZOOM_STEPS[i];
         }
-        stagesEl.innerHTML = html;
+        return TOTAL;
       }
 
       // ── Render ───────────────────────────────────────────
       function render() {
-        const t = tokensFor(active);
+        const t = tokensNow();
+        const used = usedOf(t);
+        const zoom = zoomFor(used);
+        const freeReal = Math.max(0, TOTAL - used);       // true free space in the 1M window
+        const headroom = Math.max(0, zoom - used);        // the drawn (zoomed) headroom
 
-        // Window blocks: flex-basis = share of TOTAL; tiny non-zero values get
-        // a minimum visible sliver so a present category always reads as there.
-        const blocks = barsEl.querySelectorAll('.k18-block');
-        blocks.forEach(function (b) {
+        // Broken-axis marker: only while the zoom hasn't reached the full window.
+        windowEl.classList.toggle('k18-window--full', zoom >= TOTAL);
+
+        // Bars: each block's flex-basis = its share of the ZOOM ceiling. The
+        // "espaço para resposta" block takes the zoomed headroom.
+        barsEl.querySelectorAll('.k18-block').forEach(function (b) {
           const cat = b.dataset.cat;
-          const val = t[cat];
-          const pct = val / TOTAL;
-          const vis = val === 0 ? 0 : Math.max(pct, 0.011);
+          const val = cat === 'response' ? headroom : t[cat];
+          const pct = val / zoom;
+          const vis = val === 0 ? 0 : Math.max(pct, 0.012);
           b.style.flexBasis = (vis * 100).toFixed(2) + '%';
           b.classList.toggle('k18-block--zero', val === 0);
           b.classList.toggle('k18-block--tiny', val > 0 && pct < PCT_HIDE_LABEL);
-          const tok = b.querySelector('[data-tok]');
-          if (tok) tok.textContent = fmt(val);
-        });
-        // Once the answer occupies the top, the remainder reads as free space.
-        const respLbl = barsEl.querySelector('.k18-block-response [data-lbl]');
-        if (respLbl) respLbl.textContent = active >= 5 ? 'Espaço livre' : 'Espaço para resposta';
-
-        // Meter (header): response space / total.
-        const ratio = t.response / TOTAL;
-        meterFill.style.width = (ratio * 100).toFixed(2) + '%';
-        respDisp.textContent = fmt(t.response) + ' / ' + fmt(TOTAL);
-
-        // Status line under the bar.
-        statusEl.innerHTML = statusFor(active);
-
-        // Stage states.
-        const items = stagesEl.querySelectorAll('.k18-stage');
-        items.forEach(function (li) {
-          const i = parseInt(li.getAttribute('data-i'), 10);
-          li.classList.toggle('is-done', i < active);
-          li.classList.toggle('is-active', i === active);
-          li.classList.toggle('is-pending', i > active);
-          const mark = li.querySelector('.k18-stage-mark');
-          if (mark) mark.textContent = (i < active) ? '✓' : String(i + 1);
+          // The response block is drawn at the ZOOMED headroom, not the true
+          // free space, so a number here would contradict its size (a broken
+          // axis). The real free space lives in the header meter; the block
+          // just names the green region.
+          const tokEl = b.querySelector('[data-tok]');
+          if (tokEl) tokEl.textContent = cat === 'response' ? '' : fmt(val);
         });
 
-        // Answer bubble appears at the final stage.
-        answerEl.classList.toggle('is-shown', active >= LAST);
+        lblHistEl.textContent = turns > 0
+          ? 'Histórico da conversa (' + (turns + 1) + ' turnos)'
+          : 'Histórico da conversa';
+
+        // Legend: exact numbers, the ledger where the 200-vs-thousands contrast
+        // is read. Dim the rows not yet in the window.
+        legendList.querySelectorAll('li').forEach(function (li) {
+          const cat = li.dataset.leg;
+          const val = t[cat];
+          li.classList.toggle('k18-leg--off', val === 0);
+          const v = li.querySelector('[data-legval]');
+          if (v) v.textContent = fmt(val);
+        });
+        turnCountEl.textContent = String(step >= 1 ? turns + 1 : 0);
+
+        // Meter: real free space out of the whole 1M window.
+        const freeRatio = freeReal / TOTAL;
+        meterFillEl.style.width = (freeRatio * 100).toFixed(2) + '%';
+        respDispEl.textContent = fmt(freeReal) + ' / ' + fmt(TOTAL);
+
+        meterEl.classList.remove('k18-meter--low', 'k18-meter--full');
+        statusEl.classList.remove('k18-status--ok', 'k18-status--low', 'k18-status--full');
+        barsEl.classList.remove('k18-bars--full');
+        const respBlock = barsEl.querySelector('.k18-block-response');
+        respBlock.classList.remove('k18-block-response--full');
+
+        if (freeReal === 0) {
+          meterEl.classList.add('k18-meter--full');
+          statusEl.classList.add('k18-status--full');
+          barsEl.classList.add('k18-bars--full');
+          respBlock.classList.add('k18-block-response--full');
+          statusEl.textContent = 'Janela cheia. Sem espaço para responder: seria preciso compactar ou começar de novo.';
+        } else if (freeRatio < PCT_LOW) {
+          meterEl.classList.add('k18-meter--low');
+          statusEl.classList.add('k18-status--low');
+          statusEl.textContent = 'Janela apertada. Mesmo 1.000.000 de tokens acaba enchendo.';
+        } else {
+          statusEl.classList.add('k18-status--ok');
+          statusEl.innerHTML = step === 0
+            ? 'Janela vazia. Clique em <strong>Próxima etapa</strong> para montar o contexto.'
+            : statusForStep();
+        }
 
         // Buttons.
-        backBtn.disabled = active < 0;
-        nextBtn.disabled = active >= LAST;
-        nextBtn.textContent = active >= LAST ? 'Concluído' : 'Próxima etapa ▶';
+        backBtn.disabled = (step === 0 && turns === 0);
+        nextBtn.disabled = step >= LAST_STEP;
+        nextBtn.textContent = step >= LAST_STEP ? 'Resposta pronta' : 'Próxima etapa ▶';
+        turnBtn.disabled = step < LAST_STEP || freeReal <= 0; // add turns once a full response exists
+      }
 
-        // Keep the active stage in view. Deferred to the next frame so the
-        // scroll accounts for the answer bubble's height once it's shown.
-        const act = stagesEl.querySelector('.k18-stage.is-active');
-        if (act && act.scrollIntoView) {
-          requestAnimationFrame(function () { act.scrollIntoView({ block: 'nearest' }); });
+      function statusForStep() {
+        switch (step) {
+          case 1: return 'Contexto montado: sistema, memórias, ferramentas, arquivos e histórico entram na janela.';
+          case 2: return 'O modelo <strong>raciocina</strong>. O pensamento ocupa alguns milhares de tokens.';
+          case 3: return 'O modelo <strong>chama uma ferramenta</strong>. A chamada em si custa pouquíssimo (~200).';
+          case 4: return 'O <strong>resultado</strong> da busca volta e entra na janela.';
+          case 5: return 'A <strong>resposta</strong> é escrita. Some + Turno para ver a conversa crescer.';
+          default: return 'Janela com folga.';
         }
       }
 
       // ── Handlers ─────────────────────────────────────────
-      function next()  { if (active < LAST) { active += 1; render(); } }
-      function back()  { if (active > -1)   { active -= 1; render(); } }
-      function reset() { active = -1; render(); }
+      function next()  { if (step < LAST_STEP) { step += 1; render(); } }
+      function back()  {
+        if (turns > 0 && step >= LAST_STEP) { turns -= 1; render(); return; }
+        if (step > 0) { step -= 1; render(); }
+      }
+      function addTurn() { if (step >= LAST_STEP) { turns += 1; render(); } }
+      function reset()   { step = 0; turns = 0; render(); }
 
       nextBtn.addEventListener('click', next);
       backBtn.addEventListener('click', back);
+      turnBtn.addEventListener('click', addTurn);
       resetBtn.addEventListener('click', reset);
 
       // ── Theme sync (mirrors bs_theme like k3) ────────────
@@ -693,7 +724,6 @@
       });
 
       // ── Init ─────────────────────────────────────────────
-      buildStages();
       render();
     })();
   </script>

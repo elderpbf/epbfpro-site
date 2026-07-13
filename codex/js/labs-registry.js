@@ -119,11 +119,11 @@ export const LABS = [
   },
   {
     key: 'k18',
-    title: 'Da pergunta à resposta',
-    summary: 'O caminho completo, do contexto à resposta',
-    description: 'Uma pergunta não vira resposta na hora. O demo percorre o caminho inteiro: o contexto sendo montado (sistema, Projeto/Gem, arquivos, histórico, ferramentas), o modelo raciocinando, chamando uma busca, o resultado voltando pra janela e, enfim, a resposta.',
-    objective: 'Ver o processo completo de uma resposta e como cada etapa gasta a janela de contexto.',
-    emoji: '🔄'
+    title: 'Janela de contexto',
+    summary: 'Tudo que ocupa a janela, do sistema à resposta',
+    description: 'Versão granular da janela de contexto: os insumos entram separados (sistema, memórias, ferramentas, arquivos, histórico) e o próprio processo do modelo também ocupa a janela. O raciocínio custa milhares de tokens, a chamada de ferramenta custa quase nada, e o resultado e a resposta somam mais. Numa janela de 1.000.000, a barra dá zoom no que é usado.',
+    objective: 'Ver que o raciocínio e as ferramentas gastam a mesma janela, e quanto cada parte custa.',
+    emoji: '🪟'
   }
 ];
 
@@ -184,7 +184,7 @@ const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:activity',
+  k18: 'glyph:window',
 };
 
 export function labIcon(key) {
