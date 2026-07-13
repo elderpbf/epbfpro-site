@@ -571,8 +571,8 @@
 .cdx-tr-app-col-left, .cdx-tr-app-col-right { min-width: 0; }
 
 .cdx-tr-app-benefits { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 14px; }
-.cdx-tr-app-benefit { display: flex; align-items: flex-start; gap: 10px; }
-.cdx-tr-app-benefit-glyph { display: inline-flex; flex-shrink: 0; color: var(--primary); margin-top: 1px; }
+.cdx-tr-app-benefit { display: flex; align-items: center; gap: 10px; }
+.cdx-tr-app-benefit-glyph { display: inline-flex; flex-shrink: 0; color: var(--primary); }
 .cdx-tr-app-benefit-text { display: flex; flex-direction: column; min-width: 0; }
 .cdx-tr-app-benefit-title { font-size: 0.92rem; font-weight: 600; color: var(--text-primary); }
 .cdx-tr-app-benefit-desc { font-size: 0.84rem; color: var(--text-secondary); line-height: 1.4; }
