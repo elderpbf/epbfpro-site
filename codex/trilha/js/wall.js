@@ -176,17 +176,15 @@ function renderRegister(wall) {
   // worker says the address is NEW (needName), then revealed inline (no modal, same card).
   function renderCardForm(revealName) {
     cardEl.classList.remove('cdx-en-wait');
-    // A 'code' turma is a register form (name + e-mail up front): it has no needName round-trip,
-    // so the name is collected here and rides on requestCode's save-on-submit. A 'magic' turma
-    // stays e-mail-first and reveals the name inline only when the worker says the address is new.
+    // Both methods share ONE e-mail-first form: the name field is revealed inline only when the
+    // worker says the address is new (needName), for magic AND code alike. The single difference
+    // is which mechanism the submit fires (requestCode vs entrar) and, downstream, the validation
+    // screen it lands on (the emailed code vs the emailed link).
     const codeMode = authMethod === 'code';
-    const showName = revealName || codeMode;
-    const subKey = revealName ? 'wall.entrar_name_sub' : (codeMode ? 'wall.entrar_code_sub' : 'wall.entrar_sub');
-    const ctaKey = revealName ? 'wall.continuar' : (codeMode ? 'wall.entrar_code_cta' : 'wall.entrar_cta');
     cardEl.innerHTML =
       '<h3 class="cdx-en-card-h">' + esc(t('wall.entrar_h')) + '</h3>' +
-      '<p class="cdx-en-card-s">' + esc(t(subKey)) + '</p>' +
-      '<div class="cdx-en-field cdx-en-namefield' + (showName ? '' : ' hidden') + '">' +
+      '<p class="cdx-en-card-s">' + esc(revealName ? t('wall.entrar_name_sub') : t('wall.entrar_sub')) + '</p>' +
+      '<div class="cdx-en-field cdx-en-namefield' + (revealName ? '' : ' hidden') + '">' +
         '<label class="cdx-en-label" for="cdx-en-name">' + esc(t('login.name_label')) + '</label>' +
         '<input id="cdx-en-name" class="cdx-en-input" type="text" autocomplete="name" placeholder="' + esc(t('login.name_placeholder')) + '">' +
       '</div>' +
@@ -195,7 +193,7 @@ function renderRegister(wall) {
         '<input id="cdx-en-email" class="cdx-en-input" type="email" autocomplete="email" inputmode="email" placeholder="' + esc(t('login.email_placeholder')) + '"' + (revealName ? ' readonly' : '') + '>' +
       '</div>' +
       '<div class="cdx-en-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
-      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(t(ctaKey)) + '</button>' +
+      '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta">' + esc(revealName ? t('wall.continuar') : t('wall.entrar_cta')) + '</button>' +
       consentNoticeHtml();
     const nameEl = cardEl.querySelector('#cdx-en-name');
     const emailEl = cardEl.querySelector('#cdx-en-email');
