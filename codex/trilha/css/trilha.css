@@ -88,7 +88,15 @@ html, body {
 }
 
 /* ── Main + shared fade-in/slide-down ────────────────────── */
-.cdx-trilha-main { animation: cdx-tr-fade-in 0.4s ease both; }
+/* Opacity-only on the MAIN container: a `transform` here (even the residual translateY(0) that
+   `both` fill-mode leaves after the animation ends) would establish a containing block that traps
+   the mobile bottom nav's `position: fixed`, pinning it to the content box instead of the viewport
+   (it floated mid-screen). The slide entrance still plays on the panels/cards below, not on main. */
+.cdx-trilha-main { animation: cdx-tr-fade-only 0.4s ease both; }
+@keyframes cdx-tr-fade-only {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
 @keyframes cdx-tr-fade-in {
   from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: translateY(0); }
@@ -216,6 +224,8 @@ html, body {
   border-bottom-color: var(--primary);
   font-weight: 700;
 }
+/* Desktop top-tab strip is text-only; the inline icon is for the mobile bottom bar (mobile.css). */
+.cdx-tr-tab-ico { display: none; }
 
 /* ── Tab panels ──────────────────────────────────────────── */
 .cdx-trilha-tabcontent { min-height: 20rem; }

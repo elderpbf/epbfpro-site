@@ -93,12 +93,14 @@ export function openTarefaSubmit(item, sub, opts) {
   // Persisting a tarefa answer requires a student session: gate the modal behind
   // login, resuming the submit once authenticated. The gate logic is unit-tested
   // (student-login.gate); here we only supply the predicate + the two callbacks.
+  const participant = (state.data || {}).participant || {};
   const proceed = () => openTarefaSubmitModal({
     item,
     clientSlug: state.clientSlug,
     turmaSlug: state.turmaSlug,
     token: state.token,
     sessionToken: state.sessionToken, // approved-session token; gated turmas require it
+    participantName: participant.display_name || participant.name || '', // logged-in identity, drops the name field
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
   // Non-gated turmas keep the open anonymous / name-based submit, exactly as before.
