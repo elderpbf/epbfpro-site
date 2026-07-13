@@ -267,14 +267,16 @@ function renderHeaderActions() {
     // anonymous student on a gated turma just sees the wall. Logged-in logout lives in the
     // settings box (below), so the header carries no login/logout pill either way.
 
-    // Settings box (the initials avatar) + bell: shown ONLY when the student has COMPLETE access —
-    // approved AND e-mail-validated (Élder 2026-07-11). A just-requested/pending student (or a
-    // provisional, not-yet-validated one) holds a walled session but must NOT see the notif prefs /
-    // logout box for access they don't fully have yet. It carries the logout (ALWAYS) plus the notif
-    // prefs (only when the forum is on). Header order: bell + theme toggle on the LEFT; the settings
-    // gear on the RIGHT, appended AFTER the theme toggle (Élder).
+    // Settings box (the initials avatar) + bell: shown whenever the student holds ACCESS —
+    // i.e. approved (Élder 2026-07-13). This includes a provisional, not-yet-validated session
+    // granted by an open window or by emergency (simple) enrol: they have real access NOW, need
+    // the logout (to switch e-mails) and get the bell. Only a just-requested/pending student (still
+    // 'pending' / not approved, on the "confira seu e-mail" screen) is excluded — the status gate
+    // below already keeps them out. It carries the logout (ALWAYS) plus the notif prefs (only when
+    // the forum is on). Header order: bell + theme toggle on the LEFT; the settings gear on the
+    // RIGHT, appended AFTER the theme toggle (Élder).
     if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated
-        && data.access.status === 'approved' && data.access.validated) {
+        && data.access.status === 'approved') {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
       let bell = null;
       if (data.turma && data.turma.forum_enabled) {

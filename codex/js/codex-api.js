@@ -198,6 +198,8 @@ export const cohorts = {
   closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
   setEnrollmentQr:       (p) => call('ct_set_enrollment_qr', p),        // { client_slug, slug, shown } — project/un-project the QR without touching the window
   getEnrollment:         (p) => call('ct_get_enrollment', p),           // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
+  // (Unified 2026-07-13: e-mail-only entry now rides the ONE enrollment window above; there is no
+  // separate reentry open/close/get action anymore. The wall reads access.window_open from the view.)
   // Fórum moderation (Phase 8). The instructor moderates ENTIRELY from Codex (no
   // Trilha access), so this is the full toolkit: list/open threads, open a new one,
   // reply as professor, pin, delete, and edit his own (admin-authored) post.

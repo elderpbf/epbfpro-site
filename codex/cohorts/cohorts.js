@@ -1575,6 +1575,13 @@ function _fmtDur(sec) {
   if (m > 0) return m + 'min';
   return '<1min';
 }
+// Days-aware remaining label for the durable session: 12d / 8h / 42min. Language-neutral
+// (the "expira em" framing comes from i18n), so the same chip serves durable and provisional.
+function _fmtLeft(sec) {
+  const d = Math.floor(sec / 86400);
+  if (d >= 1) return d + 'd';
+  return _fmtDur(sec);
+}
 
 function _pRow(p, gated) {
   const st = p.access_status || 'pending';
@@ -1588,16 +1595,33 @@ function _pRow(p, gated) {
     const valChip = validated
       ? '<span class="cdx-prow-val ok" title="' + _esc(t('cohorts.pval_validated_t')) + '">' + _esc(t('cohorts.pval_validated')) + '</span>'
       : '<span class="cdx-prow-val prov" title="' + _esc(t('cohorts.pval_unvalidated_t')) + '">' + _esc(t('cohorts.pval_unvalidated')) + '</span>';
-    const remain = validated ? 0 : _provRemaining(p.session_expires_at);
-    let when;
-    if (remain > 0) {
-      when = '<span class="cdx-prow-when prov">' + _esc(t('cohorts.pprov_expires').replace('{t}', _fmtDur(remain))) + '</span>';
-    } else if (p.last_access_at) {
-      when = '<span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span> <span class="cdx-prow-when">' + _esc(relTime(p.last_access_at)) + '</span>';
-    } else {
-      when = '<span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span>';
-    }
-    conn = ' ' + valChip + ' ' + when;
+    // "Dias até expirar" chip (Élder 2026-07-13): the at-a-glance metric for every approved
+    // participant, from the furthest-out live session. Hovering it opens a small popover (no
+    // modal) with the rest of the dossier — validado / aparelhos / último acesso / reentradas.
+    const remain = _provRemaining(p.session_expires_at);
+    let expLabel, expTone;
+    if (remain > 0) { expLabel = t('cohorts.pexp_left').replace('{t}', _fmtLeft(remain)); expTone = remain <= 86400 ? 'soon' : 'ok'; }
+    else if (p.last_access_at) { expLabel = t('cohorts.pexp_lapsed'); expTone = 'off'; }
+    else { expLabel = t('cohorts.pexp_none'); expTone = 'off'; }
+    // Last-access recency (the ✓ acessou / ✕ nunca mark) now lives inside the popover.
+    const lastAccess = p.last_access_at
+      ? '<span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span> ' + _esc(relTime(p.last_access_at))
+      : '<span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span> ' + _esc(t('cohorts.pop_never'));
+    const reN = Number(p.reentry_count || 0);
+    const reVal = reN > 0 && p.last_reentry_at
+      ? reN + ' · ' + t('cohorts.pop_reentry_last').replace('{t}', relTime(p.last_reentry_at))
+      : String(reN);
+    const pop = '<span class="cdx-prow-pop" role="tooltip">' +
+        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_validated')) + '</b> ' + _esc(validated ? t('cohorts.pop_yes') : t('cohorts.pop_no')) + '</span>' +
+        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_devices')) + '</b> ' + _esc(String(Number(p.active_sessions || 0))) + '</span>' +
+        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_last_access')) + '</b> ' + lastAccess + '</span>' +
+        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_reentries')) + '</b> ' + _esc(reVal) + '</span>' +
+      '</span>';
+    const expChip = '<span class="cdx-prow-exp cdx-prow-exp--' + expTone + '" tabindex="0">' + _esc(expLabel) + pop + '</span>';
+    // Held in its OWN flex cell (cdx-prow-meta), NOT inside the name (which is overflow:hidden +
+    // nowrap and would clip both the chip and its popover). The popover is position:fixed and
+    // placed by JS on hover (see _wireDossierParticipants) so the scrolling dossier body can't clip it.
+    conn = '<span class="cdx-prow-meta">' + valChip + expChip + '</span>';
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
@@ -1605,9 +1629,10 @@ function _pRow(p, gated) {
     '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
     _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(name) + conn + '</div>' +
+      '<div class="cdx-prow-name">' + _esc(name) + '</div>' +
       '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
     '</div>' +
+    conn +
     badge +
     '<button type="button" class="cdx-prow-edit" data-edit title="' + _esc(t('cohorts.participant_edit_title')) + '">✎</button>' +
   '</div>';
@@ -1661,6 +1686,22 @@ function _paintDossierParticipants(el, turma) {
 function _wireDossierParticipants(el, turma) {
   const rows = Array.prototype.slice.call(el.querySelectorAll('.cdx-prow'));
   const acts = Array.prototype.slice.call(el.querySelectorAll('.cdx-ptb-act'));
+
+  // "Dias até expirar" popover (Élder 2026-07-13): the popover is position:fixed, so on hover we
+  // place it at the chip's viewport rect — below it, or above when there isn't room. This escapes
+  // the dossier body's overflow:auto clip that a plain absolute popover hit. CSS :hover does the show/hide.
+  el.addEventListener('mouseover', (ev) => {
+    const chip = ev.target && ev.target.closest ? ev.target.closest('.cdx-prow-exp') : null;
+    if (!chip || !el.contains(chip)) return;
+    const pop = chip.querySelector('.cdx-prow-pop');
+    if (!pop) return;
+    const r = chip.getBoundingClientRect();
+    const h = pop.offsetHeight || 120, w = pop.offsetWidth || 200;
+    const below = r.bottom + 6 + h <= window.innerHeight;
+    pop.style.top = (below ? r.bottom + 6 : Math.max(8, r.top - 6 - h)) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+  });
+
   const allChk = el.querySelector('.cdx-pall');
   const countEl = el.querySelector('.cdx-ptb-count');
   const chkOf = (r) => r.querySelector('.cdx-pchk');

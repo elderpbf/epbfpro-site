@@ -154,6 +154,10 @@ function renderRegister(wall) {
   // link (the check-your-e-mail screen + poll); 'code' sends a 4-letter OTP the student types
   // back (the code screen). Both mechanisms already live in the shared createLoginFlow.
   const authMethod = (((state.data || {}).access || {}).email_auth_method === 'code') ? 'code' : 'magic';
+  // The ONE window OPEN (the "Janela" the instructor opens in class): the e-mail submit enters on the spot
+  // (15d for a validated member, else 12h provisional + validation link), no code/link round-trip. Works
+  // for both código and magic turmas; falls back to authMethod only if the window closed mid-flight.
+  const windowOpen = !!(((state.data || {}).access || {}).window_open);
   let pollTimer = null;
   const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
 
@@ -204,8 +208,18 @@ function renderRegister(wall) {
     const submit = async () => {
       name = nameEl ? (nameEl.value || '').trim() : '';
       cta.disabled = true; cta.textContent = t('login.sending');
-      if (codeMode) await flow.requestCode(emailEl.value, { name });
-      else await flow.entrar(emailEl.value, name);
+      // Window open: try e-mail-only entry first; if it closed mid-flight, fall to the method.
+      if (windowOpen) {
+        await flow.reentry(emailEl.value, name);
+        if (flow.reentryClosed) {
+          if (codeMode) await flow.requestCode(emailEl.value, { name });
+          else await flow.entrar(emailEl.value, name);
+        }
+      } else if (codeMode) {
+        await flow.requestCode(emailEl.value, { name });
+      } else {
+        await flow.entrar(emailEl.value, name);
+      }
       settle();
     };
     cta.addEventListener('click', submit);
