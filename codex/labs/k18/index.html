@@ -313,7 +313,7 @@
 
   <template data-lab-info data-lab-info-title="Como a janela de contexto se preenche">
     <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está em uso; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
-    <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e depois o <strong>documento</strong> que ele anexa; então o modelo <strong>raciocina</strong> (custa milhares) e <strong>chama uma ferramenta</strong> (a chamada em si custa quase nada, ~200) e recebe o <strong>resultado</strong>. Num mesmo turno ele pode repetir isso, raciocinando de novo antes de cada chamada; só a última saída é a <strong>resposta</strong>. Cada novo pedaço se empilha, nada se apaga.</p>
+    <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e depois o <strong>documento</strong> que ele anexa; então o modelo <strong>raciocina</strong> (custa milhares) e <strong>chama uma ferramenta</strong> (a chamada em si custa quase nada, ~200) e recebe o <strong>resultado</strong>. Num mesmo turno ele pode repetir isso e sempre <strong>avalia o resultado</strong> antes de seguir, seja para chamar outra ferramenta ou para escrever a <strong>resposta</strong> (um resultado nunca vira resposta direto). Cada novo pedaço se empilha, nada se apaga.</p>
     <p>Repare no <strong>total processado</strong>: toda vez que o modelo gera algo, ele lê de novo tudo que já está na janela e escreve por cima. O custo não é o tamanho atual da janela, é a soma de todas essas releituras, e ela cresce a cada turno. Por isso conversa longa sai cara mesmo antes de a janela encher.</p>
     <p><strong>Compactar</strong> resume as interações que já passaram num único bloco menor (o setup fica de fora): libera espaço e faz as próximas releituras custarem menos, sem devolver o que já foi processado. É assim que a janela funciona por dentro.</p>
   </template>
@@ -331,9 +331,10 @@
       // block(s), in real chronological order. STEP 0 is the setup and stays out
       // of compaction. The user prompt and the document are separate steps.
       // In one turn the model may call several tools. It reasons, calls a tool,
-      // reads the result, then reasons AGAIN before the next call — so every tool
-      // call is preceded by its own raciocínio. Only the LAST model output in the
-      // turn is the resposta; everything between tool calls is reasoning.
+      // reads the result, then reasons AGAIN to weigh what came back — so every
+      // tool call is preceded by a raciocínio AND every result is followed by one,
+      // including the final reasoning that leads into the resposta (a result never
+      // goes straight to the answer). Only the LAST model output is the resposta.
       const STEPS = [
         [ {t:'system', l:'Prompt do sistema', k:3000, turn:0},
           {t:'memory', l:'Memórias',          k:2000, turn:0},
@@ -343,6 +344,7 @@
         [ {t:'think',  l:'Raciocínio', k:5000, turn:1} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:1} ],
         [ {t:'result', l:'Resultado', k:6000, turn:1} ],
+        [ {t:'think',  l:'Raciocínio', k:2000, turn:1} ],
         [ {t:'answer', l:'Resposta', k:2500, turn:1} ],
         [ {t:'user', l:'Prompt do usuário', k:500, turn:2, start:true} ],
         [ {t:'think',  l:'Raciocínio', k:6000, turn:2} ],
@@ -351,6 +353,7 @@
         [ {t:'think',  l:'Raciocínio', k:3000, turn:2} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:2} ],
         [ {t:'result', l:'Resultado', k:7000, turn:2} ],
+        [ {t:'think',  l:'Raciocínio', k:2500, turn:2} ],
         [ {t:'answer', l:'Resposta', k:3000, turn:2} ],
         [ {t:'user', l:'Prompt do usuário', k:700, turn:3, start:true} ],
         [ {t:'think',  l:'Raciocínio', k:7000, turn:3} ],
@@ -359,6 +362,7 @@
         [ {t:'think',  l:'Raciocínio', k:4000, turn:3} ],
         [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:3} ],
         [ {t:'result', l:'Resultado', k:5000, turn:3} ],
+        [ {t:'think',  l:'Raciocínio', k:3000, turn:3} ],
         [ {t:'answer', l:'Resposta', k:4000, turn:3} ]
       ];
       const SETUP_STEPS = 1;  // the first step (setup) is never compacted
@@ -377,6 +381,7 @@
           steps.push([ {t:'call',   l:'Chamada de ferramenta', k:200, turn:turnNo} ]);
           steps.push([ {t:'result', l:'Resultado', k:3000 + (turnNo*613 + i*271)%7000, turn:turnNo} ]);
         }
+        steps.push([ {t:'think',  l:'Raciocínio', k:2500 + (turnNo*397)%3000, turn:turnNo} ]);  // weigh the last result
         steps.push([ {t:'answer', l:'Resposta', k:2500 + (turnNo*503)%2500, turn:turnNo} ]);
         return steps;
       }
