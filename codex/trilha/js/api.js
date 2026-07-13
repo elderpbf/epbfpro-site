@@ -37,10 +37,6 @@ export const trail = {
   logout:         (p) => call('student_logout', p),         // { session_token } -> { ok, clear_session_cookie }
   // Single "Entrar" in-room path (track-36 c/d): 12h provisional session while the window is open.
   provisionalEnter: (p) => call('student_provisional_enter', p), // { client_slug, turma_slug, email, name?, et? } -> { ok, entered, provisional?, session_token? } | { error }
-  // Reentry window (feat/trilha-reentry): while the turma's reentry window is open, an approved +
-  // validated member re-enters by e-mail alone (15-day durable); anyone else gets 12h provisional +
-  // a validation link. entered:false means the window closed mid-flight (caller falls back).
-  reentryEnter: (p) => call('student_reentry_enter', p), // { client_slug, turma_slug, email, name?, ask_name? } -> { ok, entered, provisional?, session_token?, needs_name? } | { error }
   // Off-window "Entrar" (track-36 c/d): send the 15-min validation link + get a poll_token for THIS
   // device. E-mail-first: pass ask_name so a NEW address returns { needs_name } to reveal the name.
   authRequest: (p) => call('student_auth_request', p), // { client_slug, turma_slug, email, name?, ask_name? } -> { ok, needs_name? , poll_token?, dev_magic_token? } | { error }

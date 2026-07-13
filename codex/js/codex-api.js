@@ -198,11 +198,6 @@ export const cohorts = {
   closeEnrollment:       (p) => call('ct_close_enrollment', p),         // { client_slug, slug }
   setEnrollmentQr:       (p) => call('ct_set_enrollment_qr', p),        // { client_slug, slug, shown } — project/un-project the QR without touching the window
   getEnrollment:         (p) => call('ct_get_enrollment', p),           // { client_slug, slug } -> { open, now, enrollment_token, enrollment_expires_at, turma_token, qr_shown }
-  // Reentry window (feat/trilha-reentry): a SEPARATE, e-mail-only re-entry window (server-capped 12h),
-  // distinct from the QR/código enrollment window. open/close are immediate; get re-reads for the state.
-  openReentry:           (p) => call('ct_open_reentry', p),             // { client_slug, slug, ttl_seconds? } -> { ok, reentry_window_until, now }
-  closeReentry:          (p) => call('ct_close_reentry', p),            // { client_slug, slug }
-  getReentry:            (p) => call('ct_get_reentry', p),              // { client_slug, slug } -> { ok, open, now, reentry_window_until }
   // Fórum moderation (Phase 8). The instructor moderates ENTIRELY from Codex (no
   // Trilha access), so this is the full toolkit: list/open threads, open a new one,
   // reply as professor, pin, delete, and edit his own (admin-authored) post.

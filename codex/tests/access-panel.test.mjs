@@ -47,7 +47,6 @@ test('wireSettings saves only the access columns and mutates the turma', async (
     '.cdx-acc-reveal': { checked: true },
     '.cdx-acc-appinstall': { checked: true },
     '.cdx-acc-authcode': { checked: true },
-    '.cdx-acc-emergency': { checked: false },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
     '.cdx-acc-msg':   { textContent: '' },
   };
@@ -62,15 +61,15 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
     access_gated: 1, certificates_enabled: 1, forum_enabled: 1, reveal_on_completion: 1,
-    app_install_prompt: 1, email_auth_method: 'code', simple_enroll_enabled: 0,
+    app_install_prompt: 1, email_auth_method: 'code',
   });
   assert.ok(!('gate_mode' in sent), 'retired mode not sent');
   assert.ok(!('enrollment_prompt_enabled' in sent), 'retired enroll-prompt not sent');
   assert.ok(!('direct_access_enabled' in sent), 'retired direct-access not sent');
   assert.ok(!('notifications_enabled' in sent), 'retired notifications toggle not sent');
-  // The "Emergência" toggle (feat/trilha-reentry) writes simple_enroll_enabled again: it is the
-  // break-glass path (name + e-mail, 8h). Off by default here, so it is sent as 0.
-  assert.equal(sent.simple_enroll_enabled, 0, 'emergency (simple-enroll) sent, off by default');
+  // track-36 f-UI: simple-enroll is retired, so the save must NOT write the column
+  // (omitted, not forced to 0 — ct_update_turma_meta leaves the dormant column as-is).
+  assert.ok(!('simple_enroll_enabled' in sent), 'retired simple-enroll not sent');
   assert.ok(!('whatsapp_url' in sent), 'does not touch whatsapp/classpulse (conditional update)');
   assert.equal(turma.access_gated, 1, 'turma row kept in sync');
   assert.equal(turma.certificates_enabled, 1);
@@ -78,7 +77,6 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.equal(turma.reveal_on_completion, 1, 'reveal flag kept in sync');
   assert.equal(turma.app_install_prompt, 1, 'app-install flag kept in sync');
   assert.equal(turma.email_auth_method, 'code', 'e-mail auth method kept in sync');
-  assert.equal(turma.simple_enroll_enabled, 0, 'emergency flag kept in sync');
 });
 
 test('the cohort dossier mounts the shared panel into the Dados tab', () => {

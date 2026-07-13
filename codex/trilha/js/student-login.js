@@ -235,34 +235,6 @@ export function createLoginFlow(opts = {}) {
       return this;
     },
 
-    // Reentry-window login (feat/trilha-reentry): the turma's reentry window is OPEN, so e-mail alone
-    // re-enters with zero friction. An already-approved + validated member gets a 15-day DURABLE session
-    // on the spot; a new / unvalidated address falls to 12h provisional + a validation link. A NEW address
-    // with no name yet stops at 'needName' (reveal the field). If the window closed between page load and
-    // submit, sets `reentryClosed` so the wall falls back to the turma's normal magic/code method.
-    async reentry(rawEmail, name) {
-      this.error = null;
-      this.reentryClosed = false;
-      const email = validateEmail(rawEmail);
-      if (!email) { this.state = 'email'; this.error = 'email_invalid'; return this; }
-      this.email = email;
-      const payload = { client_slug: client, turma_slug: turma, email, ask_name: true };
-      const cleanName = (name || '').trim();
-      if (cleanName) payload.name = cleanName;
-      if (opts.k) payload.k = opts.k;
-      if (opts.origin) payload.origin = opts.origin;
-      const res = await safeCall(api.reentryEnter(payload));
-      if (res && res.error === 'access_blocked') { this.state = 'email'; this.error = 'access_blocked'; return this; }
-      if (res && res.needs_name) { this.state = 'needName'; return this; }
-      // Window closed mid-flight: signal the wall to use the normal path (magic/code).
-      if (res && res.ok && res.entered === false) { this.reentryClosed = true; return this; }
-      if (!res || !res.ok || !res.session_token) { this.state = 'email'; this.error = (res && res.error) || 'error'; return this; }
-      sess.setToken(client, turma, res.session_token);
-      this.participantId = res.participant_id != null ? res.participant_id : null;
-      this.state = res.needs_profile ? 'profile' : 'authenticated';
-      return this;
-    },
-
     // ── track-36 single "Entrar" (the one screen, e-mail-first) ─────────────────
     // One method drives the whole entry. In-room (a live window + código/QR token) mints
     // IMMEDIATE provisional access (12h), zero e-mail wait. Off-window, it sends the 15-min
