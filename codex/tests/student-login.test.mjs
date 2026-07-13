@@ -133,7 +133,7 @@ test('requestCode (bound/wall) sends the turma context so the code is always iss
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
   await flow.requestCode('  Aluno@Exemplo.com ');
   assert.equal(api.calls[0].name, 'otpRequest');
-  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', client_slug: 'jfse', turma_slug: 'geral' });
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', ask_name: true, client_slug: 'jfse', turma_slug: 'geral' });
   assert.equal(flow.state, 'code');
   assert.equal(flow.email, 'aluno@exemplo.com');
   assert.equal(flow.error, null);
@@ -143,7 +143,7 @@ test('requestCode (unbound/entry) sets require_enrolled so an un-enrolled e-mail
   api = fakeApi({ otpRequest: { ok: true } });
   flow = createLoginFlow({ api, session: sess }); // no client/turma -> the turma-agnostic /trilha entry
   await flow.requestCode('aluno@exemplo.com');
-  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', require_enrolled: true });
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', ask_name: true, require_enrolled: true });
 });
 
 test('requestCode surfaces email_not_enrolled and stays on email (no code step)', async () => {
@@ -185,7 +185,14 @@ test('requestCode (bound/wall) forwards the typed name when given', async () => 
   api = fakeApi({ otpRequest: { ok: true } });
   flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
   await flow.requestCode('aluno@exemplo.com', { name: '  Ana Maria  ' });
-  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', name: 'Ana Maria', client_slug: 'jfse', turma_slug: 'geral' });
+  assert.deepEqual(api.calls[0].params, { email: 'aluno@exemplo.com', ask_name: true, name: 'Ana Maria', client_slug: 'jfse', turma_slug: 'geral' });
+});
+
+test('requestCode routes a brand-new e-mail (needs_name) to the needName step, like the magic flow', async () => {
+  api = fakeApi({ otpRequest: { ok: true, needs_name: true } });
+  flow = createLoginFlow({ api, session: sess, client: 'jfse', turma: 'geral' });
+  await flow.requestCode('novo@exemplo.com');
+  assert.equal(flow.state, 'needName', 'a new e-mail is asked for the name inline before the code, same as entrar');
 });
 
 // Simple-enroll login (turma flag ON): name + e-mail register + grant access on the spot,
