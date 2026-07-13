@@ -34,29 +34,26 @@
       --focal: var(--lab-focal);
       --focal-rgb: var(--lab-focal-rgb);
       --good: var(--lab-good);
-      --bad: var(--lab-bad);
-      --bad-rgb: var(--lab-bad-rgb);
       --font-display: var(--lab-font-display);
       --font-mono: var(--lab-font-mono);
 
-      /* Category colors, picked so the stacked blocks each read distinct.
-         Fixed hexes (not theme-shifting) so each category keeps one identity
-         in light and dark; all carry white block text on either page theme. */
-      --cat-system:    #64748b;  /* slate  — prompt do sistema */
-      --cat-memory:    #8b5cf6;  /* violet — memórias */
-      --cat-tools:     #e11d48;  /* rose   — ferramentas (definições) */
-      --cat-files:     #d4a017;  /* amber  — arquivos anexados */
-      --cat-history:   #3b82f6;  /* blue   — histórico da conversa */
-      --cat-think:     #ea580c;  /* orange — raciocínio (custa milhares) */
-      --cat-call:      #db2777;  /* magenta— chamada de ferramenta (~200) */
-      --cat-result:    #0d9488;  /* teal   — resultado da busca / RAG */
-      --cat-answer:    #16a34a;  /* green  — a resposta */
-      --cat-answer-rgb: 22, 163, 74;
+      /* One fixed colour per block TYPE, so the bar stays decodable once labels
+         get too thin to read (the legend is the key). Fixed hexes carry white
+         text on either theme. */
+      --t-system:  #64748b;  /* slate  */
+      --t-memory:  #a855f7;  /* purple */
+      --t-tools:   #e11d48;  /* red    */
+      --t-user:    #0ea5e9;  /* sky    — marks each new turn */
+      --t-doc:     #eab308;  /* yellow */
+      --t-think:   #f97316;  /* orange */
+      --t-call:    #ec4899;  /* pink   — the ~200-token hairline */
+      --t-result:  #14b8a6;  /* teal   */
+      --t-answer:  #22c55e;  /* green  */
+      --t-summary: #78716a;  /* stone  — compaction summary */
+      --t-free-rgb: 34, 197, 94;
 
       position: relative;
       width: 100%;
-      /* dvh, not vh: on mobile the vh box sits behind the URL bar and hides
-         the operator button row. dvh tracks the visible viewport. */
       height: 100dvh;
       overflow: hidden;
       display: grid;
@@ -69,353 +66,165 @@
       font-family: var(--font-display);
     }
 
-    /* The header (brand + title) is mounted by lab-header.js into the shared
-       .lab-header placeholder and styled by labs.css. The meter is the
-       header's right-side widget; only its own styles live here. */
-    .k18-meter {
-      display: flex;
-      flex-direction: column;
-      gap: 0.35rem;
-      min-width: 0;
-    }
-    .k18-meter-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      gap: 0.6rem;
-      min-width: 0;
-    }
+    /* Header meter: real free space out of the whole window. */
+    .k18-meter { display: flex; flex-direction: column; gap: 0.35rem; min-width: 0; }
+    .k18-meter-row { display: flex; justify-content: space-between; align-items: baseline; gap: 0.6rem; min-width: 0; }
     .k18-meter-label {
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-ui);
-      color: var(--text-dim);
-      letter-spacing: 0.04em;
-      text-transform: uppercase;
-      font-weight: 600;
+      font-size: var(--lab-fs-ui); color: var(--text-dim);
+      letter-spacing: 0.04em; text-transform: uppercase; font-weight: 600;
     }
     .k18-meter-value {
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-audience);
-      font-weight: 700;
-      color: var(--good);
-      letter-spacing: -0.01em;
-      white-space: nowrap;
-      transition: color 320ms;
+      font-family: var(--font-mono); font-size: var(--lab-fs-audience);
+      font-weight: 700; color: var(--good); letter-spacing: -0.01em; white-space: nowrap;
     }
-    .k18-meter.k18-meter--low .k18-meter-value { color: #d4a017; }
-    .k18-meter.k18-meter--full .k18-meter-value { color: var(--bad); }
     .k18-meter-bar {
-      position: relative;
-      height: 10px;
+      position: relative; height: 10px;
       background: color-mix(in srgb, var(--text) 8%, transparent);
-      border-radius: 999px;
-      overflow: hidden;
+      border-radius: 999px; overflow: hidden;
     }
     .k18-meter-fill {
-      position: absolute;
-      top: 0; bottom: 0; left: 0;
-      width: 100%;
-      background: linear-gradient(90deg,
-        rgba(var(--cat-answer-rgb), 0.55),
-        var(--good));
-      border-radius: 999px;
-      transition: width 800ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                  background 320ms;
-    }
-    .k18-meter.k18-meter--low .k18-meter-fill {
-      background: linear-gradient(90deg, rgba(212,160,23,0.5), #d4a017);
-    }
-    .k18-meter.k18-meter--full .k18-meter-fill {
-      background: linear-gradient(90deg, rgba(var(--bad-rgb), 0.55), var(--bad));
+      position: absolute; top: 0; bottom: 0; left: 0; width: 100%;
+      background: linear-gradient(90deg, rgba(var(--t-free-rgb), 0.55), var(--good));
+      border-radius: 999px; transition: width 500ms ease;
     }
 
-    /* ── Main 2-column area: bars on left, legend on right ── */
+    /* ── Main 2-column area: window (bar) + legend ── */
     .k18-main {
       display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 30%);
       gap: 1.4rem;
       min-height: 0;
     }
 
-    /* The window column: a broken-axis marker on top, the stacked bar below.
-       The bar is ZOOMED to a dynamic ceiling so the small process blocks stay
-       legible in a 1.000.000-token window; the marker says the window keeps
-       going above the zoom. */
-    .k18-window {
-      display: flex;
-      flex-direction: column;
-      min-height: 0;
-      gap: 0;
-    }
+    .k18-window { display: flex; flex-direction: column; min-height: 0; gap: 0; }
 
-    /* Broken-axis marker: sits above the bar, hidden when the zoom already
-       reaches the full window. Says "there is much more free space above,
-       up to 1.000.000, just not drawn to scale". */
+    /* Broken-axis marker: says the window continues above the zoom, up to the
+       full size. Hidden when the scale already shows the whole window. */
     .k18-break {
-      flex: 0 0 auto;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      gap: 0.6rem;
-      height: 30px;
-      padding: 0 1.1rem;
-      box-sizing: border-box;
-      border-radius: 14px 14px 0 0;
-      border: 1.5px dashed var(--border);
-      border-bottom: none;
-      background: repeating-linear-gradient(
-        -45deg,
-        color-mix(in srgb, var(--text) 5%, transparent) 0 6px,
-        transparent 6px 12px);
-      color: var(--text-dim);
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-ui);
-      font-weight: 600;
+      flex: 0 0 auto; display: flex; align-items: center; justify-content: space-between;
+      gap: 0.6rem; height: 30px; padding: 0 1.1rem; box-sizing: border-box;
+      border-radius: 14px 14px 0 0; border: 1.5px dashed var(--border); border-bottom: none;
+      background: repeating-linear-gradient(-45deg,
+        color-mix(in srgb, var(--text) 5%, transparent) 0 6px, transparent 6px 12px);
+      color: var(--text-dim); font-size: var(--lab-fs-ui); font-weight: 600;
     }
     .k18-break-dots { letter-spacing: 0.25em; font-weight: 700; }
     .k18-break-ceil { font-family: var(--font-mono); }
-    .k18-window.k18-window--full .k18-break { display: none; }
+    .k18-window--full .k18-break { display: none; }
 
-    /* Vertical stack of category blocks, anchored bottom (system at bottom,
-       response space at top). Each block's flex-basis is its share of the
-       ZOOM ceiling; transitions are 800ms so the audience can watch blocks
-       land and the response band shrink as the conversation grows. */
+    /* The stacked bar = the window. Oldest at the bottom, newest just under the
+       free space; the free space is always the top block. */
     .k18-bars {
-      position: relative;
-      flex: 1 1 auto;
-      display: flex;
-      flex-direction: column;
-      align-items: stretch;
-      min-height: 0;
-      border-radius: 0 0 14px 14px;
-      overflow: hidden;
-      outline: 1.5px solid var(--border);
-      transition: outline-color 320ms, box-shadow 320ms;
+      position: relative; flex: 1 1 auto; display: flex; flex-direction: column;
+      align-items: stretch; min-height: 0; border-radius: 0 0 14px 14px;
+      overflow: hidden; outline: 1.5px solid var(--border);
     }
     .k18-window--full .k18-bars { border-radius: 14px; }
-    .k18-bars.k18-bars--full {
-      outline-color: var(--bad);
-      box-shadow: 0 0 22px rgba(var(--bad-rgb), 0.28);
-      animation: k18-flash 700ms ease-out 1;
-    }
-    @keyframes k18-flash {
-      0%   { box-shadow: 0 0 0 rgba(var(--bad-rgb), 0); }
-      40%  { box-shadow: 0 0 32px rgba(var(--bad-rgb), 0.55); }
-      100% { box-shadow: 0 0 22px rgba(var(--bad-rgb), 0.28); }
-    }
+
     .k18-block {
-      flex: 0 0 0;             /* JS sets flex-basis as percent */
-      min-height: 0;
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      padding: 0 1.1rem;
-      box-sizing: border-box;
-      transition: flex-basis 800ms cubic-bezier(0.22, 0.61, 0.36, 1),
-                  background 320ms;
-      overflow: hidden;
-      color: #fff;
-      font-family: var(--font-display);
-      font-weight: 600;
+      flex-grow: 0; flex-shrink: 1; min-height: 0; display: flex; align-items: center;
+      justify-content: space-between; padding: 0 1.1rem; box-sizing: border-box;
+      overflow: hidden; color: #fff; font-weight: 600;
+      transition: flex-basis 420ms cubic-bezier(0.22, 0.61, 0.36, 1);
     }
     .k18-block-label {
-      font-size: var(--lab-fs-body);
-      letter-spacing: 0.02em;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
+      font-size: var(--lab-fs-body); letter-spacing: 0.02em;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.28);
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
     }
     .k18-block-tokens {
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-body);
-      font-weight: 700;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.25);
-      padding-left: 0.5rem;
+      font-family: var(--font-mono); font-size: var(--lab-fs-body); font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.28); padding-left: 0.5rem;
     }
-    /* Hide labels when a block gets too short to read */
-    .k18-block.k18-block--tiny .k18-block-label,
-    .k18-block.k18-block--tiny .k18-block-tokens { opacity: 0; }
-    .k18-block.k18-block--zero { flex-basis: 0 !important; padding: 0; }
+    .k18-block--tiny .k18-block-label, .k18-block--tiny .k18-block-tokens { opacity: 0; }
+    /* A new turn starts with a sky-blue user block; a hairline top rule doubles
+       the visual turn boundary. */
+    .k18-block--turnstart { box-shadow: inset 0 2px 0 rgba(255,255,255,0.55); }
 
-    .k18-block-system  { background: var(--cat-system); }
-    .k18-block-memory  { background: var(--cat-memory); }
-    .k18-block-tools   { background: var(--cat-tools); }
-    .k18-block-files   { background: var(--cat-files); }
-    .k18-block-history { background: var(--cat-history); }
-    .k18-block-think   { background: var(--cat-think); }
-    .k18-block-call    { background: var(--cat-call); }
-    .k18-block-result  { background: var(--cat-result); }
-    .k18-block-answer  { background: var(--cat-answer); }
-    .k18-block-response {
-      background: linear-gradient(180deg,
-        rgba(var(--cat-answer-rgb), 0.55),
-        rgba(var(--cat-answer-rgb), 0.28));
+    .k18-block-system  { background: var(--t-system); }
+    .k18-block-memory  { background: var(--t-memory); }
+    .k18-block-tools   { background: var(--t-tools); }
+    .k18-block-user    { background: var(--t-user); }
+    .k18-block-doc     { background: var(--t-doc); }
+    .k18-block-think   { background: var(--t-think); }
+    .k18-block-call    { background: var(--t-call); }
+    .k18-block-result  { background: var(--t-result); }
+    .k18-block-answer  { background: var(--t-answer); }
+    .k18-block-summary {
+      background: repeating-linear-gradient(45deg,
+        var(--t-summary) 0 10px, color-mix(in srgb, var(--t-summary) 80%, #000) 10px 20px);
+    }
+    .k18-block-free {
       color: #fff;
-    }
-    .k18-block-response.k18-block-response--full {
-      background: linear-gradient(180deg, var(--bad), color-mix(in srgb, var(--bad) 70%, #000));
+      background: linear-gradient(180deg, rgba(var(--t-free-rgb), 0.5), rgba(var(--t-free-rgb), 0.24));
     }
 
-    /* ── Legend / sidebar (the exact-number ledger) ────────── */
+    /* ── Legend: the colour key (blocks repeat, so no per-row totals) ── */
     .k18-legend {
-      display: flex;
-      flex-direction: column;
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 14px;
-      padding: 1rem 1.1rem;
-      min-width: 0;
-      min-height: 0;
-      gap: 0.5rem;
+      display: flex; flex-direction: column;
+      background: var(--surface); border: 1.5px solid var(--border);
+      border-radius: 14px; padding: 0.9rem 1rem; min-width: 0; min-height: 0; gap: 0.6rem;
     }
     .k18-legend-title {
-      margin: 0;
-      font-size: var(--lab-fs-ui);
-      font-weight: 600;
-      letter-spacing: 0.1em;
-      text-transform: uppercase;
-      color: var(--text-dim);
+      margin: 0; font-size: var(--lab-fs-ui); font-weight: 600;
+      letter-spacing: 0.1em; text-transform: uppercase; color: var(--text-dim);
     }
-    .k18-legend-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0.32rem;
-      min-height: 0;
-      overflow-y: auto;
+    .k18-key { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.28rem; min-height: 0; overflow-y: auto; }
+    .k18-key li {
+      display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center;
+      gap: 0.55rem; font-size: var(--lab-fs-body); font-weight: 500; color: var(--text);
     }
-    .k18-legend-list li {
-      display: grid;
-      grid-template-columns: auto minmax(0, 1fr) auto;
-      align-items: center;
-      gap: 0.6rem;
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      font-weight: 500;
-      color: var(--text);
-      transition: opacity 200ms;
-    }
-    .k18-legend-list li.k18-leg--off { opacity: 0.32; }
-    .k18-dot {
-      width: 14px;
-      height: 14px;
-      border-radius: 4px;
-      flex-shrink: 0;
-    }
-    .k18-dot-system  { background: var(--cat-system); }
-    .k18-dot-memory  { background: var(--cat-memory); }
-    .k18-dot-tools   { background: var(--cat-tools); }
-    .k18-dot-files   { background: var(--cat-files); }
-    .k18-dot-history { background: var(--cat-history); }
-    .k18-dot-think   { background: var(--cat-think); }
-    .k18-dot-call    { background: var(--cat-call); }
-    .k18-dot-result  { background: var(--cat-result); }
-    .k18-dot-answer  { background: var(--cat-answer); }
-    .k18-leg-val {
-      font-family: var(--font-mono);
-      font-weight: 600;
-      color: var(--text-dim);
-    }
+    .k18-key .sw { width: 13px; height: 13px; border-radius: 4px; flex-shrink: 0; }
+    .k18-key .kv { font-family: var(--font-mono); font-weight: 600; color: var(--text-dim); font-size: var(--lab-fs-ui); }
+    .sw-system{background:var(--t-system)} .sw-memory{background:var(--t-memory)} .sw-tools{background:var(--t-tools)}
+    .sw-user{background:var(--t-user)} .sw-doc{background:var(--t-doc)} .sw-think{background:var(--t-think)}
+    .sw-call{background:var(--t-call)} .sw-result{background:var(--t-result)} .sw-answer{background:var(--t-answer)}
+    .sw-summary{background:var(--t-summary)}
 
-    .k18-turn-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      padding-top: 0.55rem;
-      border-top: 1px dashed var(--border);
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      color: var(--text-dim);
+    .k18-stats {
+      padding-top: 0.5rem; border-top: 1px dashed var(--border);
+      display: flex; flex-direction: column; gap: 0.2rem;
+      font-size: var(--lab-fs-ui); color: var(--text-dim);
     }
-    .k18-turn-val {
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-answer);
-      font-weight: 700;
-      color: var(--text);
-    }
+    .k18-stats-row { display: flex; justify-content: space-between; align-items: baseline; }
+    .k18-stats-row b { font-family: var(--font-mono); color: var(--text); font-weight: 700; }
     .k18-status {
-      margin-top: auto;
-      padding-top: 0.55rem;
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-ui);
-      color: var(--text-dim);
-      font-style: italic;
-      line-height: 1.3;
+      margin-top: auto; padding-top: 0.5rem;
+      font-size: var(--lab-fs-ui); color: var(--text-dim); font-style: italic; line-height: 1.3;
     }
     .k18-status strong { color: var(--focal); font-style: normal; }
-    .k18-status.k18-status--ok { color: var(--good); }
-    .k18-status.k18-status--low { color: #d4a017; }
-    .k18-status.k18-status--full { color: var(--bad); font-style: normal; font-weight: 600; }
 
-    /* ── Button bar (operator) ────────────────────────────── */
-    .k18-button-bar {
-      display: flex;
-      justify-content: flex-end;
-      align-items: center;
-      gap: 0.45rem;
-      padding: 0 0.2rem;
-      flex-wrap: wrap;
-    }
+    /* ── Button bar ── */
+    .k18-button-bar { display: flex; justify-content: flex-end; align-items: center; gap: 0.45rem; padding: 0 0.2rem; flex-wrap: wrap; }
     .k18-fs-slot { margin-right: auto; }
     .k18-btn {
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-btn);
-      font-weight: 600;
-      padding: 0.4rem 1rem;
-      border-radius: 999px;
-      cursor: pointer;
-      transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
-      letter-spacing: 0.02em;
-      line-height: 1.15;
-      border: 1.5px solid var(--border);
-      background: transparent;
-      color: var(--text-dim);
+      font-size: var(--lab-fs-btn); font-weight: 600; padding: 0.4rem 1rem; border-radius: 999px;
+      cursor: pointer; transition: background 180ms, color 180ms, border-color 180ms, box-shadow 180ms, transform 150ms;
+      letter-spacing: 0.02em; line-height: 1.15; border: 1.5px solid var(--border);
+      background: transparent; color: var(--text-dim);
     }
     .k18-btn:hover { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
     .k18-btn-action {
-      border-color: var(--focal);
-      background: rgba(var(--focal-rgb), 0.16);
-      color: var(--focal);
+      border-color: var(--focal); background: rgba(var(--focal-rgb), 0.16); color: var(--focal);
       box-shadow: 0 0 10px rgba(var(--focal-rgb), 0.18);
     }
-    .k18-btn-action:hover {
-      background: rgba(var(--focal-rgb), 0.28);
-      border-color: var(--focal);
-      color: var(--focal);
-      box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3);
-    }
+    .k18-btn-action:hover { background: rgba(var(--focal-rgb), 0.28); box-shadow: 0 0 16px rgba(var(--focal-rgb), 0.3); }
+    .k18-btn-toggle.k18-on { border-color: var(--focal); color: var(--focal); background: rgba(var(--focal-rgb), 0.10); }
     .k18-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .k18-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
 
-    /* ── Responsive: phone / narrow portrait ───────────────
-       The main area switches to the shared mobile-tab primitive (lab-tabs.js),
-       so the .k18-main grid rule below is only a JS-off fallback. */
     @media (max-width: 700px) {
       .k18-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
-      .k18-main {
-        grid-template-columns: 1fr;
-        grid-template-rows: minmax(0, 1fr) auto;
-        gap: 0.55rem;
-      }
-      .k18-legend { padding: 0.55rem 0.75rem; gap: 0.35rem; }
+      .k18-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 0.55rem; }
+      .k18-legend { padding: 0.55rem 0.75rem; gap: 0.4rem; }
       .k18-legend-title { display: none; }
       .k18-block { padding: 0 0.7rem; }
       .k18-button-bar { gap: 0.4rem; padding: 0; }
-      .k18-btn {
-        padding: 0.65rem 0.5rem;
-        flex: 1 1 calc(50% - 0.2rem);
-        min-height: 44px;
-        min-width: 0;
-        text-align: center;
-      }
+      .k18-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(33% - 0.3rem); min-height: 44px; min-width: 0; text-align: center; }
       .k18-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
       .k18-button-bar > [data-lab-info-ctl] { order: -1; display: flex; flex: 1 1 100%; }
       .k18-button-bar > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
     }
-
     @media (max-height: 500px) and (orientation: landscape) {
       .k18-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
       .k18-main { gap: 0.6rem; }
@@ -426,13 +235,13 @@
 
   <div class="lab-header"
        data-lab-title="Janela de contexto"
-       data-lab-subtitle="Tudo que ocupa a janela, do sistema à resposta">
+       data-lab-subtitle="Como a janela se preenche, passo a passo">
     <div class="k18-meter" id="k18-meter">
       <div class="k18-meter-row">
         <span class="k18-meter-label">Espaço para resposta</span>
-        <span class="k18-meter-value" id="k18-response-display">1.000.000 / 1.000.000</span>
+        <span class="k18-meter-value" id="k18-free">1.000.000 / 1.000.000</span>
       </div>
-      <div class="k18-meter-bar"><div class="k18-meter-fill" id="k18-meter-fill"></div></div>
+      <div class="k18-meter-bar"><div class="k18-meter-fill" id="k18-fill"></div></div>
     </div>
   </div>
 
@@ -443,68 +252,28 @@
         <span>a janela continua até</span>
         <span class="k18-break-ceil">1.000.000</span>
       </div>
-      <div class="k18-bars" id="k18-bars">
-        <div class="k18-block k18-block-response" data-cat="response">
-          <span class="k18-block-label">Espaço para resposta</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-answer" data-cat="answer">
-          <span class="k18-block-label">Resposta</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-result" data-cat="result">
-          <span class="k18-block-label">Resultado da busca (RAG)</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-call" data-cat="call">
-          <span class="k18-block-label">Chamada de ferramenta</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-think" data-cat="think">
-          <span class="k18-block-label">Raciocínio</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-history" data-cat="history">
-          <span class="k18-block-label" id="k18-lbl-history">Histórico da conversa</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-files" data-cat="files">
-          <span class="k18-block-label">Arquivos anexados</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-tools" data-cat="tools">
-          <span class="k18-block-label">Ferramentas</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-memory" data-cat="memory">
-          <span class="k18-block-label">Memórias</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-        <div class="k18-block k18-block-system" data-cat="system">
-          <span class="k18-block-label">Prompt do sistema</span>
-          <span class="k18-block-tokens" data-tok></span>
-        </div>
-      </div>
+      <div class="k18-bars" id="k18-bars"><!-- blocks built by JS --></div>
     </div>
 
-    <aside class="k18-legend" data-lab-tab="Composição">
-      <h2 class="k18-legend-title">Composição</h2>
-      <ul class="k18-legend-list" id="k18-legend-list">
-        <li data-leg="system"><span class="k18-dot k18-dot-system"></span> <span>Prompt do sistema</span>  <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="memory"><span class="k18-dot k18-dot-memory"></span> <span>Memórias</span>           <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="tools"><span class="k18-dot k18-dot-tools"></span>   <span>Ferramentas</span>        <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="files"><span class="k18-dot k18-dot-files"></span>   <span>Arquivos anexados</span>  <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="history"><span class="k18-dot k18-dot-history"></span> <span>Histórico da conversa</span> <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="think"><span class="k18-dot k18-dot-think"></span>   <span>Raciocínio</span>         <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="call"><span class="k18-dot k18-dot-call"></span>     <span>Chamada de ferramenta</span> <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="result"><span class="k18-dot k18-dot-result"></span> <span>Resultado (RAG)</span>    <span class="k18-leg-val" data-legval></span></li>
-        <li data-leg="answer"><span class="k18-dot k18-dot-answer"></span> <span>Resposta</span>           <span class="k18-leg-val" data-legval></span></li>
+    <aside class="k18-legend" data-lab-tab="Legenda">
+      <h2 class="k18-legend-title">Legenda</h2>
+      <ul class="k18-key">
+        <li><span class="sw sw-system"></span><span>Prompt do sistema</span></li>
+        <li><span class="sw sw-memory"></span><span>Memórias</span></li>
+        <li><span class="sw sw-tools"></span><span>Ferramentas</span></li>
+        <li><span class="sw sw-user"></span><span>Prompt do usuário</span></li>
+        <li><span class="sw sw-doc"></span><span>Documento anexado</span></li>
+        <li><span class="sw sw-think"></span><span>Raciocínio</span></li>
+        <li><span class="sw sw-call"></span><span>Chamada de ferramenta</span></li>
+        <li><span class="sw sw-result"></span><span>Resultado</span></li>
+        <li><span class="sw sw-answer"></span><span>Resposta</span></li>
+        <li><span class="sw sw-summary"></span><span>Resumo de compactação</span></li>
       </ul>
-      <div class="k18-turn-row">
-        <span>Turnos na conversa</span>
-        <span class="k18-turn-val" id="k18-turn-count">0</span>
+      <div class="k18-stats">
+        <div class="k18-stats-row"><span>Total na janela</span><b id="k18-used">0</b></div>
+        <div class="k18-stats-row"><span>Turnos</span><b id="k18-turns">0</b></div>
       </div>
-      <p class="k18-status k18-status--ok" id="k18-status"></p>
+      <p class="k18-status" id="k18-status"></p>
     </aside>
   </div>
 
@@ -513,217 +282,203 @@
     <span class="k18-fs-slot" data-lab-fs-ctl></span>
     <button class="k18-btn" id="k18-back">◀ Voltar</button>
     <button class="k18-btn k18-btn-action" id="k18-next">Próxima etapa ▶</button>
-    <button class="k18-btn" id="k18-turn">+ Turno</button>
+    <button class="k18-btn" id="k18-compact">Compactar</button>
+    <button class="k18-btn k18-btn-toggle" id="k18-scale">Ver 1.000.000 inteiro</button>
     <button class="k18-btn" id="k18-reset">Reiniciar</button>
   </div>
 
-  <!-- Theory kept off the stage by the app-fit rule; surfaced by the shared
-       "Entenda" button (lab-info.js). -->
-  <template data-lab-info data-lab-info-title="O que ocupa a janela de contexto?">
-    <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está sendo usado; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
-    <p>No começo entram os insumos: <strong>prompt do sistema, memórias, ferramentas, arquivos e o histórico</strong> da conversa. Aí o modelo trabalha, e cada passo também ocupa a janela: o <strong>raciocínio</strong> custa alguns milhares de tokens; a <strong>chamada de ferramenta</strong> custa pouquíssimo (só a invocação, ~200); o <strong>resultado</strong> que volta e a <strong>resposta</strong> custam mais uns milhares.</p>
-    <p>Por isso o processo inteiro disputa o mesmo orçamento. Cada turno novo empilha mais histórico e mais raciocínio, e mesmo uma janela de 1.000.000 vai enchendo. É por isso que conversas longas e muitos anexos degradam a resposta: falta espaço, não é preguiça.</p>
+  <template data-lab-info data-lab-info-title="Como a janela de contexto se preenche">
+    <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está em uso; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
+    <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e o <strong>documento</strong> que ele anexa; depois o modelo <strong>raciocina</strong> (custa milhares), <strong>chama ferramentas</strong> (a chamada em si custa quase nada, ~200), recebe o <strong>resultado</strong> e escreve a <strong>resposta</strong>. Cada novo pedaço se empilha, nada se apaga.</p>
+    <p>Por isso conversas longas vão ocupando a janela. <strong>Compactar</strong> resume tudo o que já passou num único bloco menor, liberando espaço. É assim que a janela funciona por dentro.</p>
   </template>
 
   <script>
     (function() {
-      // ── The window (fixed size, not drawn to scale) ──────
       const TOTAL = 1000000;
+      const SUMMARY_TOK = 9000;        // size of a compaction summary
+      const PCT_HIDE_LABEL = 0.03;
+      // Zoom ceilings the bar snaps through. Starts small so the setup blocks
+      // (a few thousand tokens each) are legible; extends as the window fills.
+      const ZOOM_STEPS = [50000, 80000, 130000, 200000, 300000, 500000, 1000000];
 
-      // Token cost of each piece. The teaching point lives in the contrast:
-      // the tool CALL is almost free (~200, just the invocation), while the
-      // model's RACIOCÍNIO costs a few thousand.
-      const TOK = {
-        system:  3000,
-        memory:  2000,
-        tools:   2000,
-        files:   30000,
-        history: 10000,   // base; grows with each extra turn
-        think:   6000,
-        call:    200,
-        result:  6000,
-        answer:  3000
-      };
-      const HIST_PER_TURN = 20000; // each extra conversation turn piles onto history
-      const PCT_LOW = 0.20;
-      const PCT_HIDE_LABEL = 0.035;
+      // The scripted conversation. Each STEP (one "Próxima etapa") reveals one
+      // or more blocks, in real chronological order. Types drive colour/label.
+      // turn: which conversation turn the block belongs to (for the turn rule).
+      const STEPS = [
+        // setup loads first (one step)
+        [ {t:'system', l:'Prompt do sistema', k:3000, turn:0},
+          {t:'memory', l:'Memórias',          k:2000, turn:0},
+          {t:'tools',  l:'Ferramentas',       k:2000, turn:0} ],
+        // 1st user interaction: prompt + attached document
+        [ {t:'user', l:'Prompt do usuário', k:600,   turn:1, start:true},
+          {t:'doc',  l:'Documento anexado', k:28000, turn:1} ],
+        // 1st model response
+        [ {t:'think',  l:'Raciocínio', k:5000, turn:1} ],
+        [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:1} ],
+        [ {t:'result', l:'Resultado', k:6000, turn:1} ],
+        [ {t:'answer', l:'Resposta', k:2500, turn:1} ],
+        // 2nd turn
+        [ {t:'user', l:'Prompt do usuário', k:500, turn:2, start:true} ],
+        [ {t:'think',  l:'Raciocínio', k:6000, turn:2} ],
+        [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:2} ],
+        [ {t:'result', l:'Resultado', k:4000, turn:2} ],
+        [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:2} ],
+        [ {t:'result', l:'Resultado', k:7000, turn:2} ],
+        [ {t:'answer', l:'Resposta', k:3000, turn:2} ],
+        // 3rd turn
+        [ {t:'user', l:'Prompt do usuário', k:700, turn:3, start:true} ],
+        [ {t:'think',  l:'Raciocínio', k:7000, turn:3} ],
+        [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:3} ],
+        [ {t:'result', l:'Resultado', k:9000, turn:3} ],
+        [ {t:'call',   l:'Chamada de ferramenta', k:200, turn:3} ],
+        [ {t:'result', l:'Resultado', k:5000, turn:3} ],
+        [ {t:'answer', l:'Resposta', k:4000, turn:3} ]
+      ];
 
-      // Zoom ceilings the bar snaps through as usage climbs. The bar is drawn
-      // to the smallest ceiling that still leaves headroom, so the small
-      // process blocks stay legible in a 1M window; the "⋯" marker shows the
-      // window continues above the zoom until the ceiling reaches TOTAL.
-      const ZOOM_STEPS = [200000, 300000, 400000, 600000, 800000, 1000000];
+      // ── State ─────────────────────────────────────────────
+      let stepPos = 0;         // steps revealed
+      let compactedSteps = 0;  // steps folded into a summary (from the start)
+      let fullScale = false;   // false = dynamic zoom, true = full 1M to scale
 
-      // ── Insertion sequence (what "Próxima etapa" reveals) ─
-      // step 0 = empty window; each step lands the next piece(s). The inputs
-      // arrive together (montar contexto), then the model's process, then the
-      // answer — the same demo as before, just granular.
-      // step: 0 idle · 1 inputs · 2 +raciocínio · 3 +chamada · 4 +resultado · 5 +resposta
-      const LAST_STEP = 5;
+      // ── DOM ───────────────────────────────────────────────
+      const windowEl = document.getElementById('k18-window');
+      const breakEl  = document.getElementById('k18-break');
+      const barsEl   = document.getElementById('k18-bars');
+      const fillEl   = document.getElementById('k18-fill');
+      const freeEl   = document.getElementById('k18-free');
+      const usedEl   = document.getElementById('k18-used');
+      const turnsEl  = document.getElementById('k18-turns');
+      const statusEl = document.getElementById('k18-status');
+      const backBtn  = document.getElementById('k18-back');
+      const nextBtn  = document.getElementById('k18-next');
+      const compactBtn = document.getElementById('k18-compact');
+      const scaleBtn = document.getElementById('k18-scale');
+      const resetBtn = document.getElementById('k18-reset');
 
-      // ── State ────────────────────────────────────────────
-      let step  = 0;
-      let turns = 0;
+      const fmt = (n) => n.toLocaleString('pt-BR');
 
-      // ── DOM refs ─────────────────────────────────────────
-      const windowEl    = document.getElementById('k18-window');
-      const breakEl      = document.getElementById('k18-break');
-      const barsEl       = document.getElementById('k18-bars');
-      const meterEl      = document.getElementById('k18-meter');
-      const meterFillEl  = document.getElementById('k18-meter-fill');
-      const respDispEl   = document.getElementById('k18-response-display');
-      const lblHistEl    = document.getElementById('k18-lbl-history');
-      const legendList   = document.getElementById('k18-legend-list');
-      const turnCountEl  = document.getElementById('k18-turn-count');
-      const statusEl     = document.getElementById('k18-status');
-      const backBtn      = document.getElementById('k18-back');
-      const nextBtn      = document.getElementById('k18-next');
-      const turnBtn      = document.getElementById('k18-turn');
-      const resetBtn     = document.getElementById('k18-reset');
-
-      function fmt(n) { return n.toLocaleString('pt-BR'); }
-
-      // ── Which categories are present at the current step ──
-      function tokensNow() {
-        const t = { system:0, memory:0, tools:0, files:0, history:0, think:0, call:0, result:0, answer:0 };
-        if (step >= 1) {
-          t.system = TOK.system; t.memory = TOK.memory; t.tools = TOK.tools;
-          t.files = TOK.files;   t.history = TOK.history + turns * HIST_PER_TURN;
+      // Events shown individually (those after the compaction point, up to stepPos).
+      function shownEvents() {
+        const out = [];
+        for (let s = compactedSteps; s < stepPos; s++) {
+          for (const ev of STEPS[s]) out.push(ev);
         }
-        if (step >= 2) t.think  = TOK.think;
-        if (step >= 3) t.call   = TOK.call;
-        if (step >= 4) t.result = TOK.result;
-        if (step >= 5) t.answer = TOK.answer;
-        return t;
+        return out;
       }
-
-      function usedOf(t) {
-        return t.system + t.memory + t.tools + t.files + t.history +
-               t.think + t.call + t.result + t.answer;
+      function usedTokens() {
+        let u = compactedSteps > 0 ? SUMMARY_TOK : 0;
+        for (const ev of shownEvents()) u += ev.k;
+        return u;
       }
-
-      // Smallest zoom ceiling that keeps ~20% headroom above what's used.
+      function turnsRevealed() {
+        let mx = 0;
+        for (let s = 0; s < stepPos; s++) for (const ev of STEPS[s]) if (ev.turn > mx) mx = ev.turn;
+        return mx;
+      }
       function zoomFor(used) {
-        for (let i = 0; i < ZOOM_STEPS.length; i++) {
-          if (used <= ZOOM_STEPS[i] * 0.8) return ZOOM_STEPS[i];
-        }
+        if (fullScale) return TOTAL;
+        for (const z of ZOOM_STEPS) if (used <= z * 0.8) return z;
         return TOTAL;
       }
 
-      // ── Render ───────────────────────────────────────────
-      function render() {
-        const t = tokensNow();
-        const used = usedOf(t);
-        const zoom = zoomFor(used);
-        const freeReal = Math.max(0, TOTAL - used);       // true free space in the 1M window
-        const headroom = Math.max(0, zoom - used);        // the drawn (zoomed) headroom
+      function blockHtml(cls, label, tokens, tiny, turnstart) {
+        const c = 'k18-block k18-block-' + cls + (tiny ? ' k18-block--tiny' : '') + (turnstart ? ' k18-block--turnstart' : '');
+        return '<div class="' + c + '" data-b>' +
+          '<span class="k18-block-label">' + label + '</span>' +
+          '<span class="k18-block-tokens">' + (tokens == null ? '' : fmt(tokens)) + '</span>' +
+        '</div>';
+      }
 
-        // Broken-axis marker: only while the zoom hasn't reached the full window.
+      function render() {
+        const events = shownEvents();
+        const used = usedTokens();
+        const zoom = zoomFor(used);
+        const free = Math.max(0, TOTAL - used);
+        const headroom = Math.max(0, zoom - used);
+
         windowEl.classList.toggle('k18-window--full', zoom >= TOTAL);
 
-        // Bars: each block's flex-basis = its share of the ZOOM ceiling. The
-        // "espaço para resposta" block takes the zoomed headroom.
-        barsEl.querySelectorAll('.k18-block').forEach(function (b) {
-          const cat = b.dataset.cat;
-          const val = cat === 'response' ? headroom : t[cat];
-          const pct = val / zoom;
-          const vis = val === 0 ? 0 : Math.max(pct, 0.012);
-          b.style.flexBasis = (vis * 100).toFixed(2) + '%';
-          b.classList.toggle('k18-block--zero', val === 0);
-          b.classList.toggle('k18-block--tiny', val > 0 && pct < PCT_HIDE_LABEL);
-          // The response block is drawn at the ZOOMED headroom, not the true
-          // free space, so a number here would contradict its size (a broken
-          // axis). The real free space lives in the header meter; the block
-          // just names the green region.
-          const tokEl = b.querySelector('[data-tok]');
-          if (tokEl) tokEl.textContent = cat === 'response' ? '' : fmt(val);
-        });
+        // Build the bar top→bottom: free space, then newest→oldest, summary last.
+        let html = '';
+        // free space (no number: it's the zoomed headroom, not the true free)
+        const freePct = zoom > 0 ? headroom / zoom : 0;
+        html += '<div class="k18-block k18-block-free" style="flex-basis:' + (freePct * 100).toFixed(2) + '%">' +
+          '<span class="k18-block-label">Espaço para resposta</span>' +
+          '<span class="k18-block-tokens"></span></div>';
+        // shown events, newest first
+        for (let i = events.length - 1; i >= 0; i--) {
+          const ev = events[i];
+          const pct = ev.k / zoom;
+          const vis = Math.max(pct, 0.008);
+          const tiny = pct < PCT_HIDE_LABEL;
+          html += blockHtml(ev.t, ev.l, ev.k, tiny, ev.start).replace('data-b', 'data-b style="flex-basis:' + (vis * 100).toFixed(2) + '%"');
+        }
+        // summary at the very bottom
+        if (compactedSteps > 0) {
+          const pct = SUMMARY_TOK / zoom;
+          const tiny = pct < PCT_HIDE_LABEL;
+          html += blockHtml('summary', 'Resumo de compactação', SUMMARY_TOK, tiny, false)
+            .replace('data-b', 'data-b style="flex-basis:' + (Math.max(pct, 0.008) * 100).toFixed(2) + '%"');
+        }
+        barsEl.innerHTML = html;
 
-        lblHistEl.textContent = turns > 0
-          ? 'Histórico da conversa (' + (turns + 1) + ' turnos)'
-          : 'Histórico da conversa';
+        // Meter + stats
+        fillEl.style.width = ((free / TOTAL) * 100).toFixed(2) + '%';
+        freeEl.textContent = fmt(free) + ' / ' + fmt(TOTAL);
+        usedEl.textContent = fmt(used);
+        turnsEl.textContent = String(turnsRevealed());
 
-        // Legend: exact numbers, the ledger where the 200-vs-thousands contrast
-        // is read. Dim the rows not yet in the window.
-        legendList.querySelectorAll('li').forEach(function (li) {
-          const cat = li.dataset.leg;
-          const val = t[cat];
-          li.classList.toggle('k18-leg--off', val === 0);
-          const v = li.querySelector('[data-legval]');
-          if (v) v.textContent = fmt(val);
-        });
-        turnCountEl.textContent = String(step >= 1 ? turns + 1 : 0);
-
-        // Meter: real free space out of the whole 1M window.
-        const freeRatio = freeReal / TOTAL;
-        meterFillEl.style.width = (freeRatio * 100).toFixed(2) + '%';
-        respDispEl.textContent = fmt(freeReal) + ' / ' + fmt(TOTAL);
-
-        meterEl.classList.remove('k18-meter--low', 'k18-meter--full');
-        statusEl.classList.remove('k18-status--ok', 'k18-status--low', 'k18-status--full');
-        barsEl.classList.remove('k18-bars--full');
-        const respBlock = barsEl.querySelector('.k18-block-response');
-        respBlock.classList.remove('k18-block-response--full');
-
-        if (freeReal === 0) {
-          meterEl.classList.add('k18-meter--full');
-          statusEl.classList.add('k18-status--full');
-          barsEl.classList.add('k18-bars--full');
-          respBlock.classList.add('k18-block-response--full');
-          statusEl.textContent = 'Janela cheia. Sem espaço para responder: seria preciso compactar ou começar de novo.';
-        } else if (freeRatio < PCT_LOW) {
-          meterEl.classList.add('k18-meter--low');
-          statusEl.classList.add('k18-status--low');
-          statusEl.textContent = 'Janela apertada. Mesmo 1.000.000 de tokens acaba enchendo.';
+        // Status hint
+        if (stepPos === 0) {
+          statusEl.innerHTML = 'Clique em <strong>Próxima etapa</strong> para carregar o setup.';
         } else {
-          statusEl.classList.add('k18-status--ok');
-          statusEl.innerHTML = step === 0
-            ? 'Janela vazia. Clique em <strong>Próxima etapa</strong> para montar o contexto.'
-            : statusForStep();
+          const last = STEPS[stepPos - 1][STEPS[stepPos - 1].length - 1];
+          statusEl.innerHTML = statusForType(last.t);
         }
 
-        // Buttons.
-        backBtn.disabled = (step === 0 && turns === 0);
-        nextBtn.disabled = step >= LAST_STEP;
-        nextBtn.textContent = step >= LAST_STEP ? 'Resposta pronta' : 'Próxima etapa ▶';
-        turnBtn.disabled = step < LAST_STEP || freeReal <= 0; // add turns once a full response exists
+        // Buttons
+        backBtn.disabled = stepPos <= compactedSteps;
+        nextBtn.disabled = stepPos >= STEPS.length;
+        nextBtn.textContent = stepPos >= STEPS.length ? 'Fim da conversa' : 'Próxima etapa ▶';
+        compactBtn.disabled = (stepPos - compactedSteps) < 2; // need something to fold
+        scaleBtn.classList.toggle('k18-on', fullScale);
+        scaleBtn.textContent = fullScale ? 'Voltar ao zoom' : 'Ver 1.000.000 inteiro';
       }
 
-      function statusForStep() {
-        switch (step) {
-          case 1: return 'Contexto montado: sistema, memórias, ferramentas, arquivos e histórico entram na janela.';
-          case 2: return 'O modelo <strong>raciocina</strong>. O pensamento ocupa alguns milhares de tokens.';
-          case 3: return 'O modelo <strong>chama uma ferramenta</strong>. A chamada em si custa pouquíssimo (~200).';
-          case 4: return 'O <strong>resultado</strong> da busca volta e entra na janela.';
-          case 5: return 'A <strong>resposta</strong> é escrita. Some + Turno para ver a conversa crescer.';
-          default: return 'Janela com folga.';
+      function statusForType(t) {
+        switch (t) {
+          case 'system': case 'memory': case 'tools':
+            return 'Setup carregado: prompt do sistema, memórias e ferramentas já ocupam a janela.';
+          case 'user': return 'O usuário manda um <strong>prompt</strong> (e às vezes um documento). Cada coisa entra na janela.';
+          case 'doc':  return 'O <strong>documento</strong> anexado entra na janela. Arquivos costumam ser grandes.';
+          case 'think': return 'O modelo <strong>raciocina</strong>. O pensamento custa alguns milhares de tokens.';
+          case 'call':  return 'O modelo <strong>chama uma ferramenta</strong>. A chamada em si custa pouquíssimo (~200).';
+          case 'result': return 'O <strong>resultado</strong> da ferramenta volta e entra na janela.';
+          case 'answer': return 'A <strong>resposta</strong> é escrita. O próximo prompt começa um novo turno.';
+          default: return '';
         }
       }
 
-      // ── Handlers ─────────────────────────────────────────
-      function next()  { if (step < LAST_STEP) { step += 1; render(); } }
-      function back()  {
-        if (turns > 0 && step >= LAST_STEP) { turns -= 1; render(); return; }
-        if (step > 0) { step -= 1; render(); }
-      }
-      function addTurn() { if (step >= LAST_STEP) { turns += 1; render(); } }
-      function reset()   { step = 0; turns = 0; render(); }
+      // ── Handlers ──────────────────────────────────────────
+      function next()    { if (stepPos < STEPS.length) { stepPos++; render(); } }
+      function back()    { if (stepPos > compactedSteps) { stepPos--; render(); } }
+      function compact() { if (stepPos - compactedSteps >= 2) { compactedSteps = stepPos; render(); } }
+      function scale()   { fullScale = !fullScale; render(); }
+      function reset()   { stepPos = 0; compactedSteps = 0; fullScale = false; render(); }
 
       nextBtn.addEventListener('click', next);
       backBtn.addEventListener('click', back);
-      turnBtn.addEventListener('click', addTurn);
+      compactBtn.addEventListener('click', compact);
+      scaleBtn.addEventListener('click', scale);
       resetBtn.addEventListener('click', reset);
 
-      // ── Theme sync (mirrors bs_theme like k3) ────────────
       window.addEventListener('storage', function (e) {
         if (e.key !== 'bs_theme') return;
         const th = e.newValue;
-        if (th === 'dark' || th === 'light') {
-          document.documentElement.setAttribute('data-theme', th);
-        }
+        if (th === 'dark' || th === 'light') document.documentElement.setAttribute('data-theme', th);
       });
 
-      // ── Init ─────────────────────────────────────────────
       render();
     })();
   </script>
