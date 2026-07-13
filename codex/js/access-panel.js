@@ -14,6 +14,7 @@ export function settingsHtml(turma) {
   const forum = !!turma.forum_enabled;
   const reveal = !!turma.reveal_on_completion;
   const appInstall = turma.app_install_prompt == null ? true : !!turma.app_install_prompt; // default ON
+  const authCode = turma.email_auth_method === 'code'; // e-mail login by code instead of the magic link (default 'magic')
   // Collapsed access model (#4, 2026-06-20): ONE gate. "Exigir cadastro" is the only
   // access switch; the legacy mode / enroll_prompt / direct_access controls are retired
   // (a gated turma is always the register wall). Their DB columns stay dormant.
@@ -23,6 +24,7 @@ export function settingsHtml(turma) {
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-forum"' + (forum ? ' checked' : '') + '> <span>' + esc(t('alunos.forum')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-reveal"' + (reveal ? ' checked' : '') + '> <span>' + esc(t('alunos.reveal')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-appinstall"' + (appInstall ? ' checked' : '') + '> <span>' + esc(t('alunos.app_install')) + '</span></label>' +
+    '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-authcode"' + (authCode ? ' checked' : '') + '> <span>' + esc(t('alunos.auth_code')) + '</span></label>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
     '<span class="cdx-acc-msg" aria-live="polite"></span></div>' +
   '</div>';
@@ -39,6 +41,7 @@ export function wireSettings(scope, turma, opts) {
   const forum = scope.querySelector('.cdx-acc-forum');
   const reveal = scope.querySelector('.cdx-acc-reveal');
   const appinstall = scope.querySelector('.cdx-acc-appinstall');
+  const authcode = scope.querySelector('.cdx-acc-authcode');
   const save = scope.querySelector('.cdx-acc-save');
   const msg = scope.querySelector('.cdx-acc-msg');
   if (!gated || !save) return;
@@ -52,6 +55,7 @@ export function wireSettings(scope, turma, opts) {
         forum_enabled: forum && forum.checked ? 1 : 0,
         reveal_on_completion: reveal && reveal.checked ? 1 : 0,
         app_install_prompt: appinstall && appinstall.checked ? 1 : 0,
+        email_auth_method: authcode && authcode.checked ? 'code' : 'magic',
       });
       if (res && res.ok) {
         turma.access_gated = gated.checked ? 1 : 0;
@@ -59,6 +63,7 @@ export function wireSettings(scope, turma, opts) {
         turma.forum_enabled = forum && forum.checked ? 1 : 0;
         turma.reveal_on_completion = reveal && reveal.checked ? 1 : 0;
         turma.app_install_prompt = appinstall && appinstall.checked ? 1 : 0;
+        turma.email_auth_method = authcode && authcode.checked ? 'code' : 'magic';
         msg.textContent = t('alunos.saved');
         if (opts.onSaved) opts.onSaved(turma);
       } else {

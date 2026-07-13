@@ -91,6 +91,7 @@ const pt = {
   'login.enroll_cta':       'Entrar',
   // Student login — OTP code step
   'login.send_code':        'Enviar código',
+  'login.resend':           'Reenviar código',
   'login.code_title':       'Digite o código',
   'login.code_desc':        'Enviamos um código de 4 letras para o seu e-mail. Digite-o abaixo para entrar.',
   'login.code_label':       'Código de acesso',
@@ -130,6 +131,8 @@ const pt = {
   'wall.entrar_sub':        'Digite seu e-mail para entrar. Sem senha.',
   'wall.entrar_name_sub':   'Primeira vez por aqui? Diga seu nome pra completar seu acesso.',
   'wall.entrar_cta':        'Entrar',
+  'wall.entrar_code_sub':   'Preencha para receber um código de acesso por e-mail.',
+  'wall.entrar_code_cta':   'Receber código',
   'wall.continuar':         'Continuar',
   'wall.check_email_h':     'Confira seu e-mail',
   'wall.check_email_sub':   'Enviamos um link de acesso para {email}. Abra o e-mail e clique no link para validar.',
@@ -307,6 +310,7 @@ const en = {
   'login.enroll_cta':       'Enter',
   // Student login — OTP code step
   'login.send_code':        'Send code',
+  'login.resend':           'Resend code',
   'login.code_title':       'Enter the code',
   'login.code_desc':        'We sent a 4-letter code to your e-mail. Enter it below to sign in.',
   'login.code_label':       'Access code',
@@ -345,6 +349,8 @@ const en = {
   'wall.entrar_sub':        'Enter your e-mail to get in. No password.',
   'wall.entrar_name_sub':   'First time here? Tell us your name to finish setting up your access.',
   'wall.entrar_cta':        'Enter',
+  'wall.entrar_code_sub':   'Fill in to get an access code by e-mail.',
+  'wall.entrar_code_cta':   'Get code',
   'wall.continuar':         'Continue',
   'wall.check_email_h':     'Check your e-mail',
   'wall.check_email_sub':   'We sent an access link to {email}. Open the e-mail and tap the link to validate.',
