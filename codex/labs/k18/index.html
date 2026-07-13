@@ -222,6 +222,19 @@
     }
     .k18-status strong { color: var(--focal); font-style: normal; }
 
+    /* Commentary toggle: the numbers (Total/Turnos/Processados) always stay put;
+       the explanatory prose collapses behind this chevron. */
+    .k18-comments-toggle {
+      display: flex; align-items: center; gap: 0.35rem; align-self: flex-start;
+      margin-top: 0.35rem; padding: 0; border: none; background: none; cursor: pointer;
+      font: inherit; font-size: var(--lab-fs-ui); font-weight: 600; color: var(--text-dim);
+      transition: color 140ms;
+    }
+    .k18-comments-toggle:hover { color: var(--focal); }
+    .k18-comments-chevron { display: inline-block; font-size: 0.8em; transition: transform 180ms; }
+    .k18-comments-toggle[aria-expanded="false"] .k18-comments-chevron { transform: rotate(-90deg); }
+    .k18-legend.k18-comments-collapsed .k18-comment { display: none; }
+
     /* ── Button bar ── */
     .k18-button-bar { display: flex; justify-content: flex-end; align-items: center; gap: 0.45rem; padding: 0 0.2rem; flex-wrap: wrap; }
     .k18-fs-slot { margin-right: auto; }
@@ -301,9 +314,13 @@
         <div class="k18-stats-row"><span>Total na janela</span><b id="k18-used">0</b></div>
         <div class="k18-stats-row"><span>Turnos</span><b id="k18-turns">0</b></div>
         <div class="k18-stats-row k18-stats-row--proc"><span>Tokens processados</span><b id="k18-proc">0</b></div>
-        <p class="k18-stats-note">Toda vez que o modelo lê a janela (para raciocinar, chamar ferramenta ou responder), ele relê tudo que já está nela. Por isso o total processado cresce bem mais rápido que a janela.</p>
+        <button type="button" class="k18-comments-toggle" id="k18-comments-toggle" aria-expanded="true">
+          <span class="k18-comments-chevron">▾</span>
+          <span id="k18-comments-toggle-label">Ocultar comentários</span>
+        </button>
+        <p class="k18-stats-note k18-comment">Toda vez que o modelo lê a janela (para raciocinar, chamar ferramenta ou responder), ele relê tudo que já está nela. Por isso o total processado cresce bem mais rápido que a janela.</p>
       </div>
-      <p class="k18-status" id="k18-status"></p>
+      <p class="k18-status k18-comment" id="k18-status"></p>
     </aside>
   </div>
 
@@ -429,6 +446,9 @@
       const sizeBtn  = document.getElementById('k18-window-size');
       const breakCeilEl = document.getElementById('k18-break-ceil');
       const resetBtn = document.getElementById('k18-reset');
+      const legendEl  = document.querySelector('.k18-legend');
+      const commentsToggleBtn = document.getElementById('k18-comments-toggle');
+      const commentsToggleLabel = document.getElementById('k18-comments-toggle-label');
 
       const fmt = (n) => n.toLocaleString('pt-BR');
 
@@ -606,12 +626,23 @@
       }
       function reset()   { stepPos = 0; compactedUntil = 0; fullScale = false; zoomCeil = ZOOM_STEPS[0]; processedFrozen = 0; compactBaseTok = 0; render(); }
 
+      // Commentary collapse: independent of the conversation state, so it isn't
+      // touched by next/back/compact/reset.
+      let commentsOpen = true;
+      function renderComments() {
+        legendEl.classList.toggle('k18-comments-collapsed', !commentsOpen);
+        commentsToggleBtn.setAttribute('aria-expanded', String(commentsOpen));
+        commentsToggleLabel.textContent = commentsOpen ? 'Ocultar comentários' : 'Mostrar comentários';
+      }
+      function toggleComments() { commentsOpen = !commentsOpen; renderComments(); }
+
       nextBtn.addEventListener('click', next);
       backBtn.addEventListener('click', back);
       compactBtn.addEventListener('click', compact);
       scaleBtn.addEventListener('click', scale);
       sizeBtn.addEventListener('click', toggleSize);
       resetBtn.addEventListener('click', reset);
+      commentsToggleBtn.addEventListener('click', toggleComments);
 
       window.addEventListener('storage', function (e) {
         if (e.key !== 'bs_theme') return;
@@ -620,6 +651,7 @@
       });
 
       render();
+      renderComments();
     })();
   </script>
 </section>
