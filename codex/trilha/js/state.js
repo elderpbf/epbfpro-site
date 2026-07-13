@@ -50,7 +50,7 @@ export const state = {
 
   data: null,
   outrosTypeFilter: null,
-  rendered: { aulas: false, forum: false, apostila: false, outros: false },
+  rendered: { aulas: false, forum: false, apostila: false, outros: false, tarefas: false },
 
   mqMobile: null,
 

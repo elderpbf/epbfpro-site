@@ -143,7 +143,7 @@ export function createLoginFlow(opts = {}) {
       // and the code is always issued. The unbound entry page sets require_enrolled, so the
       // worker rejects an address that belongs to no turma (email_not_enrolled) BEFORE
       // sending a code — the "no turma" check happens at e-mail submit, not after verify.
-      const reqParams = { email };
+      const reqParams = { email, ask_name: true };
       if (opts.resend) reqParams.resend = true;
       // Carry the typed name so the worker's save-on-submit persists the REAL name (not the
       // e-mail as a placeholder) the instant the code is requested. Only meaningful on the
@@ -153,6 +153,9 @@ export function createLoginFlow(opts = {}) {
       else { reqParams.require_enrolled = true; }
       const res = await safeCall(api.otpRequest(reqParams));
       if (!res || !res.ok) { this.state = 'email'; this.error = (res && res.error) || 'error'; this.retryAfter = (res && res.retry_after_seconds) || null; return this; }
+      // Convergence with the magic flow: a brand-new e-mail is asked for the name inline BEFORE
+      // the code is sent (the wall reveals the name field), exactly like entrar's needName step.
+      if (res.needs_name) { this.state = 'needName'; return this; }
       // Cooldown hit on an explicit resend: stay on the code step and surface the countdown.
       if (res.throttled) { this.retryAfter = res.retry_after_seconds || null; this.state = 'code'; return this; }
       // The previous code is still valid: reuse it — keep the on-screen dev code (don't null it).

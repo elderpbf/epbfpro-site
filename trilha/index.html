@@ -2,7 +2,7 @@
 <html lang="pt-BR" id="html-root">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
 <meta name="robots" content="noindex, nofollow">
 <title>PensoIA</title>
 
@@ -27,14 +27,15 @@
 <link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.2">
 <link rel="stylesheet" href="/codex/css/item-render.css?v=1.1">
 <link rel="stylesheet" href="/codex/questions/questions.css?v=4.9">
-<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.7">
+<link rel="stylesheet" href="/codex/trilha/css/trilha.css?v=1.8">
 <link rel="stylesheet" href="/codex/trilha/css/cards.css?v=1.8">
 <link rel="stylesheet" href="/codex/trilha/css/forum.css?v=1.2">
-<link rel="stylesheet" href="/codex/trilha/css/wall.css?v=1.2">
+<link rel="stylesheet" href="/codex/trilha/css/wall.css?v=1.3">
 <link rel="stylesheet" href="/codex/css/notif-bell.css?v=1.4">
 <link rel="stylesheet" href="/codex/trilha/css/nexo.css?v=1.3">
 <link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=1.5">
-<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.0">
+<link rel="stylesheet" href="/codex/trilha/css/tarefas.css?v=1.1">
+<link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.3">
 <link rel="stylesheet" href="/css/support-entry.css?v=1">
 
 <script src="/codex/js/debug.js?v=2.5"></script>
@@ -74,16 +75,25 @@
       </div>
     </section>
 
-    <!-- TAB NAV (split: Aulas + Outros left, Apostila right) -->
+    <!-- TAB NAV (split: Aulas + Outros left, Apostila right). Each button carries an inline SVG
+         icon (shown only on the mobile bottom bar, hidden on the desktop top-tab strip) plus a
+         label span; the icons are ported verbatim from the trilha-tabs mock (b2.html). -->
     <nav class="cdx-trilha-tabs" role="tablist">
       <div class="cdx-trilha-tabs-left">
-        <button class="cdx-tr-tab-btn active" role="tab" data-tab="aulas" aria-selected="true" data-i18n="page.tab_aulas">Aulas</button>
-        <button class="cdx-tr-tab-btn" role="tab" data-tab="forum" aria-selected="false" id="cdx-tr-tab-forum" data-i18n="page.tab_forum" hidden>Fórum</button>
-        <button class="cdx-tr-tab-btn" role="tab" data-tab="outros" aria-selected="false" id="cdx-tr-tab-outros" hidden>Outros materiais</button>
+        <button class="cdx-tr-tab-btn active" role="tab" data-tab="aulas" aria-selected="true">
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h10"/></svg><span class="cdx-tr-tab-txt" data-i18n="page.tab_aulas">Aulas</span></button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="tarefas" aria-selected="false" id="cdx-tr-tab-tarefas" hidden>
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 11l3 3L22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/></svg><span class="cdx-tr-tab-txt" data-i18n="page.tab_tarefas">Tarefas</span></button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="forum" aria-selected="false" id="cdx-tr-tab-forum" hidden>
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg><span class="cdx-tr-tab-txt" data-i18n="page.tab_forum">Fórum</span></button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="outros" aria-selected="false" id="cdx-tr-tab-outros" hidden>
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M22 19a2 2 0 0 1-2 2H4a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h5l2 3h9a2 2 0 0 1 2 2z"/></svg><span class="cdx-tr-tab-txt">Outros materiais</span></button>
       </div>
       <div class="cdx-trilha-tabs-right">
-        <button class="cdx-tr-tab-btn" role="tab" data-tab="apps" aria-selected="false" id="cdx-tr-tab-apps" hidden>Aplicativos</button>
-        <button class="cdx-tr-tab-btn" role="tab" data-tab="apostila" aria-selected="false" id="cdx-tr-tab-apostila" data-i18n="page.tab_apostila" hidden>Apostila do curso</button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="apps" aria-selected="false" id="cdx-tr-tab-apps" hidden>
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg><span class="cdx-tr-tab-txt">Aplicativos</span></button>
+        <button class="cdx-tr-tab-btn" role="tab" data-tab="apostila" aria-selected="false" id="cdx-tr-tab-apostila" hidden>
+          <svg class="cdx-tr-tab-ico" viewBox="0 0 24 24" aria-hidden="true"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg><span class="cdx-tr-tab-txt" data-i18n="page.tab_apostila">Apostila do curso</span></button>
       </div>
     </nav>
 
@@ -93,6 +103,11 @@
       <div class="cdx-trilha-panel" data-panel="aulas">
         <button id="cdx-tr-back-pill" class="cdx-tr-back-pill" type="button">&lsaquo; Voltar à trilha</button>
         <div id="cdx-tr-aulas-timeline" class="cdx-tr-timeline"></div>
+      </div>
+
+      <!-- TAREFAS -->
+      <div class="cdx-trilha-panel" data-panel="tarefas" hidden>
+        <div id="cdx-tr-tarefas-root"></div>
       </div>
 
       <!-- FÓRUM -->
@@ -134,6 +149,7 @@
   import * as glyphs from '/codex/js/glyphs.js';
   import { mount } from '/codex/trilha/js/page.js';
   import '/codex/trilha/js/aulas.js'; // self-registers the 'aulas' panel renderer
+  import '/codex/trilha/js/tarefas.js'; // self-registers the 'tarefas' panel renderer
   import '/codex/trilha/js/forum.js'; // self-registers the 'forum' panel renderer
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
   import '/codex/trilha/js/apps.js';  // self-registers the 'apps' panel renderer

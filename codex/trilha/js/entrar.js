@@ -116,6 +116,7 @@ function startEmail(emailEl, root) {
   if (!emailEl) return;
   let flow = null;       // the SHARED login flow, bound to the resolved turma
   let turmaRef = null;   // { client_slug, turma_slug, token } — the resolved turma, for the launch URL
+  let authMethod = 'magic'; // the resolved turma's e-mail login method: 'magic' link or 'code' OTP
   let pollTimer = null;
   const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
   // The wall's locked cadence: 2s for the first ~6 calls, then 4/6/10/15s, capped ~30 (~5min).
@@ -132,6 +133,7 @@ function startEmail(emailEl, root) {
     if (flow.state === 'authenticated') { goToTurma(); return; }
     if (flow.state === 'validating') { renderMagicSent(); startPoll('validation'); return; }
     if (flow.state === 'pendingApproval') { renderPending(); startPoll('approval'); return; }
+    if (flow.state === 'code') { renderCodeStep(); return; } // 'code' turma: type the emailed OTP
     renderForm(); // needName can't happen for an enrolled e-mail; fall back to the form
   }
 
@@ -168,10 +170,14 @@ function startEmail(emailEl, root) {
         err.textContent = entryErrorText((entry && entry.error) || 'error');
         send.disabled = false; send.textContent = t('login.enroll_cta'); return;
       }
-      // Enrolled: bind the SHARED flow to this turma and run it — same code path as the wall.
+      // Enrolled: bind the SHARED flow to this turma and run it, same code path as the wall.
+      // The resolved turma's method picks the mechanism: 'code' e-mails a 4-letter OTP the
+      // student types back; 'magic' (default) e-mails the validation link + poll.
       turmaRef = entry.turma;
+      authMethod = entry.turma.email_auth_method === 'code' ? 'code' : 'magic';
       flow = createLoginFlow({ client: turmaRef.client_slug, turma: turmaRef.turma_slug, k: turmaRef.token, origin: (typeof location !== 'undefined') ? location.origin : undefined });
-      await flow.entrar(email);
+      if (authMethod === 'code') await flow.requestCode(email);
+      else await flow.entrar(email);
       if (flow.state === 'email' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); send.disabled = false; send.textContent = t('login.enroll_cta'); return; }
       settle();
     };
@@ -199,6 +205,38 @@ function startEmail(emailEl, root) {
       b.disabled = false; b.textContent = t('wall.already_validated');
       settle();
     });
+    emailEl.querySelector('.cdx-entrar-back').addEventListener('click', () => { renderForm(); });
+  }
+
+  // 'code' turma: the student types the 4-letter OTP the worker e-mailed. verifyCode exchanges
+  // (email, code) for the session, then settle() enters the turma (or shows pending approval).
+  function renderCodeStep() {
+    if (root) root.classList.add('cdx-entrar-step-code'); // hide the código card; focus the e-mail step
+    const dev = flow.devCode
+      ? '<p class="cdx-entrar-dev"><strong>' + esc(t('login.dev_link')) + '</strong> ' + esc(flow.devCode) + '</p>'
+      : '';
+    emailEl.innerHTML =
+      '<div class="cdx-entrar-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
+      '<h2 class="cdx-entrar-card-h">' + esc(t('login.code_title')) + '</h2>' +
+      '<p class="cdx-entrar-card-p">' + esc(t('login.code_desc')) + '</p>' +
+      '<input class="cdx-entrar-field cdx-entrar-code-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
+      dev +
+      '<div class="cdx-entrar-error cdx-entrar-code-error" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : entryErrorText(flow.error, flow.retryAfter)) + '</div>' +
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-verify" type="button">' + esc(t('login.enroll_cta')) + '</button>' +
+      '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
+    const input = emailEl.querySelector('.cdx-entrar-code-input');
+    const verify = emailEl.querySelector('.cdx-entrar-verify');
+    const err = emailEl.querySelector('.cdx-entrar-code-error');
+    setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
+    const doVerify = async () => {
+      err.textContent = '';
+      verify.disabled = true; verify.textContent = t('login.sending');
+      await flow.verifyCode(input.value);
+      if (flow.state === 'code' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); verify.disabled = false; verify.textContent = t('login.enroll_cta'); return; }
+      settle();
+    };
+    verify.addEventListener('click', doVerify);
+    input.addEventListener('keydown', (e) => { if (e.key === 'Enter') doVerify(); });
     emailEl.querySelector('.cdx-entrar-back').addEventListener('click', () => { renderForm(); });
   }
 
@@ -249,7 +287,7 @@ export function start() {
     if (!/^[0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
     resolveAndGo(code, els);
   });
-  // e-mail path (OTP).
+  // e-mail path (magic link by default, or a 4-letter OTP code when the turma's method is 'code').
   startEmail(els.email, els.root);
   // código link path: auto-resolve when the URL carried a 4-digit code.
   const code = readCode(location.search, location.pathname);

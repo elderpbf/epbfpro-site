@@ -3,7 +3,7 @@
 // and meta parsing (the logic that decides what the student sees on failure).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { errorMessage, parseMeta } from '../trilha/js/tarefa-submit-modal.js';
+import { errorMessage, parseMeta, identityConfig } from '../trilha/js/tarefa-submit-modal.js';
 
 test('errorMessage: known codes map to specific messages', () => {
   assert.match(errorMessage('already_submitted'), /já enviou/i);
@@ -23,4 +23,32 @@ test('parseMeta: object passthrough, JSON string parse, junk -> {}', () => {
   assert.deepEqual(parseMeta('not json'), {});
   assert.deepEqual(parseMeta(null), {});
   assert.deepEqual(parseMeta(''), {});
+});
+
+// identityConfig: the modal's name/anon control decision (track-26 item 3).
+test('identityConfig: logged-in student drops the name field', () => {
+  const c = identityConfig('Ana Beatriz', false);
+  assert.equal(c.authed, true);
+  assert.equal(c.showNameField, false);
+});
+test('identityConfig: logged-in + anon-allowed shows the checkbox PRE-CHECKED', () => {
+  const c = identityConfig('Ana', true);
+  assert.equal(c.showAnonCheckbox, true);
+  assert.equal(c.anonChecked, true);
+});
+test('identityConfig: logged-in + anon-NOT-allowed hides the checkbox entirely', () => {
+  const c = identityConfig('Ana', false);
+  assert.equal(c.showAnonCheckbox, false);
+  assert.equal(c.anonChecked, false);
+});
+test('identityConfig: open turma (no name) keeps the name field, anon never pre-checked', () => {
+  const anon = identityConfig('', true);
+  assert.equal(anon.authed, false);
+  assert.equal(anon.showNameField, true);
+  assert.equal(anon.showAnonCheckbox, true);
+  assert.equal(anon.anonChecked, false);
+  const named = identityConfig('   ', false); // whitespace-only counts as no identity
+  assert.equal(named.authed, false);
+  assert.equal(named.showNameField, true);
+  assert.equal(named.showAnonCheckbox, false);
 });

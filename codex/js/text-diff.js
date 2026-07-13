@@ -13,7 +13,13 @@ function _tokens(s) {
   return String(s == null ? '' : s).split(/(\s+)/);
 }
 
-export function markChanges(oldStr, newStr) {
+// diffWords(old, new) -> ordered segments covering ALL of `new`: [{ text, added }].
+// `added:true` = a run present in `new` but not aligned to `old`. Word/whitespace tokens,
+// so a fully-new paragraph comes back as ONE added segment (its spaces included) and a
+// single changed word inside otherwise-equal text comes back as its own added segment.
+// Used two ways: markChanges (below) for plain-text fields, and the apostila body
+// highlighter which expands these into a per-character mask over the RENDERED text.
+export function diffWords(oldStr, newStr) {
   const a = _tokens(oldStr), b = _tokens(newStr);
   const n = a.length, m = b.length;
   const dp = Array.from({ length: n + 1 }, () => new Array(m + 1).fill(0));
@@ -22,15 +28,30 @@ export function markChanges(oldStr, newStr) {
       dp[i][j] = a[i] === b[j] ? dp[i + 1][j + 1] + 1 : Math.max(dp[i + 1][j], dp[i][j + 1]);
     }
   }
-  let i = 0, j = 0, out = '', run = '';
-  const flush = () => { if (run) { out += DIFF_OPEN + run + DIFF_CLOSE; run = ''; } };
+  const segs = [];
+  const push = (text, added) => {
+    if (!text) return;
+    const last = segs[segs.length - 1];
+    if (last && last.added === added) last.text += text;                   // merge same-flag runs
+    else segs.push({ text, added });
+  };
+  let i = 0, j = 0;
   while (j < m) {
-    if (i < n && a[i] === b[j]) { flush(); out += b[j]; i++; j++; }        // common token
+    if (i < n && a[i] === b[j]) { push(b[j], false); i++; j++; }           // common token
     else if (i < n && dp[i + 1][j] >= dp[i][j + 1]) { i++; }               // old token dropped
-    else { run += b[j]; j++; }                                            // new token added
+    else { push(b[j], true); j++; }                                        // new token added
   }
-  flush();
-  return out;
+  return segs;
+}
+
+// Sentinel-wrapped form for PLAIN-TEXT fields (title/summary), where the caller escapes then
+// swaps the sentinels for <mark>. NOT for markdown bodies: a sentinel before `###`/`- ` breaks
+// block parsing and a run spanning blocks yields an inline <mark> the browser closes at the
+// first block boundary. The apostila body highlights on the rendered DOM via diffWords instead.
+export function markChanges(oldStr, newStr) {
+  return diffWords(oldStr, newStr)
+    .map((s) => (s.added ? DIFF_OPEN + s.text + DIFF_CLOSE : s.text))
+    .join('');
 }
 
 export function stripMarks(s) {

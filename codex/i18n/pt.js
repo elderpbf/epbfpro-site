@@ -75,6 +75,7 @@ export default {
   'alunos.forum':        'Fórum da turma',
   'alunos.reveal':       'Revelar conteúdo só ao concluir a aula',
   'alunos.app_install':  'Oferecer instalação do app da trilha',
+  'alunos.auth_code':    'Login por e-mail por código (em vez do link mágico)',
   'alunos.notifications':'Notificações (sino)',
   'alunos.save':         'Salvar',
   'alunos.saved':        'Salvo.',
