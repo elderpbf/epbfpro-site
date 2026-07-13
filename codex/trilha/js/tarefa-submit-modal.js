@@ -35,6 +35,22 @@ export function parseMeta(metaJson) {
   try { return JSON.parse(metaJson) || {}; } catch (_) { return {}; }
 }
 
+// PURE. Decide the modal's identity controls. Students are authenticated now (track-26): when
+// we know the participant (a gated turma with a session), the old "Seu nome" field is dead, so
+// we drop it and take the name from the session. The anonymous control then follows the tarefa's
+// admin config: shown ONLY when the tarefa allows anonymous, and PRE-CHECKED when shown (Élder).
+// An open (non-gated) turma has no session identity, so it keeps the name field + the original
+// unchecked anon checkbox / "identificação obrigatória" hint.
+export function identityConfig(participantName, allowAnon) {
+  const authed = !!String(participantName == null ? '' : participantName).trim();
+  return {
+    authed,
+    showNameField: !authed,
+    showAnonCheckbox: !!allowAnon,
+    anonChecked: authed && !!allowAnon,
+  };
+}
+
 export function openTarefaSubmitModal(opts) {
   if (!opts || !opts.item) return;
   const item = opts.item;
@@ -42,13 +58,38 @@ export function openTarefaSubmitModal(opts) {
   const turmaSlug = opts.turmaSlug;
   const token = opts.token;
   const sessionToken = opts.sessionToken; // gated turmas require an approved session to submit
+  const participantName = String(opts.participantName || '').trim(); // the logged-in student, if any
   const onSubmitted = opts.onSubmitted || (() => {});
 
   const meta = parseMeta(item.meta_json);
   const fieldType = meta.field_type || 'text';
   const allowAnon = !!meta.allow_anonymous;
+  const idCfg = identityConfig(participantName, allowAnon);
   let savedName = '';
   try { savedName = localStorage.getItem(LS_NAME) || ''; } catch (_) { /* noop */ }
+
+  // The identity block: name field only for an anonymous open turma; the anon checkbox only when
+  // the tarefa allows it (pre-checked for a logged-in student). When a logged-in student has no
+  // anon option, the block is omitted entirely (the name is taken from the session, no control).
+  let identityHtml = '';
+  if (idCfg.showNameField || idCfg.showAnonCheckbox) {
+    identityHtml = '<div class="tr-tarefa-identity">';
+    if (idCfg.showNameField) {
+      identityHtml +=
+        '<label class="tr-tarefa-name-label">Seu nome</label>' +
+        '<input type="text" class="tr-tarefa-name" placeholder="Digite seu nome completo" value="' + esc(savedName) + '">';
+    }
+    if (idCfg.showAnonCheckbox) {
+      identityHtml +=
+        '<label class="tr-tarefa-anon-row">' +
+          '<input type="checkbox" class="tr-tarefa-anon-cb"' + (idCfg.anonChecked ? ' checked' : '') + '>' +
+          '<span>Enviar como anônimo</span>' +
+        '</label>';
+    } else if (idCfg.showNameField) {
+      identityHtml += '<p class="tr-tarefa-hint">Identificação obrigatória para esta tarefa.</p>';
+    }
+    identityHtml += '</div>';
+  }
 
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-tarefa-submit-backdrop';
@@ -60,17 +101,7 @@ export function openTarefaSubmitModal(opts) {
       '<div class="tr-tarefa-form">' +
         '<label class="tr-tarefa-field-label">Sua resposta</label>' +
         '<div class="tr-tarefa-field"></div>' +
-        '<div class="tr-tarefa-identity">' +
-          '<label class="tr-tarefa-name-label">Seu nome</label>' +
-          '<input type="text" class="tr-tarefa-name" placeholder="Digite seu nome completo" value="' + esc(savedName) + '">' +
-          (allowAnon
-            ? '<label class="tr-tarefa-anon-row">' +
-                '<input type="checkbox" class="tr-tarefa-anon-cb">' +
-                '<span>Enviar como anônimo</span>' +
-              '</label>'
-            : '<p class="tr-tarefa-hint">Identificação obrigatória para esta tarefa.</p>'
-          ) +
-        '</div>' +
+        identityHtml +
         '<div class="tr-tarefa-actions">' +
           '<button type="button" class="tr-btn tr-btn-ghost cdx-btn tr-tarefa-cancel">Cancelar</button>' +
           '<button type="button" class="tr-btn tr-btn-primary cdx-btn tr-tarefa-submit">Enviar resposta</button>' +
@@ -107,7 +138,8 @@ export function openTarefaSubmitModal(opts) {
   closeBtn.addEventListener('click', close);
   cancelBtn.addEventListener('click', close);
 
-  if (anonCb) {
+  // Only meaningful when the name field exists (open turma): disable it while "anônimo" is on.
+  if (anonCb && nameInput) {
     anonCb.addEventListener('change', () => {
       if (anonCb.checked) { nameInput.disabled = true; nameInput.classList.add('disabled'); }
       else { nameInput.disabled = false; nameInput.classList.remove('disabled'); }
@@ -117,10 +149,18 @@ export function openTarefaSubmitModal(opts) {
   submitBtn.addEventListener('click', async () => {
     errorEl.textContent = '';
     const isAnon = !!(anonCb && anonCb.checked);
-    const name = isAnon ? '' : (nameInput.value || '').trim();
-    if (!isAnon && !name) {
-      errorEl.textContent = 'Informe seu nome ou marque "Enviar como anônimo".';
-      return;
+    let name;
+    if (idCfg.authed) {
+      // Logged-in student: the name comes from the session, never a typed field. An anonymous
+      // submit sends no name (the worker still stamps participant_id, so the student's own
+      // Tarefas tab can match it back while the professor's list stays anonymous).
+      name = isAnon ? '' : participantName;
+    } else {
+      name = isAnon ? '' : (nameInput ? (nameInput.value || '').trim() : '');
+      if (!isAnon && !name) {
+        errorEl.textContent = 'Informe seu nome ou marque "Enviar como anônimo".';
+        return;
+      }
     }
     const value = field.readValue(fieldEl);
     const validation = field.validate(value);
@@ -128,7 +168,7 @@ export function openTarefaSubmitModal(opts) {
 
     submitBtn.disabled = true;
     submitBtn.textContent = 'Enviando...';
-    if (!isAnon && name) {
+    if (!idCfg.authed && !isAnon && name) {
       try { localStorage.setItem(LS_NAME, name); } catch (_) { /* noop */ }
     }
 

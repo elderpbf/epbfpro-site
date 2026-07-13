@@ -170,6 +170,7 @@ function renderRegister(wall) {
   // The single Entrar card: one e-mail field. The name field is present but hidden until the
   // worker says the address is NEW (needName), then revealed inline (no modal, same card).
   function renderCardForm(revealName) {
+    cardEl.classList.remove('cdx-en-wait');
     cardEl.innerHTML =
       '<h3 class="cdx-en-card-h">' + esc(t('wall.entrar_h')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(revealName ? t('wall.entrar_name_sub') : t('wall.entrar_sub')) + '</p>' +
@@ -207,6 +208,7 @@ function renderRegister(wall) {
     const dev = flow.devMagicToken
       ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_link')) + '</strong> <a href="?lt=' + esc(flow.devMagicToken) + '&k=' + esc(state.token || '') + '">abrir link</a></p>'
       : '';
+    cardEl.classList.add('cdx-en-wait');
     cardEl.innerHTML =
       '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
       '<h3 class="cdx-en-card-h">' + esc(t('wall.check_email_h')) + '</h3>' +
@@ -227,6 +229,7 @@ function renderRegister(wall) {
   // Reuses the EXISTING pending message (renderPending / login.pending_*), not a new one — the
   // poll unlocks this card in place when the instructor approves in the e-sino.
   function renderPendingApproval() {
+    cardEl.classList.add('cdx-en-wait');
     cardEl.innerHTML =
       '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('clock', { size: 34 }) + '</div>' +
       '<h3 class="cdx-en-card-h">' + esc(t('login.pending_title')) + '</h3>' +

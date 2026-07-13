@@ -27,7 +27,7 @@ import { overlayLabItems } from './lab-overlay.js';
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
 
-const PANELS = ['aulas', 'forum', 'apostila', 'outros', 'apps'];
+const PANELS = ['aulas', 'tarefas', 'forum', 'apostila', 'outros', 'apps'];
 
 // Which panel a location hash selects (default 'aulas').
 export function resolveTab(hash) {
@@ -517,27 +517,41 @@ function renderTabs(root) {
   const apostilaBtn = root.querySelector('#cdx-tr-tab-apostila');
   const forumBtn = root.querySelector('#cdx-tr-tab-forum');
   const appsBtn = root.querySelector('#cdx-tr-tab-apps');
+  const tarefasBtn = root.querySelector('#cdx-tr-tab-tarefas');
 
   // The Fórum tab shows only when the turma enabled it.
   if (forumBtn) forumBtn.hidden = !turma.forum_enabled;
 
+  // The Tarefas tab is per-student (your own submissions), so it needs a session: show it only
+  // when the student is logged in AND at least one tarefa is revealed. On an open turma (no
+  // session) it stays hidden, since "my tarefas" has no identity to resolve.
+  if (tarefasBtn) tarefasBtn.hidden = !(state.sessionToken && items.some((it) => it.type === 'tarefa'));
+
   // Aplicativos tab: shows only when the turma has at least one app whose lesson has
   // occurred (the backend already applied that happened-gate to data.apps). With exactly
   // one app the tab takes that app's name; with several it is the generic "Aplicativos".
+  // Each tab button now wraps its label in a .cdx-tr-tab-txt span (next to the inline SVG icon),
+  // so set the SPAN's text, never the button's textContent, which would wipe the icon.
+  const labelEl = (btn) => (btn && (btn.querySelector('.cdx-tr-tab-txt') || btn));
   const apps = data.apps || [];
   if (appsBtn) {
     appsBtn.hidden = !apps.length;
-    if (apps.length === 1 && apps[0].name) appsBtn.textContent = apps[0].name;
-    else appsBtn.textContent = t('page.tab_apps');
+    if (apps.length === 1 && apps[0].name) labelEl(appsBtn).textContent = apps[0].name;
+    else labelEl(appsBtn).textContent = t('page.tab_apps');
   }
 
   if (outrosBtn) {
-    if (outros.length) outrosBtn.textContent = t('page.tab_outros') + ' (' + outros.length + ')';
+    if (outros.length) labelEl(outrosBtn).textContent = t('page.tab_outros') + ' (' + outros.length + ')';
     outrosBtn.hidden = !outros.length;
   }
   if (apostilaBtn) apostilaBtn.hidden = !apostilaCount;
 
+  // Short labels for the mobile fixed bottom nav (the full labels wrap at ≤700px). The CSS hides
+  // the button's text node and draws data-short via ::after; set it from i18n so pt/en both work.
   root.querySelectorAll('.cdx-tr-tab-btn').forEach((btn) => {
+    const key = 'page.tabshort_' + btn.dataset.tab;
+    const short = t(key);
+    if (short && short !== key) btn.setAttribute('data-short', short);
     btn.addEventListener('click', () => {
       if (_win) _win.location.hash = '#' + btn.dataset.tab;
       else onHashChange(btn.dataset.tab);
