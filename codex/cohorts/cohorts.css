@@ -927,7 +927,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 /* The provisional-remaining time ("expira em 5h") reads as neutral emphasis, theme-adaptive. */
 .cdx-prow-when.prov { color: var(--text-primary); font-weight: 700; }
 /* "Dias até expirar" chip + hover popover (Élder 2026-07-13): the at-a-glance expiry, with
-   the rest of the participant dossier revealed on hover/focus. No modal, pure CSS. */
+   the rest of the participant dossier revealed on hover/focus. The popover is position:FIXED and
+   placed by JS (_wireDossierParticipants) so the scrolling dossier body (overflow-y:auto) can't clip it. */
 .cdx-prow-exp {
   position: relative; font-size: .64rem; font-weight: 700; padding: .05rem .32rem;
   border-radius: 4px; white-space: nowrap; cursor: default; outline: none;
@@ -937,7 +938,7 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-exp--soon { background: var(--tint-task);    color: var(--tint-task-tx); }
 .cdx-prow-exp--off  { background: rgba(127,127,127,.14); color: var(--text-secondary); opacity: .85; }
 .cdx-prow-pop {
-  display: none; position: absolute; z-index: 40; top: calc(100% + 6px); left: 0;
+  display: none; position: fixed; z-index: 60; top: 0; left: 0;
   min-width: 190px; padding: .5rem .6rem; border-radius: 8px; cursor: default;
   background: var(--surface); color: var(--text-primary);
   border: 1px solid var(--border); box-shadow: 0 8px 24px var(--shadow);

@@ -1618,7 +1618,10 @@ function _pRow(p, gated) {
         '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_reentries')) + '</b> ' + _esc(reVal) + '</span>' +
       '</span>';
     const expChip = '<span class="cdx-prow-exp cdx-prow-exp--' + expTone + '" tabindex="0">' + _esc(expLabel) + pop + '</span>';
-    conn = ' ' + valChip + ' ' + expChip;
+    // Held in its OWN flex cell (cdx-prow-meta), NOT inside the name (which is overflow:hidden +
+    // nowrap and would clip both the chip and its popover). The popover is position:fixed and
+    // placed by JS on hover (see _wireDossierParticipants) so the scrolling dossier body can't clip it.
+    conn = '<span class="cdx-prow-meta">' + valChip + expChip + '</span>';
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
@@ -1626,9 +1629,10 @@ function _pRow(p, gated) {
     '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
     _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(name) + conn + '</div>' +
+      '<div class="cdx-prow-name">' + _esc(name) + '</div>' +
       '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
     '</div>' +
+    conn +
     badge +
     '<button type="button" class="cdx-prow-edit" data-edit title="' + _esc(t('cohorts.participant_edit_title')) + '">✎</button>' +
   '</div>';
@@ -1682,6 +1686,22 @@ function _paintDossierParticipants(el, turma) {
 function _wireDossierParticipants(el, turma) {
   const rows = Array.prototype.slice.call(el.querySelectorAll('.cdx-prow'));
   const acts = Array.prototype.slice.call(el.querySelectorAll('.cdx-ptb-act'));
+
+  // "Dias até expirar" popover (Élder 2026-07-13): the popover is position:fixed, so on hover we
+  // place it at the chip's viewport rect — below it, or above when there isn't room. This escapes
+  // the dossier body's overflow:auto clip that a plain absolute popover hit. CSS :hover does the show/hide.
+  el.addEventListener('mouseover', (ev) => {
+    const chip = ev.target && ev.target.closest ? ev.target.closest('.cdx-prow-exp') : null;
+    if (!chip || !el.contains(chip)) return;
+    const pop = chip.querySelector('.cdx-prow-pop');
+    if (!pop) return;
+    const r = chip.getBoundingClientRect();
+    const h = pop.offsetHeight || 120, w = pop.offsetWidth || 200;
+    const below = r.bottom + 6 + h <= window.innerHeight;
+    pop.style.top = (below ? r.bottom + 6 : Math.max(8, r.top - 6 - h)) + 'px';
+    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
+  });
+
   const allChk = el.querySelector('.cdx-pall');
   const countEl = el.querySelector('.cdx-ptb-count');
   const chkOf = (r) => r.querySelector('.cdx-pchk');
