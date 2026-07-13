@@ -481,6 +481,18 @@ export default {
   'cohorts.pval_unvalidated':  'Not validated',
   'cohorts.pval_unvalidated_t':'E-mail not yet validated (12h provisional access)',
   'cohorts.pprov_expires':     'provisional · expires in {t}',
+  // Cohorts — participant "days to expiry" chip + hover popover (Élder 2026-07-13)
+  'cohorts.pexp_left':         'expires in {t}',
+  'cohorts.pexp_lapsed':       'session expired',
+  'cohorts.pexp_none':         'no access',
+  'cohorts.pop_validated':     'Validated',
+  'cohorts.pop_devices':       'Devices',
+  'cohorts.pop_last_access':   'Last access',
+  'cohorts.pop_reentries':     'Re-entries',
+  'cohorts.pop_reentry_last':  'last {t}',
+  'cohorts.pop_yes':           'Yes',
+  'cohorts.pop_no':            'No',
+  'cohorts.pop_never':         'never',
   // Cohorts — participant entry-type tags (inline list)
   'cohorts.ptag_lista':    'Roster',
   'cohorts.ptag_qr':       'QR',
