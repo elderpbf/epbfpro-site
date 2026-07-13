@@ -267,7 +267,7 @@
     <div class="k18-meter" id="k18-meter">
       <div class="k18-meter-row">
         <span class="k18-meter-label">Espaço para resposta</span>
-        <span class="k18-meter-value" id="k18-free">1.000.000 / 1.000.000</span>
+        <span class="k18-meter-value" id="k18-free">272.000 / 272.000</span>
       </div>
       <div class="k18-meter-bar"><div class="k18-meter-fill" id="k18-fill"></div></div>
     </div>
@@ -278,7 +278,7 @@
       <div class="k18-break" id="k18-break">
         <span class="k18-break-dots">⋯</span>
         <span>a janela continua até</span>
-        <span class="k18-break-ceil" id="k18-break-ceil">1.000.000</span>
+        <span class="k18-break-ceil" id="k18-break-ceil">272.000</span>
       </div>
       <div class="k18-bars" id="k18-bars"><!-- blocks built by JS --></div>
     </div>
@@ -313,13 +313,13 @@
     <button class="k18-btn" id="k18-back">◀ Voltar</button>
     <button class="k18-btn k18-btn-action" id="k18-next">Próxima etapa ▶</button>
     <button class="k18-btn" id="k18-compact">Compactar</button>
-    <button class="k18-btn k18-btn-toggle" id="k18-window-size">ChatGPT: 272k</button>
-    <button class="k18-btn k18-btn-toggle" id="k18-scale">Mostrar 1M</button>
+    <button class="k18-btn k18-btn-toggle" id="k18-window-size">Janela 1M</button>
+    <button class="k18-btn k18-btn-toggle" id="k18-scale">Sem zoom</button>
     <button class="k18-btn" id="k18-reset">Reiniciar</button>
   </div>
 
   <template data-lab-info data-lab-info-title="Como a janela de contexto se preenche">
-    <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Aqui, 1.000.000 (no ChatGPT são 272.000). Ela é enorme, então a barra dá um <strong>zoom</strong> no que está em uso; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
+    <p>Tudo que o modelo enxerga de uma vez cabe numa <strong>janela de tamanho fixo</strong>, medida em <em>tokens</em>. Na maioria dos modelos são 1.000.000; no ChatGPT, 272.000. Ela é enorme, então a barra dá um <strong>zoom</strong> no que está em uso; a linha "⋯" no topo lembra que a janela continua bem acima.</p>
     <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e depois o <strong>documento</strong> que ele anexa; então o modelo <strong>raciocina</strong> (custa milhares) e <strong>chama uma ferramenta</strong> (a chamada em si custa quase nada, ~200) e recebe o <strong>resultado</strong>. Num mesmo turno ele pode repetir isso e sempre <strong>avalia o resultado</strong> antes de seguir, seja para chamar outra ferramenta ou para escrever a <strong>resposta</strong> (um resultado nunca vira resposta direto). Cada novo pedaço se empilha, nada se apaga.</p>
     <p>Repare no <strong>total processado</strong>: toda vez que o modelo gera algo, ele lê de novo tudo que já está na janela e escreve por cima. O custo não é o tamanho atual da janela, é a soma de todas essas releituras, e ela cresce a cada turno. Por isso conversa longa sai cara mesmo antes de a janela encher.</p>
     <p><strong>Compactar</strong> resume as interações que já passaram num único bloco menor (o setup fica de fora): libera espaço e faz as próximas releituras custarem menos, sem devolver o que já foi processado. É assim que a janela funciona por dentro.</p>
@@ -327,9 +327,9 @@
 
   <script>
     (function() {
-      const TOTAL_DEFAULT = 1000000;   // most models (Claude, Gemini)
-      const TOTAL_CHATGPT = 272000;    // ChatGPT is the odd one out
-      let TOTAL = TOTAL_DEFAULT;       // current window size, toggled by the size button
+      const TOTAL_1M = 1000000;        // most models (Claude, Gemini)
+      const TOTAL_272K = 272000;       // ChatGPT
+      let TOTAL = TOTAL_272K;          // current window size (272k by default), toggled by the size button
       const SUMMARY_TOK = 9000;        // size of a compaction summary
       const PCT_HIDE_LABEL = 0.03;
       // Zoom ceilings the bar snaps through. Starts small so the setup blocks
@@ -568,10 +568,9 @@
         nextBtn.disabled = stepPos >= STEPS.length;  // quiet stop; no "end of conversation"
         compactBtn.disabled = (stepPos - shownStart) < 2;
         scaleBtn.classList.toggle('k18-on', fullScale);
-        scaleBtn.textContent = fullScale ? 'Voltar ao zoom' : ('Mostrar ' + (TOTAL === TOTAL_DEFAULT ? '1M' : '272k'));
-        // The size button names the window it will switch TO (like Mostrar 1M).
-        sizeBtn.textContent = (TOTAL === TOTAL_DEFAULT) ? 'ChatGPT: 272k' : 'Padrão: 1M';
-        sizeBtn.classList.toggle('k18-on', TOTAL !== TOTAL_DEFAULT);
+        scaleBtn.textContent = fullScale ? 'Com zoom' : 'Sem zoom';
+        // The size button names the window it will switch TO.
+        sizeBtn.textContent = (TOTAL === TOTAL_1M) ? 'Janela 272k' : 'Janela 1M';
       }
 
       function statusForType(t) {
@@ -601,7 +600,7 @@
       }
       function scale()   { fullScale = !fullScale; render(); }
       function toggleSize() {
-        TOTAL = (TOTAL === TOTAL_DEFAULT) ? TOTAL_CHATGPT : TOTAL_DEFAULT;
+        TOTAL = (TOTAL === TOTAL_1M) ? TOTAL_272K : TOTAL_1M;
         zoomCeil = Math.min(zoomCeil, TOTAL);  // ceiling can't exceed the new window
         render();
       }
