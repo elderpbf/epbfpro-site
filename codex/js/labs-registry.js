@@ -7,7 +7,8 @@
 // Lessons. The legacy backstage global stays live for the un-ported ClassVault.
 //
 // Public API: LABS, findItem(idStr), getAllItems(), isLabEnabled(key),
-// orderedLabs(), labOrderIndex(key), setLabOrder(keys), labIcon(key).
+// orderedLabs(), archivedLabs(), isLabArchived(key), setLabArchived(key,on),
+// labOrderIndex(key), setLabOrder(keys), labIcon(key).
 // The legacy renderSection()/LABS_GLYPH (the ClassVault "Aula" index DOM) is NOT
 // ported: Codex renders Labs natively (content/labs.js, lessons.js), so that
 // markup would be dead code emitting cv- classes the native modules forbid.
@@ -139,6 +140,29 @@ export function isLabEnabled(key) {
   } catch (e) { return true; }
 }
 
+// Archived labs are "put away": dropped from the active list and from every
+// consumer (Presets/Lessons/Liberações) via orderedLabs(), but kept in the
+// registry so they can be restored. State is an array of keys in localStorage,
+// deliberately behind this thin seam (isLabArchived/setLabArchived/archivedLabs)
+// so it can move server-side later without touching any consumer. Client-only
+// for now, same reach as the on/off map — it does not filter the public Trilha.
+const LS_ARCHIVED = 'cv_labs_archived';
+function _readArchived() {
+  try {
+    const raw = localStorage.getItem(LS_ARCHIVED);
+    const arr = raw ? JSON.parse(raw) : [];
+    return Array.isArray(arr) ? arr : [];
+  } catch (e) { return []; }
+}
+export function isLabArchived(key) {
+  return _readArchived().indexOf(key) !== -1;
+}
+export function setLabArchived(key, on) {
+  const next = _readArchived().filter((k) => k !== key);
+  if (on) next.push(key);
+  try { localStorage.setItem(LS_ARCHIVED, JSON.stringify(next)); } catch (e) { /* ignore */ }
+}
+
 // Drag-to-reorder (Content > Labs) persists here as an ordered array of keys.
 // Every consumer (the rail itself, getAllItems(), releases.js's Labs rows)
 // derives its order from orderedLabs(), so reordering in one place propagates
@@ -156,12 +180,24 @@ function _readOrder() {
 // LABS in the admin's chosen order. Keys no longer in the registry are
 // dropped; labs not yet in the stored order keep their registry position,
 // appended after the ordered ones (covers new labs added after the last drag).
-export function orderedLabs() {
+function _allOrdered() {
   const order = _readOrder();
   const byKey = new Map(LABS.map((l) => [l.key, l]));
   const ordered = order.map((k) => byKey.get(k)).filter(Boolean);
   const seen = new Set(ordered.map((l) => l.key));
   return ordered.concat(LABS.filter((l) => !seen.has(l.key)));
+}
+
+// The ACTIVE labs (archived ones dropped), in the admin's chosen order. Every
+// consumer derives its list from here, so archiving hides a lab everywhere at
+// once. The archived ones are reachable only via archivedLabs().
+export function orderedLabs() {
+  return _allOrdered().filter((l) => !isLabArchived(l.key));
+}
+
+// The archived labs, in the same order basis — for the Content > Labs drawer.
+export function archivedLabs() {
+  return _allOrdered().filter((l) => isLabArchived(l.key));
 }
 
 export function labOrderIndex(key) {

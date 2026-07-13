@@ -21,6 +21,10 @@ function setOrder(arr) {
   if (arr == null) _store.delete('cv_labs_order');
   else _store.set('cv_labs_order', JSON.stringify(arr));
 }
+function setArchived(arr) {
+  if (arr == null) _store.delete('cv_labs_archived');
+  else _store.set('cv_labs_archived', JSON.stringify(arr));
+}
 
 const reg = await import('../js/labs-registry.js');
 
@@ -172,4 +176,57 @@ test('getAllItems follows the stored order (filtered to enabled labs)', () => {
   assert.deepEqual(ids.slice(0, 2), ['lab:k16', 'lab:k2'], 'k1 stays disabled-hidden even though it is in the stored order');
   setOrder(null);
   setEnabledMap(null);
+});
+
+test('isLabArchived defaults false; setLabArchived toggles the cv_labs_archived list', () => {
+  setArchived(null);
+  assert.equal(reg.isLabArchived('k3'), false, 'no list = not archived');
+  reg.setLabArchived('k3', true);
+  assert.equal(reg.isLabArchived('k3'), true, 'archived after set true');
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), ['k3']);
+  reg.setLabArchived('k3', false);
+  assert.equal(reg.isLabArchived('k3'), false, 'restored after set false');
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), []);
+  setArchived(null);
+});
+
+test('setLabArchived is idempotent (no duplicate keys)', () => {
+  setArchived(null);
+  reg.setLabArchived('k3', true);
+  reg.setLabArchived('k3', true);
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), ['k3'], 'archiving twice keeps one entry');
+  setArchived(null);
+});
+
+test('orderedLabs drops archived labs; archivedLabs returns exactly them', () => {
+  setOrder(null);
+  setArchived(['k3', 'k9']);
+  const active = reg.orderedLabs().map((l) => l.key);
+  assert.ok(!active.includes('k3') && !active.includes('k9'), 'archived hidden from the active list');
+  assert.equal(active.length, EXPECTED_KEYS.length - 2, 'two fewer active labs');
+  assert.deepEqual(reg.archivedLabs().map((l) => l.key).sort(), ['k3', 'k9'], 'archivedLabs returns the archived ones');
+  setArchived(null);
+});
+
+test('getAllItems (Presets/Lessons picker) excludes archived labs', () => {
+  setEnabledMap(null);
+  setArchived(['k1']);
+  const ids = reg.getAllItems().map((i) => i.id);
+  assert.ok(!ids.includes('lab:k1'), 'archived lab absent from the picker');
+  assert.equal(ids.length, EXPECTED_KEYS.length - 1);
+  setArchived(null);
+});
+
+test('findItem still resolves an archived lab by id (a lesson may reference it)', () => {
+  setArchived(['k3']);
+  assert.ok(reg.findItem('lab:k3'), 'archived lab still resolves by id');
+  setArchived(null);
+});
+
+test('archivedLabs honours the stored order basis', () => {
+  setOrder(['k9', 'k3']);
+  setArchived(['k3', 'k9']);
+  assert.deepEqual(reg.archivedLabs().map((l) => l.key), ['k9', 'k3'], 'archived list follows the same order');
+  setOrder(null);
+  setArchived(null);
 });

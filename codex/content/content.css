@@ -971,6 +971,14 @@
 .cdx-lab-frame-wrap { position: relative; overflow: hidden; border: 2px solid #fff; border-radius: 4px; background: #0a0e1a; flex-shrink: 0; box-sizing: border-box; }
 .cdx-lab-frame { position: absolute; top: 0; left: 0; border: 0; display: block; transform-origin: top left; pointer-events: none; background: #0a0e1a; }
 
+/* Arquivados: the pinned footer button at the bottom of the labs list (rail
+   footer) + the inline Restaurar button on each archived row. */
+.cdx-labs-archfoot { display: flex; align-items: center; justify-content: center; gap: 0.4rem; width: 100%; padding: 0.6rem 0.75rem; background: transparent; border: 0; color: var(--text-secondary); font: inherit; font-size: 0.85rem; font-weight: 600; cursor: pointer; transition: background 140ms, color 140ms; }
+.cdx-labs-archfoot:hover:not(:disabled) { background: var(--cdx-card-hover-bg); color: var(--text-primary); }
+.cdx-labs-archfoot:disabled { opacity: 0.45; cursor: default; }
+.cdx-labs-archfoot svg { flex-shrink: 0; }
+.cdx-lab-rowbtn { flex-shrink: 0; }
+
 /* ── Drive sub-tab (native, master-detail like Items) ────────────────────────
    Reuses the Items split shell. Toolbar + connection status + folder rows +
    file groups + the folder editor. All theme tokens, so dark-safe. */

@@ -20,7 +20,7 @@
 // reflected in the Lessons sidebar and the Presets picker. Filtering stays
 // read-time in every consumer, so disabling is instant and reversible.
 import { t } from '../js/i18n.js';
-import { orderedLabs, labIcon, setLabOrder } from '../js/labs-registry.js';
+import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder } from '../js/labs-registry.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { mountRail } from '../js/list-rail.js';
@@ -31,6 +31,7 @@ const LS_KEY = 'cv_labs_enabled';
 
 let _viewEl = null;
 let _selectedKey = null;
+let _mode = 'active';     // 'active' = the labs list; 'archived' = the Arquivados drawer
 let _rail = null;         // the left labs list is the shared list-rail (js/list-rail.js)
 let _onClick = null;
 let _onChange = null;
@@ -60,9 +61,12 @@ function _labs() {
   const labs = orderedLabs();
   return Array.isArray(labs) ? labs : null;
 }
+// The list currently on screen: the active labs, or the archived drawer.
+function _currentList() {
+  return _mode === 'archived' ? archivedLabs() : (_labs() || []);
+}
 function _labByKey(key) {
-  const labs = _labs();
-  return labs ? labs.find((l) => String(l.key) === String(key)) : null;
+  return _currentList().find((l) => String(l.key) === String(key)) || null;
 }
 
 // Keep the current selection if it still exists, else fall back to the first lab.
@@ -96,6 +100,34 @@ function _labRowMain(lab) {
     '</div>';
 }
 
+// A row in the Arquivados drawer: no switch, no drag grip, just the lab + a
+// Restaurar button (exempt from row selection via the rail's rowSelectIgnore).
+function _archivedRowMain(lab) {
+  return '<div class="cdx-lab-rowwrap is-off">' +
+      '<span class="cdx-item-type-icon cdx-lab-icon">' + typeIconHtml(labIcon(lab.key), { size: 16 }) + '</span>' +
+      '<div class="cdx-item-info">' +
+        '<div class="cdx-item-title">' + _esc(lab.title) + '</div>' +
+        '<div class="cdx-item-sub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) + '</div>' +
+      '</div>' +
+      '<button type="button" class="cdx-btn cdx-btn-sm cdx-lab-rowbtn" data-action="restore" data-key="' + _esc(lab.key) + '">' +
+        _esc(t('labs.restore')) + '</button>' +
+    '</div>';
+}
+
+// The pinned footer button at the bottom of the labs list: "Arquivados (N)" in
+// the active list (disabled when empty), and a back link inside the drawer.
+function _footerHtml() {
+  if (_mode === 'archived') {
+    return '<button type="button" class="cdx-labs-archfoot" data-action="show-active">' +
+        '&larr; ' + _esc(t('labs.back_active')) + '</button>';
+  }
+  const n = archivedLabs().length;
+  return '<button type="button" class="cdx-labs-archfoot" data-action="show-archived"' + (n ? '' : ' disabled') + '>' +
+      typeIconHtml('glyph:archive', { size: 14 }) +
+      '<span>' + _esc(t('labs.archived')) + ' (' + n + ')</span>' +
+    '</button>';
+}
+
 function _previewHtml(lab) {
   if (!lab) return '<div class="cdx-preview-empty">' + _esc(t('labs.select')) + '</div>';
   const on = _isEnabled(lab.key);
@@ -105,7 +137,10 @@ function _previewHtml(lab) {
         '<div class="cdx-lab-psub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) + '</div>' +
       '</div>' +
       '<div class="cdx-lab-preview-actions">' +
-        _switchHtml(on) +
+        (_mode === 'archived'
+          ? '<button type="button" class="cdx-btn cdx-btn-sm" data-action="restore" data-key="' + _esc(lab.key) + '">' + _esc(t('labs.restore')) + '</button>'
+          : _switchHtml(on) +
+            '<button type="button" class="cdx-btn cdx-btn-sm" data-action="archive" data-key="' + _esc(lab.key) + '">' + _esc(t('labs.archive')) + '</button>') +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-action="fullscreen">' + _esc(t('labs.preview')) + '</button>' +
       '</div>' +
     '</div>' +
@@ -121,18 +156,22 @@ function _previewHtml(lab) {
 function _buildRail() {
   const el = _viewEl.querySelector('#cdx-labs-list');
   if (!el) return;
-  _rail = mountRail(el, {
+  const archived = _mode === 'archived';
+  const cfg = {
     title: '',
-    items: () => _labs() || [],
+    items: () => _currentList(),
     getId: (l) => l.key,
-    renderRow: (lab) => ({ main: _labRowMain(lab) }),
+    renderRow: (lab) => ({ main: archived ? _archivedRowMain(lab) : _labRowMain(lab) }),
     selectedId: () => _selectedKey,
     onSelect: (key) => { _selectedKey = key; _rail.render(); _renderPreview(); },
-    rowSelectIgnore: '.cdx-lab-switch',
-    // Order is registry-wide (labs-registry.setLabOrder), not local UI state, so
-    // Presets/Lessons/Liberações inherit the same order via orderedLabs() too.
-    reorder: { onReorder: (keys) => { setLabOrder(keys); _rail.render(); } },
-  });
+    rowSelectIgnore: '.cdx-lab-switch, .cdx-lab-rowbtn',
+    footer: () => _footerHtml(),
+  };
+  // Reorder only in the active list (archived labs have no drag grip). Order is
+  // registry-wide (labs-registry.setLabOrder), so Presets/Lessons/Liberações
+  // inherit the same order via orderedLabs() too.
+  if (!archived) cfg.reorder = { onReorder: (keys) => { setLabOrder(keys); _rail.render(); } };
+  _rail = mountRail(el, cfg);
 }
 
 function _renderList() {
@@ -183,7 +222,7 @@ function _render() {
     _viewEl.innerHTML = '<div class="cdx-empty">' + _esc(t('labs.unavailable')) + '</div>';
     return;
   }
-  _selectedKey = _resolveSelection(labs, _selectedKey);
+  _selectedKey = _resolveSelection(_currentList(), _selectedKey);
   _viewEl.innerHTML =
     '<div class="cdx-labs">' +
       '<div class="cdx-labs-head">' +
@@ -206,6 +245,26 @@ function _openFullscreen(key) {
   openLabViewer({ key, title: lab && lab.title });
 }
 
+// Switch between the active list and the Arquivados drawer: rebuild the rail
+// with the mode-appropriate rows/footer/reorder and re-pick the selection.
+function _switchMode(mode) {
+  _mode = mode;
+  _selectedKey = _resolveSelection(_currentList(), null);
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _buildRail();
+  _renderPreview();
+}
+// Archive (on=true) or restore (on=false) a lab, then refresh. Emptying the
+// drawer jumps back to the active list; the footer count re-renders with the rail.
+function _archive(key, on) {
+  if (!key) return;
+  setLabArchived(key, on);
+  if (_mode === 'archived' && archivedLabs().length === 0) { _switchMode('active'); return; }
+  _selectedKey = _resolveSelection(_currentList(), _selectedKey === key ? null : _selectedKey);
+  if (_rail) _rail.render();
+  _renderPreview();
+}
+
 // track-34 §B: idempotent bootstrap that upserts a real ct_items row per
 // registry lab (backend ct_ensure_lab_items), so Labs show up as a normal
 // section in the Liberações composer. Runs silently on mount -- enabling a
@@ -223,6 +282,12 @@ export function mount(viewEl) {
   // rowSelectIgnore. Only the preview's fullscreen button is wired here.
   _onClick = (e) => {
     if (e.target.closest('[data-action="fullscreen"]')) { e.preventDefault(); if (_selectedKey) _openFullscreen(_selectedKey); return; }
+    const arch = e.target.closest('[data-action="archive"]');
+    if (arch) { e.preventDefault(); _archive(arch.getAttribute('data-key') || _selectedKey, true); return; }
+    const rest = e.target.closest('[data-action="restore"]');
+    if (rest) { e.preventDefault(); _archive(rest.getAttribute('data-key') || _selectedKey, false); return; }
+    if (e.target.closest('[data-action="show-archived"]')) { e.preventDefault(); _switchMode('archived'); return; }
+    if (e.target.closest('[data-action="show-active"]')) { e.preventDefault(); _switchMode('active'); return; }
   };
   _onChange = (e) => {
     const input = e.target.closest('.cdx-lab-switch-input');

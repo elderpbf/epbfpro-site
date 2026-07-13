@@ -45,8 +45,8 @@ test('labs preserves the shared state + registry contract', () => {
 
 test('labs list rail supports drag-to-reorder, propagated via labs-registry', () => {
   const src = read('../content/labs.js');
-  assert.match(src, /import \{ orderedLabs, labIcon, setLabOrder \} from '\.\.\/js\/labs-registry\.js'/, 'reads the ordered/emoji registry API');
-  assert.match(src, /reorder:\s*\{\s*onReorder:/, 'enables the rail reorder config');
+  assert.match(src, /import \{[^}]*\borderedLabs\b[^}]*\bsetLabOrder\b[^}]*\} from '\.\.\/js\/labs-registry\.js'/, 'reads the ordered/emoji registry API');
+  assert.match(src, /reorder\s*=\s*\{\s*onReorder:/, 'enables the rail reorder config');
   assert.match(src, /setLabOrder\(keys\)/, 'persists the drop order via the registry, not local state');
   assert.ok(!/window\.CTLabsPanel/.test(src), 'still no legacy global (regression guard)');
 });
@@ -60,8 +60,18 @@ test('labs list rows show the per-lab emoji instead of a fixed diamond glyph', (
 test('labs strings route through t() in both dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
-  for (const k of ['labs.title', 'labs.hint', 'labs.preview', 'labs.toggle', 'labs.lab_prefix', 'labs.select', 'labs.unavailable']) {
+  for (const k of ['labs.title', 'labs.hint', 'labs.preview', 'labs.toggle', 'labs.lab_prefix', 'labs.select', 'labs.unavailable',
+    'labs.archive', 'labs.restore', 'labs.archived', 'labs.back_active']) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
   }
+});
+
+test('labs supports archive: put-away drawer with restore, wired to the registry', () => {
+  const src = read('../content/labs.js');
+  assert.match(src, /import \{[^}]*\barchivedLabs\b[^}]*\bsetLabArchived\b[^}]*\} from '\.\.\/js\/labs-registry\.js'/, 'reads the archive registry API');
+  assert.match(src, /data-action="archive"/, 'active preview has an Arquivar action');
+  assert.match(src, /data-action="restore"/, 'archived rows/preview have a Restaurar action');
+  assert.match(src, /data-action="show-archived"/, 'the labs list has a footer button that opens the Arquivados drawer');
+  assert.match(src, /setLabArchived\(key,\s*(true|on)\)|setLabArchived\(key, on\)/, 'toggles archived state via the registry, not local UI state');
 });

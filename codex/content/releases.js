@@ -13,7 +13,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
-import { isLabEnabled, labIcon, labOrderIndex } from '../js/labs-registry.js';
+import { isLabEnabled, isLabArchived, labIcon, labOrderIndex } from '../js/labs-registry.js';
 import { renderItem } from '../js/item-render.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
@@ -208,8 +208,11 @@ function _labKeyOf(item) {
 function _isVisibleLab(item) {
   if (item.type !== 'lab') return true;
   const key = _labKeyOf(item);
-  if (!key || isLabEnabled(key)) return true;
-  return _released.indexOf(Number(item.id)) !== -1;
+  if (!key) return true;
+  // Archived OR disabled: hide from the add-pool unless it is already released
+  // to an aula (then keep it visible so the admin can still unrelease it).
+  if (isLabArchived(key) || !isLabEnabled(key)) return _released.indexOf(Number(item.id)) !== -1;
+  return true;
 }
 // The per-row glyph for a lab item is its own emoji (labs-registry.labIcon),
 // not the generic "Lab" type glyph every other lab would otherwise share.
