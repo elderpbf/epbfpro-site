@@ -137,6 +137,16 @@
       text-shadow: 0 1px 2px rgba(0,0,0,0.28); padding-left: 0.5rem;
     }
     .k18-block--tiny .k18-block-label, .k18-block--tiny .k18-block-tokens { opacity: 0; }
+    /* The block that JUST entered shows its name where it would if the box were
+       big enough — overflowing onto its neighbours, on top — so the current
+       event is legible in the moment it matters. It reverts to a nameless
+       hairline once the next block arrives. */
+    .k18-block--active.k18-block--tiny { overflow: visible; z-index: 5; }
+    .k18-block--active.k18-block--tiny .k18-block-label,
+    .k18-block--active.k18-block--tiny .k18-block-tokens {
+      opacity: 1;
+      text-shadow: 0 1px 3px rgba(0,0,0,0.75), 0 0 2px rgba(0,0,0,0.6);
+    }
     /* A new turn starts with a sky-blue user block; a hairline top rule doubles
        the visual turn boundary. */
     .k18-block--turnstart { box-shadow: inset 0 2px 0 rgba(255,255,255,0.55); }
@@ -387,7 +397,7 @@
             el.dataset.key = d.key;
             el.style.flexBasis = '0%';     // new blocks grow in from zero
           }
-          el.className = d.cls + (d.tiny ? ' k18-block--tiny' : '');
+          el.className = d.cls + (d.tiny ? ' k18-block--tiny' : '') + (d.active ? ' k18-block--active' : '');
           el.innerHTML = '<span class="k18-block-label">' + d.label + '</span>' +
             '<span class="k18-block-tokens">' + (d.tokens == null ? '' : fmt(d.tokens)) + '</span>';
           el._basis = (d.pct * 100).toFixed(2) + '%';
@@ -429,6 +439,9 @@
           const pct = ev.k / zoom;
           desired.push({ key: 'ev' + ev.id, cls: 'k18-block k18-block-' + ev.t, label: ev.l, tokens: ev.k, pct: pct, tiny: pct < PCT_HIDE_LABEL });
         }
+        // The newest block (just under the free space) shows its name even as a
+        // hairline; it drops back to nameless when the next step pushes a new one.
+        if (desired.length > 1) desired[1].active = true;
         reconcile(desired);
 
         fillEl.style.width = ((free / TOTAL) * 100).toFixed(2) + '%';
