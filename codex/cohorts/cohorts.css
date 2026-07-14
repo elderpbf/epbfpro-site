@@ -1254,6 +1254,11 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-alunos-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
 .cdx-alunos-search { flex: 1; min-width: 200px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-size: 0.85rem; }
 .cdx-alunos-filter { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; }
+.cdx-alunos-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); padding: 6px 14px 10px; }
+.cdx-alunos-tools { padding-top: 8px; }
+.cdx-alunos-sel { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-size: 0.8rem; cursor: pointer; }
+.cdx-alunos-spacer { flex: 1 1 auto; }
+.cdx-al-derived { font-style: italic; }
 
 .cdx-al-row { cursor: pointer; align-items: center; gap: 10px; }
 .cdx-al-row.is-open { background: var(--cdx-card-sel-bg); }
