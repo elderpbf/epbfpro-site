@@ -180,6 +180,7 @@ export default {
   'alunos.st_approved':    'aprovado',
   'alunos.st_pending':     'pendente',
   'alunos.st_denied':      'bloqueado',
+  'alunos.remove_confirm_global': 'Remover os alunos selecionados de TODAS as turmas? O cadastro é apagado e eles perdem o acesso.',
   'alunos.last_access':    'último acesso',
   'alunos.never':          'nunca acessou',
   'alunos.open_turma':     'Abrir turma',

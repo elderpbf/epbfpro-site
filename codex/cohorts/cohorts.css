@@ -1266,6 +1266,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-av { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--cdx-chip-bg); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
 .cdx-al-val.ok { color: var(--success); }
 .cdx-al-val.no { color: var(--text-secondary); }
+/* ct_students.role: only shown when the identity is not a plain student. */
+.cdx-al-role { font-size: 0.65rem; margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
 
 .cdx-al-turma { font-size: 0.8rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
 .cdx-al-turma.multi { font-weight: 600; color: var(--text-primary); }

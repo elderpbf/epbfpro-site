@@ -2,9 +2,16 @@
 // "Alunos" sub-tab of Cohorts (track-28a2): the cross-turma deduped roster. One line per
 // CANONICAL identity (ct_students). A single-turma person shows their turma + status inline;
 // a multi-turma person shows a global summary + "Várias turmas", and the line expands to one
-// sub-row per turma. Access stays per-turma (backend keeps it on the participant row); this
-// view only READS. Look/feel mirrors the dossier Participantes list (.cdx-prow); the list sits
-// in its own card. Names/initials come from js/names.js (derived from e-mail when unnamed).
+// sub-row per turma.
+//
+// ACTIONS HERE ARE GLOBAL (Élder 2026-07-14): aprovar/bloquear/desbloquear/remover apply to EVERY
+// turma of the selected people, fanning out only over the turmas where the action actually applies.
+// Per-turma changes are made inside the cohort. Access still LIVES per-turma on the participant row
+// (the a1 invariant): this view writes many rows at once, it never keys authorization off the
+// identity. The name edit writes the LOCKED canonical name, the single source of truth.
+//
+// The bulk toolbar + selection come from roster-actions.js and the edit modal from
+// participant-edit.js, both shared with the turma Participantes panel (no duplicated code).
 // Routed here by cohorts.js when ctx.sub === 'alunos'.
 
 import { cohorts as api } from '../js/codex-api.js';
@@ -13,6 +20,9 @@ import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
 import { initials } from '../js/names.js';
 import { hasStatus, hasPending, filterOptions } from './students-filters.js';
+import { toolbarHtml, wireSelection } from './roster-actions.js';
+import { openPersonEditModal } from './participant-edit.js';
+import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 
 let _viewEl = null;
 let _students = [];
@@ -25,6 +35,7 @@ let _sort = 'name';   // name | turmas | last | status
 let _expanded = {};
 
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
+function _byId(sid) { return _students.find((s) => String(s.id) === String(sid)); }
 
 // ── time (frontend, Date is fine) ────────────────────────────────────────────────
 function _relTime(unix) {
@@ -46,8 +57,13 @@ function _statusMix(s) {
   s.turmas.forEach((x) => { c[x.access_status] = (c[x.access_status] || 0) + 1; });
   return c;
 }
+// The participant rows an action would actually touch for this person (participant-view rules).
+function _targets(s, act) {
+  const rule = ACTION_RULES[act];
+  return rule ? s.turmas.filter((x) => rule(x.access_status)).map((x) => x.participant_id) : [];
+}
 
-// ── shell (header on bg + a card holding tools + list) ────────────────────────────
+// ── filters bar ───────────────────────────────────────────────────────────────────
 function _opt(v, cur, label) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
 
 function _toolsBar() {
@@ -84,13 +100,46 @@ function _renderShell() {
         '<div class="cdx-alunos-stats" id="cdx-al-stats"></div>' +
       '</div>' +
       '<div class="cdx-alunos-card">' +
-        _toolsBar() +
-        '<div class="cdx-plist cdx-alunos-list" id="cdx-al-list"></div>' +
+        '<div id="cdx-al-tools"></div>' +
+        '<div id="cdx-al-roster"></div>' +
       '</div>' +
     '</div>';
+  // Delegated once on the stable hosts, so the inner HTML can be repainted freely.
+  const tools = _q('#cdx-al-tools');
+  if (tools) {
+    tools.addEventListener('input', (e) => { if (e.target.id === 'cdx-al-search') { _search = e.target.value || ''; _paintList(); } });
+    tools.addEventListener('change', (e) => {
+      const id = e.target.id, v = e.target.value;
+      if (id === 'cdx-al-fclient') _fClient = v;
+      else if (id === 'cdx-al-fstatus') _fStatus = v;
+      else if (id === 'cdx-al-fver') _fVerified = v;
+      else if (id === 'cdx-al-fturmas') _fTurmas = v;
+      else if (id === 'cdx-al-sort') _sort = v;
+      else return;
+      _paintList();
+    });
+  }
+  const roster = _q('#cdx-al-roster');
+  if (roster) roster.addEventListener('click', (e) => {
+    // Selection (checkbox) and the bulk toolbar are owned by roster-actions; ignore them here.
+    if (e.target.closest('.cdx-pchk') || e.target.closest('.cdx-ptb')) return;
+    const openBtn = e.target.closest('.cdx-al-open');
+    if (openBtn) {
+      e.stopPropagation();
+      location.href = '/codex/?tab=cohorts&sub=turmas&client=' + encodeURIComponent(openBtn.dataset.client) + '&turma=' + encodeURIComponent(openBtn.dataset.turma);
+      return;
+    }
+    const editBtn = e.target.closest('.cdx-al-edit');
+    if (editBtn) { e.stopPropagation(); const s = _byId(editBtn.dataset.sid); if (s) _openEdit(s); return; }
+    if (e.target.closest('.cdx-al-detail')) return;
+    const row = e.target.closest('.cdx-al-row');
+    if (!row) return;
+    _expanded[row.dataset.sid] = !_expanded[row.dataset.sid];
+    _paintList();
+  });
 }
 
-// ── status chip ───────────────────────────────────────────────────────────────────
+// ── chips ─────────────────────────────────────────────────────────────────────────
 function _statusChip(st) {
   const key = st === 'approved' ? 'st_approved' : st === 'denied' ? 'st_denied' : 'st_pending';
   return '<span class="cdx-al-st cdx-al-st--' + esc(st || 'pending') + '">' + esc(t('alunos.' + key)) + '</span>';
@@ -104,6 +153,8 @@ function _row(s) {
   const verified = s.email_verified
     ? '<span class="cdx-al-val ok" title="' + esc(t('alunos.verified')) + '">✓</span>'
     : '<span class="cdx-al-val no" title="' + esc(t('alunos.unverified')) + '">•</span>';
+  // The identity is not students-only (ct_students.role); show the role when it is anything else.
+  const role = (s.role && s.role !== 'student') ? '<span class="cdx-al-role">' + esc(s.role) + '</span>' : '';
 
   let turmaCell;
   if (multi) {
@@ -124,20 +175,22 @@ function _row(s) {
   const lastCell = '<span class="cdx-al-last">' + (la ? esc(la) : '<span class="cdx-al-never">' + esc(t('alunos.never')) + '</span>') + '</span>';
   const caret = '<span class="cdx-al-caret' + (open ? ' open' : '') + '">▸</span>';
 
-  return '<div class="cdx-prow cdx-al-row' + (open ? ' is-open' : '') + '" data-sid="' + s.id + '">' +
+  return '<div class="cdx-prow cdx-al-row' + (open ? ' is-open' : '') + '" data-sid="' + esc(String(s.id)) + '">' +
+      '<input type="checkbox" class="cdx-pchk" aria-label="' + esc(nm) + '">' +
       caret +
       '<span class="cdx-al-av">' + esc(initials(nm)) + '</span>' +
       '<div class="cdx-prow-id">' +
-        '<div class="cdx-prow-name">' + esc(nm) + ' ' + verified + '</div>' +
+        '<div class="cdx-prow-name">' + esc(nm) + ' ' + verified + role + '</div>' +
         '<div class="cdx-prow-mail">' + esc(s.email) + '</div>' +
       '</div>' +
       turmaCell +
       lastCell +
+      '<button type="button" class="cdx-al-edit cdx-prow-edit" data-sid="' + esc(String(s.id)) + '" title="' + esc(t('alunos.edit_title')) + '">✎</button>' +
     '</div>' +
     (open ? _detail(s) : '');
 }
 
-// ── expanded detail (one sub-row per turma + name variants) ──────────────────────────
+// ── expanded detail (one sub-row per turma) ──────────────────────────────────────────
 function _detail(s) {
   const rows = s.turmas.map((x) => {
     const la = _relTime(x.last_access_at);
@@ -152,7 +205,7 @@ function _detail(s) {
   return '<div class="cdx-al-detail">' + rows + '</div>';
 }
 
-// ── filter + sort + paint ────────────────────────────────────────────────────────────
+// ── filter + sort ────────────────────────────────────────────────────────────────────
 function _filtered() {
   const q = _search.trim().toLowerCase();
   const rows = _students.filter((s) => {
@@ -175,6 +228,45 @@ function _filtered() {
   return rows;
 }
 
+// ── global actions (fan out across every turma the action applies to) ────────────────
+async function _applyGlobal(act, people) {
+  const ids = [];
+  people.forEach((s) => { _targets(s, act).forEach((id) => ids.push(id)); });
+  if (!ids.length) return;
+  if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm_global'))) return;
+  try {
+    if (act === 'remove') {
+      for (const id of ids) {
+        await api.deleteParticipant({ id }).catch((e) => notice.internal('alunos: remove failed: ' + (e && e.message || e)));
+      }
+    } else {
+      const status = actionTargetStatus(act);
+      const payload = { participant_ids: ids, status };
+      if (status === 'approved') payload.origin = location.origin;
+      await api.setParticipantAccess(payload).catch((e) => notice.internal('alunos: set access failed: ' + (e && e.message || e)));
+    }
+  } finally {
+    _load();
+  }
+}
+
+// The identity edit: the name writes the LOCKED canonical (one source of truth, every surface
+// reading it gets the fix). The e-mail IS the identity key, so changing it is a merge, not an
+// edit; that lives in the duplicates tool, hence read-only here (Élder 2026-07-14).
+function _openEdit(s) {
+  openPersonEditModal({
+    title: t('alunos.edit_title'),
+    fields: [
+      { key: 'name', label: t('cohorts.participant_name'), value: s.name || '', required: true,
+        validate: (v) => (v ? null : t('cohorts.name_required')) },
+      { key: 'email', label: t('cohorts.participant_email'), value: s.email, readonly: true },
+    ],
+    onSave: (vals) => api.setCanonicalName({ student_id: s.id, name: vals.name }).then(() => _load()),
+    savedMsg: t('cohorts.participant_updated'),
+  });
+}
+
+// ── paint ────────────────────────────────────────────────────────────────────────────
 function _paintStats() {
   const el = _q('#cdx-al-stats');
   if (!el) return;
@@ -187,55 +279,50 @@ function _paintStats() {
     (pend ? '<span class="cdx-al-stat warn">' + t('alunos.stat_pending').replace('{n}', pend) + '</span>' : '');
 }
 
-function _paintList() {
-  const el = _q('#cdx-al-list');
-  if (!el) return;
-  const rows = _filtered();
-  if (!_students.length) { el.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.empty')) + '</span>'; return; }
-  if (!rows.length) { el.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.no_match')) + '</span>'; return; }
-  el.innerHTML = rows.map(_row).join('');
+function _paintTools() {
+  const el = _q('#cdx-al-tools');
+  if (el) el.innerHTML = _toolsBar();
 }
 
-function _repaint() { _paintStats(); _paintList(); }
+function _paintList() {
+  const host = _q('#cdx-al-roster');
+  if (!host) return;
+  // Carry the selection across a repaint (expand / filter / sort), keyed by identity.
+  const keep = new Set(Array.prototype.slice.call(host.querySelectorAll('.cdx-al-row .cdx-pchk'))
+    .filter((c) => c.checked).map((c) => c.closest('.cdx-al-row').dataset.sid));
 
-// ── wire ───────────────────────────────────────────────────────────────────────────
-function _wire() {
-  const on = (id, ev, fn) => { const e = _q(id); if (e) e.addEventListener(ev, fn); };
-  on('#cdx-al-search', 'input', (e) => { _search = e.target.value || ''; _paintList(); });
-  on('#cdx-al-fclient', 'change', (e) => { _fClient = e.target.value; _paintList(); });
-  on('#cdx-al-fstatus', 'change', (e) => { _fStatus = e.target.value; _paintList(); });
-  on('#cdx-al-fver', 'change', (e) => { _fVerified = e.target.value; _paintList(); });
-  on('#cdx-al-fturmas', 'change', (e) => { _fTurmas = e.target.value; _paintList(); });
-  on('#cdx-al-sort', 'change', (e) => { _sort = e.target.value; _paintList(); });
+  if (!_students.length) { host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.empty')) + '</span>'; return; }
+  const rows = _filtered();
+  if (!rows.length) { host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.no_match')) + '</span>'; return; }
+  host.innerHTML = toolbarHtml(true) + '<div class="cdx-plist cdx-alunos-list">' + rows.map(_row).join('') + '</div>';
 
-  const list = _q('#cdx-al-list');
-  if (list) list.addEventListener('click', (e) => {
-    const open = e.target.closest ? e.target.closest('.cdx-al-open') : null;
-    if (open) {
-      e.stopPropagation();
-      location.href = '/codex/?tab=cohorts&sub=turmas&client=' + encodeURIComponent(open.dataset.client) + '&turma=' + encodeURIComponent(open.dataset.turma);
-      return;
-    }
-    const row = e.target.closest ? e.target.closest('.cdx-al-row') : null;
-    if (!row) return;
-    _expanded[Number(row.dataset.sid)] = !_expanded[Number(row.dataset.sid)];
-    _paintList();
+  Array.prototype.slice.call(host.querySelectorAll('.cdx-al-row')).forEach((r) => {
+    if (!keep.has(r.dataset.sid)) return;
+    const c = r.querySelector('.cdx-pchk');
+    if (c) c.checked = true;
+  });
+
+  wireSelection(host, {
+    rowSel: '.cdx-al-row',
+    chkSel: '.cdx-pchk',
+    rowClickToggles: false,           // a row-click expands here; the checkbox owns selection
+    enabledFor: (act, rowEls) => rowEls.some((r) => { const s = _byId(r.dataset.sid); return !!(s && _targets(s, act).length); }),
+    onApply: (act, rowEls) => _applyGlobal(act, rowEls.map((r) => _byId(r.dataset.sid)).filter(Boolean)),
   });
 }
 
+function _repaint() { _paintStats(); _paintTools(); _paintList(); }
+
 // ── load ─────────────────────────────────────────────────────────────────────────
 function _load() {
-  const el = _q('#cdx-al-list');
-  if (el) el.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.loading')) + '</span>';
-  api.listStudents({}).then((d) => {
+  const host = _q('#cdx-al-roster');
+  if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.loading')) + '</span>';
+  return api.listStudents({}).then((d) => {
     _students = (d && d.students) || [];
-    // clients dropdown depends on the data, so re-render the tools bar once loaded
-    const card = _viewEl && _viewEl.querySelector('.cdx-alunos-card');
-    if (card) { card.innerHTML = _toolsBar() + '<div class="cdx-plist cdx-alunos-list" id="cdx-al-list"></div>'; _wire(); }
     _repaint();
   }).catch((e) => {
     notice.internal('alunos: load students failed: ' + (e && e.message || e));
-    if (el) el.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.load_error')) + '</span>';
+    if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.load_error')) + '</span>';
   });
 }
 
@@ -244,7 +331,6 @@ export function mount(viewEl) {
   _viewEl = viewEl;
   _students = []; _search = ''; _fClient = ''; _fStatus = ''; _fVerified = ''; _fTurmas = ''; _sort = 'name'; _expanded = {};
   _renderShell();
-  _wire();
   _load();
 }
 

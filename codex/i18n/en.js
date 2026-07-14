@@ -180,6 +180,7 @@ export default {
   'alunos.st_approved':    'approved',
   'alunos.st_pending':     'pending',
   'alunos.st_denied':      'blocked',
+  'alunos.remove_confirm_global': 'Remove the selected students from ALL their classes? The record is deleted and they lose access.',
   'alunos.last_access':    'last access',
   'alunos.never':          'never accessed',
   'alunos.open_turma':     'Open class',

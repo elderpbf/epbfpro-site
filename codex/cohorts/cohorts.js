@@ -16,7 +16,9 @@ import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
 import { relTime } from '../js/rel-time.js';
-import { isApprovalGated, groupParticipantsByStatus, sortByName, toolbarActions, actionEnabled, actionTargetStatus } from './participant-view.js';
+import { isApprovalGated, groupParticipantsByStatus, sortByName, actionEnabled, actionTargetStatus } from './participant-view.js';
+import { toolbarHtml, wireSelection } from './roster-actions.js';
+import { openPersonEditModal } from './participant-edit.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
@@ -1129,44 +1131,26 @@ function _openImportParticipants(turma) {
   });
 }
 
+// Delegates to the ONE shared person-edit modal (participant-edit.js); the Alunos roster opens the
+// same modal for the identity. Here it edits THIS turma's participant row (name/email/cpf).
 function _openParticipantEditModal(participant, onSaved) {
-  const html =
-    '<div class="cdx-modal cdx-modal--lg">' +
-      '<div class="cdx-modal-title">' + t('cohorts.participant_edit_title') + '</div>' +
-      '<div class="cdx-field"><label>' + t('cohorts.participant_name') + ' <span class="cdx-required">*</span></label>' +
-        '<input type="text" id="cdx-pe-name" value="' + _esc(participant.name) + '">' +
-      '</div>' +
-      '<div class="cdx-field"><label>' + t('cohorts.participant_email') + '</label>' +
-        '<input type="text" id="cdx-pe-email" value="' + _esc(participant.email || '') + '" placeholder="' + t('cohorts.participant_email_ph') + '">' +
-      '</div>' +
-      '<div class="cdx-field"><label>' + t('cohorts.participant_cpf') + '</label>' +
-        '<input type="text" id="cdx-pe-cpf" value="' + _esc(participant.cpf || '') + '" maxlength="14" placeholder="' + t('cohorts.participant_cpf_ph') + '">' +
-      '</div>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" id="cdx-pe-cancel">' + t('cohorts.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-primary" id="cdx-pe-save">' + t('cohorts.save') + '</button>' +
-      '</div>' +
-    '</div>';
-
-  const bd = _openModal(html, { disableBackdropClose: true });
-  _wireCpfMask(bd.querySelector('#cdx-pe-cpf'));
-  bd.querySelector('#cdx-pe-cancel').addEventListener('click', () => _closeModal(bd));
-  bd.querySelector('#cdx-pe-save').addEventListener('click', () => {
-    const name   = bd.querySelector('#cdx-pe-name').value.trim();
-    const email  = bd.querySelector('#cdx-pe-email').value.trim();
-    const cpfEl2 = bd.querySelector('#cdx-pe-cpf');
-    const cpf    = cpfEl2.value.replace(/\D/g, '') ? cpfEl2.value.trim() : null;
-    if (!name)  { toast.err(t('cohorts.name_required'));  bd.querySelector('#cdx-pe-name').focus();  return; }
-    if (!email) { toast.err(t('cohorts.email_required')); bd.querySelector('#cdx-pe-email').focus(); return; }
-    if (!_emailValid(email)) { toast.err(t('cohorts.email_invalid')); bd.querySelector('#cdx-pe-email').focus(); return; }
-    if (cpf && !_cpfValid(cpf)) { toast.err(t('cohorts.cpf_invalid')); cpfEl2.focus(); return; }
-    api.updateParticipant({ id: participant.id, name, email, cpf }).then(() => {
-      _closeModal(bd);
-      toast.ok(t('cohorts.participant_updated'));
-      if (onSaved) onSaved();
-    }).catch((err) => {
-      notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));
-    });
+  openPersonEditModal({
+    title: t('cohorts.participant_edit_title'),
+    fields: [
+      { key: 'name', label: t('cohorts.participant_name'), value: participant.name, required: true,
+        validate: (v) => (v ? null : t('cohorts.name_required')) },
+      { key: 'email', label: t('cohorts.participant_email'), value: participant.email || '',
+        placeholder: t('cohorts.participant_email_ph'),
+        validate: (v) => (!v ? t('cohorts.email_required') : (_emailValid(v) ? null : t('cohorts.email_invalid'))) },
+      { key: 'cpf', label: t('cohorts.participant_cpf'), value: participant.cpf || '', maxlength: 14,
+        placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => _wireCpfMask(el),
+        validate: (v) => (!v.replace(/\D/g, '') || _cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
+    ],
+    onSave: (vals) => api.updateParticipant({
+      id: participant.id, name: vals.name, email: vals.email,
+      cpf: vals.cpf.replace(/\D/g, '') ? vals.cpf : null,
+    }).then(() => { if (onSaved) onSaved(); }),
+    savedMsg: t('cohorts.participant_updated'),
   });
 }
 
@@ -1674,17 +1658,10 @@ function _paintDossierParticipants(el, turma) {
     return;
   }
 
-  // Adaptive toolbar: master "Todos" + live count + the wired bulk actions. Each
-  // action button greys out unless EVERY selected row's status permits it (B+C2).
-  // Only backend-wired actions are offered (see toolbarActions / participant-view).
-  const toolbar =
-    '<div class="cdx-ptb">' +
-      '<label class="cdx-ptb-all"><input type="checkbox" class="cdx-pall">' + _esc(t('alunos.filter_all')) + '</label>' +
-      '<span class="cdx-ptb-count">0 ' + _esc(t('alunos.sel_suffix')) + '</span>' +
-      toolbarActions(gated).map((act) =>
-        '<button type="button" class="cdx-btn cdx-btn-sm cdx-ptb-act" data-act="' + act + '" disabled>' +
-          _esc(t('alunos.' + act)) + '</button>').join('') +
-    '</div>';
+  // Adaptive toolbar: master "Todos" + live count + the wired bulk actions. Each action button
+  // greys out unless EVERY selected row's status permits it (B+C2). Shared with the Alunos roster
+  // via roster-actions.js, so there is ONE toolbar implementation (track-28a2).
+  const toolbar = toolbarHtml(gated);
 
   // Gated -> one list broken into status sections (pending first). Not gated ->
   // a flat name-sorted roster (no status, since approval makes no difference).
@@ -1698,9 +1675,6 @@ function _paintDossierParticipants(el, turma) {
 }
 
 function _wireDossierParticipants(el, turma) {
-  const rows = Array.prototype.slice.call(el.querySelectorAll('.cdx-prow'));
-  const acts = Array.prototype.slice.call(el.querySelectorAll('.cdx-ptb-act'));
-
   // "Dias até expirar" popover (Élder 2026-07-13): the popover is position:fixed, so on hover we
   // place it at the chip's viewport rect — below it, or above when there isn't room. This escapes
   // the dossier body's overflow:auto clip that a plain absolute popover hit. CSS :hover does the show/hide.
@@ -1716,75 +1690,58 @@ function _wireDossierParticipants(el, turma) {
     pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
   });
 
-  const allChk = el.querySelector('.cdx-pall');
-  const countEl = el.querySelector('.cdx-ptb-count');
-  const chkOf = (r) => r.querySelector('.cdx-pchk');
-  const selected = () => rows.filter((r) => { const c = chkOf(r); return c && c.checked; });
-
-  // Recompute the selection highlight, the count, the master checkbox, and which
-  // toolbar actions are live (greyed unless they fit every selected row).
-  function refresh() {
-    const sel = selected();
-    rows.forEach((r) => { const c = chkOf(r); r.classList.toggle('is-on', !!(c && c.checked)); });
-    if (countEl) countEl.textContent = sel.length + ' ' + t('alunos.sel_suffix');
-    const sts = sel.map((r) => r.dataset.status);
-    acts.forEach((b) => { b.disabled = !actionEnabled(b.dataset.act, sts); });
-    if (allChk) allChk.checked = rows.length > 0 && sel.length === rows.length;
-  }
-
-  rows.forEach((r) => {
-    const c = chkOf(r);
-    // Clicking anywhere on the row toggles its checkbox (except the edit ✎).
-    r.addEventListener('click', (e) => {
-      if (e.target.closest('[data-edit]')) return;
-      if (e.target !== c && c) c.checked = !c.checked;
-      refresh();
-    });
-    const ed = r.querySelector('[data-edit]');
-    if (ed) ed.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = Number(r.dataset.pid);
-      const p = _dossierParticipants.find((x) => Number(x.id) === id);
-      if (p) _openParticipantEditModal(p, () => _loadDossierParticipants(turma));
-    });
+  // Selection + the bulk toolbar come from roster-actions.js (shared with the Alunos roster).
+  // Here a row-click toggles selection and an action applies to the selected rows in THIS turma.
+  const sel = wireSelection(el, {
+    rowSel: '.cdx-prow--sel',
+    chkSel: '.cdx-pchk',
+    ignoreSel: '[data-edit]',
+    rowClickToggles: true,
+    enabledFor: (act, rowEls) => actionEnabled(act, rowEls.map((r) => r.dataset.status)),
+    onApply: (act, rowEls) => _applyParticipantAction(act, rowEls.map((r) => Number(r.dataset.pid)), turma),
   });
 
-  if (allChk) allChk.addEventListener('change', () => {
-    rows.forEach((r) => { const c = chkOf(r); if (c) c.checked = allChk.checked; });
-    refresh();
-  });
+  // Per-row edit ✎ (participants-only).
+  el.querySelectorAll('[data-edit]').forEach((ed) => ed.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const row = ed.closest('.cdx-prow--sel');
+    if (!row) return;
+    const p = _dossierParticipants.find((x) => Number(x.id) === Number(row.dataset.pid));
+    if (p) _openParticipantEditModal(p, () => _loadDossierParticipants(turma));
+  }));
 
+  // "selecionar seção" (participants-only): check every row of one status group.
   el.querySelectorAll('[data-secsel]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const sec = btn.dataset.secsel;
-      rows.forEach((r) => { if (r.dataset.status === sec) { const c = chkOf(r); if (c) c.checked = true; } });
-      refresh();
+      el.querySelectorAll('.cdx-prow--sel').forEach((r) => {
+        if (r.dataset.status !== sec) return;
+        const c = r.querySelector('.cdx-pchk');
+        if (c) c.checked = true;
+      });
+      sel.refresh();
     });
   });
+}
 
-  acts.forEach((b) => b.addEventListener('click', async () => {
-    if (b.disabled) return;
-    const ids = selected().map((r) => Number(r.dataset.pid));
-    if (!ids.length) return;
-    const act = b.dataset.act;
-    if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
-    acts.forEach((x) => { x.disabled = true; });
-    try {
-      if (act === 'remove') {
-        for (const id of ids) { await api.deleteParticipant({ id }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk delete participant failed: ' + (e && e.message || e), 'error'); }); }
-      } else {
-        const status = actionTargetStatus(act);
-        const payload = { participant_ids: ids, status };
-        if (status === 'approved') payload.origin = location.origin;
-        await api.setParticipantAccess(payload).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk set access failed: ' + (e && e.message || e), 'error'); });
-      }
-    } finally {
-      _loadDossierParticipants(turma);
+// The bulk action for the turma Participantes panel: it acts on THIS turma's participant rows.
+// (The Alunos roster runs the same actions globally, fanning out across a person's turmas.)
+async function _applyParticipantAction(act, ids, turma) {
+  if (!ids.length) return;
+  if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
+  try {
+    if (act === 'remove') {
+      for (const id of ids) { await api.deleteParticipant({ id }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk delete participant failed: ' + (e && e.message || e), 'error'); }); }
+    } else {
+      const status = actionTargetStatus(act);
+      const payload = { participant_ids: ids, status };
+      if (status === 'approved') payload.origin = location.origin;
+      await api.setParticipantAccess(payload).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk set access failed: ' + (e && e.message || e), 'error'); });
     }
-  }));
-
-  refresh();
+  } finally {
+    _loadDossierParticipants(turma);
+  }
 }
 
 function _loadDossierParticipants(turma) {
