@@ -22,6 +22,7 @@ import { initials } from '../js/names.js';
 import { hasStatus, hasPending, filterOptions } from './students-filters.js';
 import { toolbarHtml, wireSelection } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
+import { dupesButtonHtml, openDupesModal } from './dupes-modal.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 
 let _viewEl = null;
@@ -33,6 +34,7 @@ let _fVerified = '';  // '' | yes | no
 let _fTurmas = '';    // '' | single | multi
 let _sort = 'name';   // name | turmas | last | status
 let _expanded = {};
+let _dupes = [];      // candidate duplicate pairs awaiting a verdict (ct_find_duplicates)
 
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _byId(sid) { return _students.find((s) => String(s.id) === String(sid)); }
@@ -89,6 +91,7 @@ function _toolsBar() {
     '<select class="cdx-alunos-sel" id="cdx-al-sort" title="' + esc(t('alunos.sort_by')) + '">' +
       _opt('name', _sort, t('alunos.sort_name')) + _opt('turmas', _sort, t('alunos.sort_turmas')) +
       _opt('last', _sort, t('alunos.sort_last')) + _opt('status', _sort, t('alunos.sort_status')) + '</select>' +
+    dupesButtonHtml(_dupes.length) +
   '</div>';
 }
 
@@ -117,6 +120,10 @@ function _renderShell() {
       else if (id === 'cdx-al-sort') _sort = v;
       else return;
       _paintList();
+    });
+    // The duplicates tool: its counter says how many pairs await a verdict.
+    tools.addEventListener('click', (e) => {
+      if (e.target.closest('#cdx-al-dupes')) openDupesModal(_dupes, () => _load());
     });
   }
   const roster = _q('#cdx-al-roster');
@@ -317,10 +324,12 @@ function _repaint() { _paintStats(); _paintTools(); _paintList(); }
 function _load() {
   const host = _q('#cdx-al-roster');
   if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.loading')) + '</span>';
-  return api.listStudents({}).then((d) => {
-    _students = (d && d.students) || [];
-    _repaint();
-  }).catch((e) => {
+  // The duplicate scan must never break the roster, so its failure degrades to "no candidates".
+  return Promise.all([
+    api.listStudents({}).then((d) => { _students = (d && d.students) || []; }),
+    api.findDuplicates({}).then((d) => { _dupes = (d && d.pairs) || []; })
+      .catch((e) => { _dupes = []; notice.internal('alunos: duplicate scan failed: ' + (e && e.message || e)); }),
+  ]).then(() => _repaint()).catch((e) => {
     notice.internal('alunos: load students failed: ' + (e && e.message || e));
     if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.load_error')) + '</span>';
   });
@@ -329,7 +338,7 @@ function _load() {
 // ── lifecycle ────────────────────────────────────────────────────────────────────
 export function mount(viewEl) {
   _viewEl = viewEl;
-  _students = []; _search = ''; _fClient = ''; _fStatus = ''; _fVerified = ''; _fTurmas = ''; _sort = 'name'; _expanded = {};
+  _students = []; _dupes = []; _search = ''; _fClient = ''; _fStatus = ''; _fVerified = ''; _fTurmas = ''; _sort = 'name'; _expanded = {};
   _renderShell();
   _load();
 }
@@ -337,5 +346,6 @@ export function mount(viewEl) {
 export function unmount() {
   _viewEl = null;
   _students = [];
+  _dupes = [];
   _expanded = {};
 }

@@ -186,6 +186,11 @@ export const cohorts = {
   listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
   listStudents:       (p) => call('ct_list_students', p),      // -> { students:[{id,email,name,role,turma_count,turmas,name_variants,...}] } cross-turma dedup roster
   setCanonicalName:   (p) => call('ct_set_canonical_name', p), // { student_id, name } -> sets + LOCKS the identity name
+  // Duplicate identities (one person, two e-mails). find -> suggested pairs; merge -> survivor
+  // absorbs loser (permanent, via the e-mail alias); dismiss -> "não é a mesma pessoa", forever.
+  findDuplicates:     (p) => call('ct_find_duplicates', p),    // -> { pairs:[{a,b,reasons,suggestion}], count }
+  mergeStudents:      (p) => call('ct_merge_students', p),     // { survivor_id, loser_id }
+  dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
