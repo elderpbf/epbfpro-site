@@ -1509,9 +1509,9 @@ export function mount(viewEl, ctx) {
   });
 
   // Audience matrix manager (delegated: tabs + add/remove + cell edits + save).
+  // Editor: closes on Esc/Cancel/X only, never a stray backdrop click (track-30).
   const audModal = viewEl.querySelector('#cdx-bank-aud');
   _on(audModal, 'click', (e) => {
-    if (e.target === audModal) { _closeAudiences(); return; }
     const tab = e.target.closest('[data-audtab]');
     if (tab) { _audTab = tab.getAttribute('data-audtab'); _renderAudContent(); return; }
     const btn = e.target.closest('[data-act]');
@@ -1712,6 +1712,8 @@ export function mount(viewEl, ctx) {
     if (hub && !hub.hidden) { _closeHub(); return; }
     const bulk = _q('#cdx-bank-bulk');
     if (bulk && !bulk.hidden) { _closeBulk(); return; }
+    const order = _q('#cdx-bank-order');
+    if (order && !order.hidden) { _closeOrder(); return; }
     const modal = _q('#cdx-bank-modal');
     if (modal && !modal.hidden) { _closeModal(); return; }
     const aud = _q('#cdx-bank-aud');
