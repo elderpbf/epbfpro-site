@@ -12,6 +12,7 @@ import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
 import { displayName, isDerived, initials } from '../js/names.js';
+import { hasStatus, hasPending, filterOptions } from './students-filters.js';
 
 let _viewEl = null;
 let _students = [];
@@ -39,38 +40,35 @@ function _relTime(unix) {
 
 // ── derived facts ─────────────────────────────────────────────────────────────────
 function _name(s) { return displayName(s.name, s.email); }
-function _hasStatus(s, st) { return s.turmas.some((x) => x.access_status === st); }
-function _hasPending(s) { return _hasStatus(s, 'pending') || _hasStatus(s, 'denied'); }
-function _worst(s) { return _hasStatus(s, 'pending') ? 0 : _hasStatus(s, 'denied') ? 1 : 2; }
+function _worst(s) { return hasStatus(s, 'pending') ? 0 : hasStatus(s, 'denied') ? 1 : 2; }
 function _statusMix(s) {
   const c = { approved: 0, pending: 0, denied: 0 };
   s.turmas.forEach((x) => { c[x.access_status] = (c[x.access_status] || 0) + 1; });
   return c;
-}
-function _clients() {
-  const set = new Set();
-  _students.forEach((s) => s.turmas.forEach((x) => x.client_slug && set.add(x.client_slug)));
-  return Array.from(set).sort();
 }
 
 // ── shell (header on bg + a card holding tools + list) ────────────────────────────
 function _opt(v, cur, label) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
 
 function _toolsBar() {
-  const clientOpts = _opt('', _fClient, t('alunos.f_all_clients')) +
-    _clients().map((c) => _opt(c, _fClient, c)).join('');
+  const opts = filterOptions(_students);
+  // A filter select renders only when it has options that actually partition the roster
+  // (students-filters.filterOptions); otherwise it is omitted. Élder 2026-07-14: hide filters
+  // nobody needs. The '' option is the "no filter" default, carrying the filter's name.
+  const sel = (id, cur, title, present, labelOf) => present.length
+    ? '<select class="cdx-alunos-sel" id="' + id + '" title="' + esc(title) + '">' +
+        _opt('', cur, title) + present.map((v) => _opt(v, cur, labelOf(v))).join('') +
+      '</select>'
+    : '';
+  const statusLbl = { pending: t('alunos.opt_pending'), denied: t('alunos.opt_denied'), approved: t('alunos.opt_all_ok') };
+  const verLbl    = { yes: t('alunos.opt_ver_yes'), no: t('alunos.opt_ver_no') };
+  const turmaLbl  = { single: t('alunos.opt_single'), multi: t('alunos.opt_multi') };
   return '<div class="cdx-alunos-tools">' +
     '<input type="search" class="cdx-alunos-search" id="cdx-al-search" placeholder="' + esc(t('alunos.search_ph')) + '" autocomplete="off" value="' + esc(_search) + '">' +
-    '<select class="cdx-alunos-sel" id="cdx-al-fclient" title="' + esc(t('alunos.f_client')) + '">' + clientOpts + '</select>' +
-    '<select class="cdx-alunos-sel" id="cdx-al-fstatus" title="' + esc(t('alunos.f_status')) + '">' +
-      _opt('', _fStatus, t('alunos.f_status')) + _opt('pending', _fStatus, t('alunos.opt_pending')) +
-      _opt('denied', _fStatus, t('alunos.opt_denied')) + _opt('approved', _fStatus, t('alunos.opt_all_ok')) + '</select>' +
-    '<select class="cdx-alunos-sel" id="cdx-al-fver" title="' + esc(t('alunos.f_verified')) + '">' +
-      _opt('', _fVerified, t('alunos.f_verified')) + _opt('yes', _fVerified, t('alunos.opt_ver_yes')) +
-      _opt('no', _fVerified, t('alunos.opt_ver_no')) + '</select>' +
-    '<select class="cdx-alunos-sel" id="cdx-al-fturmas" title="' + esc(t('alunos.f_turmas')) + '">' +
-      _opt('', _fTurmas, t('alunos.f_turmas')) + _opt('single', _fTurmas, t('alunos.opt_single')) +
-      _opt('multi', _fTurmas, t('alunos.opt_multi')) + '</select>' +
+    sel('cdx-al-fclient', _fClient, t('alunos.f_client'), opts.clients, (c) => c) +
+    sel('cdx-al-fstatus', _fStatus, t('alunos.f_status'), opts.status, (v) => statusLbl[v]) +
+    sel('cdx-al-fver', _fVerified, t('alunos.f_verified'), opts.verified, (v) => verLbl[v]) +
+    sel('cdx-al-fturmas', _fTurmas, t('alunos.f_turmas'), opts.turmas, (v) => turmaLbl[v]) +
     '<span class="cdx-alunos-spacer"></span>' +
     '<select class="cdx-alunos-sel" id="cdx-al-sort" title="' + esc(t('alunos.sort_by')) + '">' +
       _opt('name', _sort, t('alunos.sort_name')) + _opt('turmas', _sort, t('alunos.sort_turmas')) +
@@ -167,9 +165,9 @@ function _filtered() {
     if (_fTurmas === 'single' && s.turma_count !== 1) return false;
     if (_fTurmas === 'multi' && s.turma_count <= 1) return false;
     if (_fClient && !s.turmas.some((x) => x.client_slug === _fClient)) return false;
-    if (_fStatus === 'pending' && !_hasStatus(s, 'pending')) return false;
-    if (_fStatus === 'denied' && !_hasStatus(s, 'denied')) return false;
-    if (_fStatus === 'approved' && _hasPending(s)) return false;
+    if (_fStatus === 'pending' && !hasStatus(s, 'pending')) return false;
+    if (_fStatus === 'denied' && !hasStatus(s, 'denied')) return false;
+    if (_fStatus === 'approved' && hasPending(s)) return false;
     if (_fVerified === 'yes' && !s.email_verified) return false;
     if (_fVerified === 'no' && s.email_verified) return false;
     if (q && !(_name(s).toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q))) return false;
@@ -188,7 +186,7 @@ function _paintStats() {
   if (!el) return;
   const total = _students.length;
   const multi = _students.filter((s) => s.turma_count > 1).length;
-  const pend = _students.filter(_hasPending).length;
+  const pend = _students.filter(hasPending).length;
   el.innerHTML =
     '<span class="cdx-al-stat">' + t('alunos.stat_total').replace('{n}', total) + '</span>' +
     '<span class="cdx-al-stat">' + t('alunos.stat_multi').replace('{n}', multi) + '</span>' +
