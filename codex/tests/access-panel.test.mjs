@@ -17,7 +17,9 @@ test('settingsHtml reflects the turma state (collapsed: one gate)', () => {
   assert.match(on, /class="cdx-acc-certs"[^>]*checked/, 'certs checked');
   assert.match(on, /class="cdx-acc-forum"[^>]*checked/, 'forum checked');
   assert.match(on, /class="cdx-btn cdx-acc-save"/, 'has a save button');
-  assert.match(on, /class="cdx-acc-authcode"/, 'has the e-mail auth-method toggle');
+  // The per-turma e-mail auth-method toggle is retired (Élder 2026-07-14): the login method is now
+  // window-driven (in-window instant + magic take-home; off-window/`/trilha` OTP code), no per-turma knob.
+  assert.ok(!/class="cdx-acc-authcode"/.test(on), 'the e-mail auth-method toggle is gone');
   // #4 collapse: the mode select + enroll_prompt + direct_access controls are retired.
   assert.ok(!/class="cdx-acc-mode"/.test(on), 'no mode select');
   assert.ok(!/class="cdx-acc-prompt"/.test(on), 'no enroll-prompt toggle');
@@ -31,11 +33,6 @@ test('settingsHtml reflects the turma state (collapsed: one gate)', () => {
   const off = settingsHtml({ access_gated: 0 });
   assert.ok(!/class="cdx-acc-gated"[^>]*checked/.test(off), 'gated unchecked when off');
   assert.ok(!/class="cdx-acc-forum"[^>]*checked/.test(off), 'forum unchecked when off');
-  assert.ok(!/class="cdx-acc-authcode"[^>]*checked/.test(off), 'auth-code unchecked when method absent (default magic)');
-
-  // The auth-method toggle is checked only when the turma's method is 'code'.
-  const codeMode = settingsHtml({ email_auth_method: 'code' });
-  assert.match(codeMode, /class="cdx-acc-authcode"[^>]*checked/, 'auth-code checked when method is code');
 });
 
 test('wireSettings saves only the access columns and mutates the turma', async () => {
@@ -46,7 +43,6 @@ test('wireSettings saves only the access columns and mutates the turma', async (
     '.cdx-acc-forum': { checked: true },
     '.cdx-acc-reveal': { checked: true },
     '.cdx-acc-appinstall': { checked: true },
-    '.cdx-acc-authcode': { checked: true },
     '.cdx-acc-emergency': { checked: false },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
     '.cdx-acc-msg':   { textContent: '' },
@@ -62,7 +58,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
     access_gated: 1, certificates_enabled: 1, forum_enabled: 1, reveal_on_completion: 1,
-    app_install_prompt: 1, email_auth_method: 'code', simple_enroll_enabled: 0,
+    app_install_prompt: 1, simple_enroll_enabled: 0,
   });
   assert.ok(!('gate_mode' in sent), 'retired mode not sent');
   assert.ok(!('enrollment_prompt_enabled' in sent), 'retired enroll-prompt not sent');
@@ -77,7 +73,6 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.equal(turma.forum_enabled, 1, 'forum flag kept in sync');
   assert.equal(turma.reveal_on_completion, 1, 'reveal flag kept in sync');
   assert.equal(turma.app_install_prompt, 1, 'app-install flag kept in sync');
-  assert.equal(turma.email_auth_method, 'code', 'e-mail auth method kept in sync');
   assert.equal(turma.simple_enroll_enabled, 0, 'emergency flag kept in sync');
 });
 

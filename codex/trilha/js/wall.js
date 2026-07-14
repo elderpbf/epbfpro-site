@@ -150,13 +150,12 @@ function renderRegister(wall) {
     origin: (typeof location !== 'undefined') ? location.origin : undefined,
   });
   let name = '';
-  // The turma's per-turma e-mail login method (default 'magic'): 'magic' sends a validation
-  // link (the check-your-e-mail screen + poll); 'code' sends a 4-letter OTP the student types
-  // back (the code screen). Both mechanisms already live in the shared createLoginFlow.
-  const authMethod = (((state.data || {}).access || {}).email_auth_method === 'code') ? 'code' : 'magic';
-  // The ONE window OPEN (the "Janela" the instructor opens in class): the e-mail submit enters on the spot
-  // (15d for a validated member, else 12h provisional + validation link), no code/link round-trip. Works
-  // for both código and magic turmas; falls back to authMethod only if the window closed mid-flight.
+  // E-mail login is a hybrid keyed on the window, NO per-turma toggle (Élder 2026-07-14). The ONE window
+  // OPEN (the "Janela" the instructor opens in class): the e-mail submit enters on the spot (15d for a
+  // validated member, else 12h provisional + a magic take-home link e-mailed for later cementing), no
+  // round-trip. Window CLOSED: the student is actively logging in at the form right now, so the fallback is
+  // the 4-letter OTP code (typed back in this same tab; verifying it also cements the e-mail durably).
+  // Both mechanisms live in the shared createLoginFlow.
   const windowOpen = !!(((state.data || {}).access || {}).window_open);
   let pollTimer = null;
   const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
@@ -180,11 +179,9 @@ function renderRegister(wall) {
   // worker says the address is NEW (needName), then revealed inline (no modal, same card).
   function renderCardForm(revealName) {
     cardEl.classList.remove('cdx-en-wait');
-    // Both methods share ONE e-mail-first form: the name field is revealed inline only when the
-    // worker says the address is new (needName), for magic AND code alike. The single difference
-    // is which mechanism the submit fires (requestCode vs entrar) and, downstream, the validation
-    // screen it lands on (the emailed code vs the emailed link).
-    const codeMode = authMethod === 'code';
+    // ONE e-mail-first form: the name field is revealed inline only when the worker says the address is
+    // new (needName). In-window the submit enters instantly (reentry); otherwise it fires the OTP code
+    // path (requestCode) and lands on the code screen.
     cardEl.innerHTML =
       '<h3 class="cdx-en-card-h">' + esc(t('wall.entrar_h')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(revealName ? t('wall.entrar_name_sub') : t('wall.entrar_sub')) + '</p>' +
@@ -208,17 +205,13 @@ function renderRegister(wall) {
     const submit = async () => {
       name = nameEl ? (nameEl.value || '').trim() : '';
       cta.disabled = true; cta.textContent = t('login.sending');
-      // Window open: try e-mail-only entry first; if it closed mid-flight, fall to the method.
+      // Window open: try e-mail-only entry first (instant, no round-trip); if it closed mid-flight, fall
+      // back to the OTP code. Window closed: the OTP code is the login (same-tab, cements the e-mail).
       if (windowOpen) {
         await flow.reentry(emailEl.value, name);
-        if (flow.reentryClosed) {
-          if (codeMode) await flow.requestCode(emailEl.value, { name });
-          else await flow.entrar(emailEl.value, name);
-        }
-      } else if (codeMode) {
-        await flow.requestCode(emailEl.value, { name });
+        if (flow.reentryClosed) await flow.requestCode(emailEl.value, { name });
       } else {
-        await flow.entrar(emailEl.value, name);
+        await flow.requestCode(emailEl.value, { name });
       }
       settle();
     };
