@@ -27,10 +27,16 @@ export function setPrefs(turmaKey, prefs) {
 // Pure: keep only the notification items the prefs allow. 'all' supersedes the rest.
 //   replies → a reply in a thread the student takes part in (item.mine + kind 'reply')
 //   topics  → a brand-new conversation (kind 'new_thread')
+// These prefs are about the FÓRUM only (that is what the popover offers), so they apply
+// ONLY to forum_post items. Anything from another source passes straight through — a
+// tarefa feedback is addressed to THIS student personally and is not a forum preference
+// to opt out of. Without this pass-through the whole feed would be silently swallowed:
+// a non-forum item has no `kind`/`mine`, so both branches below reject it.
 export function filterByPrefs(items, prefs) {
   const p = prefs || DEFAULT_PREFS;
   if (p.all) return (items || []).slice();
   return (items || []).filter((it) =>
+    it.type !== 'forum_post' ||
     (p.replies && it.mine && it.kind === 'reply') ||
     (p.topics && it.kind === 'new_thread')
   );
