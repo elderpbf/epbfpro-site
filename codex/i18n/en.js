@@ -84,6 +84,7 @@ export default {
   'alunos.queue':        'Pending approvals',
   'alunos.queue_empty':  'No students awaiting approval.',
   'alunos.approve':      'Approve',
+  'alunos.validate':     'Validate',
   'alunos.block':        'Block',
   'alunos.unblock':      'Unblock',
   'alunos.deny':         'Deny',

@@ -53,39 +53,54 @@ test('sortByName: flat name-sorted roster (the non-gated view)', () => {
   assert.deepEqual(ps.map((p) => p.id), [1, 2, 3], 'input order preserved');
 });
 
-test('toolbarActions: gated offers the full set; open access offers remove only', () => {
-  assert.deepEqual(toolbarActions(true), ['approve', 'block', 'unblock', 'remove']);
+test('toolbarActions: gated offers the full set incl. validate; open access offers remove only', () => {
+  assert.deepEqual(toolbarActions(true), ['approve', 'validate', 'block', 'unblock', 'remove']);
   assert.deepEqual(toolbarActions(false), ['remove'], 'no approve/block when approval is meaningless');
 });
 
-test('actionEnabled: an action is live only when EVERY selected status permits it', () => {
+// Each selected row is { status, verified }; string shorthand fills status only
+// (verified undefined = not validated), which the status-axis actions don't read.
+const rows = (...specs) => specs.map((s) => (typeof s === 'string' ? { status: s } : s));
+
+test('actionEnabled: an action is live only when EVERY selected row permits it', () => {
   // approve: all pending
-  assert.equal(actionEnabled('approve', ['pending', 'pending']), true);
-  assert.equal(actionEnabled('approve', ['pending', 'approved']), false);
+  assert.equal(actionEnabled('approve', rows('pending', 'pending')), true);
+  assert.equal(actionEnabled('approve', rows('pending', 'approved')), false);
   // block: nothing already denied
-  assert.equal(actionEnabled('block', ['pending', 'approved']), true);
-  assert.equal(actionEnabled('block', ['approved', 'denied']), false);
+  assert.equal(actionEnabled('block', rows('pending', 'approved')), true);
+  assert.equal(actionEnabled('block', rows('approved', 'denied')), false);
   // unblock: all denied
-  assert.equal(actionEnabled('unblock', ['denied', 'denied']), true);
-  assert.equal(actionEnabled('unblock', ['denied', 'pending']), false);
+  assert.equal(actionEnabled('unblock', rows('denied', 'denied')), true);
+  assert.equal(actionEnabled('unblock', rows('denied', 'pending')), false);
   // remove: always, given a selection
-  assert.equal(actionEnabled('remove', ['pending', 'approved', 'denied']), true);
+  assert.equal(actionEnabled('remove', rows('pending', 'approved', 'denied')), true);
   // empty selection: nothing is live
-  for (const a of ['approve', 'block', 'unblock', 'remove']) {
+  for (const a of ['approve', 'validate', 'block', 'unblock', 'remove']) {
     assert.equal(actionEnabled(a, []), false, a + ' disabled with no selection');
   }
   // unknown action never enables
-  assert.equal(actionEnabled('validate', ['pending']), false, 'unwired action stays off');
+  assert.equal(actionEnabled('nope', rows('pending')), false, 'unknown action stays off');
 });
 
-test('actionTargetStatus: maps an action to the status it sets (null = delete)', () => {
+test('actionEnabled: validate is live only for approved rows not yet e-mail-validated', () => {
+  assert.equal(actionEnabled('validate', [{ status: 'approved', verified: false }]), true, 'approved + unvalidated');
+  assert.equal(actionEnabled('validate', [{ status: 'approved', verified: true }]), false, 'already validated');
+  assert.equal(actionEnabled('validate', [{ status: 'pending', verified: false }]), false, 'pending is not validatable on this axis');
+  assert.equal(actionEnabled('validate', [
+    { status: 'approved', verified: false },
+    { status: 'approved', verified: true },
+  ]), false, 'off if ANY selected row is already validated');
+});
+
+test('actionTargetStatus: maps an action to the status it sets (null = no re-status)', () => {
   assert.equal(actionTargetStatus('approve'), 'approved');
   assert.equal(actionTargetStatus('block'), 'denied');
   assert.equal(actionTargetStatus('unblock'), 'pending');
   assert.equal(actionTargetStatus('remove'), null);
+  assert.equal(actionTargetStatus('validate'), null, 'validate flips the validation axis, not the status');
 });
 
-test('ACTION_RULES has no entry for unwired actions (no dead toolbar buttons)', () => {
-  assert.ok(!('validate' in ACTION_RULES), 'validate access is not wired');
+test('ACTION_RULES: validate is wired (track-29); revoke is still not (no dead buttons)', () => {
+  assert.ok('validate' in ACTION_RULES, 'validate access is now wired');
   assert.ok(!('revoke' in ACTION_RULES), 'revoke token is not wired');
 });

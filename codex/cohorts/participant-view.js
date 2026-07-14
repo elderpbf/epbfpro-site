@@ -39,29 +39,34 @@ export function groupParticipantsByStatus(participants) {
 }
 
 // Adaptive-toolbar rules (B+C2): an action is enabled only when EVERY selected
-// row's status satisfies its predicate. Only backend-wired actions live here;
-// "validate access" and "revoke token" are intentionally absent until those
-// worker actions ship (otherwise they would be dead buttons).
+// row satisfies its predicate. Each predicate reads a row's TWO axes together —
+// { status: access_status, verified: email_verified bool } — because approval and
+// e-mail validation are independent (track-36). `validate` is the admin "validar
+// acesso" (track-29): offered for an approved-but-not-yet-validated row, where the
+// validation chip is shown, so the button and the chip agree. Only backend-wired
+// actions live here; "revoke token" stays absent until its worker action ships.
 export const ACTION_RULES = {
-  approve: (st) => st === 'pending',
-  block:   (st) => st !== 'denied',
-  unblock: (st) => st === 'denied',
-  remove:  () => true,
+  approve:  (r) => r.status === 'pending',
+  validate: (r) => r.status === 'approved' && !r.verified,
+  block:    (r) => r.status !== 'denied',
+  unblock:  (r) => r.status === 'denied',
+  remove:   () => true,
 };
 
 // The toolbar actions offered for a given gating state, in display order.
 export function toolbarActions(gated) {
-  return gated ? ['approve', 'block', 'unblock', 'remove'] : ['remove'];
+  return gated ? ['approve', 'validate', 'block', 'unblock', 'remove'] : ['remove'];
 }
 
-// Whether `action` is enabled for the given array of selected row statuses.
-export function actionEnabled(action, statuses) {
+// Whether `action` is enabled for the given array of selected rows. Each row is
+// { status, verified }; the action is live only when EVERY selected row permits it.
+export function actionEnabled(action, rows) {
   const rule = ACTION_RULES[action];
-  return !!(rule && statuses.length > 0 && statuses.every(rule));
+  return !!(rule && rows.length > 0 && rows.every(rule));
 }
 
-// The access_status an action moves the selected rows to (null for `remove`,
-// which deletes rather than re-statuses).
+// The access_status an action moves the selected rows to (null when the action
+// does not re-status: `remove` deletes, `validate` flips the validation axis).
 export function actionTargetStatus(action) {
   if (action === 'approve') return 'approved';
   if (action === 'block') return 'denied';

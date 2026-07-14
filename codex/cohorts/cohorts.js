@@ -1637,7 +1637,7 @@ function _pRow(p, gated) {
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
-  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '">' +
+  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '" data-verified="' + (p.email_verified ? '1' : '0') + '">' +
     '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
     _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
@@ -1725,8 +1725,10 @@ function _wireDossierParticipants(el, turma) {
     const sel = selected();
     rows.forEach((r) => { const c = chkOf(r); r.classList.toggle('is-on', !!(c && c.checked)); });
     if (countEl) countEl.textContent = sel.length + ' ' + t('alunos.sel_suffix');
-    const sts = sel.map((r) => r.dataset.status);
-    acts.forEach((b) => { b.disabled = !actionEnabled(b.dataset.act, sts); });
+    // Each selected row carries both axes (status + validation) so the two-axis
+    // predicates (e.g. validate = approved && !verified) can decide enablement.
+    const selRows = sel.map((r) => ({ status: r.dataset.status, verified: r.dataset.verified === '1' }));
+    acts.forEach((b) => { b.disabled = !actionEnabled(b.dataset.act, selRows); });
     if (allChk) allChk.checked = rows.length > 0 && sel.length === rows.length;
   }
 
@@ -1771,6 +1773,10 @@ function _wireDossierParticipants(el, turma) {
     try {
       if (act === 'remove') {
         for (const id of ids) { await api.deleteParticipant({ id }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk delete participant failed: ' + (e && e.message || e), 'error'); }); }
+      } else if (act === 'validate') {
+        // Validation is its own axis (email_verified), not an access_status change: mark
+        // the selected participants validated (and promote their live session to durable).
+        await api.setEmailVerified({ participant_ids: ids }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk validate access failed: ' + (e && e.message || e), 'error'); });
       } else {
         const status = actionTargetStatus(act);
         const payload = { participant_ids: ids, status };
