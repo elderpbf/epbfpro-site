@@ -109,14 +109,13 @@ async function autoEnter(els) {
 // The e-mail entry, driven by the SAME shared login flow the wall uses (createLoginFlow /
 // student-login.js) so the two login surfaces behave IDENTICALLY (track-36: converge on one
 // module, Élder). Turma-agnostic: the worker resolves the address's most-recent turma (a SIMPLE
-// turma logs in on the spot); for any other enrolled turma we bind the flow and run its states,
-// exactly like the wall's settle(): validating ("confira seu e-mail" + poll) -> pendingApproval
-// ("aguardando aprovação" + approval poll) -> authenticated (enter the turma). OTP retired here.
+// turma logs in on the spot); for any other enrolled turma we bind the flow and run the OTP code
+// path (Élder 2026-07-14: /trilha is an active login at the form, so it is ALWAYS the code, never
+// the link), landing on the code screen -> pendingApproval ("aguardando aprovação") -> authenticated.
 function startEmail(emailEl, root) {
   if (!emailEl) return;
   let flow = null;       // the SHARED login flow, bound to the resolved turma
   let turmaRef = null;   // { client_slug, turma_slug, token } — the resolved turma, for the launch URL
-  let authMethod = 'magic'; // the resolved turma's e-mail login method: 'magic' link or 'code' OTP
   let pollTimer = null;
   const clearPoll = () => { if (pollTimer) { clearTimeout(pollTimer); pollTimer = null; } };
   // The wall's locked cadence: 2s for the first ~6 calls, then 4/6/10/15s, capped ~30 (~5min).
@@ -170,14 +169,12 @@ function startEmail(emailEl, root) {
         err.textContent = entryErrorText((entry && entry.error) || 'error');
         send.disabled = false; send.textContent = t('login.enroll_cta'); return;
       }
-      // Enrolled: bind the SHARED flow to this turma and run it, same code path as the wall.
-      // The resolved turma's method picks the mechanism: 'code' e-mails a 4-letter OTP the
-      // student types back; 'magic' (default) e-mails the validation link + poll.
+      // Enrolled: bind the SHARED flow to this turma and run the OTP code path (same module as the
+      // wall). A code is e-mailed, the student types it back here (same tab), and verifying it cements
+      // the e-mail. The magic link is reserved for the in-window take-home, not this active login.
       turmaRef = entry.turma;
-      authMethod = entry.turma.email_auth_method === 'code' ? 'code' : 'magic';
       flow = createLoginFlow({ client: turmaRef.client_slug, turma: turmaRef.turma_slug, k: turmaRef.token, origin: (typeof location !== 'undefined') ? location.origin : undefined });
-      if (authMethod === 'code') await flow.requestCode(email);
-      else await flow.entrar(email);
+      await flow.requestCode(email);
       if (flow.state === 'email' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); send.disabled = false; send.textContent = t('login.enroll_cta'); return; }
       settle();
     };
