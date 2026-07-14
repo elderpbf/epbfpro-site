@@ -1244,6 +1244,15 @@ function _renderDossier(turma) {
   const editSelect = (field, label, optsHtml, extraClass) =>
     '<div class="cdx-doss-fact cdx-doss-fact--edit' + (extraClass ? ' ' + extraClass : '') + '"><label>' + _esc(label) + '</label>' +
     '<select class="cdx-doss-edit" data-edit-field="' + field + '">' + optsHtml + '</select></div>';
+  // track-39: expected size (numeric) + default class hours (HH:MM). Auto-save via the same
+  // [data-edit-field] wiring. Blank size -> the throttle floors at 20; blank hours -> the schedule
+  // stays inactive and the Janela button governs the window manually.
+  const editNum = (field, label, value, ph2) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+    '<input class="cdx-doss-edit" type="number" min="1" step="1" inputmode="numeric" data-edit-field="' + field + '" value="' + _esc(value == null ? '' : value) + '"' + (ph2 ? ' placeholder="' + _esc(ph2) + '"' : '') + '></div>';
+  const editTime = (field, label, value) =>
+    '<div class="cdx-doss-fact cdx-doss-fact--edit"><label>' + _esc(label) + '</label>' +
+    '<input class="cdx-doss-edit" type="time" data-edit-field="' + field + '" value="' + _esc(value == null ? '' : value) + '"></div>';
   const courseOpts = '<option value="">' + _esc(t('cohorts.tf_no_course')) + '</option>' +
     (_turmaCourses || []).map((c) => '<option value="' + _esc(String(c.id)) + '"' + (String(turma.course_id || '') === String(c.id) ? ' selected' : '') + '>' + _esc(c.title) + '</option>').join('');
   const fmtOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
@@ -1325,6 +1334,9 @@ function _renderDossier(turma) {
           factId('cdx-doss-encontros', t('cohorts.tf_meetings'), encontrosDerived) +
           fact(t('cohorts.tf_date_start'), dStart) +
           fact(t('cohorts.tf_date_end'), dEnd) +
+          editNum('size', t('cohorts.tf_size'), turma.size, t('cohorts.tf_size_ph')) +
+          editTime('start_hour', t('cohorts.tf_start_hour'), turma.start_hour) +
+          editTime('end_hour', t('cohorts.tf_end_hour'), turma.end_hour) +
           editSelect('format', t('cohorts.tf_format'), fmtOpts) +
           editText('place', t('cohorts.tf_place'), turma.place, t('cohorts.tf_place_ph')) +
           editText('display_name', t('cohorts.field_display_name'), turma.display_name, t('cohorts.field_display_placeholder')) +
@@ -2098,7 +2110,7 @@ function _renderAulaPane(turma, aula) {
     _aulaEmbedMounted.tarefas = true;
     return;
   }
-  paneEl.innerHTML = '<div class="cdx-aula-dados">' + _renderAulaColEditor(aula) + '</div>';
+  paneEl.innerHTML = '<div class="cdx-aula-dados">' + _renderAulaColEditor(aula, turma) + '</div>';
   _wireAulaDadosEditor(paneEl, aula, turma);
 }
 
@@ -2136,7 +2148,13 @@ function _repaintOutrosCount() {
   if (c) c.textContent = _outrosCount();
 }
 
-function _renderAulaColEditor(a) {
+function _renderAulaColEditor(a, turma) {
+  // track-39: per-lesson size + hours PREFILL from the turma default (a.<field> || turma.<field>) but are
+  // freely overridable; clearing a field falls back to the turma default server-side (aula.x || turma.x).
+  const _pf = (own, def) => (own != null && own !== '') ? own : (def != null ? def : '');
+  const sizePf = _pf(a.size, turma && turma.size);
+  const startPf = _pf(a.start_hour, turma && turma.start_hour);
+  const endPf = _pf(a.end_hour, turma && turma.end_hour);
   return (
     '<div class="cdx-aula-col-editor">' +
       '<div class="cdx-field">' +
@@ -2152,6 +2170,19 @@ function _renderAulaColEditor(a) {
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.course_hours_label') + '</label>' +
           '<input type="number" min="0" step="1" inputmode="numeric" class="cdx-aula-hours" value="' + _esc(a.hours != null ? a.hours : '') + '" placeholder="0">' +
+        '</div>' +
+        // track-39: per-lesson window hours + size (prefilled from the turma, overridable for this lesson).
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.tf_start_hour') + '</label>' +
+          '<input type="time" class="cdx-aula-start" value="' + _esc(startPf) + '">' +
+        '</div>' +
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.tf_end_hour') + '</label>' +
+          '<input type="time" class="cdx-aula-end" value="' + _esc(endPf) + '">' +
+        '</div>' +
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.tf_size') + '</label>' +
+          '<input type="number" min="1" step="1" inputmode="numeric" class="cdx-aula-size" value="' + _esc(sizePf) + '" placeholder="' + t('cohorts.tf_size_ph') + '">' +
         '</div>' +
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.aula_field_happened') + '</label>' +
@@ -2266,6 +2297,9 @@ function _wireAulaDadosEditor(container, aula, turma) {
   const happInput  = container.querySelector('.cdx-aula-happened');
   const rfromInput = container.querySelector('.cdx-aula-rescheduled-from');
   const rnoteInput = container.querySelector('.cdx-aula-rescheduled-note');
+  const startInput = container.querySelector('.cdx-aula-start');
+  const endInput   = container.querySelector('.cdx-aula-end');
+  const sizeInput  = container.querySelector('.cdx-aula-size');
 
   if (saveBtn) saveBtn.addEventListener('click', () => {
     const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
@@ -2283,6 +2317,9 @@ function _wireAulaDadosEditor(container, aula, turma) {
       happened_on:      happVal,
       rescheduled_from: rfromInput.value || null,
       rescheduled_note: rnoteInput.value.trim() || null,
+      start_hour:       startInput && startInput.value ? startInput.value : null,
+      end_hour:         endInput && endInput.value ? endInput.value : null,
+      size:             sizeInput && sizeInput.value.trim() !== '' ? Number(sizeInput.value) : null,
     };
     const isNew = !!aula._isNew;
     const params = Object.assign({}, payload);
@@ -2300,6 +2337,9 @@ function _wireAulaDadosEditor(container, aula, turma) {
       aula.happened_on      = payload.happened_on;
       aula.rescheduled_from = payload.rescheduled_from;
       aula.rescheduled_note = payload.rescheduled_note;
+      aula.start_hour       = payload.start_hour;
+      aula.end_hour         = payload.end_hour;
+      aula.size             = payload.size;
       toast.ok(t('cohorts.aula_saved'));
       _renderAulaHubRows();
       _renderAulaDetail(turma);
