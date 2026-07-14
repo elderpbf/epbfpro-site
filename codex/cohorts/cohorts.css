@@ -1258,7 +1258,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-alunos-tools { padding-top: 8px; }
 .cdx-alunos-sel { padding: 6px 9px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-size: 0.8rem; cursor: pointer; }
 .cdx-alunos-spacer { flex: 1 1 auto; }
-.cdx-al-derived { font-style: italic; }
 
 .cdx-al-row { cursor: pointer; align-items: center; gap: 10px; }
 .cdx-al-row.is-open { background: var(--cdx-card-sel-bg); }
@@ -1286,7 +1285,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-never { opacity: 0.7; }
 
 .cdx-al-detail { padding: 4px 0 10px 38px; background: var(--background); border-bottom: 1px solid var(--border); }
-.cdx-al-aka { font-size: 0.75rem; color: var(--text-secondary); font-style: italic; padding: 4px 0 6px; }
 .cdx-al-trow { display: flex; align-items: center; gap: 10px; padding: 5px 10px; font-size: 0.8rem; }
 .cdx-al-tname { font-weight: 600; color: var(--text-primary); min-width: 120px; }
 .cdx-al-via { font-size: 0.7rem; color: var(--text-secondary); }

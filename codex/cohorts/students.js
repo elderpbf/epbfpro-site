@@ -11,7 +11,7 @@ import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
-import { displayName, isDerived, initials } from '../js/names.js';
+import { initials } from '../js/names.js';
 import { hasStatus, hasPending, filterOptions } from './students-filters.js';
 
 let _viewEl = null;
@@ -39,7 +39,7 @@ function _relTime(unix) {
 }
 
 // ── derived facts ─────────────────────────────────────────────────────────────────
-function _name(s) { return displayName(s.name, s.email); }
+function _name(s) { return s.name || s.email; }
 function _worst(s) { return hasStatus(s, 'pending') ? 0 : hasStatus(s, 'denied') ? 1 : 2; }
 function _statusMix(s) {
   const c = { approved: 0, pending: 0, denied: 0 };
@@ -101,7 +101,6 @@ function _row(s) {
   const multi = s.turma_count > 1;
   const open = !!_expanded[s.id];
   const nm = _name(s);
-  const derived = isDerived(s.name, s.email);
   const verified = s.email_verified
     ? '<span class="cdx-al-val ok" title="' + esc(t('alunos.verified')) + '">✓</span>'
     : '<span class="cdx-al-val no" title="' + esc(t('alunos.unverified')) + '">•</span>';
@@ -124,14 +123,12 @@ function _row(s) {
   const la = _relTime(s.last_access_at);
   const lastCell = '<span class="cdx-al-last">' + (la ? esc(la) : '<span class="cdx-al-never">' + esc(t('alunos.never')) + '</span>') + '</span>';
   const caret = '<span class="cdx-al-caret' + (open ? ' open' : '') + '">▸</span>';
-  const nameCls = 'cdx-prow-name' + (derived ? ' cdx-al-derived' : '');
-  const nameTitle = derived ? ' title="' + esc(t('alunos.derived_name')) + '"' : '';
 
   return '<div class="cdx-prow cdx-al-row' + (open ? ' is-open' : '') + '" data-sid="' + s.id + '">' +
       caret +
       '<span class="cdx-al-av">' + esc(initials(nm)) + '</span>' +
       '<div class="cdx-prow-id">' +
-        '<div class="' + nameCls + '"' + nameTitle + '>' + esc(nm) + ' ' + verified + '</div>' +
+        '<div class="cdx-prow-name">' + esc(nm) + ' ' + verified + '</div>' +
         '<div class="cdx-prow-mail">' + esc(s.email) + '</div>' +
       '</div>' +
       turmaCell +
@@ -142,9 +139,6 @@ function _row(s) {
 
 // ── expanded detail (one sub-row per turma + name variants) ──────────────────────────
 function _detail(s) {
-  const variants = (s.name_variants && s.name_variants.length)
-    ? '<div class="cdx-al-aka">' + esc(t('alunos.also_known').replace('{names}', s.name_variants.join(', '))) + '</div>'
-    : '';
   const rows = s.turmas.map((x) => {
     const la = _relTime(x.last_access_at);
     return '<div class="cdx-al-trow">' +
@@ -155,7 +149,7 @@ function _detail(s) {
         '<button type="button" class="cdx-btn cdx-btn-sm cdx-al-open" data-client="' + esc(x.client_slug) + '" data-turma="' + esc(x.turma_slug) + '">' + esc(t('alunos.open_turma')) + '</button>' +
       '</div>';
   }).join('');
-  return '<div class="cdx-al-detail">' + variants + rows + '</div>';
+  return '<div class="cdx-al-detail">' + rows + '</div>';
 }
 
 // ── filter + sort + paint ────────────────────────────────────────────────────────────
