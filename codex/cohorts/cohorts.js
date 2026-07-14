@@ -20,6 +20,7 @@ import { isApprovalGated, groupParticipantsByStatus, sortByName, toolbarActions,
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
+import * as students from './students.js';
 // Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
 // (the same modules the Content tab used to host, now { turma }-driven so they skip
 // the picker). Reused as-is, no composer logic is duplicated.
@@ -33,6 +34,7 @@ import * as appRelease from './app-release.js';
 export const SUBTABS = [
   { key: 'turmas', labelKey: 'cohorts.sub_turmas' },
   { key: 'cursos', labelKey: 'cohorts.sub_cursos' },
+  { key: 'alunos', labelKey: 'cohorts.sub_alunos' },
 ];
 
 function _resolveSub(sub) {
@@ -2428,6 +2430,7 @@ export function mount(viewEl, ctx) {
   // (Concept A) merged Turmas+Clientes list → dossier view is the shell below.
   const sub = _resolveSub(ctx && ctx.sub);
   if (sub === 'cursos') { cursos.mount(viewEl); return; }
+  if (sub === 'alunos') { students.mount(viewEl); return; }
 
   _renderShell();
   _loadAll();
@@ -2435,6 +2438,7 @@ export function mount(viewEl, ctx) {
 
 export function unmount() {
   cursos.unmount();
+  students.unmount();
   _unmountAulaEmbeds();
   _dossierDtab = 'dados'; _deepAula = null; _deepItem = null;
   if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }

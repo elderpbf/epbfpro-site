@@ -1244,3 +1244,46 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-aula-app-name svg { color: var(--primary); }
 .cdx-aula-app-row.is-elsewhere .cdx-aula-app-name { color: var(--text-secondary); }
 .cdx-aula-app-elsewhere { font-size: 0.72rem; color: var(--text-secondary); font-style: italic; }
+
+/* ── Alunos: cross-turma deduped roster (track-28a2) ─────────────────────────── */
+.cdx-alunos-head { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 10px; }
+.cdx-alunos-h1 { font-size: 1.15rem; font-weight: 700; color: var(--text-primary); margin: 0; }
+.cdx-alunos-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+.cdx-al-stat { font-size: 0.8rem; color: var(--text-secondary); }
+.cdx-al-stat.warn { color: var(--cdx-warn); font-weight: 600; }
+.cdx-alunos-tools { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin-bottom: 8px; }
+.cdx-alunos-search { flex: 1; min-width: 200px; padding: 7px 11px; border: 1px solid var(--border); border-radius: 8px; background: var(--surface); color: var(--text-primary); font-size: 0.85rem; }
+.cdx-alunos-filter { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; color: var(--text-secondary); cursor: pointer; }
+
+.cdx-al-row { cursor: pointer; align-items: center; gap: 10px; }
+.cdx-al-row.is-open { background: var(--cdx-card-sel-bg); }
+.cdx-al-caret { display: inline-block; width: 14px; color: var(--text-secondary); transition: transform 0.12s; flex: 0 0 auto; }
+.cdx-al-caret.open { transform: rotate(90deg); }
+.cdx-al-av { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--cdx-chip-bg); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
+.cdx-al-val.ok { color: var(--success); }
+.cdx-al-val.no { color: var(--text-secondary); }
+
+.cdx-al-turma { font-size: 0.8rem; color: var(--text-secondary); display: inline-flex; align-items: center; gap: 6px; white-space: nowrap; }
+.cdx-al-turma.multi { font-weight: 600; color: var(--text-primary); }
+.cdx-al-n { color: var(--text-secondary); font-weight: 400; }
+.cdx-al-mix { display: inline-flex; gap: 4px; margin-left: 2px; }
+.cdx-al-dot { font-size: 0.7rem; padding: 1px 6px; border-radius: 8px; font-weight: 700; }
+.cdx-al-dot.ok { background: var(--success-bg); color: var(--success); }
+.cdx-al-dot.pend { background: var(--cdx-chip-bg); color: var(--cdx-warn); }
+.cdx-al-dot.den { background: var(--danger-fill); color: var(--error); }
+
+.cdx-al-st { font-size: 0.68rem; padding: 1px 7px; border-radius: 8px; font-weight: 600; white-space: nowrap; }
+.cdx-al-st--approved { background: var(--success-bg); color: var(--success); }
+.cdx-al-st--pending  { background: var(--cdx-chip-bg); color: var(--cdx-warn); }
+.cdx-al-st--denied   { background: var(--danger-fill); color: var(--error); }
+
+.cdx-al-last { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; flex: 0 0 auto; }
+.cdx-al-never { opacity: 0.7; }
+
+.cdx-al-detail { padding: 4px 0 10px 38px; background: var(--background); border-bottom: 1px solid var(--border); }
+.cdx-al-aka { font-size: 0.75rem; color: var(--text-secondary); font-style: italic; padding: 4px 0 6px; }
+.cdx-al-trow { display: flex; align-items: center; gap: 10px; padding: 5px 10px; font-size: 0.8rem; }
+.cdx-al-tname { font-weight: 600; color: var(--text-primary); min-width: 120px; }
+.cdx-al-via { font-size: 0.7rem; color: var(--text-secondary); }
+.cdx-al-tlast { font-size: 0.72rem; color: var(--text-secondary); margin-left: auto; }
+.cdx-al-open { flex: 0 0 auto; }

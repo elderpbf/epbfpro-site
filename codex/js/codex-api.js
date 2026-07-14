@@ -184,6 +184,7 @@ export const cohorts = {
   reorderAulas:    (p) => call('ct_reorder_aulas', p),         // { client_slug, turma_slug, ordered_ids: [aula_id...] } — renumbers + remaps release/plan bindings in lockstep
   // Participant roster (API.md — Participant Roster, ct_* family, auth required)
   listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
+  listStudents:       (p) => call('ct_list_students', p),      // -> { students:[{id,email,name,turma_count,turmas,name_variants,...}] } cross-turma dedup roster
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
