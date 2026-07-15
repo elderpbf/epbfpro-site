@@ -187,6 +187,7 @@ export const cohorts = {
   listStudents:       (p) => call('ct_list_students', p),      // -> { students:[{id,email,name,role,turma_count,turmas,name_variants,...}] } cross-turma dedup roster
   // THE list, both admin scopes. turma_id is the FILTER, not a different endpoint: omit it for the
   // global Pessoas roster, pass it for a cohort's Participantes panel. Same shape either way.
+  setPersonEmail:     (p) => call('ct_set_person_email', p),  // { student_id, email } -> rewrites the identity + every row; RESETS validation
   listPeople:         (p) => call('ct_list_people', p),        // { turma_id? } -> { people:[{id,email,name,role,aliases,cpf,turma_count,rows:[...]}] }
   setCanonicalName:   (p) => call('ct_set_canonical_name', p), // { student_id, name } -> sets + LOCKS the identity name
   // Duplicate identities (one person, two e-mails). find -> suggested pairs; merge -> survivor

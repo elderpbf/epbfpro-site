@@ -22,23 +22,20 @@ import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
-import { hasStatus, hasPending, filterOptions } from './students-filters.js';
+import * as toast from '../js/toast.js';
+import { hasPending } from './students-filters.js';
+import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
 import { dupesButtonHtml, openDupesModal } from './dupes-modal.js';
-import { cpfValid, wireCpfMask } from '../js/person-fields.js';
+import { cpfValid, emailValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 import { personListHtml } from './person-list.js';
 import { openAliasPopover } from './alias-popover.js';
 
 let _viewEl = null;
 let _people = [];
-let _search = '';
-let _fClient = '';    // '' = all clients
-let _fStatus = '';    // '' | pending | denied | approved
-let _fVerified = '';  // '' | yes | no
-let _fTurmas = '';    // '' | single | multi
-let _sort = 'name';   // name | turmas | last | status
+let _filters = emptyFilterState();   // search / client / status / verified / turmas / sort — shared shape
 let _expanded = {};
 let _dupes = [];      // candidate duplicate pairs awaiting a verdict (ct_find_duplicates)
 
@@ -46,8 +43,6 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _byId(pid) { return _people.find((s) => String(s.id) === String(pid)); }
 
 // ── derived facts ─────────────────────────────────────────────────────────────────
-function _name(s) { return s.name || s.email; }
-function _worst(s) { return hasStatus(s, 'pending') ? 0 : hasStatus(s, 'denied') ? 1 : 2; }
 // The participant rows an action would actually touch for this person (shared participant-view
 // rules, same list the turma panel uses).
 function _targets(s, act) {
@@ -58,35 +53,11 @@ function _targets(s, act) {
     .map((x) => x.participant_id);
 }
 
-// ── filters bar ───────────────────────────────────────────────────────────────────
-function _opt(v, cur, label) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
-
-function _toolsBar() {
-  const opts = filterOptions(_people);
-  // A filter select renders only when it has options that actually partition the roster
-  // (students-filters.filterOptions); otherwise it is omitted. Élder 2026-07-14: hide filters
-  // nobody needs. The '' option is the "no filter" default, carrying the filter's name.
-  const sel = (id, cur, title, present, labelOf) => present.length
-    ? '<select class="cdx-alunos-sel" id="' + id + '" title="' + esc(title) + '">' +
-        _opt('', cur, title) + present.map((v) => _opt(v, cur, labelOf(v))).join('') +
-      '</select>'
-    : '';
-  const statusLbl = { pending: t('alunos.opt_pending'), denied: t('alunos.opt_denied'), approved: t('alunos.opt_all_ok') };
-  const verLbl    = { yes: t('alunos.opt_ver_yes'), no: t('alunos.opt_ver_no') };
-  const turmaLbl  = { single: t('alunos.opt_single'), multi: t('alunos.opt_multi') };
-  return '<div class="cdx-alunos-tools">' +
-    '<input type="search" class="cdx-alunos-search" id="cdx-al-search" placeholder="' + esc(t('alunos.search_ph')) + '" autocomplete="off" value="' + esc(_search) + '">' +
-    sel('cdx-al-fclient', _fClient, t('alunos.f_client'), opts.clients, (c) => c) +
-    sel('cdx-al-fstatus', _fStatus, t('alunos.f_status'), opts.status, (v) => statusLbl[v]) +
-    sel('cdx-al-fver', _fVerified, t('alunos.f_verified'), opts.verified, (v) => verLbl[v]) +
-    sel('cdx-al-fturmas', _fTurmas, t('alunos.f_turmas'), opts.turmas, (v) => turmaLbl[v]) +
-    '<span class="cdx-alunos-spacer"></span>' +
-    '<select class="cdx-alunos-sel" id="cdx-al-sort" title="' + esc(t('alunos.sort_by')) + '">' +
-      _opt('name', _sort, t('alunos.sort_name')) + _opt('turmas', _sort, t('alunos.sort_turmas')) +
-      _opt('last', _sort, t('alunos.sort_last')) + _opt('status', _sort, t('alunos.sort_status')) + '</select>' +
-    dupesButtonHtml(_dupes.length) +
-  '</div>';
-}
+// The filter/search/sort bar is cohorts/person-filters.js, shared with the dossiê — it is what
+// replaced the dossiê's status sections, so the same question is answered the same way in both
+// scopes. Only the dupes button is scope-specific (there is nothing to de-duplicate inside a
+// single turma).
+function _toolsBar() { return filtersBarHtml(_filters, _people, dupesButtonHtml(_dupes.length)); }
 
 function _renderShell() {
   _viewEl.innerHTML =
@@ -103,16 +74,13 @@ function _renderShell() {
   // Delegated once on the stable hosts, so the inner HTML can be repainted freely.
   const tools = _q('#cdx-al-tools');
   if (tools) {
-    tools.addEventListener('input', (e) => { if (e.target.id === 'cdx-al-search') { _search = e.target.value || ''; _paintList(); } });
+    tools.addEventListener('input', (e) => {
+      if (!applyFilterChange(_filters, e.target.id, e.target.value)) return;
+      _paintList();   // typing must not re-render the bar under the cursor
+    });
     tools.addEventListener('change', (e) => {
-      const id = e.target.id, v = e.target.value;
-      if (id === 'cdx-al-fclient') _fClient = v;
-      else if (id === 'cdx-al-fstatus') _fStatus = v;
-      else if (id === 'cdx-al-fver') _fVerified = v;
-      else if (id === 'cdx-al-fturmas') _fTurmas = v;
-      else if (id === 'cdx-al-sort') _sort = v;
-      else return;
-      _paintList();
+      if (!applyFilterChange(_filters, e.target.id, e.target.value)) return;
+      _repaint();
     });
     // The duplicates tool: its counter says how many pairs await a verdict.
     tools.addEventListener('click', (e) => {
@@ -166,28 +134,7 @@ function _renderShell() {
 // cohorts.js, were two implementations of one list — which is exactly how they came to disagree
 // about the same data. Élder: "nothing inside of this project should duplicate code."
 
-// ── filter + sort ────────────────────────────────────────────────────────────────────
-function _filtered() {
-  const q = _search.trim().toLowerCase();
-  const rows = _people.filter((s) => {
-    if (_fTurmas === 'single' && s.turma_count !== 1) return false;
-    if (_fTurmas === 'multi' && s.turma_count <= 1) return false;
-    if (_fClient && !(s.rows || []).some((x) => x.client_slug === _fClient)) return false;
-    if (_fStatus === 'pending' && !hasStatus(s, 'pending')) return false;
-    if (_fStatus === 'denied' && !hasStatus(s, 'denied')) return false;
-    if (_fStatus === 'approved' && hasPending(s)) return false;
-    if (_fVerified === 'yes' && !s.email_verified) return false;
-    if (_fVerified === 'no' && s.email_verified) return false;
-    if (q && !(_name(s).toLowerCase().includes(q) || (s.email || '').toLowerCase().includes(q))) return false;
-    return true;
-  });
-  const byName = (a, b) => _name(a).localeCompare(_name(b));
-  if (_sort === 'turmas') rows.sort((a, b) => (b.turma_count - a.turma_count) || byName(a, b));
-  else if (_sort === 'last') rows.sort((a, b) => (Number(b.last_access_at || 0) - Number(a.last_access_at || 0)) || byName(a, b));
-  else if (_sort === 'status') rows.sort((a, b) => (_worst(a) - _worst(b)) || byName(a, b));
-  else rows.sort(byName);
-  return rows;
-}
+function _filtered() { return applyFilters(_people, _filters); }
 
 // ── global actions (fan out across every turma the action applies to) ────────────────
 async function _applyGlobal(act, people) {
@@ -210,18 +157,31 @@ async function _applyGlobal(act, people) {
 function _openEdit(s) {
   openPersonEditModal({
     title: t('alunos.edit_title'),
-    // The SAME fields as the turma panel (Élder: it must be the same modal). The CPF belongs to the
-    // person, so editing it here writes it to every turma row they hold.
+    // The SAME fields as the turma panel, e-mail included (Élder 2026-07-15: "the duplications
+    // modal is a place to FIND duplications, but I should still be able to change the email of any
+    // person"). The CPF belongs to the person, so editing it here writes it to every turma row.
     fields: [
       { key: 'name', label: t('cohorts.participant_name'), value: s.name || '', required: true,
         validate: (v) => (v ? null : t('cohorts.name_required')) },
-      { key: 'email', label: t('cohorts.participant_email'), value: s.email, readonly: true },
+      { key: 'email', label: t('cohorts.participant_email'), value: s.email || '',
+        placeholder: t('cohorts.participant_email_ph'),
+        validate: (v) => (!v ? t('cohorts.email_required') : (emailValid(v) ? null : t('cohorts.email_invalid'))) },
       { key: 'cpf', label: t('cohorts.participant_cpf'), value: s.cpf || '', maxlength: 14,
         placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => wireCpfMask(el), secret: true,
         validate: (v) => (!v.replace(/\D/g, '') || cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
     ],
     onSave: async (vals) => {
       await api.setCanonicalName({ student_id: s.id, name: vals.name });
+      // The e-mail IS the identity key, so it is rewritten on the identity AND every row at once
+      // (ct_set_person_email), never row-by-row. Changing it resets validation — they proved a
+      // DIFFERENT inbox — so say so instead of letting it surprise later.
+      const email = String(vals.email || '').trim().toLowerCase();
+      if (email && email !== String(s.email || '').toLowerCase()) {
+        const r = await api.setPersonEmail({ student_id: s.id, email });
+        if (r && r.error === 'email_belongs_to_another_person') { notice.warn(t('alunos.email_taken')); return; }
+        if (r && r.error) { notice.internal('alunos: set e-mail: ' + r.error); return; }
+        if (r && r.revalidation_required) toast.info(t('alunos.email_changed_revalidate'));
+      }
       const cpf = vals.cpf.replace(/\D/g, '') ? vals.cpf : null;
       if ((s.cpf || null) !== cpf) {
         for (const x of (s.rows || [])) await api.updateParticipant({ id: x.participant_id, cpf });
@@ -306,7 +266,7 @@ function _load() {
 // ── lifecycle ────────────────────────────────────────────────────────────────────
 export function mount(viewEl) {
   _viewEl = viewEl;
-  _people = []; _dupes = []; _search = ''; _fClient = ''; _fStatus = ''; _fVerified = ''; _fTurmas = ''; _sort = 'name'; _expanded = {};
+  _people = []; _dupes = []; _filters = emptyFilterState(); _expanded = {};
   _renderShell();
   _load();
 }

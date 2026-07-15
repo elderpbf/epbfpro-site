@@ -29,7 +29,6 @@ import { esc } from '../js/dom.js';
 import { relTime } from '../js/rel-time.js';
 import { initials } from '../js/initials.js';
 import { approvalTagHtml, approvalOf, validationOf, accessOf } from '../js/access-model.js';
-import { groupParticipantsByStatus } from './participant-view.js';
 
 // ── pure summaries (the aggregates on a multi-turma header) ────────────────────────
 // "2/2" reads as: approved in 2 of the 2 turmas this person is in.
@@ -253,38 +252,17 @@ export function headerHtml(cfg) {
   '</div>';
 }
 
-// Status sections (Pendentes / Aprovados / Bloqueados), which the dossiê has always had and which
-// the global roster replaces with its status FILTER. Kept as a scope flag rather than dropped:
-// Élder has not said to retire them, and the grouping rule + order are already owned (and tested)
-// by participant-view.groupParticipantsByStatus — so this reuses it instead of re-deciding it.
-// Only meaningful in turma scope, where a person has exactly one row.
-// Ported verbatim from the dossiê's _pSep (same classes, same keys, same data-secsel contract) so
-// the section header and its "selecionar seção" button keep behaving exactly as they do today.
-export function sepHtml(status, count) {
-  return '<div class="cdx-psec" data-section="' + esc(status) + '">' +
-    '<span class="cdx-psec-dot cdx-psec-dot--' + esc(status) + '"></span>' +
-    '<span class="cdx-psec-t">' + esc(t('alunos.filter_' + status)) + ' · ' + count + '</span>' +
-    '<span class="cdx-psec-sp"></span>' +
-    '<button type="button" class="cdx-psec-sel" data-secsel="' + esc(status) + '">' + esc(t('alunos.select_section')) + '</button>' +
-  '</div>';
-}
-
-export function sectionsFor(people) {
-  const proxies = (people || []).map((p) => ({
-    ...p,
-    access_status: ((p.rows || [])[0] || {}).access_status,
-    name: p.name || p.email || '',
-  }));
-  return groupParticipantsByStatus(proxies);
-}
+// The status SECTIONS (Pendentes / Aprovados / Bloqueados) are gone (Élder 2026-07-15: "if it's
+// going to diverge from the persons list then it should either be part of both of them, [or]
+// removed"). They cannot be part of both: in global scope a person spans several turmas and
+// therefore several statuses at once, so there is no one section to put them in. The shared
+// filter bar (cohorts/person-filters.js) answers the same question in both scopes instead.
 
 export function personListHtml(people, cfg) {
   const c = cfg || {};
   const list = people || [];
   if (!list.length) return '<div class="cdx-empty">' + esc(t(c.emptyKey || 'alunos.empty')) + '</div>';
-  const body = c.groupBy === 'status'
-    ? sectionsFor(list).map((g) => sepHtml(g.status, g.rows.length) + g.rows.map((p) => personRowHtml(p, c)).join('')).join('')
-    : list.map((p) => personRowHtml(p, c)).join('');
+  const body = list.map((p) => personRowHtml(p, c)).join('');
   return '<div class="cdx-pl' + (c.scope === 'turma' ? ' cdx-pl--turma' : '') + '">' +
     headerHtml(c) + body +
   '</div>';

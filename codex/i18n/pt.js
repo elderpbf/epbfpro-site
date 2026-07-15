@@ -145,6 +145,8 @@ export default {
   'alunos.n_turmas':           '{n} turmas',
   'alunos.expand':             'Ver as turmas desta pessoa',
   'alunos.no_name':            '(sem nome)',
+  'alunos.email_taken':        'Esse e-mail já é de outra pessoa. Se as duas são a mesma, use o resolvedor de duplicatas para juntá-las.',
+  'alunos.email_changed_revalidate': 'E-mail alterado. A validação foi zerada: a pessoa precisa confirmar a nova caixa para voltar aos 15 dias.',
 
   'alunos.roster':       'Pré-aprovar por e-mail',
   'alunos.roster_hint':  'Cole os e-mails dos alunos para liberar o acesso automaticamente no primeiro login.',
