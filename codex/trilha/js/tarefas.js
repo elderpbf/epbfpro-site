@@ -262,11 +262,13 @@ function cardHtml(tarefa, aulas) {
     : '';
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
     '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
+      // As tags ficam ABAIXO do título, não ao lado: duas tags disputando a linha espremiam o
+      // título em três linhas no celular. O título é o que o aluno lê primeiro.
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
+        '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
       '</div>' +
-      '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
       chevron +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +

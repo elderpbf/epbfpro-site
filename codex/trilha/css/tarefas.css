@@ -104,23 +104,32 @@
 .cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }   /* Nao respondida */
 .cdx-tt-badge--again   { color: var(--info); background: var(--info-bg); }     /* Responder de novo */
 .cdx-tt-badge--done    { color: var(--success); background: var(--success-bg); } /* Respondida */
-/* Mensagem do professor: convive com a tag da entrega, nao a substitui. */
-.cdx-tt-badge--msg     { color: var(--info); background: var(--info-bg); font-weight: 600; }
+/* Mensagem do professor: convive com a tag da entrega, nao a substitui. Fica de proposito
+   mais discreta que a tag de acao: esta AVISA, a outra e o botao. Iguais no peso, o aluno
+   nao sabe qual da pra tocar. */
+.cdx-tt-badge--msg {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
 .cdx-tt-badge--send { cursor: pointer; }
 .cdx-tt-badge--send:hover { filter: brightness(0.95); }
 .cdx-tt-badge-i { flex-shrink: 0; }
-/* As duas tags juntas, empurradas pra direita como a tag unica era antes. */
+/* As tags moram ABAIXO do titulo. Ao lado, duas delas espremiam o titulo em 3 linhas no
+   celular, e o titulo e o que o aluno le primeiro. */
 .cdx-tt-tags {
-  margin-left: auto;
   display: flex;
   align-items: center;
   gap: 0.35rem;
   flex-wrap: wrap;
-  justify-content: flex-end;
+  margin-top: 0.4rem;
 }
 /* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. */
 .cdx-tt-chev {
   flex-shrink: 0;
+  align-self: flex-start;
+  margin-top: 0.15rem;
   display: inline-flex;
   color: var(--text-secondary);
   transition: transform 0.15s ease;
