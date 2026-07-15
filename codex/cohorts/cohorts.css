@@ -1018,7 +1018,10 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-leg-h { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); margin: 1rem 0 .5rem; }
 .cdx-leg-h:first-of-type { margin-top: .25rem; }
 .cdx-leg-row { display: flex; align-items: flex-start; gap: .6rem; padding: .3rem 0; }
-.cdx-leg-sw { flex: 0 0 auto; min-width: 64px; display: flex; align-items: center; }
+/* FIXED width, not min-width: the swatch is a column, so every explanation has to start at the same
+   x. On min-width the wide ones (Emergência, Bloqueado) pushed their own text right and the list
+   read as ragged — the same "information doesn't line up" Élder called out on the rows. */
+.cdx-leg-sw { flex: 0 0 104px; display: flex; align-items: center; }
 .cdx-leg-tx { font-size: .84rem; color: var(--text-primary); line-height: 1.4; }
 .cdx-leg-note { font-size: .78rem; color: var(--text-secondary); margin: .4rem 0 0; font-style: italic; }
 /* A swatch that is a WORD (the three concepts, the 2/2 fraction) rather than a badge. */
