@@ -86,9 +86,12 @@
   color: var(--text-secondary);
   margin-top: 0.1rem;
 }
+/* A tag E o botao (Élder 2026-07-15): quando da pra enviar ela vira <button>, entao
+   zera o estilo nativo aqui em vez de ter duas regras quase iguais. */
 .cdx-tt-badge {
-  margin-left: auto;
   flex-shrink: 0;
+  border: 0;
+  font-family: inherit;
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
@@ -98,9 +101,31 @@
   border-radius: 20px;
   white-space: nowrap;
 }
-.cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }
-.cdx-tt-badge--sent     { color: var(--info); background: var(--info-bg); }
-.cdx-tt-badge--graded   { color: var(--success); background: var(--success-bg); }
+.cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }   /* Nao respondida */
+.cdx-tt-badge--again   { color: var(--info); background: var(--info-bg); }     /* Responder de novo */
+.cdx-tt-badge--done    { color: var(--success); background: var(--success-bg); } /* Respondida */
+/* Mensagem do professor: convive com a tag da entrega, nao a substitui. */
+.cdx-tt-badge--msg     { color: var(--info); background: var(--info-bg); font-weight: 600; }
+.cdx-tt-badge--send { cursor: pointer; }
+.cdx-tt-badge--send:hover { filter: brightness(0.95); }
+.cdx-tt-badge-i { flex-shrink: 0; }
+/* As duas tags juntas, empurradas pra direita como a tag unica era antes. */
+.cdx-tt-tags {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+/* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. */
+.cdx-tt-chev {
+  flex-shrink: 0;
+  display: inline-flex;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+}
+.cdx-tt-chev.is-open { transform: rotate(180deg); }
 
 .cdx-tt-body {
   padding: 0.1rem 0.9rem 0.9rem;
@@ -152,19 +177,42 @@
   padding-top: 0.15rem;
   border-top: 1px dashed var(--border);
 }
-/* "Enviar outra resposta": only rendered on a tarefa the teacher opted into multiple
-   deliveries, so it must read as a real action without competing with the answer above it. */
-.cdx-tt-again {
-  align-self: flex-start;
-  margin-top: 0.15rem;
-  padding: 0.4rem 0.75rem;
-  font: inherit;
-  font-size: 0.72rem;
-  font-weight: 600;
-  color: var(--info);
-  background: var(--info-bg);
-  border: 1px solid var(--info);
-  border-radius: 999px;
-  cursor: pointer;
+
+
+/* Todas as entregas, mais recente primeiro, cada uma com a resposta do professor ANINHADA
+   dentro dela. Solta, a resposta parecia conversa de mensageiro (Élder: "parece que é IM"):
+   o recuo + a borda dizem "isto responde AQUILO", que uma lista plana nao consegue dizer. */
+.cdx-tt-deliveries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
 }
-.cdx-tt-again:hover { filter: brightness(0.95); }
+.cdx-tt-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cdx-tt-delivery + .cdx-tt-delivery {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.75rem;
+}
+.cdx-tt-dlabel {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cdx-tt-reply {
+  margin-left: 0.85rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 2px solid var(--info);
+  background: var(--info-bg);
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}

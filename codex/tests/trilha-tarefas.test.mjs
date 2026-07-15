@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { aulaLabel, countLabel, sortByAula, anyAulaHasMultiple, statusGroups, answerText, isExpandable } from '../trilha/js/tarefas.js';
+import { aulaLabel, countLabel, sortByAula, anyAulaHasMultiple, statusGroups, answerText, isExpandable, tarefaKind, canSend, deliveries } from '../trilha/js/tarefas.js';
 import { resolveTab } from '../trilha/js/page.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
@@ -88,28 +88,69 @@ test('answerText: an unknown payload shape still degrades to JSON rather than bl
 // ── resolveTab knows the tarefas tab ─────────────────────────────────────────
 test('resolveTab: #tarefas -> tarefas', () => assert.equal(resolveTab('#tarefas'), 'tarefas'));
 
-// ── isExpandable (multiple deliveries, track-26 item 3) ──────────────────────
-// A sent tarefa is normally a dead end. When the teacher opted THIS tarefa into multiple
-// deliveries the card must open, so the student can re-read their answer and send another.
-test('isExpandable: a sent tarefa stays closed on a single-delivery tarefa', () => {
-  assert.equal(isExpandable({ state: 'enviada', allow_multi: false }), false);
+// ── tarefaKind / canSend / isExpandable (semantica do Élder, 2026-07-15) ─────
+// A tag descreve O QUE O ALUNO FEZ, e so isso. A fala do professor e MENSAGEM, nao estado da
+// entrega: foi misturar as duas que tornou "Corrigida"/"Respondida" impossivel de nomear
+// ("respondida por quem?").
+const feita = (extra) => Object.assign({ item_id: 1, submissions: [{ answer_json: '"x"' }] }, extra || {});
+
+test('tarefaKind: sem envio -> nao_respondida', () => {
+  assert.equal(tarefaKind({ item_id: 1, submissions: [] }), 'nao_respondida');
 });
-test('isExpandable: a sent tarefa opens when multiple deliveries are on', () => {
-  assert.equal(isExpandable({ state: 'enviada', allow_multi: true }), true);
+test('tarefaKind: enviou e o professor fechou -> respondida', () => {
+  assert.equal(tarefaKind(feita({ allow_multi: false })), 'respondida');
 });
-test('isExpandable: a graded tarefa opens either way', () => {
-  assert.equal(isExpandable({ state: 'corrigida', allow_multi: false }), true);
-  assert.equal(isExpandable({ state: 'corrigida', allow_multi: true }), true);
+test('tarefaKind: enviou e pode de novo -> de_novo', () => {
+  assert.equal(tarefaKind(feita({ allow_multi: true })), 'de_novo');
 });
-test('isExpandable: an unsent tarefa never expands — that click submits', () => {
-  assert.equal(isExpandable({ state: 'a_enviar', allow_multi: true }), false);
+test('tarefaKind: a MENSAGEM do professor NAO mexe na tag da entrega', () => {
+  assert.equal(tarefaKind(feita({ allow_multi: false, has_instructor_message: true })), 'respondida');
+  assert.equal(tarefaKind(feita({ allow_multi: true, has_instructor_message: true })), 'de_novo');
+});
+
+test('canSend: da pra enviar quando falta responder ou quando pode de novo', () => {
+  assert.equal(canSend({ item_id: 1, submissions: [] }), true);        // primeira resposta
+  assert.equal(canSend(feita({ allow_multi: true })), true);           // responder de novo
+  assert.equal(canSend(feita({ allow_multi: false })), false);         // fechada
+});
+
+// O cartao entregue SEMPRE abre. Amarrar isso ao allow_multi (como ficou por um momento)
+// escondia a propria resposta do professor assim que ele fechava a tarefa: o avesso do certo.
+test('isExpandable: qualquer tarefa entregue abre, mesmo sem multipla entrega', () => {
+  assert.equal(isExpandable(feita({ allow_multi: false })), true);
+});
+test('isExpandable: entregue com multipla entrega tambem abre', () => {
+  assert.equal(isExpandable(feita({ allow_multi: true })), true);
+});
+test('isExpandable: sem entrega nao abre (nao ha o que ler)', () => {
+  assert.equal(isExpandable({ item_id: 1, submissions: [] }), false);
+});
+
+// A aba tem que renderizar certo mesmo contra um Worker que ainda nao foi promovido.
+test('deliveries: cai pro `submission` singular quando o worker e antigo', () => {
+  assert.deepEqual(deliveries({ submission: { answer_json: '"a"' } }), [{ answer_json: '"a"' }]);
+  assert.deepEqual(deliveries({ submissions: [], submission: null }), []);
+});
+test('deliveries: prefere a lista quando o worker manda', () => {
+  assert.equal(deliveries({ submissions: [{ answer_json: '"n"' }, { answer_json: '"v"' }] }).length, 2);
 });
 
 // ── source contract ─────────────────────────────────────────────────────────
-test('the "send another" button is gated on allow_multi, never offered by default', () => {
+test('a tag E o botao: nao existe mais botao separado de "enviar outra"', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.match(src, /if \(tarefa\.allow_multi\) \{[\s\S]*?data-tt-again/, '"enviar outra" only renders when the teacher opted in');
-  assert.match(src, /stopPropagation/, 'the button must not toggle the card it sits in');
+  assert.ok(!/data-tt-again/.test(src), 'o botao de baixo morreu; a tag em cima envia');
+  assert.match(src, /data-tt-send/, 'a tag e quem envia');
+  assert.match(src, /stopPropagation/, 'enviar nao pode fechar o cartao');
+});
+test('os glifos vem do banco, nenhum svg inventado no cartao', () => {
+  const src = read('../trilha/js/tarefas.js');
+  assert.match(src, /from '\.\.\/\.\.\/js\/glyphs\.js'/, 'importa o banco de glifos');
+  assert.ok(!/<svg/i.test(src), 'nenhum SVG solto no modulo do cartao');
+});
+test('a nota de plumbing e a sub-legenda de espera sumiram', () => {
+  const src = read('../trilha/js/tarefas.js');
+  assert.ok(!/gate_note/.test(src), 'a nota de plumbing morreu');
+  assert.ok(!/sub_sent|sub_graded|subHtml/.test(src), '"aguardando correção do professor" morreu');
 });
 
 test('tarefas.js self-registers a renderer and uses the facade only', () => {

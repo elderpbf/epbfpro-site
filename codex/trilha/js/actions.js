@@ -4,7 +4,7 @@
 // injectActionButton / appendFlatActionRow mount it. The tarefa-submit modal is
 // the Codex tarefa-submit-modal module (cdx- port).
 import { state } from './state.js';
-import { esc, copyToClipboard, hasSubmittedTarefa } from './utils.js';
+import { esc, copyToClipboard } from './utils.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { openTrailLogin } from './gate.js';
@@ -29,8 +29,13 @@ export function getMeta(item) {
 export function getItemAction(item) {
   const meta = getMeta(item);
   if (item.type === 'tarefa') {
-    if (hasSubmittedTarefa(item.id)) return { kind: 'submitted', label: 'Resposta enviada', shortLabel: 'Enviada', icon: 'check' };
-    return { kind: 'submit', label: 'Enviar resposta', shortLabel: 'Enviar', icon: 'send', item };
+    // A aba Aulas não entrega nada: ela LEVA pra aba Tarefas, que é a dona do fluxo de entrega
+    // (Élder 2026-07-15). Isso também mata um bug vivo: o estado "Resposta enviada" saía do
+    // localStorage (`ct_tarefa_submitted_<item>_<turma>`), uma chave SEM o aluno dentro, então
+    // era por NAVEGADOR: o segundo aluno a entrar no mesmo aparelho via a tarefa como já
+    // entregue e não conseguia enviar. Aqui não se pergunta mais nada ao localStorage, e a aba
+    // Tarefas decide pelo `state` que o servidor manda, que é quem sabe a verdade.
+    return { kind: 'go-tarefas', label: 'Ir para tarefas', shortLabel: 'Tarefas', icon: 'external', item };
   }
   // A lab is an interactive demo, not a download: its action opens the shared
   // fullscreen viewer (js/lab-viewer.js), keyed by lab_key from meta_json.
@@ -84,9 +89,18 @@ export function injectActionButton(sub, item, opts = {}) {
     if (e && e.stopPropagation) e.stopPropagation();
     if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
     else if (action.kind === 'submit') { if (e && e.preventDefault) e.preventDefault(); openTarefaSubmit(action.item, sub, opts); }
+    else if (action.kind === 'go-tarefas') { if (e && e.preventDefault) e.preventDefault(); goToTarefa(item.id); }
     else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
   });
   actionsEl.appendChild(btn);
+}
+
+// Leva o aluno pra aba Tarefas, JÁ no cartão daquela tarefa. Reusa o deep-focus que o sino de
+// notificações usa (focusTarefa): mesmo problema, mesma solução, nada duplicado. Import dinâmico
+// porque tarefas.js importa page.js, e um import estático aqui fecharia o ciclo.
+export function goToTarefa(itemId) {
+  const go = () => { if (typeof location !== 'undefined') location.hash = '#tarefas'; };
+  import('./tarefas.js').then((m) => { if (m && m.focusTarefa) m.focusTarefa(itemId); go(); }).catch(go);
 }
 
 export function openTarefaSubmit(item, sub, opts) {

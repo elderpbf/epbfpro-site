@@ -11,6 +11,7 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { registerRenderer } from './page.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
+import { glyphSvg } from '../../js/glyphs.js';   // o banco de glifos: nada de icone novo aqui
 
 // ── Pure helpers (tested) ────────────────────────────────────────────────────
 
@@ -158,90 +159,136 @@ function paintList() {
   }
 }
 
+// PURE. Every delivery the student made, newest first. `submissions` is the worker's list;
+// `submission` (singular, the most recent) is the older shape, kept so this tab still renders
+// correctly against a Worker that has not been promoted yet.
+export function deliveries(tarefa) {
+  if (tarefa && tarefa.submissions && tarefa.submissions.length) return tarefa.submissions;
+  return (tarefa && tarefa.submission) ? [tarefa.submission] : [];
+}
+
+// PURE. THE state of a tarefa card, and the single source for its tag, its glyph and whether
+// the tag sends. It describes what the STUDENT did, and nothing else (Élder 2026-07-15):
+//   nao_respondida -> nothing sent yet          -> tag sends (first answer)
+//   respondida     -> sent, teacher closed it   -> done, checkmark
+//   de_novo        -> sent, teacher left it open -> tag sends again
+// The instructor's reply is deliberately ABSENT here: it is a MESSAGE, not a state of the
+// delivery, and mixing the two is what made "Corrigida"/"Respondida" impossible to name
+// ("respondida por quem?").
+export function tarefaKind(tarefa) {
+  if (!deliveries(tarefa).length) return 'nao_respondida';
+  return tarefa.allow_multi ? 'de_novo' : 'respondida';
+}
+
+// PURE. Can the student send right now? Both the "answer" and the "answer again" cases.
+export function canSend(tarefa) {
+  const k = tarefaKind(tarefa);
+  return k === 'nao_respondida' || k === 'de_novo';
+}
+
 // One definition of "this card opens", used by both the markup and the click handler, so they
-// can never disagree about which cards are interactive.
+// can never disagree about which cards are interactive. Anything already delivered opens: the
+// student must always be able to re-read what they sent and what the teacher said. Tying this
+// to allow_multi (as it briefly was) hid the teacher's own reply the moment the teacher closed
+// the tarefa, which is exactly backwards.
 export function isExpandable(tarefa) {
-  if (tarefa.state === 'a_enviar') return false;         // that click submits, it doesn't expand
-  return tarefa.state === 'corrigida' || !!tarefa.allow_multi;
+  return deliveries(tarefa).length > 0;
 }
 
+const KIND_TAG = {
+  nao_respondida: { label: 'tarefas.badge_unanswered', glyph: 'send',         cls: 'pending' },
+  respondida:     { label: 'tarefas.badge_answered',   glyph: 'check-circle', cls: 'done' },
+  de_novo:        { label: 'tarefas.badge_again',      glyph: 'send',         cls: 'again' },
+};
+
+// The tag IS the button (Élder: "o botão embaixo é desnecessário, a tag em cima já é o botão").
+// When it sends, it is a real <button>; when it does not, it is inert text.
 function badgeHtml(tarefa) {
-  if (tarefa.state === 'corrigida') return '<span class="cdx-tt-badge cdx-tt-badge--graded">' + esc(t('tarefas.badge_graded')) + '</span>';
-  if (tarefa.state === 'enviada') return '<span class="cdx-tt-badge cdx-tt-badge--sent">' + esc(t('tarefas.badge_sent')) + '</span>';
-  return '<span class="cdx-tt-badge cdx-tt-badge--pending">' + esc(t('tarefas.badge_pending')) + '</span>';
+  const def = KIND_TAG[tarefaKind(tarefa)];
+  const icon = glyphSvg(def.glyph, { size: 14, cls: 'cdx-tt-badge-i' });
+  const inner = icon + '<span>' + esc(t(def.label)) + '</span>';
+  if (!canSend(tarefa)) return '<span class="cdx-tt-badge cdx-tt-badge--' + def.cls + '">' + inner + '</span>';
+  return '<button type="button" class="cdx-tt-badge cdx-tt-badge--' + def.cls + ' cdx-tt-badge--send" ' +
+    'data-tt-send="' + tarefa.item_id + '">' + inner + '</button>';
 }
 
-function subHtml(tarefa, open) {
-  if (tarefa.state === 'corrigida') return open ? t('tarefas.sub_graded_open') : t('tarefas.sub_graded_closed');
-  // "aguardando correção" reads as a dead end, which is right for a single-delivery tarefa but
-  // would hide the affordance on a multi one: say it can be tapped.
-  if (tarefa.state === 'enviada') return tarefa.allow_multi && !open ? t('tarefas.sub_sent_multi') : t('tarefas.sub_sent');
-  return t('tarefas.sub_pending');
+// The teacher said something, on any delivery. A MESSAGE, not a correction (Élder: "mais
+// didático e menos pressão"), so it sits BESIDE the delivery tag instead of replacing it.
+function msgBadgeHtml(tarefa) {
+  if (!tarefa.has_instructor_message) return '';
+  return '<span class="cdx-tt-badge cdx-tt-badge--msg">' +
+    glyphSvg('mail', { size: 14, cls: 'cdx-tt-badge-i' }) +
+    '<span>' + esc(t('tarefas.badge_msg')) + '</span></span>';
+}
+
+// ONE delivery: what the student sent, and NESTED under it whatever the teacher said about
+// THAT delivery. Nesting is the point (Élder: "senão parece que é IM") — a flat stream of
+// answers and replies reads like a chat and loses which reply answers which answer.
+function deliveryHtml(sub, ordinal, total) {
+  let html = '<li class="cdx-tt-delivery">';
+  if (total > 1) {
+    html += '<div class="cdx-tt-dlabel">' + esc(t('tarefas.delivery_n').replace('{n}', String(ordinal))) + '</div>';
+  }
+  html += '<div class="cdx-tt-fv">' + esc(answerText(sub)) + '</div>';
+  if (sub.instructor_reply || sub.grade) {
+    html += '<div class="cdx-tt-reply">' +
+      '<div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>';
+    if (sub.instructor_reply) html += '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div>';
+    if (sub.grade) {
+      html += '<div class="cdx-tt-grade"><span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span></div>';
+    }
+    html += '</div>';
+  }
+  return html + '</li>';
 }
 
 function bodyHtml(tarefa) {
-  const sub = tarefa.submission;
-  let html = '<div class="cdx-tt-body">';
-  html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_answer')) + '</div>' +
-    '<div class="cdx-tt-fv">' + esc(answerText(sub)) + '</div></div>';
-  if (sub.grade) {
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_grade')) + '</div>' +
-      '<div class="cdx-tt-grade"><span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span>' +
-      (sub.instructor_reply ? '<span class="cdx-tt-grade-note">' + esc(sub.instructor_reply) + '</span>' : '') +
-      '</div></div>';
-  } else if (sub.instructor_reply) {
-    // A resposta SEM nota é uma resposta, não uma nota. Rotulá-la "Nota" (o que esta
-    // branch fazia) confunde justamente o caso do toggle "resposta" ligado sozinho, que
-    // é o mais comum. Com nota, a resposta segue como a nota do lado (branch acima).
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>' +
-      '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div></div>';
-  }
-  // (Élder 2026-07-15: the "reply/grade only show when the instructor releases them" note is gone.
-  // It explained OUR plumbing to a student who never asked, on a card that is already doing the
-  // right thing by hiding what is not released.)
-  // The teacher opted THIS tarefa into multiple deliveries, so sending again is allowed and the
-  // earlier answers are kept. Only offered here, inside the card the student already opened to
-  // review what they sent — never on a single-delivery tarefa, where the worker would refuse it.
-  if (tarefa.allow_multi) {
-    html += '<button type="button" class="cdx-tt-again" data-tt-again="' + tarefa.item_id + '">' +
-      esc(t('tarefas.send_another')) + '</button>';
-  }
-  html += '</div>';
-  return html;
+  // EVERY delivery, newest first, not just the last one (Élder). The "enviar outra resposta"
+  // button that used to live down here is gone: the tag in the head is the button now.
+  const subs = deliveries(tarefa);
+  const total = subs.length;
+  return '<div class="cdx-tt-body"><ul class="cdx-tt-deliveries">' +
+    subs.map((s, i) => deliveryHtml(s, total - i, total)).join('') +
+    '</ul></div>';
 }
 
 function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
-  // A sent tarefa is normally a dead end: nothing to see until it is graded. With multiple
-  // deliveries on, it opens too, so the student can re-read their answer and send another.
   const expandable = isExpandable(tarefa);
+  // The chevron is the affordance: without it, "this card opens" was a guess (Élder). It only
+  // shows when there is something to open, and it turns when the card is open.
+  const chevron = expandable
+    ? '<span class="cdx-tt-chev' + (open ? ' is-open' : '') + '">' + glyphSvg('chevron-down', { size: 18 }) + '</span>'
+    : '';
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
-    '<div class="cdx-tt-top"' + (tarefa.state === 'a_enviar' || expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
+    '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
-        '<div class="cdx-tt-sub">' + esc(subHtml(tarefa, open)) + '</div>' +
       '</div>' +
-      badgeHtml(tarefa) +
+      '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
+      chevron +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +
   '</div>';
 }
 
 function wireList() {
+  // The head toggles. The tag sends. Two jobs, two targets, so tapping the tag never collapses
+  // the card the student just opened.
   _root.querySelectorAll('[data-tt-open]').forEach((top) => {
     top.addEventListener('click', () => {
       const id = parseInt(top.getAttribute('data-tt-open'), 10);
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
-      if (!tarefa) return;
-      if (tarefa.state === 'a_enviar') { openSubmit(tarefa); return; }
-      if (isExpandable(tarefa)) { _openId = (_openId === id) ? null : id; paintList(); }
+      if (!tarefa || !isExpandable(tarefa)) return;
+      _openId = (_openId === id) ? null : id;
+      paintList();
     });
   });
-  _root.querySelectorAll('[data-tt-again]').forEach((btn) => {
+  _root.querySelectorAll('[data-tt-send]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();                       // the card head toggles; this must not collapse it
-      const id = parseInt(btn.getAttribute('data-tt-again'), 10);
+      e.stopPropagation();
+      const id = parseInt(btn.getAttribute('data-tt-send'), 10);
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
       if (tarefa) openSubmit(tarefa);
     });

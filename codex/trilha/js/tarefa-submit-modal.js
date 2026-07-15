@@ -7,13 +7,12 @@
 // answer field comes from the Codex tarefa-fields registry.
 //
 // Public API: openTarefaSubmitModal({ item, clientSlug, turmaSlug, token, onSubmitted })
-// The submitted-state key is shared with utils.tarefaSubmittedKey so the action
-// button flips to "Resposta enviada" after a successful submit. The pure helpers
+// The pure helpers
 // (errorMessage / parseMeta) are unit-tested; the modal DOM is verified on staging.
 import { renderItem } from '../../js/item-render.js';
 import { getField } from '../../js/tarefa-fields.js';
 import { trail } from './api.js';
-import { esc, tarefaSubmittedKey } from './utils.js';
+import { esc } from './utils.js';
 
 const LS_NAME = 'ct_student_name';
 
@@ -184,7 +183,6 @@ export function openTarefaSubmitModal(opts) {
         answer_json: JSON.stringify(value),
         _silent: true,
       });
-      try { localStorage.setItem(tarefaSubmittedKey(item.id), String(Date.now())); } catch (_) { /* noop */ }
       close();
       onSubmitted();
     } catch (e) {
