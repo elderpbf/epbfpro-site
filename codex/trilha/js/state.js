@@ -4,6 +4,7 @@
 // media query, and the icon set used by content action buttons. parseLocation()
 // is pure (unit-tested); `state` is the page-lifetime singleton the modules share.
 import { brandMark } from '../../js/brand-marks.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 // Parse the trilha URL. Supports ?c=&t=&k= and the clean path
 // /[codex/]trilha/<client>/<turma> (?k=<token>).
@@ -20,23 +21,20 @@ export function parseLocation(search, pathname) {
   return { clientSlug: clientSlug || null, turmaSlug: turmaSlug || null, token: token || null };
 }
 
-// Inline SVG icons for content action buttons (copy / open / download / check /
-// send). Copied verbatim from the legacy Trilha.State.ICONS.
+// Icons for content action buttons, sourced from the shared library. These five were
+// verbatim copies of keys js/glyphs.js already had, kept here only because the legacy
+// Trilha.State.ICONS was ported wholesale.
+//
+// size:null on purpose: cards.css (.cdx-tr-item-action svg) owns BOTH the sizing (13px,
+// 15px on mobile) and the paint (stroke-width 2.2, not the library's 2). CSS beats
+// presentation attributes, so emitting width/height/stroke-width here would be silently
+// overridden anyway. Omitting them says that out loud instead of pretending otherwise.
 export const ICONS = {
-  copy:
-    '<svg viewBox="0 0 24 24"><rect x="9" y="9" width="13" height="13" rx="2"/>' +
-    '<path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/></svg>',
-  external:
-    '<svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/>' +
-    '<polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>',
-  download:
-    '<svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>' +
-    '<polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>',
-  check:
-    '<svg viewBox="0 0 24 24"><polyline points="20 6 9 17 4 12"/></svg>',
-  send:
-    '<svg viewBox="0 0 24 24"><line x1="22" y1="2" x2="11" y2="13"/>' +
-    '<polygon points="22 2 15 22 11 13 2 9 22 2"/></svg>',
+  copy:     glyphSvg('copy', { size: null }),
+  external: glyphSvg('external-link', { size: null }),
+  download: glyphSvg('download', { size: null }),
+  check:    glyphSvg('check', { size: null }),
+  send:     glyphSvg('send', { size: null }),
 };
 
 // The WhatsApp mark moved to the shared third-party registry (js/brand-marks.js). An icon

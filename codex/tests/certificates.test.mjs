@@ -535,7 +535,10 @@ describe('Assinador app (source contract)', () => {
 
   test('the Certificados toolbar offers the signer download as a glyph with a tooltip', () => {
     assert.ok(src.includes('releases/latest/download/PensoIA-Assinador.exe'), 'links to the GitHub release asset');
-    assert.ok(src.includes('id="cdx-certs-signer-dl"') && src.includes('<svg'), 'rendered as an icon glyph, not a text button');
+    // Still "a glyph, not a text button", but the glyph now comes from the shared library
+    // instead of an inline <svg> hand-drawn here, so assert the intent via the library call.
+    assert.ok(src.includes('id="cdx-certs-signer-dl"') && src.includes("glyphSvg('lock-download'"),
+      'rendered as an icon glyph (from js/glyphs.js), not a text button');
     assert.ok(src.includes("t('certificates.signer_download') + ': ' + t('certificates.signer_download_hint')"), 'hover tooltip explains what it is');
     assert.ok(pt.includes("'certificates.signer_download'"), 'pt dictionary has the key');
   });

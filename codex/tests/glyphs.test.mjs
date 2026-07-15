@@ -30,9 +30,18 @@ test('glyphSvg renders an <svg> for a known key and "" for an unknown one', () =
 test('the keys the call sites were hand-drawing are registered', () => {
   const keys = glyphs.glyphKeys();
   for (const k of ['external-link', 'menu', 'close', 'check', 'sort', 'maximize',
-                   'lock-download', 'stopwatch', 'hourglass', 'message-circle', 'preset']) {
+                   'lock-download', 'message-circle', 'message-square', 'preset', 'certificate']) {
     assert.ok(keys.includes(k), `library registers ${k}`);
     assert.match(glyphs.glyphSvg(k), /^<svg/, `${k} renders`);
+  }
+});
+
+// The slides tree is the sealed vendored core: it may import js/i18n.js and nothing else
+// (tests/modules.test.mjs). So its hand-drawn stopwatch/hourglass are the boundary working,
+// not drift, and this library must not grow keys whose only caller is forbidden to use them.
+test('no keys registered purely for the sealed slides core', () => {
+  for (const k of ['stopwatch', 'hourglass']) {
+    assert.equal(glyphs.hasGlyph(k), false, `${k} has no reachable consumer; do not register it`);
   }
 });
 

@@ -63,11 +63,18 @@ function rateLimitedText(retryAfter) {
   return t('login.rate_limited');
 }
 
-// Benefit icons, ported verbatim from the a1 mock.
+// Benefit icons. Three now come from the shared library (js/glyphs.js): they were verbatim
+// copies of keys it already had, hand-drawn here AND again in wall-simple.js. size:null
+// because wall.css (.cdx-en-bene-ic svg) owns the sizing.
+//
+// `cert` is the one hold-out, still drawn here on purpose. The library's `award` is the same
+// IDEA (medal + ribbon) but not the same drawing: r=7 with a different ribbon, against this
+// r=6. Converging it is a real visual change to the public wall, so it is a decision, not a
+// refactor, and it is not being smuggled in under a "use the library" commit.
 const ICONS = {
-  conteudo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-  tarefa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
-  forum: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
+  conteudo: glyphSvg('book', { size: null }),
+  tarefa: glyphSvg('send', { size: null }),
+  forum: glyphSvg('message-square', { size: null }),
   cert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>',
 };
 

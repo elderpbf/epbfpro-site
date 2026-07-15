@@ -7,12 +7,15 @@
 // entry across every page beats a different affordance per screen (Élder 2026-07-08).
 import { esc } from './utils.js';
 import { t } from '../i18n.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 export const SUPPORT_PAGE = '/suporte.html';
 
-const HELP_ICON =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-  '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><path d="M12 17h.01"/></svg>';
+// From the shared library: this was a verbatim copy of the `help` key. size:null because
+// support-entry.css (.psup-entry svg) owns the sizing. The library draws the question
+// mark's dot as a zero-length <line> rather than <path d="M12 17h.01">; both are a round
+// dot under stroke-linecap:round, so the pill renders the same.
+const HELP_ICON = glyphSvg('help', { size: null });
 
 // The /suporte URL carrying the origin + any live trilha context (URL-encoded).
 export function supportUrl(context = {}, source = '') {
