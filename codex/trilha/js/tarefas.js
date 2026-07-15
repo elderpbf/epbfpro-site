@@ -58,12 +58,17 @@ export function statusGroups(tarefas) {
     .filter((g) => g.tarefas.length);
 }
 
-// PURE. answer_json is always a JSON-encoded value (string | object); render it as text.
+// PURE. answer_json is a JSON-encoded value. The tarefa-fields registry writes a PAYLOAD OBJECT
+// ({ text: '...' } for the text field), so stringifying anything non-string dumped the raw JSON
+// onto the student's own screen — `{"text":"test"}` instead of `test`. Élder saw it on 2026-07-15;
+// it was live. Plain strings still work: the open/anonymous path predates the registry.
 export function answerText(sub) {
   if (!sub) return '';
   let v;
   try { v = JSON.parse(sub.answer_json); } catch (_) { return String(sub.answer_json || ''); }
-  return typeof v === 'string' ? v : JSON.stringify(v);
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object' && typeof v.text === 'string') return v.text;
+  return JSON.stringify(v);
 }
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
@@ -191,9 +196,9 @@ function bodyHtml(tarefa) {
     html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>' +
       '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div></div>';
   }
-  if (!(tarefa.reply_enabled && tarefa.grade_enabled)) {
-    html += '<div class="cdx-tt-gate">' + esc(t('tarefas.gate_note')) + '</div>';
-  }
+  // (Élder 2026-07-15: the "reply/grade only show when the instructor releases them" note is gone.
+  // It explained OUR plumbing to a student who never asked, on a card that is already doing the
+  // right thing by hiding what is not released.)
   // The teacher opted THIS tarefa into multiple deliveries, so sending again is allowed and the
   // earlier answers are kept. Only offered here, inside the card the student already opened to
   // review what they sent — never on a single-delivery tarefa, where the worker would refuse it.

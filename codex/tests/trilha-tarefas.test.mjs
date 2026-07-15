@@ -73,6 +73,18 @@ test('answerText: a non-string JSON value stringifies', () => {
 });
 test('answerText: no submission -> empty', () => assert.equal(answerText(null), ''));
 
+// The registry writes a PAYLOAD OBJECT, and stringifying it dumped raw JSON on the student's
+// own screen (Élder saw {"text":"test"} where his answer should be). Live bug, fixed 2026-07-15.
+test('answerText: a text-field payload renders the text, NOT the raw JSON', () => {
+  assert.equal(answerText({ answer_json: '{"text":"minha resposta"}' }), 'minha resposta');
+});
+test('answerText: a plain JSON string still works (open/anonymous path predates the registry)', () => {
+  assert.equal(answerText({ answer_json: '"resposta antiga"' }), 'resposta antiga');
+});
+test('answerText: an unknown payload shape still degrades to JSON rather than blowing up', () => {
+  assert.equal(answerText({ answer_json: '{"rating":4}' }), '{"rating":4}');
+});
+
 // ── resolveTab knows the tarefas tab ─────────────────────────────────────────
 test('resolveTab: #tarefas -> tarefas', () => assert.equal(resolveTab('#tarefas'), 'tarefas'));
 
