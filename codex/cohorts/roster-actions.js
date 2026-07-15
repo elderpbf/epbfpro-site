@@ -4,9 +4,31 @@
 // "Todos" + live count + action buttons) and wire selection the same way. Each consumer supplies
 // how an action is GATED and APPLIED, so the panel acts on one participant row while the roster
 // fans the action out across a person's turmas. No duplicated toolbar/selection code.
+import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
-import { toolbarActions } from './participant-view.js';
+import { toolbarActions, actionTargetStatus } from './participant-view.js';
+
+// THE one place a roster action is performed. Both surfaces call this; only the ids differ (the
+// turma panel passes that turma's rows, the Alunos roster fans out across a person's turmas).
+// Two implementations of "apply" is exactly how "validar" went missing, so there is only one.
+export async function applyRosterAction(action, ids) {
+  const list = (ids || []).filter((v) => v != null);
+  if (!list.length) return;
+  if (action === 'remove') {
+    for (const id of list) await api.deleteParticipant({ id });
+    return;
+  }
+  if (action === 'validate') {
+    await api.setEmailVerified({ participant_ids: list, verified: 1 });
+    return;
+  }
+  const status = actionTargetStatus(action);
+  if (!status) return;
+  const payload = { participant_ids: list, status };
+  if (status === 'approved') payload.origin = location.origin;
+  await api.setParticipantAccess(payload);
+}
 
 // The adaptive toolbar markup. `gated` decides which actions are offered (participant-view rules).
 export function toolbarHtml(gated) {

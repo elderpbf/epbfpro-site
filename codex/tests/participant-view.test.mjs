@@ -53,39 +53,45 @@ test('sortByName: flat name-sorted roster (the non-gated view)', () => {
   assert.deepEqual(ps.map((p) => p.id), [1, 2, 3], 'input order preserved');
 });
 
-test('toolbarActions: gated offers the full set; open access offers remove only', () => {
-  assert.deepEqual(toolbarActions(true), ['approve', 'block', 'unblock', 'remove']);
-  assert.deepEqual(toolbarActions(false), ['remove'], 'no approve/block when approval is meaningless');
+// This is THE action list: every surface (turma panel + Alunos roster) renders exactly this, so an
+// action added here reaches both. Adding one in only one place is what left "validar" missing.
+test('toolbarActions: gated offers the full set (incl. validate); open access offers remove only', () => {
+  assert.deepEqual(toolbarActions(true), ['approve', 'block', 'unblock', 'validate', 'remove']);
+  assert.deepEqual(toolbarActions(false), ['remove'], 'no approve/validate when approval is meaningless');
 });
 
-test('actionEnabled: an action is live only when EVERY selected status permits it', () => {
+const r = (status, verified = 0) => ({ status, verified: !!verified });
+
+test('actionEnabled: an action is live only when EVERY selected row permits it', () => {
   // approve: all pending
-  assert.equal(actionEnabled('approve', ['pending', 'pending']), true);
-  assert.equal(actionEnabled('approve', ['pending', 'approved']), false);
+  assert.equal(actionEnabled('approve', [r('pending'), r('pending')]), true);
+  assert.equal(actionEnabled('approve', [r('pending'), r('approved')]), false, 'a mostly-approved selection must not offer Aprovar');
   // block: nothing already denied
-  assert.equal(actionEnabled('block', ['pending', 'approved']), true);
-  assert.equal(actionEnabled('block', ['approved', 'denied']), false);
+  assert.equal(actionEnabled('block', [r('pending'), r('approved')]), true);
+  assert.equal(actionEnabled('block', [r('approved'), r('denied')]), false);
   // unblock: all denied
-  assert.equal(actionEnabled('unblock', ['denied', 'denied']), true);
-  assert.equal(actionEnabled('unblock', ['denied', 'pending']), false);
+  assert.equal(actionEnabled('unblock', [r('denied'), r('denied')]), true);
+  assert.equal(actionEnabled('unblock', [r('denied'), r('pending')]), false);
+  // validate: only rows whose e-mail is not confirmed yet
+  assert.equal(actionEnabled('validate', [r('approved', 0), r('pending', 0)]), true);
+  assert.equal(actionEnabled('validate', [r('approved', 0), r('approved', 1)]), false, 'already-validated in the selection = not offered');
   // remove: always, given a selection
-  assert.equal(actionEnabled('remove', ['pending', 'approved', 'denied']), true);
+  assert.equal(actionEnabled('remove', [r('pending'), r('approved'), r('denied')]), true);
   // empty selection: nothing is live
-  for (const a of ['approve', 'block', 'unblock', 'remove']) {
+  for (const a of ['approve', 'block', 'unblock', 'validate', 'remove']) {
     assert.equal(actionEnabled(a, []), false, a + ' disabled with no selection');
   }
-  // unknown action never enables
-  assert.equal(actionEnabled('validate', ['pending']), false, 'unwired action stays off');
 });
 
-test('actionTargetStatus: maps an action to the status it sets (null = delete)', () => {
+test('actionTargetStatus: maps an action to the status it sets (null = does not re-status)', () => {
   assert.equal(actionTargetStatus('approve'), 'approved');
   assert.equal(actionTargetStatus('block'), 'denied');
   assert.equal(actionTargetStatus('unblock'), 'pending');
-  assert.equal(actionTargetStatus('remove'), null);
+  assert.equal(actionTargetStatus('remove'), null, 'remove deletes');
+  assert.equal(actionTargetStatus('validate'), null, 'validate flips email_verified, not the status');
 });
 
-test('ACTION_RULES has no entry for unwired actions (no dead toolbar buttons)', () => {
-  assert.ok(!('validate' in ACTION_RULES), 'validate access is not wired');
-  assert.ok(!('revoke' in ACTION_RULES), 'revoke token is not wired');
+test('ACTION_RULES carries only backend-wired actions (no dead toolbar buttons)', () => {
+  assert.ok('validate' in ACTION_RULES, 'validate is wired now (ct_set_email_verified shipped)');
+  assert.ok(!('revoke' in ACTION_RULES), 'revoke token is still not wired');
 });

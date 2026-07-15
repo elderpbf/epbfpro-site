@@ -17,8 +17,9 @@ import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
 import { relTime } from '../js/rel-time.js';
 import { isApprovalGated, groupParticipantsByStatus, sortByName, actionEnabled, actionTargetStatus } from './participant-view.js';
-import { toolbarHtml, wireSelection } from './roster-actions.js';
+import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
+import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
@@ -984,30 +985,8 @@ function _openTurmaForm(turma) {
 
 // ── CPF utilities ─────────────────────────────────────────────────────────────
 
-function _formatCpf(raw) {
-  const v = String(raw || '').replace(/\D/g, '').slice(0, 11);
-  if (v.length > 9) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6,9)+'-'+v.slice(9);
-  if (v.length > 6) return v.slice(0,3)+'.'+v.slice(3,6)+'.'+v.slice(6);
-  if (v.length > 3) return v.slice(0,3)+'.'+v.slice(3);
-  return v;
-}
-function _emailValid(email) {
-  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(String(email || ''));
-}
-function _cpfValid(cpf) {
-  const s = String(cpf || '').replace(/\D/g, '');
-  if (s.length !== 11 || /^(.)\1+$/.test(s)) return false;
-  let sum = 0; for (let i = 0; i < 9; i++) sum += Number(s[i]) * (10 - i);
-  let r = (sum * 10) % 11; if (r >= 10) r = 0;
-  if (r !== Number(s[9])) return false;
-  sum = 0; for (let i = 0; i < 10; i++) sum += Number(s[i]) * (11 - i);
-  r = (sum * 10) % 11; if (r >= 10) r = 0;
-  return r === Number(s[10]);
-}
-function _wireCpfMask(el) {
-  if (el && el.value) el.value = _formatCpf(el.value);
-  if (el) el.addEventListener('input', () => { el.value = _formatCpf(el.value); });
-}
+// _emailValid / _cpfValid / _formatCpf / _wireCpfMask now live in js/person-fields.js so the Alunos
+// roster validates and masks exactly the same way (imported as the old names above).
 
 // ── Participantes: add + import (the unified list itself lives in the dossier panel) ──
 
@@ -1143,7 +1122,7 @@ function _openParticipantEditModal(participant, onSaved) {
         placeholder: t('cohorts.participant_email_ph'),
         validate: (v) => (!v ? t('cohorts.email_required') : (_emailValid(v) ? null : t('cohorts.email_invalid'))) },
       { key: 'cpf', label: t('cohorts.participant_cpf'), value: participant.cpf || '', maxlength: 14,
-        placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => _wireCpfMask(el),
+        placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => _wireCpfMask(el), secret: true,
         validate: (v) => (!v.replace(/\D/g, '') || _cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
     ],
     onSave: (vals) => api.updateParticipant({
@@ -1623,7 +1602,7 @@ function _pRow(p, gated) {
   }
   const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
   const name = p.display_name || p.name || ('#' + p.id);
-  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '">' +
+  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '" data-verified="' + (p.email_verified ? '1' : '0') + '">' +
     '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
     _pAvatar(p, st, gated) +
     '<div class="cdx-prow-id">' +
@@ -1697,7 +1676,7 @@ function _wireDossierParticipants(el, turma) {
     chkSel: '.cdx-pchk',
     ignoreSel: '[data-edit]',
     rowClickToggles: true,
-    enabledFor: (act, rowEls) => actionEnabled(act, rowEls.map((r) => r.dataset.status)),
+    enabledFor: (act, rowEls) => actionEnabled(act, rowEls.map((r) => ({ status: r.dataset.status, verified: r.dataset.verified === '1' }))),
     onApply: (act, rowEls) => _applyParticipantAction(act, rowEls.map((r) => Number(r.dataset.pid)), turma),
   });
 
@@ -1726,19 +1705,15 @@ function _wireDossierParticipants(el, turma) {
 }
 
 // The bulk action for the turma Participantes panel: it acts on THIS turma's participant rows.
-// (The Alunos roster runs the same actions globally, fanning out across a person's turmas.)
+// The action itself is performed by the shared roster-actions.applyRosterAction, the same call the
+// Alunos roster makes; only the id selection differs (there it fans out across a person's turmas).
 async function _applyParticipantAction(act, ids, turma) {
   if (!ids.length) return;
   if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
   try {
-    if (act === 'remove') {
-      for (const id of ids) { await api.deleteParticipant({ id }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk delete participant failed: ' + (e && e.message || e), 'error'); }); }
-    } else {
-      const status = actionTargetStatus(act);
-      const payload = { participant_ids: ids, status };
-      if (status === 'approved') payload.origin = location.origin;
-      await api.setParticipantAccess(payload).catch((e) => { if (window.bsLog) window.bsLog('cohorts: bulk set access failed: ' + (e && e.message || e), 'error'); });
-    }
+    await applyRosterAction(act, ids);
+  } catch (e) {
+    if (window.bsLog) window.bsLog('cohorts: bulk ' + act + ' failed: ' + (e && e.message || e), 'error');
   } finally {
     _loadDossierParticipants(turma);
   }

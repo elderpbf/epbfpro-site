@@ -38,30 +38,37 @@ export function groupParticipantsByStatus(participants) {
     .filter((g) => g.rows.length);
 }
 
-// Adaptive-toolbar rules (B+C2): an action is enabled only when EVERY selected
-// row's status satisfies its predicate. Only backend-wired actions live here;
-// "validate access" and "revoke token" are intentionally absent until those
-// worker actions ship (otherwise they would be dead buttons).
+// THE action list. This module is the SINGLE source of what can be done to a person: every
+// surface (the turma Participantes panel and the cross-turma Alunos roster) renders this same
+// list and gates it the same way, so an action added here reaches both at once. Adding one in
+// only one place is the bug that left "validar" missing from the roster (Élder 2026-07-14).
+//
+// A rule reads a ROW DESCRIPTOR { status, verified } rather than a bare status, because some
+// actions key off validation rather than approval.
 export const ACTION_RULES = {
-  approve: (st) => st === 'pending',
-  block:   (st) => st !== 'denied',
-  unblock: (st) => st === 'denied',
-  remove:  () => true,
+  approve:  (r) => r.status === 'pending',
+  block:    (r) => r.status !== 'denied',
+  unblock:  (r) => r.status === 'denied',
+  validate: (r) => !r.verified,   // confirm the e-mail by hand (ct_set_email_verified, track-29)
+  remove:   () => true,
 };
 
-// The toolbar actions offered for a given gating state, in display order.
+// The toolbar actions offered for a given gating state, in display order. Approval and validation
+// only mean something when access is gated; without it everyone is simply in.
 export function toolbarActions(gated) {
-  return gated ? ['approve', 'block', 'unblock', 'remove'] : ['remove'];
+  return gated ? ['approve', 'block', 'unblock', 'validate', 'remove'] : ['remove'];
 }
 
-// Whether `action` is enabled for the given array of selected row statuses.
-export function actionEnabled(action, statuses) {
+// Whether `action` is live for the selection: EVERY selected row must satisfy the rule, so an
+// action that would be a no-op for part of the selection is not offered (Élder: "only the actions
+// that can be done to all of the selected are available").
+export function actionEnabled(action, rows) {
   const rule = ACTION_RULES[action];
-  return !!(rule && statuses.length > 0 && statuses.every(rule));
+  return !!(rule && rows.length > 0 && rows.every(rule));
 }
 
-// The access_status an action moves the selected rows to (null for `remove`,
-// which deletes rather than re-statuses).
+// The access_status an action moves the selected rows to. null for the actions that don't
+// re-status (`remove` deletes; `validate` flips email_verified instead).
 export function actionTargetStatus(action) {
   if (action === 'approve') return 'approved';
   if (action === 'block') return 'denied';

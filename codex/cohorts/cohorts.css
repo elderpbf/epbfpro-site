@@ -1266,25 +1266,30 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-av { flex: 0 0 auto; width: 30px; height: 30px; border-radius: 50%; background: var(--cdx-chip-bg); color: var(--text-secondary); display: inline-flex; align-items: center; justify-content: center; font-size: 0.72rem; font-weight: 700; }
 .cdx-al-val.ok { color: var(--success); }
 .cdx-al-val.no { color: var(--text-secondary); }
-/* Duplicates tool (track-28a2 stage 4): the list button carries a notification-style counter. */
+/* Duplicates tool (track-28a2 stage 4): the list button carries a notification-style counter.
+   Dark text on the amber badge: white on yellow failed contrast in dark mode (Élder). */
 .cdx-al-dupes { position: relative; display: inline-flex; align-items: center; gap: 6px; }
-.cdx-al-dupes-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--cdx-warn, #c47f17); color: #fff; font-size: 0.65rem; font-weight: 700; display: inline-flex; align-items: center; justify-content: center; }
+.cdx-al-dupes-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #d98f27; color: #1c1200; font-size: 0.65rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .cdx-dup-modal .cdx-dup-list { max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
 .cdx-dup-pair { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
 .cdx-dup-why { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
 .cdx-dup-reason { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); }
-.cdx-dup-sug { margin-left: auto; font-size: 0.7rem; color: var(--text-secondary); font-style: italic; }
-.cdx-dup-cards { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
-@media (max-width: 640px) { .cdx-dup-cards { grid-template-columns: 1fr; } }
-.cdx-dup-card { display: flex; align-items: flex-start; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
-.cdx-dup-card.is-on { border-color: var(--accent, #4a90d9); background: var(--cdx-chip-bg); }
+/* Same/not-same first, then the stacked name choice. */
+.cdx-dup-same { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.78rem; flex-wrap: wrap; }
+.cdx-dup-same label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+.cdx-dup-q { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
+.cdx-dup-names { display: flex; flex-direction: column; gap: 6px; }
+.cdx-dup-opt { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
+.cdx-dup-opt.is-on { border-color: var(--accent, #4a90d9); background: var(--cdx-chip-bg); }
 .cdx-dup-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cdx-dup-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-dup-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
-.cdx-dup-meta { font-size: 0.68rem; color: var(--text-secondary); }
-.cdx-dup-keep { font-size: 0.65rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; }
-.cdx-dup-alt { display: flex; gap: 16px; margin-top: 8px; font-size: 0.75rem; color: var(--text-secondary); flex-wrap: wrap; }
-.cdx-dup-alt label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+
+/* Masked field (CPF) with an eye on the right that toggles visibility. */
+.cdx-pe-secret { position: relative; display: flex; align-items: center; }
+.cdx-pe-secret input { flex: 1; padding-right: 34px; }
+.cdx-pe-eye { position: absolute; right: 4px; background: none; border: 0; cursor: pointer; opacity: 0.5; font-size: 0.95rem; line-height: 1; padding: 4px; }
+.cdx-pe-eye:hover, .cdx-pe-eye.is-on { opacity: 1; }
 
 /* ct_students.role: only shown when the identity is not a plain student. */
 .cdx-al-role { font-size: 0.65rem; margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }

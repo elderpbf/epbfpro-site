@@ -20,9 +20,10 @@ import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
 import { initials } from '../js/names.js';
 import { hasStatus, hasPending, filterOptions } from './students-filters.js';
-import { toolbarHtml, wireSelection } from './roster-actions.js';
+import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
 import { dupesButtonHtml, openDupesModal } from './dupes-modal.js';
+import { cpfValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 
 let _viewEl = null;
@@ -59,10 +60,14 @@ function _statusMix(s) {
   s.turmas.forEach((x) => { c[x.access_status] = (c[x.access_status] || 0) + 1; });
   return c;
 }
-// The participant rows an action would actually touch for this person (participant-view rules).
+// The participant rows an action would actually touch for this person (shared participant-view
+// rules, same list the turma panel uses).
 function _targets(s, act) {
   const rule = ACTION_RULES[act];
-  return rule ? s.turmas.filter((x) => rule(x.access_status)).map((x) => x.participant_id) : [];
+  if (!rule) return [];
+  return s.turmas
+    .filter((x) => rule({ status: x.access_status, verified: !!x.email_verified }))
+    .map((x) => x.participant_id);
 }
 
 // ── filters bar ───────────────────────────────────────────────────────────────────
@@ -242,16 +247,9 @@ async function _applyGlobal(act, people) {
   if (!ids.length) return;
   if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm_global'))) return;
   try {
-    if (act === 'remove') {
-      for (const id of ids) {
-        await api.deleteParticipant({ id }).catch((e) => notice.internal('alunos: remove failed: ' + (e && e.message || e)));
-      }
-    } else {
-      const status = actionTargetStatus(act);
-      const payload = { participant_ids: ids, status };
-      if (status === 'approved') payload.origin = location.origin;
-      await api.setParticipantAccess(payload).catch((e) => notice.internal('alunos: set access failed: ' + (e && e.message || e)));
-    }
+    await applyRosterAction(act, ids);   // the SAME apply the turma panel uses
+  } catch (e) {
+    notice.internal('alunos: ' + act + ' failed: ' + (e && e.message || e));
   } finally {
     _load();
   }
@@ -263,12 +261,24 @@ async function _applyGlobal(act, people) {
 function _openEdit(s) {
   openPersonEditModal({
     title: t('alunos.edit_title'),
+    // The SAME fields as the turma panel (Élder: it must be the same modal). The CPF belongs to the
+    // person, so editing it here writes it to every turma row they hold.
     fields: [
       { key: 'name', label: t('cohorts.participant_name'), value: s.name || '', required: true,
         validate: (v) => (v ? null : t('cohorts.name_required')) },
       { key: 'email', label: t('cohorts.participant_email'), value: s.email, readonly: true },
+      { key: 'cpf', label: t('cohorts.participant_cpf'), value: s.cpf || '', maxlength: 14,
+        placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => wireCpfMask(el), secret: true,
+        validate: (v) => (!v.replace(/\D/g, '') || cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
     ],
-    onSave: (vals) => api.setCanonicalName({ student_id: s.id, name: vals.name }).then(() => _load()),
+    onSave: async (vals) => {
+      await api.setCanonicalName({ student_id: s.id, name: vals.name });
+      const cpf = vals.cpf.replace(/\D/g, '') ? vals.cpf : null;
+      if ((s.cpf || null) !== cpf) {
+        for (const x of s.turmas) await api.updateParticipant({ id: x.participant_id, cpf });
+      }
+      await _load();
+    },
     savedMsg: t('cohorts.participant_updated'),
   });
 }
@@ -313,7 +323,9 @@ function _paintList() {
     rowSel: '.cdx-al-row',
     chkSel: '.cdx-pchk',
     rowClickToggles: false,           // a row-click expands here; the checkbox owns selection
-    enabledFor: (act, rowEls) => rowEls.some((r) => { const s = _byId(r.dataset.sid); return !!(s && _targets(s, act).length); }),
+    // EVERY selected person must be actionable, exactly like the participants panel: selecting a
+    // batch that is mostly already approved must not offer "Aprovar" (Élder 2026-07-14).
+    enabledFor: (act, rowEls) => rowEls.every((r) => { const s = _byId(r.dataset.sid); return !!(s && _targets(s, act).length); }),
     onApply: (act, rowEls) => _applyGlobal(act, rowEls.map((r) => _byId(r.dataset.sid)).filter(Boolean)),
   });
 }

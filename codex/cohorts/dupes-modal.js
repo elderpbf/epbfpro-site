@@ -32,34 +32,37 @@ function _reasons(r) {
   return bits.map((b) => '<span class="cdx-dup-reason">' + esc(b) + '</span>').join('');
 }
 
-function _card(s, side, idx, checked) {
+// One stacked option per identity: the NAME is what is being chosen (some records carry a fuller
+// name than others), and picking it also picks which identity survives.
+function _option(s, side, idx, checked) {
   const ver = s.email_verified
     ? '<span class="cdx-al-val ok" title="' + esc(t('alunos.verified')) + '">✓</span>'
     : '<span class="cdx-al-val no" title="' + esc(t('alunos.unverified')) + '">•</span>';
-  return '<label class="cdx-dup-card' + (checked ? ' is-on' : '') + '">' +
+  return '<label class="cdx-dup-opt' + (checked ? ' is-on' : '') + '">' +
       '<input type="radio" name="dup-' + idx + '" value="keep_' + side + '"' + (checked ? ' checked' : '') + '>' +
       '<span class="cdx-dup-body">' +
         '<span class="cdx-dup-name">' + esc(s.name || s.email) + ' ' + ver + '</span>' +
-        '<span class="cdx-dup-mail">' + esc(s.email) + '</span>' +
-        '<span class="cdx-dup-meta">' + esc(t('alunos.dup_turmas').replace('{n}', Number(s.turma_count || 0))) + '</span>' +
+        '<span class="cdx-dup-mail">' + esc(s.email) + ' · ' + esc(t('alunos.dup_turmas').replace('{n}', Number(s.turma_count || 0))) + '</span>' +
       '</span>' +
-      '<span class="cdx-dup-keep">' + esc(t('alunos.dup_keep')) + '</span>' +
     '</label>';
 }
 
 function _pairHtml(p, idx) {
   const sug = p.suggestion;
-  return '<div class="cdx-dup-pair" data-idx="' + idx + '" data-a="' + esc(String(p.a.id)) + '" data-b="' + esc(String(p.b.id)) + '">' +
-      '<div class="cdx-dup-why">' + _reasons(p.reasons) +
-        '<span class="cdx-dup-sug">' + esc(t('alunos.dup_suggested')) + ': ' + esc(t('alunos.dup_v_' + sug)) + '</span>' +
+  // The verdict is binary: same person (then pick the name) or not. There is no "decide later",
+  // closing the window already does that (Élder 2026-07-14).
+  const same = sug !== 'not_dup';
+  return '<div class="cdx-dup-pair" data-idx="' + idx + '" data-a="' + esc(String(p.a.id)) + '" data-b="' + esc(String(p.b.id)) + '"' +
+      ' data-name-a="' + esc(p.a.name || p.a.email) + '" data-name-b="' + esc(p.b.name || p.b.email) + '">' +
+      '<div class="cdx-dup-why">' + _reasons(p.reasons) + '</div>' +
+      '<div class="cdx-dup-same">' +
+        '<label><input type="radio" name="same-' + idx + '" value="same"' + (same ? ' checked' : '') + '> ' + esc(t('alunos.dup_same')) + '</label>' +
+        '<label><input type="radio" name="same-' + idx + '" value="not"' + (same ? '' : ' checked') + '> ' + esc(t('alunos.dup_not_same')) + '</label>' +
       '</div>' +
-      '<div class="cdx-dup-cards">' +
-        _card(p.a, 'a', idx, sug === 'keep_a') +
-        _card(p.b, 'b', idx, sug === 'keep_b') +
-      '</div>' +
-      '<div class="cdx-dup-alt">' +
-        '<label><input type="radio" name="dup-' + idx + '" value="not_dup"' + (sug === 'not_dup' ? ' checked' : '') + '> ' + esc(t('alunos.dup_v_not_dup')) + '</label>' +
-        '<label><input type="radio" name="dup-' + idx + '" value="skip"> ' + esc(t('alunos.dup_v_skip')) + '</label>' +
+      '<div class="cdx-dup-names"' + (same ? '' : ' hidden') + '>' +
+        '<div class="cdx-dup-q">' + esc(t('alunos.dup_which_name')) + '</div>' +
+        _option(p.a, 'a', idx, sug !== 'keep_b') +
+        _option(p.b, 'b', idx, sug === 'keep_b') +
       '</div>' +
     '</div>';
 }
@@ -83,40 +86,57 @@ export function openDupesModal(pairs, onDone) {
     '</div>';
   const bd = openModal(html, { disableBackdropClose: true });
 
-  // Keep the "manter este" card highlight in sync with the radios.
+  // Same/not-same reveals or hides the name choice; the picked name highlights.
   bd.addEventListener('change', (e) => {
     if (e.target.type !== 'radio') return;
     const pair = e.target.closest('.cdx-dup-pair');
     if (!pair) return;
-    pair.querySelectorAll('.cdx-dup-card').forEach((c) => {
+    const same = pair.querySelector('input[name^=same-]:checked');
+    const names = pair.querySelector('.cdx-dup-names');
+    if (names) names.hidden = !(same && same.value === 'same');
+    pair.querySelectorAll('.cdx-dup-opt').forEach((c) => {
       const r = c.querySelector('input[type=radio]');
       c.classList.toggle('is-on', !!(r && r.checked));
     });
   });
 
   const verdicts = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-dup-pair')).map((el) => {
-    const picked = el.querySelector('input[type=radio]:checked');
-    return { a: Number(el.dataset.a), b: Number(el.dataset.b), verdict: picked ? picked.value : 'skip' };
+    const same = el.querySelector('input[name^=same-]:checked');
+    const keep = el.querySelector('input[name^=dup-]:checked');
+    const keepB = !!(keep && keep.value === 'keep_b');
+    return {
+      a: Number(el.dataset.a), b: Number(el.dataset.b),
+      same: !!(same && same.value === 'same'),
+      keepB,
+      name: keepB ? el.dataset.nameB : el.dataset.nameA,
+    };
   });
 
   async function apply(all) {
-    const items = verdicts();
+    let items = verdicts();
     if (all) {
       // "Aceitar todas": force every pair back to the suggestion we shipped it with.
-      list.forEach((p, i) => { if (items[i]) items[i].verdict = p.suggestion; });
+      items = items.map((it, i) => {
+        const sug = list[i] && list[i].suggestion;
+        if (!sug) return it;
+        const keepB = sug === 'keep_b';
+        return { ...it, same: sug !== 'not_dup', keepB, name: keepB ? list[i].b.name || list[i].b.email : list[i].a.name || list[i].a.email };
+      });
     }
-    const work = items.filter((it) => it.verdict && it.verdict !== 'skip');
-    if (!work.length) { closeModal(bd); return; }
     const btns = bd.querySelectorAll('.cdx-modal-actions button');
     btns.forEach((b) => { b.disabled = true; });
     let done = 0;
     // Sequential: a merge deletes an identity, so a later pair may reference something that is
     // already gone. The backend answers 'student not found' for those; we skip them quietly.
-    for (const it of work) {
+    for (const it of items) {
       try {
-        if (it.verdict === 'not_dup') await api.dismissDuplicate({ a_student_id: it.a, b_student_id: it.b });
-        else if (it.verdict === 'keep_a') await api.mergeStudents({ survivor_id: it.a, loser_id: it.b });
-        else if (it.verdict === 'keep_b') await api.mergeStudents({ survivor_id: it.b, loser_id: it.a });
+        if (!it.same) {
+          await api.dismissDuplicate({ a_student_id: it.a, b_student_id: it.b });
+        } else {
+          const survivor = it.keepB ? it.b : it.a;
+          const loser = it.keepB ? it.a : it.b;
+          await api.mergeStudents({ survivor_id: survivor, loser_id: loser, name: it.name });
+        }
         done++;
       } catch (err) {
         notice.internal('alunos: duplicate resolution failed: ' + (err && err.message || err));
