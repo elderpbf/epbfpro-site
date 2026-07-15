@@ -118,7 +118,14 @@ export function openTarefaSubmitModal(opts) {
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-tarefa-submit-backdrop';
   bd.innerHTML =
-    '<div class="tr-modal tr-tarefa-submit">' +
+    // A classe deste <div> NAO pode ser a mesma do <button> la embaixo: o
+    // bd.querySelector('.tr-tarefa-submit') casava com ele PRIMEIRO (ordem do documento) e o
+    // "botao de enviar" do modal era, na verdade, o modal inteiro. Consequencias reais, ao vivo:
+    // tocar em QUALQUER lugar do modal (o enunciado, o rotulo) enviava a resposta; o
+    // textContent = 'Enviando...' apagava o modal inteiro e deixava so a palavra na tela; e o
+    // .disabled = true nao fazia nada, porque <div> nao tem disabled (nada segurava um envio
+    // duplo). Nenhum CSS usa esta classe: era peso morto com uma armadilha dentro.
+    '<div class="tr-modal tr-tarefa-submit-modal">' +
       '<button class="tr-modal-close" type="button" aria-label="Fechar">×</button>' +
       '<h2 class="tr-modal-title">' + esc(item.title) + '</h2>' +
       '<div class="tr-tarefa-instructions"></div>' +
@@ -150,7 +157,9 @@ export function openTarefaSubmitModal(opts) {
   const nameInput = bd.querySelector('.tr-tarefa-name');
   const anonCb = bd.querySelector('.tr-tarefa-anon-cb');
   const errorEl = bd.querySelector('.tr-tarefa-error');
-  const submitBtn = bd.querySelector('.tr-tarefa-submit');
+  // 'button.' explicito: cinto e suspensorio com o rename la em cima. Um dia alguem poe
+  // tr-tarefa-submit num wrapper de novo, e aqui continua pegando o botao.
+  const submitBtn = bd.querySelector('button.tr-tarefa-submit');
   const cancelBtn = bd.querySelector('.tr-tarefa-cancel');
   const closeBtn = bd.querySelector('.tr-modal-close');
 

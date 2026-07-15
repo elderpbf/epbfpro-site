@@ -51,6 +51,22 @@ test('o modal explica a trava em vez de dizer "erro"', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
   assert.match(src, /code === 'already_seen'/);
 });
+
+// Bug ANTIGO, achado pelo playtest desta feature: o <div> do modal e o <button> de enviar
+// tinham a MESMA classe, e o querySelector casava com o div primeiro (ordem do documento). O
+// "botao" era o modal inteiro: tocar em qualquer lugar dele enviava, o textContent = 'Enviando...'
+// apagava o modal e deixava so a palavra na tela, e o .disabled = true nao fazia nada (div nao
+// tem disabled). Estava vivo no envio, em producao. O js/frame-trail.js ja tinha o 'button.'
+// como contorno, que era o fossil do bug.
+test('a classe do botao de enviar e SO do botao', () => {
+  const src = read('../trilha/js/tarefa-submit-modal.js');
+  // (?![-\w]) e nao \b: o \b depois de "submit" casaria com o hifen de tr-tarefa-submit-modal e
+  // de tr-tarefa-submit-backdrop, que sao classes DIFERENTES e legitimas.
+  const classes = [...src.matchAll(/class="([^"]*\btr-tarefa-submit(?![-\w])[^"]*)"/g)].map((m) => m[1]);
+  assert.equal(classes.length, 1, 'so um elemento carrega a classe: ' + JSON.stringify(classes));
+  assert.match(src, /<button[^>]*class="[^"]*\btr-tarefa-submit(?![-\w])/, 'e ele e o <button>');
+  assert.match(src, /bd\.querySelector\('button\.tr-tarefa-submit'\)/, 'e a busca exige o button');
+});
 // Editar comeca do que foi enviado: campo vazio obrigaria a redigitar tudo pra trocar uma frase.
 test('o campo volta preenchido, e quem desempacota o payload e o registry', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
