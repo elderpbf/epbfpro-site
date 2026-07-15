@@ -197,7 +197,9 @@ export const cohorts = {
   dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
   // The Limpeza tool's other half: registrations that look like throwaway tests. Suggestion only —
   // nothing is pre-selected, and the delete goes through the ordinary deleteParticipant path.
+  // dismiss -> "não é um registro de teste", forever; the mirror of dismissDuplicate above.
   findTestAccounts:   (p) => call('ct_find_test_accounts', p), // -> { people:[{id,email,name,participant_ids,reasons}], count }
+  dismissTestAccount: (p) => call('ct_dismiss_test_account', p), // { student_id }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }

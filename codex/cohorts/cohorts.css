@@ -1004,15 +1004,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-prow-edit:hover { background: var(--cdx-card-hover-bg); color: var(--text-primary); }
 
 /* "?" help glyph next to the Participantes header */
-.cdx-phelp {
-  display: inline-grid; place-items: center; width: 17px; height: 17px;
-  margin-left: .4rem; padding: 0; vertical-align: middle;
-  font: inherit; font-size: .66rem; font-weight: 700; line-height: 1;
-  color: var(--text-secondary); background: var(--background);
-  border: 1px solid var(--border); border-radius: 999px; cursor: pointer;
-  transition: border-color .12s, color .12s;
-}
-.cdx-phelp:hover { border-color: var(--primary); color: var(--tint-primary-tx); }
+/* .cdx-phelp removed: the dossiê hand-rolled its own "?" next to person-legend.js, whose entire
+   point is that both surfaces share one. Both now render legendButtonHtml() -> .cdx-leg-btn. */
 
 /* Participant-list legend modal */
 .cdx-leg-h { font-size: .74rem; font-weight: 700; text-transform: uppercase; letter-spacing: .04em; color: var(--text-secondary); margin: 1rem 0 .5rem; }
@@ -1343,19 +1336,54 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-clean-h { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; color: var(--text-secondary); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; }
 .cdx-clean-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-size: 0.65rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
 .cdx-dup-modal .cdx-test-list { display: flex; flex-direction: column; gap: 6px; }
-.cdx-test-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
-/* Ticked = about to be deleted, so it reads in the danger colour rather than the neutral "selected"
+.cdx-test-row { border: 1px solid var(--border); border-radius: 6px; padding: 8px; }
+/* Identity left, reasons right, verdict pill under both — so the pill has the full width to sit on
+   and never competes with the e-mail for room. */
+.cdx-test-main { display: flex; align-items: flex-start; gap: 10px; margin-bottom: 8px; }
+.cdx-test-row .cdx-seg { margin-bottom: 0; }
+/* "Apagar" = about to be deleted, so it reads in the danger colour rather than the neutral "selected"
    tint the duplicates section uses. The two sections must never look like the same gesture — and the
    token is --tint-danger (an earlier --tint-danger-bg guess silently fell back to the chip colour,
    which made a pending deletion look exactly like a pending merge). */
 .cdx-test-row.is-on { border-color: var(--danger-fill); background: var(--tint-danger); }
 .cdx-test-row.is-on .cdx-test-name { color: var(--tint-danger-tx); }
-.cdx-test-chk { accent-color: var(--danger-fill); flex-shrink: 0; }
+.cdx-test-row.is-on .cdx-seg-opt.is-on > span { background: var(--danger-fill); color: #fff; }
+/* "Não é teste" = it stays, and the row is on its way out of the list. It fades rather than colours:
+   a dismissal is the harmless verdict and must not compete for attention with the destructive one. */
+.cdx-test-row.is-off { opacity: 0.55; }
 .cdx-test-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cdx-test-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-test-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
 .cdx-test-meta { font-size: 0.65rem; color: var(--text-secondary); opacity: 0.8; }
 .cdx-test-why { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; max-width: 45%; }
+
+/* THE LIMPEZA MODAL ON A PHONE (found by the same audit: on an iPhone 13 "Cancelar" could not be
+   clicked at all — the one button that gets you out of a modal full of irreversible deletes).
+   Two causes, both about width. The verdict pill is an inline-flex of three nowrap segments, so it
+   cannot shrink and simply runs out past the modal's edge; and the action row, even wrapping, sits at
+   its natural size. Content wider than the card pushes the card's own children sideways, and the
+   backdrop is position:fixed — so nothing can be scrolled back into reach. It is not off-screen by a
+   little, it is unreachable.
+   So on a phone the pill stops being an inline pill and becomes a full-width segmented bar with three
+   equal thirds — which also gives each verdict a finger-sized target instead of a 5px-padded label —
+   and the buttons go full-width in a column, which is the one layout that cannot overflow. */
+@media (max-width: 560px) {
+  .cdx-seg { display: flex; width: 100%; box-sizing: border-box; }
+  .cdx-seg-opt { flex: 1 1 0; min-width: 0; }
+  .cdx-seg-opt > span {
+    width: 100%; justify-content: center; text-align: center;
+    white-space: normal; padding: 9px 4px; line-height: 1.25;
+  }
+  /* The suggestion marker stacks under its label instead of widening the segment. */
+  .cdx-seg-opt > span { flex-direction: column; gap: 1px; }
+  .cdx-dup-modal .cdx-modal-actions { flex-direction: column-reverse; align-items: stretch; }
+  .cdx-dup-modal .cdx-modal-actions .cdx-btn { width: 100%; }
+  /* Reasons under the identity, not squeezed into 45% beside it. */
+  .cdx-test-main { flex-direction: column; gap: 6px; }
+  .cdx-test-why { max-width: 100%; justify-content: flex-start; }
+  /* dvh tracks the iOS URL bar; vh does not, so 88vh can be taller than what you can actually see. */
+  .cdx-dup-modal, .cdx-leg-modal { max-height: 88dvh; }
+}
 
 /* Masked field (CPF) with an eye on the right that toggles visibility. */
 .cdx-pe-secret { position: relative; display: flex; align-items: center; }
@@ -1507,4 +1535,20 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   .cdx-pl { --pl-cols: 26px 34px minmax(140px, 2fr) minmax(90px, 1fr) 100px 34px; }
   .cdx-pl--turma { --pl-cols: 26px 34px minmax(140px, 2fr) 100px 34px; }
   .cdx-pl-val, .cdx-pl-acc { display: none; }
+}
+
+/* THE LIST SCROLLS, THE PAGE DOES NOT (found by an independent audit on an iPhone 13: the whole page
+   scrolled sideways, scrollWidth 486 vs clientWidth 308, which drags the header and the tabs off with
+   it — every screen, not just this list).
+   Not a mystery: even after the 900px tier drops two columns, the template's own minimum is
+   26+34+140+90+100+34 = 424px plus five 8px gaps = 464px. No phone is that wide.
+   The fix keeps all six columns and contains the overflow instead of deleting data: the identity, the
+   aprovação badge and the turma are all things Élder sorts by, and a column dropped here is a column
+   he cannot see at all. `min-content` rather than a hardcoded 464 because every one of those minimums
+   is a fixed px in --pl-cols, so it resolves to the SAME number for head, row and sub-row — the three
+   stay locked to one template (the whole point of --pl-cols) and it re-derives itself if a tier
+   changes. -webkit-overflow-scrolling keeps the momentum flick on iOS. */
+@media (max-width: 620px) {
+  .cdx-pl { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .cdx-pl-head, .cdx-pl-row, .cdx-pl-sub { min-width: min-content; }
 }

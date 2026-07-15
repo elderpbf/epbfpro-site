@@ -20,9 +20,16 @@ import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { ORIGIN_I18N, ORIGIN_TONE } from '../js/access-model.js';
 
-// The "?" beside the list title. Same glyph, same behaviour, both scopes.
-export function legendButtonHtml() {
-  return '<button type="button" class="cdx-leg-btn" id="cdx-pl-help" title="' +
+// The "?" beside the list title. Same glyph, same look, both scopes — from ONE builder, because a
+// module whose whole reason to exist is "both surfaces share this" cannot have the dossiê hand-rolling
+// its own copy next to it (it did, until an audit noticed).
+//
+// `hook` picks the delegation attribute, from a closed set: the roster listens on an id, the dossiê
+// on its existing data-doss switch. That is the only thing that legitimately differs, so it is the
+// only thing parameterised — and being a closed set, nothing can be injected through it.
+export function legendButtonHtml(hook) {
+  const h = hook === 'doss' ? 'data-doss="phelp"' : 'id="cdx-pl-help"';
+  return '<button type="button" class="cdx-leg-btn" ' + h + ' title="' +
     esc(t('cohorts.phelp_title')) + '" aria-label="' + esc(t('cohorts.phelp_title')) + '">?</button>';
 }
 

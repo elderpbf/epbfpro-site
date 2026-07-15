@@ -28,10 +28,24 @@ test('the "?" is one glyph and nothing more', () => {
 test('BOTH lists open the SAME card — that is the whole point of the module', () => {
   assert.match(studentsJs, /import \{ legendButtonHtml, openPersonLegend \} from '\.\/person-legend\.js'/);
   assert.match(studentsJs, /openPersonLegend\(\{ scope: 'global' \}\)/);
-  assert.match(cohortsJs, /import \{ openPersonLegend \} from '\.\/person-legend\.js'/);
+  assert.match(cohortsJs, /import \{ legendButtonHtml, openPersonLegend \} from '\.\/person-legend\.js'/);
   assert.match(cohortsJs, /openPersonLegend\(\{ scope: 'turma' \}\)/);
   // ...and no private copy survives in cohorts.js to drift away from it.
   assert.ok(!/function _openParticipantsHelp/.test(cohortsJs));
+});
+
+test('BOTH lists render the SAME button, from the one builder', () => {
+  // The dossiê used to hand-roll its own <button class="cdx-phelp" data-doss="phelp">?</button> right
+  // next to the module whose entire reason to exist is that both surfaces share one. An audit caught
+  // it; this keeps it caught.
+  assert.match(studentsJs, /legendButtonHtml\(\)/);
+  assert.match(cohortsJs, /legendButtonHtml\('doss'\)/);
+  assert.ok(!/class="cdx-phelp"/.test(cohortsJs), 'no hand-rolled copy of the ? button');
+  // The hook is a closed set, so nothing can be injected through the parameter.
+  assert.match(legendJs, /hook === 'doss' \? 'data-doss="phelp"' : 'id="cdx-pl-help"'/);
+  assert.match(legendButtonHtml('doss'), /data-doss="phelp"/);
+  assert.match(legendButtonHtml(), /id="cdx-pl-help"/);
+  assert.match(legendButtonHtml('anything else'), /id="cdx-pl-help"/);   // unknown hook -> the default
 });
 
 test('the roster renders the "?" beside its title, where Élder asked for it', () => {

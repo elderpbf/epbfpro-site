@@ -237,7 +237,7 @@ export default {
   'alunos.days_ago':       'há {n} d',
   'alunos.f_all_clients':  'Todos os clientes',
   'alunos.f_client':       'Cliente',
-  'alunos.f_status':       'Acesso',
+  'alunos.f_status':       'Aprovação',
   'alunos.f_verified':     'Validação',
   'alunos.f_turmas':       'Nº de turmas',
   'alunos.opt_pending':    'Pendente',
@@ -272,7 +272,9 @@ export default {
   // Registros de teste. O texto diz "apaga de vez" porque apaga mesmo: some das turmas, das sessões
   // e do cadastro, e não tem como voltar atrás.
   'alunos.tests_none':     'Nenhum registro de teste encontrado.',
-  'alunos.tests_hint':     'Parecem cadastros descartáveis (e-mail temporário, domínio de exemplo, nome de teste). Nada vem marcado: marque só os que quiser apagar de vez.',
+  'alunos.tests_hint':     'Parecem cadastros descartáveis (e-mail temporário, domínio de exemplo, nome de teste). Nada vem decidido: escolha em cada um. "Não é teste" tira da lista pra sempre.',
+  'alunos.test_v_delete':  'Apagar',
+  'alunos.test_v_not':     'Não é teste',
   'alunos.test_delete_confirm': 'Apagar {n} registro(s) de vez? Some das turmas, das sessões e do cadastro, e não tem como voltar atrás.',
   'alunos.test_seen':      'último acesso {t}',
   'alunos.test_never':     'nunca acessou',
@@ -608,7 +610,6 @@ export default {
   'cohorts.pop_never':         'nunca',
   // Cohorts — participant entry-type tags (inline list)
   // Cohorts — participant list legend (the "?" help glyph)
-  'cohorts.phelp_btn_title':     'Como funciona esta lista',
   // A legenda da lista (cohorts/person-legend.js). Os 3 conceitos vêm de
   // manifest/architecture/access.md §"Os 3 conceitos" — mesma redação, para não divergirem.
   'cohorts.phelp_concepts_h':    'Os 3 conceitos desta lista',

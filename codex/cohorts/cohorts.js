@@ -18,7 +18,7 @@ import { initials } from '../js/initials.js';
 import { isApprovalGated, actionEnabled, actionTargetStatus } from './participant-view.js';
 // THE list (same component the Alunos roster renders, in the other scope) + the "+" popover.
 import { personListHtml } from './person-list.js';
-import { openPersonLegend } from './person-legend.js';
+import { legendButtonHtml, openPersonLegend } from './person-legend.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick, FILTER_IDS } from './person-filters.js';
 import { openAliasPopover } from './alias-popover.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
@@ -1293,7 +1293,7 @@ function _renderDossier(turma) {
       // Participantes panel (the roster/help controls move into a panel toolbar).
       '<div class="cdx-doss-panel" data-dpanel="participantes"' + _panHide('participantes') + '>' +
         '<div class="cdx-doss-panel-bar">' +
-          '<button type="button" class="cdx-phelp" data-doss="phelp" title="' + _esc(t('cohorts.phelp_btn_title')) + '" aria-label="' + _esc(t('cohorts.phelp_btn_title')) + '">?</button>' +
+          legendButtonHtml('doss') +
           '<span class="cdx-doss-sec-acts">' +
             '<button class="cdx-btn cdx-btn-sm" data-doss="padd">+ ' + _esc(t('cohorts.participants_add_btn')) + '</button>' +
             '<button class="cdx-btn cdx-btn-sm" data-doss="pimport">⇪ ' + _esc(t('cohorts.participants_import_btn')) + '</button>' +
