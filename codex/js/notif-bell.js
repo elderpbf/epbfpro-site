@@ -15,6 +15,7 @@
 import { relTime } from './rel-time.js';
 import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
 import { esc } from './dom.js';
+import * as notifBus from './notif-bus.js';
 
 const BELL_SVG =
   '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
@@ -40,13 +41,16 @@ function groupItems(items) {
 //   markSeen:           () => Promise<any>   (bell-open: clears the OPEN/Dispensáveis tier)
 //   markAll:            () => Promise<any>   (optional; "marcar tudo": clears everything)
 //   dismissItem:        (item) => Promise<any> (optional; dismiss ONE ACT/Acionável)
+//   adaptFeed:          (res) => { count, items } (optional; normalize/filter a raw feed —
+//                        applied to BOTH a fetched feed and a piggybacked envelope, so the
+//                        two can never diverge. The Trilha uses it for the student's prefs.)
 //   onNavigate:         (item) => void   (the bell closes + marks seen first)
 //   t:                  (key) => string  (labels: notif.title / notif.mark_all / notif.empty
 //                                          / notif.dismiss / notif.history / notif.tier_act
 //                                          / notif.tier_dismiss)
 //   btnClass:           extra class for the button (defaults to the topbar icon button)
 //   role:               'student' | 'admin'
-export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
+export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, adaptFeed, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-bell-wrap';
   wrap.innerHTML =
@@ -179,12 +183,20 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     }).join('');
   }
 
+  // Adopt a feed, whatever brought it (our own fetch, or an envelope that rode back on some
+  // other call via notif-bus). Filtering the caller applied on its own fetch is re-applied
+  // here through adaptFeed, so a piggybacked envelope obeys the same prefs as a fetched one.
+  function _adopt(res) {
+    const feed = adaptFeed ? adaptFeed(res) : res;
+    _items = (feed && feed.items) || [];
+    setBadge((feed && feed.count) || _items.filter((i) => !i.seen).length);
+    if (!panel.hidden) { paint(_items); renderHist(); }
+  }
+
   async function refresh() {
     let res;
     try { res = await fetchNotifications(); } catch (_) { return; }
-    _items = (res && res.items) || [];
-    setBadge((res && res.count) || _items.filter((i) => !i.seen).length);
-    if (!panel.hidden) { paint(_items); renderHist(); }
+    _adopt(res);
   }
 
   function openPanel() {
@@ -244,14 +256,24 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     b.addEventListener('click', () => { _histTab = b.getAttribute('data-hist'); renderHist(); });
   });
 
-  const onFocus = () => refresh();
+  // The feed now comes to US: any Worker call the page makes can carry it back (notif-bus).
+  // Subscribe first, then seed from whatever the bus already holds — the page's own load call
+  // (turmaView / the admin's first fetch) normally lands BEFORE the bell mounts, so the bell
+  // paints having spent ZERO requests of its own. Only when nothing has arrived do we buy one.
+  const _unsub = notifBus.subscribe(_adopt);
+  const _seeded = notifBus.latest();
+  if (_seeded) _adopt(_seeded); else refresh();
+
+  // Focus is a FALLBACK now, not the refresh mechanism, and it shares the bus's single
+  // throttle window: flipping tabs no longer buys a request per flip (it used to buy one
+  // EVERY time), and it still catches the idle case where the page calls nothing at all.
+  const onFocus = () => { if (notifBus.shouldAsk()) { notifBus.markAsked(); refresh(); } };
   if (typeof window !== 'undefined') window.addEventListener('focus', onFocus);
 
-  refresh();
   return {
     el: wrap,
     refresh,
-    destroy() { if (typeof window !== 'undefined') window.removeEventListener('focus', onFocus); closePanel(); },
+    destroy() { _unsub(); if (typeof window !== 'undefined') window.removeEventListener('focus', onFocus); closePanel(); },
   };
 }
 

@@ -289,11 +289,14 @@ function renderHeaderActions() {
       // (markAll → scope:'all', which also clears the actionable floor).
       const bell = createBell({
         role: 'student',
-        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
-          .then((res) => {
-            const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
-            return { count: items.length, items };
-          }),
+        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        // The student's prefs live HERE, not inside the fetch, so they apply identically to a
+        // feed we fetched and to one that rode back on another call (notif-bus). Putting them
+        // in the fetch would have let a piggybacked envelope bypass them.
+        adaptFeed: (res) => {
+          const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
+          return { count: items.length, items };
+        },
         markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
         markAll: () => trail.forumMarkSeen({ session_token: state.sessionToken, scope: 'all' }),
         dismissItem: (item) => trail.forumDismiss({
