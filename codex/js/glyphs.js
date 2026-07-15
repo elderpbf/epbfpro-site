@@ -8,6 +8,14 @@
 //   - "glyph:<key>"  -> rendered from this library (the new way), or
 //   - an emoji char  -> rendered verbatim (legacy types, until re-picked).
 // iconHtml() resolves both, so old and new types render side by side.
+//
+// NOT here, and deliberately:
+//   js/brand-marks.js  third-party BRAND marks (WhatsApp, ...). They are fixed, filled
+//                      artwork owned by someone else, so they cannot be a 24x24
+//                      currentColor stroke and must not be redrawn as one.
+//   js/brand-logos.js  PensoIA's OWN artwork (a builder: palettes, tagline, layers).
+// If you came here looking for one of those, go there. If you are about to hand-draw an
+// interface icon anywhere else, add the key here instead: that is what this file is for.
 
 export const GLYPH_PREFIX = 'glyph:';
 
@@ -57,6 +65,8 @@ const GLYPHS = {
   'copy':       '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   'layers':     '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   'list':       '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  // A list with a solid header bar: a template, i.e. a list whose first row is fixed.
+  'preset':     '<rect x="3" y="3" width="18" height="4" rx="1"/><path d="M3 11h18"/><path d="M3 17h18"/>',
   'type':       '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>',
   'hash':       '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
   'paperclip':  '<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
@@ -95,6 +105,9 @@ const GLYPHS = {
   'mail':       '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
   'send':       '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
   'bell':       '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  // Round bubble = a conversation (the Perguntas surface). `prompt` is the square-ish
+  // bubble with text lines in it and means a written prompt; they are not interchangeable.
+  'message-circle':'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
   'users':      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   'user':       '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   'at-sign':    '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>',
@@ -103,6 +116,11 @@ const GLYPHS = {
   // ── Time / place / business ──
   'calendar':   '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   'clock':      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  // The presenter's three time readouts are three different ideas, so they get three
+  // keys: clock is what time it is, stopwatch is how long this has run, hourglass is
+  // how long is left. Drawing one and rotating it would blur exactly that distinction.
+  'stopwatch':  '<path d="M9 2.5h6"/><path d="M12 2.5v2.5"/><path d="M18.5 6l1.2-1.2"/><circle cx="12" cy="13" r="7.5"/><path d="M12 13V9"/>',
+  'hourglass':  '<path d="M6 3h12"/><path d="M6 21h12"/><path d="M7.5 3c0 4.5 4.5 6 4.5 9s-4.5 4.5-4.5 9"/><path d="M16.5 3c0 4.5-4.5 6-4.5 9s4.5 4.5 4.5 9"/>',
   'map-pin':    '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   'briefcase':  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   'dollar-sign':'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
@@ -137,7 +155,24 @@ const GLYPHS = {
   // Disclosure. Added here rather than inline in a card because this library is the ONE source
   // for Codex icons: an "it opens" affordance is needed in more than one place, and a one-off
   // SVG next to a card is exactly the ad-hoc drift this file exists to prevent.
-  'chevron-down': '<polyline points="6 9 12 15 18 9"/>'
+  'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+  // Registered from the drift audit: each of these was being hand-drawn at a call site
+  // because the library had no key for it. Two of them had already drifted into rival
+  // drawings before ever landing here, which is the whole argument for this file:
+  //   external-link -> trilha/js/state.js AND lessons/lessons.js drew it differently
+  //   menu          -> codex-topbar.js drew 3 lines, questions/live-host.js drew 4
+  // The versions kept below are the Feather originals, matching this file's lineage.
+  'external-link':'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  'menu':       '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  'close':      '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  // Bare tick. Distinct from check-circle on purpose: this one rides inside a button
+  // label ("Copiado"), where a circled tick reads as a status badge instead.
+  'check':      '<polyline points="20 6 9 17 4 12"/>',
+  'sort':       '<path d="M5 7h10M5 12h7M5 17h4"/><path d="M19 7v10"/><path d="M16.5 9.5 19 7l2.5 2.5"/><path d="M16.5 14.5 19 17l2.5-2.5"/>',
+  'maximize':   '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>',
+  // Compound: padlock + download arrow. Not lock and not download; it marks the ONE
+  // download whose point is that it is signed (the certificate signer link).
+  'lock-download':'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="M12 14.5v3.4"/><path d="M10.2 16.1 12 17.9l1.8-1.8"/>'
 };
 
 import { esc as _esc } from './dom.js';
@@ -147,15 +182,25 @@ export function glyphKeys() { return Object.keys(GLYPHS); }
 
 export function hasGlyph(key) { return Object.prototype.hasOwnProperty.call(GLYPHS, key); }
 
-// Render a glyph by key as a full <svg>. opts: { size=18, cls='' }. Unknown
-// key returns '' so callers can fall back.
+// Render a glyph by key as a full <svg>. Unknown key returns '' so callers can fall back.
+// opts:
+//   size=18       px. Pass size:null to omit width/height entirely and let CSS size it.
+//   cls=''        class attribute.
+//   filled=false  fill with currentColor instead of none. A filled glyph is the SAME
+//                 shape reading as "on": a solid star is the favourited star. Without
+//                 this the library could only ever return outlines, which is why
+//                 lessons.js hand-copied the star it already had a key for.
+//   strokeWidth=2 thinner strokes suit a filled shape, whose silhouette carries it.
 export function glyphSvg(key, opts) {
   if (!hasGlyph(key)) return '';
   opts = opts || {};
-  const size = opts.size || 18;
+  const size = ('size' in opts) ? opts.size : 18;
+  const dim = (size == null) ? '' : ' width="' + size + '" height="' + size + '"';
   const cls = opts.cls ? ' class="' + opts.cls + '"' : '';
-  return '<svg' + cls + ' width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
-    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
+  const fill = opts.filled ? 'currentColor' : 'none';
+  const sw = opts.strokeWidth || 2;
+  return '<svg' + cls + dim + ' viewBox="0 0 24 24" ' +
+    'fill="' + fill + '" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" ' +
     'stroke-linejoin="round" aria-hidden="true">' + GLYPHS[key] + '</svg>';
 }
 
