@@ -16,7 +16,10 @@
 //     * a pending student in a gated turma (must be approved — the e-sino, track-36 e)
 //   OPEN (Dispensáveis) — a glance, clears on open:
 //     * a forum reply (informational)
-// The student bell stays all-OPEN for now (students only see forum activity).
+// The student bell (Élder 2026-07-14) is the MIRROR, not a lesser copy: the teacher's
+// resposta/nota on the student's own tarefa is ACIONÁVEL (they must go read it — it is
+// the exact counterpart of the admin's 'tarefa_submission'), while forum activity stays
+// a glance. Same module, same tiers, both directions.
 //
 // BACKEND: 'act' persistence is now backed by ct_notif_dismissed in codex-api
 // (dismissed one at a time via ct_forum_admin_dismiss); 'open' still clears via the
@@ -33,6 +36,9 @@ export function dismissalFor(item, role) {
     if (item.type === 'tarefa_submission') return DISMISS_ACT;
     if (item.type === 'forum_post' && item.kind === 'new_thread') return DISMISS_ACT;
     if (item.type === 'student_pending') return DISMISS_ACT;   // e-sino: approve or dismiss by hand
+  }
+  if (role === 'student' && item) {
+    if (item.type === 'tarefa_feedback') return DISMISS_ACT;   // resposta/nota do professor: ir ler
   }
   return DISMISS_OPEN;
 }

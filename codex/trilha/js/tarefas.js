@@ -72,6 +72,21 @@ let _outerRoot = null;
 let _root = null;
 let _tarefas = [];
 let _openId = null;
+let _pendingFocus = null;
+
+// Deep-focus from the notification bell (the mirror of forum.js focusThread): land ON the
+// tarefa the professor answered, already expanded, instead of dumping the student on the tab
+// to hunt for it. The bell usually fires from ANOTHER tab, so this tab has not mounted or
+// finished its async load yet: the request is REMEMBERED and applied when the list paints,
+// never consumed against an empty list. That async-load race is exactly what broke the admin
+// deep-link (track-26 1.d) — same shape, same fix.
+export function focusTarefa(itemId) {
+  const id = Number(itemId);
+  if (!Number.isFinite(id)) return;
+  _openId = id;          // survives the load: cardHtml expands this id whenever it paints
+  _pendingFocus = id;    // one-shot: scroll on the next paint only, not on every toggle
+  if (_root && _tarefas.length) paintList();   // already loaded (student was on the tab)
+}
 
 export async function renderMyTarefas(root) {
   _outerRoot = root;
@@ -126,6 +141,16 @@ function paintList() {
   html += '</div>';
   _root.innerHTML = html;
   wireList();
+  // Consume a pending bell focus: the card is already expanded (_openId), just bring it into
+  // view. One-shot, so a later manual toggle never yanks the page around.
+  if (_pendingFocus != null) {
+    const card = _root.querySelector('[data-tt-card="' + _pendingFocus + '"]');
+    _pendingFocus = null;
+    if (card && card.scrollIntoView) {
+      try { card.scrollIntoView({ behavior: 'smooth', block: 'center' }); }
+      catch (_) { card.scrollIntoView(); }   // older engines: no options object
+    }
+  }
 }
 
 function badgeHtml(tarefa) {
@@ -151,7 +176,10 @@ function bodyHtml(tarefa) {
       (sub.instructor_reply ? '<span class="cdx-tt-grade-note">' + esc(sub.instructor_reply) + '</span>' : '') +
       '</div></div>';
   } else if (sub.instructor_reply) {
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_grade')) + '</div>' +
+    // A resposta SEM nota é uma resposta, não uma nota. Rotulá-la "Nota" (o que esta
+    // branch fazia) confunde justamente o caso do toggle "resposta" ligado sozinho, que
+    // é o mais comum. Com nota, a resposta segue como a nota do lado (branch acima).
+    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>' +
       '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div></div>';
   }
   if (!(tarefa.reply_enabled && tarefa.grade_enabled)) {

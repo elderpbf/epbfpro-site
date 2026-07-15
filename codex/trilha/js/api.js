@@ -59,8 +59,14 @@ export const trail = {
   forumCreateThread:(p) => call('ct_forum_create_thread', p), // { session_token, title, body } -> { ok, thread }
   forumCreatePost:  (p) => call('ct_forum_create_post', p),   // { session_token, thread_id, parent_post_id?, body } -> { ok, post }
   forumEditPost:    (p) => call('ct_forum_edit_post', p),     // { session_token, post_id, body } -> { ok } | { error }
+  // forumNotifications is the student's GENERAL notification feed, not just the forum: the
+  // worker merges every source (forum posts where the turma enabled it + the teacher's
+  // resposta/nota on this student's tarefas, always). Legacy action name, kept over a
+  // breaking rename. markSeen with no scope clears only the Dispensáveis (bell-open);
+  // scope:'all' is "marcar tudo" and also clears the Acionáveis.
   forumNotifications:(p) => call('ct_forum_notifications', p),// { session_token } -> { ok, count, items }
-  forumMarkSeen:    (p) => call('ct_forum_mark_seen', p),     // { session_token } -> { ok }
+  forumMarkSeen:    (p) => call('ct_forum_mark_seen', p),     // { session_token, scope?: 'all' } -> { ok }
+  forumDismiss:     (p) => call('ct_forum_dismiss', p),       // { session_token, notif_key, up_to_at } -> { ok }
 
   // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
   // live session is open; the device stores it and offers it at login so being in

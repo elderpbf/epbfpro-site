@@ -184,27 +184,13 @@ export const cohorts = {
   reorderAulas:    (p) => call('ct_reorder_aulas', p),         // { client_slug, turma_slug, ordered_ids: [aula_id...] } — renumbers + remaps release/plan bindings in lockstep
   // Participant roster (API.md — Participant Roster, ct_* family, auth required)
   listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }
-  listStudents:       (p) => call('ct_list_students', p),      // -> { students:[{id,email,name,role,turma_count,turmas,name_variants,...}] } cross-turma dedup roster
-  // THE list, both admin scopes. turma_id is the FILTER, not a different endpoint: omit it for the
-  // global Pessoas roster, pass it for a cohort's Participantes panel. Same shape either way.
-  setPersonEmail:     (p) => call('ct_set_person_email', p),  // { student_id, email } -> rewrites the identity + every row; RESETS validation
-  listPeople:         (p) => call('ct_list_people', p),        // { turma_id? } -> { people:[{id,email,name,role,aliases,cpf,turma_count,rows:[...]}] }
-  setCanonicalName:   (p) => call('ct_set_canonical_name', p), // { student_id, name } -> sets + LOCKS the identity name
-  // Duplicate identities (one person, two e-mails). find -> suggested pairs; merge -> survivor
-  // absorbs loser (permanent, via the e-mail alias); dismiss -> "não é a mesma pessoa", forever.
-  findDuplicates:     (p) => call('ct_find_duplicates', p),    // -> { pairs:[{a,b,reasons,suggestion}], count }
-  mergeStudents:      (p) => call('ct_merge_students', p),     // { survivor_id, loser_id }
-  dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
-  // The Limpeza tool's other half: registrations that look like throwaway tests. Suggestion only —
-  // nothing is pre-selected, and the delete goes through the ordinary deleteParticipant path.
-  findTestAccounts:   (p) => call('ct_find_test_accounts', p), // -> { people:[{id,email,name,participant_ids,reasons}], count }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
   importParticipants: (p) => call('ct_import_participants', p), // { turma_id, rows[] }
   // Trail access-control admin (Phase 7): the Alunos section drives these.
   setParticipantAccess:  (p) => call('ct_set_participant_access', p),   // { participant_id|participant_ids, status }
-  setEmailVerified:      (p) => call('ct_set_email_verified', p),       // { participant_id|participant_ids, verified } "validar acesso"
+  setEmailVerified:      (p) => call('ct_set_email_verified', p),       // { participant_id|participant_ids, verified? } — admin "validar acesso" (track-29)
   rosterApprove:         (p) => call('ct_roster_approve', p),           // { turma_id, emails[] }
   revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p),  // { participant_id }
   // QR enrollment window (Phase 7b): open mints the token + expiry (+ turma_token to

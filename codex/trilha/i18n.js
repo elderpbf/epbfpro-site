@@ -186,6 +186,7 @@ const pt = {
   'tarefas.field_prompt':   'Proposta',
   'tarefas.field_answer':   'Sua resposta',
   'tarefas.field_grade':    'Nota',
+  'tarefas.field_reply':    'Resposta do professor',
   'tarefas.gate_note':      'Resposta e nota aparecem só quando o professor libera cada uma no painel.',
   // Student entry surface (pensoia.com/trilha): entra na última turma + 2 campos sempre abertos
   'entrar.title':           'Acesse sua trilha',
@@ -402,6 +403,7 @@ const en = {
   'tarefas.field_prompt':   'Prompt',
   'tarefas.field_answer':   'Your answer',
   'tarefas.field_grade':    'Grade',
+  'tarefas.field_reply':    "Instructor's reply",
   'tarefas.gate_note':      'Your reply and grade only show once the instructor releases each in the panel.',
   // Student entry surface (pensoia.com/trilha): enter the last class + 2 fields always open
   'entrar.title':           'Access your trail',

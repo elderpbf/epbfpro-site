@@ -84,6 +84,7 @@ export default {
   'alunos.queue':        'Aprovações pendentes',
   'alunos.queue_empty':  'Nenhum aluno aguardando aprovação.',
   'alunos.approve':      'Aprovar',
+  'alunos.validate':     'Validar',
   'alunos.block':        'Bloquear',
   'alunos.unblock':      'Desbloquear',
   'alunos.validate':     'Validar',
