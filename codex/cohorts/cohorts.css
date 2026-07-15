@@ -1270,7 +1270,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
    Dark text on the amber badge: white on yellow failed contrast in dark mode (Élder). */
 .cdx-al-dupes { position: relative; display: inline-flex; align-items: center; gap: 6px; }
 .cdx-al-dupes-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: #d98f27; color: #1c1200; font-size: 0.65rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-.cdx-dup-modal .cdx-dup-list { max-height: 60vh; overflow-y: auto; display: flex; flex-direction: column; gap: 12px; }
+/* The Limpeza modal scrolls ONCE, in its body: the title and the actions are pinned. Two nested
+   scrollers (one per section) overflowed the viewport and pushed the delete button off-screen. */
+.cdx-dup-modal { display: flex; flex-direction: column; max-height: 88vh; }
+.cdx-dup-modal .cdx-modal-title, .cdx-dup-modal .cdx-modal-actions { flex-shrink: 0; }
+.cdx-clean-body { flex: 1; min-height: 0; overflow-y: auto; margin-bottom: 4px; }
+.cdx-dup-modal .cdx-dup-list { display: flex; flex-direction: column; gap: 12px; }
 .cdx-dup-pair { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
 .cdx-dup-why { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
 .cdx-dup-reason { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); }
@@ -1290,11 +1295,15 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-clean-sec { margin-bottom: 18px; }
 .cdx-clean-h { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; color: var(--text-secondary); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; }
 .cdx-clean-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-size: 0.65rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
-.cdx-dup-modal .cdx-test-list { max-height: 40vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.cdx-dup-modal .cdx-test-list { display: flex; flex-direction: column; gap: 6px; }
 .cdx-test-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
 /* Ticked = about to be deleted, so it reads in the danger colour rather than the neutral "selected"
-   blue the duplicates section uses. The two sections must never look like the same gesture. */
-.cdx-test-row.is-on { border-color: var(--cdx-danger-border); background: var(--tint-danger-bg, var(--cdx-chip-bg)); }
+   tint the duplicates section uses. The two sections must never look like the same gesture — and the
+   token is --tint-danger (an earlier --tint-danger-bg guess silently fell back to the chip colour,
+   which made a pending deletion look exactly like a pending merge). */
+.cdx-test-row.is-on { border-color: var(--danger-fill); background: var(--tint-danger); }
+.cdx-test-row.is-on .cdx-test-name { color: var(--tint-danger-tx); }
+.cdx-test-chk { accent-color: var(--danger-fill); flex-shrink: 0; }
 .cdx-test-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cdx-test-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-test-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }

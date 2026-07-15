@@ -129,10 +129,15 @@ export function openCleanupModal(data, onDone) {
   const html =
     '<div class="cdx-modal cdx-modal--lg cdx-dup-modal">' +
       '<div class="cdx-modal-title">' + esc(t('alunos.cleanup_title')) + '</div>' +
-      _sectionHtml(t('alunos.sec_dupes'), list.length,
-        (list.length ? '<p class="cdx-helper-text">' + esc(t('alunos.dupes_hint')) + '</p>' : '') +
-        '<div class="cdx-dup-list">' + dupBody + '</div>') +
-      _sectionHtml(t('alunos.sec_tests'), tests.length, testBody) +
+      // ONE scroller for both sections. Two sections each scrolling on their own pushed the title
+      // and the buttons off the screen — including the delete button, on the one modal where the
+      // buttons are the point. The title and actions stay pinned; only this scrolls.
+      '<div class="cdx-clean-body">' +
+        _sectionHtml(t('alunos.sec_dupes'), list.length,
+          (list.length ? '<p class="cdx-helper-text">' + esc(t('alunos.dupes_hint')) + '</p>' : '') +
+          '<div class="cdx-dup-list">' + dupBody + '</div>') +
+        _sectionHtml(t('alunos.sec_tests'), tests.length, testBody) +
+      '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-dup-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
         (tests.length ? '<button class="cdx-btn cdx-btn-danger" id="cdx-test-del" disabled>' + esc(t('alunos.test_delete')) + '</button>' : '') +
