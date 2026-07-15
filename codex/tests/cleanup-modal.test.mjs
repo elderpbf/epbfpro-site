@@ -194,6 +194,12 @@ test('the survivor radio reflects the suggestion, ready for when merge is picked
   assert.match(pairHtml(pair({ suggestion: 'keep_a' }), 0), /value="keep_a" checked/);
 });
 
+test('...but neither identity is PAINTED as chosen while the verdict is still "deixar assim"', () => {
+  // Highlighting one side on open would contradict the modal's one promise: nothing is decided
+  // until you decide it. The highlight is _syncPair's job, once the pair is really merging.
+  assert.doesNotMatch(pairHtml(pair({ suggestion: 'keep_a' }), 0), /cdx-dup-opt is-on/);
+});
+
 test('the pair carries the ids and names the apply needs', () => {
   const h = pairHtml(pair(), 2);
   assert.match(h, /data-a="15"/);

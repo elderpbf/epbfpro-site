@@ -50,11 +50,16 @@ function _reasons(r) {
 
 // One stacked option per identity: the NAME is what is being chosen (some records carry a fuller
 // name than others), and picking it also picks which identity survives.
+//
+// The radio is pre-checked to the suggestion so the survivor is ready the moment "mesclar" is picked
+// — but the `is-on` HIGHLIGHT is not applied here, only by _syncPair once the pair really is merging.
+// Painting one identity as chosen while the verdict still says "deixar assim" would contradict the
+// one promise this modal makes: nothing is decided until you decide it.
 function _option(s, side, idx, checked) {
   const ver = s.email_verified
     ? '<span class="cdx-al-val ok" title="' + esc(t('alunos.verified')) + '">✓</span>'
     : '<span class="cdx-al-val no" title="' + esc(t('alunos.unverified')) + '">•</span>';
-  return '<label class="cdx-dup-opt' + (checked ? ' is-on' : '') + '">' +
+  return '<label class="cdx-dup-opt">' +
       '<input type="radio" name="dup-' + idx + '" value="keep_' + side + '"' + (checked ? ' checked' : '') + '>' +
       '<span class="cdx-dup-body">' +
         '<span class="cdx-dup-name">' + esc(s.name || s.email) + ' ' + ver + '</span>' +
