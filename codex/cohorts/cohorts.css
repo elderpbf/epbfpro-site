@@ -1285,6 +1285,22 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-dup-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-dup-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
 
+/* Limpeza: the two sections (duplicatas + registros de teste) inside one modal. Each list scrolls in
+   its own box, so a long duplicate list can never push the test list off the screen. */
+.cdx-clean-sec { margin-bottom: 18px; }
+.cdx-clean-h { display: flex; align-items: center; gap: 8px; font-size: 0.7rem; text-transform: uppercase; font-weight: 700; letter-spacing: 0.04em; color: var(--text-secondary); border-bottom: 1px solid var(--border); padding-bottom: 6px; margin-bottom: 10px; }
+.cdx-clean-n { min-width: 16px; height: 16px; padding: 0 4px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-size: 0.65rem; font-weight: 800; display: inline-flex; align-items: center; justify-content: center; }
+.cdx-dup-modal .cdx-test-list { max-height: 40vh; overflow-y: auto; display: flex; flex-direction: column; gap: 6px; }
+.cdx-test-row { display: flex; align-items: center; gap: 10px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
+/* Ticked = about to be deleted, so it reads in the danger colour rather than the neutral "selected"
+   blue the duplicates section uses. The two sections must never look like the same gesture. */
+.cdx-test-row.is-on { border-color: var(--cdx-danger-border); background: var(--tint-danger-bg, var(--cdx-chip-bg)); }
+.cdx-test-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
+.cdx-test-name { font-weight: 600; font-size: 0.85rem; }
+.cdx-test-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+.cdx-test-meta { font-size: 0.65rem; color: var(--text-secondary); opacity: 0.8; }
+.cdx-test-why { display: flex; flex-wrap: wrap; gap: 4px; justify-content: flex-end; max-width: 45%; }
+
 /* Masked field (CPF) with an eye on the right that toggles visibility. */
 .cdx-pe-secret { position: relative; display: flex; align-items: center; }
 .cdx-pe-secret input { flex: 1; padding-right: 34px; }

@@ -27,7 +27,7 @@ import { hasPending } from './students-filters.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
-import { dupesButtonHtml, openDupesModal } from './dupes-modal.js';
+import { cleanupButtonHtml, openCleanupModal } from './cleanup-modal.js';
 import { cpfValid, emailValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 import { personListHtml } from './person-list.js';
@@ -38,6 +38,7 @@ let _people = [];
 let _filters = emptyFilterState();   // search / client / status / verified / turmas / sort — shared shape
 let _expanded = {};
 let _dupes = [];      // candidate duplicate pairs awaiting a verdict (ct_find_duplicates)
+let _tests = [];      // registrations that look like throwaway tests (ct_find_test_accounts)
 
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _byId(pid) { return _people.find((s) => String(s.id) === String(pid)); }
@@ -55,9 +56,9 @@ function _targets(s, act) {
 
 // The filter/search/sort bar is cohorts/person-filters.js, shared with the dossiê — it is what
 // replaced the dossiê's status sections, so the same question is answered the same way in both
-// scopes. Only the dupes button is scope-specific (there is nothing to de-duplicate inside a
-// single turma).
-function _toolsBar() { return filtersBarHtml(_filters, _people, dupesButtonHtml(_dupes.length)); }
+// scopes. Only the Limpeza button is scope-specific: both the things it cleans up (duplicate
+// identities, throwaway registrations) are facts about the whole registry, not about one turma.
+function _toolsBar() { return filtersBarHtml(_filters, _people, cleanupButtonHtml(_dupes.length, _tests.length)); }
 
 function _renderShell() {
   _viewEl.innerHTML =
@@ -82,9 +83,9 @@ function _renderShell() {
       if (!applyFilterChange(_filters, e.target.id, e.target.value)) return;
       _repaint();
     });
-    // The duplicates tool: its counter says how many pairs await a verdict.
+    // The Limpeza tool: its counter says how much — duplicates + test registrations — awaits a verdict.
     tools.addEventListener('click', (e) => {
-      if (e.target.closest('#cdx-al-dupes')) openDupesModal(_dupes, () => _load());
+      if (e.target.closest('#cdx-al-dupes')) openCleanupModal({ pairs: _dupes, tests: _tests }, () => _load());
     });
   }
   const roster = _q('#cdx-al-roster');
@@ -252,11 +253,14 @@ function _repaint() { _paintStats(); _paintTools(); _paintList(); }
 function _load() {
   const host = _q('#cdx-al-roster');
   if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.loading')) + '</span>';
-  // The duplicate scan must never break the roster, so its failure degrades to "no candidates".
+  // Neither cleanup scan may ever break the roster, so each failure degrades to "no candidates" on
+  // its own — the list is the job here, the Limpeza button is an extra.
   return Promise.all([
     api.listPeople({}).then((d) => { _people = (d && d.people) || []; }),
     api.findDuplicates({}).then((d) => { _dupes = (d && d.pairs) || []; })
       .catch((e) => { _dupes = []; notice.internal('alunos: duplicate scan failed: ' + (e && e.message || e)); }),
+    api.findTestAccounts({}).then((d) => { _tests = (d && d.people) || []; })
+      .catch((e) => { _tests = []; notice.internal('alunos: test-account scan failed: ' + (e && e.message || e)); }),
   ]).then(() => _repaint()).catch((e) => {
     notice.internal('alunos: load students failed: ' + (e && e.message || e));
     if (host) host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.load_error')) + '</span>';
@@ -266,7 +270,7 @@ function _load() {
 // ── lifecycle ────────────────────────────────────────────────────────────────────
 export function mount(viewEl) {
   _viewEl = viewEl;
-  _people = []; _dupes = []; _filters = emptyFilterState(); _expanded = {};
+  _people = []; _dupes = []; _tests = []; _filters = emptyFilterState(); _expanded = {};
   _renderShell();
   _load();
 }
@@ -275,5 +279,6 @@ export function unmount() {
   _viewEl = null;
   _people = [];
   _dupes = [];
+  _tests = [];
   _expanded = {};
 }

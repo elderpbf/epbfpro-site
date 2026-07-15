@@ -195,6 +195,9 @@ export const cohorts = {
   findDuplicates:     (p) => call('ct_find_duplicates', p),    // -> { pairs:[{a,b,reasons,suggestion}], count }
   mergeStudents:      (p) => call('ct_merge_students', p),     // { survivor_id, loser_id }
   dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
+  // The Limpeza tool's other half: registrations that look like throwaway tests. Suggestion only —
+  // nothing is pre-selected, and the delete goes through the ordinary deleteParticipant path.
+  findTestAccounts:   (p) => call('ct_find_test_accounts', p), // -> { people:[{id,email,name,participant_ids,reasons}], count }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
