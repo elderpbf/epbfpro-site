@@ -4,7 +4,9 @@ import { test } from 'node:test';
 import assert from 'node:assert';
 import { hasStatus, hasPending, filterOptions } from '../cohorts/students-filters.js';
 
-const mk = (turmas, email_verified = 1) => ({ turmas, turma_count: turmas.length, email_verified });
+// `rows` = the person's per-turma participations, the shape ct_list_people returns for BOTH
+// scopes. (The `turmas` FILTER below is a different thing: single vs multi.)
+const mk = (rows, email_verified = 1) => ({ rows, turma_count: rows.length, email_verified });
 
 test('hasStatus / hasPending read across a person\'s turmas', () => {
   const s = mk([{ access_status: 'approved' }, { access_status: 'pending' }]);

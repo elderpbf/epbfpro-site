@@ -1314,3 +1314,112 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-tname { font-weight: 600; color: var(--text-primary); min-width: 120px; }
 .cdx-al-tlast { font-size: 0.72rem; color: var(--text-secondary); margin-left: auto; }
 .cdx-al-open { flex: 0 0 auto; }
+
+/* ── person-list.js: THE list, both scopes (track-28a2, Élder 2026-07-15) ──────────
+   Élder: "I think we should organise the lines into columns... right now all the information
+   is bunched up to the right which looks horrible and the information on the lines inside of
+   each one do not match the ones on the person's header."
+
+   So the header, every person line and every per-turma sub-line are children of ONE grid with
+   ONE template: a sub-line therefore lands under the exact column its header does, by
+   construction rather than by matching paddings. `subgrid` is not safe to rely on here, so the
+   template is declared once in a custom property and reused by the three row types. */
+.cdx-pl {
+  --pl-cols: 26px 34px minmax(180px, 1.7fr) minmax(120px, 1fr) 118px 104px 96px 34px;
+  display: flex;
+  flex-direction: column;
+}
+.cdx-pl--turma {  /* inside a cohort the turma column is pointless — Élder */
+  --pl-cols: 26px 34px minmax(180px, 1.7fr) 118px 104px 96px 34px;
+}
+.cdx-pl-head,
+.cdx-pl-row,
+.cdx-pl-sub {
+  display: grid;
+  grid-template-columns: var(--pl-cols);
+  align-items: center;
+  gap: 8px;
+}
+.cdx-pl-head {
+  font-size: 0.68rem;
+  text-transform: lowercase;
+  letter-spacing: .02em;
+  color: var(--text-secondary);
+  padding: 2px 8px 6px;
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  background: var(--surface);
+  z-index: 2;
+}
+.cdx-pl-row {
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  cursor: default;
+}
+.cdx-pl-row:hover { background: var(--cdx-hover, rgba(127,127,127,.06)); }
+.cdx-pl-row.is-sel { background: var(--tint-primary); }
+
+.cdx-pl-c { min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-size: 0.78rem; }
+.cdx-pl-chk { display: flex; justify-content: center; }
+.cdx-pl-av  { display: flex; justify-content: center; }
+
+.cdx-pl-id { display: flex; flex-direction: column; gap: 1px; }
+.cdx-pl-name { display: flex; align-items: center; gap: 4px; font-weight: 600; color: var(--text-primary); min-width: 0; }
+.cdx-pl-name > :first-child { overflow: hidden; text-overflow: ellipsis; }
+.cdx-pl-mail { display: flex; align-items: center; gap: 4px; font-size: 0.7rem; color: var(--text-secondary); min-width: 0; }
+
+/* Élder: "put a + ... besides the email that we can click on it and it opens a small window
+   with the other emails" — and nothing at all when there are none. */
+.cdx-pl-plus {
+  flex: 0 0 auto; width: 14px; height: 14px; line-height: 12px; padding: 0;
+  border: 1px solid var(--border); border-radius: 4px; background: transparent;
+  color: var(--text-secondary); font-size: 0.66rem; cursor: pointer;
+}
+.cdx-pl-plus:hover { border-color: var(--primary); color: var(--primary); }
+
+.cdx-pl-edit, .cdx-pl-caret, .cdx-pl-go {
+  flex: 0 0 auto; border: 0; background: transparent; color: var(--text-secondary);
+  cursor: pointer; padding: 0 2px; font-size: 0.76rem; opacity: 0; transition: opacity .12s;
+}
+.cdx-pl-caret { opacity: .8; }        /* the expander must be discoverable without a hover */
+.cdx-pl-row:hover .cdx-pl-edit,
+.cdx-pl-row:hover .cdx-pl-go { opacity: .75; }
+.cdx-pl-edit:hover, .cdx-pl-caret:hover, .cdx-pl-go:hover { opacity: 1; color: var(--primary); }
+.cdx-pl-caret[aria-expanded="true"] { transform: rotate(90deg); }
+.cdx-pl-sub .cdx-pl-go { opacity: .6; }
+.cdx-pl-sub:hover .cdx-pl-go { opacity: 1; }
+
+.cdx-pl-val--ok { color: var(--success); }
+.cdx-pl-val--no { color: var(--text-secondary); }
+
+.cdx-pl-acc { font-weight: 600; }
+.cdx-pl-acc--ok   { color: var(--success); }
+.cdx-pl-acc--soon { color: var(--cdx-warn); }
+.cdx-pl-acc--off  { color: var(--text-secondary); font-weight: 400; opacity: .85; }
+
+/* The fractions on a multi-turma header (2/2, 1/2): green when whole, amber when partial. */
+.cdx-pl-agg--ok   { color: var(--success); font-weight: 600; }
+.cdx-pl-agg--soon { color: var(--cdx-warn); font-weight: 600; }
+.cdx-pl-agg--off  { color: var(--text-secondary); }
+
+.cdx-pl-detail { display: flex; flex-direction: column; background: var(--background); border-bottom: 1px solid var(--border); }
+.cdx-pl-sub { padding: 4px 8px; font-size: 0.74rem; }
+.cdx-pl-sub:hover { background: var(--cdx-hover, rgba(127,127,127,.06)); }
+
+/* The aliases popover the "+" opens: position:fixed so the scrolling list cannot clip it. */
+.cdx-pl-alias-pop {
+  position: fixed; z-index: 60; min-width: 180px; max-width: 320px;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px;
+  box-shadow: 0 6px 24px rgba(0,0,0,.18); padding: 8px 10px;
+  font-size: 0.74rem; color: var(--text-primary);
+}
+.cdx-pl-alias-pop h4 { margin: 0 0 4px; font-size: 0.68rem; color: var(--text-secondary); font-weight: 600; }
+.cdx-pl-alias-pop div { padding: 2px 0; word-break: break-all; }
+
+@media (max-width: 900px) {
+  /* Drop validação + acesso before the identity: on a narrow screen "who" beats "for how long". */
+  .cdx-pl { --pl-cols: 26px 34px minmax(140px, 2fr) minmax(90px, 1fr) 100px 34px; }
+  .cdx-pl--turma { --pl-cols: 26px 34px minmax(140px, 2fr) 100px 34px; }
+  .cdx-pl-val, .cdx-pl-acc { display: none; }
+}

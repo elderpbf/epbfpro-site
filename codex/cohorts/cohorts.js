@@ -15,9 +15,10 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
-import { approvalTagHtml } from '../js/access-model.js';
-import { relTime } from '../js/rel-time.js';
-import { isApprovalGated, groupParticipantsByStatus, sortByName, actionEnabled, actionTargetStatus } from './participant-view.js';
+import { isApprovalGated, actionEnabled, actionTargetStatus } from './participant-view.js';
+// THE list (same component the Alunos roster renders, in the other scope) + the "+" popover.
+import { personListHtml } from './person-list.js';
+import { openAliasPopover } from './alias-popover.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
 import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
@@ -1114,21 +1115,24 @@ function _openImportParticipants(turma) {
 
 // Delegates to the ONE shared person-edit modal (participant-edit.js); the Alunos roster opens the
 // same modal for the identity. Here it edits THIS turma's participant row (name/email/cpf).
-function _openParticipantEditModal(participant, onSaved) {
+// Takes a PERSON (the ct_list_people shape this panel now holds). In turma scope they carry exactly
+// one row, and it is that ROW we edit — person.id is the identity, never a participant id.
+function _openParticipantEditModal(person, onSaved) {
+  const row = ((person.rows || [])[0]) || {};
   openPersonEditModal({
     title: t('cohorts.participant_edit_title'),
     fields: [
-      { key: 'name', label: t('cohorts.participant_name'), value: participant.name, required: true,
+      { key: 'name', label: t('cohorts.participant_name'), value: person.name || row.name_in_turma || '', required: true,
         validate: (v) => (v ? null : t('cohorts.name_required')) },
-      { key: 'email', label: t('cohorts.participant_email'), value: participant.email || '',
+      { key: 'email', label: t('cohorts.participant_email'), value: row.email || person.email || '',
         placeholder: t('cohorts.participant_email_ph'),
         validate: (v) => (!v ? t('cohorts.email_required') : (_emailValid(v) ? null : t('cohorts.email_invalid'))) },
-      { key: 'cpf', label: t('cohorts.participant_cpf'), value: participant.cpf || '', maxlength: 14,
+      { key: 'cpf', label: t('cohorts.participant_cpf'), value: person.cpf || row.cpf || '', maxlength: 14,
         placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => _wireCpfMask(el), secret: true,
         validate: (v) => (!v.replace(/\D/g, '') || _cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
     ],
     onSave: (vals) => api.updateParticipant({
-      id: participant.id, name: vals.name, email: vals.email,
+      id: row.participant_id, name: vals.name, email: vals.email,
       cpf: vals.cpf.replace(/\D/g, '') ? vals.cpf : null,
     }).then(() => { if (onSaved) onSaved(); }),
     savedMsg: t('cohorts.participant_updated'),
@@ -1511,113 +1515,11 @@ function _toggleDossierWindow(btn) {
 // The pure rules (gating, grouping, action predicates) live in participant-view.js
 // and are unit-tested there; this section is the render + DOM wiring only.
 
-// Two orthogonal axes, shown one at a time: while NOT approved the status is the actionable fact;
-// once approved the origin (how they got in) is. The decision itself lives in js/access-model.js
-// so this panel and the Alunos roster cannot disagree about it again — the old else-branch here
-// ("any older/blank value reads as the pre-approved list") was calling 23 people "Lista" who came
-// through the janela or the emergência, while the roster printed the raw column.
-const _pTag = approvalTagHtml;
-
-// 2-letter initials avatar (shared rule, matches the Trail). Tinted by status when
-// approval is gated; a single neutral tint otherwise (status carries no meaning).
-function _pAvatar(p, st, gated) {
-  const tint = !gated ? 'cdx-pav--neutral'
-    : st === 'denied' ? 'cdx-pav--denied'
-    : st === 'pending' ? 'cdx-pav--pending'
-    : 'cdx-pav--approved';
-  return '<span class="cdx-pav ' + tint + '">' + _esc(initials(p.display_name || p.name || p.email || '')) + '</span>';
-}
-
-// One selectable row. No per-row action buttons (B+C2): the whole row toggles its
-// checkbox; the only per-row control is the discreet edit ✎. The status badge shows
-// only when gated; the online dot only for an approved + connected person.
-// Seconds left on a provisional session (client clock; seconds of skew are immaterial for a 12h
-// window). 0 when there is no live session or it already lapsed.
-function _provRemaining(expiresAt) {
-  if (!expiresAt) return 0;
-  return Math.max(0, Number(expiresAt) - Math.floor(Date.now() / 1000));
-}
-// Compact remaining label: 5h / 42min / <1min.
-function _fmtDur(sec) {
-  const h = Math.floor(sec / 3600);
-  const m = Math.floor((sec % 3600) / 60);
-  if (h > 0) return h + 'h';
-  if (m > 0) return m + 'min';
-  return '<1min';
-}
-// Days-aware remaining label for the durable session: 12d / 8h / 42min. Language-neutral
-// (the "expira em" framing comes from i18n), so the same chip serves durable and provisional.
-function _fmtLeft(sec) {
-  const d = Math.floor(sec / 86400);
-  if (d >= 1) return d + 'd';
-  return _fmtDur(sec);
-}
-
-function _pRow(p, gated) {
-  const st = p.access_status || 'pending';
-  // Two axes shown together (track-36, Élder): approval is the status badge (_pTag); here we show
-  // VALIDATION (e-mail confirmed?) + the relevant time — for a not-yet-validated (provisional)
-  // access, how much of the 12h is left; otherwise the last access. The validation chip is neutral
-  // info, NOT the ⚠ alarm that was retired 2026-07-09.
-  let conn = '';
-  if (gated && st === 'approved') {
-    const validated = !!p.email_verified;
-    const valChip = validated
-      ? '<span class="cdx-prow-val ok" title="' + _esc(t('cohorts.pval_validated_t')) + '">' + _esc(t('cohorts.pval_validated')) + '</span>'
-      : '<span class="cdx-prow-val prov" title="' + _esc(t('cohorts.pval_unvalidated_t')) + '">' + _esc(t('cohorts.pval_unvalidated')) + '</span>';
-    // "Dias até expirar" chip (Élder 2026-07-13): the at-a-glance metric for every approved
-    // participant, from the furthest-out live session. Hovering it opens a small popover (no
-    // modal) with the rest of the dossier — validado / aparelhos / último acesso / reentradas.
-    const remain = _provRemaining(p.session_expires_at);
-    let expLabel, expTone;
-    if (remain > 0) { expLabel = t('cohorts.pexp_left').replace('{t}', _fmtLeft(remain)); expTone = remain <= 86400 ? 'soon' : 'ok'; }
-    else if (p.last_access_at) { expLabel = t('cohorts.pexp_lapsed'); expTone = 'off'; }
-    else { expLabel = t('cohorts.pexp_none'); expTone = 'off'; }
-    // Last-access recency (the ✓ acessou / ✕ nunca mark) now lives inside the popover.
-    const lastAccess = p.last_access_at
-      ? '<span class="cdx-prow-conn ok" title="' + _esc(t('cohorts.conn_accessed')) + '">✓</span> ' + _esc(relTime(p.last_access_at))
-      : '<span class="cdx-prow-conn no" title="' + _esc(t('cohorts.conn_never')) + '">✕</span> ' + _esc(t('cohorts.pop_never'));
-    const reN = Number(p.reentry_count || 0);
-    const reVal = reN > 0 && p.last_reentry_at
-      ? reN + ' · ' + t('cohorts.pop_reentry_last').replace('{t}', relTime(p.last_reentry_at))
-      : String(reN);
-    const pop = '<span class="cdx-prow-pop" role="tooltip">' +
-        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_validated')) + '</b> ' + _esc(validated ? t('cohorts.pop_yes') : t('cohorts.pop_no')) + '</span>' +
-        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_devices')) + '</b> ' + _esc(String(Number(p.active_sessions || 0))) + '</span>' +
-        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_last_access')) + '</b> ' + lastAccess + '</span>' +
-        '<span class="cdx-pop-row"><b>' + _esc(t('cohorts.pop_reentries')) + '</b> ' + _esc(reVal) + '</span>' +
-      '</span>';
-    const expChip = '<span class="cdx-prow-exp cdx-prow-exp--' + expTone + '" tabindex="0">' + _esc(expLabel) + pop + '</span>';
-    // Held in its OWN flex cell (cdx-prow-meta), NOT inside the name (which is overflow:hidden +
-    // nowrap and would clip both the chip and its popover). The popover is position:fixed and
-    // placed by JS on hover (see _wireDossierParticipants) so the scrolling dossier body can't clip it.
-    conn = '<span class="cdx-prow-meta">' + valChip + expChip + '</span>';
-  }
-  const badge = gated ? '<span class="cdx-prow-badge">' + _pTag(p) + '</span>' : '';
-  const name = p.display_name || p.name || ('#' + p.id);
-  return '<div class="cdx-prow cdx-prow--sel" data-pid="' + p.id + '" data-status="' + _esc(st) + '" data-verified="' + (p.email_verified ? '1' : '0') + '">' +
-    '<input type="checkbox" class="cdx-pchk" aria-label="' + _esc(name) + '">' +
-    _pAvatar(p, st, gated) +
-    '<div class="cdx-prow-id">' +
-      '<div class="cdx-prow-name">' + _esc(name) + '</div>' +
-      '<div class="cdx-prow-mail">' + _esc(p.email || '') + '</div>' +
-    '</div>' +
-    conn +
-    badge +
-    '<button type="button" class="cdx-prow-edit" data-edit title="' + _esc(t('cohorts.participant_edit_title')) + '">✎</button>' +
-  '</div>';
-}
-
-// A status separator: dot + "Pendentes · N" + a "selecionar seção" link that checks
-// every row in that section at once.
-function _pSep(status, count) {
-  return '<div class="cdx-psec" data-section="' + status + '">' +
-    '<span class="cdx-psec-dot cdx-psec-dot--' + status + '"></span>' +
-    '<span class="cdx-psec-t">' + _esc(t('alunos.filter_' + status)) + ' · ' + count + '</span>' +
-    '<span class="cdx-psec-sp"></span>' +
-    '<button type="button" class="cdx-psec-sel" data-secsel="' + status + '">' + _esc(t('alunos.select_section')) + '</button>' +
-  '</div>';
-}
+// The row, its avatar, its badges, its expiry chip and the section separator all moved to
+// cohorts/person-list.js — the ONE component this panel and the Alunos roster both render. They
+// used to be two implementations of one list (which is how they came to disagree about the same
+// column), and Élder: "they share the same module and this appears to be different
+// implementations of it."
 
 function _paintDossierParticipants(el, turma) {
   const ps = _dossierParticipants;
@@ -1633,61 +1535,64 @@ function _paintDossierParticipants(el, turma) {
   // Adaptive toolbar: master "Todos" + live count + the wired bulk actions. Each action button
   // greys out unless EVERY selected row's status permits it (B+C2). Shared with the Alunos roster
   // via roster-actions.js, so there is ONE toolbar implementation (track-28a2).
-  const toolbar = toolbarHtml(gated);
+  //
+  // The LIST is person-list.js in `turma` scope — the exact component the Alunos roster renders in
+  // `global` scope (Élder: "the only difference is that in the cohort it is pre-filtered for that
+  // cohort and it doesn't show the other cohorts"). Gated keeps the status sections; not gated is a
+  // flat name-sorted roster, since approval makes no difference there.
+  el.innerHTML = toolbarHtml(gated) + personListHtml(ps, {
+    scope: 'turma',
+    groupBy: gated ? 'status' : null,
+    emptyKey: 'cohorts.participants_empty',
+  });
+}
 
-  // Gated -> one list broken into status sections (pending first). Not gated ->
-  // a flat name-sorted roster (no status, since approval makes no difference).
-  const body = gated
-    ? groupParticipantsByStatus(ps)
-        .map((g) => _pSep(g.status, g.rows.length) + g.rows.map((p) => _pRow(p, true)).join(''))
-        .join('')
-    : sortByName(ps).map((p) => _pRow(p, false)).join('');
-
-  el.innerHTML = toolbar + '<div class="cdx-plist">' + body + '</div>';
+// The row id for a person in THIS turma: in turma scope every person carries exactly one row, so
+// data-pids holds that single participant_id.
+function _pidOf(rowEl) { return Number((rowEl.dataset.pids || '').split(',')[0]); }
+function _personInRow(rowEl) {
+  const pid = _pidOf(rowEl);
+  if (!pid) return null;
+  return _dossierParticipants.find((x) => Number((((x.rows || [])[0]) || {}).participant_id) === pid) || null;
 }
 
 function _wireDossierParticipants(el, turma) {
-  // "Dias até expirar" popover (Élder 2026-07-13): the popover is position:fixed, so on hover we
-  // place it at the chip's viewport rect — below it, or above when there isn't room. This escapes
-  // the dossier body's overflow:auto clip that a plain absolute popover hit. CSS :hover does the show/hide.
-  el.addEventListener('mouseover', (ev) => {
-    const chip = ev.target && ev.target.closest ? ev.target.closest('.cdx-prow-exp') : null;
-    if (!chip || !el.contains(chip)) return;
-    const pop = chip.querySelector('.cdx-prow-pop');
-    if (!pop) return;
-    const r = chip.getBoundingClientRect();
-    const h = pop.offsetHeight || 120, w = pop.offsetWidth || 200;
-    const below = r.bottom + 6 + h <= window.innerHeight;
-    pop.style.top = (below ? r.bottom + 6 : Math.max(8, r.top - 6 - h)) + 'px';
-    pop.style.left = Math.max(8, Math.min(r.left, window.innerWidth - w - 8)) + 'px';
-  });
+  // The "+" beside an e-mail: this person's other addresses. Same module, same behaviour as the
+  // Alunos roster (Élder: "this has to be the same behaviour on both tables").
+  el.addEventListener('click', (e) => {
+    const plus = e.target.closest ? e.target.closest('.cdx-pl-plus') : null;
+    if (!plus || !el.contains(plus)) return;
+    e.stopPropagation();
+    const row = plus.closest('.cdx-pl-row');
+    const p = row && _personInRow(row);
+    openAliasPopover(plus, (plus.dataset.aliases || '').split(',').filter(Boolean), p && p.email);
+  }, true);
 
   // Selection + the bulk toolbar come from roster-actions.js (shared with the Alunos roster).
   // Here a row-click toggles selection and an action applies to the selected rows in THIS turma.
   const sel = wireSelection(el, {
-    rowSel: '.cdx-prow--sel',
+    rowSel: '.cdx-pl-row',
     chkSel: '.cdx-pchk',
-    ignoreSel: '[data-edit]',
+    ignoreSel: '[data-edit],[data-caret],.cdx-pl-plus,.cdx-pl-go',
     rowClickToggles: true,
     enabledFor: (act, rowEls) => actionEnabled(act, rowEls.map((r) => ({ status: r.dataset.status, verified: r.dataset.verified === '1' }))),
-    onApply: (act, rowEls) => _applyParticipantAction(act, rowEls.map((r) => Number(r.dataset.pid)), turma),
+    onApply: (act, rowEls) => _applyParticipantAction(act, rowEls.map(_pidOf).filter(Boolean), turma),
   });
 
-  // Per-row edit ✎ (participants-only).
+  // Per-row edit ✎.
   el.querySelectorAll('[data-edit]').forEach((ed) => ed.addEventListener('click', (e) => {
     e.stopPropagation();
-    const row = ed.closest('.cdx-prow--sel');
-    if (!row) return;
-    const p = _dossierParticipants.find((x) => Number(x.id) === Number(row.dataset.pid));
-    if (p) _openParticipantEditModal(p, () => _loadDossierParticipants(turma));
+    const row = ed.closest('.cdx-pl-row');
+    const person = row && _personInRow(row);
+    if (person) _openParticipantEditModal(person, () => _loadDossierParticipants(turma));
   }));
 
-  // "selecionar seção" (participants-only): check every row of one status group.
+  // "selecionar seção": check every row of one status group.
   el.querySelectorAll('[data-secsel]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       const sec = btn.dataset.secsel;
-      el.querySelectorAll('.cdx-prow--sel').forEach((r) => {
+      el.querySelectorAll('.cdx-pl-row').forEach((r) => {
         if (r.dataset.status !== sec) return;
         const c = r.querySelector('.cdx-pchk');
         if (c) c.checked = true;
@@ -1713,8 +1618,11 @@ async function _applyParticipantAction(act, ids, turma) {
 }
 
 function _loadDossierParticipants(turma) {
-  api.listParticipants({ turma_id: turma.id }).then((d) => {
-    _dossierParticipants = (d && d.participants) || [];
+  // Same action as the Alunos roster; turma_id is the FILTER. So this panel now holds PEOPLE (each
+  // with their single row for this turma), not raw participant rows — which is what lets the one
+  // component render both surfaces.
+  api.listPeople({ turma_id: turma.id }).then((d) => {
+    _dossierParticipants = (d && d.people) || [];
     const el = _q('cdx-doss-participants');
     if (!el) return;
     _paintDossierParticipants(el, turma);

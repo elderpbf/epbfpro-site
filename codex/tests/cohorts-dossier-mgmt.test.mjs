@@ -137,13 +137,15 @@ test('labs3 rodada 3: the roster connection mark is ✓ acessou / ✕ não acess
   // Élder 2026-07-09: the old ● read like the legend's • "não logou"; the ⚠ (e-mail não
   // confirmado) was a different axis that misfired as an alarm. Now one axis, two explicit
   // marks, plus how long ago the last access was.
-  assert.match(cohortsJs, /import \{ relTime \} from '\.\.\/js\/rel-time\.js'/, 'imports the relative-time helper');
-  const pRow = cohortsJs.slice(cohortsJs.indexOf('function _pRow'), cohortsJs.indexOf('function _pSep'));
-  assert.match(pRow, /cdx-prow-conn ok"[^>]*>✓/, 'connected renders a ✓');
-  assert.match(pRow, /cdx-prow-conn no"[^>]*>✕/, 'not-accessed renders a ✕');
-  assert.match(pRow, /relTime\(p\.last_access_at\)/, 'accessed rows show the last-access recency');
-  assert.ok(!/cdx-prow-online/.test(pRow), 'the old ● online dot is gone from the row');
-  assert.ok(!/cdx-prow-warn/.test(pRow), 'the ⚠ e-mail-unverified mark is out of the row');
+  // The row moved to cohorts/person-list.js (track-28a2: ONE list component for the dossiê AND the
+  // Alunos roster), so the marks are asserted at their new home. The DECISION is unchanged.
+  const plJs = read('../cohorts/person-list.js');
+  assert.match(plJs, /import \{ relTime \} from '\.\.\/js\/rel-time\.js'/, 'imports the relative-time helper');
+  const detail = plJs.slice(plJs.indexOf('function accessDetail'), plJs.indexOf('export function accessCell'));
+  assert.match(detail, /'✓ ' \+ relTime\(row\.last_access_at\)/, 'accessed renders a ✓ with the recency');
+  assert.match(detail, /'✕ ' \+ t\('cohorts\.pop_never'\)/, 'not-accessed renders a ✕');
+  assert.ok(!/cdx-prow-online/.test(plJs), 'the old ● online dot is gone from the row');
+  assert.ok(!/cdx-prow-warn/.test(plJs), 'the ⚠ e-mail-unverified mark is out of the row');
   // Legend matches the row exactly: ✓ + ✕, no phantom • / ⚠.
   const legStart = cohortsJs.indexOf('function _openParticipantsHelp');
   const legend = cohortsJs.slice(legStart, legStart + 2000);
