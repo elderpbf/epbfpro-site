@@ -1074,7 +1074,20 @@
 .cdx-t1b-card.is-open { border-color: var(--primary); }
 .cdx-t1b-chead { display: flex; align-items: center; gap: 0.5rem; padding: 0.6rem 0.75rem; cursor: pointer; flex-wrap: wrap; }
 .cdx-t1b-chead:hover { background: var(--cdx-card-hover-bg); }
-.cdx-t1b-cname { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); }
+/* Élder 2026-07-15: "deixa na linha do título, só wrap se o viewport não comportar."
+   The "Resposta do instrutor" / "Nota" chips were dropping to a row of their own next to a
+   perfectly short card. The cause is a flexbox subtlety, not a lack of room: line breaking is
+   decided from each item's HYPOTHETICAL size (its natural content width) BEFORE any shrinking —
+   flex items never shrink to avoid a wrap, they only shrink once the line is already fixed. With
+   no flex sizing here, the title contributed its full untruncated width, so a longish tarefa name
+   alone pushed the chips onto line 2 while the space they needed sat unused beside it.
+   `flex: 1 1 0` makes the title's hypothetical size ZERO, so it can never force the break by
+   itself; it then grows into whatever the chips leave over, and the text wraps INSIDE its own
+   column (no ellipsis — a truncated tarefa title is a real loss, a two-line one is not). The
+   chips wrap now only when the chips themselves cannot fit, which is exactly "só se o viewport
+   não comportar". min-width: 0 because a flex item's automatic minimum is min-content, which
+   would put the longest word back in charge. */
+.cdx-t1b-cname { font-weight: 600; font-size: 0.9rem; color: var(--text-primary); flex: 1 1 0; min-width: 0; overflow-wrap: anywhere; }
 .cdx-t1b-badge { font-size: 0.66rem; font-weight: 700; border-radius: 999px; padding: 0.08rem 0.45rem; border: 1px solid var(--cdx-chip-border); }
 .cdx-t1b-badge.is-avail { color: var(--primary); background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
 .cdx-t1b-badge.is-held { color: var(--text-secondary); background: var(--cdx-chip-bg); }

@@ -86,15 +86,16 @@
 .cdx-badge-danger  { background: var(--tint-danger);  color: var(--tint-danger-tx); }
 .cdx-badge-info    { background: var(--tint-info);    color: var(--tint-info-tx); }
 .cdx-badge-task    { background: var(--tint-task);    color: var(--tint-task-tx); }
-/* accent badge: set --acc to any palette hue (or a semantic --acc-<tab>) */
+/* accent badge: set --acc to any palette hue (or a semantic --acc-<tab>).
+   No leading dot. It used to draw one (a 7px ::before in --acc), which was never a decision about
+   any particular badge — accent is just the generic "tint me any hue" variant, and its only caller
+   is the aprovação word "Janela", which borrowed it to get a 5th colour. The dot came along for the
+   ride and made Janela the odd one out next to Lista/Manual/Emergência (Élder: "why does janela tag
+   have a dot on the left"). The hue already carries the meaning. (2026-07-15) */
 .cdx-badge-accent {
   background: color-mix(in oklab, var(--acc, var(--primary)) var(--acc-mix-bg), var(--surface));
   border-color: color-mix(in oklab, var(--acc, var(--primary)) 35%, transparent);
   color: var(--text-primary);
-}
-.cdx-badge-accent::before {
-  content: ''; width: 7px; height: 7px; border-radius: 50%;
-  background: var(--acc, var(--primary)); flex-shrink: 0;
 }
 /* count badge (numeric pill) */
 .cdx-badge-count { background: var(--cdx-chip-bg); color: var(--tint-primary-tx); border-color: var(--cdx-chip-border); min-width: 20px; justify-content: center; }
