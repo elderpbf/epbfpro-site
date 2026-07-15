@@ -18,6 +18,7 @@ import { initials } from '../js/initials.js';
 import { isApprovalGated, actionEnabled, actionTargetStatus } from './participant-view.js';
 // THE list (same component the Alunos roster renders, in the other scope) + the "+" popover.
 import { personListHtml } from './person-list.js';
+import { openPersonLegend } from './person-legend.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick, FILTER_IDS } from './person-filters.js';
 import { openAliasPopover } from './alias-popover.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
@@ -994,41 +995,9 @@ function _openTurmaForm(turma) {
 
 // ── Participantes: add + import (the unified list itself lives in the dossier panel) ──
 
-// A plain-language legend for the participant list: what each tag, status, and
-// connection mark means. Opened from the "?" glyph next to "Participantes" so the
-// scheme is self-explaining months later. Reuses the real tag classes so the
-// swatches match the rows exactly.
-function _openParticipantsHelp() {
-  const tag = (cls, key) => '<span class="cdx-tag ' + cls + '">' + _esc(t(key)) + '</span>';
-  const row = (swatch, text) =>
-    '<div class="cdx-leg-row"><span class="cdx-leg-sw">' + swatch + '</span>' +
-      '<span class="cdx-leg-tx">' + _esc(text) + '</span></div>';
-  const html =
-    '<div class="cdx-modal" style="max-width:540px;max-height:88vh;overflow-y:auto">' +
-      '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
-
-      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
-      row(tag('cdx-badge cdx-badge-primary', 'access.origin_lista'),                                t('cohorts.phelp_lista')) +
-      row(tag('cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)', 'access.origin_janela'),  t('cohorts.phelp_janela')) +
-      row(tag('cdx-badge cdx-badge-success', 'access.origin_manual'),                               t('cohorts.phelp_manual')) +
-      row(tag('cdx-badge cdx-badge-info', 'access.origin_emergencia'),                              t('cohorts.phelp_emergencia')) +
-
-      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
-      row(tag('cdx-badge cdx-badge-task', 'access.state_pending'),   t('cohorts.phelp_pending')) +
-      row(tag('cdx-badge cdx-badge-danger', 'access.state_denied'),  t('cohorts.phelp_denied')) +
-      '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
-
-      '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
-      row('<span class="cdx-prow-conn ok">✓</span>', t('cohorts.phelp_connected')) +
-      row('<span class="cdx-prow-conn no">✕</span>', t('cohorts.phelp_never')) +
-
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn cdx-btn-primary" id="cdx-phelp-close">' + _esc(t('cohorts.close')) + '</button>' +
-      '</div>' +
-    '</div>';
-  const bd = _openModal(html);
-  bd.querySelector('#cdx-phelp-close').addEventListener('click', () => _closeModal(bd));
-}
+// The participant-list legend now lives in cohorts/person-legend.js — the SAME card the Usuários
+// roster opens (Élder 2026-07-15: "let's put the legend back on both people and participant
+// lists"). It was private here, which is why the roster never had one.
 
 // Add a single participant (name + e-mail + optional CPF). A focused form, NOT a
 // second copy of the list — the unified list lives in the dossier panel and is
@@ -1355,7 +1324,7 @@ function _renderDossier(turma) {
     if (a === 'padd' || a === 'pimport' || a === 'phelp') e.stopPropagation();
     if (a === 'padd') _openAddParticipant(turma);
     else if (a === 'pimport') _openImportParticipants(turma);
-    else if (a === 'phelp') _openParticipantsHelp();
+    else if (a === 'phelp') openPersonLegend({ scope: 'turma' });
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'unarchive') _unarchiveTurma(turma.client_slug, turma.slug);
     else if (a === 'delete') _deleteTurma(turma);

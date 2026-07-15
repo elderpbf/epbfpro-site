@@ -62,7 +62,7 @@ export default {
   'notif.tier_dismiss': 'Dispensáveis',
 
   // Alunos (student access) admin section
-  'alunos.title':        'Alunos',
+  'alunos.title':        'Usuários',
   'alunos.turma':        'Turma',
   'alunos.pick':         'Selecione uma turma...',
   'alunos.pick_hint':    'Selecione uma turma para gerenciar o acesso dos alunos.',
@@ -214,11 +214,11 @@ export default {
   // Sub-tabs + Cursos (course/ementa registry)
   'cohorts.sub_turmas':           'Turmas',
   'cohorts.sub_cursos':           'Cursos',
-  'cohorts.sub_alunos':           'Alunos',
+  'cohorts.sub_alunos':           'Usuários',
   // Alunos (cross-turma deduped roster, track-28a2)
   'alunos.search_ph':      'Buscar por nome ou e-mail…',
   'alunos.filter_multi':   'Só em várias turmas',
-  'alunos.stat_total':     '{n} alunos',
+  'alunos.stat_total':     '{n} usuários',
   'alunos.stat_multi':     '{n} em várias turmas',
   'alunos.stat_pending':   '{n} com acesso pendente',
   'alunos.multi_label':    'Várias turmas',
@@ -228,8 +228,8 @@ export default {
   'alunos.last_access':    'último acesso',
   'alunos.never':          'nunca acessou',
   'alunos.open_turma':     'Abrir turma',
-  'alunos.empty':          'Nenhum aluno ainda.',
-  'alunos.no_match':       'Nenhum aluno corresponde ao filtro.',
+  'alunos.empty':          'Nenhum usuário ainda.',
+  'alunos.no_match':       'Nenhum usuário corresponde ao filtro.',
   'alunos.just_now':       'agora mesmo',
   'alunos.mins_ago':       'há {n} min',
   'alunos.hours_ago':      'há {n} h',
@@ -608,21 +608,37 @@ export default {
   // Cohorts — participant entry-type tags (inline list)
   // Cohorts — participant list legend (the "?" help glyph)
   'cohorts.phelp_btn_title':     'Como funciona esta lista',
-  'cohorts.phelp_title':         'Como funciona a lista de participantes',
-  'cohorts.phelp_origin_h':      'Como a pessoa entrou (quando já está aprovada)',
+  // A legenda da lista (cohorts/person-legend.js). Os 3 conceitos vêm de
+  // manifest/architecture/access.md §"Os 3 conceitos" — mesma redação, para não divergirem.
+  'cohorts.phelp_concepts_h':    'Os 3 conceitos desta lista',
+  'cohorts.phelp_c_approval':    'Deixei essa pessoa entrar nas minhas aulas. Manual, por lista, ou automático enquanto a janela estava aberta. Quem pede fora da janela fica pendente até eu aprovar.',
+  'cohorts.phelp_c_validation':  'Provou que o e-mail é dela mesmo (clicou no link). Sozinho não dá acesso nenhum: só define por quanto tempo o acesso dura.',
+  'cohorts.phelp_c_access':      'A sessão viva, agora. Tem prazo e expira. Aprovado + validado = 15 dias; aprovado sem validar = 12h; Emergência = 8h.',
+  'cohorts.phelp_c_note':        'São independentes: dá para estar aprovado e validado e mesmo assim sem acesso, porque a sessão expirou. É só entrar de novo.',
+  'cohorts.phelp_val_h':         'Validação',
+  'cohorts.phelp_validado':      'Clicou no link e provou que a caixa de entrada é dela.',
+  'cohorts.phelp_nao_validado':  'Ainda não confirmou o e-mail. Continua entrando, mas com sessão curta.',
+  'cohorts.phelp_acc_h':         'Acesso',
+  'cohorts.phelp_acc_live':      'Sessão viva, com o tempo que ainda falta para expirar.',
+  'cohorts.phelp_acc_soon':      'Menos de um dia para expirar.',
+  'cohorts.phelp_acc_lapsed':    'Já entrou, mas a sessão venceu. Basta entrar de novo.',
+  'cohorts.phelp_acc_never':     'Está liberada, mas nunca entrou na trilha.',
+  'cohorts.phelp_marks_h':       'Marcas da lista',
+  'cohorts.phelp_frac':          'A pessoa está em mais de uma turma: aprovada em 2 das 2, por exemplo. Abra a linha para ver turma por turma.',
+  'cohorts.phelp_caret':         'Tem mais de uma turma. Clique em qualquer lugar da linha para abrir.',
+  'cohorts.phelp_plus':          'Tem outros e-mails além do principal (foram mesclados). Clique para ver quais.',
+  'cohorts.phelp_hover_note':    'Passe o mouse em qualquer célula: ela explica o que é e conta o resto (onde, quando e como).',
+  'cohorts.phelp_title':         'Como funciona esta lista',
+  'cohorts.phelp_origin_h':      'Aprovação: como a pessoa entrou',
   'cohorts.phelp_lista':         'Você pré-aprovou o e-mail dela na lista, antes da aula.',
   'cohorts.phelp_janela':        'Entrou na hora, pela janela que você abriu na aula (código/QR, ou o próprio e-mail enquanto a janela estava aberta).',
   'cohorts.phelp_manual':        'Pediu acesso pelo link e você aprovou na mão.',
   'cohorts.phelp_emergencia':    'Entrou pela Emergência (e-mail + nome, sessão curta de 8h), preservando a identidade.',
-  'cohorts.phelp_status_h':      'Situação (enquanto ainda não está liberada)',
   'cohorts.phelp_pending':       'Pediu acesso pelo link e está esperando você aprovar.',
   'cohorts.phelp_denied':        'Você bloqueou o acesso. Pode reativar quando quiser.',
   'cohorts.phelp_approved_note': 'Quem já está aprovado não mostra situação, só a origem acima.',
-  'cohorts.phelp_conn_h':        'Acesso à trilha (de quem já está aprovado)',
   'cohorts.phelp_connected':     'Já acessou a trilha. Ao lado aparece há quanto tempo foi o último acesso.',
   'cohorts.phelp_never':         'Está liberado, mas ainda não acessou a trilha nenhuma vez.',
-  'cohorts.phelp_waiting':       'Está liberado, mas ainda não fez login nenhuma vez.',
-  'cohorts.phelp_unverified':    'O e-mail ainda não foi confirmado (não clicou no link de verificação).',
 
   // Content tab — sub-tab nav (Items native; the rest bridge to the legacy
   // ClassTrail page until each is migrated)

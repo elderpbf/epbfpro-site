@@ -1021,6 +1021,21 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-leg-sw { flex: 0 0 auto; min-width: 64px; display: flex; align-items: center; }
 .cdx-leg-tx { font-size: .84rem; color: var(--text-primary); line-height: 1.4; }
 .cdx-leg-note { font-size: .78rem; color: var(--text-secondary); margin: .4rem 0 0; font-style: italic; }
+/* A swatch that is a WORD (the three concepts, the 2/2 fraction) rather than a badge. */
+.cdx-leg-word { font-size: .74rem; font-weight: 700; color: var(--tint-primary-tx); white-space: nowrap; }
+/* The legend card scrolls in its body, like the Limpeza modal: title and the close button stay put. */
+.cdx-leg-modal { display: flex; flex-direction: column; max-height: 88vh; }
+.cdx-leg-modal .cdx-modal-title, .cdx-leg-modal .cdx-modal-actions { flex-shrink: 0; }
+.cdx-leg-body { flex: 1; min-height: 0; overflow-y: auto; }
+/* The "?" beside the list title (Élder: "just a ? glyph besides Alunos"). Deliberately small and
+   quiet — it is a reference card for months from now, not a control anyone needs today. */
+.cdx-leg-btn {
+  width: 18px; height: 18px; flex-shrink: 0; padding: 0; border-radius: 50%; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: var(--text-secondary);
+  font-size: 0.7rem; font-weight: 700; line-height: 1; align-self: center;
+}
+.cdx-leg-btn:hover { border-color: var(--tint-primary-tx); color: var(--tint-primary-tx); }
+.cdx-leg-btn:focus-visible { outline: 2px solid var(--tint-primary-tx); outline-offset: 2px; }
 
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 

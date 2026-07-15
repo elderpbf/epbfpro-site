@@ -32,6 +32,7 @@ import { cpfValid, emailValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
 import { personListHtml } from './person-list.js';
 import { openAliasPopover } from './alias-popover.js';
+import { legendButtonHtml, openPersonLegend } from './person-legend.js';
 
 let _viewEl = null;
 let _people = [];
@@ -66,6 +67,9 @@ function _renderShell() {
       '<div class="cdx-alunos-head">' +
         '<h1 class="cdx-alunos-h1">' + esc(t('alunos.title')) + '</h1>' +
         '<div class="cdx-alunos-stats" id="cdx-al-stats"></div>' +
+        // The "?" beside the title (Élder): the same legend the dossiê opens, so the scheme explains
+        // itself months from now on whichever list you happen to be looking at.
+        legendButtonHtml() +
       '</div>' +
       '<div class="cdx-alunos-card">' +
         '<div id="cdx-al-tools"></div>' +
@@ -88,6 +92,11 @@ function _renderShell() {
       if (e.target.closest('#cdx-al-dupes')) openCleanupModal({ pairs: _dupes, tests: _tests }, () => _load());
     });
   }
+  // The "?" sits in the head, not the tools bar, so it gets its own listener there.
+  const headEl = _q('.cdx-alunos-head');
+  if (headEl) headEl.addEventListener('click', (e) => {
+    if (e.target.closest('#cdx-pl-help')) openPersonLegend({ scope: 'global' });
+  });
   const roster = _q('#cdx-al-roster');
   if (roster) roster.addEventListener('click', (e) => {
     // Selection (checkbox) and the bulk toolbar are owned by roster-actions; ignore them here.

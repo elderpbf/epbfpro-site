@@ -146,13 +146,16 @@ test('labs3 rodada 3: the roster connection mark is ✓ acessou / ✕ não acess
   assert.match(detail, /'✕ ' \+ t\('cohorts\.pop_never'\)/, 'not-accessed renders a ✕');
   assert.ok(!/cdx-prow-online/.test(plJs), 'the old ● online dot is gone from the row');
   assert.ok(!/cdx-prow-warn/.test(plJs), 'the ⚠ e-mail-unverified mark is out of the row');
-  // Legend matches the row exactly: ✓ + ✕, no phantom • / ⚠.
-  const legStart = cohortsJs.indexOf('function _openParticipantsHelp');
-  const legend = cohortsJs.slice(legStart, legStart + 2000);
+  // Legend matches the row exactly: ✓ + ✕, no phantom • / ⚠. The legend moved OUT of cohorts.js to
+  // cohorts/person-legend.js (Élder 2026-07-15: "put the legend back on both people and participant
+  // lists") — it was private here, which is why the roster never had one. The DECISION is unchanged,
+  // so the assertions just follow it to its new home.
+  const legend = read('../cohorts/person-legend.js');
   assert.match(legend, /cdx-prow-conn ok">✓/, 'legend connected = ✓');
   assert.match(legend, /cdx-prow-conn no">✕/, 'legend not-accessed = ✕');
   assert.ok(!/cdx-prow-conn">•/.test(legend), 'no phantom • waiting row');
   assert.ok(!/cdx-prow-warn">⚠/.test(legend), 'no ⚠ unverified row in the legend');
+  assert.ok(!/_openParticipantsHelp/.test(cohortsJs), 'the private copy in cohorts.js is gone, not orphaned');
   for (const k of ['cohorts.conn_accessed', 'cohorts.conn_never', 'cohorts.phelp_never']) {
     const re = new RegExp("'" + k.replace(/\./g, '\\.') + "'");
     assert.match(ptJs, re, `${k} in pt`);
