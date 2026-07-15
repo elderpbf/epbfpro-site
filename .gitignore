@@ -20,3 +20,4 @@ desktop.ini
 # Environment files (if you add any later)
 .env
 .env.local
+.wrangler/

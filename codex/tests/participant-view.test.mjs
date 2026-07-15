@@ -82,14 +82,25 @@ test('actionEnabled: an action is live only when EVERY selected row permits it',
   assert.equal(actionEnabled('nope', rows('pending')), false, 'unknown action stays off');
 });
 
-test('actionEnabled: validate is live only for approved rows not yet e-mail-validated', () => {
+test('actionEnabled: validate reads the validation axis ALONE, never approval', () => {
+  // Élder, settling it on the track-29/track-28a2 merge (2026-07-15): "validation and approval are
+  // different and independent things." track-29 shipped `approved && !verified`; that coupling is
+  // gone. A pending person really can be validated — enrolling outside the window validates the
+  // e-mail while approval waits — and it grants them nothing, it only decides how long their access
+  // will last once approval comes (access.md §Os 3 conceitos).
   assert.equal(actionEnabled('validate', [{ status: 'approved', verified: false }]), true, 'approved + unvalidated');
+  assert.equal(actionEnabled('validate', [{ status: 'pending', verified: false }]), true, 'PENDING + unvalidated: the two axes are independent');
+  assert.equal(actionEnabled('validate', [{ status: 'denied', verified: false }]), true, 'blocked + unvalidated: still its own axis');
   assert.equal(actionEnabled('validate', [{ status: 'approved', verified: true }]), false, 'already validated');
-  assert.equal(actionEnabled('validate', [{ status: 'pending', verified: false }]), false, 'pending is not validatable on this axis');
+  assert.equal(actionEnabled('validate', [{ status: 'pending', verified: true }]), false, 'already validated, whatever the approval');
+  assert.equal(actionEnabled('validate', [
+    { status: 'pending', verified: false },
+    { status: 'approved', verified: false },
+  ]), true, 'mixed approvals are irrelevant — both still owe the proof');
   assert.equal(actionEnabled('validate', [
     { status: 'approved', verified: false },
     { status: 'approved', verified: true },
-  ]), false, 'off if ANY selected row is already validated');
+  ]), false, 'off if ANY selected row is already validated (it would be a no-op for that one)');
 });
 
 test('actionTargetStatus: maps an action to the status it sets (null = no re-status)', () => {

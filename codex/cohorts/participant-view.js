@@ -38,35 +38,52 @@ export function groupParticipantsByStatus(participants) {
     .filter((g) => g.rows.length);
 }
 
-// Adaptive-toolbar rules (B+C2): an action is enabled only when EVERY selected
-// row satisfies its predicate. Each predicate reads a row's TWO axes together —
-// { status: access_status, verified: email_verified bool } — because approval and
-// e-mail validation are independent (track-36). `validate` is the admin "validar
-// acesso" (track-29): offered for an approved-but-not-yet-validated row, where the
-// validation chip is shown, so the button and the chip agree. Only backend-wired
-// actions live here; "revoke token" stays absent until its worker action ships.
+// THE action list, and the SINGLE source of what can be done to a person: every surface (the turma
+// Participantes panel and the cross-turma Usuários roster) renders this same list and gates it the
+// same way, so an action added here reaches both at once. Adding one in only one place is the bug
+// that left "validar" missing from the roster (Élder 2026-07-14).
+//
+// An action is enabled only when EVERY selected row satisfies its predicate, and a predicate reads
+// a row's TWO axes together — { status: access_status, verified: email_verified bool } — because
+// approval and e-mail validation are independent (track-36, access.md §Os 3 conceitos).
+//
+// `validate` is the admin "validar acesso" (track-29): offered for ANY row whose e-mail is not
+// confirmed yet, whatever its approval says. Élder settled this on merge (2026-07-15): "validation
+// and approval are different and independent things."
+//
+// track-29 shipped the coupled rule `status === 'approved' && !verified`, on the rationale that it
+// should only appear where the validation chip did. That rationale expired: the validação column now
+// renders on EVERY row, and coupling the two contradicts access.md §Os 3 conceitos — a pending person
+// really can be validated (enrolling outside the window validates the e-mail while approval waits),
+// and validating them grants nothing on its own. It only decides how long their access lasts once
+// approval does come.
+//
+// Only backend-wired actions live here; "revoke token" stays absent until its worker action ships,
+// so the toolbar never grows a dead button.
 export const ACTION_RULES = {
   approve:  (r) => r.status === 'pending',
-  validate: (r) => r.status === 'approved' && !r.verified,
+  validate: (r) => !r.verified,   // ct_set_email_verified — its own axis, not approval's
   block:    (r) => r.status !== 'denied',
   unblock:  (r) => r.status === 'denied',
   remove:   () => true,
 };
 
-// The toolbar actions offered for a given gating state, in display order.
+// The toolbar actions offered for a given gating state, in display order. Approval and validation
+// only mean something when access is gated; without it everyone is simply in.
 export function toolbarActions(gated) {
   return gated ? ['approve', 'validate', 'block', 'unblock', 'remove'] : ['remove'];
 }
 
-// Whether `action` is enabled for the given array of selected rows. Each row is
-// { status, verified }; the action is live only when EVERY selected row permits it.
+// Whether `action` is live for the selection: EVERY selected row must satisfy the rule, so an
+// action that would be a no-op for part of the selection is not offered (Élder: "only the actions
+// that can be done to all of the selected are available"). Each row is { status, verified }.
 export function actionEnabled(action, rows) {
   const rule = ACTION_RULES[action];
   return !!(rule && rows.length > 0 && rows.every(rule));
 }
 
-// The access_status an action moves the selected rows to (null when the action
-// does not re-status: `remove` deletes, `validate` flips the validation axis).
+// The access_status an action moves the selected rows to. null for the actions that don't
+// re-status: `remove` deletes, `validate` flips the validation axis instead.
 export function actionTargetStatus(action) {
   if (action === 'approve') return 'approved';
   if (action === 'block') return 'denied';
