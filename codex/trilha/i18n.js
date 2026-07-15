@@ -189,7 +189,7 @@ const pt = {
   'tarefas.delivery_n':     'Entrega {n}',
   // Assinatura + carimbo de cada interação do cartão.
   'tarefas.by_at':          'de {who} em {when}',
-  'tarefas.msg_by_at':      'Mensagem de {who} em {when}',
+  'tarefas.msg_by_at':      'Mensagem do {who} em {when}',
   'tarefas.anonymous':      'Anônimo',
   'tarefas.instructor':     'Instrutor',
   'tarefas.field_prompt':   'Proposta',
