@@ -7,16 +7,21 @@
 // that share one idea — the registry has junk in it and only Élder can say which — and nothing else:
 //
 //   DUPLICATAS       one person under two e-mails. a1 made same-e-mail duplicates impossible, so
-//                    these are a typo, or a personal + work address. The backend SUGGESTS a verdict
-//                    and it comes pre-selected; a wrong click here is cheap (a merge is undoable by
-//                    hand, a dismissal only hides a suggestion).
+//                    these are a typo, or a personal + work address. A three-state pill per pair:
+//                    mesclar | não é a mesma | deixar assim.
 //   REGISTROS DE TESTE  throwaway registrations (10 Minute Mail burners, @example.com seeds, rows
-//                    named "teste"). NOTHING is pre-selected and the button is destructive: this
-//                    delete purges the person's rows, sessions and identity, and nothing brings them
-//                    back. The backend only points; Élder ticks.
+//                    named "teste"). Tick the ones to purge.
 //
-// The asymmetry is the whole design: two sections, two opposite defaults, for two opposite costs of
-// being wrong.
+// NOTHING IS DECIDED ON OPEN, in either section. The backend only ever SUGGESTS, and the suggestion
+// is shown (a "sugerido" marker) rather than pre-selected, so a pair Élder never looked at is a pair
+// nothing happens to.
+//
+// THREE buttons, and only one of them touches the database:
+//   Cancelar           closes; nothing was staged, so nothing is lost.
+//   Aceitar sugestões  FILLS IN our recommendation everywhere — every pair onto its suggested
+//                      verdict, every test registration ticked. Executes nothing.
+//   Aplicar            THE executor: merges, dismissals and deletions, whatever is currently decided.
+//                      Disabled until something is.
 import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
@@ -83,7 +88,7 @@ export function segmentedHtml(name, options, selected) {
 //
 // The suggestion is still SHOWN (a "sugerido" marker on its segment) — it is no longer pre-selected,
 // so without the marker "aceitar todas" would be a black box.
-function _pairHtml(p, idx) {
+export function pairHtml(p, idx) {
   const sug = p.suggestion === 'not_dup' ? 'not' : 'merge';
   const opts = [
     { value: 'merge', label: t('alunos.dup_v_merge'), hint: sug === 'merge' ? t('alunos.dup_suggested') : '' },
@@ -94,9 +99,12 @@ function _pairHtml(p, idx) {
       ' data-name-a="' + esc(p.a.name || p.a.email) + '" data-name-b="' + esc(p.b.name || p.b.email) + '">' +
       '<div class="cdx-dup-why">' + _reasons(p.reasons) + '</div>' +
       segmentedHtml('same-' + idx, opts, 'leave') +
-      // Hidden until "mesclar" is picked: the name choice only exists once he says it IS one person.
-      // (The survivor comes with it — some records carry a fuller name than the other.)
-      '<div class="cdx-dup-names" hidden>' +
+      // ALWAYS visible: WHO the pair is. Hiding the two identities behind the "mesclar" state left a
+      // pair showing nothing but its reason chip and the pill — impossible to judge, since the whole
+      // question is "are these two the same person" and the two people were exactly what was missing.
+      // Only the CHOICE of survivor is gated (the .is-merging class below): the names are information,
+      // picking one is a decision.
+      '<div class="cdx-dup-names">' +
         '<div class="cdx-dup-q">' + esc(t('alunos.dup_which_name')) + '</div>' +
         _option(p.a, 'a', idx, p.suggestion !== 'keep_b') +
         _option(p.b, 'b', idx, p.suggestion === 'keep_b') +
@@ -146,7 +154,7 @@ export function openCleanupModal(data, onDone) {
   const list = (data && data.pairs) || [];
   const tests = (data && data.tests) || [];
   const dupBody = list.length
-    ? list.map(_pairHtml).join('')
+    ? list.map(pairHtml).join('')
     : '<div class="cdx-empty">' + esc(t('alunos.dupes_none')) + '</div>';
   const testBody = tests.length
     ? '<p class="cdx-helper-text">' + esc(t('alunos.tests_hint')) + '</p>' +
@@ -164,45 +172,57 @@ export function openCleanupModal(data, onDone) {
           '<div class="cdx-dup-list">' + dupBody + '</div>') +
         _sectionHtml(t('alunos.sec_tests'), tests.length, testBody) +
       '</div>' +
+      // THREE buttons, not four (Élder: "no need for an 'apagar selecionados' button — if it's
+      // choosing people to be deleted, apply just does that"). Aplicar is the ONE executor: it
+      // merges, dismisses and deletes, whatever was decided. Aceitar sugestões only FILLS IN the
+      // suggestion everywhere — including ticking the test registrations — and executes nothing, so
+      // there is always a look before the leap.
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" id="cdx-dup-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
-        (tests.length ? '<button class="cdx-btn cdx-btn-danger" id="cdx-test-del" disabled>' + esc(t('alunos.test_delete')) + '</button>' : '') +
-        (list.length ? '<button class="cdx-btn" id="cdx-dup-all">' + esc(t('alunos.dup_accept_all')) + '</button>' : '') +
-        (list.length ? '<button class="cdx-btn cdx-btn-primary" id="cdx-dup-apply" disabled>' + esc(t('alunos.dup_apply')) + '</button>' : '') +
+        '<button class="cdx-btn" id="cdx-dup-all">' + esc(t('alunos.dup_accept_all')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" id="cdx-dup-apply" disabled>' + esc(t('alunos.dup_apply')) + '</button>' +
       '</div>' +
     '</div>';
   const bd = openModal(html, { disableBackdropClose: true });
 
-  // Same/not-same reveals or hides the name choice; the picked name highlights. Ticking a test row
-  // arms the delete button — it stays disabled while nothing is selected, so the destructive button
-  // is never live by default.
+  // Repaint one pair: which segment is live, whether the survivor is choosable, which name is picked.
+  function _syncPair(pair) {
+    const same = pair.querySelector('input[name^=same-]:checked');
+    const merging = !!(same && same.value === 'merge');
+    // The identities stay VISIBLE either way — only picking between them is a "mesclar" thing.
+    pair.classList.toggle('is-merging', merging);
+    pair.querySelectorAll('.cdx-seg-opt').forEach((c) => {
+      const r = c.querySelector('input[type=radio]');
+      c.classList.toggle('is-on', !!(r && r.checked));
+    });
+    pair.querySelectorAll('.cdx-dup-opt').forEach((c) => {
+      const r = c.querySelector('input[type=radio]');
+      c.classList.toggle('is-on', merging && !!(r && r.checked));
+    });
+  }
+
   bd.addEventListener('change', (e) => {
     if (e.target.classList.contains('cdx-test-chk')) {
-      const del = bd.querySelector('#cdx-test-del');
-      if (del) del.disabled = !bd.querySelector('.cdx-test-chk:checked');
       const row = e.target.closest('.cdx-test-row');
       if (row) row.classList.toggle('is-on', e.target.checked);
+      _syncApply();
       return;
     }
     if (e.target.type !== 'radio') return;
     const pair = e.target.closest('.cdx-dup-pair');
     if (!pair) return;
-    const same = pair.querySelector('input[name^=same-]:checked');
-    const names = pair.querySelector('.cdx-dup-names');
-    // The name choice belongs to "mesclar" alone — the other two verdicts have no survivor to pick.
-    if (names) names.hidden = !(same && same.value === 'merge');
-    pair.querySelectorAll('.cdx-dup-opt, .cdx-seg-opt').forEach((c) => {
-      const r = c.querySelector('input[type=radio]');
-      c.classList.toggle('is-on', !!(r && r.checked));
-    });
+    _syncPair(pair);
     _syncApply();
   });
 
-  // Aplicar stays dead until at least one pair is off "deixar assim". That is the SKIP made visible:
-  // with nothing decided there is, correctly, nothing to apply.
+  // Aplicar stays dead until SOMETHING is decided, in either section. That is the skip made visible:
+  // with every pair on "deixar assim" and no registration ticked, there is correctly nothing to do.
   function _syncApply() {
     const btn = bd.querySelector('#cdx-dup-apply');
-    if (btn) btn.disabled = !bd.querySelector('.cdx-dup-pair input[name^=same-]:checked:not([value=leave])');
+    if (!btn) return;
+    const decidedPair = !!bd.querySelector('.cdx-dup-pair input[name^=same-]:checked:not([value=leave])');
+    const tickedTest = !!bd.querySelector('.cdx-test-chk:checked');
+    btn.disabled = !decidedPair && !tickedTest;
   }
 
   const verdicts = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-dup-pair')).map((el) => {
@@ -217,31 +237,49 @@ export function openCleanupModal(data, onDone) {
     };
   });
 
-  async function apply(all) {
-    let items = verdicts();
-    if (all) {
-      // "Aceitar todas": force every pair to the suggestion we shipped it with — including the ones
-      // still sitting at "deixar assim", which is the whole point of the button.
-      items = items.map((it, i) => {
-        const sug = list[i] && list[i].suggestion;
-        if (!sug) return it;
-        const keepB = sug === 'keep_b';
-        return { ...it, verdict: sug === 'not_dup' ? 'not' : 'merge', keepB,
-          name: keepB ? list[i].b.name || list[i].b.email : list[i].a.name || list[i].a.email };
-      });
-    }
-    // THE SKIP (Élder: "the way it is right now I cannot skip any of them; if I hit apply it just
-    // applies to all of them"). A pair left at "deixar assim" is not touched — not merged, not
-    // dismissed — so it comes back next time. This filter is what makes Aplicar and Aceitar todas
-    // two different buttons.
-    items = items.filter((it) => it.verdict !== 'leave');
-    if (!items.length) { closeModal(bd); return; }   // decided nothing -> did nothing, no error
-    const btns = bd.querySelectorAll('.cdx-modal-actions button');
-    btns.forEach((b) => { b.disabled = true; });
+  // The ticked test registrations, each with the participant rows that have to go.
+  const selectedTests = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row'))
+    .filter((el) => { const c = el.querySelector('.cdx-test-chk'); return c && c.checked; })
+    .map((el) => ({ id: Number(el.dataset.id), pids: String(el.dataset.pids || '').split(',').filter(Boolean).map(Number) }));
+
+  // "Aceitar sugestões" FILLS IN, it does not execute (Élder: "apply just does that"). It moves every
+  // pair onto its suggested verdict and ticks every test registration — our recommendation for those
+  // is always "apagar", they would not be listed otherwise. Then he looks, changes his mind wherever
+  // he likes, and Aplicar is still the only thing that touches the database.
+  function acceptSuggestions() {
+    Array.prototype.slice.call(bd.querySelectorAll('.cdx-dup-pair')).forEach((el, i) => {
+      const sug = list[i] && list[i].suggestion;
+      if (!sug) return;
+      const want = sug === 'not_dup' ? 'not' : 'merge';
+      const seg = el.querySelector('input[name^=same-][value="' + want + '"]');
+      if (seg) seg.checked = true;
+      const keep = el.querySelector('input[name^=dup-][value="keep_' + (sug === 'keep_b' ? 'b' : 'a') + '"]');
+      if (keep) keep.checked = true;
+      _syncPair(el);
+    });
+    Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row')).forEach((el) => {
+      const c = el.querySelector('.cdx-test-chk');
+      if (c) { c.checked = true; el.classList.add('is-on'); }
+    });
+    _syncApply();
+  }
+
+  // Aplicar — THE one executor: merges, dismissals and deletions, whatever was decided, in one go.
+  // A pair left on "deixar assim" and an unticked registration are skipped entirely: not merged, not
+  // dismissed, not deleted. They come back next time, which is exactly what "deixar assim" means.
+  async function apply() {
+    const pairs = verdicts().filter((it) => it.verdict !== 'leave');
+    const dels = selectedTests();
+    if (!pairs.length && !dels.length) { closeModal(bd); return; }   // decided nothing -> did nothing
+    // The only confirm in this modal, and only when it would delete: a merge can be undone by hand,
+    // a purge cannot. The count is the thing worth checking before saying yes.
+    if (dels.length && typeof confirm === 'function' &&
+        !confirm(t('alunos.test_delete_confirm').replace('{n}', dels.length))) return;
+    bd.querySelectorAll('.cdx-modal-actions button').forEach((b) => { b.disabled = true; });
     let done = 0;
     // Sequential: a merge deletes an identity, so a later pair may reference something that is
     // already gone. The backend answers 'student not found' for those; we skip them quietly.
-    for (const it of items) {
+    for (const it of pairs) {
       try {
         if (it.verdict === 'not') {
           await api.dismissDuplicate({ a_student_id: it.a, b_student_id: it.b });
@@ -252,30 +290,12 @@ export function openCleanupModal(data, onDone) {
         }
         done++;
       } catch (err) {
-        notice.internal('alunos: duplicate resolution failed: ' + (err && err.message || err));
+        notice.internal('limpeza: duplicate resolution failed: ' + (err && err.message || err));
       }
     }
-    closeModal(bd);
-    toast.ok(t('alunos.dup_applied').replace('{n}', done));
-    if (onDone) onDone();
-  }
-
-  // The checked test registrations, each with the participant rows that have to go.
-  const selectedTests = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row'))
-    .filter((el) => { const c = el.querySelector('.cdx-test-chk'); return c && c.checked; })
-    .map((el) => ({ id: Number(el.dataset.id), pids: String(el.dataset.pids || '').split(',').filter(Boolean).map(Number) }));
-
-  async function deleteTests() {
-    const items = selectedTests();
-    if (!items.length) return;
-    // Named confirmation, not a generic one: this purges people, and the count is the thing to check
-    // before saying yes. Deliberately the ONLY confirm in this modal — merges are recoverable by
-    // hand, this is not.
-    if (typeof confirm === 'function' && !confirm(t('alunos.test_delete_confirm').replace('{n}', items.length))) return;
-    const btns = bd.querySelectorAll('.cdx-modal-actions button');
-    btns.forEach((b) => { b.disabled = true; });
-    let done = 0;
-    for (const it of items) {
+    // Deletions LAST: a merge may have folded one of these rows into another identity, so running
+    // them first would delete rows the merges still need.
+    for (const it of dels) {
       try {
         // Deleting the LAST participation purges the identity (and its aliases) with it, so there is
         // no separate "delete person" call to keep in step with this one.
@@ -286,16 +306,14 @@ export function openCleanupModal(data, onDone) {
       }
     }
     closeModal(bd);
-    toast.ok(t('alunos.test_deleted').replace('{n}', done));
+    toast.ok(t('alunos.dup_applied').replace('{n}', done));
     if (onDone) onDone();
   }
 
   bd.querySelector('#cdx-dup-cancel').addEventListener('click', () => closeModal(bd));
   const allBtn = bd.querySelector('#cdx-dup-all');
-  if (allBtn) allBtn.addEventListener('click', () => apply(true));
+  if (allBtn) allBtn.addEventListener('click', () => acceptSuggestions());
   const applyBtn = bd.querySelector('#cdx-dup-apply');
-  if (applyBtn) applyBtn.addEventListener('click', () => apply(false));
-  const delBtn = bd.querySelector('#cdx-test-del');
-  if (delBtn) delBtn.addEventListener('click', () => deleteTests());
+  if (applyBtn) applyBtn.addEventListener('click', () => apply());
   return bd;
 }

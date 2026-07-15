@@ -6,7 +6,7 @@
 // reasons always visible, and the counter covering both sections.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanupButtonHtml, testRowHtml, segmentedHtml } from '../cohorts/cleanup-modal.js';
+import { cleanupButtonHtml, testRowHtml, segmentedHtml, pairHtml } from '../cohorts/cleanup-modal.js';
 
 const cand = (o = {}) => ({
   id: o.id || 66,
@@ -139,4 +139,71 @@ test('labels are escaped like everything else', () => {
   const h = segmentedHtml('x', [{ value: 'a', label: '<b>hi</b>' }, { value: 'b', label: 'ok' }], 'b');
   assert.doesNotMatch(h, /<b>hi<\/b>/);
   assert.match(h, /&lt;b&gt;/);
+});
+
+// ── the pair still has to SHOW the pair ──────────────────────────────────────────────
+// The regression these exist for: converting to the pill, I hid the two identities behind the
+// "mesclar" state. Élder opened it to "mesmo usuário, domínio diferente" + three buttons "and
+// nothing else, no name, no email, nothing" — a duplicate pair with the two people missing, which is
+// the entire question. Never again.
+const pair = (o = {}) => ({
+  a: { id: 15, name: 'Maiana Pessoa', email: 'maianapessoa@gmail.com', turma_count: 1, email_verified: 1 },
+  b: { id: 63, name: 'Maiana Alves Pessoa', email: 'maianapessoa@agu.gov.br', turma_count: 1, email_verified: 0 },
+  reasons: { sameLocal: true, nearEmail: false, sameName: false, nearName: true },
+  suggestion: o.suggestion || 'keep_a',
+});
+
+test('BOTH names and BOTH e-mails are on screen from the start — that IS the question', () => {
+  const h = pairHtml(pair(), 0);
+  assert.match(h, /Maiana Pessoa/);
+  assert.match(h, /Maiana Alves Pessoa/);
+  assert.match(h, /maianapessoa@gmail\.com/);
+  assert.match(h, /maianapessoa@agu\.gov\.br/);
+});
+
+test('the identities are NOT hidden at the default verdict', () => {
+  // The exact bug: <div class="cdx-dup-names" hidden> while the pill sits on "deixar assim".
+  const h = pairHtml(pair(), 0);
+  const names = h.slice(h.indexOf('cdx-dup-names'));
+  assert.doesNotMatch(names.slice(0, 40), /hidden/);
+});
+
+test('each identity still carries its turmas and its validation mark', () => {
+  const h = pairHtml(pair(), 0);
+  assert.match(h, /1 turma\(s\)/);
+  assert.match(h, /✓/);   // the verified side
+  assert.match(h, /•/);   // the unverified side
+});
+
+test('the pair opens on "deixar assim" with the suggestion merely marked', () => {
+  const h = pairHtml(pair({ suggestion: 'keep_a' }), 0);
+  assert.match(h, /value="leave" checked/);
+  assert.doesNotMatch(h, /value="merge" checked/);
+  assert.match(h, /sugerido/);
+});
+
+test('a not_dup suggestion marks the "não é a mesma" segment, still without selecting it', () => {
+  const h = pairHtml(pair({ suggestion: 'not_dup' }), 0);
+  assert.match(h, /value="leave" checked/);
+  const notSeg = h.slice(h.indexOf('value="not"'), h.indexOf('value="leave"'));
+  assert.match(notSeg, /sugerido/);
+});
+
+test('the survivor radio reflects the suggestion, ready for when merge is picked', () => {
+  assert.match(pairHtml(pair({ suggestion: 'keep_b' }), 0), /value="keep_b" checked/);
+  assert.match(pairHtml(pair({ suggestion: 'keep_a' }), 0), /value="keep_a" checked/);
+});
+
+test('the pair carries the ids and names the apply needs', () => {
+  const h = pairHtml(pair(), 2);
+  assert.match(h, /data-a="15"/);
+  assert.match(h, /data-b="63"/);
+  assert.match(h, /data-name-a="Maiana Pessoa"/);
+  assert.match(h, /name="same-2"/);
+});
+
+test('the reason chips survived the redesign', () => {
+  const h = pairHtml(pair(), 0);
+  assert.match(h, /mesmo usuário, domínio diferente/);
+  assert.match(h, /nome parecido/);
 });

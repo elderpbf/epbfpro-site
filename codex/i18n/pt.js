@@ -264,7 +264,7 @@ export default {
   'alunos.dup_v_not':      'Não é a mesma',
   'alunos.dup_v_leave':    'Deixar assim',
   'alunos.dup_suggested':  'sugerido',
-  'alunos.dup_accept_all': 'Aceitar todas as sugestões',
+  'alunos.dup_accept_all': 'Aceitar sugestões',
   'alunos.dup_apply':      'Aplicar',
   'alunos.dup_applied':    '{n} resolvido(s).',
   'alunos.dup_r_near_email': 'e-mail quase igual',
@@ -275,9 +275,7 @@ export default {
   // e do cadastro, e não tem como voltar atrás.
   'alunos.tests_none':     'Nenhum registro de teste encontrado.',
   'alunos.tests_hint':     'Parecem cadastros descartáveis (e-mail temporário, domínio de exemplo, nome de teste). Nada vem marcado: marque só os que quiser apagar de vez.',
-  'alunos.test_delete':    'Apagar selecionados',
   'alunos.test_delete_confirm': 'Apagar {n} registro(s) de vez? Some das turmas, das sessões e do cadastro, e não tem como voltar atrás.',
-  'alunos.test_deleted':   '{n} registro(s) apagado(s).',
   'alunos.test_seen':      'último acesso {t}',
   'alunos.test_never':     'nunca acessou',
   'alunos.test_r_reserved':  'domínio de exemplo',

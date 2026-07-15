@@ -1274,6 +1274,10 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
    scrollers (one per section) overflowed the viewport and pushed the delete button off-screen. */
 .cdx-dup-modal { display: flex; flex-direction: column; max-height: 88vh; }
 .cdx-dup-modal .cdx-modal-title, .cdx-dup-modal .cdx-modal-actions { flex-shrink: 0; }
+/* The action row must WRAP, never overflow. A flex row of buttons will not shrink below its content,
+   so with justify-content:flex-end the excess escaped out the LEFT edge of the modal — "Cancelar" was
+   sitting outside the card entirely. Wrapping keeps every button inside on any width. */
+.cdx-dup-modal .cdx-modal-actions { flex-wrap: wrap; min-width: 0; }
 .cdx-clean-body { flex: 1; min-height: 0; overflow-y: auto; margin-bottom: 4px; }
 .cdx-dup-modal .cdx-dup-list { display: flex; flex-direction: column; gap: 12px; }
 .cdx-dup-pair { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
@@ -1298,6 +1302,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-dup-names { display: flex; flex-direction: column; gap: 6px; }
 .cdx-dup-opt { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }
 .cdx-dup-opt.is-on { border-color: var(--accent, #4a90d9); background: var(--cdx-chip-bg); }
+/* WHO the pair is stays on screen in every state — it is the question being asked. Only picking the
+   survivor belongs to "mesclar", so outside that state the radios and the "qual nome manter" heading
+   step back and the two identities read as plain information. */
+.cdx-dup-pair:not(.is-merging) .cdx-dup-q { visibility: hidden; height: 0; margin: 0; }
+.cdx-dup-pair:not(.is-merging) .cdx-dup-opt { cursor: default; opacity: 0.75; }
+.cdx-dup-pair:not(.is-merging) .cdx-dup-opt input[type="radio"] { visibility: hidden; }
 .cdx-dup-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cdx-dup-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-dup-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
