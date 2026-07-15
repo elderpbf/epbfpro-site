@@ -25,6 +25,7 @@ import { openPersonEditModal } from './participant-edit.js';
 import { dupesButtonHtml, openDupesModal } from './dupes-modal.js';
 import { cpfValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
+import { approvalTagHtml } from '../js/access-model.js';
 
 let _viewEl = null;
 let _students = [];
@@ -151,11 +152,6 @@ function _renderShell() {
   });
 }
 
-// ── chips ─────────────────────────────────────────────────────────────────────────
-function _statusChip(st) {
-  const key = st === 'approved' ? 'st_approved' : st === 'denied' ? 'st_denied' : 'st_pending';
-  return '<span class="cdx-al-st cdx-al-st--' + esc(st || 'pending') + '">' + esc(t('alunos.' + key)) + '</span>';
-}
 
 // ── collapsed row (one per identity) ────────────────────────────────────────────────
 function _row(s) {
@@ -172,15 +168,15 @@ function _row(s) {
   if (multi) {
     const mix = _statusMix(s);
     const bits = [];
-    if (mix.approved) bits.push('<span class="cdx-al-dot ok" title="' + esc(t('alunos.st_approved')) + '">' + mix.approved + '</span>');
-    if (mix.pending) bits.push('<span class="cdx-al-dot pend" title="' + esc(t('alunos.st_pending')) + '">' + mix.pending + '</span>');
-    if (mix.denied) bits.push('<span class="cdx-al-dot den" title="' + esc(t('alunos.st_denied')) + '">' + mix.denied + '</span>');
+    if (mix.approved) bits.push('<span class="cdx-al-dot ok" title="' + esc(t('access.state_approved')) + '">' + mix.approved + '</span>');
+    if (mix.pending) bits.push('<span class="cdx-al-dot pend" title="' + esc(t('access.state_pending')) + '">' + mix.pending + '</span>');
+    if (mix.denied) bits.push('<span class="cdx-al-dot den" title="' + esc(t('access.state_denied')) + '">' + mix.denied + '</span>');
     turmaCell = '<span class="cdx-al-turma multi">' + esc(t('alunos.multi_label')) +
       ' <span class="cdx-al-n">' + t('alunos.turmas_n').replace('{n}', s.turma_count) + '</span>' +
       '<span class="cdx-al-mix">' + bits.join('') + '</span></span>';
   } else {
     const tm = s.turmas[0] || {};
-    turmaCell = '<span class="cdx-al-turma">' + esc(tm.turma_name || '') + ' ' + _statusChip(tm.access_status) + '</span>';
+    turmaCell = '<span class="cdx-al-turma">' + esc(tm.turma_name || '') + ' ' + approvalTagHtml(tm) + '</span>';
   }
 
   const la = _relTime(s.last_access_at);
@@ -208,8 +204,7 @@ function _detail(s) {
     const la = _relTime(x.last_access_at);
     return '<div class="cdx-al-trow">' +
         '<span class="cdx-al-tname">' + esc(x.turma_name) + '</span>' +
-        _statusChip(x.access_status) +
-        (x.approved_via ? '<span class="cdx-al-via">' + esc(x.approved_via) + '</span>' : '') +
+        approvalTagHtml(x) +
         '<span class="cdx-al-tlast">' + (la ? esc(t('alunos.last_access') + ': ' + la) : esc(t('alunos.never'))) + '</span>' +
         '<button type="button" class="cdx-btn cdx-btn-sm cdx-al-open" data-client="' + esc(x.client_slug) + '" data-turma="' + esc(x.turma_slug) + '">' + esc(t('alunos.open_turma')) + '</button>' +
       '</div>';

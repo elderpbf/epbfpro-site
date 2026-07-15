@@ -15,6 +15,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
+import { approvalTagHtml } from '../js/access-model.js';
 import { relTime } from '../js/rel-time.js';
 import { isApprovalGated, groupParticipantsByStatus, sortByName, actionEnabled, actionTargetStatus } from './participant-view.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
@@ -1004,13 +1005,14 @@ function _openParticipantsHelp() {
       '<div class="cdx-modal-title">' + _esc(t('cohorts.phelp_title')) + '</div>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_origin_h')) + '</div>' +
-      row(tag('cdx-badge cdx-badge-primary', 'cohorts.ptag_lista'),                           t('cohorts.phelp_lista')) +
-      row(tag('cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)', 'cohorts.ptag_qr'), t('cohorts.phelp_qr')) +
-      row(tag('cdx-badge cdx-badge-success', 'cohorts.ptag_manual'),                          t('cohorts.phelp_manual')) +
+      row(tag('cdx-badge cdx-badge-primary', 'access.origin_lista'),                                t('cohorts.phelp_lista')) +
+      row(tag('cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)', 'access.origin_janela'),  t('cohorts.phelp_janela')) +
+      row(tag('cdx-badge cdx-badge-success', 'access.origin_manual'),                               t('cohorts.phelp_manual')) +
+      row(tag('cdx-badge cdx-badge-info', 'access.origin_emergencia'),                              t('cohorts.phelp_emergencia')) +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_status_h')) + '</div>' +
-      row(tag('cdx-badge cdx-badge-task', 'cohorts.ptag_pending'),   t('cohorts.phelp_pending')) +
-      row(tag('cdx-badge cdx-badge-danger', 'cohorts.ptag_denied'),  t('cohorts.phelp_denied')) +
+      row(tag('cdx-badge cdx-badge-task', 'access.state_pending'),   t('cohorts.phelp_pending')) +
+      row(tag('cdx-badge cdx-badge-danger', 'access.state_denied'),  t('cohorts.phelp_denied')) +
       '<p class="cdx-leg-note">' + _esc(t('cohorts.phelp_approved_note')) + '</p>' +
 
       '<div class="cdx-leg-h">' + _esc(t('cohorts.phelp_conn_h')) + '</div>' +
@@ -1509,21 +1511,12 @@ function _toggleDossierWindow(btn) {
 // The pure rules (gating, grouping, action predicates) live in participant-view.js
 // and are unit-tested there; this section is the render + DOM wiring only.
 
-function _pTag(p) {
-  const st = p.access_status || 'pending';
-  // Two orthogonal axes, shown one at a time: while NOT approved the status is the
-  // actionable fact; once approved the origin (how they got in) is. They never
-  // overlap because origin (approved_via) is only stamped on approval, and the
-  // "approved" state itself is the expected default, so it carries no tag.
-  if (st === 'pending') return '<span class="cdx-badge cdx-badge-task">'    + _esc(t('cohorts.ptag_pending')) + '</span>';
-  if (st === 'denied')  return '<span class="cdx-badge cdx-badge-danger">'  + _esc(t('cohorts.ptag_denied'))  + '</span>';
-  const via = p.approved_via || '';
-  if (via === 'manual')                                        return '<span class="cdx-badge cdx-badge-success">'                                                         + _esc(t('cohorts.ptag_manual')) + '</span>';
-  // In-class enrollment window (the projected QR): window/presence/qr all read as QR.
-  if (via === 'qr' || via === 'window' || via === 'presence') return '<span class="cdx-badge cdx-badge-accent" style="--acc:var(--acc-teal)">'                            + _esc(t('cohorts.ptag_qr'))     + '</span>';
-  // roster pre-approval, or any older/blank value, reads as the pre-approved list.
-  return '<span class="cdx-badge cdx-badge-primary">' + _esc(t('cohorts.ptag_lista')) + '</span>';
-}
+// Two orthogonal axes, shown one at a time: while NOT approved the status is the actionable fact;
+// once approved the origin (how they got in) is. The decision itself lives in js/access-model.js
+// so this panel and the Alunos roster cannot disagree about it again — the old else-branch here
+// ("any older/blank value reads as the pre-approved list") was calling 23 people "Lista" who came
+// through the janela or the emergência, while the roster printed the raw column.
+const _pTag = approvalTagHtml;
 
 // 2-letter initials avatar (shared rule, matches the Trail). Tinted by status when
 // approval is gated; a single neutral tint otherwise (status carries no meaning).

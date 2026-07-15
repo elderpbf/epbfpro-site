@@ -1303,10 +1303,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-dot.pend { background: var(--cdx-chip-bg); color: var(--cdx-warn); }
 .cdx-al-dot.den { background: var(--danger-fill); color: var(--error); }
 
-.cdx-al-st { font-size: 0.68rem; padding: 1px 7px; border-radius: 8px; font-weight: 600; white-space: nowrap; }
-.cdx-al-st--approved { background: var(--success-bg); color: var(--success); }
-.cdx-al-st--pending  { background: var(--cdx-chip-bg); color: var(--cdx-warn); }
-.cdx-al-st--denied   { background: var(--danger-fill); color: var(--error); }
+/* The roster's own status chip + raw-`approved_via` text are gone: both surfaces now render the
+   ONE badge from js/access-model.js (cdx-badge*), so the word and its colour cannot diverge. */
 
 .cdx-al-last { font-size: 0.72rem; color: var(--text-secondary); white-space: nowrap; flex: 0 0 auto; }
 .cdx-al-never { opacity: 0.7; }
@@ -1314,6 +1312,5 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-al-detail { padding: 4px 0 10px 38px; background: var(--background); border-bottom: 1px solid var(--border); }
 .cdx-al-trow { display: flex; align-items: center; gap: 10px; padding: 5px 10px; font-size: 0.8rem; }
 .cdx-al-tname { font-weight: 600; color: var(--text-primary); min-width: 120px; }
-.cdx-al-via { font-size: 0.7rem; color: var(--text-secondary); }
 .cdx-al-tlast { font-size: 0.72rem; color: var(--text-secondary); margin-left: auto; }
 .cdx-al-open { flex: 0 0 auto; }
