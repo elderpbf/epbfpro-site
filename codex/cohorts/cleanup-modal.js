@@ -58,22 +58,48 @@ function _option(s, side, idx, checked) {
     '</label>';
 }
 
+// A segmented control — one pill, N segments, exactly one live. Radios under the hood (so keyboard
+// and screen readers get a real radiogroup for free), styled as a pill: Élder asked for a slider,
+// not checkboxes. Exported because the shape is general, not a duplicates detail.
+export function segmentedHtml(name, options, selected) {
+  return '<div class="cdx-seg" role="radiogroup">' + options.map((o) =>
+    '<label class="cdx-seg-opt' + (o.value === selected ? ' is-on' : '') + '">' +
+      '<input type="radio" name="' + esc(name) + '" value="' + esc(o.value) + '"' +
+        (o.value === selected ? ' checked' : '') + '>' +
+      '<span>' + esc(o.label) +
+        (o.hint ? '<i class="cdx-seg-sug">' + esc(o.hint) + '</i>' : '') +
+      '</span>' +
+    '</label>').join('') + '</div>';
+}
+
+// THE THREE-STATE VERDICT (Élder, asked three times before I built it):
+// [ mesclar | não é a mesma | deixar assim ], and "deixar assim" is the DEFAULT.
+//
+// The old binary pre-selected the backend's suggestion, which had two consequences Élder called out:
+// there was no way to SKIP a pair (apply hit all of them), and so "Aplicar" and "Aceitar todas as
+// sugestões" did the same thing. With "deixar assim" as the default, the two buttons finally differ:
+// Aplicar touches only the pairs he actually decided; Aceitar todas forces every pair to its
+// suggestion. Nothing happens to a pair he did not look at.
+//
+// The suggestion is still SHOWN (a "sugerido" marker on its segment) — it is no longer pre-selected,
+// so without the marker "aceitar todas" would be a black box.
 function _pairHtml(p, idx) {
-  const sug = p.suggestion;
-  // The verdict is binary: same person (then pick the name) or not. There is no "decide later",
-  // closing the window already does that (Élder 2026-07-14).
-  const same = sug !== 'not_dup';
+  const sug = p.suggestion === 'not_dup' ? 'not' : 'merge';
+  const opts = [
+    { value: 'merge', label: t('alunos.dup_v_merge'), hint: sug === 'merge' ? t('alunos.dup_suggested') : '' },
+    { value: 'not',   label: t('alunos.dup_v_not'),   hint: sug === 'not' ? t('alunos.dup_suggested') : '' },
+    { value: 'leave', label: t('alunos.dup_v_leave') },
+  ];
   return '<div class="cdx-dup-pair" data-idx="' + idx + '" data-a="' + esc(String(p.a.id)) + '" data-b="' + esc(String(p.b.id)) + '"' +
       ' data-name-a="' + esc(p.a.name || p.a.email) + '" data-name-b="' + esc(p.b.name || p.b.email) + '">' +
       '<div class="cdx-dup-why">' + _reasons(p.reasons) + '</div>' +
-      '<div class="cdx-dup-same">' +
-        '<label><input type="radio" name="same-' + idx + '" value="same"' + (same ? ' checked' : '') + '> ' + esc(t('alunos.dup_same')) + '</label>' +
-        '<label><input type="radio" name="same-' + idx + '" value="not"' + (same ? '' : ' checked') + '> ' + esc(t('alunos.dup_not_same')) + '</label>' +
-      '</div>' +
-      '<div class="cdx-dup-names"' + (same ? '' : ' hidden') + '>' +
+      segmentedHtml('same-' + idx, opts, 'leave') +
+      // Hidden until "mesclar" is picked: the name choice only exists once he says it IS one person.
+      // (The survivor comes with it — some records carry a fuller name than the other.)
+      '<div class="cdx-dup-names" hidden>' +
         '<div class="cdx-dup-q">' + esc(t('alunos.dup_which_name')) + '</div>' +
-        _option(p.a, 'a', idx, sug !== 'keep_b') +
-        _option(p.b, 'b', idx, sug === 'keep_b') +
+        _option(p.a, 'a', idx, p.suggestion !== 'keep_b') +
+        _option(p.b, 'b', idx, p.suggestion === 'keep_b') +
       '</div>' +
     '</div>';
 }
@@ -142,7 +168,7 @@ export function openCleanupModal(data, onDone) {
         '<button class="cdx-btn" id="cdx-dup-cancel">' + esc(t('cohorts.cancel')) + '</button>' +
         (tests.length ? '<button class="cdx-btn cdx-btn-danger" id="cdx-test-del" disabled>' + esc(t('alunos.test_delete')) + '</button>' : '') +
         (list.length ? '<button class="cdx-btn" id="cdx-dup-all">' + esc(t('alunos.dup_accept_all')) + '</button>' : '') +
-        (list.length ? '<button class="cdx-btn cdx-btn-primary" id="cdx-dup-apply">' + esc(t('alunos.dup_apply')) + '</button>' : '') +
+        (list.length ? '<button class="cdx-btn cdx-btn-primary" id="cdx-dup-apply" disabled>' + esc(t('alunos.dup_apply')) + '</button>' : '') +
       '</div>' +
     '</div>';
   const bd = openModal(html, { disableBackdropClose: true });
@@ -163,12 +189,21 @@ export function openCleanupModal(data, onDone) {
     if (!pair) return;
     const same = pair.querySelector('input[name^=same-]:checked');
     const names = pair.querySelector('.cdx-dup-names');
-    if (names) names.hidden = !(same && same.value === 'same');
-    pair.querySelectorAll('.cdx-dup-opt').forEach((c) => {
+    // The name choice belongs to "mesclar" alone — the other two verdicts have no survivor to pick.
+    if (names) names.hidden = !(same && same.value === 'merge');
+    pair.querySelectorAll('.cdx-dup-opt, .cdx-seg-opt').forEach((c) => {
       const r = c.querySelector('input[type=radio]');
       c.classList.toggle('is-on', !!(r && r.checked));
     });
+    _syncApply();
   });
+
+  // Aplicar stays dead until at least one pair is off "deixar assim". That is the SKIP made visible:
+  // with nothing decided there is, correctly, nothing to apply.
+  function _syncApply() {
+    const btn = bd.querySelector('#cdx-dup-apply');
+    if (btn) btn.disabled = !bd.querySelector('.cdx-dup-pair input[name^=same-]:checked:not([value=leave])');
+  }
 
   const verdicts = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-dup-pair')).map((el) => {
     const same = el.querySelector('input[name^=same-]:checked');
@@ -176,7 +211,7 @@ export function openCleanupModal(data, onDone) {
     const keepB = !!(keep && keep.value === 'keep_b');
     return {
       a: Number(el.dataset.a), b: Number(el.dataset.b),
-      same: !!(same && same.value === 'same'),
+      verdict: same ? same.value : 'leave',    // merge | not | leave
       keepB,
       name: keepB ? el.dataset.nameB : el.dataset.nameA,
     };
@@ -185,14 +220,22 @@ export function openCleanupModal(data, onDone) {
   async function apply(all) {
     let items = verdicts();
     if (all) {
-      // "Aceitar todas": force every pair back to the suggestion we shipped it with.
+      // "Aceitar todas": force every pair to the suggestion we shipped it with — including the ones
+      // still sitting at "deixar assim", which is the whole point of the button.
       items = items.map((it, i) => {
         const sug = list[i] && list[i].suggestion;
         if (!sug) return it;
         const keepB = sug === 'keep_b';
-        return { ...it, same: sug !== 'not_dup', keepB, name: keepB ? list[i].b.name || list[i].b.email : list[i].a.name || list[i].a.email };
+        return { ...it, verdict: sug === 'not_dup' ? 'not' : 'merge', keepB,
+          name: keepB ? list[i].b.name || list[i].b.email : list[i].a.name || list[i].a.email };
       });
     }
+    // THE SKIP (Élder: "the way it is right now I cannot skip any of them; if I hit apply it just
+    // applies to all of them"). A pair left at "deixar assim" is not touched — not merged, not
+    // dismissed — so it comes back next time. This filter is what makes Aplicar and Aceitar todas
+    // two different buttons.
+    items = items.filter((it) => it.verdict !== 'leave');
+    if (!items.length) { closeModal(bd); return; }   // decided nothing -> did nothing, no error
     const btns = bd.querySelectorAll('.cdx-modal-actions button');
     btns.forEach((b) => { b.disabled = true; });
     let done = 0;
@@ -200,7 +243,7 @@ export function openCleanupModal(data, onDone) {
     // already gone. The backend answers 'student not found' for those; we skip them quietly.
     for (const it of items) {
       try {
-        if (!it.same) {
+        if (it.verdict === 'not') {
           await api.dismissDuplicate({ a_student_id: it.a, b_student_id: it.b });
         } else {
           const survivor = it.keepB ? it.b : it.a;

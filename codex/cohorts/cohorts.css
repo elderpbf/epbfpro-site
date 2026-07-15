@@ -1279,9 +1279,21 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-dup-pair { border: 1px solid var(--border); border-radius: 8px; padding: 10px; background: var(--surface); }
 .cdx-dup-why { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-bottom: 8px; }
 .cdx-dup-reason { font-size: 0.65rem; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); }
-/* Same/not-same first, then the stacked name choice. */
-.cdx-dup-same { display: flex; gap: 16px; margin-bottom: 8px; font-size: 0.78rem; flex-wrap: wrap; }
-.cdx-dup-same label { display: inline-flex; align-items: center; gap: 5px; cursor: pointer; }
+/* The verdict pill: one segmented control, three segments, exactly one live (Élder asked for a
+   slider, not checkboxes). Real radios underneath — visually hidden, so keyboard and screen readers
+   still get a proper radiogroup — with the label's span doing all the drawing. */
+.cdx-seg { display: inline-flex; border: 1px solid var(--border); border-radius: 999px; overflow: hidden; margin-bottom: 8px; background: var(--surface); }
+.cdx-seg-opt { display: inline-flex; }
+.cdx-seg-opt input { position: absolute; width: 1px; height: 1px; opacity: 0; pointer-events: none; }
+.cdx-seg-opt > span { display: inline-flex; align-items: center; gap: 5px; padding: 5px 13px; font-size: 0.74rem; line-height: 1.4; color: var(--text-secondary); cursor: pointer; white-space: nowrap; transition: background 0.12s, color 0.12s; }
+.cdx-seg-opt + .cdx-seg-opt > span { border-left: 1px solid var(--border); }
+.cdx-seg-opt:hover:not(.is-on) > span { background: var(--surface-hover); }
+.cdx-seg-opt.is-on > span { background: var(--tint-primary); color: var(--tint-primary-tx); font-weight: 700; }
+/* Keyboard focus has to survive the hidden input. */
+.cdx-seg-opt input:focus-visible + span { outline: 2px solid var(--tint-primary-tx); outline-offset: -2px; }
+/* The backend's suggestion, marked rather than pre-selected: nothing is decided by default, so
+   without this "aceitar todas as sugestões" would be a black box. */
+.cdx-seg-sug { font-style: normal; font-size: 0.58rem; text-transform: uppercase; letter-spacing: 0.04em; opacity: 0.65; }
 .cdx-dup-q { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; margin-bottom: 4px; }
 .cdx-dup-names { display: flex; flex-direction: column; gap: 6px; }
 .cdx-dup-opt { display: flex; align-items: center; gap: 8px; border: 1px solid var(--border); border-radius: 6px; padding: 8px; cursor: pointer; }

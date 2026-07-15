@@ -6,7 +6,7 @@
 // reasons always visible, and the counter covering both sections.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { cleanupButtonHtml, testRowHtml } from '../cohorts/cleanup-modal.js';
+import { cleanupButtonHtml, testRowHtml, segmentedHtml } from '../cohorts/cleanup-modal.js';
 
 const cand = (o = {}) => ({
   id: o.id || 66,
@@ -88,4 +88,55 @@ test('the e-mail is escaped, not injected — this list is full of hostile-looki
   assert.doesNotMatch(h, /<img/);
   assert.doesNotMatch(h, /<b>/);
   assert.match(h, /&lt;img/);
+});
+
+// ── the 3-state verdict pill ────────────────────────────────────────────────────────
+// Élder asked for this three times before it got built, so these pin the exact semantics he
+// specified rather than whatever the markup happens to do.
+const OPTS = [
+  { value: 'merge', label: 'Mesclar', hint: 'sugerido' },
+  { value: 'not', label: 'Não é a mesma' },
+  { value: 'leave', label: 'Deixar assim' },
+];
+
+test('the pill is a segmented control, NOT checkboxes', () => {
+  const h = segmentedHtml('same-0', OPTS, 'leave');
+  assert.doesNotMatch(h, /type="checkbox"/);
+  assert.match(h, /role="radiogroup"/);
+  assert.equal((h.match(/type="radio"/g) || []).length, 3);
+});
+
+test('three segments, and exactly ONE is live', () => {
+  const h = segmentedHtml('same-0', OPTS, 'leave');
+  assert.equal((h.match(/cdx-seg-opt/g) || []).length, 3);
+  assert.equal((h.match(/ checked/g) || []).length, 1);
+  assert.equal((h.match(/is-on/g) || []).length, 1);
+});
+
+test('"deixar assim" is the DEFAULT — nothing happens to a pair he never looked at', () => {
+  const h = segmentedHtml('same-0', OPTS, 'leave');
+  // the checked radio must be the leave one, not merge and not not-the-same
+  assert.match(h, /value="leave" checked/);
+  assert.doesNotMatch(h, /value="merge" checked/);
+  assert.doesNotMatch(h, /value="not" checked/);
+});
+
+test('the suggestion is SHOWN but not selected — otherwise "aceitar todas" is a black box', () => {
+  const h = segmentedHtml('same-0', OPTS, 'leave');
+  assert.match(h, /sugerido/);
+  // ...and the segment carrying the hint is still not the checked one
+  const merge = h.slice(h.indexOf('value="merge"'), h.indexOf('value="not"'));
+  assert.match(merge, /sugerido/);
+  assert.doesNotMatch(merge, /checked/);
+});
+
+test('the radios share one name per pair, so the three states are mutually exclusive', () => {
+  const h = segmentedHtml('same-3', OPTS, 'leave');
+  assert.equal((h.match(/name="same-3"/g) || []).length, 3);
+});
+
+test('labels are escaped like everything else', () => {
+  const h = segmentedHtml('x', [{ value: 'a', label: '<b>hi</b>' }, { value: 'b', label: 'ok' }], 'b');
+  assert.doesNotMatch(h, /<b>hi<\/b>/);
+  assert.match(h, /&lt;b&gt;/);
 });
