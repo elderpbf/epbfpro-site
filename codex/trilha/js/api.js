@@ -18,6 +18,11 @@ export const trail = {
   itemPublic:     (p) => call('ct_get_item_public', p),     // { item_id, ... } -> item detail
   submitTarefa:   (p) => call('ct_submit_tarefa', p),       // { client_slug, turma_slug, token, item_id, student_name, answer_type, answer_json }
   myTarefas:      (p) => call('ct_list_my_tarefas', p),     // { client_slug, turma_slug, session_token } -> { ok, tarefas:[{item_id,title,summary,aula_number,reply_enabled,grade_enabled,state,submission}] }
+  // Editar enquanto a outra parte não viu (migration 0037). "Vi" é um EVENTO: quem chama é a
+  // tela que abriu, nunca um list — uma leitura que carimba trancaria todo mundo sem ninguém
+  // ter aberto nada.
+  editTarefa:     (p) => call('ct_edit_submission', p),     // { client_slug, turma_slug, session_token, id, answer_json, student_name } -> { ok } | { error:'already_seen'|... }
+  markReplySeen:  (p) => call('ct_mark_reply_seen', p),     // { client_slug, turma_slug, session_token, item_id } -> { ok, seen }
 
   // Live questions (ClassPulse public surface)
   activeForTurma: (p) => call('cp_get_active_for_turma', p),// { client_slug, turma_slug } -> { session, question } | { session:null }

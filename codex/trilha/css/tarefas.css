@@ -243,6 +243,23 @@
   color: var(--text-secondary);
   opacity: 0.85;
 }
+/* "Editar", enquanto o instrutor nao viu (0037). Mora na assinatura da entrega, discreto: e uma
+   saida, nao a acao principal do cartao (essa e a tag la em cima). margin-left:auto joga pra
+   ponta direita da linha, o mesmo lugar onde a acao mora no topo. */
+.cdx-tt-edit {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--info);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+  text-decoration: underline;
+}
+.cdx-tt-edit:hover { background: var(--info-bg); }
 /* O clamp (js/clamp.js) desenha o fade com a cor do fundo. Dentro da resposta do professor
    o fundo e --info-bg, nao --surface: sem isto o degrade terminava na cor errada e aparecia
    uma faixa clara boiando sobre o azul. */

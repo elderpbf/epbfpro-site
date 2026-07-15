@@ -256,6 +256,14 @@ function deliveryHtml(sub, ordinal, total) {
   if (total > 1) html += '<span class="cdx-tt-dlabel">' + esc(fill(t('tarefas.delivery_n'), { n: ordinal })) + '</span>';
   html += '<span class="cdx-tt-by">' +
     esc(fill(t('tarefas.by_at'), { who: deliveryWho(sub), when: stampTime(sub.submitted_at) })) + '</span>';
+  // Editar enquanto o instrutor não viu (Élder 2026-07-15). Quem decide é o SERVIDOR (can_edit,
+  // migration 0037), nunca esta aba: o mesmo carimbo que abre o botão é o que o ct_edit_submission
+  // consulta pra aceitar. O botão fica na assinatura da entrega, junto do "de Fulano em ...":
+  // é ali que se diz de quem é e de quando é, então é ali que se mexe nela.
+  if (sub.can_edit) {
+    html += '<button type="button" class="cdx-tt-edit" data-tt-edit="' + esc(sub.id) + '">' +
+      esc(t('tarefas.edit')) + '</button>';
+  }
   html += '</div>';
   html += '<div class="cdx-tt-fv" data-tt-text>' + esc(answerText(sub)) + '</div>';
   if (sub.instructor_reply || sub.grade) {
@@ -321,7 +329,14 @@ function wireList() {
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
       if (!tarefa || !isExpandable(tarefa)) return;
       _openId = (_openId === id) ? null : id;
+      if (_openId === id) markReplySeen(tarefa);   // só ABRIR é ver; fechar não desvê nada
       paintList();
+    });
+  });
+  _root.querySelectorAll('[data-tt-edit]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();   // o botão mora dentro do corpo do cartão aberto
+      openEdit(parseInt(btn.getAttribute('data-tt-edit'), 10));
     });
   });
   _root.querySelectorAll('[data-tt-send]').forEach((btn) => {
@@ -337,7 +352,25 @@ function wireList() {
   wireClamps(_root, '[data-tt-text]');
 }
 
-async function openSubmit(tarefa) {
+// "O aluno viu a mensagem do professor" (migration 0037) = expandiu o cartão, que é a única
+// tela onde ela aparece. Daqui pra frente o professor não reescreve mais o que já está na frente
+// do aluno.
+//
+// Dispara e segue: o cartão abre na hora, sem esperar a rede. Falhar aqui só deixa o professor
+// editando por mais um instante uma mensagem já lida — o preço de errar pra este lado é ínfimo
+// perto de travar a abertura do cartão atrás de um POST. Nada a repintar: quem muda é a tela do
+// professor, não esta.
+function markReplySeen(tarefa) {
+  if (!tarefa || !tarefa.has_instructor_message || !state.sessionToken) return;
+  Promise.resolve(trail.markReplySeen({
+    client_slug: state.clientSlug, turma_slug: state.turmaSlug,
+    session_token: state.sessionToken, item_id: tarefa.item_id, _silent: true,
+  })).catch(() => { /* ver é do aluno, não é uma tarefa dele */ });
+}
+
+// O modal precisa do ITEM (enunciado + tipo de campo + se aceita anônimo), que a lista não
+// carrega. Um caminho só pros dois verbos: o que muda entre responder e editar é `editing`.
+async function openModal(tarefa, editing) {
   let item;
   try {
     const res = await trail.itemPublic({
@@ -346,7 +379,7 @@ async function openSubmit(tarefa) {
     });
     item = res && res.item;
   } catch (e) {
-    if (window.bsLog) window.bsLog('tarefas openSubmit itemPublic: ' + (e && e.message || e), 'error');
+    if (window.bsLog) window.bsLog('tarefas openModal itemPublic: ' + (e && e.message || e), 'error');
     return;
   }
   if (!item) return;
@@ -358,8 +391,30 @@ async function openSubmit(tarefa) {
     token: state.token,
     sessionToken: state.sessionToken,
     participantName: participant.display_name || participant.name || '', // logged-in: drops the name field
+    editing,
     onSubmitted: () => renderMyTarefas(_outerRoot),
   });
+}
+
+const openSubmit = (tarefa) => openModal(tarefa, null);
+
+// PURE. Achar a entrega (e a tarefa dela) por id. O botão de editar carrega o id da ENTREGA, não
+// o da tarefa: numa tarefa com várias entregas o id da tarefa não diz qual delas abrir.
+export function findDelivery(tarefas, subId) {
+  for (const tf of tarefas || []) {
+    const sub = deliveries(tf).find((s) => s.id === subId);
+    if (sub) return { tarefa: tf, sub };
+  }
+  return null;
+}
+
+function openEdit(subId) {
+  const hit = findDelivery(_tarefas, subId);
+  if (!hit) return;
+  // `anon` é o que a entrega É hoje (sem nome = anônima), não uma proposta: a caixa do modal
+  // mostra o estado atual pra que salvar uma correção de vírgula não identifique quem escolheu
+  // não aparecer.
+  openModal(hit.tarefa, { id: hit.sub.id, answer_json: hit.sub.answer_json, anon: !hit.sub.student_name });
 }
 
 registerRenderer('tarefas', renderMyTarefas);

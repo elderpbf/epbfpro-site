@@ -956,6 +956,10 @@ export default {
   'tarefas.grade_ph':         'Nota (ex.: 9,5 · A · Aprovado)',
   'tarefas.grade_save':       'Salvar',
   'tarefas.saved':            'Salvo.',
+  // A trava da 0037, do lado do professor. Diz o FATO, não uma regra abstrata: o aviso aparece
+  // exatamente sobre a mensagem que travou.
+  'tarefas.msg_seen':         'O aluno já leu esta mensagem, então ela não pode mais ser alterada.',
+  'tarefas.msg_seen_toast':   'O aluno abriu a tarefa e já leu esta mensagem.',
   'tarefas.csv_student':      'Aluno',
   'tarefas.csv_date':         'Data',
   'tarefas.csv_type':         'Tipo',

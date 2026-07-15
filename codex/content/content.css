@@ -926,6 +926,9 @@
 .cdx-resp-reply-row, .cdx-resp-grade-row { display: flex; gap: 0.4rem; align-items: center; }
 .cdx-resp-reply-row .cdx-input { flex: 1; min-width: 0; }
 .cdx-resp-grade-row .cdx-input { width: 9rem; flex: 0 0 auto; }
+/* O motivo da trava (0037): o aluno leu, entao a mensagem nao muda mais. Discreto e italico, do
+   lado do campo cinza — sem ele um input desabilitado vira bug na cabeca de quem ve. */
+.cdx-resp-seen { font-size: 0.7rem; font-style: italic; color: var(--text-secondary); opacity: 0.85; margin: 0.35rem 0 0; }
 
 /* ── Tarefas sub-tab (native, master-detail like Items) ──────────────────────
    Reuses the Items split shell: left = tarefa list, right = the selected

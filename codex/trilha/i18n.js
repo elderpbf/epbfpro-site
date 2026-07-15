@@ -192,6 +192,8 @@ const pt = {
   'tarefas.msg_by_at':      'Mensagem do {who} em {when}',
   'tarefas.anonymous':      'Anônimo',
   'tarefas.instructor':     'Instrutor',
+  // Só aparece enquanto o instrutor não viu a entrega (migration 0037).
+  'tarefas.edit':           'Editar',
   'tarefas.field_prompt':   'Proposta',
   'tarefas.field_answer':   'Sua resposta',
   'tarefas.field_grade':    'Nota',
@@ -413,6 +415,7 @@ const en = {
   'tarefas.msg_by_at':      'Message from {who} on {when}',
   'tarefas.anonymous':      'Anonymous',
   'tarefas.instructor':     'Instructor',
+  'tarefas.edit':           'Edit',
   'tarefas.field_prompt':   'Prompt',
   'tarefas.field_answer':   'Your answer',
   'tarefas.field_grade':    'Grade',
