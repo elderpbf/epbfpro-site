@@ -18,7 +18,7 @@ import { initials } from '../js/initials.js';
 import { isApprovalGated, actionEnabled, actionTargetStatus } from './participant-view.js';
 // THE list (same component the Alunos roster renders, in the other scope) + the "+" popover.
 import { personListHtml } from './person-list.js';
-import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, FILTER_IDS } from './person-filters.js';
+import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick, FILTER_IDS } from './person-filters.js';
 import { openAliasPopover } from './alias-popover.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
@@ -1547,7 +1547,7 @@ function _paintDossierParticipants(el, turma) {
   // they cannot partition the list, so inside one turma the client + single/multi filters simply
   // do not render (Élder's "don't show options that none have").
   el.innerHTML = filtersBarHtml(_dossierFilters, ps, '') + toolbarHtml(gated) +
-    personListHtml(applyFilters(ps, _dossierFilters), { scope: 'turma', emptyKey: 'cohorts.participants_empty' });
+    personListHtml(applyFilters(ps, _dossierFilters), { scope: 'turma', emptyKey: 'cohorts.participants_empty', sort: _dossierFilters.sort, dir: _dossierFilters.dir });
 }
 
 // The row id for a person in THIS turma: in turma scope every person carries exactly one row, so
@@ -1585,6 +1585,17 @@ function _wireDossierPanelOnce(el) {
     _paintDossierParticipants(el, _dossierTurma);
     _wireDossierParticipants(el, _dossierTurma);
   };
+
+  // The column headers ARE the sort control (Élder 2026-07-15) — here too, same component, same
+  // behaviour. Capture phase + stopPropagation so the click never reaches wireSelection, which in
+  // this scope treats a row-click as "select". Delegated on the panel, since the header is rebuilt
+  // by every repaint.
+  el.addEventListener('click', (e) => {
+    const btn = e.target.closest ? e.target.closest('[data-sort]') : null;
+    if (!btn) return;
+    e.stopPropagation();
+    if (applySortClick(_dossierFilters, btn.dataset.sort)) repaint();
+  }, true);
   el.addEventListener('input', (e) => {
     if (!applyFilterChange(_dossierFilters, e.target.id, e.target.value)) return;
     repaint();

@@ -24,7 +24,7 @@ import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { hasPending } from './students-filters.js';
-import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters } from './person-filters.js';
+import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal } from './participant-edit.js';
 import { cleanupButtonHtml, openCleanupModal } from './cleanup-modal.js';
@@ -115,17 +115,26 @@ function _renderShell() {
       if (s) _openEdit(s);
       return;
     }
-    // Expansion is the caret's job alone: a person with ONE turma has nothing to open, and a
-    // click anywhere on the row must not fight the checkbox for the same gesture.
-    const caret = e.target.closest('[data-caret]');
-    if (!caret) return;
+    // Sorting: the column headers are the control now, so the click lands here on the delegated
+    // host — the header itself is rebuilt on every repaint, and a handler bound to it would die.
+    const sortBtn = e.target.closest('[data-sort]');
+    if (sortBtn) {
+      e.stopPropagation();
+      if (applySortClick(_filters, sortBtn.dataset.sort)) _paintList();
+      return;
+    }
+    // ANYWHERE on the line expands it (Élder: "clicking the line should extend it, instead of just
+    // clicking the chevron"). One path, reached after the checkbox/edit/+/→ early-returns above, so
+    // a caret click can't toggle twice. A person with ONE turma has nothing to open: no caret, no
+    // detail, and this is a clean no-op for them.
+    const row = e.target.closest('.cdx-pl-row');
+    if (!row || !row.classList.contains('cdx-pl-row--exp')) return;
     e.stopPropagation();
-    const row = caret.closest('.cdx-pl-row');
-    if (!row) return;
     _expanded[row.dataset.person] = !_expanded[row.dataset.person];
     const detail = row.nextElementSibling;
     if (detail && detail.classList.contains('cdx-pl-detail')) detail.hidden = !_expanded[row.dataset.person];
-    caret.setAttribute('aria-expanded', _expanded[row.dataset.person] ? 'true' : 'false');
+    const caret = row.querySelector('[data-caret]');
+    if (caret) caret.setAttribute('aria-expanded', _expanded[row.dataset.person] ? 'true' : 'false');
   });
 }
 
@@ -222,7 +231,7 @@ function _paintList() {
   const rows = _filtered();
   if (!rows.length) { host.innerHTML = '<span class="cdx-empty">' + esc(t('alunos.no_match')) + '</span>'; return; }
   // THE list, in global scope. The dossiê renders the same call with scope 'turma'.
-  host.innerHTML = toolbarHtml(true) + personListHtml(rows, { scope: 'global' });
+  host.innerHTML = toolbarHtml(true) + personListHtml(rows, { scope: 'global', sort: _filters.sort, dir: _filters.dir });
 
   Array.prototype.slice.call(host.querySelectorAll('.cdx-pl-row')).forEach((r) => {
     if (keep.has(r.dataset.person)) { const c = r.querySelector('.cdx-pchk'); if (c) c.checked = true; }

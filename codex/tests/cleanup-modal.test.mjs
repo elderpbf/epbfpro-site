@@ -213,3 +213,34 @@ test('the reason chips survived the redesign', () => {
   assert.match(h, /mesmo usuário, domínio diferente/);
   assert.match(h, /nome parecido/);
 });
+
+// ── the kept name is an editable field ───────────────────────────────────────────────
+// Élder's round-1 ask, finally built: "sometimes you have a name that has more parts than the other
+// one, but the more complete one is not in Pascal case, so I can quickly make it better and then just
+// save that name. Same thing if there's a misspelling."
+test('the kept name is a PREFILLED text field, not just a label', () => {
+  const h = pairHtml(pair({ suggestion: 'keep_a' }), 0);
+  assert.match(h, /class="cdx-dup-name-in"/);
+  assert.match(h, /type="text"/);
+  assert.match(h, /value="Maiana Pessoa"/);   // prefilled, so it reads as changeable
+});
+
+test('the field is prefilled from the SUGGESTED survivor, whichever side that is', () => {
+  assert.match(pairHtml(pair({ suggestion: 'keep_b' }), 0), /class="cdx-dup-name-in"[^>]*value="Maiana Alves Pessoa"/);
+  assert.match(pairHtml(pair({ suggestion: 'keep_a' }), 0), /class="cdx-dup-name-in"[^>]*value="Maiana Pessoa"/);
+});
+
+test('the field has its own id and a label pointing at it', () => {
+  const h = pairHtml(pair(), 3);
+  assert.match(h, /id="dup-name-3"/);
+  assert.match(h, /for="dup-name-3"/);
+  assert.match(h, /Nome final/);
+});
+
+test('a name with quotes cannot break out of the value attribute', () => {
+  const p = pair();
+  p.a.name = 'Maiana "A" Pessoa';
+  const h = pairHtml(p, 0);
+  assert.doesNotMatch(h, /value="Maiana "A" Pessoa"/);
+  assert.match(h, /&quot;A&quot;/);
+});

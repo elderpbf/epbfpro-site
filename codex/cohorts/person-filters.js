@@ -20,19 +20,22 @@
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { filterOptions, hasStatus, hasPending } from './students-filters.js';
+import { SORT_DEFAULT_DIR } from './person-list.js';
+import { accessOf } from '../js/access-model.js';
 
 export function emptyFilterState() {
-  return { search: '', client: '', status: '', verified: '', turmas: '', sort: 'name' };
+  return { search: '', client: '', status: '', verified: '', turmas: '', sort: 'name', dir: 'asc' };
 }
 
 // The <select> ids, exported so each surface can wire change events without re-deriving them.
+// No sort select any more: the column headers ARE the sort control (Élder 2026-07-15, "since we have
+// column headers now, let's make them sort by those; so the sort dropdown is no longer needed").
 export const FILTER_IDS = {
   search: 'cdx-al-search',
   client: 'cdx-al-fclient',
   status: 'cdx-al-fstatus',
   verified: 'cdx-al-fver',
   turmas: 'cdx-al-fturmas',
-  sort: 'cdx-al-sort',
 };
 
 // Map a changed control back onto the state. Returns true when it was one of ours.
@@ -40,6 +43,16 @@ export function applyFilterChange(state, id, value) {
   const key = Object.keys(FILTER_IDS).find((k) => FILTER_IDS[k] === id);
   if (!key) return false;
   state[key] = value || '';
+  return true;
+}
+
+// A header click: same column -> reverse; new column -> open on ITS natural end (name A→Z, but the
+// others on "most turmas" / "worst standing" / "most live", which is what you click them to see).
+export function applySortClick(state, key) {
+  if (!key) return false;
+  const s = state || {};
+  if (s.sort === key) s.dir = s.dir === 'asc' ? 'desc' : 'asc';
+  else { s.sort = key; s.dir = SORT_DEFAULT_DIR[key] || 'asc'; }
   return true;
 }
 
@@ -60,8 +73,6 @@ export function filtersBarHtml(state, people, extra) {
   const statusLbl = { pending: t('alunos.opt_pending'), denied: t('alunos.opt_denied'), approved: t('alunos.opt_all_ok') };
   const verLbl = { yes: t('alunos.opt_ver_yes'), no: t('alunos.opt_ver_no') };
   const turmaLbl = { single: t('alunos.opt_single'), multi: t('alunos.opt_multi') };
-  // The turma-count sort only means something when people can have more than one.
-  const multiTurma = (people || []).some((p) => p.turma_count > 1);
   return '<div class="cdx-alunos-tools">' +
     '<input type="search" class="cdx-alunos-search" id="' + FILTER_IDS.search + '" placeholder="' +
       esc(t('alunos.search_ph')) + '" autocomplete="off" value="' + esc(s.search) + '">' +
@@ -70,12 +81,6 @@ export function filtersBarHtml(state, people, extra) {
     sel(FILTER_IDS.verified, s.verified, t('alunos.f_verified'), opts.verified, (v) => verLbl[v]) +
     sel(FILTER_IDS.turmas, s.turmas, t('alunos.f_turmas'), opts.turmas, (v) => turmaLbl[v]) +
     '<span class="cdx-alunos-spacer"></span>' +
-    '<select class="cdx-alunos-sel" id="' + FILTER_IDS.sort + '" title="' + esc(t('alunos.sort_by')) + '">' +
-      opt('name', s.sort, t('alunos.sort_name')) +
-      (multiTurma ? opt('turmas', s.sort, t('alunos.sort_turmas')) : '') +
-      opt('last', s.sort, t('alunos.sort_last')) +
-      opt('status', s.sort, t('alunos.sort_status')) +
-    '</select>' +
     (extra || '') +
   '</div>';
 }
@@ -83,6 +88,24 @@ export function filtersBarHtml(state, people, extra) {
 const nameOf = (p) => p.name || p.email || '';
 // Worst standing first: something pending needs you before something merely blocked.
 const worst = (p) => (hasStatus(p, 'pending') ? 0 : hasStatus(p, 'denied') ? 1 : 2);
+
+// The acesso column shows the LIVE SESSION — time left, "sessão expirada", "nunca entrou" — so its
+// header sorts by exactly that, in the order the cell reads: live (longest left first) > expirada >
+// nunca > nada. Sorting it by último acesso would order the column by a number it does not display;
+// último acesso lives in the cell's hover instead. (This replaces the old "último acesso" option of
+// the dropdown, which no longer exists.)
+function accessRank(p, now) {
+  const rows = p.rows || [];
+  if (!rows.length) return { tier: 3, left: 0 };
+  let best = { tier: 3, left: 0 };
+  for (const r of rows) {
+    const a = accessOf(r, now);
+    const tier = a.state === 'live' ? 0 : a.state === 'lapsed' ? 1 : a.state === 'never' ? 2 : 3;
+    const left = a.state === 'live' ? Math.max(0, Number(r.session_expires_at || 0) - now) : 0;
+    if (tier < best.tier || (tier === best.tier && left > best.left)) best = { tier, left };
+  }
+  return best;
+}
 
 // PURE. The filter + sort both scopes run — the same predicates, so "pendente" means the same
 // thing in the dossiê as in the roster.
@@ -101,10 +124,25 @@ export function applyFilters(people, state) {
     if (q && !(nameOf(p).toLowerCase().includes(q) || String(p.email || '').toLowerCase().includes(q))) return false;
     return true;
   });
+  // One comparator per COLUMN, each written in its natural ("asc") reading. The direction multiplies
+  // the PRIMARY key only — the name tiebreak stays A→Z either way, so reversing "turmas" doesn't
+  // hand back a list whose names read Z→A inside each group. (A plain .reverse() would do exactly
+  // that, and it also flips ties, which makes a repaint look like the list moved on its own.)
+  const now = Number(s.nowSec) || Math.floor(Date.now() / 1000);
   const byName = (a, b) => nameOf(a).localeCompare(nameOf(b));
-  if (s.sort === 'turmas') rows.sort((a, b) => (b.turma_count - a.turma_count) || byName(a, b));
-  else if (s.sort === 'last') rows.sort((a, b) => (Number(b.last_access_at || 0) - Number(a.last_access_at || 0)) || byName(a, b));
-  else if (s.sort === 'status') rows.sort((a, b) => (worst(a) - worst(b)) || byName(a, b));
-  else rows.sort(byName);
+  const primary = {
+    name: byName,                                                                    // asc = A→Z
+    turmas: (a, b) => a.turma_count - b.turma_count,                                 // asc = fewest first
+    status: (a, b) => worst(a) - worst(b),                                           // asc = pending first
+    validated: (a, b) => (a.email_verified ? 1 : 0) - (b.email_verified ? 1 : 0),    // asc = still owing proof first
+    // asc = worst access first: nada > nunca > expirada > live (least time left).
+    access: (a, b) => {
+      const ra = accessRank(a, now), rb = accessRank(b, now);
+      return (rb.tier - ra.tier) || (ra.left - rb.left);
+    },
+  };
+  const key = primary[s.sort] ? s.sort : 'name';
+  const mul = (s.dir || SORT_DEFAULT_DIR[key] || 'asc') === 'desc' ? -1 : 1;
+  rows.sort((a, b) => (mul * primary[key](a, b)) || byName(a, b));
   return rows;
 }

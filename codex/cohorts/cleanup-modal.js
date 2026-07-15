@@ -113,6 +113,16 @@ export function pairHtml(p, idx) {
         '<div class="cdx-dup-q">' + esc(t('alunos.dup_which_name')) + '</div>' +
         _option(p.a, 'a', idx, p.suggestion !== 'keep_b') +
         _option(p.b, 'b', idx, p.suggestion === 'keep_b') +
+        // The kept name, PREFILLED and editable (Élder, round 1: "sometimes you have a name that has
+        // more parts than the other one, but the more complete one is not in Pascal case, so I can
+        // quickly make it better and then just save that name. Same if there's a misspelling").
+        // Picking a survivor refills it; typing over it wins. The radios choose which identity
+        // survives, this fixes what it is called.
+        '<div class="cdx-dup-final">' +
+          '<label class="cdx-dup-final-l" for="dup-name-' + idx + '">' + esc(t('alunos.dup_final_name')) + '</label>' +
+          '<input type="text" class="cdx-dup-name-in" id="dup-name-' + idx + '" autocomplete="off"' +
+            ' value="' + esc(p.suggestion === 'keep_b' ? (p.b.name || p.b.email) : (p.a.name || p.a.email)) + '">' +
+        '</div>' +
       '</div>' +
     '</div>';
 }
@@ -216,6 +226,12 @@ export function openCleanupModal(data, onDone) {
     if (e.target.type !== 'radio') return;
     const pair = e.target.closest('.cdx-dup-pair');
     if (!pair) return;
+    // Picking a survivor REFILLS the name field with that side's name: the radio says "start from
+    // this one", and anything typed afterwards wins (verdicts() reads the field, never the dataset).
+    if (String(e.target.name || '').startsWith('dup-')) {
+      const inp = pair.querySelector('.cdx-dup-name-in');
+      if (inp) inp.value = e.target.value === 'keep_b' ? pair.dataset.nameB : pair.dataset.nameA;
+    }
     _syncPair(pair);
     _syncApply();
   });
@@ -234,11 +250,15 @@ export function openCleanupModal(data, onDone) {
     const same = el.querySelector('input[name^=same-]:checked');
     const keep = el.querySelector('input[name^=dup-]:checked');
     const keepB = !!(keep && keep.value === 'keep_b');
+    const inp = el.querySelector('.cdx-dup-name-in');
+    // The FIELD is the name, not the radio: the radio only says which one it started from. An empty
+    // field falls back to the picked side rather than saving a nameless person.
+    const typed = inp ? String(inp.value || '').trim() : '';
     return {
       a: Number(el.dataset.a), b: Number(el.dataset.b),
       verdict: same ? same.value : 'leave',    // merge | not | leave
       keepB,
-      name: keepB ? el.dataset.nameB : el.dataset.nameA,
+      name: typed || (keepB ? el.dataset.nameB : el.dataset.nameA),
     };
   });
 
@@ -260,6 +280,12 @@ export function openCleanupModal(data, onDone) {
       if (seg) seg.checked = true;
       const keep = el.querySelector('input[name^=dup-][value="keep_' + (sug === 'keep_b' ? 'b' : 'a') + '"]');
       if (keep) keep.checked = true;
+      // Refill the name from the suggested survivor — but NOT over a name he typed himself. Setting
+      // .checked in code fires no change event, so this is also what keeps the field in step with the
+      // radio here. "Aceitar sugestões" fills in decisions; it must not throw away his corrections.
+      const inp = el.querySelector('.cdx-dup-name-in');
+      const untouched = inp && (inp.value === el.dataset.nameA || inp.value === el.dataset.nameB);
+      if (inp && untouched) inp.value = sug === 'keep_b' ? el.dataset.nameB : el.dataset.nameA;
       _syncPair(el);
     });
     Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row')).forEach((el) => {

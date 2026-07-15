@@ -237,17 +237,38 @@ export function personRowHtml(person, cfg) {
   (expandable ? '<div class="cdx-pl-detail" hidden>' + rows.map((r) => detailLine(r, c)).join('') + '</div>' : '');
 }
 
-// The column header. Rendered once, on the same grid, so the labels sit over their columns.
+// ── the column header, which is also the sort control ─────────────────────────────
+// Élder: "since we have column headers now, let's make them sort by those; so the sort dropdown is
+// no longer needed." Each header is a button carrying its sort key; the active one shows the
+// direction. The keys are person-filters.js's, unchanged — this only moves the control.
+//
+// FIRST CLICK OPENS ON THE INTERESTING END, per column. Name is the only one where A→Z is what you
+// want; on the others the useful end is "most turmas", "worst standing", "most live" — a header that
+// opened `acesso` on "nunca entrou" would be a sort nobody asked for. Clicking again reverses.
+export const SORT_DEFAULT_DIR = { name: 'asc', turmas: 'desc', status: 'asc', validated: 'asc', access: 'desc' };
+
+function sortHead(cls, key, label, cur, dir) {
+  const on = cur === key;
+  const arrow = on ? (dir === 'desc' ? ' ▾' : ' ▴') : '';
+  return '<span class="cdx-pl-c ' + cls + '">' +
+    '<button type="button" class="cdx-pl-sort' + (on ? ' is-on' : '') + '" data-sort="' + esc(key) + '"' +
+      ' title="' + esc(t('alunos.sort_by')) + '">' + esc(label) + arrow + '</button>' +
+  '</span>';
+}
+
 export function headerHtml(cfg) {
   const c = cfg || {};
+  const cur = c.sort || 'name';
+  const dir = c.dir || SORT_DEFAULT_DIR[cur] || 'asc';
   return '<div class="cdx-pl-head">' +
     '<span class="cdx-pl-c cdx-pl-chk"></span>' +
     '<span class="cdx-pl-c cdx-pl-av"></span>' +
-    '<span class="cdx-pl-c cdx-pl-id">' + esc(t('access.col_person')) + '</span>' +
-    (c.scope === 'turma' ? '' : '<span class="cdx-pl-c cdx-pl-turma">' + esc(t('access.col_turma')) + '</span>') +
-    '<span class="cdx-pl-c cdx-pl-appr">' + esc(t('access.col_approval')) + '</span>' +
-    '<span class="cdx-pl-c cdx-pl-val">' + esc(t('access.col_validation')) + '</span>' +
-    '<span class="cdx-pl-c cdx-pl-acc">' + esc(t('access.col_access')) + '</span>' +
+    sortHead('cdx-pl-id', 'name', t('access.col_person'), cur, dir) +
+    // The turma column does not exist inside a turma, and neither does sorting by it.
+    (c.scope === 'turma' ? '' : sortHead('cdx-pl-turma', 'turmas', t('access.col_turma'), cur, dir)) +
+    sortHead('cdx-pl-appr', 'status', t('access.col_approval'), cur, dir) +
+    sortHead('cdx-pl-val', 'validated', t('access.col_validation'), cur, dir) +
+    sortHead('cdx-pl-acc', 'access', t('access.col_access'), cur, dir) +
     '<span class="cdx-pl-c cdx-pl-act"></span>' +
   '</div>';
 }

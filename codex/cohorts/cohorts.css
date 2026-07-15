@@ -1311,6 +1311,13 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-dup-body { display: flex; flex-direction: column; gap: 2px; min-width: 0; flex: 1; }
 .cdx-dup-name { font-weight: 600; font-size: 0.85rem; }
 .cdx-dup-mail { font-size: 0.72rem; color: var(--text-secondary); overflow-wrap: anywhere; }
+/* The kept name, prefilled and editable — visible only while the pair is actually merging, like the
+   "qual nome manter" heading above it. */
+.cdx-dup-final { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
+.cdx-dup-final-l { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; white-space: nowrap; }
+.cdx-dup-name-in { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; font-size: 0.82rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-primary); }
+.cdx-dup-name-in:focus { outline: none; border-color: var(--tint-primary-tx); }
+.cdx-dup-pair:not(.is-merging) .cdx-dup-final { display: none; }
 
 /* Limpeza: the two sections (duplicatas + registros de teste) inside one modal. Each list scrolls in
    its own box, so a long duplicate list can never push the test list off the screen. */
@@ -1387,6 +1394,19 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   align-items: center;
   gap: 8px;
 }
+/* The headers ARE the sort control now (the dropdown is gone), so they have to look pressable and
+   show which one is active. The button is bare — the grid cell already positions it, and any padding
+   here would shift the label off its column. */
+.cdx-pl-sort {
+  background: none; border: 0; padding: 0; margin: 0; font: inherit; color: inherit;
+  cursor: pointer; text-align: left; letter-spacing: inherit; text-transform: inherit;
+  max-width: 100%; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cdx-pl-sort:hover { color: var(--text-primary); text-decoration: underline; text-underline-offset: 3px; }
+.cdx-pl-sort.is-on { color: var(--tint-primary-tx); font-weight: 700; }
+.cdx-pl-sort:focus-visible { outline: 2px solid var(--tint-primary-tx); outline-offset: 2px; border-radius: 3px; }
+/* A row is clickable to expand (Élder), so it needs to say so — but only the ones that open. */
+.cdx-pl-row--exp { cursor: pointer; }
 .cdx-pl-head {
   font-size: 0.68rem;
   text-transform: lowercase;
