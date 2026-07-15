@@ -1443,9 +1443,15 @@ function _renderDossier(turma) {
     accEl.innerHTML = accessSettingsHtml(turma);
     wireAccessSettings(accEl, turma, { api, clientSlug: turma.client_slug, slug: turma.slug });
   }
-  // The course + classpulse selects need their option lists; load once and re-render
-  // this dossier when they arrive (so the saved option is selectable).
-  if ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length)) {
+  // The course + classpulse selects need their option lists; load once and re-render this
+  // dossier when they arrive (so the saved option is selectable).
+  // _dossierDepsTried is part of the CONDITION, not just of _ensureDossierDeps' internals: once
+  // tried, that helper invokes the callback SYNCHRONOUSLY, and the callback re-enters
+  // _renderDossier. So asking again after a try that came back EMPTY recursed until the stack
+  // blew (RangeError), while every level re-fired the aulas/participants/certs/forum loaders —
+  // the crash and the minute-long Aulas sub-tab were the same bug. Empty is a legitimate answer
+  // (a client with no courses yet, exactly what staging is), not a reason to ask forever.
+  if (!_dossierDepsTried && ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length))) {
     _ensureDossierDeps(() => { if (_dossierTurma === turma) _renderDossier(turma); });
   }
 
