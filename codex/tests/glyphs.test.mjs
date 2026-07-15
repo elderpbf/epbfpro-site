@@ -23,6 +23,43 @@ test('glyphSvg renders an <svg> for a known key and "" for an unknown one', () =
   assert.equal(glyphs.glyphSvg('nope-not-real'), '', 'unknown key yields empty string');
 });
 
+// Registered from the drift audit. Each was being hand-drawn at a call site because the
+// library had no key for it; external-link and menu had already forked into two rival
+// drawings before landing here. Pinned so a tidy-up cannot quietly drop one and send the
+// call sites back to hand-drawing.
+test('the keys the call sites were hand-drawing are registered', () => {
+  const keys = glyphs.glyphKeys();
+  for (const k of ['external-link', 'menu', 'close', 'check', 'sort', 'maximize',
+                   'lock-download', 'stopwatch', 'hourglass', 'message-circle', 'preset']) {
+    assert.ok(keys.includes(k), `library registers ${k}`);
+    assert.match(glyphs.glyphSvg(k), /^<svg/, `${k} renders`);
+  }
+});
+
+// A filled glyph is the SAME shape reading as "on": a solid star is the favourited star.
+// Without this the library can only return outlines, which is exactly why lessons.js
+// hand-copied a star it already had a key for.
+test('glyphSvg: filled swaps the fill, and outline stays the default', () => {
+  assert.match(glyphs.glyphSvg('star', { filled: true }), /fill="currentColor"/, 'filled fills');
+  assert.match(glyphs.glyphSvg('star'), /fill="none"/, 'default is still an outline');
+  assert.match(glyphs.glyphSvg('star', { filled: false }), /fill="none"/, 'explicit false is an outline');
+});
+
+test('glyphSvg: strokeWidth is overridable and defaults to 2', () => {
+  assert.match(glyphs.glyphSvg('star', { strokeWidth: 1.5 }), /stroke-width="1.5"/);
+  assert.match(glyphs.glyphSvg('star'), /stroke-width="2"/, 'default unchanged');
+});
+
+// Some call sites size the icon from the stylesheet; emitting width/height would win
+// over the sheet. size:null opts out. Only null does: omitting size keeps the 18 default.
+test('glyphSvg: size:null omits width/height so CSS can size it', () => {
+  const css = glyphs.glyphSvg('star', { size: null });
+  assert.ok(!/ width="/.test(css), 'no width attribute');
+  assert.ok(!/ height="/.test(css), 'no height attribute');
+  assert.match(css, /viewBox="0 0 24 24"/, 'still a valid 24x24 svg');
+  assert.match(glyphs.glyphSvg('star'), / width="18" height="18"/, 'omitting size keeps the default');
+});
+
 test('no glyph markup contains an emoji or an em dash', () => {
   const src = read('../js/glyphs.js');
   assert.ok(!/[\u{1F000}-\u{1FAFF}\u{2600}-\u{27BF}\u{2B00}-\u{2BFF}]/u.test(src), 'glyph library is emoji-free');
