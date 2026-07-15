@@ -948,6 +948,7 @@ export default {
   'tarefas.flags_label':      'On this assignment:',
   'tarefas.reply_toggle':     'Instructor reply',
   'tarefas.grade_toggle':     'Grade',
+  'tarefas.multi_toggle':     'Multiple deliveries',
   'tarefas.reply_label':      'Your reply',
   'tarefas.reply_ph':         'Reply to this student…',
   'tarefas.reply_send':       'Reply',

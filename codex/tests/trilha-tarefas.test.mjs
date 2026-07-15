@@ -7,7 +7,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { aulaLabel, countLabel, sortByAula, anyAulaHasMultiple, statusGroups, answerText } from '../trilha/js/tarefas.js';
+import { aulaLabel, countLabel, sortByAula, anyAulaHasMultiple, statusGroups, answerText, isExpandable } from '../trilha/js/tarefas.js';
 import { resolveTab } from '../trilha/js/page.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
@@ -76,7 +76,30 @@ test('answerText: no submission -> empty', () => assert.equal(answerText(null), 
 // ── resolveTab knows the tarefas tab ─────────────────────────────────────────
 test('resolveTab: #tarefas -> tarefas', () => assert.equal(resolveTab('#tarefas'), 'tarefas'));
 
+// ── isExpandable (multiple deliveries, track-26 item 3) ──────────────────────
+// A sent tarefa is normally a dead end. When the teacher opted THIS tarefa into multiple
+// deliveries the card must open, so the student can re-read their answer and send another.
+test('isExpandable: a sent tarefa stays closed on a single-delivery tarefa', () => {
+  assert.equal(isExpandable({ state: 'enviada', allow_multi: false }), false);
+});
+test('isExpandable: a sent tarefa opens when multiple deliveries are on', () => {
+  assert.equal(isExpandable({ state: 'enviada', allow_multi: true }), true);
+});
+test('isExpandable: a graded tarefa opens either way', () => {
+  assert.equal(isExpandable({ state: 'corrigida', allow_multi: false }), true);
+  assert.equal(isExpandable({ state: 'corrigida', allow_multi: true }), true);
+});
+test('isExpandable: an unsent tarefa never expands — that click submits', () => {
+  assert.equal(isExpandable({ state: 'a_enviar', allow_multi: true }), false);
+});
+
 // ── source contract ─────────────────────────────────────────────────────────
+test('the "send another" button is gated on allow_multi, never offered by default', () => {
+  const src = read('../trilha/js/tarefas.js');
+  assert.match(src, /if \(tarefa\.allow_multi\) \{[\s\S]*?data-tt-again/, '"enviar outra" only renders when the teacher opted in');
+  assert.match(src, /stopPropagation/, 'the button must not toggle the card it sits in');
+});
+
 test('tarefas.js self-registers a renderer and uses the facade only', () => {
   const src = read('../trilha/js/tarefas.js');
   assert.match(src, /registerRenderer\('tarefas'/, 'registers the tarefas renderer');

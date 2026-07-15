@@ -153,6 +153,13 @@ function paintList() {
   }
 }
 
+// One definition of "this card opens", used by both the markup and the click handler, so they
+// can never disagree about which cards are interactive.
+export function isExpandable(tarefa) {
+  if (tarefa.state === 'a_enviar') return false;         // that click submits, it doesn't expand
+  return tarefa.state === 'corrigida' || !!tarefa.allow_multi;
+}
+
 function badgeHtml(tarefa) {
   if (tarefa.state === 'corrigida') return '<span class="cdx-tt-badge cdx-tt-badge--graded">' + esc(t('tarefas.badge_graded')) + '</span>';
   if (tarefa.state === 'enviada') return '<span class="cdx-tt-badge cdx-tt-badge--sent">' + esc(t('tarefas.badge_sent')) + '</span>';
@@ -161,7 +168,9 @@ function badgeHtml(tarefa) {
 
 function subHtml(tarefa, open) {
   if (tarefa.state === 'corrigida') return open ? t('tarefas.sub_graded_open') : t('tarefas.sub_graded_closed');
-  if (tarefa.state === 'enviada') return t('tarefas.sub_sent');
+  // "aguardando correção" reads as a dead end, which is right for a single-delivery tarefa but
+  // would hide the affordance on a multi one: say it can be tapped.
+  if (tarefa.state === 'enviada') return tarefa.allow_multi && !open ? t('tarefas.sub_sent_multi') : t('tarefas.sub_sent');
   return t('tarefas.sub_pending');
 }
 
@@ -185,15 +194,24 @@ function bodyHtml(tarefa) {
   if (!(tarefa.reply_enabled && tarefa.grade_enabled)) {
     html += '<div class="cdx-tt-gate">' + esc(t('tarefas.gate_note')) + '</div>';
   }
+  // The teacher opted THIS tarefa into multiple deliveries, so sending again is allowed and the
+  // earlier answers are kept. Only offered here, inside the card the student already opened to
+  // review what they sent — never on a single-delivery tarefa, where the worker would refuse it.
+  if (tarefa.allow_multi) {
+    html += '<button type="button" class="cdx-tt-again" data-tt-again="' + tarefa.item_id + '">' +
+      esc(t('tarefas.send_another')) + '</button>';
+  }
   html += '</div>';
   return html;
 }
 
 function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
-  const expandable = tarefa.state === 'corrigida';
+  // A sent tarefa is normally a dead end: nothing to see until it is graded. With multiple
+  // deliveries on, it opens too, so the student can re-read their answer and send another.
+  const expandable = isExpandable(tarefa);
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
-    '<div class="cdx-tt-top"' + (tarefa.state !== 'enviada' ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
+    '<div class="cdx-tt-top"' + (tarefa.state === 'a_enviar' || expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
@@ -212,7 +230,15 @@ function wireList() {
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
       if (!tarefa) return;
       if (tarefa.state === 'a_enviar') { openSubmit(tarefa); return; }
-      if (tarefa.state === 'corrigida') { _openId = (_openId === id) ? null : id; paintList(); }
+      if (isExpandable(tarefa)) { _openId = (_openId === id) ? null : id; paintList(); }
+    });
+  });
+  _root.querySelectorAll('[data-tt-again]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();                       // the card head toggles; this must not collapse it
+      const id = parseInt(btn.getAttribute('data-tt-again'), 10);
+      const tarefa = _tarefas.find((tf) => tf.item_id === id);
+      if (tarefa) openSubmit(tarefa);
     });
   });
 }
