@@ -47,18 +47,22 @@ export function groupParticipantsByStatus(participants) {
 // a row's TWO axes together — { status: access_status, verified: email_verified bool } — because
 // approval and e-mail validation are independent (track-36, access.md §Os 3 conceitos).
 //
-// `validate` is the admin "validar acesso" (track-29), offered for an approved-but-not-yet-validated
-// row. It is deliberately NOT offered for a pending row: track-28a2 briefly had the looser
-// `!r.verified`, and track-29's stricter rule won on merge — it shipped first, and a rule that
-// offers fewer actions can only ever fail safe. (Worth revisiting: the three concepts say validation
-// is independent of approval, and the validação column now renders on every row, so hand-validating
-// a pending person is arguably meaningful. Élder's call, not a merge's.)
+// `validate` is the admin "validar acesso" (track-29): offered for ANY row whose e-mail is not
+// confirmed yet, whatever its approval says. Élder settled this on merge (2026-07-15): "validation
+// and approval are different and independent things."
+//
+// track-29 shipped the coupled rule `status === 'approved' && !verified`, on the rationale that it
+// should only appear where the validation chip did. That rationale expired: the validação column now
+// renders on EVERY row, and coupling the two contradicts access.md §Os 3 conceitos — a pending person
+// really can be validated (enrolling outside the window validates the e-mail while approval waits),
+// and validating them grants nothing on its own. It only decides how long their access lasts once
+// approval does come.
 //
 // Only backend-wired actions live here; "revoke token" stays absent until its worker action ships,
 // so the toolbar never grows a dead button.
 export const ACTION_RULES = {
   approve:  (r) => r.status === 'pending',
-  validate: (r) => r.status === 'approved' && !r.verified,   // ct_set_email_verified
+  validate: (r) => !r.verified,   // ct_set_email_verified — its own axis, not approval's
   block:    (r) => r.status !== 'denied',
   unblock:  (r) => r.status === 'denied',
   remove:   () => true,
