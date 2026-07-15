@@ -62,7 +62,7 @@ function _targets(s, act) {
 function _opt(v, cur, label) { return '<option value="' + esc(v) + '"' + (v === cur ? ' selected' : '') + '>' + esc(label) + '</option>'; }
 
 function _toolsBar() {
-  const opts = filterOptions(_students);
+  const opts = filterOptions(_people);
   // A filter select renders only when it has options that actually partition the roster
   // (students-filters.filterOptions); otherwise it is omitted. Élder 2026-07-14: hide filters
   // nobody needs. The '' option is the "no filter" default, carrying the filter's name.
