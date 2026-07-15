@@ -304,8 +304,16 @@ function renderHeaderActions() {
         onNavigate: (item) => {
           // Already on this turma's page, so navigate IN-PAGE per source; the deeplink is
           // only the cross-device fallback. Dynamic import dodges the page.js↔forum.js cycle.
-          if (item && item.type === 'tarefa_feedback') {
-            if (_win && _win.location) { _win.location.hash = '#tarefas'; return; }
+          // Tarefa feedback: land ON the answered tarefa with the professor's resposta open,
+          // not merely on the tab. focusTarefa FIRST (it remembers the request), THEN the tab
+          // switch — the tab may still have to mount + load, and it applies the focus when it
+          // paints. If we are already on the tab the hash is a no-op and focusTarefa repaints.
+          if (item && item.type === 'tarefa_feedback' && item.item_id != null) {
+            import('./tarefas.js').then((m) => {
+              m.focusTarefa(item.item_id);
+              if (_win && _win.location) _win.location.hash = '#tarefas';
+            });
+            return;
           }
           if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
           if (item && item.deeplink && typeof location !== 'undefined') {
