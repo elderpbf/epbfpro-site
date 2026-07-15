@@ -36,13 +36,22 @@ test('the keys the call sites were hand-drawing are registered', () => {
   }
 });
 
-// The slides tree is the sealed vendored core: it may import js/i18n.js and nothing else
-// (tests/modules.test.mjs). So its hand-drawn stopwatch/hourglass are the boundary working,
-// not drift, and this library must not grow keys whose only caller is forbidden to use them.
-test('no keys registered purely for the sealed slides core', () => {
-  for (const k of ['stopwatch', 'hourglass']) {
-    assert.equal(glyphs.hasGlyph(k), false, `${k} has no reachable consumer; do not register it`);
+// Every key is user-selectable as an item-type icon (content/items.js builds its picker from
+// glyphKeys()), so a key with no code call site is NOT dead: the picker is a consumer. That
+// is why there is no "unused key" test here, and why `filled` is reachable only from a call
+// site, a stored "glyph:<key>" string cannot encode it.
+test('the picker can render every registered key (no key is un-pickable)', () => {
+  for (const k of glyphs.glyphKeys()) {
+    assert.match(glyphs.glyphSvg(k), /^<svg/, `${k} renders for the type picker grid`);
+    assert.equal(glyphs.isGlyphIcon('glyph:' + k), true, `${k} round-trips as a stored icon`);
   }
+});
+
+// style is an escape hatch (prefer cls), but it is the difference between a call site using
+// the library and keeping its own copy over one attribute. question-composer needs it.
+test('glyphSvg: style passes through, and is absent unless asked', () => {
+  assert.match(glyphs.glyphSvg('star', { style: 'vertical-align:-2px' }), /style="vertical-align:-2px"/);
+  assert.ok(!/style=/.test(glyphs.glyphSvg('star')), 'no style attribute by default');
 });
 
 // A filled glyph is the SAME shape reading as "on": a solid star is the favourited star.

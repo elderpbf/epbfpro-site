@@ -124,12 +124,13 @@ const GLYPHS = {
   // ── Time / place / business ──
   'calendar':   '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   'clock':      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  // No `stopwatch` / `hourglass` here on purpose. The only surface that draws them is the
-  // presenter bar in content/slides/js/app.js, and that tree is the SEALED vendored core:
-  // it may import js/i18n.js and nothing else (tests/modules.test.mjs enforces it), so it
-  // cannot consume this library by design. Registering keys their only possible caller is
-  // forbidden to use would be speculation, not curation. If a non-slides surface ever needs
-  // a timer icon, add them then, and lift the drawings from app.js.
+  // No `stopwatch` / `hourglass` here on purpose. The presenter bar in content/slides/js/
+  // draws both by hand, and that looks like drift until you check: that tree is the SEALED
+  // vendored core, allowed to import js/i18n.js and nothing else (tests/modules.test.mjs
+  // enforces it). It cannot consume this library BY DESIGN, so its hand-drawn icons are the
+  // boundary working. Adding keys here would not have removed a single copy; it would just
+  // be a third drawing. If a surface that CAN import this ever wants a timer, add them then
+  // and lift the drawings from app.js.
   'map-pin':    '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   'briefcase':  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   'dollar-sign':'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
@@ -200,17 +201,23 @@ export function hasGlyph(key) { return Object.prototype.hasOwnProperty.call(GLYP
 //                 this the library could only ever return outlines, which is why
 //                 lessons.js hand-copied the star it already had a key for.
 //   strokeWidth=2 thinner strokes suit a filled shape, whose silhouette carries it.
+//   style=''      inline style. Deliberately an escape hatch, prefer `cls`. It exists
+//                 because a glyph sitting inline with text sometimes needs a one-off
+//                 optical nudge (vertical-align) and has no class to hang it on, and
+//                 the alternative was a call site keeping its own hand-drawn copy over
+//                 a single attribute. A copy is the expensive kind of wrong; this is not.
 export function glyphSvg(key, opts) {
   if (!hasGlyph(key)) return '';
   opts = opts || {};
   const size = ('size' in opts) ? opts.size : 18;
   const dim = (size == null) ? '' : ' width="' + size + '" height="' + size + '"';
   const cls = opts.cls ? ' class="' + opts.cls + '"' : '';
+  const style = opts.style ? ' style="' + opts.style + '"' : '';
   const fill = opts.filled ? 'currentColor' : 'none';
   const sw = opts.strokeWidth || 2;
   return '<svg' + cls + dim + ' viewBox="0 0 24 24" ' +
     'fill="' + fill + '" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" ' +
-    'stroke-linejoin="round" aria-hidden="true">' + GLYPHS[key] + '</svg>';
+    'stroke-linejoin="round"' + style + ' aria-hidden="true">' + GLYPHS[key] + '</svg>';
 }
 
 // Resolve a type's stored icon to display HTML: a glyph SVG for "glyph:<key>",
