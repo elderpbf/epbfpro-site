@@ -956,8 +956,6 @@ export default {
   'tarefas.grade_ph':         'Grade (e.g. 9.5 · A · Passed)',
   'tarefas.grade_save':       'Save',
   'tarefas.saved':            'Saved.',
-  'tarefas.msg_seen':         'The student has read this message, so it can no longer be changed.',
-  'tarefas.msg_seen_toast':   'The student opened the tarefa and has read this message.',
   'tarefas.csv_student':      'Student',
   'tarefas.csv_date':         'Date',
   'tarefas.csv_type':         'Type',

@@ -7,8 +7,8 @@
 // answer field comes from the Codex tarefa-fields registry.
 //
 // Public API: openTarefaSubmitModal({ item, clientSlug, turmaSlug, token, onSubmitted, editing })
-// `editing` ({ id, answer_json, anon }) troca o modal pro modo EDIÇÃO da entrega que já existe
-// (migration 0037): mesmo campo, mesmas regras, outro verbo. Um modal só, porque é o mesmo ato
+// `editing` ({ id, answer_json, anon }) troca o modal pro modo EDIÇÃO da entrega que já existe:
+// mesmo campo, mesmas regras, outro verbo. Um modal só, porque é o mesmo ato
 // de responder — um segundo modal quase igual seria duas telas pra corrigir juntas pra sempre.
 // The pure helpers
 // (errorMessage / parseMeta) are unit-tested; the modal DOM is verified on staging.
@@ -22,9 +22,9 @@ const LS_NAME = 'ct_student_name';
 // PURE. Map a Worker error code to a student-facing message.
 export function errorMessage(code) {
   if (code === 'already_submitted') return 'Você já enviou uma resposta para esta tarefa. Cada aluno só pode enviar uma vez.';
-  // A trava da 0037, na cara de quem esbarrou nela. O texto diz O QUE ACONTECEU e o que ainda
-  // dá pra fazer: "erro ao salvar" mandaria o aluno tentar de novo pra sempre.
-  if (code === 'already_seen') return 'O instrutor já viu esta resposta, então ela não pode mais ser editada. Se a tarefa aceitar, envie outra resposta.';
+  // A trava, na cara de quem esbarrou nela. O texto diz O QUE ACONTECEU e o que ainda dá pra
+  // fazer: "erro ao salvar" mandaria o aluno tentar de novo pra sempre.
+  if (code === 'already_replied') return 'O instrutor já respondeu esta entrega, então ela não pode mais ser editada. Se a tarefa aceitar, envie outra resposta.';
   if (code === 'anon_not_allowed') return 'Esta tarefa exige identificação. Informe seu nome.';
   if (code === 'needs_approval') return 'Seu acesso a esta turma está em análise. Aguarde a liberação para enviar.';
   if (code === 'forbidden') return 'Acesso negado. Recarregue a página e tente novamente.';
@@ -76,8 +76,8 @@ export function openTarefaSubmitModal(opts) {
   const sessionToken = opts.sessionToken; // gated turmas require an approved session to submit
   const participantName = String(opts.participantName || '').trim(); // the logged-in student, if any
   const onSubmitted = opts.onSubmitted || (() => {});
-  // Modo edição (0037): a MESMA entrega volta pro mesmo campo. `anon` é o que ela é hoje, não
-  // uma proposta.
+  // Modo edição: a MESMA entrega volta pro mesmo campo. `anon` é o que ela é hoje, não uma
+  // proposta.
   const editing = opts.editing || null;
   const SEND_LABEL = editing ? 'Salvar alterações' : 'Enviar resposta';
 

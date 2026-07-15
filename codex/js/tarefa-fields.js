@@ -15,7 +15,7 @@ import { esc } from './dom.js';
 export { esc };
 
 // answer_json -> o PAYLOAD do campo, que é o formato que renderForm({ initial }) e renderStored
-// falam. Exportado porque a edição (0037) precisa devolver uma entrega já gravada PRA DENTRO do
+// falam. Exportado porque a edição da entrega precisa devolver uma já gravada PRA DENTRO do
 // formulário, e o registry é quem conhece a forma do payload: reimplementar isso no modal seria
 // pôr a mesma regra em dois lugares pra corrigirem juntos pra sempre.
 export function parseAnswer(answer_json) {

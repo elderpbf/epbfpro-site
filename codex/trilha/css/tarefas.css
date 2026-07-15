@@ -173,6 +173,15 @@
   white-space: pre-wrap;
   overflow-wrap: anywhere;   /* uma URL colada nao estoura o cartao */
 }
+/* A nota vive FORA do bloco da mensagem (Élder: "a nota nao e mensagem do professor"), entao ela
+   carrega o proprio rotulo: solta e sem rotulo, era um numero verde sem explicacao. */
+.cdx-tt-gl {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
 .cdx-tt-grade {
   display: flex;
   align-items: center;
@@ -243,7 +252,7 @@
   color: var(--text-secondary);
   opacity: 0.85;
 }
-/* "Editar", enquanto o instrutor nao viu (0037). Mora na assinatura da entrega, discreto: e uma
+/* "Editar", enquanto o instrutor nao respondeu. Mora na assinatura da entrega, discreto: e uma
    saida, nao a acao principal do cartao (essa e a tag la em cima). margin-left:auto joga pra
    ponta direita da linha, o mesmo lugar onde a acao mora no topo. */
 .cdx-tt-edit {

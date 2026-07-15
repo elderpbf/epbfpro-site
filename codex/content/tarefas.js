@@ -158,7 +158,6 @@ function _loadTarefas(clientSlug, turmaSlug) {
       _renderLockedPane();
       if (_focusItemId != null && Number(_selectedId) === _focusItemId) {
         _loadSubmissions(_focusItemId);
-        _markAnswersSeen(_focusItemId);   // o deep-link JÁ abre o painel: chegar aqui é ver
         const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + _focusItemId + '"]');
         if (card && card.scrollIntoView) card.scrollIntoView({ block: 'center' });
         _focusItemId = null;
@@ -180,21 +179,6 @@ function _updateSubmissionCount(itemId) {
 }
 
 // ── Submissions (answers) ─────────────────────────────────────────────────────
-
-// "Abri o painel de respostas desta tarefa" (migration 0037): daqui pra frente o aluno não
-// reescreve mais uma entrega que já está na minha frente.
-//
-// Chamado dos dois pontos onde o painel APARECE (abrir o cartão, e o deep-link que já abre),
-// nunca de dentro do _loadSubmissions: um recarregamento não é uma abertura, e o
-// _removeFromTurma logo abaixo já lê a lista SEM mostrar nada pra ninguém, pendurar o carimbo
-// na leitura marcaria como vista uma resposta que ninguém olhou.
-//
-// Dispara e segue: nada nesta tela depende da resposta. Quem muda é a do aluno, e no próximo
-// carregamento dela.
-function _markAnswersSeen(itemId) {
-  Promise.resolve(api.markAnswersSeen({ client_slug: _client, turma_slug: _turma, item_id: itemId }))
-    .catch((e) => { if (window.bsLog) window.bsLog('tarefas _markAnswersSeen: ' + (e && e.message || e), 'warn'); });
-}
 
 function _loadSubmissions(itemId) {
   api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
@@ -307,11 +291,6 @@ function _submissionCardHtml(s, flags) {
     '</div>' +
     (flags.reply_enabled ? _replyBlockHtml(s) : '') +
     (flags.grade_enabled ? _gradeBlockHtml(s) : '') +
-    // O motivo da trava, UMA vez por cartão: resposta e nota travam juntas (são a mesma
-    // mensagem), então repetir o aviso nas duas seria só ruído. Sem o motivo escrito, um campo
-    // cinza vira bug, o professor recarrega a página e tenta de novo.
-    ((flags.reply_enabled || flags.grade_enabled) && _msgSeen(s)
-      ? '<p class="cdx-resp-seen">' + _esc(t('tarefas.msg_seen')) + '</p>' : '') +
   '</div>';
 }
 
@@ -321,30 +300,25 @@ function _flagToggleHtml(flag, on, label) {
   return '<button class="cdx-btn cdx-btn-sm cdx-resp-flag' + (on ? ' is-on' : '') + '" data-flag="' + flag + '">' +
     (on ? '☑ ' : '☐ ') + _esc(label) + '</button>';
 }
-// A mensagem trava depois que o aluno a viu (Élder 2026-07-15: "se a outra parte não viu
-// ainda"). Resposta e nota travam JUNTAS porque saem no mesmo bloco na tela do aluno: são a
-// mesma mensagem, e "editei a nota, não a mensagem" é uma distinção que só existe na tabela.
-//
-// Trava desenhada, não escondida: o campo continua ali com o texto legível e o motivo escrito
-// do lado. Sumir com a resposta faria o professor achar que ela não foi salva.
-const _msgSeen = (s) => !!s.reply_seen_at;
+// A resposta e a nota do instrutor NÃO travam nunca (Élder 2026-07-15: "eu sempre posso
+// editar"). Ele é dono do que escreveu, e uma nota "pode precisar ser ajustada depois". Quem
+// tem prazo é a ENTREGA do aluno, que fecha quando a resposta chega, e essa regra mora no
+// Worker (ct_edit_submission), não aqui.
 function _replyBlockHtml(s) {
-  const seen = _msgSeen(s);
   return '<div class="cdx-resp-reply">' +
     '<label class="cdx-resp-sublabel">' + t('tarefas.reply_label') + '</label>' +
     '<div class="cdx-resp-reply-row">' +
-      '<input type="text" class="cdx-input cdx-resp-reply-input" placeholder="' + _esc(t('tarefas.reply_ph')) + '" value="' + (s.instructor_reply ? _esc(s.instructor_reply) : '') + '"' + (seen ? ' disabled' : '') + '>' +
-      (seen ? '' : '<button class="cdx-btn cdx-btn-sm cdx-resp-reply-send" data-sid="' + _esc(s.id) + '">' + t('tarefas.reply_send') + '</button>') +
+      '<input type="text" class="cdx-input cdx-resp-reply-input" placeholder="' + _esc(t('tarefas.reply_ph')) + '" value="' + (s.instructor_reply ? _esc(s.instructor_reply) : '') + '">' +
+      '<button class="cdx-btn cdx-btn-sm cdx-resp-reply-send" data-sid="' + _esc(s.id) + '">' + t('tarefas.reply_send') + '</button>' +
     '</div>' +
   '</div>';
 }
 function _gradeBlockHtml(s) {
-  const seen = _msgSeen(s);
   return '<div class="cdx-resp-grade">' +
     '<label class="cdx-resp-sublabel">' + t('tarefas.grade_toggle') + '</label>' +
     '<div class="cdx-resp-grade-row">' +
-      '<input type="text" class="cdx-input cdx-resp-grade-input" placeholder="' + _esc(t('tarefas.grade_ph')) + '" value="' + (s.grade != null ? _esc(s.grade) : '') + '"' + (seen ? ' disabled' : '') + '>' +
-      (seen ? '' : '<button class="cdx-btn cdx-btn-sm cdx-resp-grade-save" data-sid="' + _esc(s.id) + '">' + t('tarefas.grade_save') + '</button>') +
+      '<input type="text" class="cdx-input cdx-resp-grade-input" placeholder="' + _esc(t('tarefas.grade_ph')) + '" value="' + (s.grade != null ? _esc(s.grade) : '') + '">' +
+      '<button class="cdx-btn cdx-btn-sm cdx-resp-grade-save" data-sid="' + _esc(s.id) + '">' + t('tarefas.grade_save') + '</button>' +
     '</div>' +
   '</div>';
 }
@@ -373,7 +347,7 @@ function _saveReply(sid, reply, itemId) {
     toast.ok(t('tarefas.saved'));
     const s = (_submissions[itemId] || []).find((x) => x.id === sid);
     if (s) s.instructor_reply = reply;
-  }).catch((err) => _saveMsgFailed(err, itemId));
+  }).catch((err) => notice.internal(_err(err)));
 }
 function _saveGrade(sid, grade, itemId) {
   api.gradeSubmission({ id: sid, grade: grade }).then(() => {
@@ -381,18 +355,7 @@ function _saveGrade(sid, grade, itemId) {
     const s = (_submissions[itemId] || []).find((x) => x.id === sid);
     if (s) s.grade = grade;
     _renderSubmissions(itemId);
-  }).catch((err) => _saveMsgFailed(err, itemId));
-}
-// A trava chega pela rede quando o aluno abriu a tarefa DEPOIS que este painel pintou: aqui o
-// campo ainda estava aberto e o Worker já recusou. Recarrega em vez de só reclamar, o painel
-// está mentindo neste segundo, e é ele que precisa mudar, não o professor que precisa adivinhar.
-function _saveMsgFailed(err, itemId) {
-  if (err && err.data && err.data.error === 'already_seen') {
-    notice.internal(t('tarefas.msg_seen_toast'));
-    _loadSubmissions(itemId);
-    return;
-  }
-  notice.internal(_err(err));
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 function _deleteSubmission(sid, itemId) {
@@ -592,7 +555,6 @@ function _toggleCard(id) {
     card.classList.add('is-open');
     if (body) body.classList.remove('is-hidden');
     _loadSubmissions(id);
-    _markAnswersSeen(id);   // abrir é ver (0037): só ABRIR, fechar não desvê nada
   }
 }
 // Open/close the inline editor inside a card, injected into the existing DOM.

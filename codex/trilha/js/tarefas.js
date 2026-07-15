@@ -256,28 +256,35 @@ function deliveryHtml(sub, ordinal, total) {
   if (total > 1) html += '<span class="cdx-tt-dlabel">' + esc(fill(t('tarefas.delivery_n'), { n: ordinal })) + '</span>';
   html += '<span class="cdx-tt-by">' +
     esc(fill(t('tarefas.by_at'), { who: deliveryWho(sub), when: stampTime(sub.submitted_at) })) + '</span>';
-  // Editar enquanto o instrutor não viu (Élder 2026-07-15). Quem decide é o SERVIDOR (can_edit,
-  // migration 0037), nunca esta aba: o mesmo carimbo que abre o botão é o que o ct_edit_submission
-  // consulta pra aceitar. O botão fica na assinatura da entrega, junto do "de Fulano em ...":
-  // é ali que se diz de quem é e de quando é, então é ali que se mexe nela.
+  // Editar até o instrutor responder (Élder 2026-07-15: "o aluno pode editar até eu responder e
+  // pronto"). Quem decide é o SERVIDOR (can_edit), nunca esta aba: é a mesma coluna que o
+  // ct_edit_submission consulta pra aceitar. O botão fica na assinatura da entrega, junto do "de
+  // Fulano em ...": é ali que se diz de quem é e de quando é, então é ali que se mexe nela.
   if (sub.can_edit) {
     html += '<button type="button" class="cdx-tt-edit" data-tt-edit="' + esc(sub.id) + '">' +
       esc(t('tarefas.edit')) + '</button>';
   }
   html += '</div>';
   html += '<div class="cdx-tt-fv" data-tt-text>' + esc(answerText(sub)) + '</div>';
-  if (sub.instructor_reply || sub.grade) {
-    // The teacher signs as "Instrutor" (Élder), not by name: the student is talking to the
-    // role. reply_at can be null on a grade-only message, so the stamp falls back to graded_at.
+  // A mensagem do instrutor. Ele assina como "Instrutor" (Élder), não pelo nome: o aluno está
+  // falando com o papel.
+  if (sub.instructor_reply) {
     html += '<div class="cdx-tt-reply">' +
       '<div class="cdx-tt-meta"><span class="cdx-tt-by">' +
-        esc(fill(t('tarefas.msg_by_at'), { who: t('tarefas.instructor'), when: stampTime(sub.reply_at || sub.graded_at) })) +
-      '</span></div>';
-    if (sub.instructor_reply) html += '<div class="cdx-tt-fv" data-tt-text>' + esc(sub.instructor_reply) + '</div>';
-    if (sub.grade) {
-      html += '<div class="cdx-tt-grade"><span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span></div>';
-    }
-    html += '</div>';
+        esc(fill(t('tarefas.msg_by_at'), { who: t('tarefas.instructor'), when: stampTime(sub.reply_at) })) +
+      '</span></div>' +
+      '<div class="cdx-tt-fv" data-tt-text>' + esc(sub.instructor_reply) + '</div>' +
+    '</div>';
+  }
+  // A nota vive FORA do bloco da mensagem (Élder 2026-07-15: "a nota não é mensagem do
+  // professor, mensagem é só mensagem"). Dentro dele, uma entrega só com nota desenhava um
+  // "Mensagem do Instrutor em ..." que não continha mensagem nenhuma: só um número. São coisas
+  // independentes, e cada uma tem o seu lugar no cartão.
+  if (sub.grade) {
+    html += '<div class="cdx-tt-grade">' +
+      '<span class="cdx-tt-gl">' + esc(t('tarefas.grade_label')) + '</span>' +
+      '<span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span>' +
+    '</div>';
   }
   return html + '</li>';
 }
@@ -329,7 +336,6 @@ function wireList() {
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
       if (!tarefa || !isExpandable(tarefa)) return;
       _openId = (_openId === id) ? null : id;
-      if (_openId === id) markReplySeen(tarefa);   // só ABRIR é ver; fechar não desvê nada
       paintList();
     });
   });
@@ -350,22 +356,6 @@ function wireList() {
   // Resposta longa vira janela, não parede (Élder): o bloco fecha numa altura legível e abre no
   // toque. Só o que REALMENTE transborda fica clicável — quem mede isso é o clamp compartilhado.
   wireClamps(_root, '[data-tt-text]');
-}
-
-// "O aluno viu a mensagem do professor" (migration 0037) = expandiu o cartão, que é a única
-// tela onde ela aparece. Daqui pra frente o professor não reescreve mais o que já está na frente
-// do aluno.
-//
-// Dispara e segue: o cartão abre na hora, sem esperar a rede. Falhar aqui só deixa o professor
-// editando por mais um instante uma mensagem já lida — o preço de errar pra este lado é ínfimo
-// perto de travar a abertura do cartão atrás de um POST. Nada a repintar: quem muda é a tela do
-// professor, não esta.
-function markReplySeen(tarefa) {
-  if (!tarefa || !tarefa.has_instructor_message || !state.sessionToken) return;
-  Promise.resolve(trail.markReplySeen({
-    client_slug: state.clientSlug, turma_slug: state.turmaSlug,
-    session_token: state.sessionToken, item_id: tarefa.item_id, _silent: true,
-  })).catch(() => { /* ver é do aluno, não é uma tarefa dele */ });
 }
 
 // O modal precisa do ITEM (enunciado + tipo de campo + se aceita anônimo), que a lista não

@@ -292,10 +292,6 @@ export const content = {
   // reuse label across turmas.
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
   listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug } -> { submissions, flags }
-  // "Abri o painel de respostas desta tarefa" (migration 0037): a partir daqui o aluno não
-  // reescreve mais o que já está na minha frente. Ação SEPARADA do list de propósito — se o
-  // carimbo pegasse carona na leitura, qualquer carregamento especulativo trancaria a turma.
-  markAnswersSeen: (p) => call('ct_mark_answers_seen', p),  // { client_slug, turma_slug, item_id } -> { ok, seen }
   deleteSubmission:(p) => call('ct_delete_submission', p),  // { id }
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
   replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)

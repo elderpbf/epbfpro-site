@@ -192,8 +192,10 @@ const pt = {
   'tarefas.msg_by_at':      'Mensagem do {who} em {when}',
   'tarefas.anonymous':      'Anônimo',
   'tarefas.instructor':     'Instrutor',
-  // Só aparece enquanto o instrutor não viu a entrega (migration 0037).
+  // Só aparece enquanto o instrutor não respondeu a entrega.
   'tarefas.edit':           'Editar',
+  // A nota tem rótulo próprio: fora do bloco da mensagem, ela é só um número solto.
+  'tarefas.grade_label':    'Nota',
   'tarefas.field_prompt':   'Proposta',
   'tarefas.field_answer':   'Sua resposta',
   'tarefas.field_grade':    'Nota',
@@ -416,6 +418,7 @@ const en = {
   'tarefas.anonymous':      'Anonymous',
   'tarefas.instructor':     'Instructor',
   'tarefas.edit':           'Edit',
+  'tarefas.grade_label':    'Grade',
   'tarefas.field_prompt':   'Prompt',
   'tarefas.field_answer':   'Your answer',
   'tarefas.field_grade':    'Grade',
