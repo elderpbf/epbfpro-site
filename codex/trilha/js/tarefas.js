@@ -294,20 +294,19 @@ function cardHtml(tarefa, aulas) {
   const chevron = expandable
     ? '<span class="cdx-tt-chev' + (open ? ' is-open' : '') + '">' + glyphSvg('chevron-down', { size: 18 }) + '</span>'
     : '<span class="cdx-tt-chev cdx-tt-chev--none"></span>';
-  const msg = msgBadgeHtml(tarefa);
+  // TODAS as tags na linha do título, a AÇÃO sempre por último, à direita (Élder 2026-07-15):
+  // [mensagem do professor ✉] [responder ✈]. Ordem fixa, então o polegar aprende UM lugar: a
+  // ponta direita do cartão é sempre o que faz alguma coisa, e o que só avisa nunca ocupa esse
+  // lugar. Quando não cabem lado a lado o grupo quebra INTEIRO pra linha de baixo, alinhado à
+  // direita — a ação continua sendo a última, que é o que a regra pede.
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
     '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
       chevron +
-      // O botão de ação volta pra LINHA DO TÍTULO (Élder): numa linha só dele ele lia como um
-      // rodapé, não como a ação do cartão. Cabe agora porque o rótulo encurtou ("Responder") e o
-      // chevron saiu da direita. A tag de MENSAGEM fica abaixo do título: ela avisa, não age, e
-      // era ela que, ao lado, espremia o título em três linhas no celular.
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
-        (msg ? '<div class="cdx-tt-tags">' + msg + '</div>' : '') +
       '</div>' +
-      badgeHtml(tarefa) +
+      '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +
   '</div>';

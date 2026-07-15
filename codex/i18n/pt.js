@@ -949,6 +949,7 @@ export default {
   'tarefas.reply_toggle':     'Resposta do instrutor',
   'tarefas.grade_toggle':     'Nota',
   'tarefas.multi_toggle':     'Várias entregas',
+  'tarefas.anon_toggle':      'Aceitar anônimo',
   'tarefas.reply_label':      'Sua resposta',
   'tarefas.reply_ph':         'Responder a este aluno…',
   'tarefas.reply_send':       'Responder',

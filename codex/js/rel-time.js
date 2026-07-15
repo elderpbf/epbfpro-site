@@ -17,7 +17,7 @@ export function relTime(createdAt, now = Math.floor(Date.now() / 1000)) {
   return 'há ' + Math.floor(h / 24) + ' d';
 }
 
-// The exact moment, PT-BR: "23/06/2026 às 12h26" (Élder 2026-07-15 — every interaction says
+// The exact moment, PT-BR: "23/06/2026 às 12h26" (Élder 2026-07-15: every interaction says
 // WHO and WHEN). Built from the Date parts by hand rather than toLocaleString: the format is
 // fixed copy the app owns, and toLocaleString hands it to whatever locale data the device
 // happens to ship, which is how "12h26" silently becomes "12:26 PM" on someone's phone.

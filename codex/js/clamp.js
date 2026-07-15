@@ -4,7 +4,7 @@
 //
 // Only text that ACTUALLY overflows becomes clickable. That is measured after paint
 // (scrollHeight vs clientHeight) instead of guessed from a character count, because a
-// character count is wrong the moment the font, the viewport width or the language changes —
+// character count is wrong the moment the font, the viewport width or the language changes,
 // and a "toque para ver tudo" hint over a two-line answer is a lie the student clicks once
 // and stops trusting.
 //
@@ -40,8 +40,8 @@ export function wireClamps(root, selector) {
     el.classList.add('is-clampable');
     el.addEventListener('click', (e) => {
       if (e && e.stopPropagation) e.stopPropagation();   // never collapse the card behind it
-      // Selecting text ENDS in a click. Once the block is open it is text again — the student
-      // may be marking their own answer to copy it — and collapsing it under their finger the
+      // Selecting text ENDS in a click. Once the block is open it is text again: the student
+      // may be marking their own answer to copy it, and collapsing it under their finger the
       // moment they finish selecting is the opposite of helpful. Closed, there is nothing to
       // select (CSS turns selection off), so the tap is unambiguously "open this".
       if (el.classList.contains('is-open') && _hasSelectionIn(el)) return;

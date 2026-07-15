@@ -36,17 +36,23 @@ export function parseMeta(metaJson) {
 
 // PURE. Decide the modal's identity controls. Students are authenticated now (track-26): when
 // we know the participant (a gated turma with a session), the old "Seu nome" field is dead, so
-// we drop it and take the name from the session. The anonymous control then follows the tarefa's
-// admin config: shown ONLY when the tarefa allows anonymous, and PRE-CHECKED when shown (Élder).
-// An open (non-gated) turma has no session identity, so it keeps the name field + the original
-// unchecked anon checkbox / "identificação obrigatória" hint.
+// we drop it and take the name from the session. The anonymous control follows the professor's
+// choice FOR THIS TURMA: shown only when this tarefa allows anonymous, and NEVER pre-checked.
+// An open (non-gated) turma has no session identity, so it keeps the name field + the
+// "identificação obrigatória" hint.
+//
+// Não vem marcado (Élder 2026-07-15: "o usuário deve marcar para ser anônimo"). Vinha, e isso
+// invertia o consentimento: quem entrasse identificado e só clicasse "Enviar" mandava anônimo
+// SEM QUERER, e a entrega chegava sem dono no painel do professor — irreversível, porque a
+// coluna do nome fica nula e não há de onde recuperar. Anonimato é o desvio, não o padrão:
+// quem quer se esconder marca.
 export function identityConfig(participantName, allowAnon) {
   const authed = !!String(participantName == null ? '' : participantName).trim();
   return {
     authed,
     showNameField: !authed,
     showAnonCheckbox: !!allowAnon,
-    anonChecked: authed && !!allowAnon,
+    anonChecked: false,
   };
 }
 
@@ -62,7 +68,11 @@ export function openTarefaSubmitModal(opts) {
 
   const meta = parseMeta(item.meta_json);
   const fieldType = meta.field_type || 'text';
-  const allowAnon = !!meta.allow_anonymous;
+  // Vem do RELEASE (ct_get_item_public devolve item.allow_anonymous a partir da coluna que a
+  // migration 0036 criou), não mais do meta_json do item do BANCO: lá a marca valia pra toda
+  // turma que usasse a tarefa. Uma fonte só — a mesma que o ct_submit_tarefa consulta pra
+  // aceitar ou recusar — senão o modal oferece o que o envio recusa.
+  const allowAnon = !!item.allow_anonymous;
   const idCfg = identityConfig(participantName, allowAnon);
   let savedName = '';
   try { savedName = localStorage.getItem(LS_NAME) || ''; } catch (_) { /* noop */ }

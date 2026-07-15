@@ -119,15 +119,19 @@
 .cdx-tt-badge--send { cursor: pointer; }
 .cdx-tt-badge--send:hover { filter: brightness(0.95); }
 .cdx-tt-badge-i { flex-shrink: 0; }
-/* A tag de MENSAGEM (so ela) fica abaixo do titulo: ela AVISA, nao age, entao nao precisa
-   da linha nobre, e o rotulo dela e longo demais pra dividir a linha com o titulo sem
-   espremer ele em 3 linhas no celular. O BOTAO de acao volta pra linha do titulo. */
+/* TODAS as tags na linha do titulo, a ACAO por ultimo, a direita (Élder). justify-content:
+   flex-end mantem a acao colada na borda direita mesmo quando o grupo quebra: se as duas nao
+   couberem lado a lado, a de mensagem sobe e a acao fica embaixo dela, ainda a direita, ainda
+   por ultimo. flex-shrink:0 no grupo -> quem cede largura e o titulo (que quebra), nao a tag
+   (que viraria reticencias). */
 .cdx-tt-tags {
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 0.35rem;
   flex-wrap: wrap;
-  margin-top: 0.4rem;
+  flex-shrink: 0;
+  max-width: 60%;   /* o titulo nunca fica sem lugar nenhum */
 }
 /* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. Mora na ESQUERDA
    e centralizado na vertical (Élder), apontando pro cartao inteiro. --none mantem a largura

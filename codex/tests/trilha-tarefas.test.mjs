@@ -202,14 +202,18 @@ test('o chevron abre o CARTAO: vem antes do conteudo e centralizado', () => {
   const css = read('../trilha/css/tarefas.css');
   assert.match(css, /\.cdx-tt-chev\s*\{[^}]*align-self:\s*center/, 'centralizado na vertical');
 });
-test('o botao de acao volta pra linha do titulo', () => {
+// TODAS as tags na linha do titulo, a ACAO sempre por ULTIMO, a direita (Élder 2026-07-15):
+// [mensagem do professor] [responder]. Ordem fixa: a ponta direita do cartao e sempre o que
+// faz alguma coisa, e o que so avisa nunca ocupa esse lugar.
+test('todas as tags na linha do titulo, a acao por ultimo', () => {
   const src = read('../trilha/js/tarefas.js');
-  // badgeHtml e irmao do bloco do titulo dentro do .cdx-tt-top, nao mais filho de .cdx-tt-tags
-  // (que agora carrega SO a tag de mensagem, e essa sim mora embaixo do titulo).
   const top = src.slice(src.indexOf("'<div class=\"cdx-tt-top\"'"), src.indexOf('function wireList'));
-  assert.ok(top.indexOf('cdx-tt-info') < top.indexOf('badgeHtml(tarefa)'), 'a acao fecha a linha do titulo');
-  assert.match(top, /cdx-tt-tags">' \+ msg \+/, 'so a tag de mensagem fica na linha de baixo');
-  assert.ok(!/tags">' \+ msgBadgeHtml\(tarefa\) \+ badgeHtml/.test(src), 'a acao saiu da linha de baixo');
+  assert.ok(top.indexOf('cdx-tt-info') < top.indexOf('cdx-tt-tags'), 'as tags fecham a linha do titulo');
+  assert.match(top, /cdx-tt-tags">' \+ msgBadgeHtml\(tarefa\) \+ badgeHtml\(tarefa\) \+/, 'mensagem primeiro, acao por ultimo');
+  assert.ok(top.indexOf('chevron +') < top.indexOf('cdx-tt-info'), 'e o chevron continua abrindo pela esquerda');
+  const css = read('../trilha/css/tarefas.css');
+  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*justify-content:\s*flex-end/, 'a acao fica colada na direita mesmo se o grupo quebrar');
+  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*flex-shrink:\s*0/, 'quem cede largura e o titulo, nao a tag');
 });
 test('texto longo vira janela: o clamp e o compartilhado, medido, nao chutado', () => {
   const src = read('../trilha/js/tarefas.js');

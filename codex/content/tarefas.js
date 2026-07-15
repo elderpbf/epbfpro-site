@@ -38,8 +38,12 @@ const FLAG_DEFS = {
   reply: { key: 'reply_enabled', label: 'tarefas.reply_toggle' },
   grade: { key: 'grade_enabled', label: 'tarefas.grade_toggle' },
   multi: { key: 'allow_multi', label: 'tarefas.multi_toggle' },
+  // "Permitir anônimo" desceu do BANCO pra cá (migration 0036, Élder: "should be an assignment
+  // option just like grades; not part of the bank"). No banco a marca valia pra toda turma que
+  // usasse a tarefa; aqui é a escolha desta turma, como as irmãs.
+  anon: { key: 'allow_anon', label: 'tarefas.anon_toggle' },
 };
-const _noFlags = () => ({ reply_enabled: false, grade_enabled: false, allow_multi: false });
+const _noFlags = () => ({ reply_enabled: false, grade_enabled: false, allow_multi: false, allow_anon: false });
 let _selectedId = null;  // selected tarefa id (master-detail)
 let _picker = null;
 let _cleanup = [];
@@ -205,6 +209,7 @@ function _renderSubmissions(itemId) {
         _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
         _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
         _flagToggleHtml('multi', flags.allow_multi, t('tarefas.multi_toggle')) +
+        _flagToggleHtml('anon', flags.allow_anon, t('tarefas.anon_toggle')) +
       '</div>') +
     '<div class="cdx-resp-toolbar">' +
       '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
@@ -492,6 +497,7 @@ function _lockedCardHtml(item) {
         _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
         _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
         _flagToggleHtml('multi', flags.allow_multi, t('tarefas.multi_toggle')) +
+        _flagToggleHtml('anon', flags.allow_anon, t('tarefas.anon_toggle')) +
       '</div>' +
       '<button class="cdx-btn cdx-btn-sm cdx-t1b-edit' + (editing ? ' is-on' : '') + '" data-edit="' + _esc(item.id) + '">' +
         '✎ ' + _esc(editing ? t('tarefas.close_editor') : t('tarefas.edit_btn')) + '</button>' +
@@ -609,21 +615,23 @@ function _removeFromTurma(id) {
   }).catch((e) => notice.internal(_err(e)));
 }
 
-// The field-type chips + anonymous toggle, shared by the card editor and the add editor
-// (injected as the editor's `extra` slot so the reusable editor stays generic).
+// The field-type chips, shared by the card editor and the add editor (injected as the editor's
+// `extra` slot so the reusable editor stays generic).
+//
+// O toggle "permitir anônimo" MOROU aqui e saiu (migration 0036, Élder: "should be an assignment
+// option just like grades; not part of the bank"). Este editor edita o ITEM DO BANCO, então
+// marcar aqui valia pra TODA turma que usasse a tarefa, hoje e no futuro, mas "esta entrega
+// pode ser anônima" é decisão de quem dá a aula, sobre a turma dela. Agora é um toggle por
+// tarefa, ao lado de Resposta / Nota / Várias entregas (FLAG_DEFS).
 function _fieldExtraHtml(meta) {
   const fieldType = (meta && meta.field_type) || 'text';
-  const allowAnon = !!(meta && meta.allow_anonymous);
   const chips = _fields().map((f) => {
     const cls = 'cdx-field-chip-btn' + (f.slug === fieldType ? ' is-active' : '') + (f.disabled ? ' is-disabled' : '');
     const future = f.disabled ? '<span class="cdx-field-future">' + t('tarefas.field_future') + '</span>' : '';
     return '<button type="button" class="' + cls + '" data-slug="' + _esc(f.slug) + '"' + (f.disabled ? ' disabled' : '') + '>' + _esc(f.label) + future + '</button>';
   }).join('');
   return '<div class="cdx-field"><label>' + t('tarefas.field_type_label') + '</label>' +
-      '<div class="cdx-field-chips">' + chips + '</div></div>' +
-    '<label class="cdx-toggle-label">' +
-      '<span class="cdx-toggle"><input type="checkbox" class="cdx-tf-anon"' + (allowAnon ? ' checked' : '') + '><span class="cdx-toggle-slider"></span></span>' +
-      '<span class="cdx-toggle-text">' + t('tarefas.allow_anon') + '</span></label>';
+      '<div class="cdx-field-chips">' + chips + '</div></div>';
 }
 function _wireFieldExtra(container) {
   container.querySelectorAll('.cdx-field-chip-btn:not(.is-disabled)').forEach((btn) => {
@@ -633,21 +641,19 @@ function _wireFieldExtra(container) {
     });
   });
 }
-function _readFieldAnon(container) {
+function _readFieldType(container) {
   const activeChip = container.querySelector('.cdx-field-chip-btn.is-active');
-  const anonEl = container.querySelector('.cdx-tf-anon');
-  return { field_type: activeChip ? activeChip.dataset.slug : 'text', allow_anonymous: !!(anonEl && anonEl.checked) };
+  return { field_type: activeChip ? activeChip.dataset.slug : 'text' };
 }
 
 // True if the editor's current values differ from `item`'s stored values (title/body/field/anon).
 // Both "Sobrescrever" and "Salvar como nova" gate on this: no no-op overwrite, no identical fork.
 function _editorChanged(host, item, vals) {
   const meta = parseMeta(item && item.meta_json);
-  const fa = _readFieldAnon(host);
+  const fa = _readFieldType(host);
   return (vals.title || '') !== ((item && item.title) || '')
     || (vals.body || '') !== ((item && item.body_md) || '')
-    || fa.field_type !== (meta.field_type || 'text')
-    || !!fa.allow_anonymous !== !!meta.allow_anonymous;
+    || fa.field_type !== (meta.field_type || 'text');
 }
 
 // Inline editor inside an instance card: edits ALWAYS land in the bank (no local copy).
@@ -676,9 +682,9 @@ function _renderCardEditor(item) {
 function _overwriteCardItem(item, vals, host) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   if (!_editorChanged(host, item, vals)) { toast.info(t('tarefas.no_changes')); return; }
-  const fa = _readFieldAnon(host);
+  const fa = _readFieldType(host);
   const meta = parseMeta(item.meta_json);
-  meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
+  meta.field_type = fa.field_type;   // allow_anonymous saiu do banco (0036): nao se escreve mais
   api.updateItem({ id: item.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) }).then(() => {
     toast.ok(t('tarefas.updated'));
     item.title = vals.title; item.body_md = vals.body; item.meta_json = JSON.stringify(meta);
@@ -925,8 +931,8 @@ function _includeInAula(itemId) {
 }
 function _createToBank(vals, ed, include) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
-  const fa = _readFieldAnon(ed);
-  const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
+  const fa = _readFieldType(ed);
+  const meta = { field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then((res) => {
       const id = res && res.item && res.item.id;
@@ -939,9 +945,9 @@ function _createToBank(vals, ed, include) {
 function _overwriteInBank(tmpl, vals, ed) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   if (!_editorChanged(ed, tmpl, vals)) { toast.info(t('tarefas.no_changes')); return; }
-  const fa = _readFieldAnon(ed);
+  const fa = _readFieldType(ed);
   const meta = parseMeta(tmpl.meta_json);
-  meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
+  meta.field_type = fa.field_type;   // allow_anonymous saiu do banco (0036): nao se escreve mais
   api.updateItem({ id: tmpl.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then(() => {
       toast.ok(t('tarefas.updated'));
@@ -955,8 +961,8 @@ function _saveAsNew(vals, ed, src) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   // A fork identical to its source is a pointless duplicate: only save as new when something changed.
   if (src && !_editorChanged(ed, src, vals)) { toast.info(t('tarefas.no_changes_fork')); return; }
-  const fa = _readFieldAnon(ed);
-  const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
+  const fa = _readFieldType(ed);
+  const meta = { field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then((res) => {
       toast.ok(t('tarefas.saved_as_new'));

@@ -949,6 +949,7 @@ export default {
   'tarefas.reply_toggle':     'Instructor reply',
   'tarefas.grade_toggle':     'Grade',
   'tarefas.multi_toggle':     'Multiple deliveries',
+  'tarefas.anon_toggle':      'Allow anonymous',
   'tarefas.reply_label':      'Your reply',
   'tarefas.reply_ph':         'Reply to this student…',
   'tarefas.reply_send':       'Reply',
