@@ -14,6 +14,18 @@
 
 const CLS = 'cdx-clamp';
 
+// Is there a live text selection sitting inside `el`? Guarded for non-browser hosts and for
+// engines where getSelection returns null in a detached document.
+function _hasSelectionIn(el) {
+  try {
+    if (typeof getSelection !== 'function') return false;
+    const sel = getSelection();
+    if (!sel || sel.isCollapsed || !String(sel)) return false;
+    const node = sel.anchorNode;
+    return !!node && el.contains(node.nodeType === 1 ? node : node.parentNode);
+  } catch (_) { return false; }
+}
+
 // Clamp every `selector` under `root`. Idempotent per element (a repaint re-runs it on
 // fresh nodes; an already-wired node is skipped). Returns the count actually clamped.
 export function wireClamps(root, selector) {
@@ -28,6 +40,11 @@ export function wireClamps(root, selector) {
     el.classList.add('is-clampable');
     el.addEventListener('click', (e) => {
       if (e && e.stopPropagation) e.stopPropagation();   // never collapse the card behind it
+      // Selecting text ENDS in a click. Once the block is open it is text again — the student
+      // may be marking their own answer to copy it — and collapsing it under their finger the
+      // moment they finish selecting is the opposite of helpful. Closed, there is nothing to
+      // select (CSS turns selection off), so the tap is unambiguously "open this".
+      if (el.classList.contains('is-open') && _hasSelectionIn(el)) return;
       el.classList.toggle('is-open');
     });
     n += 1;
