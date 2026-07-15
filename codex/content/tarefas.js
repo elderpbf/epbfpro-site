@@ -30,7 +30,7 @@ let _items = [];
 let _itemTurmas = {};    // item_id -> [{ client_slug, turma_slug, ... }]
 let _turmaReleasedIds = new Set(); // item ids released to the current turma (bank "já na turma" badge)
 let _submissions = {};   // item_id -> [submission]
-let _flags = {};         // item_id -> { reply_enabled, grade_enabled, allow_multi } (per-instance toggles)
+let _flags = {};         // item_id -> { reply_enabled, grade_enabled, allow_multi, allow_anon } (per-instance toggles)
 // The per-instance toggles, in one table: data-flag -> the key it carries on the flags object
 // (which is also the ct_set_tarefa_flags param name) + its label. Adding a toggle is an entry
 // here, not another branch in every ternary.
@@ -131,6 +131,7 @@ function _loadTarefas(clientSlug, turmaSlug) {
   const pv = _q('cdx-tarefas-preview');
   if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
   _submissions = {};
+  _flags = {};   // estado da turma que esta saindo: sem isto, os toggles dela pintariam os cartoes da proxima ate o load chegar
 
   cohortsApi.listTurmas({ client_slug: clientSlug }).then((td) => {
     const turma = ((td && td.turmas) || []).find((tu) => tu.slug === turmaSlug);
@@ -138,8 +139,15 @@ function _loadTarefas(clientSlug, turmaSlug) {
     return Promise.all([
       api.listItems({ type: 'tarefa' }),
       relApi.turmaView({ client_slug: clientSlug, turma_slug: turmaSlug, token: turma.token }),
+      // Os toggles chegam JUNTO com a lista, porque e a lista que os desenha. Antes eles vinham
+      // de carona no _loadSubmissions, que so roda no cartao SELECIONADO: todo cartao fechado
+      // desenhava os quatro desligados, fosse qual fosse a verdade, e o primeiro clique mandava
+      // LIGAR o que ja estava ligado (Élder: "preciso dar 2 cliques", "volta desmarcado").
+      api.listTarefaFlags({ client_slug: clientSlug, turma_slug: turmaSlug }),
     ]);
   }).then((results) => {
+    // Antes do primeiro render: quem desenha ja sabe a verdade.
+    _flags = (results[2] && results[2].flags) || {};
     const allTarefas = ((results[0] && results[0].items) || []).filter((i) => i.type === 'tarefa');
     const releaseMap = {};
     _turmaReleasedIds = new Set();
@@ -488,7 +496,7 @@ function _lockedCardHtml(item) {
   const open = Number(item.id) === Number(_selectedId);
   const editing = Number(item.id) === Number(_editCard);
   const subCount = (_submissions[item.id] && _submissions[item.id].length) || 0;
-  const flags = _flags[item.id] || {};
+  const flags = _flags[item.id] || _noFlags();   // _flags ja vem da lista; o default e so pra tarefa sem release
   const fromBank = item.tarefa_section_id != null;
   const tag = fromBank
     ? '<span class="cdx-t1b-tag">' + _esc(t('tarefas.from_bank')) + '</span>'
@@ -1110,6 +1118,7 @@ export function mount(viewEl, ctx = {}) {
   _itemTurmas = {};
   _turmaReleasedIds = new Set();
   _submissions = {};
+  _flags = {};
   _selectedId = null;
   _cleanup = [];
   _adding = false;

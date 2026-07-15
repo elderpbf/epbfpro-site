@@ -308,6 +308,9 @@ export const content = {
   // reuse label across turmas.
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
   listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug } -> { submissions, flags }
+  // Os toggles de TODAS as tarefas da turma, de uma vez. O painel precisa deles pra DESENHAR a
+  // lista; sem isto ele só conhecia os do cartão aberto e desenhava o resto desligado.
+  listTarefaFlags: (p) => call('ct_list_tarefa_flags', p), // { client_slug, turma_slug } -> { flags: { <item_id>: {...} } }
   deleteSubmission:(p) => call('ct_delete_submission', p),  // { id }
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
   replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)
