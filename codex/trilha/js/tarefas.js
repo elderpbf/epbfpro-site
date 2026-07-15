@@ -176,7 +176,10 @@ function bodyHtml(tarefa) {
       (sub.instructor_reply ? '<span class="cdx-tt-grade-note">' + esc(sub.instructor_reply) + '</span>' : '') +
       '</div></div>';
   } else if (sub.instructor_reply) {
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_grade')) + '</div>' +
+    // A resposta SEM nota é uma resposta, não uma nota. Rotulá-la "Nota" (o que esta
+    // branch fazia) confunde justamente o caso do toggle "resposta" ligado sozinho, que
+    // é o mais comum. Com nota, a resposta segue como a nota do lado (branch acima).
+    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>' +
       '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div></div>';
   }
   if (!(tarefa.reply_enabled && tarefa.grade_enabled)) {
