@@ -44,47 +44,81 @@ test('the button says Limpeza, not Duplicatas — the tool is broader than dupli
 test('NOTHING is pre-selected: this delete purges a person and there is no undo', () => {
   // The duplicates section deliberately pre-checks its suggestion; this one must never.
   // Élder: "do nothing should be the default, so I can choose to do something about it."
-  const h = testRowHtml(cand());
-  assert.match(h, /type="checkbox"/);
-  assert.doesNotMatch(h, /checked/);
+  const h = testRowHtml(cand(), 0);
+  assert.match(h, /value="leave" checked/);
+  assert.doesNotMatch(h, /value="del"[^>]*checked/);
+});
+
+// ── dispensar ─────────────────────────────────────────────────────────────────────────
+// Élder 2026-07-15: "falta um botão de dispensar e a pessoa não aparece ali mais."
+// It was a checkbox, which spans only purge / not-yet — there was no way to tell the detector it was
+// WRONG, so a real student called "Teste" came back forever and the list could never reach zero.
+test('the row offers the THIRD verdict: it is not a test', () => {
+  const h = testRowHtml(cand(), 0);
+  assert.match(h, /value="del"/);
+  assert.match(h, /value="not"/);
+  assert.match(h, /value="leave"/);
+  assert.match(h, /Não é teste/);
+  assert.match(h, /Apagar/);
+  assert.match(h, /Deixar assim/);
+});
+
+test('the verdict is the SAME pill as a duplicate pair, not a checkbox beside a button', () => {
+  // Two controls for one question is two controls that can contradict each other (ticked AND
+  // dismissed). Élder asked for the pill three times over on the pairs; this is the same question.
+  const h = testRowHtml(cand(), 0);
+  assert.match(h, /class="cdx-seg"/);
+  assert.doesNotMatch(h, /type="checkbox"/);
+  assert.doesNotMatch(h, /cdx-test-chk/);
+});
+
+test('each row gets its OWN radio group — one verdict must not steal another row\'s', () => {
+  assert.match(testRowHtml(cand(), 0), /name="test-0"/);
+  assert.match(testRowHtml(cand(), 3), /name="test-3"/);
+});
+
+test('no row is marked "sugerido": every listing is already a suggestion to delete', () => {
+  // The pairs mark theirs because a pair can be suggested either way. Marking all of these would say
+  // nothing — and would read as pre-selection on the one list where nothing may be pre-selected.
+  assert.doesNotMatch(testRowHtml(cand(), 0), /cdx-seg-sug/);
 });
 
 test('every candidate shows WHY, so nobody is deleted blind', () => {
-  assert.match(testRowHtml(cand()), /e-mail sem sentido/);
-  assert.match(testRowHtml(cand()), /nome de teste/);
+  assert.match(testRowHtml(cand(), 0), /e-mail sem sentido/);
+  assert.match(testRowHtml(cand(), 0), /nome de teste/);
   assert.match(
     testRowHtml(cand({ email: 'eduarda.santos@example.com', name: 'Eduarda Ribeiro Santos',
-      reasons: { reservedDomain: true, gibberishLocal: false, junkName: false } })),
+      reasons: { reservedDomain: true, gibberishLocal: false, junkName: false } }), 0),
     /domínio de exemplo/
   );
 });
 
 test('a reason that did NOT fire is not shown', () => {
-  const h = testRowHtml(cand({ reasons: { gibberishLocal: true, junkName: false, reservedDomain: false } }));
+  const h = testRowHtml(cand({ reasons: { gibberishLocal: true, junkName: false, reservedDomain: false } }), 0);
   assert.match(h, /e-mail sem sentido/);
   assert.doesNotMatch(h, /nome de teste/);
   assert.doesNotMatch(h, /domínio de exemplo/);
 });
 
 test('the row carries the participant rows the delete has to walk', () => {
-  const h = testRowHtml(cand({ id: 72, participant_ids: [11, 22] }));
+  const h = testRowHtml(cand({ id: 72, participant_ids: [11, 22] }), 0);
   assert.match(h, /data-id="72"/);
   assert.match(h, /data-pids="11,22"/);
 });
 
 test('never-accessed says so rather than showing an empty gap', () => {
-  assert.match(testRowHtml(cand({ last_access_at: null })), /nunca acessou/);
-  assert.match(testRowHtml(cand({ last_access_at: 1_700_000_000 })), /último acesso/);
+  assert.match(testRowHtml(cand({ last_access_at: null }), 0), /nunca acessou/);
+  assert.match(testRowHtml(cand({ last_access_at: 1_700_000_000 }), 0), /último acesso/);
 });
 
 test('a nameless registration still renders (a missing name is not a crash)', () => {
-  const h = testRowHtml(cand({ name: null }));
+  const h = testRowHtml(cand({ name: null }), 0);
   assert.match(h, /cdx-test-row/);
   assert.doesNotMatch(h, /null/);
 });
 
 test('the e-mail is escaped, not injected — this list is full of hostile-looking strings', () => {
-  const h = testRowHtml(cand({ email: '<img src=x onerror=alert(1)>@x.com', name: '<b>cc</b>' }));
+  const h = testRowHtml(cand({ email: '<img src=x onerror=alert(1)>@x.com', name: '<b>cc</b>' }), 0);
   assert.doesNotMatch(h, /<img/);
   assert.doesNotMatch(h, /<b>/);
   assert.match(h, /&lt;img/);

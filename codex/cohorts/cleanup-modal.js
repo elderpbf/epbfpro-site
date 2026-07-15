@@ -10,7 +10,8 @@
 //                    these are a typo, or a personal + work address. A three-state pill per pair:
 //                    mesclar | não é a mesma | deixar assim.
 //   REGISTROS DE TESTE  throwaway registrations (10 Minute Mail burners, @example.com seeds, rows
-//                    named "teste"). Tick the ones to purge.
+//                    named "teste"). The same three-state pill, one per row:
+//                    apagar | não é teste | deixar assim.
 //
 // NOTHING IS DECIDED ON OPEN, in either section. The backend only ever SUGGESTS, and the suggestion
 // is shown (a "sugerido" marker) rather than pre-selected, so a pair Élder never looked at is a pair
@@ -19,7 +20,7 @@
 // THREE buttons, and only one of them touches the database:
 //   Cancelar           closes; nothing was staged, so nothing is lost.
 //   Aceitar sugestões  FILLS IN our recommendation everywhere — every pair onto its suggested
-//                      verdict, every test registration ticked. Executes nothing.
+//                      verdict, every test registration onto "apagar". Executes nothing.
 //   Aplicar            THE executor: merges, dismissals and deletions, whatever is currently decided.
 //                      Disabled until something is.
 import { cohorts as api } from '../js/codex-api.js';
@@ -138,22 +139,40 @@ function _testReasons(r) {
   return bits.map((b) => '<span class="cdx-dup-reason">' + esc(b) + '</span>').join('');
 }
 
-// Unchecked by DEFAULT and never pre-selected — the opposite of the duplicates section above, because
-// this button purges a person for good. Élder: "do nothing should be the default, so I can choose to
-// do something about it."
-export function testRowHtml(p) {
+// THE SAME THREE-STATE VERDICT as a duplicate pair, because it is the same question asked once per
+// row: [ apagar | não é teste | deixar assim ], defaulting to "deixar assim".
+//
+// It was a checkbox until Élder 2026-07-15: "falta um botão de dispensar e a pessoa não aparece ali
+// mais." A checkbox only spans purge / not-yet: there was no way to tell the detector it was WRONG,
+// so a real student called "Teste" came back every single time and the list could never reach zero.
+// A list that is never empty stops being read, which is how a real deletion gets waved through.
+//
+// So "não é teste" is the exact analog of the pair's "não é a mesma" — a verdict that persists
+// (ct_test_dismissed) — and once there is a third state, the control that fits is the pill Élder
+// asked for three times, not a checkbox plus a button that could contradict it.
+//
+// No "sugerido" marker here, unlike the pairs. Everything listed is suggested for deletion (it would
+// not be listed otherwise), so marking every row would say nothing.
+export function testRowHtml(p, idx) {
   const seen = p.last_access_at
     ? t('alunos.test_seen').replace('{t}', relTime(p.last_access_at))
     : t('alunos.test_never');
-  return '<label class="cdx-test-row" data-id="' + esc(String(p.id)) + '" data-pids="' + esc((p.participant_ids || []).join(',')) + '">' +
-      '<input type="checkbox" class="cdx-test-chk">' +
-      '<span class="cdx-test-body">' +
-        '<span class="cdx-test-name">' + esc(p.name || t('alunos.no_name')) + '</span>' +
-        '<span class="cdx-test-mail">' + esc(p.email) + '</span>' +
-        '<span class="cdx-test-meta">' + esc(p.turma_name || '') + ' · ' + esc(seen) + '</span>' +
-      '</span>' +
-      '<span class="cdx-test-why">' + _testReasons(p.reasons || {}) + '</span>' +
-    '</label>';
+  const opts = [
+    { value: 'del',   label: t('alunos.test_v_delete') },
+    { value: 'not',   label: t('alunos.test_v_not') },
+    { value: 'leave', label: t('alunos.dup_v_leave') },
+  ];
+  return '<div class="cdx-test-row" data-id="' + esc(String(p.id)) + '" data-pids="' + esc((p.participant_ids || []).join(',')) + '">' +
+      '<div class="cdx-test-main">' +
+        '<div class="cdx-test-body">' +
+          '<span class="cdx-test-name">' + esc(p.name || t('alunos.no_name')) + '</span>' +
+          '<span class="cdx-test-mail">' + esc(p.email) + '</span>' +
+          '<span class="cdx-test-meta">' + esc(p.turma_name || '') + ' · ' + esc(seen) + '</span>' +
+        '</div>' +
+        '<div class="cdx-test-why">' + _testReasons(p.reasons || {}) + '</div>' +
+      '</div>' +
+      segmentedHtml('test-' + idx, opts, 'leave') +
+    '</div>';
 }
 
 function _sectionHtml(title, count, inner) {
@@ -216,14 +235,24 @@ export function openCleanupModal(data, onDone) {
     });
   }
 
+  // Repaint one test row: which segment is live, and whether the row is dressed as a pending delete
+  // (is-on) or a pending dismissal (is-off). Only "apagar" gets the danger colour — a dismissal is
+  // the harmless verdict and must not look like the destructive one.
+  function _syncTest(row) {
+    const v = row.querySelector('input[name^=test-]:checked');
+    const val = v ? v.value : 'leave';
+    row.classList.toggle('is-on', val === 'del');
+    row.classList.toggle('is-off', val === 'not');
+    row.querySelectorAll('.cdx-seg-opt').forEach((c) => {
+      const r = c.querySelector('input[type=radio]');
+      c.classList.toggle('is-on', !!(r && r.checked));
+    });
+  }
+
   bd.addEventListener('change', (e) => {
-    if (e.target.classList.contains('cdx-test-chk')) {
-      const row = e.target.closest('.cdx-test-row');
-      if (row) row.classList.toggle('is-on', e.target.checked);
-      _syncApply();
-      return;
-    }
     if (e.target.type !== 'radio') return;
+    const testRow = e.target.closest('.cdx-test-row');
+    if (testRow) { _syncTest(testRow); _syncApply(); return; }
     const pair = e.target.closest('.cdx-dup-pair');
     if (!pair) return;
     // Picking a survivor REFILLS the name field with that side's name: the radio says "start from
@@ -237,13 +266,13 @@ export function openCleanupModal(data, onDone) {
   });
 
   // Aplicar stays dead until SOMETHING is decided, in either section. That is the skip made visible:
-  // with every pair on "deixar assim" and no registration ticked, there is correctly nothing to do.
+  // with every row on "deixar assim" there is correctly nothing to do.
   function _syncApply() {
     const btn = bd.querySelector('#cdx-dup-apply');
     if (!btn) return;
     const decidedPair = !!bd.querySelector('.cdx-dup-pair input[name^=same-]:checked:not([value=leave])');
-    const tickedTest = !!bd.querySelector('.cdx-test-chk:checked');
-    btn.disabled = !decidedPair && !tickedTest;
+    const decidedTest = !!bd.querySelector('.cdx-test-row input[name^=test-]:checked:not([value=leave])');
+    btn.disabled = !decidedPair && !decidedTest;
   }
 
   const verdicts = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-dup-pair')).map((el) => {
@@ -262,10 +291,15 @@ export function openCleanupModal(data, onDone) {
     };
   });
 
-  // The ticked test registrations, each with the participant rows that have to go.
-  const selectedTests = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row'))
-    .filter((el) => { const c = el.querySelector('.cdx-test-chk'); return c && c.checked; })
-    .map((el) => ({ id: Number(el.dataset.id), pids: String(el.dataset.pids || '').split(',').filter(Boolean).map(Number) }));
+  // Every test row's verdict, with the participant rows a deletion would have to remove.
+  const testVerdicts = () => Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row')).map((el) => {
+    const v = el.querySelector('input[name^=test-]:checked');
+    return {
+      id: Number(el.dataset.id),
+      verdict: v ? v.value : 'leave',   // del | not | leave
+      pids: String(el.dataset.pids || '').split(',').filter(Boolean).map(Number),
+    };
+  });
 
   // "Aceitar sugestões" FILLS IN, it does not execute (Élder: "apply just does that"). It moves every
   // pair onto its suggested verdict and ticks every test registration — our recommendation for those
@@ -289,8 +323,9 @@ export function openCleanupModal(data, onDone) {
       _syncPair(el);
     });
     Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row')).forEach((el) => {
-      const c = el.querySelector('.cdx-test-chk');
-      if (c) { c.checked = true; el.classList.add('is-on'); }
+      const seg = el.querySelector('input[name^=test-][value="del"]');
+      if (seg) seg.checked = true;
+      _syncTest(el);
     });
     _syncApply();
   }
@@ -300,10 +335,13 @@ export function openCleanupModal(data, onDone) {
   // dismissed, not deleted. They come back next time, which is exactly what "deixar assim" means.
   async function apply() {
     const pairs = verdicts().filter((it) => it.verdict !== 'leave');
-    const dels = selectedTests();
-    if (!pairs.length && !dels.length) { closeModal(bd); return; }   // decided nothing -> did nothing
-    // The only confirm in this modal, and only when it would delete: a merge can be undone by hand,
-    // a purge cannot. The count is the thing worth checking before saying yes.
+    const tests = testVerdicts().filter((it) => it.verdict !== 'leave');
+    const dels = tests.filter((it) => it.verdict === 'del');
+    if (!pairs.length && !tests.length) { closeModal(bd); return; }   // decided nothing -> did nothing
+    // The only confirm in this modal, and only when it would DELETE: a merge can be undone by hand, a
+    // dismissal is harmless, a purge is neither. It counts `dels`, not `tests` — asking "apagar 3
+    // registros?" over two dismissals and one delete would train him to click through the one prompt
+    // that matters.
     if (dels.length && typeof confirm === 'function' &&
         !confirm(t('alunos.test_delete_confirm').replace('{n}', dels.length))) return;
     bd.querySelectorAll('.cdx-modal-actions button').forEach((b) => { b.disabled = true; });
@@ -326,14 +364,18 @@ export function openCleanupModal(data, onDone) {
     }
     // Deletions LAST: a merge may have folded one of these rows into another identity, so running
     // them first would delete rows the merges still need.
-    for (const it of dels) {
+    for (const it of tests) {
       try {
-        // Deleting the LAST participation purges the identity (and its aliases) with it, so there is
-        // no separate "delete person" call to keep in step with this one.
-        for (const pid of it.pids) await api.deleteParticipant({ id: pid });
+        if (it.verdict === 'not') {
+          await api.dismissTestAccount({ student_id: it.id });
+        } else {
+          // Deleting the LAST participation purges the identity (and its aliases) with it, so there
+          // is no separate "delete person" call to keep in step with this one.
+          for (const pid of it.pids) await api.deleteParticipant({ id: pid });
+        }
         done++;
       } catch (err) {
-        notice.internal('limpeza: delete test account failed: ' + (err && err.message || err));
+        notice.internal('limpeza: test registration verdict failed: ' + (err && err.message || err));
       }
     }
     closeModal(bd);

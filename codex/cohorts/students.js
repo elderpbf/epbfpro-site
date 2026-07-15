@@ -102,10 +102,15 @@ function _renderShell() {
     // Selection (checkbox) and the bulk toolbar are owned by roster-actions; ignore them here.
     if (e.target.closest('.cdx-pchk') || e.target.closest('.cdx-ptb')) return;
     // "Ir para a turma" — on the person's own line (single turma) or on a per-turma sub-line.
+    // The params are fclient/fturma/fdtab, NOT client/turma: index.html's router only reads the f-
+    // prefixed ones (see its `params.get('fclient')`), so the old names silently deep-linked to
+    // nothing and dropped you on the bare, unselected Turmas rail. And fdtab is explicit because its
+    // default with no faula is 'forum' — from a people list the panel you want is Participantes.
     const goBtn = e.target.closest('.cdx-pl-go');
     if (goBtn) {
       e.stopPropagation();
-      location.href = '/codex/?tab=cohorts&sub=turmas&client=' + encodeURIComponent(goBtn.dataset.client) + '&turma=' + encodeURIComponent(goBtn.dataset.turma);
+      location.href = '/codex/?tab=cohorts&sub=turmas&fclient=' + encodeURIComponent(goBtn.dataset.client) +
+        '&fturma=' + encodeURIComponent(goBtn.dataset.turma) + '&fdtab=participantes';
       return;
     }
     // The "+": this person's other addresses, in a small window (Élder).
