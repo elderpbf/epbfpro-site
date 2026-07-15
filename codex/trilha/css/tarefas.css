@@ -75,7 +75,10 @@
   padding: 0.75rem 0.9rem;
 }
 .cdx-tt-card[data-tt-open], .cdx-tt-top[data-tt-open] { cursor: pointer; }
-.cdx-tt-info { min-width: 0; }
+/* flex:1 + min-width:0 = o titulo pode encolher e quebrar em vez de empurrar o botao
+   pra fora da linha. Sem o min-width, um titulo longo NAO encolhe (o default e min-content)
+   e estoura o cartao. */
+.cdx-tt-info { flex: 1; min-width: 0; }
 .cdx-tt-title {
   font-size: 0.9rem;
   font-weight: 600;
@@ -116,8 +119,9 @@
 .cdx-tt-badge--send { cursor: pointer; }
 .cdx-tt-badge--send:hover { filter: brightness(0.95); }
 .cdx-tt-badge-i { flex-shrink: 0; }
-/* As tags moram ABAIXO do titulo. Ao lado, duas delas espremiam o titulo em 3 linhas no
-   celular, e o titulo e o que o aluno le primeiro. */
+/* A tag de MENSAGEM (so ela) fica abaixo do titulo: ela AVISA, nao age, entao nao precisa
+   da linha nobre, e o rotulo dela e longo demais pra dividir a linha com o titulo sem
+   espremer ele em 3 linhas no celular. O BOTAO de acao volta pra linha do titulo. */
 .cdx-tt-tags {
   display: flex;
   align-items: center;
@@ -125,16 +129,19 @@
   flex-wrap: wrap;
   margin-top: 0.4rem;
 }
-/* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. */
+/* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. Mora na ESQUERDA
+   e centralizado na vertical (Élder), apontando pro cartao inteiro. --none mantem a largura
+   do slot num cartao que nao abre, senao o titulo dele desalinha do resto da lista. */
 .cdx-tt-chev {
   flex-shrink: 0;
-  align-self: flex-start;
-  margin-top: 0.15rem;
+  align-self: center;
   display: inline-flex;
+  width: 18px;
   color: var(--text-secondary);
   transition: transform 0.15s ease;
 }
 .cdx-tt-chev.is-open { transform: rotate(180deg); }
+.cdx-tt-chev--none { visibility: hidden; }
 
 .cdx-tt-body {
   padding: 0.1rem 0.9rem 0.9rem;
@@ -143,7 +150,10 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-.cdx-tt-field .cdx-tt-fl {
+/* Sem escopo: o .cdx-tt-field que embrulhava isto morreu junto com o subHtml, e a regra
+   ficou orfa — o texto da entrega renderizava SEM tamanho e SEM pre-wrap, engolindo as
+   quebras de linha do aluno. */
+.cdx-tt-fl {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -152,11 +162,12 @@
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
-.cdx-tt-field .cdx-tt-fv {
+.cdx-tt-fv {
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text-primary);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;   /* uma URL colada nao estoura o cartao */
 }
 .cdx-tt-grade {
   display: flex;
@@ -208,12 +219,31 @@
   border-top: 1px dashed var(--border);
   padding-top: 0.75rem;
 }
+/* A assinatura de cada interacao: quem + quando. "Entrega 2" e o rotulo, "de Fulano em
+   23/06/2026 as 12h26" e a assinatura; os dois na mesma linha, quebrando junto no celular. */
+.cdx-tt-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
 .cdx-tt-dlabel {
   font-size: 0.66rem;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--text-secondary);
+}
+.cdx-tt-by {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+/* O clamp (js/clamp.js) desenha o fade com a cor do fundo. Dentro da resposta do professor
+   o fundo e --info-bg, nao --surface: sem isto o degrade terminava na cor errada e aparecia
+   uma faixa clara boiando sobre o azul. */
+.cdx-tt-reply .cdx-clamp.is-clampable::after {
+  background: linear-gradient(to bottom, transparent, var(--info-bg));
 }
 .cdx-tt-reply {
   margin-left: 0.85rem;

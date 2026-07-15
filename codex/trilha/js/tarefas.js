@@ -12,6 +12,8 @@ import { t } from '../i18n.js';
 import { registerRenderer } from './page.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
 import { glyphSvg } from '../../js/glyphs.js';   // o banco de glifos: nada de icone novo aqui
+import { stampTime } from '../../js/rel-time.js';
+import { wireClamps } from '../../js/clamp.js';
 
 // ── Pure helpers (tested) ────────────────────────────────────────────────────
 
@@ -195,6 +197,21 @@ export function isExpandable(tarefa) {
   return deliveries(tarefa).length > 0;
 }
 
+// PURE. Fill a {placeholder} template from the dictionary. Via a replacer FUNCTION on purpose:
+// a student named with a `$&` in it would otherwise be spliced back into the string by
+// String.replace's own substitution syntax.
+export function fill(tpl, map) {
+  return String(tpl == null ? '' : tpl).replace(/\{(\w+)\}/g, (m, k) =>
+    (Object.prototype.hasOwnProperty.call(map || {}, k) ? String(map[k]) : m));
+}
+
+// PURE. Who made this delivery. An anonymous delivery has no name BECAUSE THE STUDENT CHOSE
+// SO, so the absence is the fact to render ("Anônimo") — never a hole to quietly patch with
+// the logged-in identity we happen to be holding.
+export function deliveryWho(sub) {
+  return (sub && sub.student_name) ? sub.student_name : t('tarefas.anonymous');
+}
+
 const KIND_TAG = {
   nao_respondida: { label: 'tarefas.badge_unanswered', glyph: 'send',         cls: 'pending' },
   respondida:     { label: 'tarefas.badge_answered',   glyph: 'check-circle', cls: 'done' },
@@ -203,10 +220,15 @@ const KIND_TAG = {
 
 // The tag IS the button (Élder: "o botão embaixo é desnecessário, a tag em cima já é o botão").
 // When it sends, it is a real <button>; when it does not, it is inert text.
+//
+// It says what it DOES, not what the tarefa IS ("Responder", not "Não respondida"): a button
+// labelled with a state is not an action, and the paper plane beside a state made no sense
+// either. The state still has a home — the section header ("Não respondidas") — which is where
+// a state belongs. The glyph comes AFTER the text (Élder): read the verb, then see the plane.
 function badgeHtml(tarefa) {
   const def = KIND_TAG[tarefaKind(tarefa)];
   const icon = glyphSvg(def.glyph, { size: 14, cls: 'cdx-tt-badge-i' });
-  const inner = icon + '<span>' + esc(t(def.label)) + '</span>';
+  const inner = '<span>' + esc(t(def.label)) + '</span>' + icon;
   if (!canSend(tarefa)) return '<span class="cdx-tt-badge cdx-tt-badge--' + def.cls + '">' + inner + '</span>';
   return '<button type="button" class="cdx-tt-badge cdx-tt-badge--' + def.cls + ' cdx-tt-badge--send" ' +
     'data-tt-send="' + tarefa.item_id + '">' + inner + '</button>';
@@ -224,16 +246,26 @@ function msgBadgeHtml(tarefa) {
 // ONE delivery: what the student sent, and NESTED under it whatever the teacher said about
 // THAT delivery. Nesting is the point (Élder: "senão parece que é IM") — a flat stream of
 // answers and replies reads like a chat and loses which reply answers which answer.
+//
+// Every interaction is SIGNED and STAMPED — "de Fulano em 23/06/2026 às 12h26" (Élder
+// 2026-07-15). Unsigned, a card with four blocks of text is a pile: the student cannot tell
+// their second try from their first, nor their own words from the teacher's.
 function deliveryHtml(sub, ordinal, total) {
   let html = '<li class="cdx-tt-delivery">';
-  if (total > 1) {
-    html += '<div class="cdx-tt-dlabel">' + esc(t('tarefas.delivery_n').replace('{n}', String(ordinal))) + '</div>';
-  }
-  html += '<div class="cdx-tt-fv">' + esc(answerText(sub)) + '</div>';
+  html += '<div class="cdx-tt-meta">';
+  if (total > 1) html += '<span class="cdx-tt-dlabel">' + esc(fill(t('tarefas.delivery_n'), { n: ordinal })) + '</span>';
+  html += '<span class="cdx-tt-by">' +
+    esc(fill(t('tarefas.by_at'), { who: deliveryWho(sub), when: stampTime(sub.submitted_at) })) + '</span>';
+  html += '</div>';
+  html += '<div class="cdx-tt-fv" data-tt-text>' + esc(answerText(sub)) + '</div>';
   if (sub.instructor_reply || sub.grade) {
+    // The teacher signs as "Instrutor" (Élder), not by name: the student is talking to the
+    // role. reply_at can be null on a grade-only message, so the stamp falls back to graded_at.
     html += '<div class="cdx-tt-reply">' +
-      '<div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>';
-    if (sub.instructor_reply) html += '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div>';
+      '<div class="cdx-tt-meta"><span class="cdx-tt-by">' +
+        esc(fill(t('tarefas.msg_by_at'), { who: t('tarefas.instructor'), when: stampTime(sub.reply_at || sub.graded_at) })) +
+      '</span></div>';
+    if (sub.instructor_reply) html += '<div class="cdx-tt-fv" data-tt-text>' + esc(sub.instructor_reply) + '</div>';
     if (sub.grade) {
       html += '<div class="cdx-tt-grade"><span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span></div>';
     }
@@ -255,21 +287,27 @@ function bodyHtml(tarefa) {
 function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
   const expandable = isExpandable(tarefa);
-  // The chevron is the affordance: without it, "this card opens" was a guess (Élder). It only
-  // shows when there is something to open, and it turns when the card is open.
+  // O chevron mora À ESQUERDA do cartão, centralizado na vertical (Élder): ali ele aponta pro
+  // CARTÃO, que é o que abre. À direita ele disputava a borda com o botão de ação e virava mais
+  // um controle solto. Quando não há o que abrir o slot continua ocupando a mesma largura, senão
+  // o título de um cartão sem entrega desalinha de todos os outros da lista.
   const chevron = expandable
     ? '<span class="cdx-tt-chev' + (open ? ' is-open' : '') + '">' + glyphSvg('chevron-down', { size: 18 }) + '</span>'
-    : '';
+    : '<span class="cdx-tt-chev cdx-tt-chev--none"></span>';
+  const msg = msgBadgeHtml(tarefa);
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
     '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
-      // As tags ficam ABAIXO do título, não ao lado: duas tags disputando a linha espremiam o
-      // título em três linhas no celular. O título é o que o aluno lê primeiro.
+      chevron +
+      // O botão de ação volta pra LINHA DO TÍTULO (Élder): numa linha só dele ele lia como um
+      // rodapé, não como a ação do cartão. Cabe agora porque o rótulo encurtou ("Responder") e o
+      // chevron saiu da direita. A tag de MENSAGEM fica abaixo do título: ela avisa, não age, e
+      // era ela que, ao lado, espremia o título em três linhas no celular.
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
-        '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
+        (msg ? '<div class="cdx-tt-tags">' + msg + '</div>' : '') +
       '</div>' +
-      chevron +
+      badgeHtml(tarefa) +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +
   '</div>';
@@ -295,6 +333,9 @@ function wireList() {
       if (tarefa) openSubmit(tarefa);
     });
   });
+  // Resposta longa vira janela, não parede (Élder): o bloco fecha numa altura legível e abre no
+  // toque. Só o que REALMENTE transborda fica clicável — quem mede isso é o clamp compartilhado.
+  wireClamps(_root, '[data-tt-text]');
 }
 
 async function openSubmit(tarefa) {
