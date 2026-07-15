@@ -190,6 +190,7 @@ export const cohorts = {
   importParticipants: (p) => call('ct_import_participants', p), // { turma_id, rows[] }
   // Trail access-control admin (Phase 7): the Alunos section drives these.
   setParticipantAccess:  (p) => call('ct_set_participant_access', p),   // { participant_id|participant_ids, status }
+  setEmailVerified:      (p) => call('ct_set_email_verified', p),       // { participant_id|participant_ids, verified? } — admin "validar acesso" (track-29)
   rosterApprove:         (p) => call('ct_roster_approve', p),           // { turma_id, emails[] }
   revokeStudentSessions: (p) => call('ct_revoke_student_sessions', p),  // { participant_id }
   // QR enrollment window (Phase 7b): open mints the token + expiry (+ turma_token to

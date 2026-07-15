@@ -3,6 +3,10 @@
 // filter that decides which pending forum items raise the bell, plus a contract
 // check that the categories list is the single extension point. The popover DOM is
 // verified visually on staging.
+//
+// The fixtures carry `type: 'forum_post'` because the worker stamps it on every item
+// (_pendingForTurma) and these prefs are FORUM prefs: they key off the type so a
+// non-forum source is never silently swallowed by them (see the pass-through test).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -12,10 +16,10 @@ import { filterByPrefs, DEFAULT_PREFS } from '../trilha/js/notif-prefs.js';
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
 const ITEMS = [
-  { thread_id: 1, kind: 'reply,', mine: true },     // a reply in my thread
-  { thread_id: 1, kind: 'reply', mine: true },      // a reply in my thread
-  { thread_id: 2, kind: 'reply', mine: false },     // a reply in someone else's thread
-  { thread_id: 3, kind: 'new_thread', mine: false },// a brand-new topic
+  { type: 'forum_post', thread_id: 1, kind: 'reply,', mine: true },     // a reply in my thread
+  { type: 'forum_post', thread_id: 1, kind: 'reply', mine: true },      // a reply in my thread
+  { type: 'forum_post', thread_id: 2, kind: 'reply', mine: false },     // a reply in someone else's thread
+  { type: 'forum_post', thread_id: 3, kind: 'new_thread', mine: false },// a brand-new topic
 ];
 
 test('filterByPrefs: all -> everything', () => {
@@ -39,6 +43,21 @@ test('default prefs notify on replies + topics', () => {
   assert.equal(DEFAULT_PREFS.replies, true);
   assert.equal(DEFAULT_PREFS.topics, true);
   assert.equal(DEFAULT_PREFS.all, false);
+});
+
+// REGRESSION LOCK: these are FORUM prefs, so they must never swallow another source. A
+// tarefa feedback has no kind/mine, so the forum branches reject it — without the
+// type-keyed pass-through the bell would go silent for every non-forum notification,
+// under the DEFAULT prefs (all:false), which is every student by default.
+test('filterByPrefs: a non-forum item passes through under default prefs', () => {
+  const feedback = { type: 'tarefa_feedback', notif_key: 'tf:7', created_at: 1700000000 };
+  const out = filterByPrefs([...ITEMS, feedback], DEFAULT_PREFS);
+  assert.ok(out.includes(feedback), 'tarefa_feedback survives the forum prefs');
+});
+test('filterByPrefs: a non-forum item survives even with every forum toggle OFF', () => {
+  const feedback = { type: 'tarefa_feedback', notif_key: 'tf:7' };
+  const out = filterByPrefs([...ITEMS, feedback], { replies: false, topics: false, all: false });
+  assert.deepEqual(out, [feedback]);   // forum silenced, the personal item still lands
 });
 
 test('the categories list is the single extension point', () => {

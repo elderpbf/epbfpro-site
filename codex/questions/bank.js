@@ -1509,9 +1509,9 @@ export function mount(viewEl, ctx) {
   });
 
   // Audience matrix manager (delegated: tabs + add/remove + cell edits + save).
+  // Editor: closes on Esc/Cancel/X only, never a stray backdrop click (track-30).
   const audModal = viewEl.querySelector('#cdx-bank-aud');
   _on(audModal, 'click', (e) => {
-    if (e.target === audModal) { _closeAudiences(); return; }
     const tab = e.target.closest('[data-audtab]');
     if (tab) { _audTab = tab.getAttribute('data-audtab'); _renderAudContent(); return; }
     const btn = e.target.closest('[data-act]');
@@ -1635,9 +1635,9 @@ export function mount(viewEl, ctx) {
     },
   }));
 
-  // Editor modal (delegated)
+  // Editor modal (delegated). Editors close on Esc/Cancel/X only, never a stray
+  // backdrop click (track-30, codex-wide modal sweep).
   _on(viewEl.querySelector('#cdx-bank-modal'), 'click', (e) => {
-    if (e.target === viewEl.querySelector('#cdx-bank-modal')) { _closeModal(); return; }
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
     const act = btn.getAttribute('data-act');
@@ -1647,7 +1647,6 @@ export function mount(viewEl, ctx) {
 
   // Bulk modal (delegated)
   _on(viewEl.querySelector('#cdx-bank-bulk'), 'click', (e) => {
-    if (e.target === viewEl.querySelector('#cdx-bank-bulk')) { _closeBulk(); return; }
     const btn = e.target.closest('[data-act]');
     if (!btn) return;
     const act = btn.getAttribute('data-act');
@@ -1658,7 +1657,6 @@ export function mount(viewEl, ctx) {
 
   // e2 propose-order modal (delegated): direction toggle + generate + apply.
   _on(viewEl.querySelector('#cdx-bank-order'), 'click', (e) => {
-    if (e.target === viewEl.querySelector('#cdx-bank-order')) { _closeOrder(); return; }
     const dirBtn = e.target.closest('.cdx-bank-order-dir-btn');
     if (dirBtn) { _orderDir = dirBtn.getAttribute('data-dir') || 'asc'; _renderOrderDir(); return; }
     const btn = e.target.closest('[data-act]');
@@ -1679,8 +1677,6 @@ export function mount(viewEl, ctx) {
   // Import / Export hub (delegated): tab + scope + format + checklist + copy/
   // download + import process/save.
   _on(viewEl.querySelector('#cdx-bank-hub'), 'click', (e) => {
-    const root = viewEl.querySelector('#cdx-bank-hub');
-    if (e.target === root) { _closeHub(); return; }
     if (e.target.matches && e.target.matches('.cdx-bank-hub-checklist input[type="checkbox"]')) {
       const set = e.target.getAttribute('data-set');
       if (e.target.checked) _exportChosen.add(set); else _exportChosen.delete(set);
@@ -1716,6 +1712,8 @@ export function mount(viewEl, ctx) {
     if (hub && !hub.hidden) { _closeHub(); return; }
     const bulk = _q('#cdx-bank-bulk');
     if (bulk && !bulk.hidden) { _closeBulk(); return; }
+    const order = _q('#cdx-bank-order');
+    if (order && !order.hidden) { _closeOrder(); return; }
     const modal = _q('#cdx-bank-modal');
     if (modal && !modal.hidden) { _closeModal(); return; }
     const aud = _q('#cdx-bank-aud');

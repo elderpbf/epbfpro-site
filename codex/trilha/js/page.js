@@ -278,32 +278,57 @@ function renderHeaderActions() {
     if (LOGIN_ENABLED && state.sessionToken && data.access && data.access.gated
         && data.access.status === 'approved') {
       const turmaKey = state.clientSlug + '/' + state.turmaSlug;
-      let bell = null;
-      if (data.turma && data.turma.forum_enabled) {
-        bell = createBell({
-          role: 'student',
-          fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true })
-            .then((res) => {
-              const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
-              return { count: items.length, items };
-            }),
-          markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
-          onNavigate: (item) => {
-            // Already on this turma's page: just switch to the Fórum tab and open the
-            // thread (the worker stamps thread_id). Falls back to the token-preserving
-            // deeplink only if the id is somehow missing. Dynamic import dodges the cycle.
-            if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
-            if (item && item.deeplink && typeof location !== 'undefined') {
-              let url = item.deeplink;
-              if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
-              location.href = url;
-            }
-          },
-          t,
-          btnClass: 'ph-action-btn',
-        });
-        prepend(bell.el); // bell to the left of the theme toggle
-      }
+      // The bell is ALWAYS here (Élder 2026-07-14) — it is NOT a forum feature. It is the
+      // one shared component (js/notif-bell.js, same as the Codex topbar) fed by a pluggable
+      // set of sources, and each SOURCE owns its own gate server-side: the forum contributes
+      // only where the turma enabled it, a tarefa resposta/nota contributes regardless. So we
+      // no longer gate the MOUNT on forum_enabled — an empty feed simply renders no badge,
+      // which costs nothing, while gating the mount meant a reply could never be announced on
+      // a forum-off turma. Same two tiers as the admin: Dispensáveis clear on open (markSeen),
+      // Acionáveis persist until dismissed one-by-one (×  → dismissItem) or via "marcar tudo"
+      // (markAll → scope:'all', which also clears the actionable floor).
+      const bell = createBell({
+        role: 'student',
+        fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        // The student's prefs live HERE, not inside the fetch, so they apply identically to a
+        // feed we fetched and to one that rode back on another call (notif-bus). Putting them
+        // in the fetch would have let a piggybacked envelope bypass them.
+        adaptFeed: (res) => {
+          const items = filterByPrefs((res && res.items) || [], getPrefs(turmaKey));
+          return { count: items.length, items };
+        },
+        markSeen: () => trail.forumMarkSeen({ session_token: state.sessionToken }),
+        markAll: () => trail.forumMarkSeen({ session_token: state.sessionToken, scope: 'all' }),
+        dismissItem: (item) => trail.forumDismiss({
+          session_token: state.sessionToken,
+          notif_key: item.notif_key,
+          up_to_at: item.created_at,
+        }),
+        onNavigate: (item) => {
+          // Already on this turma's page, so navigate IN-PAGE per source; the deeplink is
+          // only the cross-device fallback. Dynamic import dodges the page.js↔forum.js cycle.
+          // Tarefa feedback: land ON the answered tarefa with the professor's resposta open,
+          // not merely on the tab. focusTarefa FIRST (it remembers the request), THEN the tab
+          // switch — the tab may still have to mount + load, and it applies the focus when it
+          // paints. If we are already on the tab the hash is a no-op and focusTarefa repaints.
+          if (item && item.type === 'tarefa_feedback' && item.item_id != null) {
+            import('./tarefas.js').then((m) => {
+              m.focusTarefa(item.item_id);
+              if (_win && _win.location) _win.location.hash = '#tarefas';
+            });
+            return;
+          }
+          if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
+          if (item && item.deeplink && typeof location !== 'undefined') {
+            let url = item.deeplink;
+            if (state.token) url += (url.indexOf('?') === -1 ? '?' : '&') + 'k=' + encodeURIComponent(state.token);
+            location.href = url;
+          }
+        },
+        t,
+        btnClass: 'ph-action-btn',
+      });
+      prepend(bell.el); // bell to the left of the theme toggle
       // "Trocar de turma" (Idea A): the device's OTHER saved turmas (those it holds a
       // session for), listed in the settings box; a dead one is removed via the ✕.
       const others = otherKnownTurmas(getKnownTurmas(), state.clientSlug, state.turmaSlug)

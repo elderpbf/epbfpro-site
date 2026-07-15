@@ -21,6 +21,8 @@
 //   window.WORKER_URL (boot-set base-URL override, else DEFAULT_WORKER_URL),
 //   window.BS_GOOGLE (Google Bearer token, admin only), window.bsLog/window.dbg
 //   (debug pill), window.cdxNet (reconnect hook installed by js/reconnect.js)
+import * as notifBus from './notif-bus.js';
+
 export const DEFAULT_WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
 // Max URL length before switching GET -> POST. Cloudflare's hard limit is ~16KB;
@@ -136,6 +138,18 @@ export async function callWorker(params, env = {}) {
         ? window.BS_GOOGLE.getAccessToken()
         : null);
 
+  // Notification piggyback (Élder 2026-07-14): ask THIS call — one that was already leaving —
+  // to bring the bell's feed back with it, instead of the bell spending a request of its own.
+  // Only on a call that already carries an identity the feed can be computed for, never on the
+  // dedicated notification actions (they ARE the feed), and at most once per bus window, so a
+  // page-load fan-out attaches it exactly once. Costs zero extra requests.
+  const _identified = !!(p.session_token || p.auth_token);
+  const _wantsNotif = _identified
+    && String(action).indexOf('_notif') === -1
+    && action !== 'ct_forum_notifications' && action !== 'ct_forum_admin_notifications'
+    && notifBus.shouldAsk();
+  if (_wantsNotif) { p._notif = 1; notifBus.markAsked(); }
+
   const req = buildWorkerRequest(p, { workerUrl, googleToken });
   _log('info', '→ ' + action + (req.method === 'POST' ? ' [POST ' + req.body.length + 'B]' : ''));
 
@@ -175,6 +189,9 @@ export async function callWorker(params, env = {}) {
   try {
     const data = interpretWorkerResponse({ ok: resp.ok, status: resp.status, text }, p);
     _log('ok', '← ' + action + ': ok');
+    // The envelope rode back on this response: hand it to the bus, which fans it out to
+    // whichever bell is mounted. Never touches `data` — the caller's payload is untouched.
+    if (data && data.notif) notifBus.publish(data.notif);
     return data;
   } catch (e) {
     if (!p._silent) _log('error', '← ' + action + ': ' + ((e.data && e.data.error) || e.message));
