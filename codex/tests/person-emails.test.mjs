@@ -80,14 +80,20 @@ test('a taken address names WHICH line was taken, instead of blaming the whole b
   }
 });
 
-test('ONE editor: both the roster and the dossiê open the SHARED person editor (track-42)', () => {
-  // Élder caught the duplication: the box landed in Usuários only, so the dossiê diverged. Both
-  // now delegate to cohorts/person-editor.js; neither builds its own person-edit fields.
+test('ONE editor: both surfaces mount the shared table, which owns the single edit call (track-42)', () => {
+  // Élder caught the duplication twice — first the e-mail box (it landed in Usuários only), then the
+  // whole assembly. Both are settled the same way: Usuários and the dossiê each MOUNT the shared
+  // cohorts/person-table.js, and that table is the ONE place a person is edited. So there is a single
+  // openPersonEditor call site, reached identically from both scopes — the divergence cannot recur by
+  // editing one side (Élder 2026-07-16).
   const cohortsJs = read('../cohorts/cohorts.js');
-  assert.match(studentsJs, /openPersonEditor\(s, \{ onSaved/);
-  assert.match(cohortsJs, /openPersonEditor\(person, \{ onSaved \}\)/);
-  assert.doesNotMatch(studentsJs, /openPersonEditModal\(/);
-  assert.doesNotMatch(cohortsJs, /openPersonEditModal\(/);
+  const tableJs = read('../cohorts/person-table.js');
+  assert.match(tableJs, /openPersonEditor\(person, \{ onSaved/);
+  assert.match(studentsJs, /createPersonTable\([\s\S]{0,240}scope: 'global'/);
+  assert.match(cohortsJs, /createPersonTable\([\s\S]{0,120}scope: 'turma'/);
+  // Neither surface builds or opens its own person editor any more — the table does.
+  assert.doesNotMatch(studentsJs, /openPersonEdit(or|Modal)\(/);
+  assert.doesNotMatch(cohortsJs, /openPersonEdit(or|Modal)\(/);
 });
 
 test('a secret field WITH a value masks it and offers the eye (track-42)', () => {

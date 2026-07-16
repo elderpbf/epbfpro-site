@@ -86,11 +86,23 @@ test('purge asks a SECOND time, and says it cannot be undone', () => {
   }
 });
 
-test('the GLOBAL remove opens the modal; the turma panel keeps its own meaning', () => {
-  // In the roster, remove already meant "the person is gone". In the dossiê it means "out of THIS
-  // turma" — a different act, and it must not inherit the erase modal.
-  assert.match(studentsJs, /if \(act === 'remove'\) \{[\s\S]{0,200}openEraseModal\(/);
-  assert.doesNotMatch(read('../cohorts/participant-view.js'), /openEraseModal/);
+test('the GLOBAL remove opens the completa/anonimizar modal (track-42)', () => {
+  // In the Usuários roster, remove already means "the person is gone", so it goes straight to the
+  // two-mode modal — never a bare "tem certeza?". Both surfaces reach remove through the shared
+  // table (person-table.js); this scope hands it openEraseModal.
+  assert.match(studentsJs, /onRemove:[\s\S]{0,140}openEraseModal\(/);
+});
+
+test('the turma remove is scope-aware: total removals reach the modal, a per-turma detach does not (option B)', () => {
+  // Élder 2026-07-16: removing from a turma is "out of THIS turma" ONLY when the person is in others.
+  // Their only turma, or "de todas", is a total removal and opens the same completa/anonimizar modal —
+  // nobody is silently detached with their name left in the content. Both paths live in turma-remove.js,
+  // and the dossiê routes its remove through it.
+  const trJs = read('../cohorts/turma-remove.js');
+  const cohortsJs = read('../cohorts/cohorts.js');
+  assert.match(cohortsJs, /onRemove:[\s\S]{0,120}removeFromTurma\(/);
+  assert.match(trJs, /openEraseModal\(/);              // the total-removal path
+  assert.match(trJs, /applyRosterAction\('remove'/);   // the per-turma detach path
 });
 
 test('the facade carries both halves, pointing at the actions the worker registers', () => {

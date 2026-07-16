@@ -1,6 +1,8 @@
 // cohorts/erase-modal.js
-// "Remover usuário" in the GLOBAL scope, where removing already means the person is gone (the turma
-// panel's remove means "out of THIS turma" and is a different act — it keeps the bare confirm).
+// "Remover usuário" — the completa/anonimizar decision. It is opened from BOTH scopes: the Usuários
+// roster (where removing always means the person is gone) and the turma dossiê whenever the removal
+// is total — their only turma, or "de todas as turmas" (turma-remove.js). The one removal that does
+// NOT open it is the dossiê's per-turma detach, where the person stays in their other turmas.
 //
 // Élder 2026-07-15: "na opção de remover o usuário o sistema tem que me dar 2 opções. Uma remoção
 // completa que é para todos os dados, não sobra nada. E outra remoção que é de anonimizar, mantém os

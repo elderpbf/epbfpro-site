@@ -15,14 +15,13 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { parseRosterLines } from './roster-parser.js';
 import { initials } from '../js/initials.js';
-import { isApprovalGated, actionEnabled, actionTargetStatus } from './participant-view.js';
-// THE list (same component the Alunos roster renders, in the other scope) + the "+" popover.
-import { personListHtml } from './person-list.js';
+import { isApprovalGated } from './participant-view.js';
 import { legendButtonHtml, openPersonLegend } from './person-legend.js';
-import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick, FILTER_IDS } from './person-filters.js';
-import { openAliasPopover } from './alias-popover.js';
-import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
-import { openPersonEditor } from './person-editor.js';
+// THE people table — the same assembly the Alunos roster mounts, in the other scope (person-table.js).
+// The dossiê Participantes panel is this component in `turma` scope; students.js is it in `global`.
+import { createPersonTable } from './person-table.js';
+// Remove here is scope-aware (out of THIS turma vs the person entirely) — turma-remove.js.
+import { removeFromTurma } from './turma-remove.js';
 import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
@@ -74,7 +73,6 @@ let _dossierTurma = null; // the turma currently shown in the dossier (#27 inlin
 let _dossierDepsTried = false; // courses/cp loaded once for the inline selects
 let _pickedCourse = null; // full course fetched when the picker changes (for ementa copy)
 let _dossierParticipants = []; // cached PEOPLE (ct_list_people, filtered to this turma)
-let _dossierFilters = emptyFilterState();  // the SAME bar the Alunos roster uses (person-filters.js)
 let _cleanup = []; // teardown functions pushed by mount
 // Aulas hub (Layout A): the released items (ct_get_turma_view) feed the per-aula
 // content counts; the rest is selection state for the list | detail split.
@@ -1084,14 +1082,6 @@ function _openImportParticipants(turma) {
   });
 }
 
-// The ONE shared person editor (cohorts/person-editor.js) — the exact same modal the Usuários roster
-// opens. It edits the PERSON (identity): name → locked canonical, e-mails → the box (primary +
-// aliases), CPF → every turma row. This panel used to edit only THIS turma's participant row; Élder
-// (2026-07-16): "eles eram o mesmo até você duplicar", so both edit the person now.
-function _openParticipantEditModal(person, onSaved) {
-  openPersonEditor(person, { onSaved });
-}
-
 // ── Turma selection (drives the dossier) ──────────────────────────────────────
 
 function _selectTurma(clientSlug, turmaSlug) {
@@ -1470,152 +1460,46 @@ function _toggleDossierWindow(btn) {
     .finally(() => { btn.disabled = false; });
 }
 
-// ── Dossier participant list (B+C2): status separators + adaptive bulk toolbar ──
-// The pure rules (gating, grouping, action predicates) live in participant-view.js
-// and are unit-tested there; this section is the render + DOM wiring only.
+// ── Dossier participant list ─────────────────────────────────────────────────────
+// This panel IS the shared people table (cohorts/person-table.js), in `turma` scope — the exact
+// assembly the Alunos roster mounts in `global` scope. The panel used to re-implement the paint,
+// selection, filter and apply here; that copy is gone, so a change to the table now lands on both
+// surfaces at once (Élder 2026-07-16: "acabamos de fazer todo esse trabalho só para ter mais
+// trabalho para consertar"). What stays here is only what is genuinely this scope's: the turma-id
+// filter, the count chip, and the per-turma REMOVE semantics.
 
-// The row, its avatar, its badges, its expiry chip and the section separator all moved to
-// cohorts/person-list.js — the ONE component this panel and the Alunos roster both render. They
-// used to be two implementations of one list (which is how they came to disagree about the same
-// column), and Élder: "they share the same module and this appears to be different
-// implementations of it."
-
-function _paintDossierParticipants(el, turma) {
-  const ps = _dossierParticipants;
-  const gated = isApprovalGated(turma);
-  const countEl = _q('cdx-doss-p-count');
-  if (countEl) countEl.textContent = ps.length || '';
-
-  if (!ps.length) {
-    el.innerHTML = '<span class="cdx-empty">' + _esc(t('cohorts.participants_empty')) + '</span>';
-    return;
-  }
-
-  // Adaptive toolbar: master "Todos" + live count + the wired bulk actions. Each action button
-  // greys out unless EVERY selected row's status permits it (B+C2). Shared with the Alunos roster
-  // via roster-actions.js, so there is ONE toolbar implementation (track-28a2).
-  //
-  // The LIST is person-list.js in `turma` scope — the exact component the Alunos roster renders in
-  // `global` scope (Élder: "the only difference is that in the cohort it is pre-filtered for that
-  // cohort and it doesn't show the other cohorts"). Gated keeps the status sections; not gated is a
-  // flat name-sorted roster, since approval makes no difference there.
-  // The SAME filter/search/sort bar as the Alunos roster — it is what replaced the status
-  // sections, so "pendente" is answered identically in both scopes. Its selects auto-hide when
-  // they cannot partition the list, so inside one turma the client + single/multi filters simply
-  // do not render (Élder's "don't show options that none have").
-  el.innerHTML = filtersBarHtml(_dossierFilters, ps, '') + toolbarHtml(gated) +
-    personListHtml(applyFilters(ps, _dossierFilters), { scope: 'turma', emptyKey: 'cohorts.participants_empty', sort: _dossierFilters.sort, dir: _dossierFilters.dir });
-}
-
-// The row id for a person in THIS turma: in turma scope every person carries exactly one row, so
-// data-pids holds that single participant_id.
-function _pidOf(rowEl) { return Number((rowEl.dataset.pids || '').split(',')[0]); }
-function _personInRow(rowEl) {
-  const pid = _pidOf(rowEl);
-  if (!pid) return null;
-  return _dossierParticipants.find((x) => Number((((x.rows || [])[0]) || {}).participant_id) === pid) || null;
-}
-
-// Container-level listeners, attached ONCE: #cdx-doss-participants survives every repaint, so
-// re-adding these per paint would stack a fresh copy each time. They read _dossierTurma rather
-// than closing over a turma, so they stay correct when the dossiê switches turma.
-function _wireDossierPanelOnce(el) {
-  if (el.dataset.plWired === '1') return;
-  el.dataset.plWired = '1';
-
-  // The "+" beside an e-mail: this person's other addresses. Same module, same behaviour as the
-  // Alunos roster (Élder: "this has to be the same behaviour on both tables").
-  el.addEventListener('click', (e) => {
-    const plus = e.target.closest ? e.target.closest('.cdx-pl-plus') : null;
-    if (!plus) return;
-    e.stopPropagation();
-    const row = plus.closest('.cdx-pl-row');
-    const p = row && _personInRow(row);
-    openAliasPopover(plus, (plus.dataset.aliases || '').split(',').filter(Boolean), p && p.email);
-  }, true);
-
-  // The filter/search/sort bar, same module and same behaviour as the Alunos roster. It replaced
-  // the status sections (and their "selecionar seção" button): filter to Pendentes, then the
-  // toolbar's "Todos" selects exactly that set — the same two clicks, one mechanism, both scopes.
-  const repaint = () => {
-    if (!_dossierTurma) return;
-    _paintDossierParticipants(el, _dossierTurma);
-    _wireDossierParticipants(el, _dossierTurma);
-  };
-
-  // The column headers ARE the sort control (Élder 2026-07-15) — here too, same component, same
-  // behaviour. Capture phase + stopPropagation so the click never reaches wireSelection, which in
-  // this scope treats a row-click as "select". Delegated on the panel, since the header is rebuilt
-  // by every repaint.
-  el.addEventListener('click', (e) => {
-    const btn = e.target.closest ? e.target.closest('[data-sort]') : null;
-    if (!btn) return;
-    e.stopPropagation();
-    if (applySortClick(_dossierFilters, btn.dataset.sort)) repaint();
-  }, true);
-  el.addEventListener('input', (e) => {
-    if (!applyFilterChange(_dossierFilters, e.target.id, e.target.value)) return;
-    repaint();
-    const box = el.querySelector('#' + FILTER_IDS.search);   // the bar was re-rendered under the cursor
-    if (box) { box.focus(); box.setSelectionRange(box.value.length, box.value.length); }
+// The table is mounted once per #cdx-doss-participants element (that element is rebuilt when the
+// dossiê switches turma) and fed data by _loadDossierParticipants. Its callbacks read _dossierTurma,
+// the live current turma, so they stay correct across a switch.
+function _dossierTable(el) {
+  if (el._pt) return el._pt;
+  el._pt = createPersonTable(el, {
+    scope: 'turma',
+    gated: () => isApprovalGated(_dossierTurma),
+    emptyKey: 'cohorts.participants_empty',
+    onReload: () => { if (_dossierTurma) _loadDossierParticipants(_dossierTurma); },
+    // Remove here is scope-aware (Élder 2026-07-16, option B): out of THIS turma if the person is in
+    // others, but their OWN turma's decision is total — the completa/anonimizar modal — so nobody is
+    // ever silently purged with their name still in the content. turma-remove.js owns the rule.
+    onRemove: (people) => removeFromTurma(people, _dossierTurma, {
+      onDone: () => { if (_dossierTurma) _loadDossierParticipants(_dossierTurma); },
+    }),
   });
-  el.addEventListener('change', (e) => {
-    if (!applyFilterChange(_dossierFilters, e.target.id, e.target.value)) return;
-    repaint();
-  });
-}
-
-// Per-repaint wiring: rows and the toolbar are new elements each paint, so these must be re-bound
-// (and cannot accumulate, since the old elements are gone with the old HTML).
-function _wireDossierParticipants(el, turma) {
-  _wireDossierPanelOnce(el);
-
-  // Selection + the bulk toolbar come from roster-actions.js (shared with the Alunos roster).
-  // Here a row-click toggles selection and an action applies to the selected rows in THIS turma.
-  wireSelection(el, {
-    rowSel: '.cdx-pl-row',
-    chkSel: '.cdx-pchk',
-    ignoreSel: '[data-edit],[data-caret],.cdx-pl-plus,.cdx-pl-go',
-    rowClickToggles: true,
-    enabledFor: (act, rowEls) => actionEnabled(act, rowEls.map((r) => ({ status: r.dataset.status, verified: r.dataset.verified === '1' }))),
-    onApply: (act, rowEls) => _applyParticipantAction(act, rowEls.map(_pidOf).filter(Boolean), turma),
-  });
-
-  // Per-row edit ✎.
-  el.querySelectorAll('[data-edit]').forEach((ed) => ed.addEventListener('click', (e) => {
-    e.stopPropagation();
-    const row = ed.closest('.cdx-pl-row');
-    const person = row && _personInRow(row);
-    if (person) _openParticipantEditModal(person, () => _loadDossierParticipants(turma));
-  }));
-}
-
-// The bulk action for the turma Participantes panel: it acts on THIS turma's participant rows.
-// The action itself is performed by the shared roster-actions.applyRosterAction, the same call the
-// Alunos roster makes; only the id selection differs (there it fans out across a person's turmas).
-async function _applyParticipantAction(act, ids, turma) {
-  if (!ids.length) return;
-  if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm'))) return;
-  try {
-    await applyRosterAction(act, ids);
-  } catch (e) {
-    if (window.bsLog) window.bsLog('cohorts: bulk ' + act + ' failed: ' + (e && e.message || e), 'error');
-  } finally {
-    _loadDossierParticipants(turma);
-  }
+  return el._pt;
 }
 
 function _loadDossierParticipants(turma) {
-  // Same action as the Alunos roster; turma_id is the FILTER. So this panel now holds PEOPLE (each
-  // with their single row for this turma), not raw participant rows — which is what lets the one
-  // component render both surfaces.
+  // Same action as the Alunos roster; turma_id is the FILTER. So this panel holds PEOPLE (each with
+  // their single row for this turma), not raw participant rows — which is what lets the one table
+  // render both surfaces.
   _dossierTurma = turma;
   api.listPeople({ turma_id: turma.id }).then((d) => {
     _dossierParticipants = (d && d.people) || [];
     const el = _q('cdx-doss-participants');
     if (!el) return;
-    _paintDossierParticipants(el, turma);
-    _wireDossierParticipants(el, turma);
+    const countEl = _q('cdx-doss-p-count');
+    if (countEl) countEl.textContent = _dossierParticipants.length || '';
+    _dossierTable(el).setPeople(_dossierParticipants);
   }).catch((e) => { if (window.bsLog) window.bsLog('cohorts: load participants failed: ' + (e && e.message || e), 'error'); });
 }
 

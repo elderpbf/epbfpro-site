@@ -189,6 +189,7 @@ export const cohorts = {
   // global Pessoas roster, pass it for a cohort's Participantes panel. Same shape either way.
   setPersonEmails:    (p) => call('ct_set_person_emails', p), // { student_id, emails:[primary,...aliases] } -> the box IS the truth; a new primary rewrites every row + RESETS validation
   listPeople:         (p) => call('ct_list_people', p),        // { turma_id? } -> { people:[{id,email,name,role,aliases,cpf,turma_count,rows:[...]}] }
+  personTurmas:       (p) => call('ct_person_turmas', p),      // { student_ids:[] } -> { people:[{ student_id, turmas:[{turma_id,client_slug,turma_slug,turma_name,participant_id}] }] } — the dossiê remove decision
   setCanonicalName:   (p) => call('ct_set_canonical_name', p), // { student_id, name } -> sets + LOCKS the identity name
   // The person's data goes, one of two ways (Élder's "completa" vs "anonimizar"). preview READS
   // what each mode would cost, including what neither can reach; erase does it.

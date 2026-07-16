@@ -1581,3 +1581,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-er-line.is-keep { color: var(--text-secondary); }
 .cdx-er-line.is-warn { color: var(--text-primary); }
 .cdx-er-line.is-warn::before { content: '!'; font-weight: 700; }
+
+/* turma-remove: the this-turma-or-all question (a person in 2+ turmas) */
+.cdx-rs-msg { font-size: 0.9rem; line-height: 1.5; }
+.cdx-rs-turmas { margin: 10px 0 0; padding-left: 20px; font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-rs-turmas li { padding: 2px 0; }
