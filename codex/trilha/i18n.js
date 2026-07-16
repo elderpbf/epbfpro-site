@@ -124,8 +124,6 @@ const pt = {
   'wall.card_sub':          'Enviamos um código de 4 letras pro seu e-mail. Sem senha, sem complicação.',
   'wall.reg_toggle':        'Criar meu acesso',
   'wall.cta':               'Enviar código',
-  'wall.nopass':            'Você vai receber um código válido por 15 minutos.',
-  'wall.have_account':      'Já tem cadastro? Use o botão "Entrar" no topo da página.',
   // track-36 single "Entrar" (e-mail-first, name inline, validation poll)
   'wall.entrar_h':          'Entrar',
   'wall.entrar_sub':        'Digite seu e-mail para entrar. Sem senha.',
@@ -352,8 +350,6 @@ const en = {
   'wall.card_sub':          'We send a 4-letter code to your e-mail. No password, no hassle.',
   'wall.reg_toggle':        'Create my access',
   'wall.cta':               'Send code',
-  'wall.nopass':            'You will receive a code valid for 15 minutes.',
-  'wall.have_account':      'Already registered? Use the “Sign in” button at the top of the page.',
   // track-36 single "Entrar" (e-mail-first, name inline, validation poll)
   'wall.entrar_h':          'Sign in',
   'wall.entrar_sub':        'Enter your e-mail to get in. No password.',
