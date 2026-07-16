@@ -5,6 +5,7 @@
 // the editor as ctx.imageStore (same pattern as the store / library / aiService adapters),
 // so the vendored core never imports the facade itself. The R2 object lands at
 // classforge/<slug>/<filename>, served back through the facade's assetUrl.
+// Globals: window.bsLog (debug pill, backstage/js/debug.js)
 import { assetUrl, slides as slidesApi } from '../../../js/codex-api.js';
 import { fileToBase64, makeDataUrlStore } from '../js/core/files.js';
 import { uid } from '../js/core/schema.js';
@@ -32,7 +33,12 @@ export function createImageStore({ facade, getSlug } = {}) {
           if (res && res.ok) {
             return { url: assetUrl('/r2/classforge/' + slug + '/' + filename), name: file.name || '' };
           }
-        } catch (_) { /* fall through to the data-URL fallback */ }
+        } catch (e) {
+          // The data-URL fallback below keeps the upload working, so this is a warn,
+          // not an error. It must still reach the pill: silently degrading to a fat
+          // inline image is exactly the failure nobody notices until a deck is huge.
+          if (window.bsLog) window.bsLog('imageStore R2: ' + ((e && e.message) || e), 'warn');
+        }
       }
       return fallback.put(file);
     },

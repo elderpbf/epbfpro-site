@@ -5,6 +5,7 @@
 import { bar } from "../theme/art.js";
 import { ed, topicList } from "../render/helpers.js";
 import { uid } from "../core/schema.js";
+import { t } from "../../../../js/i18n.js";
 
 const list = (texts) => texts.map((text) => ({ id: uid(), text }));
 
@@ -20,7 +21,7 @@ export default {
   reveals: () => 0,
   render: (s) => `${bar}<div class="L-check">${ed("h2", "title", s.title)}
     <div class="chk-cols">
-      <div class="chk-col chk-do"><div class="chk-h">Faça</div>${topicList(s.dos, "dos")}</div>
-      <div class="chk-col chk-dont"><div class="chk-h">Não faça</div>${topicList(s.donts, "donts")}</div>
+      <div class="chk-col chk-do"><div class="chk-h">${t("slides.chk_do")}</div>${topicList(s.dos, "dos")}</div>
+      <div class="chk-col chk-dont"><div class="chk-h">${t("slides.chk_dont")}</div>${topicList(s.donts, "donts")}</div>
     </div></div>`,
 };

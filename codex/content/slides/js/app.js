@@ -30,12 +30,23 @@ import { makeStubAi } from "./ai/aiService.js";
 // Layout display label by id, translated. Layout modules keep a PT fallback in
 // their own `label`; here we map the id to an i18n key so the add-slide menu
 // follows the active language.
+// Every registered layout, or the menu shows PT with the toggle on EN (Élder 2026-07-16).
+// The map covered 5 of 14; the other 9 fell through to L.label, which is PT-only.
 const LAYOUT_LABEL_KEY = {
-  cover:  "slides.layout_cover",
-  split:  "slides.layout_split",
-  topics: "slides.layout_topics",
-  bleed:  "slides.layout_bleed",
-  cards:  "slides.layout_cards",
+  cover:     "slides.layout_cover",
+  split:     "slides.layout_split",
+  topics:    "slides.layout_topics",
+  bleed:     "slides.layout_bleed",
+  cards:     "slides.layout_cards",
+  agenda:    "slides.layout_agenda",
+  checklist: "slides.layout_checklist",
+  compare:   "slides.layout_compare",
+  define:    "slides.layout_define",
+  imagebox:  "slides.layout_imagebox",
+  quote:     "slides.layout_quote",
+  roadmap:   "slides.layout_roadmap",
+  statement: "slides.layout_statement",
+  steps:     "slides.layout_steps",
 };
 const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) : L.label);
 
@@ -202,7 +213,7 @@ export function mount(root, ctx = {}) {
       this._maxStep = player.autoSteps(this.stage, s.build, s.buildFx); // ordered reveal plan (Phase 7) + per-unit effect (Phase 9)
       player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
-      if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
+      if (this.gripReorder) this.gripReorder.afterRender(); // inject drag grips on cards/topics
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
@@ -471,7 +482,12 @@ export function mount(root, ctx = {}) {
     async uploadToGallery(file, target) {
       if (!file) return;
       let res;
-      try { res = await this._imageStore.put(file); } catch (_) { return; }
+      try { res = await this._imageStore.put(file); } catch (e) {
+        // The store already falls back to a data URL internally, so reaching here is a
+        // real failure and the image silently never appears. Say it on the pill.
+        if (window.bsLog) window.bsLog('gallery upload: ' + ((e && e.message) || e), 'error');
+        return;
+      }
       if (!res || !res.url) return;
       this.record("gallery:add");
       const entry = addImage(this.deck(), res);

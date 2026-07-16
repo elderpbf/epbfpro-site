@@ -16,6 +16,7 @@
 // is another property on that object, never a migration, mirroring the composable
 // cards `parts` decision. Branding is NOT stored: logo + theme are deck-level
 // overlays the frame emits, so a template rebrands per deck for free.
+// Globals: window.bsLog (debug pill, backstage/js/debug.js)
 import { slides as slidesApi } from '../../../js/codex-api.js';
 import { uid, clone } from '../js/core/schema.js';
 
@@ -65,7 +66,11 @@ export function createLibrary({ facade } = {}) {
       try {
         const res = await api.list();
         exists = ((res && res.presentations) || []).some((p) => p && p.slug === LIBRARY_SLUG);
-      } catch (_) {
+      } catch (e) {
+        // Not the not-found case (the `exists` gate below owns that): reaching here
+        // means the listing itself failed (worker/network), so the +slide modal shows
+        // an empty library when one may well exist. Degrade, but say so.
+        if (window.bsLog) window.bsLog('slides library list: ' + ((e && e.message) || e), 'error');
         return [];
       }
       if (!exists) return [];

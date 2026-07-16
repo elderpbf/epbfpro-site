@@ -93,7 +93,7 @@ function build(app) {
   // Proporção do deck (Phase 8): 16:9 / 4:3, two lit buttons. No header/close row here
   // (click outside closes it, like the animation panel).
   const asp = el("section", "tb-sec");
-  asp.appendChild(el("div", "tb-sec-h", "Proporção"));
+  asp.appendChild(el("div", "tb-sec-h", t("slides.ed_aspect")));
   const aspRow = el("div", "tb-arts");
   for (const a of ["16:9", "4:3"]) {
     const b = el("button", "tb-art" + (a === (app.deck().aspect || "16:9") ? " on" : ""), a);
