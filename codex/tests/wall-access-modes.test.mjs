@@ -121,15 +121,17 @@ test('o roadmap nao volta pelo lado da emergencia', () => {
   }
 });
 
-// A caixa de suporte existia SO na copia da emergencia, ou seja: quem nao conseguia entrar pelo
-// muro normal era exatamente quem nao tinha como pedir ajuda. Agora e do muro, entao vale pras
-// duas portas de uma vez (Elder 2026-07-15: "o suporte deve aparecer la tambem").
-test('a caixa de suporte aparece no registro, em QUALQUER porta', () => {
-  const w = wall();
-  assert.match(w, /entryHtml\(contextFromState\(state\), 'registro'\)/, 'registro tem suporte');
-  assert.match(w, /entryHtml\(contextFromState\(state\), 'bloqueado'\)/, 'bloqueado continua tendo');
-  // Tem que estar no MURO, nao dentro de um modo: no modo, cada porta nova teria que lembrar de
-  // repetir, que e como a copia comecou.
+// O suporte ("Precisa de ajuda?") vem do RODAPE (#cdx-tr-support-footer), montado pelo renderHero
+// em TODA pagina da trilha, muro incluso. Entao ja aparece na tela de registro sem o muro fazer
+// nada. Adicionar um segundo no muro DUPLICA na tela (Elder 2026-07-16: "Precisa de ajuda? esta
+// duplicado"). A copia wall-simple montava o proprio E ganhava o rodape: mostrava dois calada.
+test('o suporte vem do rodape, nao duplicado no muro', () => {
+  assert.match(page(), /mountEntry\(root\.querySelector\('#cdx-tr-support-footer'\)/,
+    'o rodape (renderHero) monta o suporte em toda pagina');
+  const reg = wall().slice(wall().indexOf('function renderRegister'));
+  assert.ok(!/entryHtml/.test(reg), 'renderRegister NAO monta um segundo suporte');
+  // E o modo tambem nao: se fosse no modo, cada porta nova teria que lembrar de repetir, que e
+  // exatamente como a duplicacao comecou.
   for (const [nome, src] of [['otp', otp()], ['emergency', emerg()]]) {
     assert.ok(!/entryHtml/.test(src), nome + ' nao carrega copia da caixa de suporte');
   }

@@ -131,11 +131,11 @@ function renderRegister(wall) {
         benefitsHtml() +
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg is-open"></div></div>' +
-    '</div>' +
-    // Support box on the register screen for EVERY turma (Élder 2026-07-15: "o suporte deve
-    // aparecer lá também"). It used to exist only on the Emergência copy, so the students who
-    // could not get in on the normal wall were exactly the ones with no way to ask for help.
-    entryHtml(contextFromState(state), 'registro');
+    '</div>';
+  // NO support box here. renderHero (page.js) already mounts one in the footer
+  // (#cdx-tr-support-footer) on EVERY trilha page, the wall included, so "Precisa de ajuda?" is
+  // already on this screen. Adding a second here duplicated it (Élder 2026-07-16). The old
+  // wall-simple copy hand-rolled its own AND still got the footer — it was quietly showing two.
   // The card is the ONLY thing an access mode owns. Everything above is the wall, identical for
   // every mode; an unknown mode falls back to the OTP door rather than rendering a bare card.
   const mount = ACCESS_MODES[accessModeFor((state.data || {}).access)] || ACCESS_MODES.otp;
