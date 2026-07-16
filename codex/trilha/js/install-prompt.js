@@ -22,24 +22,18 @@
 // is missed. isStandalone/isIosSafari/isInstallAvailable are PURE and unit-pinned.
 import { t } from '../i18n.js';
 import { esc } from './utils.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 const DISMISS_KEY = 'trilha_install_v2_dismissed'; // v2: old auto-dismiss flags are ignored
 const LOGO_SRC = '/codex/trilha/icons/app-icon-192.png';
 
 // Download glyph (arrow into a tray) for the collapsed strip and the questions pill.
 const DL_GLYPH =
-  '<svg class="cdx-install-glyph-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
-    'fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 3v12"/><path d="m7 11 5 5 5-5"/><path d="M5 21h14"/>' +
-  '</svg>';
+  glyphSvg('download', { size: null, cls: 'cdx-install-glyph-svg', strokeWidth: 2.2 });
 
 // iOS Share glyph (box with an up arrow), matching the system affordance the hint names.
 const SHARE_GLYPH =
-  '<svg class="cdx-install-share-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" ' +
-    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">' +
-    '<path d="M12 15V3"/><path d="m8 7 4-4 4 4"/>' +
-    '<path d="M4 12v7a1 1 0 0 0 1 1h14a1 1 0 0 0 1-1v-7"/>' +
-  '</svg>';
+  glyphSvg('upload', { size: null, cls: 'cdx-install-share-svg' });
 
 // PURE. Already running as an installed PWA? (iOS uses navigator.standalone.)
 export function isStandalone(win) {

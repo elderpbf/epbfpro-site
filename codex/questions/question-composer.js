@@ -7,6 +7,7 @@
 // Strings via t(), no inline handlers, cdx- classes only.
 import { t } from '../js/i18n.js';
 import { ai } from '../js/codex-api.js';
+import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { resolve, isVariable, usedVars } from '../js/audiences.js';
@@ -17,8 +18,11 @@ const OPTION_TYPES = ['mc', 'tf', 'poll'];
 
 // AI Gerar / Melhorar glyphs (node-for-node from host.html). Owned here so the
 // Bank editor and the live-host card render the SAME buttons from ONE source.
-const _AI_GEN = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>';
-const _AI_IMP = '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:-2px"><polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/></svg>';
+// From the shared library. Both were verbatim copies of keys it already had: _AI_GEN's
+// path traces the same ten vertices as the `star` polygon, _AI_IMP is `maximize`. They sit
+// inline with the button text, hence the vertical-align nudge they have always carried.
+const _AI_GEN = glyphSvg('star', { size: 13, style: 'vertical-align:-2px' });
+const _AI_IMP = glyphSvg('maximize', { size: 13, style: 'vertical-align:-2px' });
 
 // The audience config (variables x audiences matrix) drives the "unique" audience
 // picker and the "variable" per-audience preview. The bank/live host load it once

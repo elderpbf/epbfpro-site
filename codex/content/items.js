@@ -149,7 +149,8 @@ function _openPrompt(opts) {
 // ── Shell ────────────────────────────────────────────────────────────────────
 // Sort glyph: decreasing horizontal lines + an up/down arrow. The button cycles
 // the sort mode on click (recent -> A-Z -> type) and shows the active mode beside it.
-const _SORT_ICON = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 7h10M5 12h7M5 17h4"/><path d="M19 7v10M16.5 9.5 19 7l2.5 2.5M16.5 14.5 19 17l2.5-2.5"/></svg>';
+// From the shared library; size/strokeWidth keep this call site's original 14 / 1.8.
+const _SORT_ICON = glyphSvg('sort', { size: 14, strokeWidth: 1.8 });
 
 function _sortLabel(s) {
   return s === 'alpha' ? t('content.sort_alpha') : s === 'type' ? t('content.sort_type') : t('content.sort_recent');

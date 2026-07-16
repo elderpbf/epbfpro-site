@@ -19,22 +19,12 @@
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.ThemeManager (theme toggle), window.QRShareModal (share modal, inert on public Trail)
 import { glyphWordmark, stdColors } from '../../js/brand-logos.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
-const QR_GLYPH =
-  '<svg class="ph-qr-glyph" xmlns="http://www.w3.org/2000/svg" ' +
-    'viewBox="0 0 24 24" fill="none" stroke="currentColor" ' +
-    'stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-    '<rect x="3" y="3" width="7" height="7" rx="1"/>' +
-    '<rect x="14" y="3" width="7" height="7" rx="1"/>' +
-    '<rect x="3" y="14" width="7" height="7" rx="1"/>' +
-    '<path d="M14 14h3v3h-3z"/>' +
-    '<path d="M20 14h1v1"/>' +
-    '<path d="M14 20h1v1"/>' +
-    '<path d="M20 20h1v1"/>' +
-    '<path d="M17 17h1"/>' +
-    '<path d="M20 17h1"/>' +
-    '<path d="M17 20h1"/>' +
-  '</svg>';
+// From the shared library. This exact markup existed THREE times: the `qr` key, here, and
+// again in questions/live-host.js. The cls keeps the .ph-qr-glyph hook public-header.css
+// sizes (1.3em), and size:null lets that rule win instead of fighting a width attribute.
+const QR_GLYPH = glyphSvg('qr', { size: null, cls: 'ph-qr-glyph' });
 
 // Text-zoom bounds. The A−/A+ buttons were removed from the bar (they only served the
 // retired GO display page); clampZoom stays as a pure exported helper (still unit-pinned).
