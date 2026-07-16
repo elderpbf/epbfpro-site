@@ -127,6 +127,10 @@ export function mountOtpCard(cardEl) {
   // via the profile step for a first-time consent). "Reenviar" re-requests with a cooldown.
   function renderCodeStep() {
     cardEl.classList.add('cdx-en-wait');
+    // dev only: on staging (no e-mail provider) the worker returns the code on-screen instead of
+    // sending it. It sits ABOVE the input, not below: below the input it lands past the fold on a
+    // phone and reads as "no code appeared" (Élder 2026-07-16). In production devCode is null (the
+    // code is e-mailed), so this whole line is empty and the layout is unchanged.
     const dev = flow.devCode
       ? '<p class="cdx-en-nopass cdx-en-dev"><strong>' + esc(t('login.dev_link')) + '</strong> ' + esc(flow.devCode) + '</p>'
       : '';
@@ -134,11 +138,11 @@ export function mountOtpCard(cardEl) {
       '<div class="cdx-en-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
       '<h3 class="cdx-en-card-h">' + esc(t('login.code_title')) + '</h3>' +
       '<p class="cdx-en-card-s">' + esc(t('login.code_desc')) + '</p>' +
+      dev +
       '<div class="cdx-en-field">' +
         '<label class="cdx-en-label" for="cdx-en-code">' + esc(t('login.code_label')) + '</label>' +
         '<input id="cdx-en-code" class="cdx-en-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '">' +
       '</div>' +
-      dev +
       '<div class="cdx-en-error' + (flow.codeStillValid ? ' cdx-en-ok' : '') + '" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta cdx-en-verify">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button type="button" class="cdx-en-resend">' + esc(t('login.resend')) + '</button>';
