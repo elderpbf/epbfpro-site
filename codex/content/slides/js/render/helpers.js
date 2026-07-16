@@ -40,13 +40,16 @@ export function imgInner(path, img, tools = false) {
 // hairline-framed region (styled in slide.css). The box itself selects on
 // single-click; the context bar's "adicionar imagem" button does the pick.
 //
-// `image-frame`, not `image`: this exact drawing moved INTO js/glyphs.js (track-35 E) rather
-// than folding into the library's square `image`, because .imgcue is not editoronly — it
-// renders on the canvas AND to the audience in presentation, so reshaping it is a change to
-// the projected slide, not an icon cleanup. size:null lets slide.css size it (30px * scales),
-// as the hand-drawn svg did by carrying no width/height.
+// The library's `image`, not a Slides-only drawing (Élder 2026-07-16, track-35 E). I had
+// registered the old hand-drawn frame as its own key to keep the pixels, arguing the cue
+// renders to the AUDIENCE in presentation. Élder killed that argument: the audience is not
+// meant to see an empty slot at all, an empty slot in a talk is the presenter's fault, so the
+// cue is an EDITOR affordance and its exact shape protects nothing. Two drawings for one
+// meaning was the real cost, and this file's own law forbids it.
+// size:null lets slide.css size it (30px * scales), as the hand-drawn svg did by carrying no
+// width/height; strokeWidth 1.6 keeps the hairline weight the cue is drawn with.
 export function imgCue() {
-  const glyph = glyphSvg("image-frame", { size: null, strokeWidth: 1.6 });
+  const glyph = glyphSvg("image", { size: null, strokeWidth: 1.6 });
   return `<div class="imgcue">${glyph}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
 }
 
