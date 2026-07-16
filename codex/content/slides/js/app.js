@@ -202,7 +202,7 @@ export function mount(root, ctx = {}) {
       this._maxStep = player.autoSteps(this.stage, s.build, s.buildFx); // ordered reveal plan (Phase 7) + per-unit effect (Phase 9)
       player.applySteps(this.stage, this.step, this._stepMode());
       if (this.select) this.select.afterRender();
-      if (this.reorder) this.reorder.afterRender(); // inject drag grips on cards/topics
+      if (this.gripReorder) this.gripReorder.afterRender(); // inject drag grips on cards/topics
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";

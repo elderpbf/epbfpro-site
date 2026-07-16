@@ -88,5 +88,10 @@ export function initReorder(app) {
 
   stage.addEventListener("dragend", end);
 
-  app.reorder = { afterRender };
+  // `gripReorder`, NOT `reorder`: the controller ALREADY owns reorder(from, to), the
+  // deck op that moves a SLIDE (app.js), which the navigator's arrows and thumb-drag
+  // both call. Publishing this subsystem as app.reorder overwrote that method with an
+  // object, and both died silently (Élder 2026-07-16: "não consigo reordenar slides;
+  // nem as setas nem arrastar"). A subsystem handle never squats on a controller verb.
+  app.gripReorder = { afterRender };
 }
