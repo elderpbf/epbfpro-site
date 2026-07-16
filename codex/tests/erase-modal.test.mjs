@@ -21,19 +21,34 @@ const facadeJs = read('../js/codex-api.js');
 const pv = (o = {}) => Object.assign({ participants: 1, submissions: 0, posts: 0, left_behind: { certificates: 0, questions_by_name: 0 } }, o);
 const kinds = (l) => l.map((x) => x.kind);
 
-test('purge says what DIES; anonimizar says the same things STAY', () => {
+test('purge DELETES the content; anonimizar KEEPS it, renamed to the anon label', () => {
   const p = pv({ submissions: 3, posts: 2 });
   assert.deepEqual(kinds(consequenceLines(p, 'purge')), ['del', 'del']);
-  assert.deepEqual(kinds(consequenceLines(p, 'anonymize')), ['keep', 'keep']);
+  // anonymize leads with the "becomes anon" line, then the kept content — nobody left without a name
+  assert.deepEqual(kinds(consequenceLines({ ...p, anon_label: 'anon9' }, 'anonymize')), ['keep', 'keep', 'keep']);
 });
 
-test('the certificate warning shows in BOTH modes — it survives either way, by construction', () => {
+test('anonimizar shows the ACTUAL future label, not a vague "anônimo" (Élder 2026-07-16)', () => {
+  const l = consequenceLines({ ...pv({ submissions: 1 }), anon_label: 'anon42' }, 'anonymize');
+  assert.ok(l.some((x) => x.text.includes('anon42')));
+});
+
+test('anonimizar always says WHAT the record becomes, even with nothing attached', () => {
+  const l = consequenceLines({ ...pv(), anon_label: 'anon9' }, 'anonymize');
+  assert.deepEqual(kinds(l), ['keep']);   // just the "becomes anon9" line
+  assert.ok(l[0].text.includes('anon9'));
+});
+
+test('the certificate is named in BOTH modes, keeping the real name either way', () => {
   const p = pv({ left_behind: { certificates: 1, questions_by_name: 0 } });
-  for (const m of ['purge', 'anonymize']) {
-    const l = consequenceLines(p, m);
-    assert.equal(l.length, 1);
-    assert.equal(l[0].kind, 'warn');
-  }
+  assert.deepEqual(kinds(consequenceLines(p, 'purge')), ['warn']);   // purge: just the cert warning
+  const a = consequenceLines({ ...p, anon_label: 'anon9' }, 'anonymize');
+  assert.equal(a[a.length - 1].kind, 'warn');   // anonymize: the "becomes" line + the cert warning
+});
+
+test('anonimizar RENAMES the Perguntas rows (they are no longer "left behind")', () => {
+  const l = consequenceLines({ ...pv({ left_behind: { certificates: 0, questions_by_name: 4 } }), anon_label: 'anon9' }, 'anonymize');
+  assert.ok(l.some((x) => x.kind === 'keep' && /4/.test(x.text)));   // a keep line, not a warn
 });
 
 test('the Perguntas remnant is a warning, never counted as erased', () => {

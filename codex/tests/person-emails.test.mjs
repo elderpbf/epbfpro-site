@@ -11,7 +11,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { linesOf } from '../cohorts/participant-edit.js';
+import { linesOf, fieldMarkup } from '../cohorts/participant-edit.js';
 import { emailBoxValue } from '../cohorts/person-editor.js';
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
@@ -88,4 +88,19 @@ test('ONE editor: both the roster and the dossiê open the SHARED person editor 
   assert.match(cohortsJs, /openPersonEditor\(person, \{ onSaved \}\)/);
   assert.doesNotMatch(studentsJs, /openPersonEditModal\(/);
   assert.doesNotMatch(cohortsJs, /openPersonEditModal\(/);
+});
+
+test('a secret field WITH a value masks it and offers the eye (track-42)', () => {
+  const h = fieldMarkup({ key: 'cpf', label: 'CPF', value: '111.444.777-35', secret: true });
+  assert.match(h, /type="password"/);
+  assert.match(h, /cdx-pe-eye/);
+});
+
+test('a secret field with NO value is a plain empty field — no dots, no eye (Élder 2026-07-16)', () => {
+  // "se não tiver cpf deve estar vazio": an empty CPF must not render as dots the admin has to
+  // reveal to see nothing, and an eye on an empty field toggles nothing.
+  const h = fieldMarkup({ key: 'cpf', label: 'CPF', value: '', secret: true, placeholder: '000.000.000-00' });
+  assert.doesNotMatch(h, /type="password"/);
+  assert.doesNotMatch(h, /cdx-pe-eye/);
+  assert.match(h, /value=""/);
 });

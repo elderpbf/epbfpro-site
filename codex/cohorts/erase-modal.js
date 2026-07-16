@@ -20,21 +20,33 @@ import { segmentedHtml } from './cleanup-modal.js';
 
 // PURE. The consequence lines for one person's preview. Only facts that are TRUE for this person
 // appear: a generic "certificates may remain" teaches him to ignore the box.
+//
+// The two modes tell different stories. PURGE deletes the content and reports what it cannot reach
+// (the cert, the name-matched Perguntas rows). ANONYMIZE keeps everything and reports what it
+// RENAMES to the anon label — nobody is left without a name (Élder 2026-07-16).
 export function consequenceLines(pv, mode) {
   const p = pv || {};
   const lb = p.left_behind || {};
+  const anon = p.anon_label || 'anon';
   const out = [];
   const n = (k, v) => t(k).replace('{n}', String(v));
+  const na = (k, v) => t(k).replace('{n}', String(v)).replace('{anon}', anon);
   if (mode === 'purge') {
     if (p.submissions) out.push({ kind: 'del', text: n('alunos.erase_x_subs', p.submissions) });
     if (p.posts) out.push({ kind: 'del', text: n('alunos.erase_x_posts', p.posts) });
+    // Beyond reach of a purge, so named rather than implied: the cert survives by construction, and
+    // the Perguntas rows are name-matched (a homonym is not this person, so purge never deletes them).
+    if (lb.certificates) out.push({ kind: 'warn', text: n('alunos.erase_left_cert', lb.certificates) });
+    if (lb.questions_by_name) out.push({ kind: 'warn', text: n('alunos.erase_left_questions', lb.questions_by_name) });
   } else {
-    if (p.submissions) out.push({ kind: 'keep', text: n('alunos.erase_keep_subs', p.submissions) });
-    if (p.posts) out.push({ kind: 'keep', text: n('alunos.erase_keep_posts', p.posts) });
+    // Everything STAYS, renamed to the anon label. The person turns into a numbered stranger.
+    out.push({ kind: 'keep', text: t('alunos.erase_becomes').replace('{anon}', anon) });
+    if (p.submissions) out.push({ kind: 'keep', text: na('alunos.erase_anon_subs', p.submissions) });
+    if (p.posts) out.push({ kind: 'keep', text: na('alunos.erase_anon_posts', p.posts) });
+    if (lb.questions_by_name) out.push({ kind: 'keep', text: na('alunos.erase_anon_questions', lb.questions_by_name) });
+    // The one thing that keeps the REAL name (a legal document), now pointing at the anon record.
+    if (lb.certificates) out.push({ kind: 'warn', text: n('alunos.erase_anon_cert', lb.certificates) });
   }
-  // Survives BOTH modes, by construction — say so where the choice is being made.
-  if (lb.certificates) out.push({ kind: 'warn', text: n('alunos.erase_left_cert', lb.certificates) });
-  if (lb.questions_by_name) out.push({ kind: 'warn', text: n('alunos.erase_left_questions', lb.questions_by_name) });
   return out;
 }
 

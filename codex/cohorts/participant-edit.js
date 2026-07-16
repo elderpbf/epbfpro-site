@@ -17,11 +17,37 @@ export function linesOf(value) {
   return String(value == null ? '' : value).split('\n').map((s) => s.trim()).filter(Boolean);
 }
 
+// PURE. One field's markup. The eye + masking appear ONLY when a secret field actually HAS a value:
+// an empty CPF is a plain empty field, not dots the admin must reveal to see nothing, and an eye on
+// an empty field is a control that does nothing (Élder 2026-07-16: "se não tiver cpf deve estar
+// vazio, e se tiver cpf deve ter um botão de olho na direita que toggle a visualização do texto
+// cru"). A field the admin types INTO stays plain text as they type — the mask is for hiding a
+// stored value, not for fighting them while they enter one.
+export function fieldMarkup(f) {
+  const hasVal = f.value != null && String(f.value) !== '';
+  const masked = f.secret && !f.multiline && hasVal;
+  const common =
+    ' id="cdx-pe-' + esc(f.key) + '" autocomplete="off"' + (f.readonly ? ' readonly' : '') +
+    (f.maxlength ? ' maxlength="' + f.maxlength + '"' : '') +
+    (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '');
+  const input = f.multiline
+    ? '<textarea class="cdx-pe-lines" rows="' + (f.rows || 3) + '"' + common + '>' + esc(f.value == null ? '' : f.value) + '</textarea>'
+    : '<input type="' + (masked ? 'password' : 'text') + '"' + common + ' value="' + esc(f.value == null ? '' : f.value) + '">';
+  const wrapped = masked
+    ? '<div class="cdx-pe-secret">' + input +
+        '<button type="button" class="cdx-pe-eye" data-eye="' + esc(f.key) + '" aria-label="' + esc(t('cohorts.toggle_visibility')) + '" title="' + esc(t('cohorts.toggle_visibility')) + '">👁</button>' +
+      '</div>'
+    : input;
+  return '<div class="cdx-field"><label>' + esc(f.label) + (f.required ? ' <span class="cdx-required">*</span>' : '') + '</label>' + wrapped +
+    (f.hint ? '<div class="cdx-pe-hint">' + esc(f.hint) + '</div>' : '') + '</div>';
+}
+
 // opts:
 //   title
 //   fields: [{ key, label, value, required, readonly, placeholder, maxlength, secret, multiline,
 //              rows, hint, onMount(inputEl), validate(val) -> errMsg|null }]
-//     secret:    render masked with an eye on the right that toggles visibility (CPF).
+//     secret:    render masked with an eye on the right that toggles visibility (CPF), but ONLY
+//                when the field has a value (see fieldMarkup).
 //     multiline: render a textarea instead of an input — one value per line (the e-mail box).
 //                Mutually exclusive with secret; a masked textarea has no eye to hang on.
 //     hint:      a line of help under the field, for a box whose rule is not self-evident.
@@ -30,22 +56,7 @@ export function linesOf(value) {
 export function openPersonEditModal(opts) {
   const o = opts || {};
   const fields = o.fields || [];
-  const fieldHtml = fields.map((f) => {
-    const common =
-      ' id="cdx-pe-' + esc(f.key) + '" autocomplete="off"' + (f.readonly ? ' readonly' : '') +
-      (f.maxlength ? ' maxlength="' + f.maxlength + '"' : '') +
-      (f.placeholder ? ' placeholder="' + esc(f.placeholder) + '"' : '');
-    const input = f.multiline
-      ? '<textarea class="cdx-pe-lines" rows="' + (f.rows || 3) + '"' + common + '>' + esc(f.value == null ? '' : f.value) + '</textarea>'
-      : '<input type="' + (f.secret ? 'password' : 'text') + '"' + common + ' value="' + esc(f.value == null ? '' : f.value) + '">';
-    const wrapped = f.secret && !f.multiline
-      ? '<div class="cdx-pe-secret">' + input +
-          '<button type="button" class="cdx-pe-eye" data-eye="' + esc(f.key) + '" aria-label="' + esc(t('cohorts.toggle_visibility')) + '" title="' + esc(t('cohorts.toggle_visibility')) + '">👁</button>' +
-        '</div>'
-      : input;
-    return '<div class="cdx-field"><label>' + esc(f.label) + (f.required ? ' <span class="cdx-required">*</span>' : '') + '</label>' + wrapped +
-      (f.hint ? '<div class="cdx-pe-hint">' + esc(f.hint) + '</div>' : '') + '</div>';
-  }).join('');
+  const fieldHtml = fields.map(fieldMarkup).join('');
   const html =
     '<div class="cdx-modal cdx-modal--lg">' +
       '<div class="cdx-modal-title">' + esc(o.title || t('cohorts.participant_edit_title')) + '</div>' +
