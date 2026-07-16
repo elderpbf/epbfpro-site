@@ -22,7 +22,7 @@ import { legendButtonHtml, openPersonLegend } from './person-legend.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick, FILTER_IDS } from './person-filters.js';
 import { openAliasPopover } from './alias-popover.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
-import { openPersonEditModal } from './participant-edit.js';
+import { openPersonEditor } from './person-editor.js';
 import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
@@ -1084,30 +1084,12 @@ function _openImportParticipants(turma) {
   });
 }
 
-// Delegates to the ONE shared person-edit modal (participant-edit.js); the Alunos roster opens the
-// same modal for the identity. Here it edits THIS turma's participant row (name/email/cpf).
-// Takes a PERSON (the ct_list_people shape this panel now holds). In turma scope they carry exactly
-// one row, and it is that ROW we edit — person.id is the identity, never a participant id.
+// The ONE shared person editor (cohorts/person-editor.js) — the exact same modal the Usuários roster
+// opens. It edits the PERSON (identity): name → locked canonical, e-mails → the box (primary +
+// aliases), CPF → every turma row. This panel used to edit only THIS turma's participant row; Élder
+// (2026-07-16): "eles eram o mesmo até você duplicar", so both edit the person now.
 function _openParticipantEditModal(person, onSaved) {
-  const row = ((person.rows || [])[0]) || {};
-  openPersonEditModal({
-    title: t('cohorts.participant_edit_title'),
-    fields: [
-      { key: 'name', label: t('cohorts.participant_name'), value: person.name || row.name_in_turma || '', required: true,
-        validate: (v) => (v ? null : t('cohorts.name_required')) },
-      { key: 'email', label: t('cohorts.participant_email'), value: row.email || person.email || '',
-        placeholder: t('cohorts.participant_email_ph'),
-        validate: (v) => (!v ? t('cohorts.email_required') : (_emailValid(v) ? null : t('cohorts.email_invalid'))) },
-      { key: 'cpf', label: t('cohorts.participant_cpf'), value: person.cpf || row.cpf || '', maxlength: 14,
-        placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => _wireCpfMask(el), secret: true,
-        validate: (v) => (!v.replace(/\D/g, '') || _cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
-    ],
-    onSave: (vals) => api.updateParticipant({
-      id: row.participant_id, name: vals.name, email: vals.email,
-      cpf: vals.cpf.replace(/\D/g, '') ? vals.cpf : null,
-    }).then(() => { if (onSaved) onSaved(); }),
-    savedMsg: t('cohorts.participant_updated'),
-  });
+  openPersonEditor(person, { onSaved });
 }
 
 // ── Turma selection (drives the dossier) ──────────────────────────────────────

@@ -19,6 +19,16 @@ import { t } from '../i18n.js';
 import { esc } from './utils.js';
 import { supportUrl } from './support-contact.js';
 
+// PURE. The CPF with only the first 3 and last 2 digits shown, the middle masked (Élder 2026-07-16).
+// It is the student's OWN CPF, but even so the full number has no reason to sit on screen. Anything
+// that is not an 11-digit CPF is shown untouched rather than mangled.
+export function maskCpf(cpf) {
+  const d = String(cpf == null ? '' : cpf).replace(/\D/g, '');
+  if (d.length !== 11) return String(cpf == null ? '' : cpf);
+  const masked = d.slice(0, 3) + '******' + d.slice(9);
+  return masked.slice(0, 3) + '.' + masked.slice(3, 6) + '.' + masked.slice(6, 9) + '-' + masked.slice(9);
+}
+
 // PURE. The rows to show, in order, skipping what this person does not have. A field we do not hold
 // must not render as an empty line: "Meus dados" answers "what do you have about me", and a blank
 // row answers it wrong.
@@ -28,7 +38,7 @@ export function dataRows(participant) {
   if (p.name) rows.push({ key: 'name', label: t('mydata.name'), values: [p.name] });
   const emails = (p.emails || []).filter(Boolean);
   if (emails.length) rows.push({ key: 'emails', label: t(emails.length > 1 ? 'mydata.emails' : 'mydata.email'), values: emails });
-  if (p.cpf) rows.push({ key: 'cpf', label: t('mydata.cpf'), values: [p.cpf] });
+  if (p.cpf) rows.push({ key: 'cpf', label: t('mydata.cpf'), values: [maskCpf(p.cpf)] });
   return rows;
 }
 

@@ -12,7 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { dataRows, myDataHtml } from '../trilha/js/my-data.js';
+import { dataRows, myDataHtml, maskCpf } from '../trilha/js/my-data.js';
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
 const mdJs = read('../trilha/js/my-data.js');
@@ -88,4 +88,27 @@ test('the panel serves the ONE name and the addresses', () => {
   // The worker's turma view had to grow email/cpf/aliases for this; the panel used to carry only a
   // name, and that name was `display_name || name` (track-42 killed the second one).
   assert.doesNotMatch(pageJs, /display_name \|\| \(data\.participant/);
+});
+
+test('maskCpf shows only the first 3 and last 2 digits (Élder 2026-07-16)', () => {
+  assert.equal(maskCpf('111.444.777-35'), '111.***.***-35');
+  assert.equal(maskCpf('11144477735'), '111.***.***-35');   // raw digits too
+});
+
+test('maskCpf leaves a non-CPF untouched rather than mangling it', () => {
+  assert.equal(maskCpf(''), '');
+  assert.equal(maskCpf(null), '');
+  assert.equal(maskCpf('123'), '123');
+});
+
+test('the card shows the MASKED cpf, not the full number', () => {
+  const cpfRow = dataRows({ name: 'Ana', cpf: '111.444.777-35' }).find((r) => r.key === 'cpf');
+  assert.equal(cpfRow.values[0], '111.***.***-35');
+});
+
+test('the settings entry and the CTA are themed, not hardcoded (track-42)', () => {
+  const bell = read('../css/notif-bell.css');
+  const modalCss = read('../trilha/css/tarefa-modal.css');
+  assert.match(bell, /\.cdx-ns-mydata\s*\{/);            // the "Meus dados" row now has a style
+  assert.match(modalCss, /\.tr-md-cta[\s\S]*?var\(--primary\)/);  // the CTA follows the theme
 });

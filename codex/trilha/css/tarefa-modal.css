@@ -307,4 +307,11 @@ body.tr-modal-open { overflow: hidden; }
 .tr-md-v div + div { margin-top: 3px; opacity: 0.75; }
 .tr-md-empty { font-size: 0.9rem; opacity: 0.7; }
 .tr-md-note { margin: 16px 0 12px; font-size: 0.78rem; line-height: 1.5; opacity: 0.7; }
-.tr-md-cta { display: inline-block; font-size: 0.85rem; font-weight: 600; text-decoration: underline; }
+/* An outlined button in the theme's own colours (both a hardcoded colour and a bare underlined link
+   read wrong in dark mode). --primary + --tint-primary-tx both flip with the theme. */
+.tr-md-cta {
+  display: inline-block; margin-top: 2px; padding: .5rem .9rem; border-radius: 9px;
+  border: 1px solid var(--primary); color: var(--primary);
+  font-size: 0.85rem; font-weight: 700; text-decoration: none;
+}
+.tr-md-cta:hover { background: var(--tint-primary-tx); }

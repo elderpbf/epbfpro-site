@@ -12,11 +12,12 @@ import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { linesOf } from '../cohorts/participant-edit.js';
-import { emailBoxValue } from '../cohorts/students.js';
+import { emailBoxValue } from '../cohorts/person-editor.js';
 
 const read = (p) => readFileSync(fileURLToPath(new URL(p, import.meta.url)), 'utf8');
 const editJs = read('../cohorts/participant-edit.js');
 const studentsJs = read('../cohorts/students.js');
+const editorJs = read('../cohorts/person-editor.js');
 const facadeJs = read('../js/codex-api.js');
 
 test('linesOf: an admin hitting Enter twice is not an empty address', () => {
@@ -52,8 +53,8 @@ test('emailBoxValue survives a person with no identity e-mail at all', () => {
 });
 
 test('the field is a real multi-line box, and it says what the box means', () => {
-  assert.match(studentsJs, /key: 'email'[\s\S]{0,200}multiline: true/);
-  assert.match(studentsJs, /hint: t\('alunos\.emails_hint'\)/);
+  assert.match(editorJs, /key: 'email'[\s\S]{0,200}multiline: true/);
+  assert.match(editorJs, /hint: t\('alunos\.emails_hint'\)/);
   // The hint is load-bearing: "first line is the primary" is a rule no textarea can show by itself.
   for (const f of [read('../i18n/pt.js'), read('../i18n/en.js')]) {
     assert.match(f, /'alunos\.emails_hint':/);
@@ -67,14 +68,24 @@ test('multiline renders a textarea and never tries to wear the secret eye', () =
 });
 
 test('the box saves as ONE call carrying every line, not a call per address', () => {
-  assert.match(studentsJs, /api\.setPersonEmails\(\{ student_id: s\.id, emails \}\)/);
+  assert.match(editorJs, /api\.setPersonEmails\(\{ student_id: s\.id, emails \}\)/);
   assert.match(facadeJs, /setPersonEmails:\s*\(p\) => call\('ct_set_person_emails', p\)/);
   assert.doesNotMatch(studentsJs, /setPersonEmail\b(?!s)/);   // the single-address setter is gone
 });
 
 test('a taken address names WHICH line was taken, instead of blaming the whole box', () => {
-  assert.match(studentsJs, /email_belongs_to_another_person[\s\S]{0,120}replace\('\{email\}'/);
+  assert.match(editorJs, /email_belongs_to_another_person[\s\S]{0,120}replace\('\{email\}'/);
   for (const f of [read('../i18n/pt.js'), read('../i18n/en.js')]) {
     assert.match(f, /'alunos\.email_taken':\s*'\{email\}/);
   }
+});
+
+test('ONE editor: both the roster and the dossiê open the SHARED person editor (track-42)', () => {
+  // Élder caught the duplication: the box landed in Usuários only, so the dossiê diverged. Both
+  // now delegate to cohorts/person-editor.js; neither builds its own person-edit fields.
+  const cohortsJs = read('../cohorts/cohorts.js');
+  assert.match(studentsJs, /openPersonEditor\(s, \{ onSaved/);
+  assert.match(cohortsJs, /openPersonEditor\(person, \{ onSaved \}\)/);
+  assert.doesNotMatch(studentsJs, /openPersonEditModal\(/);
+  assert.doesNotMatch(cohortsJs, /openPersonEditModal\(/);
 });

@@ -153,6 +153,14 @@ pensoia-header .ph-action-btn.cdx-ns-btn { background: none; border: none; paddi
 }
 .cdx-ns-logout:hover { background: rgba(220, 38, 38, 0.07); }
 
+/* "Meus dados" read-only card entry (track-42). A neutral row, same shape as the two below. */
+.cdx-ns-mydata {
+  width: 100%; padding: .7rem 1rem; border: none; border-top: 1px solid var(--border);
+  background: none; color: var(--text-primary); font-family: inherit; font-size: .86rem; font-weight: 700;
+  text-align: left; cursor: pointer;
+}
+.cdx-ns-mydata:hover { background: rgba(20,184,166,.06); }
+
 /* "Instalar app" recover row (brings the dismissed install invite back — iOS). */
 .cdx-ns-install {
   width: 100%; padding: .7rem 1rem; border: none; border-top: 1px solid var(--border);
