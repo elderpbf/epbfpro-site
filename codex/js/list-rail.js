@@ -15,7 +15,10 @@
 //     selectedId:()=>id, onSelect:(id)=>{},
 //     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
-//               onMoveItem:(itemId,secId,orderedIds)=>{}},
+//               onMoveItem:(itemId,secId,orderedIds)=>{},
+//               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
+//               renderHead:(sec,count)=>({main,act})},
+//     bands:{of:(sec)=>bandId, list:()=>[{id,title}]},   // OUTER level: band > section > row
 //     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
 //     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max}
 //         | {mode:'autohide', layoutEl, openClass, revealZone, hideDelay, pinned},
@@ -35,6 +38,7 @@ export function mountRail(container, cfg) {
   const getId = cfg.getId || ((it) => it.id);
   const readItems = () => (typeof cfg.items === 'function' ? cfg.items() : (cfg.items || []));
   const sections = cfg.sections || null;
+  const bands = (cfg.bands && sections) ? cfg.bands : null;   // bands group SECTIONS; meaningless without them
   const reorder = cfg.reorder || null;
   const filter = cfg.filter || null;
   const add = cfg.add || null;
@@ -71,16 +75,45 @@ export function mountRail(container, cfg) {
     '</div>';
   }
 
+  // A section head. `sections.renderHead(sec, count) -> {main, act}` lets a consumer own the
+  // head's guts (Clientes needs an avatar there) while the module keeps the caret, the row
+  // shell and the toggle wiring. Default = the plain title + count.
+  function sectionHeadInner(sec, count) {
+    const rh = sections.renderHead ? sections.renderHead(sec, count) : null;
+    if (rh) {
+      return '<span class="cdx-rail-sec-title">' + (rh.main || '') + '</span>' +
+        (rh.act ? '<span class="cdx-rail-sec-acts">' + rh.act + '</span>' : '');
+    }
+    return '<span class="cdx-rail-sec-title">' + esc(sec.title || '') + '</span>' +
+      '<span class="cdx-rail-sec-count">' + count + '</span>' +
+      (sections.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(sec.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(sec.id)) + '" title="Excluir">×</button></span>' : '');
+  }
+
+  // `sections.exclusive` = accordion: at most ONE section open, and the open one is the
+  // CONSUMER's state (`sections.openId()`), not a CSS class the module toggles behind its
+  // back — Clientes already tracks `_expandedClient` and re-renders from it, so the module
+  // must not hold a second copy of that truth.
   function sectionHtml(sec, rows) {
-    const rid = 'sec-' + esc(String(sec.id));
-    return '<div class="cdx-rail-sec" data-sec="' + esc(String(sec.id)) + '">' +
+    const open = sections.exclusive
+      ? (sections.openId && String(sections.openId()) === String(sec.id))
+      : !(sections.collapsed && sections.collapsed(sec));
+    return '<div class="cdx-rail-sec' + (open ? ' is-open' : ' is-collapsed') + '" data-sec="' + esc(String(sec.id)) + '">' +
       '<div class="cdx-rail-sec-h" data-sec-toggle="' + esc(String(sec.id)) + '">' +
         '<span class="cdx-rail-sec-caret" aria-hidden="true">▸</span>' +
-        '<span class="cdx-rail-sec-title">' + esc(sec.title || '') + '</span>' +
-        '<span class="cdx-rail-sec-count">' + rows.length + '</span>' +
-        (sections.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(sec.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(sec.id)) + '" title="Excluir">×</button></span>' : '') +
+        sectionHeadInner(sec, rows.length) +
       '</div>' +
       '<div class="cdx-rail-seclist" data-seclist="' + esc(String(sec.id)) + '">' + rows.join('') + '</div>' +
+    '</div>';
+  }
+
+  // An outer band groups SECTIONS (two levels: band > section > row). Clientes is the first
+  // consumer: status band (ativos/futuros/inativos) > client group > turma rows. A band is a
+  // plain divider, never collapsible and never a drop target — the drag contract stays on
+  // .cdx-rail-seclist, so reorder is unaffected by nesting.
+  function bandHtml(band, secsHtml) {
+    return '<div class="cdx-rail-band" data-band="' + esc(String(band.id)) + '">' +
+      '<div class="cdx-rail-band-h">' + esc(band.title || '') + '</div>' +
+      secsHtml.join('') +
     '</div>';
   }
 
@@ -106,7 +139,22 @@ export function mountRail(container, cfg) {
     });
     let html = '';
     if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.join('') + '</div>';
-    list.forEach((s) => { html += sectionHtml(s, groups.get(String(s.id)) || []); });
+    const secHtmlFor = (s) => sectionHtml(s, groups.get(String(s.id)) || []);
+    if (bands) {
+      // Two levels. A band with no sections is skipped (Clientes hides an empty status band),
+      // and a section whose band is unknown falls through to the bandless tail below.
+      const bandList = (typeof bands.list === 'function' ? bands.list() : (bands.list || [])).slice();
+      const seen = new Set();
+      bandList.forEach((b) => {
+        const secs = list.filter((s) => String(bands.of(s)) === String(b.id));
+        secs.forEach((s) => seen.add(String(s.id)));
+        if (!secs.length) return;
+        html += bandHtml(b, secs.map(secHtmlFor));
+      });
+      list.filter((s) => !seen.has(String(s.id))).forEach((s) => { html += secHtmlFor(s); });
+    } else {
+      list.forEach((s) => { html += secHtmlFor(s); });
+    }
     if (sections.editable) {
       html += '<button type="button" class="cdx-rail-newsec" data-newsec>' + esc(cfg.newSectionLabel || '+ Nova seção') + '</button>';
     }
@@ -167,7 +215,16 @@ export function mountRail(container, cfg) {
       const del = e.target.closest('[data-sec-del]');
       if (del) { if (sections.onDelete) sections.onDelete(del.getAttribute('data-sec-del')); return; }
       const tog = e.target.closest('[data-sec-toggle]');
-      if (tog) { tog.closest('.cdx-rail-sec').classList.toggle('is-collapsed'); return; }
+      if (tog) {
+        const sid = tog.getAttribute('data-sec-toggle');
+        // Exclusive (accordion): the open section is the CONSUMER's state. Hand it the click
+        // and let its re-render decide — toggling the class here would fight that state and
+        // silently win until the next render(), which is the classic two-truths bug.
+        if (sections.exclusive) { if (sections.onToggle) sections.onToggle(sid); return; }
+        tog.closest('.cdx-rail-sec').classList.toggle('is-collapsed');
+        if (sections.onToggle) sections.onToggle(sid);
+        return;
+      }
       if (e.target.closest('[data-newsec]')) { if (sections.onCreate) sections.onCreate(); return; }
     }
     const row = e.target.closest('.cdx-rail-row');

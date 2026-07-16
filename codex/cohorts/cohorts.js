@@ -100,6 +100,23 @@ let _navHideTimer = null;
 let _navPinned = true;       // open + pinned until the first turma is picked
 const NAV_REVEAL_ZONE = 6;   // px from the left edge that triggers the reveal
 const NAV_HIDE_DELAY = 1500; // ms after the cursor leaves the rail before it hides
+// "Continuar de onde eu estava": a última turma aberta, pra sobreviver a um refresh.
+// O SET sempre existiu (em _selectTurma, com o comentário "reopen this turma after a
+// refresh"); o READ nunca foi escrito, então todo F5 caía no prompt vazio com o rail
+// pinado — a queixa do Élder. Um deep-link (?fclient/?fturma) tem precedência: é uma
+// intenção explícita, o último aberto é só o default.
+const LS_LAST = 'cdx_cohorts_last';
+function _lsLastSet(clientSlug, turmaSlug) {
+  try { localStorage.setItem(LS_LAST, clientSlug + '\n' + turmaSlug); } catch (_) { /* private mode */ }
+}
+function _lsLastGet() {
+  let raw = null;
+  try { raw = localStorage.getItem(LS_LAST); } catch (_) { return null; }
+  if (!raw) return null;
+  const [client, turma] = String(raw).split('\n');
+  return (client && turma) ? { client, turma } : null;
+}
+
 function _navLayoutEl() { return _viewEl && _viewEl.querySelector('.cdx-three-pane'); }
 function _openNav() { const l = _navLayoutEl(); if (l) l.classList.add('cdx-sm--open'); }
 function _closeNav() { const l = _navLayoutEl(); if (!l || _navPinned) return; l.classList.remove('cdx-sm--open'); }
@@ -1094,7 +1111,7 @@ function _selectTurma(clientSlug, turmaSlug) {
   _dossierDtab = 'dados';
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
-  try { localStorage.setItem('cdx_cohorts_last', clientSlug + '\n' + turmaSlug); } catch (_) {}  // reopen this turma after a refresh
+  _lsLastSet(clientSlug, turmaSlug);   // reopen this turma after a refresh (read back in mount)
   _selectedClientSlug = clientSlug; // new-turma / form context follows the selection
   _expandedClient = clientSlug;     // selecting a turma opens its client group
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
@@ -2124,6 +2141,12 @@ export function mount(viewEl, ctx) {
   _turmaAulas = [];
   _relClientSlug = (ctx && ctx.fclient) || null;
   _relTurmaSlug = (ctx && ctx.fturma) || null;
+  // Sem deep-link, retoma a última turma aberta (ver LS_LAST). Se ela sumiu ou foi
+  // arquivada, o _loadAll não a acha e cai no prompt vazio de sempre: sem guarda extra.
+  if (!_relClientSlug && !_relTurmaSlug) {
+    const last = _lsLastGet();
+    if (last) { _relClientSlug = last.client; _relTurmaSlug = last.turma; }
+  }
   _dossierDtab = (ctx && ctx.fdtab) || 'dados';   // deep-link (e-sino → participantes) seeds the sub-tab
   _deepAula = (ctx && ctx.faula != null && ctx.faula !== '') ? ctx.faula : null;
   _deepItem = (ctx && ctx.fitem != null && ctx.fitem !== '') ? ctx.fitem : null;
