@@ -12,32 +12,6 @@ export function isApprovalGated(turma) {
   return !!(turma.certificates_enabled || turma.access_gated);
 }
 
-function statusOf(p) {
-  return (p && p.access_status) || 'pending';
-}
-
-function byName(a, b) {
-  return String(a.display_name || a.name || '').localeCompare(String(b.display_name || b.name || ''));
-}
-
-// Flat, name-sorted list (the non-gated roster).
-export function sortByName(participants) {
-  return participants.slice().sort(byName);
-}
-
-// Grouped pending -> approved -> denied, each name-sorted (the gated view).
-// Returns an ordered array of { status, rows }, with only the non-empty groups.
-export function groupParticipantsByStatus(participants) {
-  const groups = { pending: [], approved: [], denied: [] };
-  participants.forEach((p) => {
-    const st = statusOf(p);
-    (groups[st] || groups.pending).push(p);
-  });
-  return ['pending', 'approved', 'denied']
-    .map((status) => ({ status, rows: groups[status].sort(byName) }))
-    .filter((g) => g.rows.length);
-}
-
 // THE action list, and the SINGLE source of what can be done to a person: every surface (the turma
 // Participantes panel and the cross-turma Usuários roster) renders this same list and gates it the
 // same way, so an action added here reaches both at once. Adding one in only one place is the bug

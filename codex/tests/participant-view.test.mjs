@@ -6,8 +6,6 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   isApprovalGated,
-  groupParticipantsByStatus,
-  sortByName,
   toolbarActions,
   actionEnabled,
   actionTargetStatus,
@@ -21,36 +19,6 @@ test('isApprovalGated: approval only matters with a certificate or restricted ac
   assert.equal(isApprovalGated({ certificates_enabled: 0, access_gated: 0 }), false, 'open access = no gate');
   assert.equal(isApprovalGated({}), false);
   assert.equal(isApprovalGated(null), false, 'no turma = not gated');
-});
-
-test('groupParticipantsByStatus: pending→approved→denied, non-empty only, name-sorted', () => {
-  const ps = [
-    { id: 1, name: 'Zelia', access_status: 'approved' },
-    { id: 2, name: 'Bruno', access_status: 'pending' },
-    { id: 3, name: 'Ana',   access_status: 'approved' },
-    { id: 4, name: 'Caio',  access_status: 'denied' },
-    { id: 5, name: 'Alda' }, // no status -> pending
-  ];
-  const groups = groupParticipantsByStatus(ps);
-  assert.deepEqual(groups.map((g) => g.status), ['pending', 'approved', 'denied'], 'section order');
-  assert.deepEqual(groups[0].rows.map((p) => p.name), ['Alda', 'Bruno'], 'pending name-sorted (blank status counts as pending)');
-  assert.deepEqual(groups[1].rows.map((p) => p.name), ['Ana', 'Zelia'], 'approved name-sorted');
-  assert.deepEqual(groups[2].rows.map((p) => p.name), ['Caio']);
-});
-
-test('groupParticipantsByStatus: empty sections are dropped', () => {
-  const groups = groupParticipantsByStatus([
-    { id: 1, name: 'X', access_status: 'approved' },
-    { id: 2, name: 'Y', access_status: 'approved' },
-  ]);
-  assert.deepEqual(groups.map((g) => g.status), ['approved'], 'only the non-empty section survives');
-});
-
-test('sortByName: flat name-sorted roster (the non-gated view)', () => {
-  const ps = [{ id: 1, name: 'Bia' }, { id: 2, name: 'Ada' }, { id: 3, display_name: 'Caio' }];
-  assert.deepEqual(sortByName(ps).map((p) => p.display_name || p.name), ['Ada', 'Bia', 'Caio']);
-  // does not mutate the input
-  assert.deepEqual(ps.map((p) => p.id), [1, 2, 3], 'input order preserved');
 });
 
 test('toolbarActions: gated offers the full set incl. validate; open access offers remove only', () => {
