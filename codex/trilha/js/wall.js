@@ -131,7 +131,11 @@ function renderRegister(wall) {
         benefitsHtml() +
       '</div>' +
       '<div><div class="cdx-en-card cdx-en-reg is-open"></div></div>' +
-    '</div>';
+    '</div>' +
+    // Support box on the register screen for EVERY turma (Élder 2026-07-15: "o suporte deve
+    // aparecer lá também"). It used to exist only on the Emergência copy, so the students who
+    // could not get in on the normal wall were exactly the ones with no way to ask for help.
+    entryHtml(contextFromState(state), 'registro');
   // The card is the ONLY thing an access mode owns. Everything above is the wall, identical for
   // every mode; an unknown mode falls back to the OTP door rather than rendering a bare card.
   const mount = ACCESS_MODES[accessModeFor((state.data || {}).access)] || ACCESS_MODES.otp;

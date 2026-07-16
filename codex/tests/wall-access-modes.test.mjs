@@ -121,6 +121,20 @@ test('o roadmap nao volta pelo lado da emergencia', () => {
   }
 });
 
+// A caixa de suporte existia SO na copia da emergencia, ou seja: quem nao conseguia entrar pelo
+// muro normal era exatamente quem nao tinha como pedir ajuda. Agora e do muro, entao vale pras
+// duas portas de uma vez (Elder 2026-07-15: "o suporte deve aparecer la tambem").
+test('a caixa de suporte aparece no registro, em QUALQUER porta', () => {
+  const w = wall();
+  assert.match(w, /entryHtml\(contextFromState\(state\), 'registro'\)/, 'registro tem suporte');
+  assert.match(w, /entryHtml\(contextFromState\(state\), 'bloqueado'\)/, 'bloqueado continua tendo');
+  // Tem que estar no MURO, nao dentro de um modo: no modo, cada porta nova teria que lembrar de
+  // repetir, que e como a copia comecou.
+  for (const [nome, src] of [['otp', otp()], ['emergency', emerg()]]) {
+    assert.ok(!/entryHtml/.test(src), nome + ' nao carrega copia da caixa de suporte');
+  }
+});
+
 // ── O comportamento da emergencia que precisa sobreviver ao refactor ─────────
 
 test('a emergencia continua e-mail-first (nome so pra endereco novo)', () => {
