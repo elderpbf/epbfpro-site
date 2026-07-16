@@ -471,7 +471,12 @@ export function mount(root, ctx = {}) {
     async uploadToGallery(file, target) {
       if (!file) return;
       let res;
-      try { res = await this._imageStore.put(file); } catch (_) { return; }
+      try { res = await this._imageStore.put(file); } catch (e) {
+        // The store already falls back to a data URL internally, so reaching here is a
+        // real failure and the image silently never appears. Say it on the pill.
+        if (window.bsLog) window.bsLog('gallery upload: ' + ((e && e.message) || e), 'error');
+        return;
+      }
       if (!res || !res.url) return;
       this.record("gallery:add");
       const entry = addImage(this.deck(), res);
