@@ -30,12 +30,23 @@ import { makeStubAi } from "./ai/aiService.js";
 // Layout display label by id, translated. Layout modules keep a PT fallback in
 // their own `label`; here we map the id to an i18n key so the add-slide menu
 // follows the active language.
+// Every registered layout, or the menu shows PT with the toggle on EN (Élder 2026-07-16).
+// The map covered 5 of 14; the other 9 fell through to L.label, which is PT-only.
 const LAYOUT_LABEL_KEY = {
-  cover:  "slides.layout_cover",
-  split:  "slides.layout_split",
-  topics: "slides.layout_topics",
-  bleed:  "slides.layout_bleed",
-  cards:  "slides.layout_cards",
+  cover:     "slides.layout_cover",
+  split:     "slides.layout_split",
+  topics:    "slides.layout_topics",
+  bleed:     "slides.layout_bleed",
+  cards:     "slides.layout_cards",
+  agenda:    "slides.layout_agenda",
+  checklist: "slides.layout_checklist",
+  compare:   "slides.layout_compare",
+  define:    "slides.layout_define",
+  imagebox:  "slides.layout_imagebox",
+  quote:     "slides.layout_quote",
+  roadmap:   "slides.layout_roadmap",
+  statement: "slides.layout_statement",
+  steps:     "slides.layout_steps",
 };
 const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) : L.label);
 
