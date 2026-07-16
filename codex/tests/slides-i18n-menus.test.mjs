@@ -54,15 +54,22 @@ test('todo layout do registro tem chave de i18n nos DOIS dicionários', () => {
   assert.deepEqual(semDicionario, [], 'chave(s) de layout faltando num dicionário');
 });
 
-// O painel de animação é o "menu dinâmico" que o Élder abriu. Nenhum literal acentuado
-// pode sobrar fora de comentário: é o sinal barato e confiável de PT cru em código.
-test('animpanel.js não tem string PT crua fora de comentário', () => {
-  const src = fs.readFileSync(path.join(SLIDES, 'edit', 'animpanel.js'), 'utf8');
-  const semComentario = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
-  const cruas = [...semComentario.matchAll(/"([^"\n]*)"|'([^'\n]*)'/g)]
-    .map((m) => m[1] ?? m[2])
-    .filter((s) => ACENTO.test(s) && !s.startsWith('slides.'));
-  assert.deepEqual(cruas, [], 'literal(is) PT no animpanel; devem virar t("slides.…")');
+// TODO painel de edição, não só o animpanel. Nenhum literal acentuado pode sobrar fora de
+// comentário: é o sinal barato e confiável de PT cru em código. Varre o diretório inteiro
+// porque a 1ª versão deste teste olhava só o animpanel e o Élder achou o furo seguinte
+// ("Proporção", no themebox) na TELA, que é exatamente o trabalho que o teste devia fazer.
+test('nenhum painel de edição tem string PT crua fora de comentário', () => {
+  const dir = path.join(SLIDES, 'edit');
+  const cruas = [];
+  for (const f of fs.readdirSync(dir).filter((n) => n.endsWith('.js'))) {
+    const src = fs.readFileSync(path.join(dir, f), 'utf8');
+    const semComentario = src.replace(/\/\*[\s\S]*?\*\//g, ' ').replace(/(^|[^:])\/\/[^\n]*/g, '$1');
+    for (const m of semComentario.matchAll(/"([^"\n]*)"|'([^'\n]*)'/g)) {
+      const s = m[1] ?? m[2];
+      if (ACENTO.test(s) && !s.startsWith('slides.')) cruas.push(f + ': ' + s);
+    }
+  }
+  assert.deepEqual(cruas, [], 'literal(is) PT em painel de edição; devem virar t("slides.…")');
 });
 
 // As chaves dos efeitos são montadas por concatenação ("slides.fx_" + fx), então nenhum
@@ -71,7 +78,7 @@ test('as chaves de efeito e transição existem nos dois dicionários', () => {
   const faltando = [];
   for (const k of ['slides.fx_surgir', 'slides.fx_fade', 'slides.fx_slide', 'slides.fx_zoom',
     'slides.ed_transition', 'slides.tr_none', 'slides.tr_fade', 'slides.tr_push',
-    'slides.ed_with_prev']) {
+    'slides.ed_with_prev', 'slides.ed_aspect']) {
     if (!pt[k]) faltando.push('pt: ' + k);
     if (!en[k]) faltando.push('en: ' + k);
   }

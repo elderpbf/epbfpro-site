@@ -1749,6 +1749,8 @@ export default {
   'slides.fx_slide':          'Deslizar',
   'slides.fx_zoom':           'Zoom',
   'slides.ed_with_prev':      'Entra junto com o item anterior (mesmo clique)',
+  'slides.ed_aspect':         'Proporção',
+  'slides.ed_reflow_warn':    'revisar: elementos se sobrepuseram ao mudar a proporção',
   'slides.ed_transition':     'Transição',
   'slides.tr_none':           'Nenhuma',
   'slides.tr_fade':           'Fade',

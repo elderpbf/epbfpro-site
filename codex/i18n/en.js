@@ -1743,6 +1743,8 @@ export default {
   'slides.fx_slide':          'Slide',
   'slides.fx_zoom':           'Zoom',
   'slides.ed_with_prev':      'Enters with the previous item (same click)',
+  'slides.ed_aspect':         'Aspect ratio',
+  'slides.ed_reflow_warn':    'review: elements overlapped when the aspect ratio changed',
   'slides.ed_transition':     'Transition',
   'slides.tr_none':           'None',
   'slides.tr_fade':           'Fade',
