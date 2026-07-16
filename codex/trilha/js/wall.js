@@ -75,7 +75,7 @@ const ICONS = {
   conteudo: glyphSvg('book', { size: null }),
   tarefa: glyphSvg('send', { size: null }),
   forum: glyphSvg('message-square', { size: null }),
-  cert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>',
+  cert: glyphSvg('award', { size: null }),
 };
 
 function benefitsHtml() {

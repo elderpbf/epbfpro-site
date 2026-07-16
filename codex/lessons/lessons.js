@@ -208,13 +208,13 @@ const SECTION_GLYPHS = {
   // has to read as solid. lessons.css sizes it, hence size:null.
   favorites: glyphSvg('star', { size: null, filled: true, strokeWidth: 1.5 }),
   preset:   glyphSvg('preset', { size: null }),
-  llm:      '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l1.8 4.6L18.5 9 14 11l-2 5-2-5-4.5-2 4.7-1.4z"/><path d="M5 17l.7 1.8L7.5 19.5l-1.8.7L5 22l-.7-1.8L2.5 19.5l1.8-.7z"/></svg>',
-  external: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 3h6v6"/><path d="M10 14L21 3"/><path d="M21 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h6"/></svg>',
-  drive:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 7a2 2 0 012-2h4l2 2h8a2 2 0 012 2v8a2 2 0 01-2 2H5a2 2 0 01-2-2V7z"/></svg>',
-  items:    '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="3" width="18" height="5" rx="1"/><path d="M5 8v12h14V8"/><path d="M10 12h4"/></svg>',
-  apostila: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 4h13a3 3 0 0 1 3 3v13a3 3 0 0 0-3-3H4z"/><path d="M4 4v16"/></svg>',
+  llm:      glyphSvg('sparkle', { size: null }),
+  external: glyphSvg('external-link', { size: null }),
+  drive:    glyphSvg('folder', { size: null }),
+  items:    glyphSvg('archive', { size: null }),
+  apostila: glyphSvg('book', { size: null }),
   tarefas:  glyphSvg('checklist', { size: null }),
-  labs:     '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9 3v6.5L4 18a3 3 0 002.6 4.5h10.8A3 3 0 0020 18l-5-8.5V3"/><path d="M8 3h8"/></svg>',
+  labs:     glyphSvg('flask', { size: null }),
 };
 
 function _renderSubCard(item) {

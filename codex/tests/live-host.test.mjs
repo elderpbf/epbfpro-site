@@ -81,8 +81,11 @@ test('live-host matches host.html fidelity (close-options in the active foot, ic
     src.indexOf('cdx-close-options') > src.indexOf('cdx-active-standard'),
     'close-options render inside the center active panel, not the composer card',
   );
-  // Legacy inline SVG glyphs on Banco de questões / Gerar / Melhorar.
-  assert.match(src, /<svg/, 'ports the host icon glyphs');
+  // The host icon glyphs (QR + Banco). They used to be inline <svg> hand-drawn here, ported
+  // node-for-node from host.html; they now come from the shared library, so the fidelity
+  // being asserted is "the glyphs are there", not "they are still pasted into this file".
+  assert.match(src, /glyphSvg\('qr'/, 'QR glyph on the share button');
+  assert.match(src, /glyphSvg\('menu'/, 'Banco glyph on the mode button');
   // Faithful bank "Conjunto" label row + student-Q&A hint line.
   assert.match(src, /host_bank_set_label/, 'bank set carries the Conjunto label');
   assert.match(src, /host_sqa_hint/, 'student-Q&A card shows the hint line');

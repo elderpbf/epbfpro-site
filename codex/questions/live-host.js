@@ -139,7 +139,7 @@ function _displayHref() { return '/codex/questions/display.html?code=' + encodeU
 // Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
 // AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI
 // buttons itself so the Bank and the live host show the same controls.
-const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
+const _ICON_BANK = glyphSvg('menu', { size: 12, strokeWidth: 2.5 });
 
 // The class glyph shown on a bank row + its filter chip: a filled dot (generic),
 // a diamond (variable), a star (specific/unique). Mirrors the legend in the mock.

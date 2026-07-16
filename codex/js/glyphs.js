@@ -63,10 +63,13 @@ const GLYPHS = {
   'help':       '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   'info':       '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
   'alert':      '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-  // App-card benefit glyphs: shared semantic keys used by ct_apps.description copy.
-  'spark':      '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/>',
+  // App-card benefit glyphs: semantic keys the ct_apps.description copy names, so they come
+  // from the DATABASE, not from code. Zero call sites here is correct, not dead.
+  // `scissors` is its own drawing; `spark` and `term` are ALIASES, wired below the map so
+  // they cannot drift. They used to carry their own copy of the sparkle/terminal paths,
+  // which meant fixing the original silently left the alias behind. Same disease as the one
+  // this file exists to cure, just asleep.
   'scissors':   '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
-  'term':       '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
 
   // ── Documents / text ──
   'file':       '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>',
@@ -184,6 +187,12 @@ const GLYPHS = {
   // download whose point is that it is signed (the certificate signer link).
   'lock-download':'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="M12 14.5v3.4"/><path d="M10.2 16.1 12 17.9l1.8-1.8"/>'
 };
+
+// Aliases: a second NAME for a drawing that already has a key, never a second drawing.
+// The ct_apps.description copy in the database names `spark` and `term`, so the keys must
+// exist, but they resolve to the one source. Add an alias here, never a copy up there.
+const ALIASES = { spark: 'sparkle', term: 'terminal' };
+for (const [alias, target] of Object.entries(ALIASES)) GLYPHS[alias] = GLYPHS[target];
 
 import { esc as _esc } from './dom.js';
 
