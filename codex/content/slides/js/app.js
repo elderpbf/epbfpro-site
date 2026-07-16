@@ -25,6 +25,7 @@ import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
+import { glyphSvg } from "../../../js/glyphs.js";
 import { makeStubAi } from "./ai/aiService.js";
 
 // Layout display label by id, translated. Layout modules keep a PT fallback in
@@ -50,17 +51,15 @@ const LAYOUT_LABEL_KEY = {
 };
 const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) : L.label);
 
-// Inline SVG glyphs for the three presenter clocks (currentColor, so theme-driven).
-//
-// These stay hand-drawn, and that is NOT drift. content/slides/js/ is the sealed vendored
-// core: a standalone app that may reach exactly one Codex module, js/i18n.js, and nothing
-// else (enforced by tests/modules.test.mjs, "Slides boundary intact outbound"). Sourcing
-// them from js/glyphs.js would couple the portable core to Codex's icon library, which is
-// the precise thing that boundary exists to prevent. Drawing them here is the boundary
-// working, not someone ignoring the library.
-const G_CLOCK = '<svg viewBox="0 0 24 24" width="15" height="15" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="9"/><path d="M12 7.5v5l3.5 2"/></svg>';
-const G_STOPWATCH = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M9 2.5h6M12 2.5v2.5M18.5 6l1.2-1.2"/><circle cx="12" cy="13" r="7.5"/><path d="M12 13V9"/></svg>';
-const G_HOURGLASS = '<svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12M6 21h12M7.5 3c0 4.5 4.5 6 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 6-4.5 9s4.5 4.5 4.5 9"/></svg>';
+// The three presenter clocks, from the shared library (track-35 E, Élder 2026-07-16: the
+// core pulls icons from js/glyphs.js instead of hand-drawing them). The old comment here
+// argued these HAD to stay hand-drawn to keep the core portable; the code said otherwise
+// (there is no standalone store adapter, no standalone entry HTML, and the core already
+// imported js/i18n.js from outside), so the boundary now allows shared presentation-only
+// libraries by rule. `stopwatch`/`hourglass` are these exact drawings, moved to the library.
+const G_CLOCK = glyphSvg("clock", { size: 15 });
+const G_STOPWATCH = glyphSvg("stopwatch", { size: 17 });
+const G_HOURGLASS = glyphSvg("hourglass", { size: 17 });
 
 // SHELL is built per-mount so every user-facing string resolves through t() in
 // the active language (the dictionary may switch between mounts).

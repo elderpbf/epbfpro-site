@@ -1,6 +1,7 @@
 // render/helpers.js — shared slot-rendering helpers used by every layout module.
 // Layouts compose their own HTML but share these so image-slot markup never drifts.
 import { t } from "../../../../js/i18n.js";
+import { glyphSvg } from "../../../../js/glyphs.js";
 
 /** CSS background value for a colour/gradient mask fill. */
 export function fillCss(m) {
@@ -38,14 +39,15 @@ export function imgInner(path, img, tools = false) {
 // ghost"): a photo glyph + "adicionar imagem". The box is a transparent,
 // hairline-framed region (styled in slide.css). The box itself selects on
 // single-click; the context bar's "adicionar imagem" button does the pick.
-const IMG_GLYPH =
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">` +
-  `<rect x="3" y="5" width="18" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6"/>` +
-  `<circle cx="8.5" cy="10" r="1.9" fill="currentColor"/>` +
-  `<path d="M5 17.5l4.7-5.2 3.2 3.4L16.3 11l3.2 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
+//
+// `image-frame`, not `image`: this exact drawing moved INTO js/glyphs.js (track-35 E) rather
+// than folding into the library's square `image`, because .imgcue is not editoronly — it
+// renders on the canvas AND to the audience in presentation, so reshaping it is a change to
+// the projected slide, not an icon cleanup. size:null lets slide.css size it (30px * scales),
+// as the hand-drawn svg did by carrying no width/height.
 export function imgCue() {
-  return `<div class="imgcue">${IMG_GLYPH}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
+  const glyph = glyphSvg("image-frame", { size: null, strokeWidth: 1.6 });
+  return `<div class="imgcue">${glyph}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
 }
 
 /** A drop-target image slot, the unified "image box". `path` is the deck path the

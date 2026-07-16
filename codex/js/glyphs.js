@@ -39,6 +39,15 @@ const GLYPHS = {
   'book':       '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   'bookmark':   '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
   'image':      '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
+  // A SECOND image drawing, and deliberate, same reasoning as `message-square` above.
+  // `image` is the square 18x18 type icon. This is the Slides empty-slot cue, lifted verbatim
+  // from render/helpers.js: a LANDSCAPE 18x14 photo frame, hairline 1.6 stroke, filled dot.
+  // It is not a style tweak of `image`, it is a different shape, and it renders ~30px on the
+  // slide canvas AND to the audience in presentation (.imgcue is not editoronly). Swapping it
+  // to `image` would silently reshape a projected slide, so the drawing moved here as-is.
+  // OPEN (Élder): whether the cue SHOULD become the standard square `image` is a look call,
+  // not a boundary one. If yes, delete this key and pass image + strokeWidth 1.6.
+  'image-frame':'<rect x="3" y="5" width="18" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6"/><circle cx="8.5" cy="10" r="1.9" fill="currentColor"/><path d="M5 17.5l4.7-5.2 3.2 3.4L16.3 11l3.2 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/>',
   'video':      '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>',
   'checklist':  '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
   'flask':      '<path d="M8.572 1.75h6.857"/><path d="M9.714 1.75v7.428L3.543 20.035a1.143 1.143 0 0 0 1.029 1.714h14.857a1.143 1.143 0 0 0 1.029-1.714L14.286 9.179V1.75"/><line x1="7.429" y1="14.321" x2="16.571" y2="14.321"/>',
@@ -127,13 +136,13 @@ const GLYPHS = {
   // ── Time / place / business ──
   'calendar':   '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   'clock':      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
-  // No `stopwatch` / `hourglass` here on purpose. The presenter bar in content/slides/js/
-  // draws both by hand, and that looks like drift until you check: that tree is the SEALED
-  // vendored core, allowed to import js/i18n.js and nothing else (tests/modules.test.mjs
-  // enforces it). It cannot consume this library BY DESIGN, so its hand-drawn icons are the
-  // boundary working. Adding keys here would not have removed a single copy; it would just
-  // be a third drawing. If a surface that CAN import this ever wants a timer, add them then
-  // and lift the drawings from app.js.
+  // `stopwatch` / `hourglass`: the presenter bar's two other time readouts, lifted VERBATIM
+  // from the drawings content/slides/js/app.js used to hand-hold. The old note here said
+  // registering them would "just be a third drawing", because the sealed Slides core could
+  // not import this file. Élder opened that boundary on 2026-07-16 (track-35 E), so the core
+  // consumes these now and the hand copies are GONE: this is a real dedup, not a third copy.
+  'stopwatch':  '<path d="M9 2.5h6M12 2.5v2.5M18.5 6l1.2-1.2"/><circle cx="12" cy="13" r="7.5"/><path d="M12 13V9"/>',
+  'hourglass':  '<path d="M6 3h12M6 21h12M7.5 3c0 4.5 4.5 6 4.5 9s-4.5 4.5-4.5 9M16.5 3c0 4.5-4.5 6-4.5 9s4.5 4.5 4.5 9"/>',
   'map-pin':    '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   'briefcase':  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   'dollar-sign':'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
