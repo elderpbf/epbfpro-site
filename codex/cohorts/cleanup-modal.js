@@ -69,6 +69,15 @@ function _option(s, side, idx, checked) {
     '</label>';
 }
 
+// One address the person could be keyed on. Deliberately plain: the two addresses are already shown
+// in full above, so this is the CHOICE, not a second description of the pair.
+function _mailOption(email, side, idx, checked) {
+  return '<label class="cdx-dup-mail-opt">' +
+      '<input type="radio" name="mail-' + idx + '" value="' + esc(email || '') + '"' + (checked ? ' checked' : '') + '>' +
+      '<span>' + esc(email || '') + '</span>' +
+    '</label>';
+}
+
 // A segmented control — one pill, N segments, exactly one live. Radios under the hood (so keyboard
 // and screen readers get a real radiogroup for free), styled as a pill: Élder asked for a slider,
 // not checkboxes. Exported because the shape is general, not a duplicates detail.
@@ -102,7 +111,8 @@ export function pairHtml(p, idx) {
     { value: 'leave', label: t('alunos.dup_v_leave') },
   ];
   return '<div class="cdx-dup-pair" data-idx="' + idx + '" data-a="' + esc(String(p.a.id)) + '" data-b="' + esc(String(p.b.id)) + '"' +
-      ' data-name-a="' + esc(p.a.name || p.a.email) + '" data-name-b="' + esc(p.b.name || p.b.email) + '">' +
+      ' data-name-a="' + esc(p.a.name || p.a.email) + '" data-name-b="' + esc(p.b.name || p.b.email) + '"' +
+      ' data-mail-a="' + esc(p.a.email || '') + '" data-mail-b="' + esc(p.b.email || '') + '">' +
       '<div class="cdx-dup-why">' + _reasons(p.reasons) + '</div>' +
       segmentedHtml('same-' + idx, opts, 'leave') +
       // ALWAYS visible: WHO the pair is. Hiding the two identities behind the "mesclar" state left a
@@ -123,6 +133,18 @@ export function pairHtml(p, idx) {
           '<label class="cdx-dup-final-l" for="dup-name-' + idx + '">' + esc(t('alunos.dup_final_name')) + '</label>' +
           '<input type="text" class="cdx-dup-name-in" id="dup-name-' + idx + '" autocomplete="off"' +
             ' value="' + esc(p.suggestion === 'keep_b' ? (p.b.name || p.b.email) : (p.a.name || p.a.email)) + '">' +
+        '</div>' +
+        // The PRIMARY e-mail (track-42). It was always being chosen — picking a survivor picked
+        // their address — the merge just never said so, so a better address could only be recovered
+        // by a second edit afterwards. Both addresses live on either way (the one not picked becomes
+        // the alias); this only says which one is the identity key. No free text: it must be one of
+        // these two, and a merge is not the place to invent an address.
+        '<div class="cdx-dup-final">' +
+          '<span class="cdx-dup-final-l">' + esc(t('alunos.dup_which_mail')) + '</span>' +
+          '<div class="cdx-dup-mails">' +
+            _mailOption(p.a.email, 'a', idx, p.suggestion !== 'keep_b') +
+            _mailOption(p.b.email, 'b', idx, p.suggestion === 'keep_b') +
+          '</div>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -233,6 +255,10 @@ export function openCleanupModal(data, onDone) {
       const r = c.querySelector('input[type=radio]');
       c.classList.toggle('is-on', merging && !!(r && r.checked));
     });
+    pair.querySelectorAll('.cdx-dup-mail-opt').forEach((c) => {
+      const r = c.querySelector('input[type=radio]');
+      c.classList.toggle('is-on', merging && !!(r && r.checked));
+    });
   }
 
   // Repaint one test row: which segment is live, and whether the row is dressed as a pending delete
@@ -255,11 +281,16 @@ export function openCleanupModal(data, onDone) {
     if (testRow) { _syncTest(testRow); _syncApply(); return; }
     const pair = e.target.closest('.cdx-dup-pair');
     if (!pair) return;
-    // Picking a survivor REFILLS the name field with that side's name: the radio says "start from
-    // this one", and anything typed afterwards wins (verdicts() reads the field, never the dataset).
+    // Picking a survivor REFILLS the name field and MOVES the primary-e-mail pick to that side: the
+    // radio says "start from this one", and anything changed afterwards wins (verdicts() reads the
+    // field and the mail radio, never the dataset). Keeping the primary on the side he just stopped
+    // choosing would be the modal quietly disagreeing with him.
     if (String(e.target.name || '').startsWith('dup-')) {
+      const b = e.target.value === 'keep_b';
       const inp = pair.querySelector('.cdx-dup-name-in');
-      if (inp) inp.value = e.target.value === 'keep_b' ? pair.dataset.nameB : pair.dataset.nameA;
+      if (inp) inp.value = b ? pair.dataset.nameB : pair.dataset.nameA;
+      const mail = pair.querySelector('input[name^=mail-][value="' + (b ? pair.dataset.mailB : pair.dataset.mailA) + '"]');
+      if (mail) mail.checked = true;
     }
     _syncPair(pair);
     _syncApply();
@@ -283,11 +314,15 @@ export function openCleanupModal(data, onDone) {
     // The FIELD is the name, not the radio: the radio only says which one it started from. An empty
     // field falls back to the picked side rather than saving a nameless person.
     const typed = inp ? String(inp.value || '').trim() : '';
+    const mail = el.querySelector('input[name^=mail-]:checked');
     return {
       a: Number(el.dataset.a), b: Number(el.dataset.b),
       verdict: same ? same.value : 'leave',    // merge | not | leave
       keepB,
       name: typed || (keepB ? el.dataset.nameB : el.dataset.nameA),
+      // The identity key. Falls back to the picked survivor's address, which is what the merge did
+      // before the choice existed.
+      email: mail ? mail.value : (keepB ? el.dataset.mailB : el.dataset.mailA),
     };
   });
 
@@ -320,6 +355,10 @@ export function openCleanupModal(data, onDone) {
       const inp = el.querySelector('.cdx-dup-name-in');
       const untouched = inp && (inp.value === el.dataset.nameA || inp.value === el.dataset.nameB);
       if (inp && untouched) inp.value = sug === 'keep_b' ? el.dataset.nameB : el.dataset.nameA;
+      // The primary follows the suggested survivor, same as the radio above it. No "untouched"
+      // guard here: a radio carries no typing to throw away, so it moves with the suggestion.
+      const mail = el.querySelector('input[name^=mail-][value="' + (sug === 'keep_b' ? el.dataset.mailB : el.dataset.mailA) + '"]');
+      if (mail) mail.checked = true;
       _syncPair(el);
     });
     Array.prototype.slice.call(bd.querySelectorAll('.cdx-test-row')).forEach((el) => {
@@ -355,7 +394,7 @@ export function openCleanupModal(data, onDone) {
         } else {
           const survivor = it.keepB ? it.b : it.a;
           const loser = it.keepB ? it.a : it.b;
-          await api.mergeStudents({ survivor_id: survivor, loser_id: loser, name: it.name });
+          await api.mergeStudents({ survivor_id: survivor, loser_id: loser, name: it.name, email: it.email });
         }
         done++;
       } catch (err) {

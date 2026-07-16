@@ -190,10 +190,14 @@ export const cohorts = {
   setPersonEmails:    (p) => call('ct_set_person_emails', p), // { student_id, emails:[primary,...aliases] } -> the box IS the truth; a new primary rewrites every row + RESETS validation
   listPeople:         (p) => call('ct_list_people', p),        // { turma_id? } -> { people:[{id,email,name,role,aliases,cpf,turma_count,rows:[...]}] }
   setCanonicalName:   (p) => call('ct_set_canonical_name', p), // { student_id, name } -> sets + LOCKS the identity name
+  // The person's data goes, one of two ways (Élder's "completa" vs "anonimizar"). preview READS
+  // what each mode would cost, including what neither can reach; erase does it.
+  erasePreview:       (p) => call('ct_erase_preview', p),      // { student_id } -> { participants, submissions, posts, left_behind }
+  erasePerson:        (p) => call('ct_erase_person', p),       // { student_id, mode: 'purge'|'anonymize' }
   // Duplicate identities (one person, two e-mails). find -> suggested pairs; merge -> survivor
   // absorbs loser (permanent, via the e-mail alias); dismiss -> "não é a mesma pessoa", forever.
   findDuplicates:     (p) => call('ct_find_duplicates', p),    // -> { pairs:[{a,b,reasons,suggestion}], count }
-  mergeStudents:      (p) => call('ct_merge_students', p),     // { survivor_id, loser_id }
+  mergeStudents:      (p) => call('ct_merge_students', p),     // { survivor_id, loser_id, name?, email? } -> name + PRIMARY are chosen; the address not chosen becomes the alias
   dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
   // The Limpeza tool's other half: registrations that look like throwaway tests. Suggestion only —
   // nothing is pre-selected, and the delete goes through the ordinary deleteParticipant path.

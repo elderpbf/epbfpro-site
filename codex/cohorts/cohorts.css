@@ -1326,6 +1326,13 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
    "qual nome manter" heading above it. */
 .cdx-dup-final { display: flex; align-items: center; gap: 8px; margin-top: 8px; }
 .cdx-dup-final-l { font-size: 0.7rem; color: var(--text-secondary); text-transform: uppercase; font-weight: 700; white-space: nowrap; }
+/* The primary-e-mail pick. Stacks, because two addresses side by side is how a long one pushes the
+   other off the modal; wraps to a row only when there is room for both. */
+.cdx-dup-mails { display: flex; flex-wrap: wrap; gap: 6px 14px; min-width: 0; }
+.cdx-dup-mail-opt { display: flex; align-items: center; gap: 6px; font-size: 0.8rem; cursor: pointer; min-width: 0; overflow-wrap: anywhere; }
+.cdx-dup-mail-opt.is-on { color: var(--text-primary); font-weight: 600; }
+.cdx-dup-pair:not(.is-merging) .cdx-dup-mails { cursor: default; opacity: 0.75; }
+.cdx-dup-pair:not(.is-merging) .cdx-dup-mail-opt input[type="radio"] { visibility: hidden; }
 .cdx-dup-name-in { flex: 1; min-width: 0; padding: 6px 8px; font: inherit; font-size: 0.82rem; border: 1px solid var(--border); border-radius: 6px; background: var(--bg); color: var(--text-primary); }
 .cdx-dup-name-in:focus { outline: none; border-color: var(--tint-primary-tx); }
 .cdx-dup-pair:not(.is-merging) .cdx-dup-final { display: none; }
@@ -1558,3 +1565,19 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   .cdx-pl { overflow-x: auto; -webkit-overflow-scrolling: touch; }
   .cdx-pl-head, .cdx-pl-row, .cdx-pl-sub { min-width: min-content; }
 }
+
+/* ── remover usuário: os dois modos (track-42) ─────────────────────────────────────────── */
+/* The consequence list is the whole modal: the pill picks a mode, this says what that mode costs
+   THIS person. Colour carries the meaning — what dies is danger, what is left behind is a warning
+   the admin has to read, what survives clean is quiet. */
+.cdx-er-who { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+.cdx-er-chip { font-size: 0.8rem; padding: 3px 8px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--border); }
+.cdx-er-what { margin-top: 12px; font-size: 0.85rem; line-height: 1.5; }
+.cdx-er-block + .cdx-er-block { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
+.cdx-er-blockh { font-size: 0.75rem; font-weight: 700; color: var(--text-secondary); margin-bottom: 4px; }
+.cdx-er-line { padding: 3px 0 3px 14px; position: relative; overflow-wrap: anywhere; }
+.cdx-er-line::before { content: '•'; position: absolute; left: 0; }
+.cdx-er-line.is-del { color: var(--danger); }
+.cdx-er-line.is-keep { color: var(--text-secondary); }
+.cdx-er-line.is-warn { color: var(--text-primary); }
+.cdx-er-line.is-warn::before { content: '!'; font-weight: 700; }

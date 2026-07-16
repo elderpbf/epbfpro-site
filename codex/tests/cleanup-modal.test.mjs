@@ -278,3 +278,38 @@ test('a name with quotes cannot break out of the value attribute', () => {
   assert.doesNotMatch(h, /value="Maiana "A" Pessoa"/);
   assert.match(h, /&quot;A&quot;/);
 });
+
+// ── the PRIMARY e-mail is chosen too (track-42) ──────────────────────────────────────────────
+// Élder 2026-07-15: "na hora da gente [des]duplicar a gente tem que escolher não só o nome que fica
+// como o email principal". It was always being chosen — picking a survivor picked their address —
+// the merge just never said so, so the better address could only be recovered by a second edit.
+
+test('the pair offers BOTH addresses as the primary, and only those two', () => {
+  const h = pairHtml(pair(), 0);
+  assert.match(h, /name="mail-0" value="maianapessoa@gmail\.com"/);
+  assert.match(h, /name="mail-0" value="maianapessoa@agu\.gov\.br"/);
+  // no free text: a merge is not the place to invent an address
+  assert.doesNotMatch(h, /cdx-dup-mails[\s\S]*?<input type="text"/);
+});
+
+test('the primary starts on the suggested survivor, both directions', () => {
+  assert.match(pairHtml(pair({ suggestion: 'keep_b' }), 0), /value="maianapessoa@agu\.gov\.br" checked/);
+  assert.match(pairHtml(pair({ suggestion: 'keep_a' }), 0), /value="maianapessoa@gmail\.com" checked/);
+});
+
+test('the radio group is per-pair, so two pairs never fight over one primary', () => {
+  assert.match(pairHtml(pair(), 2), /name="mail-2"/);
+  assert.doesNotMatch(pairHtml(pair(), 2), /name="mail-0"/);
+});
+
+test('both addresses are on the pair element, so the survivor pick can move the primary', () => {
+  const h = pairHtml(pair(), 0);
+  assert.match(h, /data-mail-a="maianapessoa@gmail\.com"/);
+  assert.match(h, /data-mail-b="maianapessoa@agu\.gov\.br"/);
+});
+
+test('the primary is NOT painted as chosen while the verdict is still "deixar assim"', () => {
+  // Same promise as the survivor options: nothing is decided until you decide it. `is-on` is
+  // applied by _syncPair once the pair really is merging, never by the renderer.
+  assert.doesNotMatch(pairHtml(pair({ suggestion: 'keep_a' }), 0), /cdx-dup-mail-opt is-on/);
+});

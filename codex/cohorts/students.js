@@ -27,6 +27,7 @@ import { hasPending } from './students-filters.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { openPersonEditModal, linesOf } from './participant-edit.js';
+import { openEraseModal } from './erase-modal.js';
 import { cleanupButtonHtml, openCleanupModal } from './cleanup-modal.js';
 import { cpfValid, emailValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
@@ -162,10 +163,17 @@ function _filtered() { return applyFilters(_people, _filters); }
 
 // ── global actions (fan out across every turma the action applies to) ────────────────
 async function _applyGlobal(act, people) {
+  // REMOVE is not a bulk roster action here. In this scope it already meant "the person is gone"
+  // (it fans out across every turma and the childless identity is purged), so it gets the modal
+  // with the two modes Élder asked for — completa vs anonimizar — instead of a bare "tem certeza?".
+  // The turma panel's remove still means "out of THIS turma" and keeps the plain confirm.
+  if (act === 'remove') {
+    openEraseModal(people.map((s) => ({ id: s.id, name: s.name, email: s.email })).filter((p) => p.id), () => _load());
+    return;
+  }
   const ids = [];
   people.forEach((s) => { _targets(s, act).forEach((id) => ids.push(id)); });
   if (!ids.length) return;
-  if (act === 'remove' && typeof confirm === 'function' && !confirm(t('alunos.remove_confirm_global'))) return;
   try {
     await applyRosterAction(act, ids);   // the SAME apply the turma panel uses
   } catch (e) {
