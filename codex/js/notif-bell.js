@@ -15,13 +15,14 @@
 import { relTime } from './rel-time.js';
 import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
 import { esc } from './dom.js';
+import { glyphSvg } from './glyphs.js';
 import * as notifBus from './notif-bus.js';
 
-const BELL_SVG =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">' +
-  '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/></svg>';
-const X_SVG =
-  '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+// From the shared library. BELL_SVG was byte-for-byte the `bell` key. size:null on both
+// because notif-bell.css owns the sizing (19px for the button, 13px for the dismiss).
+// The dismiss keeps its 2.4 stroke: it renders at 13px, where the library's 2 goes faint.
+const BELL_SVG = glyphSvg('bell', { size: null });
+const X_SVG = glyphSvg('close', { size: null, strokeWidth: 2.4 });
 
 // Group items by their `group` label (teacher cross-turma). Items with no group
 // fall into a single null bucket (student, single turma) rendered without a header.

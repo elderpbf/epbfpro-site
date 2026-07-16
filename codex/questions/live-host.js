@@ -14,6 +14,7 @@
 // the embedded element's poll, the Q&A feed's poll, the SQA debounce, and every
 // layout/resizer/document/modal listener.
 import { questions as api, cohorts, audiences as audienceApi } from '../js/codex-api.js';
+import { glyphSvg } from '../js/glyphs.js';
 import { mountComposer, correctForLaunch } from './question-composer.js';
 import { register as registerQuestionEl, TAG as QTAG } from './question-element.js';
 import { createQaFeed } from './live-qa.js';
@@ -125,7 +126,7 @@ function _barMarkup() {
       '<button class="cdx-btn cdx-host-trail" id="cdx-host-trail" data-act="trail" type="button" hidden><span class="cdx-host-trail-dot" id="cdx-host-trail-dot"></span>' + _esc(t('questions.host_trail')) + '</button>' +
       '<button class="cdx-btn cdx-host-janela" id="cdx-host-janela" data-act="janela" type="button" hidden title="' + _esc(t('questions.host_window_title')) + '">' + _esc(t('questions.host_window')) + '</button>' +
       '<button class="cdx-btn cdx-host-qr" id="cdx-host-qr" data-act="qr" type="button" hidden aria-label="' + _esc(t('questions.host_qr')) + '" title="' + _esc(t('questions.host_qr')) + '">' +
-        '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><path d="M14 14h3v3h-3z"/><path d="M20 14h1v1"/><path d="M14 20h1v1"/><path d="M20 20h1v1"/><path d="M17 17h1"/><path d="M20 17h1"/><path d="M17 20h1"/></svg></button>' +
+        glyphSvg('qr', { size: 16 }) + '</button>' +
       '<a class="cdx-btn cdx-host-display" id="cdx-host-display" href="' + _esc(_displayHref()) + '" target="_blank" rel="noopener" hidden>' + _esc(t('questions.host_display')) + '</a>' +
       '<button class="cdx-btn cdx-btn-primary cdx-host-start" id="cdx-host-start" data-act="start" type="button" hidden>' + _esc(t('questions.host_start')) + '</button>' +
       '<button class="cdx-btn cdx-btn-danger cdx-host-stop" id="cdx-host-stop" data-act="stop" type="button" hidden>' + _esc(t('questions.host_stop')) + '</button>' +
@@ -138,7 +139,7 @@ function _displayHref() { return '/codex/questions/display.html?code=' + encodeU
 // Inline SVG glyph copied node-for-node from host.html (the bank hamburger). The
 // AI Gerar/Melhorar glyphs now live in the shared composer, which renders the AI
 // buttons itself so the Bank and the live host show the same controls.
-const _ICON_BANK = '<svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 6h16M4 10h16M4 14h16M4 18h16"/></svg>';
+const _ICON_BANK = glyphSvg('menu', { size: 12, strokeWidth: 2.5 });
 
 // The class glyph shown on a bank row + its filter chip: a filled dot (generic),
 // a diamond (variable), a star (specific/unique). Mirrors the legend in the mock.

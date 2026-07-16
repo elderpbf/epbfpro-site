@@ -16,7 +16,6 @@ import { openLoginModal } from './student-login-modal.js';
 import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
 import { renderWall } from './wall.js';
-import { renderSimpleWall } from './wall-simple.js';
 import { renderNoticePage } from './notice-page.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
@@ -426,10 +425,10 @@ function renderTrilhaView(root, loc) {
   // approved / open) renders the timeline as usual; the per-item gate in sub.js/flat.js
   // handles inline opens.
   if (LOGIN_ENABLED && isWall((state.data || {}).access)) {
-    // Opt-in: a turma flagged `simple_enroll` uses the separate name+e-mail page that
-    // registers on the spot; every other gated turma keeps the original OTP wall.
-    if (((state.data || {}).access || {}).simple_enroll) renderSimpleWall(root);
-    else renderWall(root);
+    // ONE wall for every turma. Which DOOR it draws (OTP or the break-glass Emergência) is the
+    // wall's own business now, picked from access.simple_enroll by its ACCESS_MODES table. This
+    // used to branch to a whole second page, and the copy drifted (Élder 2026-07-15).
+    renderWall(root);
   } else {
     renderTabs(root);
     _onHash = () => onHashChange();
