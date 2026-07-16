@@ -2,7 +2,7 @@
 //
 // WHY THIS FILE EXISTS: on 2026-07-15 a merge resolved codex-api.js with `git checkout --theirs`,
 // which takes the other side's WHOLE FILE — silently dropping seven methods (listPeople,
-// setPersonEmail, findTestAccounts, findDuplicates, mergeStudents, dismissDuplicate,
+// setPersonEmails, findTestAccounts, findDuplicates, mergeStudents, dismissDuplicate,
 // setCanonicalName) that only one side had. The full suite passed 1609/1609 and the Usuários list
 // was stone dead: "api.listPeople is not a function", caught only by opening a browser.
 //
@@ -56,7 +56,7 @@ for (const d of DIRS) {
 test('the facade still carries the whole track-28a2 seam', () => {
   // Named explicitly, because these are exactly the ones a whole-file merge resolution dropped.
   // Losing any of them kills the Usuários list outright, with a green suite.
-  for (const m of ['listPeople', 'setPersonEmail', 'setCanonicalName', 'findDuplicates',
+  for (const m of ['listPeople', 'setPersonEmails', 'setCanonicalName', 'findDuplicates',
                    'mergeStudents', 'dismissDuplicate', 'findTestAccounts', 'setEmailVerified']) {
     assert.equal(typeof facade.cohorts[m], 'function', m + ' missing from the facade');
   }
@@ -68,7 +68,7 @@ test('each of those maps to the action string the worker actually registers', ()
   global.callWorker = (p) => { seen.push(p.action); return Promise.resolve({}); };
   const expect = {
     listPeople: 'ct_list_people',
-    setPersonEmail: 'ct_set_person_email',
+    setPersonEmails: 'ct_set_person_emails',
     setCanonicalName: 'ct_set_canonical_name',
     findDuplicates: 'ct_find_duplicates',
     mergeStudents: 'ct_merge_students',

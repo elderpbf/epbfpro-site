@@ -26,7 +26,7 @@ import * as toast from '../js/toast.js';
 import { hasPending } from './students-filters.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
-import { openPersonEditModal } from './participant-edit.js';
+import { openPersonEditModal, linesOf } from './participant-edit.js';
 import { cleanupButtonHtml, openCleanupModal } from './cleanup-modal.js';
 import { cpfValid, emailValid, wireCpfMask } from '../js/person-fields.js';
 import { ACTION_RULES, actionTargetStatus } from './participant-view.js';
@@ -175,9 +175,18 @@ async function _applyGlobal(act, people) {
   }
 }
 
-// The identity edit: the name writes the LOCKED canonical (one source of truth, every surface
-// reading it gets the fix). The e-mail IS the identity key, so changing it is a merge, not an
-// edit; that lives in the duplicates tool, hence read-only here (Élder 2026-07-14).
+// PURE. The person's addresses as the box shows them: the primary FIRST, then the aliases. The
+// order is the meaning, so it is not sorted (Élder 2026-07-15: "o que é o principal é o primeiro
+// da linha").
+export function emailBoxValue(person) {
+  const p = person || {};
+  return [p.email, ...(p.aliases || [])].filter(Boolean).join('\n');
+}
+
+// The identity edit. The name writes the LOCKED canonical (one source of truth, every surface
+// reading it gets the fix). The e-mail is a BOX, not a field (track-42): a person can answer to
+// more than one address, and a single field could not show the aliases they already have — the one
+// place you edit an address was the one place that denied the others existed.
 function _openEdit(s) {
   openPersonEditModal({
     title: t('alunos.edit_title'),
@@ -187,23 +196,30 @@ function _openEdit(s) {
     fields: [
       { key: 'name', label: t('cohorts.participant_name'), value: s.name || '', required: true,
         validate: (v) => (v ? null : t('cohorts.name_required')) },
-      { key: 'email', label: t('cohorts.participant_email'), value: s.email || '',
+      { key: 'email', label: t('alunos.emails_label'), value: emailBoxValue(s), required: true,
+        multiline: true, rows: 3, hint: t('alunos.emails_hint'),
         placeholder: t('cohorts.participant_email_ph'),
-        validate: (v) => (!v ? t('cohorts.email_required') : (emailValid(v) ? null : t('cohorts.email_invalid'))) },
+        validate: (v) => {
+          const lines = linesOf(v);
+          if (!lines.length) return t('cohorts.email_required');
+          return lines.every(emailValid) ? null : t('cohorts.email_invalid');
+        } },
       { key: 'cpf', label: t('cohorts.participant_cpf'), value: s.cpf || '', maxlength: 14,
         placeholder: t('cohorts.participant_cpf_ph'), onMount: (el) => wireCpfMask(el), secret: true,
         validate: (v) => (!v.replace(/\D/g, '') || cpfValid(v) ? null : t('cohorts.cpf_invalid')) },
     ],
     onSave: async (vals) => {
       await api.setCanonicalName({ student_id: s.id, name: vals.name });
-      // The e-mail IS the identity key, so it is rewritten on the identity AND every row at once
-      // (ct_set_person_email), never row-by-row. Changing it resets validation — they proved a
-      // DIFFERENT inbox — so say so instead of letting it surprise later.
-      const email = String(vals.email || '').trim().toLowerCase();
-      if (email && email !== String(s.email || '').toLowerCase()) {
-        const r = await api.setPersonEmail({ student_id: s.id, email });
-        if (r && r.error === 'email_belongs_to_another_person') { notice.warn(t('alunos.email_taken')); return; }
-        if (r && r.error) { notice.internal('alunos: set e-mail: ' + r.error); return; }
+      // One save for the whole box: line 1 is the identity key (rewritten on the identity AND every
+      // row at once, never row-by-row), the rest are aliases. Sending it unchanged is a no-op
+      // server-side, but skipping the call keeps a pointless write out of the log.
+      const emails = linesOf(vals.email).map((x) => x.toLowerCase());
+      if (emails.join('\n') !== emailBoxValue(s).toLowerCase()) {
+        const r = await api.setPersonEmails({ student_id: s.id, emails });
+        if (r && r.error === 'email_belongs_to_another_person') { notice.warn(t('alunos.email_taken').replace('{email}', r.email || '')); return; }
+        if (r && r.error) { notice.internal('alunos: set e-mails: ' + r.error); return; }
+        // Changing the PRIMARY resets validation — they proved a DIFFERENT inbox. Say it here
+        // instead of letting it surprise them later. Editing only aliases proves nothing new.
         if (r && r.revalidation_required) toast.info(t('alunos.email_changed_revalidate'));
       }
       const cpf = vals.cpf.replace(/\D/g, '') ? vals.cpf : null;

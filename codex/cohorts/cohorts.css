@@ -1391,6 +1391,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-pe-eye { position: absolute; right: 4px; background: none; border: 0; cursor: pointer; opacity: 0.5; font-size: 0.95rem; line-height: 1; padding: 4px; }
 .cdx-pe-eye:hover, .cdx-pe-eye.is-on { opacity: 1; }
 
+/* The multi-line field (the e-mail box). Inherits the .cdx-field input look; only the things a
+   textarea does differently are declared: it must not be draggable wider than the modal, and one
+   address per line means no wrapping games. */
+.cdx-pe-lines { width: 100%; resize: vertical; min-height: 62px; font-family: inherit; line-height: 1.5; white-space: pre; overflow-x: auto; }
+.cdx-pe-hint { margin-top: 4px; font-size: 0.75rem; color: var(--text-secondary); line-height: 1.4; }
+
 /* ct_students.role: only shown when the identity is not a plain student. */
 .cdx-al-role { font-size: 0.65rem; margin-left: 6px; padding: 1px 6px; border-radius: 8px; background: var(--cdx-chip-bg); color: var(--text-secondary); font-weight: 600; text-transform: uppercase; }
 

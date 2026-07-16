@@ -145,8 +145,10 @@ export default {
   'alunos.n_turmas':           '{n} cohorts',
   'alunos.expand':             'Show this person\'s cohorts',
   'alunos.no_name':            '(no name)',
-  'alunos.email_taken':        'That email already belongs to someone else. If they are the same person, use the duplicates resolver to merge them.',
+  'alunos.email_taken':        '{email} already belongs to someone else. If they are the same person, use the duplicates resolver to merge them.',
   'alunos.email_changed_revalidate': 'Email changed. Validation was reset: they must confirm the new inbox to get back to 15 days.',
+  'alunos.emails_label':       'Emails',
+  'alunos.emails_hint':        'One per line. The first is the primary and identifies the person; the others also lead to them. Removing a line removes the address.',
 
   'alunos.roster':       'Pre-approve by email',
   'alunos.roster_hint':  'Paste student emails to auto-grant access on their first login.',
