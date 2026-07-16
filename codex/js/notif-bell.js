@@ -199,14 +199,25 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     _adopt(res);
   }
 
+  // Opening the tray paints what we already hold (instantly — the student never waits to see
+  // the tray), then ASKS THE SERVER (Élder 2026-07-15: "clicar no sino deve checar por novas
+  // notificações"). A click on a bell is a request for news; answering it from a cache that
+  // last refreshed on some other tab's focus event is how a bell stops being believed.
+  //
+  // Deliberately outside the notif-bus throttle: the throttle exists to stop PASSIVE refreshes
+  // (window focus) from buying a request per tab-flip. An explicit tap is not passive.
+  //
+  // dismissOnOpen runs AFTER the fetch resolves, not before: it fires markSeen, and clearing
+  // the tier against the stale list would race the in-flight fetch — the server would answer
+  // with rows still unseen and the badge would pop back up right after the student cleared it.
   function openPanel() {
     panel.hidden = false;
     paint(_items);
     renderHist();
     positionMobile();
-    dismissOnOpen();
     document.addEventListener('click', onOutside, true);
     document.addEventListener('keydown', onEsc);
+    Promise.resolve(refresh()).catch(() => {}).then(() => { if (!panel.hidden) dismissOnOpen(); });
   }
   // On a narrow viewport the panel is a viewport-pinned tray (css/notif-bell.css sets
   // position:fixed + 12px gutters); anchor its TOP just under the bell so it clears the

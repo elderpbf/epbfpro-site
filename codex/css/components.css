@@ -200,3 +200,23 @@
 .cdx-consent-more { font-weight: 700; text-decoration: underline; white-space: nowrap; }
 .cdx-consent[open] .cdx-consent-more { display: none; }
 .cdx-consent-full { margin: .6rem 0 0; font-size: .72rem; line-height: 1.55; color: var(--text-secondary); }
+
+/* ── CLAMP (long text = a window, not a wall; pairs with js/clamp.js) ─────────*/
+/* A block that would run for screens is capped at ~8 lines and opens on a click.
+   Only a block that actually overflows gets .is-clampable (js/clamp.js measures it
+   after paint), so the fade + the pointer only ever appear over text that really has
+   more to read. */
+.cdx-clamp { max-height: 12em; overflow: hidden; }
+.cdx-clamp.is-clampable { position: relative; cursor: pointer; }
+/* Fechado, o bloco e um BOTAO, nao texto: sem selecao, senao o toque pra abrir marca a
+   frase de azul em vez de abrir. Aberto ele volta a ser texto e o aluno pode copiar a
+   propria resposta (js/clamp.js nao fecha enquanto houver selecao viva). */
+.cdx-clamp.is-clampable:not(.is-open) { user-select: none; -webkit-user-select: none; }
+/* The fade IS the affordance: it says "cut here" without spending a line on a button. */
+.cdx-clamp.is-clampable::after {
+  content: ''; position: absolute; left: 0; right: 0; bottom: 0; height: 3em;
+  background: linear-gradient(to bottom, transparent, var(--surface));
+  pointer-events: none;
+}
+.cdx-clamp.is-open { max-height: none; }
+.cdx-clamp.is-open::after { content: none; }

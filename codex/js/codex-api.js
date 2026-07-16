@@ -197,7 +197,9 @@ export const cohorts = {
   dismissDuplicate:   (p) => call('ct_dismiss_duplicate', p),  // { a_student_id, b_student_id }
   // The Limpeza tool's other half: registrations that look like throwaway tests. Suggestion only —
   // nothing is pre-selected, and the delete goes through the ordinary deleteParticipant path.
+  // dismiss -> "não é um registro de teste", forever; the mirror of dismissDuplicate above.
   findTestAccounts:   (p) => call('ct_find_test_accounts', p), // -> { people:[{id,email,name,participant_ids,reasons}], count }
+  dismissTestAccount: (p) => call('ct_dismiss_test_account', p), // { student_id }
   addParticipant:     (p) => call('ct_add_participant', p),    // { turma_id, name, email?, cpf? }
   updateParticipant:  (p) => call('ct_update_participant', p), // { id, name?, email?, cpf? }
   deleteParticipant:  (p) => call('ct_delete_participant', p), // { id }
@@ -306,6 +308,9 @@ export const content = {
   // reuse label across turmas.
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
   listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug } -> { submissions, flags }
+  // Os toggles de TODAS as tarefas da turma, de uma vez. O painel precisa deles pra DESENHAR a
+  // lista; sem isto ele só conhecia os do cartão aberto e desenhava o resto desligado.
+  listTarefaFlags: (p) => call('ct_list_tarefa_flags', p), // { client_slug, turma_slug } -> { flags: { <item_id>: {...} } }
   deleteSubmission:(p) => call('ct_delete_submission', p),  // { id }
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).
   replySubmission: (p) => call('ct_reply_submission', p),   // { id, reply } (empty clears)

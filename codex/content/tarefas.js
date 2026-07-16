@@ -30,7 +30,20 @@ let _items = [];
 let _itemTurmas = {};    // item_id -> [{ client_slug, turma_slug, ... }]
 let _turmaReleasedIds = new Set(); // item ids released to the current turma (bank "já na turma" badge)
 let _submissions = {};   // item_id -> [submission]
-let _flags = {};         // item_id -> { reply_enabled, grade_enabled } (per-instance toggles)
+let _flags = {};         // item_id -> { reply_enabled, grade_enabled, allow_multi, allow_anon } (per-instance toggles)
+// The per-instance toggles, in one table: data-flag -> the key it carries on the flags object
+// (which is also the ct_set_tarefa_flags param name) + its label. Adding a toggle is an entry
+// here, not another branch in every ternary.
+const FLAG_DEFS = {
+  reply: { key: 'reply_enabled', label: 'tarefas.reply_toggle' },
+  grade: { key: 'grade_enabled', label: 'tarefas.grade_toggle' },
+  multi: { key: 'allow_multi', label: 'tarefas.multi_toggle' },
+  // "Permitir anônimo" desceu do BANCO pra cá (migration 0036, Élder: "should be an assignment
+  // option just like grades; not part of the bank"). No banco a marca valia pra toda turma que
+  // usasse a tarefa; aqui é a escolha desta turma, como as irmãs.
+  anon: { key: 'allow_anon', label: 'tarefas.anon_toggle' },
+};
+const _noFlags = () => ({ reply_enabled: false, grade_enabled: false, allow_multi: false, allow_anon: false });
 let _selectedId = null;  // selected tarefa id (master-detail)
 let _picker = null;
 let _cleanup = [];
@@ -118,6 +131,7 @@ function _loadTarefas(clientSlug, turmaSlug) {
   const pv = _q('cdx-tarefas-preview');
   if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
   _submissions = {};
+  _flags = {};   // estado da turma que esta saindo: sem isto, os toggles dela pintariam os cartoes da proxima ate o load chegar
 
   cohortsApi.listTurmas({ client_slug: clientSlug }).then((td) => {
     const turma = ((td && td.turmas) || []).find((tu) => tu.slug === turmaSlug);
@@ -125,8 +139,15 @@ function _loadTarefas(clientSlug, turmaSlug) {
     return Promise.all([
       api.listItems({ type: 'tarefa' }),
       relApi.turmaView({ client_slug: clientSlug, turma_slug: turmaSlug, token: turma.token }),
+      // Os toggles chegam JUNTO com a lista, porque e a lista que os desenha. Antes eles vinham
+      // de carona no _loadSubmissions, que so roda no cartao SELECIONADO: todo cartao fechado
+      // desenhava os quatro desligados, fosse qual fosse a verdade, e o primeiro clique mandava
+      // LIGAR o que ja estava ligado (Élder: "preciso dar 2 cliques", "volta desmarcado").
+      api.listTarefaFlags({ client_slug: clientSlug, turma_slug: turmaSlug }),
     ]);
   }).then((results) => {
+    // Antes do primeiro render: quem desenha ja sabe a verdade.
+    _flags = (results[2] && results[2].flags) || {};
     const allTarefas = ((results[0] && results[0].items) || []).filter((i) => i.type === 'tarefa');
     const releaseMap = {};
     _turmaReleasedIds = new Set();
@@ -166,10 +187,11 @@ function _updateSubmissionCount(itemId) {
 }
 
 // ── Submissions (answers) ─────────────────────────────────────────────────────
+
 function _loadSubmissions(itemId) {
   api.listSubmissions({ item_id: itemId, client_slug: _client, turma_slug: _turma }).then((res) => {
     _submissions[itemId] = (res && res.submissions) || [];
-    _flags[itemId] = (res && res.flags) || { reply_enabled: false, grade_enabled: false };
+    _flags[itemId] = (res && res.flags) || _noFlags();
     _renderSubmissions(itemId);
     _updateSubmissionCount(itemId);
   }).catch((e) => {
@@ -185,7 +207,7 @@ function _renderSubmissions(itemId) {
   const pane = _respPaneFor(itemId);
   if (!pane) return;
   const subs = _submissions[itemId] || [];
-  const flags = _flags[itemId] || { reply_enabled: false, grade_enabled: false };
+  const flags = _flags[itemId] || _noFlags();
   const count = subs.length;
   pane.innerHTML =
     '<h4 class="cdx-tarefa-pane-title">' + t('tarefas.answers_title') + ' (' + count + ')</h4>' +
@@ -195,6 +217,8 @@ function _renderSubmissions(itemId) {
         '<span class="cdx-resp-flags-label">' + t('tarefas.flags_label') + '</span>' +
         _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
         _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
+        _flagToggleHtml('multi', flags.allow_multi, t('tarefas.multi_toggle')) +
+        _flagToggleHtml('anon', flags.allow_anon, t('tarefas.anon_toggle')) +
       '</div>') +
     '<div class="cdx-resp-toolbar">' +
       '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
@@ -284,6 +308,10 @@ function _flagToggleHtml(flag, on, label) {
   return '<button class="cdx-btn cdx-btn-sm cdx-resp-flag' + (on ? ' is-on' : '') + '" data-flag="' + flag + '">' +
     (on ? '☑ ' : '☐ ') + _esc(label) + '</button>';
 }
+// A resposta e a nota do instrutor NÃO travam nunca (Élder 2026-07-15: "eu sempre posso
+// editar"). Ele é dono do que escreveu, e uma nota "pode precisar ser ajustada depois". Quem
+// tem prazo é a ENTREGA do aluno, que fecha quando a resposta chega, e essa regra mora no
+// Worker (ct_edit_submission), não aqui.
 function _replyBlockHtml(s) {
   return '<div class="cdx-resp-reply">' +
     '<label class="cdx-resp-sublabel">' + t('tarefas.reply_label') + '</label>' +
@@ -303,8 +331,10 @@ function _gradeBlockHtml(s) {
   '</div>';
 }
 function _toggleFlag(itemId, flag) {
-  const cur = _flags[itemId] || { reply_enabled: false, grade_enabled: false };
-  const key = flag === 'reply' ? 'reply_enabled' : 'grade_enabled';
+  const cur = _flags[itemId] || _noFlags();
+  const def = FLAG_DEFS[flag];
+  if (!def) return;
+  const key = def.key;
   const next = !cur[key];
   const payload = { client_slug: _client, turma_slug: _turma, item_id: itemId };
   payload[key] = next ? 1 : 0;
@@ -315,7 +345,7 @@ function _toggleFlag(itemId, flag) {
     if (_lockedAula != null) {
       const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
       const b = card && card.querySelector('.cdx-resp-flag[data-flag="' + flag + '"]');
-      if (b) { b.classList.toggle('is-on', next); b.innerHTML = (next ? '☑ ' : '☐ ') + _esc(flag === 'reply' ? t('tarefas.reply_toggle') : t('tarefas.grade_toggle')); }
+      if (b) { b.classList.toggle('is-on', next); b.innerHTML = (next ? '☑ ' : '☐ ') + _esc(t(def.label)); }
       _renderSubmissions(itemId);
     } else _renderSubmissions(itemId);
   }).catch((err) => notice.internal(_err(err)));
@@ -466,7 +496,7 @@ function _lockedCardHtml(item) {
   const open = Number(item.id) === Number(_selectedId);
   const editing = Number(item.id) === Number(_editCard);
   const subCount = (_submissions[item.id] && _submissions[item.id].length) || 0;
-  const flags = _flags[item.id] || {};
+  const flags = _flags[item.id] || _noFlags();   // _flags ja vem da lista; o default e so pra tarefa sem release
   const fromBank = item.tarefa_section_id != null;
   const tag = fromBank
     ? '<span class="cdx-t1b-tag">' + _esc(t('tarefas.from_bank')) + '</span>'
@@ -479,6 +509,8 @@ function _lockedCardHtml(item) {
       '<div class="cdx-t1b-toggles">' +
         _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
         _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
+        _flagToggleHtml('multi', flags.allow_multi, t('tarefas.multi_toggle')) +
+        _flagToggleHtml('anon', flags.allow_anon, t('tarefas.anon_toggle')) +
       '</div>' +
       '<button class="cdx-btn cdx-btn-sm cdx-t1b-edit' + (editing ? ' is-on' : '') + '" data-edit="' + _esc(item.id) + '">' +
         '✎ ' + _esc(editing ? t('tarefas.close_editor') : t('tarefas.edit_btn')) + '</button>' +
@@ -596,21 +628,23 @@ function _removeFromTurma(id) {
   }).catch((e) => notice.internal(_err(e)));
 }
 
-// The field-type chips + anonymous toggle, shared by the card editor and the add editor
-// (injected as the editor's `extra` slot so the reusable editor stays generic).
+// The field-type chips, shared by the card editor and the add editor (injected as the editor's
+// `extra` slot so the reusable editor stays generic).
+//
+// O toggle "permitir anônimo" MOROU aqui e saiu (migration 0036, Élder: "should be an assignment
+// option just like grades; not part of the bank"). Este editor edita o ITEM DO BANCO, então
+// marcar aqui valia pra TODA turma que usasse a tarefa, hoje e no futuro, mas "esta entrega
+// pode ser anônima" é decisão de quem dá a aula, sobre a turma dela. Agora é um toggle por
+// tarefa, ao lado de Resposta / Nota / Várias entregas (FLAG_DEFS).
 function _fieldExtraHtml(meta) {
   const fieldType = (meta && meta.field_type) || 'text';
-  const allowAnon = !!(meta && meta.allow_anonymous);
   const chips = _fields().map((f) => {
     const cls = 'cdx-field-chip-btn' + (f.slug === fieldType ? ' is-active' : '') + (f.disabled ? ' is-disabled' : '');
     const future = f.disabled ? '<span class="cdx-field-future">' + t('tarefas.field_future') + '</span>' : '';
     return '<button type="button" class="' + cls + '" data-slug="' + _esc(f.slug) + '"' + (f.disabled ? ' disabled' : '') + '>' + _esc(f.label) + future + '</button>';
   }).join('');
   return '<div class="cdx-field"><label>' + t('tarefas.field_type_label') + '</label>' +
-      '<div class="cdx-field-chips">' + chips + '</div></div>' +
-    '<label class="cdx-toggle-label">' +
-      '<span class="cdx-toggle"><input type="checkbox" class="cdx-tf-anon"' + (allowAnon ? ' checked' : '') + '><span class="cdx-toggle-slider"></span></span>' +
-      '<span class="cdx-toggle-text">' + t('tarefas.allow_anon') + '</span></label>';
+      '<div class="cdx-field-chips">' + chips + '</div></div>';
 }
 function _wireFieldExtra(container) {
   container.querySelectorAll('.cdx-field-chip-btn:not(.is-disabled)').forEach((btn) => {
@@ -620,21 +654,19 @@ function _wireFieldExtra(container) {
     });
   });
 }
-function _readFieldAnon(container) {
+function _readFieldType(container) {
   const activeChip = container.querySelector('.cdx-field-chip-btn.is-active');
-  const anonEl = container.querySelector('.cdx-tf-anon');
-  return { field_type: activeChip ? activeChip.dataset.slug : 'text', allow_anonymous: !!(anonEl && anonEl.checked) };
+  return { field_type: activeChip ? activeChip.dataset.slug : 'text' };
 }
 
 // True if the editor's current values differ from `item`'s stored values (title/body/field/anon).
 // Both "Sobrescrever" and "Salvar como nova" gate on this: no no-op overwrite, no identical fork.
 function _editorChanged(host, item, vals) {
   const meta = parseMeta(item && item.meta_json);
-  const fa = _readFieldAnon(host);
+  const fa = _readFieldType(host);
   return (vals.title || '') !== ((item && item.title) || '')
     || (vals.body || '') !== ((item && item.body_md) || '')
-    || fa.field_type !== (meta.field_type || 'text')
-    || !!fa.allow_anonymous !== !!meta.allow_anonymous;
+    || fa.field_type !== (meta.field_type || 'text');
 }
 
 // Inline editor inside an instance card: edits ALWAYS land in the bank (no local copy).
@@ -663,9 +695,9 @@ function _renderCardEditor(item) {
 function _overwriteCardItem(item, vals, host) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   if (!_editorChanged(host, item, vals)) { toast.info(t('tarefas.no_changes')); return; }
-  const fa = _readFieldAnon(host);
+  const fa = _readFieldType(host);
   const meta = parseMeta(item.meta_json);
-  meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
+  meta.field_type = fa.field_type;   // allow_anonymous saiu do banco (0036): nao se escreve mais
   api.updateItem({ id: item.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) }).then(() => {
     toast.ok(t('tarefas.updated'));
     item.title = vals.title; item.body_md = vals.body; item.meta_json = JSON.stringify(meta);
@@ -912,8 +944,8 @@ function _includeInAula(itemId) {
 }
 function _createToBank(vals, ed, include) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
-  const fa = _readFieldAnon(ed);
-  const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
+  const fa = _readFieldType(ed);
+  const meta = { field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then((res) => {
       const id = res && res.item && res.item.id;
@@ -926,9 +958,9 @@ function _createToBank(vals, ed, include) {
 function _overwriteInBank(tmpl, vals, ed) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   if (!_editorChanged(ed, tmpl, vals)) { toast.info(t('tarefas.no_changes')); return; }
-  const fa = _readFieldAnon(ed);
+  const fa = _readFieldType(ed);
   const meta = parseMeta(tmpl.meta_json);
-  meta.field_type = fa.field_type; meta.allow_anonymous = fa.allow_anonymous;
+  meta.field_type = fa.field_type;   // allow_anonymous saiu do banco (0036): nao se escreve mais
   api.updateItem({ id: tmpl.id, title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then(() => {
       toast.ok(t('tarefas.updated'));
@@ -942,8 +974,8 @@ function _saveAsNew(vals, ed, src) {
   if (!vals.title) { toast.err(t('editor.title_required')); return; }
   // A fork identical to its source is a pointless duplicate: only save as new when something changed.
   if (src && !_editorChanged(ed, src, vals)) { toast.info(t('tarefas.no_changes_fork')); return; }
-  const fa = _readFieldAnon(ed);
-  const meta = { allow_anonymous: fa.allow_anonymous, field_type: fa.field_type };
+  const fa = _readFieldType(ed);
+  const meta = { field_type: fa.field_type };
   api.createItem({ type: 'tarefa', title: vals.title, body_md: vals.body, meta_json: JSON.stringify(meta) })
     .then((res) => {
       toast.ok(t('tarefas.saved_as_new'));
@@ -1086,6 +1118,7 @@ export function mount(viewEl, ctx = {}) {
   _itemTurmas = {};
   _turmaReleasedIds = new Set();
   _submissions = {};
+  _flags = {};
   _selectedId = null;
   _cleanup = [];
   _adding = false;

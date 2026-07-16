@@ -11,6 +11,9 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { registerRenderer } from './page.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
+import { glyphSvg } from '../../js/glyphs.js';   // o banco de glifos: nada de icone novo aqui
+import { stampTime } from '../../js/rel-time.js';
+import { wireClamps } from '../../js/clamp.js';
 
 // ── Pure helpers (tested) ────────────────────────────────────────────────────
 
@@ -58,12 +61,17 @@ export function statusGroups(tarefas) {
     .filter((g) => g.tarefas.length);
 }
 
-// PURE. answer_json is always a JSON-encoded value (string | object); render it as text.
+// PURE. answer_json is a JSON-encoded value. The tarefa-fields registry writes a PAYLOAD OBJECT
+// ({ text: '...' } for the text field), so stringifying anything non-string dumped the raw JSON
+// onto the student's own screen — `{"text":"test"}` instead of `test`. Élder saw it on 2026-07-15;
+// it was live. Plain strings still work: the open/anonymous path predates the registry.
 export function answerText(sub) {
   if (!sub) return '';
   let v;
   try { v = JSON.parse(sub.answer_json); } catch (_) { return String(sub.answer_json || ''); }
-  return typeof v === 'string' ? v : JSON.stringify(v);
+  if (typeof v === 'string') return v;
+  if (v && typeof v === 'object' && typeof v.text === 'string') return v.text;
+  return JSON.stringify(v);
 }
 
 // ── DOM ──────────────────────────────────────────────────────────────────────
@@ -153,71 +161,206 @@ function paintList() {
   }
 }
 
-function badgeHtml(tarefa) {
-  if (tarefa.state === 'corrigida') return '<span class="cdx-tt-badge cdx-tt-badge--graded">' + esc(t('tarefas.badge_graded')) + '</span>';
-  if (tarefa.state === 'enviada') return '<span class="cdx-tt-badge cdx-tt-badge--sent">' + esc(t('tarefas.badge_sent')) + '</span>';
-  return '<span class="cdx-tt-badge cdx-tt-badge--pending">' + esc(t('tarefas.badge_pending')) + '</span>';
+// PURE. Every delivery the student made, newest first. `submissions` is the worker's list;
+// `submission` (singular, the most recent) is the older shape, kept so this tab still renders
+// correctly against a Worker that has not been promoted yet.
+export function deliveries(tarefa) {
+  if (tarefa && tarefa.submissions && tarefa.submissions.length) return tarefa.submissions;
+  return (tarefa && tarefa.submission) ? [tarefa.submission] : [];
 }
 
-function subHtml(tarefa, open) {
-  if (tarefa.state === 'corrigida') return open ? t('tarefas.sub_graded_open') : t('tarefas.sub_graded_closed');
-  if (tarefa.state === 'enviada') return t('tarefas.sub_sent');
-  return t('tarefas.sub_pending');
+// PURE. THE state of a tarefa card, and the single source for its tag, its glyph and whether
+// the tag sends. It describes what the STUDENT did, and nothing else (Élder 2026-07-15):
+//   nao_respondida -> nothing sent yet          -> tag sends (first answer)
+//   respondida     -> sent, teacher closed it   -> done, checkmark
+//   de_novo        -> sent, teacher left it open -> tag sends again
+// The instructor's reply is deliberately ABSENT here: it is a MESSAGE, not a state of the
+// delivery, and mixing the two is what made "Corrigida"/"Respondida" impossible to name
+// ("respondida por quem?").
+export function tarefaKind(tarefa) {
+  if (!deliveries(tarefa).length) return 'nao_respondida';
+  return tarefa.allow_multi ? 'de_novo' : 'respondida';
+}
+
+// PURE. Can the student send right now? Both the "answer" and the "answer again" cases.
+export function canSend(tarefa) {
+  const k = tarefaKind(tarefa);
+  return k === 'nao_respondida' || k === 'de_novo';
+}
+
+// One definition of "this card opens", used by both the markup and the click handler, so they
+// can never disagree about which cards are interactive. Anything already delivered opens: the
+// student must always be able to re-read what they sent and what the teacher said. Tying this
+// to allow_multi (as it briefly was) hid the teacher's own reply the moment the teacher closed
+// the tarefa, which is exactly backwards.
+export function isExpandable(tarefa) {
+  return deliveries(tarefa).length > 0;
+}
+
+// PURE. Fill a {placeholder} template from the dictionary. Via a replacer FUNCTION on purpose:
+// a student named with a `$&` in it would otherwise be spliced back into the string by
+// String.replace's own substitution syntax.
+export function fill(tpl, map) {
+  return String(tpl == null ? '' : tpl).replace(/\{(\w+)\}/g, (m, k) =>
+    (Object.prototype.hasOwnProperty.call(map || {}, k) ? String(map[k]) : m));
+}
+
+// PURE. Who made this delivery. An anonymous delivery has no name BECAUSE THE STUDENT CHOSE
+// SO, so the absence is the fact to render ("Anônimo") — never a hole to quietly patch with
+// the logged-in identity we happen to be holding.
+export function deliveryWho(sub) {
+  return (sub && sub.student_name) ? sub.student_name : t('tarefas.anonymous');
+}
+
+const KIND_TAG = {
+  nao_respondida: { label: 'tarefas.badge_unanswered', glyph: 'send',         cls: 'pending' },
+  respondida:     { label: 'tarefas.badge_answered',   glyph: 'check-circle', cls: 'done' },
+  de_novo:        { label: 'tarefas.badge_again',      glyph: 'send',         cls: 'again' },
+};
+
+// The tag IS the button (Élder: "o botão embaixo é desnecessário, a tag em cima já é o botão").
+// When it sends, it is a real <button>; when it does not, it is inert text.
+//
+// It says what it DOES, not what the tarefa IS ("Responder", not "Não respondida"): a button
+// labelled with a state is not an action, and the paper plane beside a state made no sense
+// either. The state still has a home — the section header ("Não respondidas") — which is where
+// a state belongs. The glyph comes AFTER the text (Élder): read the verb, then see the plane.
+function badgeHtml(tarefa) {
+  const def = KIND_TAG[tarefaKind(tarefa)];
+  const icon = glyphSvg(def.glyph, { size: 14, cls: 'cdx-tt-badge-i' });
+  const inner = '<span>' + esc(t(def.label)) + '</span>' + icon;
+  if (!canSend(tarefa)) return '<span class="cdx-tt-badge cdx-tt-badge--' + def.cls + '">' + inner + '</span>';
+  return '<button type="button" class="cdx-tt-badge cdx-tt-badge--' + def.cls + ' cdx-tt-badge--send" ' +
+    'data-tt-send="' + tarefa.item_id + '">' + inner + '</button>';
+}
+
+// The teacher said something, on any delivery. A MESSAGE, not a correction (Élder: "mais
+// didático e menos pressão"), so it sits BESIDE the delivery tag instead of replacing it.
+function msgBadgeHtml(tarefa) {
+  if (!tarefa.has_instructor_message) return '';
+  return '<span class="cdx-tt-badge cdx-tt-badge--msg">' +
+    glyphSvg('mail', { size: 14, cls: 'cdx-tt-badge-i' }) +
+    '<span>' + esc(t('tarefas.badge_msg')) + '</span></span>';
+}
+
+// ONE delivery: what the student sent, and NESTED under it whatever the teacher said about
+// THAT delivery. Nesting is the point (Élder: "senão parece que é IM") — a flat stream of
+// answers and replies reads like a chat and loses which reply answers which answer.
+//
+// Every interaction is SIGNED and STAMPED — "de Fulano em 23/06/2026 às 12h26" (Élder
+// 2026-07-15). Unsigned, a card with four blocks of text is a pile: the student cannot tell
+// their second try from their first, nor their own words from the teacher's.
+function deliveryHtml(sub, ordinal, total) {
+  let html = '<li class="cdx-tt-delivery">';
+  html += '<div class="cdx-tt-meta">';
+  if (total > 1) html += '<span class="cdx-tt-dlabel">' + esc(fill(t('tarefas.delivery_n'), { n: ordinal })) + '</span>';
+  html += '<span class="cdx-tt-by">' +
+    esc(fill(t('tarefas.by_at'), { who: deliveryWho(sub), when: stampTime(sub.submitted_at) })) + '</span>';
+  // Editar até o instrutor responder (Élder 2026-07-15: "o aluno pode editar até eu responder e
+  // pronto"). Quem decide é o SERVIDOR (can_edit), nunca esta aba: é a mesma coluna que o
+  // ct_edit_submission consulta pra aceitar. O botão fica na assinatura da entrega, junto do "de
+  // Fulano em ...": é ali que se diz de quem é e de quando é, então é ali que se mexe nela.
+  if (sub.can_edit) {
+    html += '<button type="button" class="cdx-tt-edit" data-tt-edit="' + esc(sub.id) + '">' +
+      esc(t('tarefas.edit')) + '</button>';
+  }
+  html += '</div>';
+  html += '<div class="cdx-tt-fv" data-tt-text>' + esc(answerText(sub)) + '</div>';
+  // A mensagem do instrutor. Ele assina como "Instrutor" (Élder), não pelo nome: o aluno está
+  // falando com o papel.
+  if (sub.instructor_reply) {
+    html += '<div class="cdx-tt-reply">' +
+      '<div class="cdx-tt-meta"><span class="cdx-tt-by">' +
+        esc(fill(t('tarefas.msg_by_at'), { who: t('tarefas.instructor'), when: stampTime(sub.reply_at) })) +
+      '</span></div>' +
+      '<div class="cdx-tt-fv" data-tt-text>' + esc(sub.instructor_reply) + '</div>' +
+    '</div>';
+  }
+  // A nota vive FORA do bloco da mensagem (Élder 2026-07-15: "a nota não é mensagem do
+  // professor, mensagem é só mensagem"). Dentro dele, uma entrega só com nota desenhava um
+  // "Mensagem do Instrutor em ..." que não continha mensagem nenhuma: só um número. São coisas
+  // independentes, e cada uma tem o seu lugar no cartão.
+  if (sub.grade) {
+    html += '<div class="cdx-tt-grade">' +
+      '<span class="cdx-tt-gl">' + esc(t('tarefas.grade_label')) + '</span>' +
+      '<span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span>' +
+    '</div>';
+  }
+  return html + '</li>';
 }
 
 function bodyHtml(tarefa) {
-  const sub = tarefa.submission;
-  let html = '<div class="cdx-tt-body">';
-  html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_answer')) + '</div>' +
-    '<div class="cdx-tt-fv">' + esc(answerText(sub)) + '</div></div>';
-  if (sub.grade) {
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_grade')) + '</div>' +
-      '<div class="cdx-tt-grade"><span class="cdx-tt-grade-num">' + esc(sub.grade) + '</span>' +
-      (sub.instructor_reply ? '<span class="cdx-tt-grade-note">' + esc(sub.instructor_reply) + '</span>' : '') +
-      '</div></div>';
-  } else if (sub.instructor_reply) {
-    // A resposta SEM nota é uma resposta, não uma nota. Rotulá-la "Nota" (o que esta
-    // branch fazia) confunde justamente o caso do toggle "resposta" ligado sozinho, que
-    // é o mais comum. Com nota, a resposta segue como a nota do lado (branch acima).
-    html += '<div class="cdx-tt-field"><div class="cdx-tt-fl">' + esc(t('tarefas.field_reply')) + '</div>' +
-      '<div class="cdx-tt-fv">' + esc(sub.instructor_reply) + '</div></div>';
-  }
-  if (!(tarefa.reply_enabled && tarefa.grade_enabled)) {
-    html += '<div class="cdx-tt-gate">' + esc(t('tarefas.gate_note')) + '</div>';
-  }
-  html += '</div>';
-  return html;
+  // EVERY delivery, newest first, not just the last one (Élder). The "enviar outra resposta"
+  // button that used to live down here is gone: the tag in the head is the button now.
+  const subs = deliveries(tarefa);
+  const total = subs.length;
+  return '<div class="cdx-tt-body"><ul class="cdx-tt-deliveries">' +
+    subs.map((s, i) => deliveryHtml(s, total - i, total)).join('') +
+    '</ul></div>';
 }
 
 function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
-  const expandable = tarefa.state === 'corrigida';
+  const expandable = isExpandable(tarefa);
+  // O chevron mora À ESQUERDA do cartão, centralizado na vertical (Élder): ali ele aponta pro
+  // CARTÃO, que é o que abre. À direita ele disputava a borda com o botão de ação e virava mais
+  // um controle solto. Quando não há o que abrir o slot continua ocupando a mesma largura, senão
+  // o título de um cartão sem entrega desalinha de todos os outros da lista.
+  const chevron = expandable
+    ? '<span class="cdx-tt-chev' + (open ? ' is-open' : '') + '">' + glyphSvg('chevron-down', { size: 18 }) + '</span>'
+    : '<span class="cdx-tt-chev cdx-tt-chev--none"></span>';
+  // TODAS as tags na linha do título, a AÇÃO sempre por último, à direita (Élder 2026-07-15):
+  // [mensagem do professor ✉] [responder ✈]. Ordem fixa, então o polegar aprende UM lugar: a
+  // ponta direita do cartão é sempre o que faz alguma coisa, e o que só avisa nunca ocupa esse
+  // lugar. Quando não cabem lado a lado o grupo quebra INTEIRO pra linha de baixo, alinhado à
+  // direita — a ação continua sendo a última, que é o que a regra pede.
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
-    '<div class="cdx-tt-top"' + (tarefa.state !== 'enviada' ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
+    '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
+      chevron +
       '<div class="cdx-tt-info">' +
         '<div class="cdx-tt-aula">' + esc(aulaLabel(tarefa.aula_number, aulas || [])) + '</div>' +
         '<div class="cdx-tt-title">' + esc(tarefa.title) + '</div>' +
-        '<div class="cdx-tt-sub">' + esc(subHtml(tarefa, open)) + '</div>' +
       '</div>' +
-      badgeHtml(tarefa) +
+      '<div class="cdx-tt-tags">' + msgBadgeHtml(tarefa) + badgeHtml(tarefa) + '</div>' +
     '</div>' +
     (open && expandable ? bodyHtml(tarefa) : '') +
   '</div>';
 }
 
 function wireList() {
+  // The head toggles. The tag sends. Two jobs, two targets, so tapping the tag never collapses
+  // the card the student just opened.
   _root.querySelectorAll('[data-tt-open]').forEach((top) => {
     top.addEventListener('click', () => {
       const id = parseInt(top.getAttribute('data-tt-open'), 10);
       const tarefa = _tarefas.find((tf) => tf.item_id === id);
-      if (!tarefa) return;
-      if (tarefa.state === 'a_enviar') { openSubmit(tarefa); return; }
-      if (tarefa.state === 'corrigida') { _openId = (_openId === id) ? null : id; paintList(); }
+      if (!tarefa || !isExpandable(tarefa)) return;
+      _openId = (_openId === id) ? null : id;
+      paintList();
     });
   });
+  _root.querySelectorAll('[data-tt-edit]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();   // o botão mora dentro do corpo do cartão aberto
+      openEdit(parseInt(btn.getAttribute('data-tt-edit'), 10));
+    });
+  });
+  _root.querySelectorAll('[data-tt-send]').forEach((btn) => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = parseInt(btn.getAttribute('data-tt-send'), 10);
+      const tarefa = _tarefas.find((tf) => tf.item_id === id);
+      if (tarefa) openSubmit(tarefa);
+    });
+  });
+  // Resposta longa vira janela, não parede (Élder): o bloco fecha numa altura legível e abre no
+  // toque. Só o que REALMENTE transborda fica clicável — quem mede isso é o clamp compartilhado.
+  wireClamps(_root, '[data-tt-text]');
 }
 
-async function openSubmit(tarefa) {
+// O modal precisa do ITEM (enunciado + tipo de campo + se aceita anônimo), que a lista não
+// carrega. Um caminho só pros dois verbos: o que muda entre responder e editar é `editing`.
+async function openModal(tarefa, editing) {
   let item;
   try {
     const res = await trail.itemPublic({
@@ -226,7 +369,7 @@ async function openSubmit(tarefa) {
     });
     item = res && res.item;
   } catch (e) {
-    if (window.bsLog) window.bsLog('tarefas openSubmit itemPublic: ' + (e && e.message || e), 'error');
+    if (window.bsLog) window.bsLog('tarefas openModal itemPublic: ' + (e && e.message || e), 'error');
     return;
   }
   if (!item) return;
@@ -238,8 +381,30 @@ async function openSubmit(tarefa) {
     token: state.token,
     sessionToken: state.sessionToken,
     participantName: participant.display_name || participant.name || '', // logged-in: drops the name field
+    editing,
     onSubmitted: () => renderMyTarefas(_outerRoot),
   });
+}
+
+const openSubmit = (tarefa) => openModal(tarefa, null);
+
+// PURE. Achar a entrega (e a tarefa dela) por id. O botão de editar carrega o id da ENTREGA, não
+// o da tarefa: numa tarefa com várias entregas o id da tarefa não diz qual delas abrir.
+export function findDelivery(tarefas, subId) {
+  for (const tf of tarefas || []) {
+    const sub = deliveries(tf).find((s) => s.id === subId);
+    if (sub) return { tarefa: tf, sub };
+  }
+  return null;
+}
+
+function openEdit(subId) {
+  const hit = findDelivery(_tarefas, subId);
+  if (!hit) return;
+  // `anon` é o que a entrega É hoje (sem nome = anônima), não uma proposta: a caixa do modal
+  // mostra o estado atual pra que salvar uma correção de vírgula não identifique quem escolheu
+  // não aparecer.
+  openModal(hit.tarefa, { id: hit.sub.id, answer_json: hit.sub.answer_json, anon: !hit.sub.student_name });
 }
 
 registerRenderer('tarefas', renderMyTarefas);

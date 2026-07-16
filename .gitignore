@@ -20,4 +20,10 @@ desktop.ini
 # Environment files (if you add any later)
 .env
 .env.local
+
+# Caches do wrangler. O .wrangler/ ja estava aqui (3eca02c) mas o wrangler tem OUTRO cache, em
+# node_modules/.cache/wrangler/, e esse ficou aberto: o wrangler-account.json de la carrega o ID
+# da conta Cloudflare e ESTE REPO E PUBLICO. node_modules inteiro nunca esteve ignorado, entao
+# tambem ja tinha um cache do vitest versionado por engano.
 .wrangler/
+node_modules/

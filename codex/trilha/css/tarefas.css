@@ -68,39 +68,100 @@
   overflow: hidden;
   margin-bottom: 0.6rem;
 }
+/* flex-wrap: as tags descem pra uma linha propria quando nao couberem ao lado do titulo (Élder
+   2026-07-15: "que eles ficassem numa linha ENQUANTO DESSE; se nao der, wrap"). Sem isto o
+   cabecalho era uma linha so pra sempre e quem pagava a conta era o titulo. */
 .cdx-tt-top {
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 0.6rem;
   padding: 0.75rem 0.9rem;
 }
 .cdx-tt-card[data-tt-open], .cdx-tt-top[data-tt-open] { cursor: pointer; }
-.cdx-tt-info { min-width: 0; }
+/* O min-width era 0, e ERA ELE o aperto do titulo no celular: min-width:0 quer dizer "eu encolho
+   ate sumir", entao o flexbox espremia o titulo indefinidamente e o grupo de tags nunca tinha
+   motivo pra quebrar de linha. Resultado: "Staging: / proposta de / resumo" em tres linhas com as
+   tags empilhadas do lado, que nao e o "enquanto der" de ninguem.
+   Com um piso de verdade, quando titulo + tags nao cabem lado a lado sao AS TAGS que descem,
+   inteiras, pra linha de baixo. O piso e em %, nao em px, pra valer igual num iPhone SE e num
+   monitor. min-width:0 continua no .cdx-tt-title: la ele so permite a QUEBRA DE PALAVRA dentro
+   do espaco que o titulo ja tem, que e outra coisa. */
+.cdx-tt-info { flex: 1 1 auto; min-width: 55%; }
 .cdx-tt-title {
+  min-width: 0;   /* um titulo sem espaco quebra a palavra em vez de estourar o cartao */
   font-size: 0.9rem;
   font-weight: 600;
   color: var(--text-primary);
+  overflow-wrap: anywhere;
 }
 .cdx-tt-sub {
   font-size: 0.78rem;
   color: var(--text-secondary);
   margin-top: 0.1rem;
 }
+/* A tag E o botao (Élder 2026-07-15): quando da pra enviar ela vira <button>, entao
+   zera o estilo nativo aqui em vez de ter duas regras quase iguais. */
 .cdx-tt-badge {
-  margin-left: auto;
   flex-shrink: 0;
+  border: 0;
+  font-family: inherit;
   display: inline-flex;
   align-items: center;
-  gap: 0.3rem;
-  font-size: 0.72rem;
+  gap: 0.28rem;
+  font-size: 0.68rem;
   font-weight: 700;
-  padding: 0.25rem 0.6rem;
+  padding: 0.25rem 0.55rem;
   border-radius: 20px;
   white-space: nowrap;
 }
-.cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }
-.cdx-tt-badge--sent     { color: var(--info); background: var(--info-bg); }
-.cdx-tt-badge--graded   { color: var(--success); background: var(--success-bg); }
+.cdx-tt-badge--pending { color: var(--amber); background: var(--amber-bg); }   /* Nao respondida */
+.cdx-tt-badge--again   { color: var(--info); background: var(--info-bg); }     /* Responder de novo */
+.cdx-tt-badge--done    { color: var(--success); background: var(--success-bg); } /* Respondida */
+/* Mensagem do professor: convive com a tag da entrega, nao a substitui. Fica de proposito
+   mais discreta que a tag de acao: esta AVISA, a outra e o botao. Iguais no peso, o aluno
+   nao sabe qual da pra tocar. */
+.cdx-tt-badge--msg {
+  color: var(--text-secondary);
+  background: transparent;
+  border: 1px solid var(--border);
+  font-weight: 600;
+}
+.cdx-tt-badge--send { cursor: pointer; }
+.cdx-tt-badge--send:hover { filter: brightness(0.95); }
+.cdx-tt-badge-i { flex-shrink: 0; }
+/* TODAS as tags na linha do titulo, a ACAO por ultimo, a direita (Élder).
+   nowrap: as tags ficam JUNTAS numa linha so ("que eles ficassem numa linha enquanto desse").
+   Quando nao cabem ao lado do titulo, quem quebra e o grupo INTEIRO, que desce pra linha de
+   baixo do .cdx-tt-top ainda na ordem certa. Empilhar uma sobre a outra ali no canto era o
+   que sobrava do max-width: 60%, que tambem morreu com o piso do titulo.
+   margin-left: auto cola o grupo na direita NAS DUAS situacoes: ao lado do titulo e sozinho
+   na linha de baixo. Sem ele, na linha de baixo o grupo comecaria na esquerda e a acao
+   deixaria de estar onde o polegar aprendeu que ela fica.
+   O wrap final e o ultimo recurso: numa tela estreita demais pras duas tags juntas ("se nao
+   der, wrap"), elas quebram entre si em vez de estourar o cartao. */
+.cdx-tt-tags {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  flex-wrap: wrap;
+  flex-shrink: 0;
+  margin-left: auto;
+}
+/* O chevron: a affordance que faltava. Sem ele, abrir o cartao era chute. Mora na ESQUERDA
+   e centralizado na vertical (Élder), apontando pro cartao inteiro. --none mantem a largura
+   do slot num cartao que nao abre, senao o titulo dele desalinha do resto da lista. */
+.cdx-tt-chev {
+  flex-shrink: 0;
+  align-self: center;
+  display: inline-flex;
+  width: 18px;
+  color: var(--text-secondary);
+  transition: transform 0.15s ease;
+}
+.cdx-tt-chev.is-open { transform: rotate(180deg); }
+.cdx-tt-chev--none { visibility: hidden; }
 
 .cdx-tt-body {
   padding: 0.1rem 0.9rem 0.9rem;
@@ -109,7 +170,10 @@
   flex-direction: column;
   gap: 0.75rem;
 }
-.cdx-tt-field .cdx-tt-fl {
+/* Sem escopo: o .cdx-tt-field que embrulhava isto morreu junto com o subHtml, e a regra
+   ficou orfa — o texto da entrega renderizava SEM tamanho e SEM pre-wrap, engolindo as
+   quebras de linha do aluno. */
+.cdx-tt-fl {
   font-size: 0.68rem;
   letter-spacing: 0.04em;
   text-transform: uppercase;
@@ -118,11 +182,21 @@
   font-weight: 600;
   margin-bottom: 0.2rem;
 }
-.cdx-tt-field .cdx-tt-fv {
+.cdx-tt-fv {
   font-size: 0.85rem;
   line-height: 1.5;
   color: var(--text-primary);
   white-space: pre-wrap;
+  overflow-wrap: anywhere;   /* uma URL colada nao estoura o cartao */
+}
+/* A nota vive FORA do bloco da mensagem (Élder: "a nota nao e mensagem do professor"), entao ela
+   carrega o proprio rotulo: solta e sem rotulo, era um numero verde sem explicacao. */
+.cdx-tt-gl {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
 }
 .cdx-tt-grade {
   display: flex;
@@ -151,4 +225,79 @@
   font-style: italic;
   padding-top: 0.15rem;
   border-top: 1px dashed var(--border);
+}
+
+
+/* Todas as entregas, mais recente primeiro, cada uma com a resposta do professor ANINHADA
+   dentro dela. Solta, a resposta parecia conversa de mensageiro (Élder: "parece que é IM"):
+   o recuo + a borda dizem "isto responde AQUILO", que uma lista plana nao consegue dizer. */
+.cdx-tt-deliveries {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+.cdx-tt-delivery {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+}
+.cdx-tt-delivery + .cdx-tt-delivery {
+  border-top: 1px dashed var(--border);
+  padding-top: 0.75rem;
+}
+/* A assinatura de cada interacao: quem + quando. "Entrega 2" e o rotulo, "de Fulano em
+   23/06/2026 as 12h26" e a assinatura; os dois na mesma linha, quebrando junto no celular. */
+.cdx-tt-meta {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+.cdx-tt-dlabel {
+  font-size: 0.66rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+}
+.cdx-tt-by {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+}
+/* "Editar", enquanto o instrutor nao respondeu. Mora na assinatura da entrega, discreto: e uma
+   saida, nao a acao principal do cartao (essa e a tag la em cima). margin-left:auto joga pra
+   ponta direita da linha, o mesmo lugar onde a acao mora no topo. */
+.cdx-tt-edit {
+  margin-left: auto;
+  border: 0;
+  background: transparent;
+  font-family: inherit;
+  font-size: 0.7rem;
+  font-weight: 600;
+  color: var(--info);
+  cursor: pointer;
+  padding: 0.1rem 0.3rem;
+  border-radius: 6px;
+  text-decoration: underline;
+}
+.cdx-tt-edit:hover { background: var(--info-bg); }
+/* O clamp (js/clamp.js) desenha o fade com a cor do fundo. Dentro da resposta do professor
+   o fundo e --info-bg, nao --surface: sem isto o degrade terminava na cor errada e aparecia
+   uma faixa clara boiando sobre o azul. */
+.cdx-tt-reply .cdx-clamp.is-clampable::after {
+  background: linear-gradient(to bottom, transparent, var(--info-bg));
+}
+.cdx-tt-reply {
+  margin-left: 0.85rem;
+  padding: 0.5rem 0.7rem;
+  border-left: 2px solid var(--info);
+  background: var(--info-bg);
+  border-radius: 0 8px 8px 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
 }

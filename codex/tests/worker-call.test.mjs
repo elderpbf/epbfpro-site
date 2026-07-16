@@ -11,6 +11,8 @@ import {
   buildWorkerRequest,
   interpretWorkerResponse,
   callWorker,
+  resolveWorkerUrl,
+  isStagingHost,
 } from '../js/worker-call.js';
 
 // ── default backend ──────────────────────────────────────────────────────────
@@ -206,4 +208,43 @@ test('callWorker: a deliberate Worker error still signals up (connection is aliv
     assert.ok(calls.some((c) => c.state === 'up'), 'an app error proves reachability -> up, not down');
     assert.ok(!calls.some((c) => c.state === 'down'), 'app errors never raise the reconnect banner');
   });
+});
+
+// ── Staging previews are pinned to the staging Worker (2026-07-15) ───────────
+// O boot script de cada pagina e config de PRODUCAO commitada
+// (window.WORKER_URL = 'https://api.pensoia.com'), entao um preview publicado do repo
+// falava com PRODUCAO. Isso queimou uma rodada inteira de teste: toggle escrito no staging,
+// lido de volta da prod, parecendo que "nao persistia". Quem decide agora e o HOST.
+test('resolveWorkerUrl: um preview de branch vai pro Worker de staging', () => {
+  assert.equal(
+    resolveWorkerUrl('track26-multi.epbfpro-site-staging.pages.dev', 'https://api.pensoia.com'),
+    'https://codex-api-staging.pensoia.workers.dev',
+  );
+});
+test('resolveWorkerUrl: o host do preview GANHA do boot script (esse e o ponto)', () => {
+  // O boot script pede prod; o host e preview; o host vence.
+  assert.equal(
+    resolveWorkerUrl('epbfpro-site-staging.pages.dev', 'https://api.pensoia.com'),
+    'https://codex-api-staging.pensoia.workers.dev',
+  );
+});
+test('resolveWorkerUrl: PRODUCAO nao e tocada', () => {
+  assert.equal(resolveWorkerUrl('pensoia.com', 'https://api.pensoia.com'), 'https://api.pensoia.com');
+  assert.equal(resolveWorkerUrl('www.pensoia.com', 'https://api.pensoia.com'), 'https://api.pensoia.com');
+});
+test('resolveWorkerUrl: staging.pensoia.com continua na prod, como sempre esteve', () => {
+  // Ela existe pra testar cookie/sessao num host *.pensoia.com de verdade; nao e da familia
+  // dos previews e nao muda de backend aqui.
+  assert.equal(resolveWorkerUrl('staging.pensoia.com', 'https://api.pensoia.com'), 'https://api.pensoia.com');
+});
+test('resolveWorkerUrl: sem boot script, cai no default', () => {
+  assert.equal(resolveWorkerUrl('pensoia.com', null), DEFAULT_WORKER_URL);
+  assert.equal(resolveWorkerUrl('', null), DEFAULT_WORKER_URL);
+});
+test('isStagingHost: nao casa um host que so TERMINA parecido', () => {
+  // 'evil-epbfpro-site-staging.pages.dev' nao e subdominio nosso: o ponto no sufixo importa.
+  assert.equal(isStagingHost('evil-epbfpro-site-staging.pages.dev'), false);
+  assert.equal(isStagingHost('a.epbfpro-site-staging.pages.dev'), true);
+  assert.equal(isStagingHost('epbfpro-site-staging.pages.dev'), true);
+  assert.equal(isStagingHost('pensoia.com'), false);
 });

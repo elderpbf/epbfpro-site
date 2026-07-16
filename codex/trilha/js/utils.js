@@ -64,14 +64,11 @@ export function parseTopics(raw) {
   return String(raw).split(',').map((t) => t.trim()).filter(Boolean);
 }
 
-export function tarefaSubmittedKey(itemId) {
-  return 'ct_tarefa_submitted_' + itemId + '_' + state.turmaSlug;
-}
-
-export function hasSubmittedTarefa(itemId) {
-  try { return localStorage.getItem(tarefaSubmittedKey(itemId)) != null; }
-  catch (_) { return false; }
-}
+// (tarefaSubmittedKey / hasSubmittedTarefa removidas em 2026-07-15. A chave era
+// 'ct_tarefa_submitted_<item>_<turma>': SEM o aluno dentro, ou seja, por NAVEGADOR. O
+// segundo aluno a entrar no mesmo aparelho herdava o "Resposta enviada" do primeiro e
+// nao conseguia enviar. Quem sabe se o aluno entregou e o servidor, via o `state` do
+// ct_list_my_tarefas: nao ha estado de entrega no localStorage.)
 
 export function copyFallback(text) {
   const ta = document.createElement('textarea');

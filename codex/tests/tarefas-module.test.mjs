@@ -80,3 +80,18 @@ test('t1b: renders instance cards + reveal badge in aula-locked mode', () => {
   assert.match(src, /_revealBadgeHtml/, 'reveal badge');
   assert.match(src, /_lockedAula != null/, 'branches on aula-locked mode');
 });
+
+// ── per-instance toggles are table-driven (track-26 item 3) ──────────────────
+// "Várias entregas" joined Resposta/Nota as a third per-instance toggle. It rides the SAME
+// button/handler as the other two — a new toggle must be one FLAG_DEFS entry, not another
+// branch in every ternary, or the three drift apart.
+test('the tarefa toggles are declared in one table, including allow_multi', () => {
+  assert.match(src, /FLAG_DEFS\s*=\s*\{/, 'toggles live in a table');
+  assert.match(src, /multi:\s*\{\s*key:\s*'allow_multi'/, 'multi maps to the ct_set_tarefa_flags param');
+  assert.ok(!/flag === 'reply' \? 'reply_enabled' : 'grade_enabled'/.test(src), 'no ternary that silently excludes the third toggle');
+});
+
+test('the multi toggle is offered in BOTH the standalone pane and the aula card head', () => {
+  const hits = src.match(/_flagToggleHtml\('multi'/g) || [];
+  assert.equal(hits.length, 2, 'both toggle rows offer it, like reply/grade');
+});

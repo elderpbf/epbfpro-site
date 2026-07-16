@@ -47,17 +47,25 @@ test('getItemAction: body_md -> copy', () => {
   assert.deepEqual(getItemAction({ type: 'x', body_md: 'hi' }), { kind: 'copy', label: 'Copiar', text: 'hi', icon: 'copy' });
 });
 test('getItemAction: nothing actionable -> null', () => assert.equal(getItemAction({ type: 'x' }), null));
-test('getItemAction: tarefa precedence over meta, not submitted -> submit', () => {
-  assert.equal(getItemAction({ type: 'tarefa', id: 7, meta_json: { pdf_url: 'x' } }).kind, 'submit');
+// A aba Aulas nao entrega nada: ela LEVA pra aba Tarefas, dona do fluxo (Élder 2026-07-15).
+test('getItemAction: tarefa precedence over meta -> go-tarefas', () => {
+  const a = getItemAction({ type: 'tarefa', id: 7, meta_json: { pdf_url: 'x' } });
+  assert.equal(a.kind, 'go-tarefas');
+  assert.equal(a.label, 'Ir para tarefas');
 });
-test('getItemAction: tarefa already submitted -> submitted (localStorage)', () => {
+// Era 'submitted (localStorage)'. A chave 'ct_tarefa_submitted_<item>_<turma>' NAO tinha o aluno
+// dentro: era por NAVEGADOR, entao o segundo aluno no mesmo aparelho herdava o "Resposta enviada"
+// do primeiro e nao conseguia enviar. Bug VIVO em producao. A aba Aulas nao pergunta mais nada ao
+// localStorage; quem sabe se entregou e o servidor.
+test('getItemAction: tarefa NAO consulta o localStorage (o estado nao e por navegador)', () => {
   state.turmaSlug = 'turma1';
+  let touched = false;
   globalThis.localStorage = {
-    _s: { 'ct_tarefa_submitted_7_turma1': '1' },
-    getItem(k) { return this._s[k] ?? null; },
-    setItem(k, v) { this._s[k] = String(v); },
+    getItem(k) { if (String(k).indexOf('tarefa_submitted') !== -1) touched = true; return null; },
+    setItem() {},
   };
-  assert.equal(getItemAction({ type: 'tarefa', id: 7 }).kind, 'submitted');
+  assert.equal(getItemAction({ type: 'tarefa', id: 7 }).kind, 'go-tarefas');
+  assert.equal(touched, false, 'o estado de entrega nunca sai do localStorage');
   delete globalThis.localStorage;
   state.turmaSlug = null;
 });

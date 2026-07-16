@@ -173,3 +173,18 @@ test('Batch B i18n keys exist in both pt and en', () => {
     assert.match(enJs, re, `${k} in en`);
   }
 });
+
+// ── the dossier deps must not re-ask once tried (2026-07-15) ─────────────────
+// _ensureDossierDeps calls its callback SYNCHRONOUSLY once _dossierDepsTried is set, and that
+// callback re-enters _renderDossier. So the call site must gate on _dossierDepsTried too, or an
+// EMPTY answer (a client with no courses yet) recursed until RangeError while every level
+// re-fired the aulas/participants/certs/forum loaders. Élder hit it on the Aulas sub-tab; it was
+// also why that tab took a minute. Empty is a legitimate answer, not a reason to ask forever.
+test('the dossier does not re-ask for deps once tried (no render recursion)', () => {
+  const src = read('../cohorts/cohorts.js');
+  assert.match(
+    src,
+    /if \(!_dossierDepsTried && \(\(!_turmaCourses/,
+    'the _ensureDossierDeps call site must gate on !_dossierDepsTried'
+  );
+});

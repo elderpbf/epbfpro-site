@@ -25,6 +25,41 @@ import * as notifBus from './notif-bus.js';
 
 export const DEFAULT_WORKER_URL = 'https://codex-api.pensoia.workers.dev';
 
+// ── Staging previews are pinned to the staging Worker ────────────────────────
+// Every *.epbfpro-site-staging.pages.dev host is a per-branch preview of THIS site, and its
+// backend is the staging Worker. This is derived from the HOST, not from the page's boot
+// script, because the boot script is committed production config: each page hardcodes
+// `window.WORKER_URL = 'https://api.pensoia.com'` (track-36, first-party API), so a preview
+// deployed from the repo silently talked to PRODUCTION.
+//
+// That is not a hypothetical. It burned a whole round of testing on 2026-07-15: the admin was
+// pointed at staging by hand while the Trail was not, so a teacher toggle written to staging
+// was read back from prod and looked like it "didn't persist" — and a live prod item title
+// showed up in a staging screenshot. Hand-editing the five boot scripts before each deploy
+// "fixes" it until the edit is forgotten, reverted, or missed on the sixth file; the host
+// already knows the answer, so the host decides.
+//
+// It also makes the DEV_COOKIE mirror (js/codex-login.js) honest: that cookie is shared across
+// the whole preview family on the stated assumption that every preview talks to the SAME
+// Worker. Until now it didn't.
+//
+// Production (pensoia.com) and staging.pensoia.com are untouched: neither matches this suffix.
+export const STAGING_HOST = 'epbfpro-site-staging.pages.dev';
+export const STAGING_WORKER_URL = 'https://codex-api-staging.pensoia.workers.dev';
+
+// PURE. Is this page one of the branch previews?
+export function isStagingHost(hostname) {
+  const h = String(hostname || '');
+  return h === STAGING_HOST || h.endsWith('.' + STAGING_HOST);
+}
+
+// PURE. The backend for a page served from `hostname`, given whatever its boot script set.
+// A preview host WINS over the boot value — that is the whole point.
+export function resolveWorkerUrl(hostname, bootUrl) {
+  if (isStagingHost(hostname)) return STAGING_WORKER_URL;
+  return bootUrl || DEFAULT_WORKER_URL;
+}
+
 // Max URL length before switching GET -> POST. Cloudflare's hard limit is ~16KB;
 // 6KB leaves headroom for intermediaries (matches the legacy budget).
 export const URL_BUDGET = 6000;
@@ -119,9 +154,13 @@ export async function callWorker(params, env = {}) {
     throw e;
   }
 
+  // env.workerUrl still wins (tests inject it). Otherwise the HOST decides: a staging preview
+  // is pinned to the staging Worker, everything else keeps the boot script's value.
   const workerUrl = env.workerUrl
-    || (typeof window !== 'undefined' && window.WORKER_URL)
-    || DEFAULT_WORKER_URL;
+    || resolveWorkerUrl(
+      (typeof location !== 'undefined' && location.hostname) || '',
+      (typeof window !== 'undefined' && window.WORKER_URL) || null,
+    );
 
   // auth_token (hash) is always sent (empty string on the public Trail).
   if (!p.auth_token) {

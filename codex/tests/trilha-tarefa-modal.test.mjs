@@ -3,7 +3,11 @@
 // and meta parsing (the logic that decides what the student sees on failure).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { errorMessage, parseMeta, identityConfig } from '../trilha/js/tarefa-submit-modal.js';
+
+const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
 test('errorMessage: known codes map to specific messages', () => {
   assert.match(errorMessage('already_submitted'), /já enviou/i);
@@ -31,15 +35,28 @@ test('identityConfig: logged-in student drops the name field', () => {
   assert.equal(c.authed, true);
   assert.equal(c.showNameField, false);
 });
-test('identityConfig: logged-in + anon-allowed shows the checkbox PRE-CHECKED', () => {
+// NUNCA vem marcado (Élder 2026-07-15: "o usuário deve marcar para ser anônimo"). Vinha, e isso
+// invertia o consentimento: quem entrasse identificado e so clicasse "Enviar" mandava anonimo SEM
+// QUERER, e a entrega chegava sem dono no painel do professor. E irreversivel: a coluna do nome
+// fica nula e nao ha de onde recuperar. Anonimato e o desvio, nao o padrao.
+test('identityConfig: logged-in + anon-allowed mostra a opcao, mas NAO marcada', () => {
   const c = identityConfig('Ana', true);
   assert.equal(c.showAnonCheckbox, true);
-  assert.equal(c.anonChecked, true);
+  assert.equal(c.anonChecked, false);
 });
 test('identityConfig: logged-in + anon-NOT-allowed hides the checkbox entirely', () => {
   const c = identityConfig('Ana', false);
   assert.equal(c.showAnonCheckbox, false);
   assert.equal(c.anonChecked, false);
+});
+
+// "Pode ser anonima" e escolha do professor PRA ESTA TURMA (release, migration 0036), nao marca
+// do item do BANCO: la valia pra toda turma que usasse a tarefa. Tem que ser a MESMA fonte que o
+// ct_submit_tarefa consulta, senao o modal oferece o que o envio recusa.
+test('a opcao de anonimo vem do release, nao do meta_json do banco', () => {
+  const src = read('../trilha/js/tarefa-submit-modal.js');
+  assert.match(src, /const allowAnon = !!item\.allow_anonymous;/, 'le a escolha da turma');
+  assert.ok(!/meta\.allow_anonymous/.test(src), 'nao le mais a marca do banco');
 });
 test('identityConfig: open turma (no name) keeps the name field, anon never pre-checked', () => {
   const anon = identityConfig('', true);
