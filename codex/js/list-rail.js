@@ -17,10 +17,12 @@
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{}},
 //     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
-//     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max} | {mode:'autohide'},
+//     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max}
+//         | {mode:'autohide', layoutEl, openClass, revealZone, hideDelay, pinned},
 //     footer:()=>html,
 //   });
 //   rail.render();   // idempotent, after loads/mutations
+//   rail.pin(bool);  // width:autohide only — pin(true)=pinned+open, pin(false)=unpinned+close
 //   rail.destroy();  // on unmount
 import { esc } from './dom.js';
 import { installResizer } from './resizable.js';
@@ -41,6 +43,18 @@ export function mountRail(container, cfg) {
   let drag = null;       // active pointer-drag state
   let wired = false;     // delegated listeners attached once (survive re-renders)
   let destroyed = false;
+
+  // ── width:autohide state (the ONE hover-reveal rail; was hand-rolled twice) ──
+  // Was copied by hand in cohorts.js (CLIENTES) and questions/sessions.js, byte-for-byte
+  // apart from one line — same 6px zone, 1500ms delay, cdx-sm--open class, Escape, and
+  // "starts pinned until the first pick". Both copies now come from here.
+  const AH_REVEAL_ZONE = 6;    // px from the left edge that triggers the reveal
+  const AH_HIDE_DELAY = 1500;  // ms after the cursor leaves the rail before it hides
+  let ahWired = false;
+  let ahPinned = false;
+  let ahOver = false;
+  let ahTimer = null;
+  let ahOff = null;      // teardown for the autohide listeners
 
   // ── markup ────────────────────────────────────────────────────────────────
   function rowHtml(it) {
@@ -135,6 +149,7 @@ export function mountRail(container, cfg) {
       '</div>';
     if (!wired) { wire(); wired = true; }
     ensureResizer();
+    ensureAutohide();
     const newBody = container.querySelector('.cdx-rail-body');
     if (newBody) newBody.scrollTop = prevScroll;
   }
@@ -239,16 +254,78 @@ export function mountRail(container, cfg) {
     if (!grid) return;
     const d = installResizer(grid, { storeKey: w.storeKey, defaultPx: w.defaultPx, min: w.min, max: w.max });
     resizerDestroy = (typeof d === 'function') ? d : null;
-    // width:autohide is C3 (clientes/turmas + sessões); not implemented here yet.
+  }
+
+  // ── width:autohide ──────────────────────────────────────────────────────────
+  // The consumer owns WHEN the rail is pinned (both call sites pin it open until the
+  // first pick, then unpin+close); it says so through rail.pin(bool). Everything else
+  // — the edge reveal, the leave-timer, Escape, the open class — lives here.
+  function ahLayout() {
+    const w = cfg.width;
+    if (!w) return null;
+    return w.layoutEl || (container ? container.parentNode : null);
+  }
+  function ahOpenClass() { return (cfg.width && cfg.width.openClass) || 'cdx-sm--open'; }
+
+  function ahOpen() {
+    const l = ahLayout();
+    if (!l) return;
+    l.classList.add(ahOpenClass());
+    if (ahPinned) return;               // pinned: stays open, no hide timer
+    clearTimeout(ahTimer);
+    ahTimer = setTimeout(ahMaybeHide, (cfg.width && cfg.width.hideDelay) || AH_HIDE_DELAY);
+  }
+  function ahClose() {
+    const l = ahLayout();
+    if (!l) return;
+    clearTimeout(ahTimer);
+    if (ahPinned) return;               // pinned: refuse to close until the consumer unpins
+    l.classList.remove(ahOpenClass());
+  }
+  function ahMaybeHide() { if (!ahOver) ahClose(); }
+
+  function ensureAutohide() {
+    const w = cfg.width;
+    if (!w || w.mode !== 'autohide' || ahWired) return;
+    ahWired = true;
+    ahPinned = (w.pinned !== false);    // both consumers start pinned open
+    const zone = w.revealZone || AH_REVEAL_ZONE;
+    const delay = w.hideDelay || AH_HIDE_DELAY;
+    const onMove = (e) => { if (e.clientX <= zone) ahOpen(); };
+    const onEnter = () => { ahOver = true; clearTimeout(ahTimer); };
+    const onLeave = () => { ahOver = false; clearTimeout(ahTimer); ahTimer = setTimeout(ahMaybeHide, delay); };
+    const onKey = (e) => { if (e.key === 'Escape') ahClose(); };
+    container.addEventListener('mouseenter', onEnter);
+    container.addEventListener('mouseleave', onLeave);
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('keydown', onKey);
+    if (ahPinned) ahOpen();
+    ahOff = () => {
+      container.removeEventListener('mouseenter', onEnter);
+      container.removeEventListener('mouseleave', onLeave);
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('keydown', onKey);
+      clearTimeout(ahTimer);
+      ahTimer = null;
+    };
+  }
+
+  // pin(true)  = pinned + open   · pin(false) = unpinned + close.
+  // Collapses both consumers' two-line dance (`_pinned = x; _openOrClose()`) into one call.
+  function pin(on) {
+    ahPinned = !!on;
+    if (ahPinned) ahOpen(); else ahClose();
   }
 
   function destroy() {
     destroyed = true;
     unwire();
     if (resizerDestroy) { try { resizerDestroy(); } catch (_) { /* ignore */ } resizerDestroy = null; }
+    if (ahOff) { try { ahOff(); } catch (_) { /* ignore */ } ahOff = null; }
+    ahWired = false; ahOver = false;
     drag = null;
     if (container) container.innerHTML = '';
   }
 
-  return { render, destroy, el: container };
+  return { render, destroy, pin, el: container };
 }
