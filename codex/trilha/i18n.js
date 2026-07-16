@@ -49,6 +49,16 @@ const pt = {
   // Student login / cadastro (magic-link). Self-registration and login share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Instalar app',
+  'mydata.pill':            'Meus dados',
+  'mydata.title':           'Meus dados',
+  'mydata.close':           'Fechar',
+  'mydata.name':            'Nome',
+  'mydata.email':           'E-mail',
+  'mydata.emails':          'E-mails',
+  'mydata.cpf':             'CPF',
+  'mydata.empty':           'Ainda não temos nenhum dado seu além do seu acesso.',
+  'mydata.note':            'É só isso que temos sobre você. Para corrigir qualquer coisa, ou para pedir que a gente apague seus dados, fale com o suporte.',
+  'mydata.cta':             'Solicitar alteração ou remoção',
   'install.cta_title':      'Instale a trilha no celular',
   'install.cta_desc':       'Salve como app na tela inicial e abra num toque, sem navegador.',
   'install.btn':            'Instalar',
@@ -279,6 +289,16 @@ const en = {
   // Student login / sign-up (magic-link). Sign-up and sign-in share one flow.
   // "Salvar como app" (PWA install)
   'install.pill':           'Install app',
+  'mydata.pill':            'My data',
+  'mydata.title':           'My data',
+  'mydata.close':           'Close',
+  'mydata.name':            'Name',
+  'mydata.email':           'Email',
+  'mydata.emails':          'Emails',
+  'mydata.cpf':             'CPF',
+  'mydata.empty':           'We hold nothing about you beyond your access.',
+  'mydata.note':            'That is everything we hold about you. To correct anything, or to ask us to erase your data, talk to support.',
+  'mydata.cta':             'Request a change or removal',
   'install.cta_title':      'Install the trail on your phone',
   'install.cta_desc':       'Save it as an app on your home screen and open it in one tap, no browser.',
   'install.btn':            'Install',

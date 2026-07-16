@@ -62,8 +62,9 @@ function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').r
 //   turmaKey : storage scope (client/turma)
 //   onChange : called after a toggle, with the new prefs (so the bell re-filters)
 //   turmas   : the OTHER turmas on this device ({ name, client, url, clientSlug, turmaSlug }),
-//              the "trocar de turma" list; onForget(clientSlug, turmaSlug) removes a saved one
-export function createNotifSettings({ initials, turmaKey, onChange, onLogout, onInstallApp, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
+//              the "trocar de turma" list; onForget(clientSlug, turmaSlug) removes a saved one;
+//              onMyData opens the read-only "Meus dados" card (track-42)
+export function createNotifSettings({ initials, turmaKey, onChange, onLogout, onInstallApp, onMyData, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-ns-wrap';
 
@@ -106,6 +107,9 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, on
           '<div class="cdx-ns-opts">' + optsHtml() + '</div>'
         : '') +
       turmasHtml() +
+      // "Meus dados" (track-42): read-only, right where the person already is. It goes ABOVE Sair
+      // because logging out is the last thing in this panel, not a peer of looking at your data.
+      (onMyData ? '<button type="button" class="cdx-ns-mydata">' + escAttr(t('mydata.pill')) + '</button>' : '') +
       (onInstallApp ? '<button type="button" class="cdx-ns-install">' + escAttr(t('install.pill')) + '</button>' : '') +
       (onLogout ? '<button type="button" class="cdx-ns-logout">' + escAttr(t('login.logout')) + '</button>' : '') +
     '</div>';
@@ -135,6 +139,9 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, on
 
   const installBtn = wrap.querySelector('.cdx-ns-install');
   if (installBtn && onInstallApp) installBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onInstallApp(); });
+
+  const myDataBtn = wrap.querySelector('.cdx-ns-mydata');
+  if (myDataBtn && onMyData) myDataBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onMyData(); });
 
   const logoutBtn = wrap.querySelector('.cdx-ns-logout');
   if (logoutBtn && onLogout) logoutBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onLogout(); });

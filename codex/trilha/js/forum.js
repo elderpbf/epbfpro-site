@@ -45,7 +45,7 @@ function avatar(name, mods = '') {
 
 function myName() {
   const p = (state.data || {}).participant || {};
-  return p.display_name || p.name || '';
+  return p.name || '';   // ONE name (track-42): the forum is always explicit (Élder)
 }
 
 function meParticipantId() {

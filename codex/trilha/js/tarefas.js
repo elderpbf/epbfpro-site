@@ -380,7 +380,7 @@ async function openModal(tarefa, editing) {
     turmaSlug: state.turmaSlug,
     token: state.token,
     sessionToken: state.sessionToken,
-    participantName: participant.display_name || participant.name || '', // logged-in: drops the name field
+    participantName: participant.name || '',   // ONE name (track-42); logged-in drops the name field
     editing,
     onSubmitted: () => renderMyTarefas(_outerRoot),
   });

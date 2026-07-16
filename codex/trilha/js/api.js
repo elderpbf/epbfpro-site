@@ -33,7 +33,7 @@ export const trail = {
   // Public actions; session_token-bearing calls POST automatically (see worker-call.js).
   otpRequest:     (p) => call('student_otp_request', p),    // { email } -> { ok, dev_otp_code? } | { error }
   otpVerify:      (p) => call('student_otp_verify', p),     // { email, code, client_slug?, turma_slug?, presence_token? } -> { ok, turmas:[{client_slug,turma_slug,client_name,turma_name,token,session_token,participant_id,needs_profile,access}] } | { error }
-  profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }
+  profileSave:    (p) => call('student_profile_save', p),   // { session_token, display_name, consent, consent_version } -> { ok } | { error }. `display_name` is the wire name of the field; it writes THE name (track-42)
   sessionCheck:   (p) => call('student_session_check', p),  // { session_token } -> { ok, participant_id, turma_id } | { error }
   // Server-side logout (track-36 d): revoke the session + clear the HttpOnly cookie (which
   // script can't touch). Always send credentials so the cookie is presented + cleared.

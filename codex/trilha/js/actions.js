@@ -114,7 +114,7 @@ export function openTarefaSubmit(item, sub, opts) {
     turmaSlug: state.turmaSlug,
     token: state.token,
     sessionToken: state.sessionToken, // approved-session token; gated turmas require it
-    participantName: participant.display_name || participant.name || '', // logged-in identity, drops the name field
+    participantName: participant.name || '',   // ONE name (track-42), the registration name; drops the name field
     onSubmitted: () => injectActionButton(sub, item, opts || {}),
   });
   // Non-gated turmas keep the open anonymous / name-based submit, exactly as before.

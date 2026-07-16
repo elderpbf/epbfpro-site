@@ -43,6 +43,8 @@ test('contextFromState: prefers display names, falls back to slugs', () => {
   assert.deepEqual(contextFromState(s2), { client: 'acme', turma: 'turma-a', studentName: '' });
 });
 test('contextFromState: carries the participant name when present', () => {
-  const s = { data: { client: { display_name: 'Acme' }, turma: { name: 'Turma A' }, participant: { display_name: 'Fulano' } }, clientSlug: 'a', turmaSlug: 't' };
+  // ONE name (track-42): the participant's `name` IS the name. It used to read
+  // `display_name || name`, which is how one person ended up with two.
+  const s = { data: { client: { display_name: 'Acme' }, turma: { name: 'Turma A' }, participant: { name: 'Fulano' } }, clientSlug: 'a', turmaSlug: 't' };
   assert.equal(contextFromState(s).studentName, 'Fulano');
 });

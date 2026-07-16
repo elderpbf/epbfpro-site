@@ -42,7 +42,7 @@ export function contextFromState(state) {
   return {
     client: (data.client || {}).display_name || state.clientSlug || '',
     turma: (data.turma || {}).display_name || (data.turma || {}).name || state.turmaSlug || '',
-    studentName: (data.participant || {}).display_name || (data.participant || {}).name || '',
+    studentName: (data.participant || {}).name || '',
   };
 }
 

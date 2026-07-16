@@ -22,6 +22,7 @@ import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
 import { mountEntry, contextFromState } from './support-contact.js';
+import { openMyData } from './my-data.js';
 import { overlayLabItems } from './lab-overlay.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
@@ -339,7 +340,7 @@ function renderHeaderActions() {
           url: '/trilha/' + encodeURIComponent(e.client_slug) + '/' + encodeURIComponent(e.turma_slug) + '?k=' + encodeURIComponent(e.k || ''),
         }));
       const settings = createNotifSettings({
-        initials: avatarInitials((data.participant || {}).display_name || (data.participant || {}).name),
+        initials: avatarInitials((data.participant || {}).name),
         turmaKey,
         showPrefs: !!(data.turma && data.turma.forum_enabled),
         turmas: others,
@@ -349,6 +350,12 @@ function renderHeaderActions() {
         // when the turma enables the prompt). No-op on platforms where it isn't installable.
         onInstallApp: (data.turma && data.turma.app_install_prompt !== 0)
           ? (() => showInstallPrompt(_root, { win: _win }))
+          : undefined,
+        // "Meus dados" (track-42): read-only. The student sees what we hold; changing or erasing it
+        // is a request to support, by hand (Élder 2026-07-15). Only offered when there IS a
+        // participant to show — an anonymous view has nothing to answer with.
+        onMyData: (data.participant)
+          ? (() => openMyData(data.participant, contextFromState(state), { root: _root }))
           : undefined,
         onLogout: async () => {
           // Server round-trip first (track-36 d): clear the HttpOnly cookie + revoke, then reload.
