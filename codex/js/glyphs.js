@@ -8,6 +8,14 @@
 //   - "glyph:<key>"  -> rendered from this library (the new way), or
 //   - an emoji char  -> rendered verbatim (legacy types, until re-picked).
 // iconHtml() resolves both, so old and new types render side by side.
+//
+// NOT here, and deliberately:
+//   js/brand-marks.js  third-party BRAND marks (WhatsApp, ...). They are fixed, filled
+//                      artwork owned by someone else, so they cannot be a 24x24
+//                      currentColor stroke and must not be redrawn as one.
+//   js/brand-logos.js  PensoIA's OWN artwork (a builder: palettes, tagline, layers).
+// If you came here looking for one of those, go there. If you are about to hand-draw an
+// interface icon anywhere else, add the key here instead: that is what this file is for.
 
 export const GLYPH_PREFIX = 'glyph:';
 
@@ -17,18 +25,23 @@ const GLYPHS = {
   'code':       '<polyline points="16 18 22 12 16 6"/><polyline points="8 6 2 12 8 18"/>',
   'terminal':   '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
   'prompt':     '<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/><line x1="8" y1="9" x2="16" y2="9"/><line x1="8" y1="13" x2="13" y2="13"/>',
+  // The bare bubble. `prompt` is this PLUS text lines and means a written prompt; this one
+  // just means "a conversation happens here" (the Trail wall's Forum benefit). Registered
+  // because the wall was hand-drawing it, and swapping it to `prompt` would silently add
+  // two text lines it never had.
+  'message-square':'<path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>',
   'idea':       '<path d="M9 18h6"/><path d="M10 22h4"/><path d="M12 2a7 7 0 0 0-4 12.7c.6.5 1 1.3 1 2.1h6c0-.8.4-1.6 1-2.1A7 7 0 0 0 12 2z"/>',
   'zap':        '<polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"/>',
   'link':       '<path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/>',
   'settings':   '<circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.6 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.6a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>',
   'star':       '<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>',
-  'sparkle':    '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/>',
+  'sparkle':    '<path d="M10.75 3.75l1.9 5.1L17.75 10.75l-5.1 1.9L10.75 17.75l-1.9-5.1L3.75 10.75l5.1-1.9z"/><path d="M17.75 15.75l.7 1.8L20.25 17.75l-1.8.7L17.75 20.25l-.7-1.8L15.25 17.75l1.8-.7z"/>',
   'book':       '<path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/>',
   'bookmark':   '<path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>',
   'image':      '<rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/>',
   'video':      '<polygon points="23 7 16 12 23 17 23 7"/><rect x="1" y="5" width="15" height="14" rx="2" ry="2"/>',
   'checklist':  '<polyline points="9 11 12 14 22 4"/><path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11"/>',
-  'flask':      '<path d="M9 3h6"/><path d="M10 3v6.5L4.6 19a1 1 0 0 0 .9 1.5h13a1 1 0 0 0 .9-1.5L14 9.5V3"/><line x1="8" y1="14" x2="16" y2="14"/>',
+  'flask':      '<path d="M8.572 1.75h6.857"/><path d="M9.714 1.75v7.428L3.543 20.035a1.143 1.143 0 0 0 1.029 1.714h14.857a1.143 1.143 0 0 0 1.029-1.714L14.286 9.179V1.75"/><line x1="7.429" y1="14.321" x2="16.571" y2="14.321"/>',
   // ── Emoji-echo set: line-icon counterparts of the emojis the lab demos used,
   //    so a lab reads the same as its emoji but renders crisply on every device.
   'window':     '<rect x="3" y="3" width="18" height="18" rx="1"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="12" y1="3" x2="12" y2="21"/>',
@@ -44,23 +57,31 @@ const GLYPHS = {
   'edit':       '<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.12 2.12 0 0 1 3 3L12 15l-4 1 1-4z"/>',
   'clipboard':  '<path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/><rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>',
   'award':      '<circle cx="12" cy="8" r="7"/><polyline points="8.21 13.89 7 23 12 20 17 23 15.79 13.88"/>',
+  // Medal with a DOWN ARROW, not a ribbon: the certificate you receive (the Certificates
+  // tab). Deliberately not `award`, whose ribbon says "you won"; this one says "collect it".
+  'certificate':'<circle cx="12" cy="8" r="6"/><path d="M12 14v8"/><path d="M8 18l4 4 4-4"/>',
   'help':       '<circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
   'info':       '<circle cx="12" cy="12" r="10"/><line x1="12" y1="16" x2="12" y2="12"/><line x1="12" y1="8" x2="12.01" y2="8"/>',
   'alert':      '<path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13"/><line x1="12" y1="17" x2="12.01" y2="17"/>',
-  // App-card benefit glyphs: shared semantic keys used by ct_apps.description copy.
-  'spark':      '<path d="M12 3l1.9 5.1L19 10l-5.1 1.9L12 17l-1.9-5.1L5 10l5.1-1.9z"/><path d="M19 15l.7 1.8L21.5 17l-1.8.7L19 19.5l-.7-1.8L16.5 17l1.8-.7z"/>',
+  // App-card benefit glyphs: semantic keys the ct_apps.description copy names, so they come
+  // from the DATABASE, not from code. Zero call sites here is correct, not dead.
+  // `scissors` is its own drawing; `spark` and `term` are ALIASES, wired below the map so
+  // they cannot drift. They used to carry their own copy of the sparkle/terminal paths,
+  // which meant fixing the original silently left the alias behind. Same disease as the one
+  // this file exists to cure, just asleep.
   'scissors':   '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><line x1="20" y1="4" x2="8.12" y2="15.88"/><line x1="14.47" y1="14.48" x2="20" y2="20"/><line x1="8.12" y1="8.12" x2="12" y2="12"/>',
-  'term':       '<polyline points="4 17 10 11 4 5"/><line x1="12" y1="19" x2="20" y2="19"/>',
 
   // ── Documents / text ──
   'file':       '<path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/>',
   'copy':       '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   'layers':     '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   'list':       '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  // A list with a solid header bar: a template, i.e. a list whose first row is fixed.
+  'preset':     '<rect x="3" y="3" width="18" height="4" rx="1"/><path d="M3 11h18"/><path d="M3 17h18"/>',
   'type':       '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>',
   'hash':       '<line x1="4" y1="9" x2="20" y2="9"/><line x1="4" y1="15" x2="20" y2="15"/><line x1="10" y1="3" x2="8" y2="21"/><line x1="16" y1="3" x2="14" y2="21"/>',
   'paperclip':  '<path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48"/>',
-  'archive':    '<polyline points="21 8 21 21 3 21 3 8"/><rect x="1" y="3" width="22" height="5"/><line x1="10" y1="12" x2="14" y2="12"/>',
+  'archive':    '<polyline points="20.182 8.364 20.182 20.182 3.818 20.182 3.818 8.364"/><rect x="2" y="3.818" width="20" height="4.545"/><line x1="10.182" y1="12" x2="13.818" y2="12"/>',
   'trash':      '<polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"/>',
 
   // ── Education / science ──
@@ -95,6 +116,9 @@ const GLYPHS = {
   'mail':       '<path d="M4 4h16c1.1 0 2 .9 2 2v12c0 1.1-.9 2-2 2H4c-1.1 0-2-.9-2-2V6c0-1.1.9-2 2-2z"/><polyline points="22,6 12,13 2,6"/>',
   'send':       '<line x1="22" y1="2" x2="11" y2="13"/><polygon points="22 2 15 22 11 13 2 9 22 2"/>',
   'bell':       '<path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 0 1-3.46 0"/>',
+  // Round bubble = a conversation (the Perguntas surface). `prompt` is the square-ish
+  // bubble with text lines in it and means a written prompt; they are not interchangeable.
+  'message-circle':'<path d="M21 11.5a8.38 8.38 0 0 1-.9 3.8 8.5 8.5 0 0 1-7.6 4.7 8.38 8.38 0 0 1-3.8-.9L3 21l1.9-5.7a8.38 8.38 0 0 1-.9-3.8 8.5 8.5 0 0 1 4.7-7.6 8.38 8.38 0 0 1 3.8-.9h.5a8.48 8.48 0 0 1 8 8v.5z"/>',
   'users':      '<path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/>',
   'user':       '<path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/>',
   'at-sign':    '<circle cx="12" cy="12" r="4"/><path d="M16 8v5a3 3 0 0 0 6 0v-1a10 10 0 1 0-3.92 7.94"/>',
@@ -103,6 +127,13 @@ const GLYPHS = {
   // ── Time / place / business ──
   'calendar':   '<rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/>',
   'clock':      '<circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>',
+  // No `stopwatch` / `hourglass` here on purpose. The presenter bar in content/slides/js/
+  // draws both by hand, and that looks like drift until you check: that tree is the SEALED
+  // vendored core, allowed to import js/i18n.js and nothing else (tests/modules.test.mjs
+  // enforces it). It cannot consume this library BY DESIGN, so its hand-drawn icons are the
+  // boundary working. Adding keys here would not have removed a single copy; it would just
+  // be a third drawing. If a surface that CAN import this ever wants a timer, add them then
+  // and lift the drawings from app.js.
   'map-pin':    '<path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/>',
   'briefcase':  '<rect x="2" y="7" width="20" height="14" rx="2" ry="2"/><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   'dollar-sign':'<line x1="12" y1="1" x2="12" y2="23"/><path d="M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"/>',
@@ -137,8 +168,31 @@ const GLYPHS = {
   // Disclosure. Added here rather than inline in a card because this library is the ONE source
   // for Codex icons: an "it opens" affordance is needed in more than one place, and a one-off
   // SVG next to a card is exactly the ad-hoc drift this file exists to prevent.
-  'chevron-down': '<polyline points="6 9 12 15 18 9"/>'
+  'chevron-down': '<polyline points="6 9 12 15 18 9"/>',
+  // Registered from the drift audit: each of these was being hand-drawn at a call site
+  // because the library had no key for it. Two of them had already drifted into rival
+  // drawings before ever landing here, which is the whole argument for this file:
+  //   external-link -> trilha/js/state.js AND lessons/lessons.js drew it differently
+  //   menu          -> codex-topbar.js drew 3 lines, questions/live-host.js drew 4
+  // The versions kept below are the Feather originals, matching this file's lineage.
+  'external-link':'<path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/>',
+  'menu':       '<line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/>',
+  'close':      '<line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>',
+  // Bare tick. Distinct from check-circle on purpose: this one rides inside a button
+  // label ("Copiado"), where a circled tick reads as a status badge instead.
+  'check':      '<polyline points="20 6 9 17 4 12"/>',
+  'sort':       '<path d="M5 7h10M5 12h7M5 17h4"/><path d="M19 7v10"/><path d="M16.5 9.5 19 7l2.5 2.5"/><path d="M16.5 14.5 19 17l2.5-2.5"/>',
+  'maximize':   '<polyline points="16 3 21 3 21 8"/><line x1="4" y1="20" x2="21" y2="3"/><polyline points="21 16 21 21 16 21"/><line x1="15" y1="15" x2="21" y2="21"/>',
+  // Compound: padlock + download arrow. Not lock and not download; it marks the ONE
+  // download whose point is that it is signed (the certificate signer link).
+  'lock-download':'<rect x="4" y="11" width="16" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/><path d="M12 14.5v3.4"/><path d="M10.2 16.1 12 17.9l1.8-1.8"/>'
 };
+
+// Aliases: a second NAME for a drawing that already has a key, never a second drawing.
+// The ct_apps.description copy in the database names `spark` and `term`, so the keys must
+// exist, but they resolve to the one source. Add an alias here, never a copy up there.
+const ALIASES = { spark: 'sparkle', term: 'terminal' };
+for (const [alias, target] of Object.entries(ALIASES)) GLYPHS[alias] = GLYPHS[target];
 
 import { esc as _esc } from './dom.js';
 
@@ -147,16 +201,32 @@ export function glyphKeys() { return Object.keys(GLYPHS); }
 
 export function hasGlyph(key) { return Object.prototype.hasOwnProperty.call(GLYPHS, key); }
 
-// Render a glyph by key as a full <svg>. opts: { size=18, cls='' }. Unknown
-// key returns '' so callers can fall back.
+// Render a glyph by key as a full <svg>. Unknown key returns '' so callers can fall back.
+// opts:
+//   size=18       px. Pass size:null to omit width/height entirely and let CSS size it.
+//   cls=''        class attribute.
+//   filled=false  fill with currentColor instead of none. A filled glyph is the SAME
+//                 shape reading as "on": a solid star is the favourited star. Without
+//                 this the library could only ever return outlines, which is why
+//                 lessons.js hand-copied the star it already had a key for.
+//   strokeWidth=2 thinner strokes suit a filled shape, whose silhouette carries it.
+//   style=''      inline style. Deliberately an escape hatch, prefer `cls`. It exists
+//                 because a glyph sitting inline with text sometimes needs a one-off
+//                 optical nudge (vertical-align) and has no class to hang it on, and
+//                 the alternative was a call site keeping its own hand-drawn copy over
+//                 a single attribute. A copy is the expensive kind of wrong; this is not.
 export function glyphSvg(key, opts) {
   if (!hasGlyph(key)) return '';
   opts = opts || {};
-  const size = opts.size || 18;
+  const size = ('size' in opts) ? opts.size : 18;
+  const dim = (size == null) ? '' : ' width="' + size + '" height="' + size + '"';
   const cls = opts.cls ? ' class="' + opts.cls + '"' : '';
-  return '<svg' + cls + ' width="' + size + '" height="' + size + '" viewBox="0 0 24 24" ' +
-    'fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" ' +
-    'stroke-linejoin="round" aria-hidden="true">' + GLYPHS[key] + '</svg>';
+  const style = opts.style ? ' style="' + opts.style + '"' : '';
+  const fill = opts.filled ? 'currentColor' : 'none';
+  const sw = opts.strokeWidth || 2;
+  return '<svg' + cls + dim + ' viewBox="0 0 24 24" ' +
+    'fill="' + fill + '" stroke="currentColor" stroke-width="' + sw + '" stroke-linecap="round" ' +
+    'stroke-linejoin="round"' + style + ' aria-hidden="true">' + GLYPHS[key] + '</svg>';
 }
 
 // Resolve a type's stored icon to display HTML: a glyph SVG for "glyph:<key>",

@@ -13,6 +13,7 @@ import { trail } from './api.js';
 import * as sess from './student-session.js';
 import { entryHtml, contextFromState } from './support-contact.js';
 import { consentNoticeHtml } from './consent-notice.js';
+import { glyphSvg } from '../../js/glyphs.js';
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const PT_MONTHS = ['jan', 'fev', 'mar', 'abr', 'mai', 'jun', 'jul', 'ago', 'set', 'out', 'nov', 'dez'];
@@ -25,12 +26,15 @@ function shortDate(dateStr) {
   return mon ? m[3] + ' ' + mon : '';
 }
 
-// Benefit icons, same set as the OTP wall (copied verbatim).
+// Benefit icons, same set as the OTP wall. This file stays a deliberate standalone COPY of
+// wall.js's register surface, but that was never a reason to hand-draw icons twice: these
+// come from the shared library (js/glyphs.js), same as wall.js. `cert` is the hold-out for
+// the same reason it is there, the library's `award` is a different drawing of the same idea.
 const ICONS = {
-  conteudo: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"/><path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"/></svg>',
-  tarefa: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M22 2 11 13"/><path d="M22 2 15 22l-4-9-9-4 20-7z"/></svg>',
-  forum: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/></svg>',
-  cert: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="8" r="6"/><path d="M15.5 13 17 22l-5-3-5 3 1.5-9"/></svg>',
+  conteudo: glyphSvg('book', { size: null }),
+  tarefa: glyphSvg('send', { size: null }),
+  forum: glyphSvg('message-square', { size: null }),
+  cert: glyphSvg('award', { size: null }),
 };
 
 function benefitsHtml() {
