@@ -21,12 +21,13 @@ import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-reg
 import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
 import { mountPresetLoader } from '../js/preset-loader.js';
 import {
-  classifyVault, SECTION_ORDER, rendererStrategy,
+  classifyVault, LESSON_SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
   driveFolderEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
   groupItemsByType, zoneClassFor,
-  makeFavorites, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
+  makeFavorites, makeSectionOrder, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
+import { mountReorder } from '../js/pointer-reorder.js';
 
 // ── Module state ─────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -43,6 +44,8 @@ const _ls = typeof localStorage !== 'undefined' ? localStorage : null;
 const _scale = makeTextScale(_ls);
 const _width = makeContentWidth(_ls);
 const _favs = makeFavorites(_ls);
+const _secOrder = makeSectionOrder(_ls);
+let _reorders = [];
 // Preset filter
 let _presetId = null;
 let _presetItems = [];
@@ -66,8 +69,9 @@ let _overTop = false;
 let _overSide = false;
 let _overBottom = false;
 
-// All accordion section keys: used in mount reset + exclusive-open logic.
-const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs'];
+// All accordion section keys: used in mount reset + exclusive-open logic. Same list the
+// sidebar renders from, so a new section cannot be added to one and forgotten in the other.
+const ALL_SECTION_KEYS = LESSON_SECTION_ORDER;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 import { esc as _esc } from '../js/dom.js';
@@ -250,9 +254,12 @@ function _renderTypeGroup(group) {
     (collapsed ? '' : group.items.map(_renderSubCard).join(''));
 }
 
+// data-sec-key: the section's identity for the drag (js/pointer-reorder.js reads it to write
+// the new order). An attribute, not a class, so it names the section without painting anything
+// - this sidebar's look is frozen.
 function _sectionCard(key, count, bodyHtml) {
   const collapsed = _collapsed.has(key);
-  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(key) + (collapsed ? ' is-collapsed' : '') + '">' +
+  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(key) + (collapsed ? ' is-collapsed' : '') + '" data-sec-key="' + _esc(key) + '">' +
     '<button type="button" class="cdx-lesson-section-head" data-section="' + _esc(key) + '" aria-expanded="' + (!collapsed) + '">' +
       '<span class="cdx-lesson-section-glyph">' + (SECTION_GLYPHS[key] || '') + '</span>' +
       '<span class="cdx-lesson-section-label">' + _sectionLabel(key) + '</span>' +
@@ -281,9 +288,12 @@ function _renderSection(section) {
 }
 
 function _renderFavoritesSection() {
-  const ids = new Set(_favs.all());
-  if (!ids.size) return '';
-  const items = _vault.filter((it) => ids.has(String(it.id)));
+  // Ordered BY THE STORED LIST, not by vault order: the list is what a drag rewrites, so
+  // rendering it in any other order would show the drag being ignored. Resolution stays
+  // vault-only (a starred lab has never appeared here, and this is not the change that
+  // starts it).
+  const byId = new Map(_vault.map((it) => [String(it.id), it]));
+  const items = _favs.all().map((id) => byId.get(String(id))).filter(Boolean);
   if (!items.length) return '';
   const collapsed = _collapsed.has('favorites');
   const body = collapsed ? '' : items.map(_renderSubCard).join('');
@@ -342,27 +352,27 @@ function _renderLabsSection() {
   return _sectionCard('labs', labs.length, body);
 }
 
+// Each section decides FOR ITSELF whether it renders ('' = not now); the ORDER comes from
+// the admin's stored preference, which falls back to the order Elder designed (2026-06-01:
+// LLMs, Labs, Items, Drive, apostila, tarefas, External right after LLMs, preset/favourites
+// pinned on top). With nothing stored this emits exactly what it always did.
 function _renderSidebar() {
   const body = _q('.cdx-lessons-sidebar-body');
   if (!body) return;
   const buckets = classifyVault(_vault);
-  const html = [];
-  const preset = _renderPresetSection();
-  if (preset) html.push(preset);
-  const fav = _renderFavoritesSection();
-  if (fav) html.push(fav);
-  // Section order (Elder, 2026-06-01): LLMs, Labs, Items, Drive, Course content
-  // (apostila), Assignments (tarefas). External links stay right after LLMs
-  // (conditional, only when present).
-  html.push(_renderLLMSection(buckets.llm));
-  if (buckets.external.length) html.push(_renderSection({ key: 'external', items: buckets.external }));
-  const labs = _renderLabsSection();
-  if (labs) html.push(labs);
-  html.push(_renderSection({ key: 'items', items: buckets.items }));
-  if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
-  if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));
-  if (buckets.tarefas.length) html.push(_renderSection({ key: 'tarefas', items: buckets.tarefas }));
-  body.innerHTML = html.join('');
+  const bucketSection = (key) => (buckets[key].length ? _renderSection({ key, items: buckets[key] }) : '');
+  const make = {
+    preset:    () => _renderPresetSection(),
+    favorites: () => _renderFavoritesSection(),
+    llm:       () => _renderLLMSection(buckets.llm),
+    external:  () => bucketSection('external'),
+    labs:      () => _renderLabsSection(),
+    items:     () => _renderSection({ key: 'items', items: buckets.items }),  // always shows
+    drive:     () => (buckets.drive.length ? _renderDriveSection(buckets.drive) : ''),
+    apostila:  () => bucketSection('apostila'),
+    tarefas:   () => bucketSection('tarefas'),
+  };
+  body.innerHTML = _secOrder.get().map((k) => (make[k] ? make[k]() : '')).join('');
   _applySearch();
 }
 
@@ -964,6 +974,30 @@ function _renderShell() {
     if (sub) _renderItem(sub.dataset.itemId);
   });
 
+  // Drag (Elder 2026-07-17, "pode inserir drag tb"): the two lists whose order is the ADMIN'S
+  // and nobody else's, so both persist client-side and no Worker action is involved. Reordering
+  // items inside a section would be a shared, per-turma fact instead: a D1 column + a new action,
+  // and it is not approved.
+  //
+  // Both mount on .cdx-lessons-sidebar-body, which survives _renderSidebar()'s innerHTML
+  // replace; the handles disambiguate them (a section drags by its head, a favourite by its
+  // card, and a card is never inside a head). Neither re-renders on drop: the DOM already IS
+  // the new order, so a re-render would only risk it flickering back.
+  const sidebarBody = _q('.cdx-lessons-sidebar-body');
+  _reorders.push(mountReorder(sidebarBody, {
+    itemSel: '.cdx-lesson-section',
+    handleSel: '.cdx-lesson-section-head',
+    listSel: '.cdx-lessons-sidebar-body',
+    idAttr: 'data-sec-key',
+    onReorder: (keys) => { _secOrder.set(keys); },
+  }));
+  _reorders.push(mountReorder(sidebarBody, {
+    itemSel: '.cdx-lesson-sub',
+    listSel: '.cdx-lesson-section--favorites .cdx-lesson-section-body',
+    idAttr: 'data-item-id',
+    onReorder: (ids) => { _favs.reorder(ids); },
+  }));
+
   // Context menu on sidebar items
   _q('.cdx-lessons-sidebar-body').addEventListener('contextmenu', (e) => {
     const sub = e.target.closest('.cdx-lesson-sub');
@@ -998,6 +1032,7 @@ export function mount(viewEl) {
   _detailCache = new Map();
   _previewReq = 0;
   _cleanup = [];
+  _reorders = [];
   _focusMountHotZones();
   _renderShellLoading();
   cohortsApi.listAllTurmas().then((d) => {
@@ -1024,6 +1059,8 @@ function _renderShellLoading() {
 export function unmount() {
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
+  _reorders.forEach((r) => r.destroy());
+  _reorders = [];
   _activeItemId = null;
   _detailCache = new Map();
   _liveSession = null;

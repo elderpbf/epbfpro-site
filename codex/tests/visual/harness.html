@@ -23,6 +23,7 @@
 <link rel="stylesheet" href="/codex/css/list-rail.css">
 <link rel="stylesheet" href="/codex/cohorts/cohorts.css">
 <link rel="stylesheet" href="/codex/questions/questions.css">
+<link rel="stylesheet" href="/codex/lessons/lessons.css">
 <link rel="stylesheet" href="/codex/css/backstage.css">
 <link rel="stylesheet" href="/codex/css/settings-drawer.css">
 <link rel="stylesheet" href="/codex/css/notif-bell.css">
@@ -68,10 +69,22 @@
   const subtab = qs.get('subtab');
   if (subtab) { try { localStorage.setItem('codex_subtab_mode', subtab); } catch (_) {} }
 
+  // ?favs=1,2 seeds cv_favorites_v1, i.e. stages the Favoritos section. It only renders when
+  // something is starred, so without this the drag test has no list to drag.
+  const favs = qs.get('favs');
+  if (favs) { try { localStorage.setItem('cv_favorites_v1', JSON.stringify(favs.split(','))); } catch (_) {} }
+
+  // ?focus=0 turns Lessons' focus mode off. It defaults ON above 700px, and it TUCKS THE
+  // SIDEBAR AWAY until the cursor hits the left edge — fine for teaching, useless for a
+  // screenshot or a drag, which need the sidebar on screen deterministically.
+  const focus = qs.get('focus');
+  if (focus) { try { localStorage.setItem('cv_focus_mode', focus); } catch (_) {} }
+
   const mod = qs.get('mod') || 'cohorts';
   const SRC = {
     cohorts:  '/codex/cohorts/cohorts.js',
     sessions: '/codex/questions/sessions.js',
+    lessons:  '/codex/lessons/lessons.js',
   };
   if (!SRC[mod]) throw new Error('harness: unknown module ' + mod);
   // "Painted" = a real ROW exists. Era-neutral by listing both the bespoke row and the rail's
@@ -82,14 +95,18 @@
   const ROW = {
     cohorts:  '#cdx-cohorts-list .cdx-ti, #cdx-cohorts-list .cdx-rail-row',
     sessions: '#cdx-sessions-sidebar .cdx-session-card, #cdx-sessions-sidebar .cdx-rail-row',
+    // Lessons keeps its own markup by design (its look is the product and is frozen), so there
+    // is no rail row to wait for here and never will be.
+    lessons:  '.cdx-lessons-sidebar-body .cdx-lesson-section',
   };
 
   // The real topbar, so the chrome height and the hamburger are the app's, not a guess.
   // Its tab/sub-tab strip is what the rails' `padding-top` has to clear.
-  const TAB = { cohorts: 'cohorts', sessions: 'questions' };
+  const TAB = { cohorts: 'cohorts', sessions: 'questions', lessons: 'lessons' };
   const SUBTABS = {
     cohorts:  [{ label: 'Turmas', href: '#', active: true }, { label: 'Cursos', href: '#' }, { label: 'Alunos', href: '#' }],
     sessions: [{ label: 'Sessões', href: '#', active: true }, { label: 'Bancos', href: '#' }],
+    lessons:  [],
   };
   const { init: topbar } = await import('/codex/js/codex-topbar.js');
   topbar({ active: TAB[mod], subTabs: SUBTABS[mod], subTabsByTab: { [TAB[mod]]: SUBTABS[mod] } });

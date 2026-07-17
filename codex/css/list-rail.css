@@ -14,8 +14,9 @@
 /* An autohide rail is a full-height SIDEBAR (the page's primary nav), not an in-page left
    panel, so its head carries the page-title weight: 1.25rem, matching the dossiê title next
    to it. Keyed on the mode class the module stamps, so Clientes and Sessões cannot drift
-   apart again (they did: Sessões came out smaller — Élder 2026-07-17) and Lessons inherits
-   it for free. The 8 in-page rails keep .95rem. */
+   apart again (they did: Sessões came out smaller, Élder 2026-07-17). The 8 in-page rails
+   keep .95rem. (Lessons is NOT one of these: it is a fixed 340px left panel and its
+   reveal is focus-mode, a different mechanism entirely.) */
 .cdx-rail--autohide .cdx-rail-head  { padding:.75rem 1rem; }
 .cdx-rail--autohide .cdx-rail-title { font-size:1.25rem; }
 .cdx-rail-add    { flex:0 0 auto; }

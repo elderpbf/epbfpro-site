@@ -228,6 +228,13 @@
 }
 .cdx-lesson-sub-sum { font-size: 0.68rem; color: var(--text-secondary); margin-top: 2px; overflow: hidden; white-space: nowrap; text-overflow: ellipsis; }
 
+/* ── Drag (js/pointer-reorder.js): sections + favourites ─────────────────────
+ * DURING the drag only. This sidebar's resting look is frozen, so there is no grip and no
+ * grab cursor to give it away: a press under the 4px threshold is still a plain click. The
+ * only thing that paints is the element being carried. */
+.cdx-lesson-section.is-dragging,
+.cdx-lesson-sub.is-dragging { opacity: 0.5; }
+
 .cdx-empty--inline { padding: 10px 12px 14px; font-size: 0.78rem; color: var(--text-dim, var(--text-secondary)); }
 
 /* ── Main view ────────────────────────────────────────────────────────────── */
