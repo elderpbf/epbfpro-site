@@ -23,14 +23,23 @@
 <link rel="stylesheet" href="/codex/css/list-rail.css">
 <link rel="stylesheet" href="/codex/cohorts/cohorts.css">
 <link rel="stylesheet" href="/codex/questions/questions.css">
+<link rel="stylesheet" href="/codex/css/backstage.css">
+<link rel="stylesheet" href="/codex/css/settings-drawer.css">
+<link rel="stylesheet" href="/codex/css/notif-bell.css">
+<script src="/codex/js/theme-manager.js"></script>
 <style>
-  /* The tab view inside the real app chrome: full viewport, no topbar. The nav's
-     auto-hide is position-driven, so the harness must give it the same box the app does. */
-  html, body { margin: 0; height: 100%; background: var(--background); }
-  #view { height: 100vh; padding: 0.6rem; box-sizing: border-box; }
+  html, body { margin: 0; min-height: 100%; background: var(--background); }
 </style>
 
-<div id="view"></div>
+<!-- The REAL app shell, not an approximation. The rails are position:fixed and clear the
+     chrome with a hardcoded `padding-top: 94px`, so a harness without a topbar cannot see
+     whether that number is right — and cannot see the hamburger/drawer at all. That blind
+     spot is not theoretical: it is how the [data-turma-slug] drawer regression shipped. -->
+<div id="screen-app" class="bs-app">
+  <main class="bs-main">
+    <div id="view" class="cdx-view"></div>
+  </main>
+</div>
 
 <script type="module">
   import { stubWorker } from './fixtures.js';
@@ -52,6 +61,13 @@
   const last = qs.get('last');
   if (last) { try { localStorage.setItem('cdx_cohorts_last', last.replace('/', '\n')); } catch (_) {} }
 
+  // ?subtab=bar|pill — the sub-tab display mode. It changes the CHROME'S HEIGHT (the bar adds a
+  // persistent row; the pill is a hover overlay and adds none), which is exactly what the rails
+  // must clear. 'pill' is the default, and the old hardcoded 94px only ever matched 'bar' — so
+  // the default shipped a 29px gap. Both modes have to be shot.
+  const subtab = qs.get('subtab');
+  if (subtab) { try { localStorage.setItem('codex_subtab_mode', subtab); } catch (_) {} }
+
   const mod = qs.get('mod') || 'cohorts';
   const SRC = {
     cohorts:  '/codex/cohorts/cohorts.js',
@@ -67,6 +83,16 @@
     cohorts:  '#cdx-cohorts-list .cdx-ti, #cdx-cohorts-list .cdx-rail-row',
     sessions: '#cdx-sessions-sidebar .cdx-session-card, #cdx-sessions-sidebar .cdx-rail-row',
   };
+
+  // The real topbar, so the chrome height and the hamburger are the app's, not a guess.
+  // Its tab/sub-tab strip is what the rails' `padding-top` has to clear.
+  const TAB = { cohorts: 'cohorts', sessions: 'questions' };
+  const SUBTABS = {
+    cohorts:  [{ label: 'Turmas', href: '#', active: true }, { label: 'Cursos', href: '#' }, { label: 'Alunos', href: '#' }],
+    sessions: [{ label: 'Sessões', href: '#', active: true }, { label: 'Bancos', href: '#' }],
+  };
+  const { init: topbar } = await import('/codex/js/codex-topbar.js');
+  topbar({ active: TAB[mod], subTabs: SUBTABS[mod], subTabsByTab: { [TAB[mod]]: SUBTABS[mod] } });
 
   const m = await import(SRC[mod]);
   m.mount(document.getElementById('view'), {});

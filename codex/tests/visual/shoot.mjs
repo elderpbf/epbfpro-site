@@ -71,9 +71,34 @@ async function shoot(name, width, height, act, query = '') {
 const SHOTS = { cohorts: shootCohorts, sessions: shootSessions };
 if (!SHOTS[mod]) { console.error('no shot list for module ' + mod); process.exit(1); }
 
+// The rails clear the chrome with a hardcoded `padding-top: 94px`. If the real topbar + sub-row
+// is not exactly 94px tall, the rail either floats below it (Élder: "não chega até a barra
+// superior; tem um gap") or slides under it. MEASURE it, never eyeball it: a few px of gap is
+// invisible in a screenshot review and obvious on a real screen.
+async function assertFlushWithChrome(p, railSel) {
+  const gap = await p.evaluate((sel) => {
+    const bar = document.querySelector('.bs-topbar');
+    const rail = document.querySelector(sel);
+    if (!bar || !rail) return null;
+    // The rail's PAINTED top edge (its inner card), not the fixed box's padding edge.
+    const inner = rail.querySelector('.cdx-rail') || rail;
+    return Math.round(inner.getBoundingClientRect().top - bar.getBoundingClientRect().bottom);
+  }, railSel);
+  if (gap === null) throw new Error('could not measure: no .bs-topbar or ' + railSel);
+  if (gap !== 0) throw new Error('the rail is ' + gap + 'px off the topbar (want 0, flush). ' + railSel);
+}
+
 async function shootCohorts() {
   // Desktop, rail pinned open (the load state: no turma picked yet).
-  await shoot('01-pinned-open', 1440, 900);
+  await shoot('01-pinned-open', 1440, 900, async (p) => {
+    await assertFlushWithChrome(p, '.cdx-cohorts-listpane');
+  });
+
+  // The SAME check in 'bar' mode, where the chrome is ~29px taller. One hardcoded number cannot
+  // be right for both, which is the whole bug; --cdx-chrome-h has to hold in each.
+  await shoot('10-flush-in-subtab-bar-mode', 1440, 900, async (p) => {
+    await assertFlushWithChrome(p, '.cdx-cohorts-listpane');
+  }, '&subtab=bar');
 
   // A client expanded — the accordion, the avatar/initials, the phase accent bars.
   await shoot('02-client-open', 1440, 900, async (p) => {
@@ -159,8 +184,28 @@ async function shootSessions() {
   const CARD = '#cdx-sessions-sidebar .cdx-session-card, #cdx-sessions-sidebar .cdx-rail-row';
   const card = (p, i) => p.locator(CARD).nth(i);
 
-  // Load state: sidebar pinned open, the create form, the picker, the live dot.
-  await shoot('01-pinned-open', 1440, 900);
+  // Load state: sidebar pinned open, title + `+` on top, the picker, the live dot. The create
+  // panel starts COLLAPSED, so the list is what the picker shows.
+  await shoot('01-pinned-open', 1440, 900, async (p) => {
+    await assertFlushWithChrome(p, '.cdx-sessions-sidebar');
+    if (await p.locator('#cdx-sessions-create').count()) throw new Error('the create panel should start collapsed');
+  });
+
+  // The + expands the head in place (no modal) and puts the cursor in the field: + then type
+  // then Enter, never leaving the rail. That IS the reason it is not a modal.
+  await shoot('07-create-panel-expanded', 1440, 900, async (p) => {
+    await p.click('[data-rail-add]');
+    await p.waitForTimeout(200);
+    if (!await p.locator('#cdx-sessions-create').count()) throw new Error('the + did not expand the head panel');
+    const focused = await p.evaluate(() => document.activeElement && document.activeElement.id);
+    if (focused !== 'cdx-sessions-title') throw new Error('the + did not focus the field, it focused: ' + focused);
+    // Toggling it back must collapse, not stack a second form.
+    await p.click('[data-rail-add]');
+    await p.waitForTimeout(150);
+    if (await p.locator('#cdx-sessions-create').count()) throw new Error('the + did not collapse the panel again');
+    await p.click('[data-rail-add]');
+    await p.waitForTimeout(150);
+  });
 
   // Picking a session: the sidebar unpins and hides, the live host takes the main area.
   await shoot('02-session-picked-rail-hidden', 1440, 900, async (p) => {
@@ -188,13 +233,14 @@ async function shootSessions() {
   // the input's value, the half-typed title vanishes under him. No test hook needed: the click
   // IS the trigger (_select -> _renderList -> rail.render).
   await shoot('06-typed-title-survives-rerender', 1440, 900, async (p) => {
-    await p.fill('#cdx-sessions-title', 'Aula 7 — Prompt engineering');
-    await card(p, 1).click();          // -> _select -> _renderList -> the footer is rebuilt
+    await p.click('[data-rail-add]');
+    await p.fill('#cdx-sessions-title', 'Aula 7: prompt engineering');
+    await card(p, 1).click();          // -> _select -> _renderList -> the head panel is rebuilt
     await p.waitForTimeout(200);
     await p.mouse.move(2, 500);        // bring the (now unpinned) rail back to see the form
     await p.waitForTimeout(300);
     const v = await p.inputValue('#cdx-sessions-title');
-    if (v !== 'Aula 7 — Prompt engineering') throw new Error('a re-render ate the half-typed title: got "' + v + '"');
+    if (v !== 'Aula 7: prompt engineering') throw new Error('a re-render ate the half-typed title: got "' + v + '"');
   });
 
   // Phone. Sessões is the screen Élder named: it has NO hamburger at all today.

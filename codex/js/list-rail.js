@@ -15,7 +15,8 @@
 //     rowClass:(it)=>'extra classes',   // per-row state the consumer's CSS keys off
 //     selectedId:()=>id, onSelect:(id)=>{},
 //     emptyText: str|()=>str, emptyHtml:()=>html,   // whole list empty (Html wins; rich states)
-//     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
+//     add:{label,title,onAdd}, headPanel:()=>html,   // head expands to reveal it ('' = collapsed)
+//     reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
 //               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
@@ -200,7 +201,13 @@ export function mountRail(container, cfg) {
     const head = (cfg.title || add)
       ? '<div class="cdx-rail-head"><span class="cdx-rail-title">' + esc(cfg.title || '') + '</span>' + addBtn + '</div>'
       : '';
-    return head + filters;
+    // headPanel(): the head EXPANDS to reveal consumer html under it — same shape as the filter
+    // row, and the consumer owns whether it is showing (return '' when collapsed). Sessões puts
+    // its create-session form here: Élder wanted the title + `+` on top like Clientes, but a `+`
+    // that opens a modal would add a click and a surface to a flow he runs live at the start of
+    // every class. Expanding in place keeps type-and-submit and still frees the top.
+    const panel = cfg.headPanel ? (cfg.headPanel() || '') : '';
+    return head + filters + (panel ? '<div class="cdx-rail-headpanel">' + panel + '</div>' : '');
   }
 
   function render() {

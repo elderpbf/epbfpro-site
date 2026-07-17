@@ -207,7 +207,7 @@
   width: 320px;
   background: var(--surface);
   border-right: 1px solid var(--border, rgba(127, 127, 127, 0.3));
-  padding-top: 94px;                 /* clears the topbar + Perguntas sub-row */
+  padding-top: var(--cdx-chrome-h, 94px);   /* the topbar publishes its real height; see cohorts.css */
   box-sizing: border-box;
   z-index: 80;
   transform: translateX(-100%);
@@ -224,7 +224,6 @@
   border-radius: 0;
 }
 .cdx-sessions-sidebar .cdx-rail-body { padding: 1rem; }
-.cdx-sessions-sidebar .cdx-rail-foot { border-top: none; padding: 0 1rem 1rem; }
 /* Rows: the rail's generic row is flush + rounded; a session card is a bordered box. */
 .cdx-sessions-sidebar .cdx-rail-row {
   padding: 0.55rem 0.7rem;
@@ -248,15 +247,11 @@
   .cdx-sessions-sidebar { width: 80vw; max-width: 320px; }
 }
 
-/* Create-session form (compact, mirrors cv-sm density). It is the rail's footer now, so it is
- * pinned below the scrolling list instead of being the sidebar's first child; the margin that
- * separated it from the list below it is gone with that. */
+/* Create-session form (compact, mirrors cv-sm density). It is the rail's head PANEL now: the
+ * header expands to reveal it when you hit +, so the card shell it used to need as a standalone
+ * block is gone (the panel is the box, .cdx-rail-headpanel owns the border + padding). */
 .cdx-create-session {
   display: flex; flex-direction: column; gap: 0.5rem;
-  background: var(--background);
-  border: 1px solid var(--border, rgba(127, 127, 127, 0.3));
-  border-radius: 10px;
-  padding: 0.7rem 0.8rem;
 }
 .cdx-create-session-heading {
   margin: 0;

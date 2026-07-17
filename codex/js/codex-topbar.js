@@ -502,6 +502,22 @@ export function init(opts) {
     header.appendChild(mrow);
   }
 
+  // Publish the chrome's REAL height as --cdx-chrome-h, for the position:fixed rails that
+  // have to clear it (cohorts' CLIENTES, Sessões). They each hardcoded `padding-top: 94px`
+  // = 65px bar + a 29px sub-BAR — but 'pill' is the DEFAULT sub-tab mode and has no bar, so
+  // the default rendering left a 29px gap between the topbar and the rail (Élder 2026-07-17:
+  // "não chega até a barra superior"). A magic number cannot know a mode it never reads;
+  // the bar owns its own height, so it is the one that must say so. Measured after every
+  // sub-bar/sub-row insert above, so it counts whatever actually rendered.
+  const publishChromeHeight = () => {
+    const h = Math.round(header.getBoundingClientRect().height);
+    if (h) document.documentElement.style.setProperty('--cdx-chrome-h', h + 'px');
+  };
+  publishChromeHeight();
+  // The bar wraps/reflows at narrow widths, so its height is not a constant. (The mode toggle
+  // itself reloads the page, so it needs no hook here.)
+  window.addEventListener('resize', publishChromeHeight);
+
   // Mobile bottom navigation (advradar-style): the four functional tabs as an
   // icon+label bar pinned to the bottom edge. Hidden on desktop; CSS reveals it
   // and hides the flex-starved top .cdx-tabs strip below the phone breakpoint.

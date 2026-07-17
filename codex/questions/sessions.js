@@ -26,11 +26,12 @@ let _selectedCode = null;
 // the hide timer, Escape and the open class used to be hand-rolled right here, byte-for-byte the
 // same as cohorts' copy; both now come from the module. This file only says WHEN it is pinned.
 let _rail = null;
-// The create form lives in the rail's footer, and render() replaces the footer DOM. Keeping the
-// typed title in module state makes that safe BY CONSTRUCTION: today nothing re-renders the list
-// while you type (no timer; only mount/create/delete/rename do), but "no caller does that yet" is
-// the kind of guarantee this track keeps finding broken.
+// The create form is the rail's head panel, and render() replaces that DOM. Keeping the typed
+// title in module state makes that safe BY CONSTRUCTION: today nothing re-renders the list while
+// you type (no timer; only mount/create/delete/rename do), but "no caller does that yet" is the
+// kind of guarantee this track keeps finding broken.
 let _newTitle = '';
+let _creating = false;   // is the head's create panel expanded
 let _loading = false;
 
 // Server accuracy is a 0..1 ratio (or null when unscored). Render as a rounded
@@ -82,15 +83,28 @@ function _cardAct(s) {
     : '';
 }
 
-// The create form: unchanged markup, now the rail's footer (it was the sidebar's first child).
-// Its value comes from _newTitle so a re-render can never eat what you are typing.
+// The create form, revealed by the head's + (rail headPanel). Élder wanted the title + `+` on
+// top like Clientes, but NOT behind a modal: the header expands in place, so creating a session
+// is still type-and-submit, which is what he does live at the start of every class.
+// Collapsed -> '' -> the rail renders no panel at all.
+// The value comes from _newTitle, so a re-render can never eat what you are typing.
 function _createFormHtml() {
+  if (!_creating) return '';
   return '<form class="cdx-create-session" id="cdx-sessions-create">' +
-      '<h3 class="cdx-create-session-heading">' + t('questions.sessions_sidebar_heading') + '</h3>' +
       '<label class="cdx-create-session-label" for="cdx-sessions-title">' + t('questions.sessions_title_label') + '</label>' +
       '<input class="cdx-input" id="cdx-sessions-title" type="text" maxlength="120" autocomplete="off" value="' + _esc(_newTitle) + '" placeholder="' + _esc(t('questions.sessions_new_title')) + '">' +
       '<button class="cdx-btn cdx-btn-primary" type="submit">' + t('questions.sessions_create') + '</button>' +
     '</form>';
+}
+
+// The + toggles the panel. Focus lands in the field on open, so it stays keyboard-first: the
+// whole point of expanding instead of a modal is that + then type then Enter never leaves the rail.
+function _toggleCreate() {
+  _creating = !_creating;
+  _renderList();
+  if (!_creating) return;
+  const input = _viewEl && _viewEl.querySelector('#cdx-sessions-title');
+  if (input) input.focus();
 }
 
 function _renderList() {
@@ -252,6 +266,7 @@ export function mount(viewEl, ctx) {
   const pre = (ctx && ctx.session) ? String(ctx.session) : null;
   _selectedCode = pre;
   _newTitle = '';
+  _creating = false;
   _loading = false;
 
   viewEl.innerHTML =
@@ -267,10 +282,15 @@ export function mount(viewEl, ctx) {
   const main = viewEl.querySelector('#cdx-sessions-detail');
   const sidebar = viewEl.querySelector('#cdx-sessions-sidebar');
 
-  // Flat list = the clean adoption: no sections, no bands, no reorder. Deliberately no
-  // title/add either, so the module skips the head bar entirely and the sidebar looks as it
-  // does today. The create form stays a real inline form (see _createFormHtml), in the footer.
+  // Flat list = the clean adoption: no sections, no bands, no reorder. Title + `+` on top like
+  // Clientes (Élder 2026-07-17), with the create form as the head's expanding panel rather
+  // than a modal, so it stays type-and-submit.
   _rail = mountRail(sidebar, {
+    // The title names what the rail LISTS ("Sessões"), like Clientes does, not the panel's
+    // action. sessions_sidebar_heading ("Nova sessão") is the + button's label instead.
+    title: t('questions.sub_sessions'),
+    add: { label: '+', title: t('questions.sessions_sidebar_heading'), onAdd: _toggleCreate },
+    headPanel: _createFormHtml,
     items: () => _sessions,
     getId: (s) => s.code,
     renderRow: (s) => ({ main: _cardMain(s), act: _cardAct(s) }),
@@ -279,7 +299,6 @@ export function mount(viewEl, ctx) {
     emptyHtml: () => (_loading
       ? '<div class="cdx-sessions-loading">' + t('questions.sessions_loading') + '</div>'
       : '<div class="cdx-sessions-empty"><div class="cdx-sessions-empty-icon">\u{1F4CB}</div><p>' + t('questions.sessions_empty') + '</p></div>'),
-    footer: _createFormHtml,
     width: {
       mode: 'autohide',
       layoutEl: viewEl.querySelector('#cdx-sessions-layout'),  // the class toggles on the layout
@@ -302,6 +321,7 @@ export function mount(viewEl, ctx) {
     try { res = await api.createSession({ title }); } catch (err) { notice.internal(err); res = null; }
     if (!res || res.error || !res.code) { toast.err(t('questions.sessions_create_error')); return; }
     _newTitle = '';
+    _creating = false;   // done: collapse the panel back
     // Like the legacy create flow, jump straight into hosting the new session.
     _selectedCode = res.code;
     _rail.pin(false);
@@ -328,6 +348,7 @@ export function unmount() {
   _sessions = [];
   _selectedCode = null;
   _newTitle = '';
+  _creating = false;
   _loading = false;
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
