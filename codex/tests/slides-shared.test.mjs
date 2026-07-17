@@ -16,10 +16,16 @@ import { createLibrary } from '../content/slides/adapters/library.js';
 // O núcleo (app.js) monta com DOM, então a costura app->adapter é lida da FONTE. É o
 // idioma dos outros contract tests do repo (modules.test.mjs, slides-i18n-menus).
 const APP_SRC = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/app.js', import.meta.url)), 'utf8');
+// Métodos de UMA LINHA (`addSlide(id) { ...; },`) param na própria linha. Sem isso o corte
+// ia até o `\n    },` do PRÓXIMO método multi-linha e devolvia o corpo de três métodos
+// juntos: um guard perguntando "addSlide chama commit?" respondia sim porque o removeSlide
+// lá embaixo chamava. Guard que lê o vizinho não é guard.
 const methodOf = (name) => {
   let i = APP_SRC.indexOf(`    ${name}(`);
   if (i < 0) i = APP_SRC.indexOf(`    async ${name}(`); // shareCurrentSlide é async
   assert.ok(i > 0, `${name} existe no app.js`);
+  const oneLine = APP_SRC.slice(i, APP_SRC.indexOf('\n', i));
+  if (/\},\s*$/.test(oneLine)) return oneLine;
   const end = APP_SRC.indexOf('\n    },', i);
   assert.ok(end > i, `${name} termina no fecho de método esperado`);
   return APP_SRC.slice(i, end);
@@ -349,6 +355,49 @@ test('TODA op que remexe slides[] limpa a multi-seleção da régua', () => {
   assert.deepEqual(missing, [], 'estas remexem slides[] sem limpar a seleção por índice');
 });
 
+test('TODA op que remexe slides[] arma o autosave (commit, direto ou via refresh)', () => {
+  // store.touch() é o ÚNICO gatilho do autosave (store.on('change') -> 800ms em
+  // content/slides.js) e commit() é o único caminho até ele. goTo() renderiza e não toca o
+  // store, então `splice + goTo` mexe no deck e NÃO marca sujo: o slide só é salvo se você
+  // digitar nele depois, porque aí o keystroke salva o deck inteiro. Por isso o bug se
+  // escondia. "Compartilhar -> este deck -> solto" (que cai no duplicate) é justo o caso sem
+  // keystroke nenhum depois: dizia "compartilhado" e sumia no reload.
+  const MUTATORS = ['addSlide', 'duplicate', 'removeSlide', 'reorder', 'insertTemplate', 'linkTemplate', 'pasteClip'];
+  const missing = MUTATORS.filter((m) => !/this\.(commit|refresh)\(/.test(methodOf(m)));
+  assert.deepEqual(missing, [], 'estas mudam slides[] sem nunca marcar o deck como sujo');
+});
+
+test('commit() é o único caminho até store.touch(), e goTo() não é um deles', () => {
+  // O guard acima só vale enquanto estas duas coisas forem verdade. Linhas de comentário
+  // fora: elas FALAM de store.touch() e não chamam nada.
+  const code = APP_SRC.split('\n').filter((l) => !/^\s*\/\//.test(l)).join('\n');
+  const n = (code.match(/store\.touch\(\)/g) || []).length;
+  assert.equal(n, 1, 'só o commit() toca o store');
+  assert.match(methodOf('commit'), /store\.touch\(\)/);
+  assert.ok(!/this\.commit\(|store\.touch/.test(methodOf('goTo')), 'goTo só navega/renderiza');
+});
+
+test('a sincronia de gêmeos parte do slide EDITADO, não do que está na tela', () => {
+  // A janela do apresentador escreve notes em QUALQUER slide por índice, não no cur(). Com
+  // syncSameRef partindo sempre do cur(), um gêmeo do slide na tela recebia o conteúdo do
+  // cur() por cima da nota recém-digitada: o mesmo "gêmeo come a edição" que este mecanismo
+  // existe pra impedir, no único ponto onde quem edita não é quem está na tela.
+  assert.match(methodOf('syncSameRef'), /const s = from \|\| this\.cur\(\)/);
+  assert.match(methodOf('commit'), /syncSameRef\(from\)/);
+  const pres = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/present/presenter.js', import.meta.url)), 'utf8');
+  assert.match(pres, /s\.notes = m\.notes; app\.commit\(s\)/, 'o presenter passa o slide que editou');
+});
+
+test('destacar NÃO é o conserto de um vínculo quebrado', () => {
+  // brokenSlide() é um AVISO ("slide compartilhado não encontrado"), não conteúdo: o conteúdo
+  // vivia na entrada da biblioteca que foi excluída, e o deck só guarda {id, ref}. Destacar um
+  // slide quebrado congelava esse aviso como conteúdo do slide e jogava o ref fora, ou seja,
+  // entregava lixo chamando de conserto. E o shr_broken_tip mandava fazer exatamente isso.
+  assert.match(methodOf('detachCurrent'), /if \(!s \|\| !s\.ref \|\| s\._broken\) return false;/, 'recusa no quebrado');
+  assert.match(methodOf('resetBroken'), /if \(!s \|\| !s\._broken\) return false;/, 'e é o único que aceita');
+  assert.match(methodOf('resetBroken'), /s\.slots = \{ text: "" \}/, 'limpa o aviso em vez de promovê-lo a conteúdo');
+});
+
 test('a preview da régua ANEXA o thumb antes de renderizar (senão o slide freed some)', () => {
   // Élder 2026-07-17: "se a imagem dentro de um frame de imagem for resized, ela deixa de
   // mostrar na preview na barra". Causa: applyOverrides -> freedStyle anda pelo offsetParent
@@ -393,7 +442,7 @@ test('app.commit sincroniza os gêmeos do mesmo ref (é o que evita o "só depoi
   // A invariante que um slide vinculado promete é UM slide, N lugares. Dentro de um deck os
   // gêmeos são objetos diferentes, então alguém tem de mantê-los iguais; o commit é o funil
   // por onde TODA mutação passa a caminho do store, então é o único lugar que fecha isso.
-  assert.match(methodOf('commit'), /this\.syncSameRef\(\)/, 'o commit sincroniza');
+  assert.match(methodOf('commit'), /this\.syncSameRef\(from\)/, 'o commit sincroniza');
   const src = methodOf('syncSameRef');
   assert.match(src, /o\.ref !== s\.ref/, 'só mexe em quem tem o mesmo ref');
   assert.match(src, /id: o\.id/, 'cada gêmeo mantém o próprio id local do deck');

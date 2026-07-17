@@ -61,6 +61,9 @@
 /* The share button carries the same link glyph in both directions; `linked` tints it so
    "this slide IS shared" (and so the click means DETACH) reads without the tooltip. */
 .cdx-deck-editor #chrome #shareBtn.linked { color: var(--teal); border-color: var(--teal-l); }
+/* Third state: the entry this slide pointed at is gone. Same danger token as the rail badge,
+   so the two places that report a broken link report it the same way. */
+.cdx-deck-editor #chrome #shareBtn.broken { color: var(--danger); border-color: var(--danger); }
 /* Rail multi-pick (Shift/Ctrl+click), what Ctrl+C takes. Distinct from `.active` (the slide
    ON the stage): active is the primary border, picked is a teal wash, and one thumb is
    routinely both. */

@@ -38,7 +38,9 @@ export function createSync(app) {
     else if (m.type === "goto") { if (app.atEnd) app.setEnd(false); app.goTo(m.index); } // slide-list click
     else if (m.type === "setnotes") { // notes edited in the presenter window: persist here
       const s = app.deck().slides[m.index];
-      if (s) { app.record("notes:" + m.index); s.notes = m.notes; app.commit(); app.syncNotes(); }
+      // commit(s), not commit(): this slide is usually NOT the one on screen, and the
+      // same-ref sync spreads FROM the slide that was edited (app.syncSameRef).
+      if (s) { app.record("notes:" + m.index); s.notes = m.notes; app.commit(s); app.syncNotes(); }
       // no re-broadcast: the presenter already shows what it typed, and broadcasting would
       // re-render its minis on every keystroke.
     }

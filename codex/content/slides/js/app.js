@@ -217,14 +217,18 @@ export function mount(root, ctx = {}) {
     // other stale until a reload (Élder 2026-07-17: "a mudança só apareceu no original
     // depois de dar refresh"). Worse than stale: dehydrate then wrote BOTH to the same
     // library id and the LAST one won, so the stale twin silently ate the edit.
-    commit() { if (this.syncSameRef()) this.renderNav(); store.touch(); },
+    // `from` = the slide that was just edited, when it is NOT the one on screen. Only the
+    // presenter window does that (it writes notes into any slide by index), and without it
+    // syncSameRef would spread cur()'s content over that slide and EAT the note that just
+    // arrived: the same twin-overwrite this whole mechanism exists to stop.
+    commit(from) { if (this.syncSameRef(from)) this.renderNav(); store.touch(); },
 
-    // Copy the current slide's content onto every OTHER slide in this deck with the same
+    // Copy the edited slide's content onto every OTHER slide in this deck with the same
     // ref, keeping each one's deck-local id. Returns true if anything changed (so commit
     // only re-renders the rail when it must; this runs on every keystroke). A slide showing
     // the broken placeholder is skipped: it has no content to spread, only a warning.
-    syncSameRef() {
-      const s = this.cur();
+    syncSameRef(from) {
+      const s = from || this.cur();
       if (!s || !s.ref || s._broken) return false;
       const sl = this.deck().slides;
       let hit = false;
@@ -272,12 +276,17 @@ export function mount(root, ctx = {}) {
       const b = this.root.querySelector("#shareBtn");
       if (!b) return;
       if (!this._library) { b.style.display = "none"; return; }
-      const shared = this.isShared(this.cur());
+      const s = this.cur();
+      // THREE states, not two: a broken link is neither "compartilhar" nor "destacar". It
+      // says so, and its click asks what to do with the hole (see the handler in wireChrome).
+      const broken = !!(s && s._broken);
+      const shared = this.isShared(s);
       b.style.display = "";
-      b.classList.toggle("linked", shared);
+      b.classList.toggle("linked", shared && !broken);
+      b.classList.toggle("broken", broken);
       b.innerHTML = glyphSvg("link", { size: 15 });
-      const lbl = t(shared ? "slides.shr_detach" : "slides.shr_share");
-      b.title = lbl + ": " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
+      const lbl = broken ? t("slides.shr_broken_fix") : t(shared ? "slides.shr_detach" : "slides.shr_share");
+      b.title = broken ? t("slides.shr_broken_tip") : lbl + ": " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
       b.setAttribute("aria-label", lbl);
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
@@ -672,8 +681,10 @@ export function mount(root, ctx = {}) {
       const s = clone(tpl.slide);
       s.id = uid();
       delete s.name;
+      delete s.from; // library-entry metadata (the origin deck), not a slide field, like `name`
       this.deck().slides.splice(this.index + 1, 0, s);
       this.goTo(this.index + 1);
+      this.commit(); // goTo does not touch the store; see addSlide
     },
     // Edit a saved layout MANUALLY: insert a detached copy as a new slide to edit,
     // and remember which template it came from so the next save-as-layout overwrites
@@ -737,6 +748,7 @@ export function mount(root, ctx = {}) {
       s.id = uid();
       s.ref = tpl.id;
       delete s.name;
+      delete s.from; // entry metadata, not a slide field (see insertTemplate)
       this.deck().slides.splice(this.index + 1, 0, s);
       this.goTo(this.index + 1);
       this.commit();
@@ -905,14 +917,37 @@ export function mount(root, ctx = {}) {
     // "Destacar": keep the content, drop the link. This slide becomes a private copy of
     // whatever it was showing; the library entry and every other deck linking it are
     // untouched. This is how a near-identical deck diverges on the few slides that
-    // differ (architecture/slides.md §10), and the escape hatch out of a broken ref.
+    // differ (architecture/slides.md §10).
+    //
+    // NOT the escape hatch out of a broken ref, which is what this used to claim and what
+    // shr_broken_tip still told the user to do. A broken slide is showing the PLACEHOLDER
+    // ("slide compartilhado nao encontrado"), because its content lived in the library entry
+    // that is gone; detaching it would freeze that warning as the slide's own content and
+    // throw away the ref, i.e. hand the user a garbage slide and call it a repair. Refused
+    // here so it cannot happen by accident; resetBroken() is the honest answer.
     detachCurrent() {
       const s = this.cur();
-      if (!s || !s.ref) return;
+      if (!s || !s.ref || s._broken) return false;
       this.record();
       delete s.ref;
       delete s._broken;
       this.refresh();
+      return true;
+    },
+
+    // The other half: a slide whose library entry is gone. There is nothing to recover (a
+    // linked slide stores {id, ref} and NOTHING else on disk), so the only honest outcomes
+    // are "drop it" or "keep the position and start over". This is the second: an empty
+    // slide of this deck, with the warning text cleared rather than promoted to content.
+    resetBroken() {
+      const s = this.cur();
+      if (!s || !s._broken) return false;
+      this.record();
+      delete s.ref;
+      delete s._broken;
+      s.slots = { text: "" };
+      this.refresh();
+      return true;
     },
 
     // insert a free element (movable on any slide) of the given type
@@ -961,8 +996,13 @@ export function mount(root, ctx = {}) {
         this.refresh();
       }
     },
-    addSlide(layoutId) { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.goTo(this.index + 1); },
-    duplicate() { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.goTo(this.index + 1); },
+    // The commit() on these two is not decoration: goTo renders but never touches the
+    // store, and store.touch() is the ONLY thing that arms the autosave. Without it a
+    // slide you add and do not TYPE into is never saved, and the bug hides because the
+    // first keystroke saves the whole deck anyway. "Compartilhar -> este deck -> solto"
+    // is exactly the case with no keystroke after it (it lands here, via duplicate).
+    addSlide(layoutId) { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.goTo(this.index + 1); this.commit(); },
+    duplicate() { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.goTo(this.index + 1); this.commit(); },
     removeSlide(i) {
       this.record();
       this.clearPick();
@@ -1164,6 +1204,23 @@ function wireChrome(app, root) {
   if (shareBtn) {
     shareBtn.onclick = async () => {
       if (!app._library) return;
+      // BROKEN link: the entry it pointed at was deleted, so the content is gone for good
+      // (the deck only ever stored {id, ref}). "Destacar" here would freeze the warning text
+      // as this slide's content and call it a repair, which is what the old tip promised.
+      // Ask instead, and let both answers be honest ones.
+      if (app.cur() && app.cur()._broken) {
+        const what = await askChoice(app.root, {
+          title: t("slides.shr_broken_title"),
+          message: t("slides.shr_broken_msg"),
+          options: [
+            { value: "remove", label: t("slides.shr_broken_remove"), hint: t("slides.shr_broken_remove_hint"), primary: true },
+            { value: "blank", label: t("slides.shr_broken_blank"), hint: t("slides.shr_broken_blank_hint") },
+          ],
+        });
+        if (what === "remove") app.removeSlide(app.index);
+        else if (what === "blank") app.resetBroken();
+        return;
+      }
       if (app.isShared(app.cur())) {
         // eslint-disable-next-line no-alert
         if (!window.confirm(t("slides.shr_detach_confirm"))) return;
