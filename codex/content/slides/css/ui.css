@@ -274,12 +274,9 @@
 .cdx-deck-editor #pv .pvtimes { display: flex; align-items: center; gap: 22px; }
 .cdx-deck-editor #pv .pvt { display: inline-flex; align-items: center; gap: 7px; }
 .cdx-deck-editor #pv .pvt .pvg { display: inline-flex; opacity: .8; }
-/* O glifo acompanha o NUMERO que ele rotula (Élder 2026-07-16). O desalinhamento que ele viu
-   não era falta de centralização (o .pvt sempre teve align-items:center), era escala: um glifo
-   de 15/17px ao lado de um número de 28px lê como solto, não como centrado. O CSS é dono do
-   tamanho aqui, então o app.js passa size:null em vez de emitir width/height que perderiam. */
-.cdx-deck-editor #pv .pvt .pvg svg { width: 26px; height: 26px; }
-.cdx-deck-editor #pv .pvt-clock .pvg svg { width: 20px; height: 20px; }
+/* Tamanho do glifo: fica no app.js (size 15/17), NÃO aqui. Tentei 26/20px em 2026-07-16 pra o
+   glifo acompanhar o número de 28px; no mock parecia certo e na tela real o Élder cortou na
+   hora ("too large"). O 15/17 é o que ele usa desde sempre e é o que fica. */
 .cdx-deck-editor #pv .pvt b { font-weight: 700; font-variant-numeric: tabular-nums; }
 .cdx-deck-editor #pv .pvt-clock { color: #6fafa3; font-size: 15px; }        /* current time: small + muted */
 .cdx-deck-editor #pv .pvt-sw b { font-size: 28px; color: var(--teal-l); }
