@@ -126,20 +126,27 @@ export function createSharedSlides({ library, message } = {}) {
       const linked = deck.slides.filter(isLinked);
       if (!linked.length) return deck;
 
-      // DEDUPE BY REF FIRST. One deck may hold the same shared slide in several positions
+      // DEDUPE BY REF. One deck may hold the same shared slide in several positions
       // (paste-linked into the deck it came from), and each is a separate object, so a naive
-      // map emits two entries for one library id. updateMany would then apply both in order
-      // and the LAST would win: whichever twin the editor had not just touched would
-      // overwrite the edit. app.syncSameRef keeps the twins identical, which makes this a
-      // belt-and-braces, but the write path must not DEPEND on that to be non-destructive.
-      const byRef = new Map();
-      for (const s of linked) if (!s._broken && !byRef.has(s.ref)) byRef.set(s.ref, s);
-
+      // map emits two entries for ONE library id; updateMany would apply both in order and
+      // the last would win. That is how the twin you did NOT just edit could overwrite your
+      // edit. app.syncSameRef keeps the twins identical on the way in, so in practice they
+      // agree; this prefers the CHANGED one when they somehow do not, which is the only
+      // choice that cannot lose an edit. What the dedupe guarantees ALONE is one write per
+      // ref, not which content wins: that part does lean on syncSameRef.
+      //
       // Write back only what actually differs, so the 800ms autosave does not rewrite the
       // whole library container on every change to an unrelated slide. A broken
       // placeholder is never written back: that would publish "not found" as the content.
+      const byRef = new Map();
+      for (const s of linked) {
+        if (s._broken) continue;
+        const c = sharedContent(s);
+        if (!byRef.has(s.ref) || changed(s.ref, c)) byRef.set(s.ref, c);
+      }
+
       const dirty = [...byRef.entries()]
-        .map(([ref, s]) => ({ id: ref, slide: sharedContent(s) }))
+        .map(([ref, slide]) => ({ id: ref, slide }))
         .filter((e) => changed(e.id, e.slide));
 
       if (dirty.length && library) {

@@ -456,3 +456,32 @@ test('app.deleteTemplate devolve inUse em vez de apagar', () => {
   assert.ok(check > 0 && remove > check, 'checa o uso ANTES de remover');
   assert.match(src, /if \(used\.length\) return \{ inUse: used \}/, 'e devolve pra UI dizer onde');
 });
+
+test('duplicar um slide COMPARTILHADO dá uma cópia solta, não um gêmeo vinculado', async () => {
+  // O duplicateSlide clonava o slide inteiro, ref junto. Então o botão "duplicar" (que promete
+  // uma cópia) devolvia um segundo VÍNCULO, e editar a "cópia" editava os outros decks. Pior:
+  // "compartilhar -> este deck -> SOLTO" passa por aqui, ou seja o solto saía vinculado, que é
+  // o oposto exato da única distinção que o Élder fica testando.
+  const { duplicateSlide } = await import('../content/slides/js/core/deck.js');
+  const d = duplicateSlide({ id: 's1', ref: 'L1', layout: 'statement', slots: { text: 'oi' } });
+  assert.equal(d.ref, undefined, 'duplicar = cópia independente, sem vínculo');
+  assert.notEqual(d.id, 's1');
+  assert.equal(d.slots.text, 'oi', 'o conteúdo vai junto');
+
+  const b = duplicateSlide({ id: 's2', ref: 'X', _broken: true, layout: 'statement', slots: { text: 'não encontrado' } });
+  assert.equal(b._broken, undefined, 'duplicar um placeholder quebrado não espalha o aviso como conteúdo');
+});
+
+test('o dehydrate escreve UMA vez por ref e escolhe o gêmeo EDITADO', async () => {
+  const lib = fakeLibrary([tpl('L1', 'v1')]);
+  const shared = createSharedSlides({ library: lib });
+  const deck = deckWith([{ id: 'a', ref: 'L1' }, { id: 'b', ref: 'L1' }]);
+  await shared.hydrate(deck);
+
+  // O 2º gêmeo é o editado (o 1º fica velho). Pegar "o primeiro" perderia a edição.
+  deck.slides[1].slots.text = 'editado no B';
+  await shared.dehydrate(deck);
+
+  assert.equal(lib.writes, 1, 'uma gravação, não duas correndo pro mesmo id');
+  assert.equal(lib._peek('L1').slide.slots.text, 'editado no B');
+});
