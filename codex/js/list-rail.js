@@ -217,8 +217,12 @@ export function mountRail(container, cfg) {
     // list (e.g. labs) when render() runs on every selection. Carry it over.
     const prevBody = container.querySelector('.cdx-rail-body');
     const prevScroll = prevBody ? prevBody.scrollTop : 0;
+    // The mode is a CSS fact too, not just behaviour: an autohide rail is a full-height
+    // sidebar and is styled as one (see css/list-rail.css). Stamped by the module so no
+    // consumer has to remember, and so two sidebars cannot drift apart.
+    const modeClass = (cfg.width && cfg.width.mode === 'autohide') ? ' cdx-rail--autohide' : '';
     container.innerHTML =
-      '<div class="cdx-rail">' +
+      '<div class="cdx-rail' + modeClass + '">' +
         headHtml() +
         '<div class="cdx-rail-body">' + bodyHtml() + '</div>' +
         (cfg.footer ? '<div class="cdx-rail-foot">' + cfg.footer() + '</div>' : '') +

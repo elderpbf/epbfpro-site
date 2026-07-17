@@ -1103,9 +1103,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-cohorts-listpane .cdx-rail-sec-acts:focus-within { opacity: 1; }
 .cdx-cohorts-listpane .cdx-rail-sec-acts { gap: 0.2rem; flex: 0 0 auto; }
 
-/* The pane title matched the dossiê title (1.25rem); the rail's default is .95rem. */
-.cdx-cohorts-listpane .cdx-rail-head { padding: 0.75rem 1rem; }
-.cdx-cohorts-listpane .cdx-rail-title { font-size: 1.25rem; }
+/* The head's size/padding is the rail's `--autohide` skin now (css/list-rail.css), shared with
+ * Sessões, so it is not duplicated here. */
 .cdx-cohorts-listpane .cdx-rail-body { padding: 0.5rem; }   /* was .cdx-pane-body's inset */
 
 .cdx-cg-ava {
