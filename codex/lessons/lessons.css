@@ -246,7 +246,10 @@
  * and let it fill. The sidebar body already supplies the 12px inset the old list had, so the
  * rail body adds none — otherwise every card drifts 2px and no border lines up with before. */
 .cdx-lessons-sidebar-body .cdx-rail { border: none; border-radius: 0; background: transparent; height: 100%; }
-.cdx-lessons-sidebar-body .cdx-rail-body { padding: 0; }
+/* No horizontal inset (the sidebar body already gives 12px, so cards line up with before), but a
+ * few px on top: the first card lifts 1px on hover, and its glow would otherwise clip against the
+ * scroll container's top edge (Élder 2026-07-18). */
+.cdx-lessons-sidebar-body .cdx-rail-body { padding: 6px 0 0; }
 
 /* Top section head = the neon accent card (the old .cdx-lesson-section-head). --sec comes from
  * .cdx-lesson-section--<key>; the constant .cdx-lesson-section class is on the rail's section. */

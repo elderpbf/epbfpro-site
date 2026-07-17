@@ -276,6 +276,18 @@ function _toggleSection(key) {
   if (_collapsed.has(key)) { ALL_SECTION_KEYS.forEach((k) => _collapsed.add(k)); _collapsed.delete(key); }
   else { _collapsed.add(key); }
 }
+// Sub-groups (type under Itens, folder under Drive) are exclusive TOO now (Élder 2026-07-18:
+// "habilite nos de baixo também"). Same shape as the sections: open one, close the rest. It is
+// global across the level, but since only one section is open at a time (exclusive above), you
+// only ever see one parent's sub-groups, so global reads as one-per-section.
+function _openSubId() {
+  for (const s of _navSubs) if (!_collapsed.has(String(s.id))) return s.id;
+  return null;
+}
+function _toggleSub(key) {
+  if (_collapsed.has(key)) { _navSubs.forEach((s) => _collapsed.add(String(s.id))); _collapsed.delete(key); }
+  else { _collapsed.add(key); }
+}
 
 // ONE entry per (item × section it appears in). The same item shows in Favoritos AND in its type
 // bucket AND in Preset, and today all of them light up together because the active state matches
@@ -346,8 +358,9 @@ function _railCfg() {
         of: (e) => e.sub,
         list: () => _navSubs,
         collapsible: true,
-        collapsed: (g) => _collapsed.has(String(g.id)),
-        onToggle: (id) => { if (_collapsed.has(id)) _collapsed.delete(id); else _collapsed.add(id); _rail.render(); },
+        exclusive: true,
+        openId: _openSubId,
+        onToggle: (id) => { _toggleSub(id); _rail.render(); },
       },
     ],
   };
