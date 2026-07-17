@@ -11,6 +11,13 @@
                    border-bottom:1px solid var(--border); }
 .cdx-rail-title  { font-size:.95rem; font-weight:700; color:var(--text-primary); flex:1; min-width:0;
                    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+/* An autohide rail is a full-height SIDEBAR (the page's primary nav), not an in-page left
+   panel, so its head carries the page-title weight: 1.25rem, matching the dossiê title next
+   to it. Keyed on the mode class the module stamps, so Clientes and Sessões cannot drift
+   apart again (they did: Sessões came out smaller — Élder 2026-07-17) and Lessons inherits
+   it for free. The 8 in-page rails keep .95rem. */
+.cdx-rail--autohide .cdx-rail-head  { padding:.75rem 1rem; }
+.cdx-rail--autohide .cdx-rail-title { font-size:1.25rem; }
 .cdx-rail-add    { flex:0 0 auto; }
 
 /* filter chips: own line under the title, wraps on mobile */
@@ -20,6 +27,10 @@
                    font:inherit; font-size:.72rem; font-weight:600; padding:.15rem .5rem; border-radius:999px; cursor:pointer; }
 .cdx-rail-chip.is-on { background:var(--tint-primary); border-color:var(--primary); color:var(--tint-primary-tx); }
 .cdx-rail-chip-n { opacity:.7; }
+
+/* headPanel: the head expanding to reveal consumer html (e.g. a create form). Never scrolls
+   with the list: it is chrome, so it stays flex-shrink:0 like the head it belongs to. */
+.cdx-rail-headpanel { flex-shrink:0; padding:.5rem .8rem .7rem; border-bottom:1px solid var(--border); }
 
 /* body: the ONLY scrolling region */
 .cdx-rail-body   { flex:1; min-height:0; overflow-y:auto; padding:.4rem; }

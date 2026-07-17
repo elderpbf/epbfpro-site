@@ -226,6 +226,44 @@ test('the mobile drawer closes on a rail row pick: the topbar selector matches a
   assert.match(topbar, /e\.target\.closest\(DRAWER_PICK_SEL\)/);
 });
 
+// An autohide rail is a full-height SIDEBAR (the page's primary nav), not an in-page panel, so
+// its head carries the page-title weight. That was hand-scoped in cohorts.css, so Sessões came
+// out smaller than Clientes (Élder 2026-07-17). The module stamps the mode as a class and ONE
+// rule in list-rail.css keys off it, so the two cannot drift apart again and Lessons inherits it.
+test('width:autohide stamps its mode class (the sidebar skin hangs off it)', () => {
+  // autohide binds document-level listeners on render; this file's stub has no document.
+  const prevDoc = global.document;
+  global.document = makeEl();
+  try {
+    const el = makeEl();
+    mountRail(el, {
+      items: () => TURMAS, getId: (t) => t.id, renderRow: (t) => ({ main: t.name }),
+      title: 'Sessões',
+      width: { mode: 'autohide', openClass: 'cdx-sm--open' },
+    }).render();
+    assert.match(el.innerHTML, /<div class="cdx-rail cdx-rail--autohide">/, 'autohide rails are marked');
+
+    const plain = makeEl();
+    mountRail(plain, {
+      items: () => TURMAS, getId: (t) => t.id, renderRow: (t) => ({ main: t.name }),
+      title: 'Cursos',
+      width: { mode: 'resize', storeKey: 'x' },
+    }).render();
+    assert.match(plain.innerHTML, /<div class="cdx-rail">/, 'an in-page rail is NOT marked');
+  } finally {
+    if (prevDoc === undefined) delete global.document; else global.document = prevDoc;
+  }
+});
+
+test('the sidebar title rule lives in the module CSS, not copied per consumer', () => {
+  const css = readFileSync(join(root, 'css/list-rail.css'), 'utf8');
+  assert.match(css, /\.cdx-rail--autohide \.cdx-rail-title \{ font-size:1\.25rem; \}/);
+  // ...and the consumer that used to hand-scope it no longer does (that was the drift).
+  const cohortsCss = readFileSync(join(root, 'cohorts/cohorts.css'), 'utf8');
+  assert.ok(!/\.cdx-cohorts-listpane \.cdx-rail-title/.test(cohortsCss),
+    'cohorts must not re-scope the title size: that is what let Sessões come out different');
+});
+
 test('the 8 migrated rails are untouched: no bands + no exclusive still renders 1 level', () => {
   const el = makeEl();
   const rail = mountRail(el, {
