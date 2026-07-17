@@ -76,9 +76,16 @@
 
   // ?focus=0 turns Lessons' focus mode off. It defaults ON above 700px, and it TUCKS THE
   // SIDEBAR AWAY until the cursor hits the left edge — fine for teaching, useless for a
-  // screenshot or a drag, which need the sidebar on screen deterministically.
+  // screenshot or a drag, which need the sidebar on screen deterministically. ?focus=1 is not
+  // redundant with omitting it: it says the shot MEANS to be in the default teaching state.
   const focus = qs.get('focus');
   if (focus) { try { localStorage.setItem('cv_focus_mode', focus); } catch (_) {} }
+
+  // ?order=tarefas,items seeds cv_section_order_v1, i.e. stages an admin who ALREADY dragged.
+  // Writing the order is one thing; painting it back on the next boot is the half a drag test
+  // cannot see, because it re-reads its own render rather than a fresh mount.
+  const secOrder = qs.get('order');
+  if (secOrder) { try { localStorage.setItem('cv_section_order_v1', JSON.stringify(secOrder.split(','))); } catch (_) {} }
 
   const mod = qs.get('mod') || 'cohorts';
   const SRC = {

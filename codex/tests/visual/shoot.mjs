@@ -383,6 +383,42 @@ async function shootLessons() {
     }
   }, NO_FOCUS + '&favs=105,101,103');
 
+  // A stored order must be READ BACK and painted, not just written. 03 proves the write; without
+  // this, "the drag sticks" rests on a unit test and an obvious .map().
+  await shoot('09-stored-order-is-painted-on-boot', 1440, 900, async (p) => {
+    const got = await order(p);
+    if (got[0] !== 'tarefas' || got[1] !== 'items') {
+      throw new Error('the stored order was not honoured at mount: ' + got.join(','));
+    }
+    if (!got.includes('llm')) throw new Error('a section missing from the stored order vanished: ' + got.join(','));
+  }, NO_FOCUS + '&order=tarefas,items');
+
+  // THE state Élder actually teaches in: focus mode is ON by default above 700px, so the sidebar
+  // is tucked away and he reveals it at the left edge BEFORE dragging. Every other shot here
+  // forces it off for determinism, which left the first drag he will ever try unverified — the
+  // exact "it works on my harness" this track exists to kill. The reveal holds while the cursor
+  // is over the sidebar (_overSide cancels the hide timer), and a drag never leaves it.
+  await shoot('10-drag-with-focus-mode-on', 1440, 900, async (p) => {
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus'))) {
+      throw new Error('setup: focus mode is not on, so this shot proves nothing');
+    }
+    await p.mouse.move(2, 450);            // the edge reveal
+    await p.waitForTimeout(300);
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus--side'))) {
+      throw new Error('setup: the edge did not reveal the sidebar');
+    }
+    await drag(p, secSel('items') + ' .cdx-lesson-section-head', secSel('llm'), 'above');
+    const got = await order(p);
+    if (got.indexOf('items') > got.indexOf('llm')) {
+      throw new Error('the drag does not work in focus mode (the state he actually uses): ' + got.join(','));
+    }
+    // And the sidebar must still be revealed: a drag that lets it tuck away mid-carry would
+    // drop the section into thin air.
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus--side'))) {
+      throw new Error('the sidebar tucked itself away during the drag');
+    }
+  }, '&focus=1');
+
   // Phone: below 700px focus mode is skipped anyway and the sidebar is the drawer.
   await shoot('08-phone', 390, 844, null, NO_FOCUS);
 }
