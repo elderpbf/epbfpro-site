@@ -266,27 +266,27 @@ export function mount(root, ctx = {}) {
       this.syncNotes();
     },
     // ONE button, both directions, reading the current slide's state (the Section B pattern:
-    // a control says what it IS). Inline -> "compartilhar" (publish + link in place);
-    // linked -> "destacar". It stays even though Ctrl+C/Ctrl+V is now the everyday way to
-    // share (Élder 2026-07-17: "só disse que ele seria pouco usado, não que deveria deixar
-    // de existir") -- copy/paste needs a second place to paste into, and this does not.
-    // Icon-only: the glyph is the same link in both states, the TITLE carries the verb.
-    // Hidden with no library injected (standalone build), like the one next to it.
+    // a control says what it IS). A plain slide reads "compartilhar". An ALREADY-shared slide
+    // still reads "compartilhar": sharing it again only points more decks at the same library
+    // entry, which is safe, so clicking it no longer jumps to "destacar" (Élder 2026-07-17:
+    // "ele só vai apontar para o que já está na biblioteca; não precisa desse notice"). The
+    // tint only SHOWS it is shared; the flow offers detach as an explicit, confirmed choice.
+    // A broken link is a third state that says so. Icon-only: the glyph is the same link, the
+    // TITLE carries the meaning. Hidden with no library injected (standalone build).
     syncShareBtn() {
       const b = this.root.querySelector("#shareBtn");
       if (!b) return;
       if (!this._library) { b.style.display = "none"; return; }
       const s = this.cur();
-      // THREE states, not two: a broken link is neither "compartilhar" nor "destacar". It
-      // says so, and its click asks what to do with the hole (see the handler in wireChrome).
       const broken = !!(s && s._broken);
       const shared = this.isShared(s);
       b.style.display = "";
       b.classList.toggle("linked", shared && !broken);
       b.classList.toggle("broken", broken);
       b.innerHTML = glyphSvg("link", { size: 15 });
-      const lbl = broken ? t("slides.shr_broken_fix") : t(shared ? "slides.shr_detach" : "slides.shr_share");
-      b.title = broken ? t("slides.shr_broken_tip") : lbl + ": " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
+      const lbl = broken ? t("slides.shr_broken_fix") : t("slides.shr_share");
+      b.title = broken ? t("slides.shr_broken_tip")
+        : (shared ? t("slides.shr_shared_tip") : lbl + ": " + t("slides.shr_share_tip"));
       b.setAttribute("aria-label", lbl);
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
@@ -1221,13 +1221,12 @@ function wireChrome(app, root) {
         else if (what === "blank") app.resetBroken();
         return;
       }
-      if (app.isShared(app.cur())) {
-        // eslint-disable-next-line no-alert
-        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
-        app.detachCurrent();
-        return;
-      }
-      // 1) WHERE. This deck, another one, or a new one created right here.
+      // An already-shared slide is SAFE to share again (it only points more decks at the same
+      // library entry), so clicking share must NOT jump to the detach confirm any more (Élder
+      // 2026-07-17). Detach stays reachable, but as a deliberate, confirmed option in the list.
+      const alreadyShared = app.isShared(app.cur());
+      // 1) WHERE. This deck, another one, a new one created right here, or (if already shared)
+      // "destacar".
       const decks = (app._deckList ? app._deckList() : []).filter((d) => d.slug !== app._slug);
       const target = await askChoice(app.root, {
         title: t("slides.shr_where_title"),
@@ -1236,9 +1235,18 @@ function wireChrome(app, root) {
           { value: "__here__", label: t("slides.shr_where_here"), hint: app._deckTitle, primary: true },
           ...decks.map((d) => ({ value: d.slug, label: d.title || d.slug })),
           { value: "__new__", label: t("slides.shr_where_new") },
+          ...(alreadyShared ? [{ value: "__detach__", label: t("slides.shr_detach"), hint: t("slides.shr_detach_tip") }] : []),
         ],
       });
       if (!target) return;
+      if (target === "__detach__") {
+        // Detach IS destructive (the slide stops following the library), so it keeps its
+        // confirm; what changed is that it only fires when the user picks it on purpose.
+        // eslint-disable-next-line no-alert
+        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
+        app.detachCurrent();
+        return;
+      }
       let dest = null;
       if (target === "__new__") {
         // No name prompt: the deck is auto-named (unique) like "+ nova apresentação", the same

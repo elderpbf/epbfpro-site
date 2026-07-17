@@ -253,7 +253,22 @@ test('o botão de compartilhar EXISTE e diz os dois estados', () => {
   // existe pra eu não podar de novo o que ele mandou manter.
   const src = methodOf('syncShareBtn');
   assert.match(src, /shr_share/, 'slide comum -> compartilhar');
-  assert.match(src, /shr_detach/, 'slide vinculado -> destacar');
+  assert.match(src, /shr_shared_tip/, 'slide já compartilhado -> segue "compartilhar", o tint mostra o estado');
+  assert.doesNotMatch(src, /shr_detach/, 'o botão NÃO vira "destacar" (Élder: sem esse notice ao compartilhar de novo)');
+});
+
+test('compartilhar um slide JÁ compartilhado não força o destacar; oferece como opção', () => {
+  // Élder 2026-07-17: clicar em compartilhar num slide já compartilhado abria "Destacar este
+  // slide?". Compartilhar de novo é seguro (só aponta mais decks pra mesma entrada), então o
+  // clique vai pro fluxo de sempre; destacar continua lá, mas como escolha explícita e confirmada.
+  const i = APP_SRC.indexOf('shareBtn.onclick');
+  const block = APP_SRC.slice(i, i + 3600);
+  const where = block.indexOf('shr_where_title');
+  const confirm = block.indexOf('shr_detach_confirm');
+  assert.ok(where > 0, 'o clique abre o WHERE');
+  assert.ok(confirm > where, 'o confirm de destacar vem DENTRO do fluxo, nunca antes de perguntar o deck');
+  assert.match(block, /value: "__detach__"/, 'destacar é uma OPÇÃO, escolhida de propósito');
+  assert.match(block, /target === "__detach__"[\s\S]{0,360}shr_detach_confirm[\s\S]{0,120}detachCurrent\(\)/, 'e escolhê-la confirma e destaca');
 });
 
 test('compartilhar NÃO pede nome: pergunta o DECK, depois vinculado ou solto', () => {

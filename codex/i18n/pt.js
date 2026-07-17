@@ -1685,6 +1685,7 @@ export default {
   'slides.shr_done_there':    'Slide enviado para {deck}',
   'slides.tpl_delete_inuse':  'Não dá para excluir: este slide compartilhado está vinculado em',
   'slides.tpl_delete_inuse_how': 'Use "destacar" nesses slides primeiro (o conteúdo fica, o vínculo é cortado). Excluir aqui deixaria todos eles com "Slide compartilhado não encontrado".',
+  'slides.shr_shared_tip':    'Slide compartilhado. Clique para enviar a outro deck (aponta para a mesma entrada da biblioteca) ou para destacar.',
   'slides.shr_detach':        'destacar',
   'slides.shr_detach_tip':    'Cortar o vínculo: este slide vira uma cópia privada deste deck. Os outros decks não mudam.',
   'slides.shr_detach_confirm': 'Destacar este slide? Ele vira uma cópia privada e para de acompanhar a biblioteca.',

@@ -1679,6 +1679,7 @@ export default {
   'slides.shr_done_there':    'Slide sent to {deck}',
   'slides.tpl_delete_inuse':  'Cannot delete: this shared slide is linked in',
   'slides.tpl_delete_inuse_how': 'Detach those slides first (the content stays, the link is cut). Deleting here would leave every one of them showing "Shared slide not found".',
+  'slides.shr_shared_tip':    'Shared slide. Click to send it to another deck (points at the same library entry) or to detach.',
   'slides.shr_detach':        'detach',
   'slides.shr_detach_tip':    'Cut the link: this slide becomes a private copy in this deck. Other decks are unaffected.',
   'slides.shr_detach_confirm': 'Detach this slide? It becomes a private copy and stops following the library.',
