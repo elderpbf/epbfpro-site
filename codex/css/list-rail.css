@@ -56,6 +56,16 @@
                    cursor:pointer; font:inherit; font-size:.85rem; line-height:1; padding:0 .15rem; }
 .cdx-rail-sec-del:hover { color:var(--danger); }
 .cdx-rail-seclist{ min-height:.6rem; }  /* keeps an empty section droppable */
+.cdx-rail-secempty { padding:.4rem .7rem .55rem 1.7rem; font-size:.76rem; color:var(--text-secondary); }
+
+/* bands: the OUTER level (band > section > row). A band is a labelled divider, not a control —
+   no caret, no hover, never collapsible, never a drop target. The label styling matches the
+   section head's so the two levels read as one scale, minus the interactive affordances. */
+.cdx-rail-band-h { font-size:.62rem; font-weight:700; text-transform:uppercase; letter-spacing:.06em;
+                   color:var(--text-secondary); padding:.6rem .6rem .45rem;
+                   border-top:1px solid var(--border); margin-top:1.4rem; }
+.cdx-rail-band:first-child .cdx-rail-band-h { border-top:none; margin-top:.2rem; }
+
 .cdx-rail-newsec { margin:.5rem .3rem .2rem; border:1px dashed var(--border); background:transparent;
                    color:var(--text-secondary); font:inherit; font-size:.78rem; font-weight:600;
                    padding:.3rem .6rem; border-radius:8px; cursor:pointer; width:calc(100% - .6rem); }

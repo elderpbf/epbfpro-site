@@ -12,12 +12,13 @@
 //
 //   const rail = mountRail(containerEl, {
 //     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
+//     rowClass:(it)=>'extra classes',   // per-row state the consumer's CSS keys off
 //     selectedId:()=>id, onSelect:(id)=>{},
 //     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
 //               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
-//               renderHead:(sec,count)=>({main,act})},
+//               renderHead:(sec,count)=>({main,act}), emptyText},
 //     bands:{of:(sec)=>bandId, list:()=>[{id,title}]},   // OUTER level: band > section > row
 //     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
 //     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max}
@@ -68,7 +69,12 @@ export function mountRail(container, cfg) {
     const grip = (reorder && !reorder.gated)
       ? '<span class="cdx-rail-grip" aria-hidden="true" title="' + esc(cfg.dragHint || 'Arrastar para reordenar') + '">' + GRIP + '</span>'
       : '';
-    return '<div class="cdx-rail-row' + (on ? ' is-on' : '') + '" data-id="' + esc(String(id)) + '">' +
+    // rowClass(it): extra classes on the row ELEMENT, for state the consumer's own CSS keys
+    // off and that renderRow's inner html cannot express — Clientes paints each turma's phase
+    // as the row's left border (via a --ph custom property set by a cdx-ph-* class) and dims
+    // archived ones, both of which have to sit on the row itself.
+    const extra = cfg.rowClass ? String(cfg.rowClass(it) || '').trim() : '';
+    return '<div class="cdx-rail-row' + (on ? ' is-on' : '') + (extra ? ' ' + extra : '') + '" data-id="' + esc(String(id)) + '">' +
       grip +
       '<div class="cdx-rail-main">' + (rc.main || '') + '</div>' +
       (rc.act ? '<div class="cdx-rail-act">' + rc.act + '</div>' : '') +
@@ -102,7 +108,13 @@ export function mountRail(container, cfg) {
         '<span class="cdx-rail-sec-caret" aria-hidden="true">▸</span>' +
         sectionHeadInner(sec, rows.length) +
       '</div>' +
-      '<div class="cdx-rail-seclist" data-seclist="' + esc(String(sec.id)) + '">' + rows.join('') + '</div>' +
+      // `sections.emptyText` fills a section that has no rows (Clientes: a client with no
+      // turmas yet). It goes INSIDE .cdx-rail-seclist so the section stays a drop container.
+      '<div class="cdx-rail-seclist" data-seclist="' + esc(String(sec.id)) + '">' +
+        (rows.length || !sections.emptyText
+          ? rows.join('')
+          : '<div class="cdx-rail-secempty">' + esc(sections.emptyText) + '</div>') +
+      '</div>' +
     '</div>';
   }
 
@@ -119,16 +131,21 @@ export function mountRail(container, cfg) {
 
   function bodyHtml() {
     const its = readItems();
-    if (!its.length) {
+    // grouped: one .cdx-rail-seclist per section (each is a drop container for cross-section
+    // drag), in the section list's order; items whose section is missing fall into a null bucket.
+    const list = sections
+      ? (typeof sections.list === 'function' ? sections.list() : (sections.list || [])).slice()
+      : [];
+    // "No items" is only "empty" when there are no sections either: with sections, the heads
+    // ARE content (Clientes with clients but no turmas yet must still list the clients, each
+    // showing its own empty text — not one "no clients" line over a screen that has clients).
+    if (!its.length && !list.length) {
       const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
       return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }
     if (!sections) {
       return '<div class="cdx-rail-list" data-seclist="__flat">' + its.map(rowHtml).join('') + '</div>';
     }
-    // grouped: one .cdx-rail-seclist per section (each is a drop container for cross-section
-    // drag), in the section list's order; items whose section is missing fall into a null bucket.
-    const list = (typeof sections.list === 'function' ? sections.list() : (sections.list || [])).slice();
     const byId = new Map(list.map((s) => [String(s.id), s]));
     const groups = new Map(list.map((s) => [String(s.id), []]));
     const loose = [];
@@ -214,6 +231,11 @@ export function mountRail(container, cfg) {
       if (ren) { if (sections.onRename) sections.onRename(ren.getAttribute('data-sec-ren')); return; }
       const del = e.target.closest('[data-sec-del]');
       if (del) { if (sections.onDelete) sections.onDelete(del.getAttribute('data-sec-del')); return; }
+      // The acts corner of a head is NOT the toggle. The module's own buttons (ren/del) are
+      // already handled and returned above, so anything left in there belongs to the consumer
+      // (Clientes puts + nova-turma / ⚙ editar-cliente there) and is wired by its own
+      // delegated listener — toggling the accordion under it would be a second, unasked action.
+      if (e.target.closest('.cdx-rail-sec-acts')) return;
       const tog = e.target.closest('[data-sec-toggle]');
       if (tog) {
         const sid = tog.getAttribute('data-sec-toggle');

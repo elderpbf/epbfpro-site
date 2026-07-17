@@ -56,11 +56,15 @@
     width: 320px;
     z-index: 80;
     box-sizing: border-box;
-    border-radius: 0;
-    border-top: 0; border-bottom: 0; border-left: 0;
     padding-top: 94px;                         /* clears the topbar + Turmas sub-row */
     transform: translateX(-100%);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
+  }
+  /* The card (surface/border/radius) is now the rail's own .cdx-rail shell, so the
+   * flush-to-the-edge overrides that used to sit on the .cdx-pane listpane move inward. */
+  .cdx-cohorts-listpane .cdx-rail {
+    border-radius: 0;
+    border-top: 0; border-bottom: 0; border-left: 0;
   }
   .cdx-three-pane.cdx-sm--open .cdx-cohorts-listpane {
     transform: translateX(0);
@@ -1061,26 +1065,46 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-ph-done { --ph: var(--cdx-cert-sent-ac); }
 .cdx-ph-arch { --ph: var(--text-secondary); }
 
-.cdx-cg { border-bottom: 1px solid var(--border); }
-.cdx-cg:last-child { border-bottom: none; }
-.cdx-cg-head {
-  display: flex;
-  align-items: center;
+/* ── The CLIENTES rail's skin ─────────────────────────────────────────────────
+ * The nav is the shared list-rail (js/list-rail.js) since track-41, so the structure is
+ * .cdx-rail-band > .cdx-rail-sec > .cdx-rail-row and the bespoke .cdx-cg / .cdx-ti shells
+ * are gone. What stays here is exactly what makes THIS rail look like Clientes and not
+ * like the other eight: the client-chip head, the phase accent bar, the teal selection.
+ * Everything is scoped under .cdx-cohorts-listpane so no other rail can be reached.
+ * The inner classes (.cdx-cg-ava/.cdx-cg-name/.cdx-cg-act, .cdx-ti-main/-t/-s) survive
+ * unchanged: they are the consumer's own html, handed to the rail via renderHead/renderRow. */
+
+/* Head: the rail's generic head is a small uppercase label; Clientes' is a chip with the
+ * client's avatar, so re-skin it rather than accept the default. */
+.cdx-cohorts-listpane .cdx-rail-sec { border-bottom: 1px solid var(--border); }
+.cdx-cohorts-listpane .cdx-rail-sec:last-child { border-bottom: none; }
+.cdx-cohorts-listpane .cdx-rail-sec-h {
   gap: 0.45rem;
   padding: 0.45rem 0.6rem;
   background: var(--background);
-  cursor: pointer;
+  font-size: inherit;              /* the name owns its own type (.cdx-cg-name) */
+  text-transform: none;
+  letter-spacing: normal;
+  font-weight: 400;
 }
-/* Accordion: caret rotates when the group is open; rows collapse when it is not. */
-.cdx-cg-caret {
+.cdx-cohorts-listpane .cdx-rail-sec-title { display: flex; align-items: center; gap: 0.45rem; }
+.cdx-cohorts-listpane .cdx-rail-sec-caret {
   flex: 0 0 auto;
   font-size: 0.7rem;
   color: var(--text-secondary);
   transition: transform 0.15s;
 }
-.cdx-cg.is-open .cdx-cg-caret { transform: rotate(90deg); }
-.cdx-cg-rows { display: none; }
-.cdx-cg.is-open .cdx-cg-rows { display: block; }
+/* The open client (its turma is in the dossier) shows its actions without a hover-hunt;
+ * other clients still reveal on hover/focus to keep the list quiet. */
+.cdx-cohorts-listpane .cdx-rail-sec.is-open .cdx-rail-sec-acts,
+.cdx-cohorts-listpane .cdx-rail-sec-acts:focus-within { opacity: 1; }
+.cdx-cohorts-listpane .cdx-rail-sec-acts { gap: 0.2rem; flex: 0 0 auto; }
+
+/* The pane title matched the dossiê title (1.25rem); the rail's default is .95rem. */
+.cdx-cohorts-listpane .cdx-rail-head { padding: 0.75rem 1rem; }
+.cdx-cohorts-listpane .cdx-rail-title { font-size: 1.25rem; }
+.cdx-cohorts-listpane .cdx-rail-body { padding: 0.5rem; }   /* was .cdx-pane-body's inset */
+
 .cdx-cg-ava {
   width: 22px;
   height: 22px;
@@ -1107,12 +1131,6 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   flex: 1;
   min-width: 0;
 }
-.cdx-cg-acts { display: flex; gap: 0.2rem; flex: 0 0 auto; opacity: 0; transition: opacity 0.12s; }
-/* The open client (its turma is in the dossier) shows its actions without a hover-
-   hunt; other clients still reveal on hover/focus to keep the list quiet. */
-.cdx-cg.is-open .cdx-cg-acts,
-.cdx-cg-head:hover .cdx-cg-acts,
-.cdx-cg-acts:focus-within { opacity: 1; }
 .cdx-cg-act {
   border: 1px solid var(--border);
   background: var(--surface);
@@ -1128,21 +1146,19 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   padding: 0;
 }
 .cdx-cg-act:hover { border-color: var(--primary); color: var(--tint-primary-tx); }
-.cdx-cg-empty { padding: 0.4rem 0.7rem 0.55rem 1.7rem; font-size: 0.76rem; color: var(--text-secondary); }
 
-.cdx-ti {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+/* Turma rows. The phase reads as a left accent bar (--ph, set by the cdx-ph-* class the
+   rail stamps via rowClass); the rail's default rounded/inset row would cut it off. */
+.cdx-cohorts-listpane .cdx-rail-row {
   padding: 0.5rem 0.6rem 0.5rem 0.7rem;
-  cursor: pointer;
-  border-left: 3px solid var(--ph, transparent); /* phase accent bar */
+  border-radius: 0;
+  border-left: 3px solid var(--ph, transparent);
 }
 /* Hover previews the SAME light teal as the selected row (selection persists),
    so it no longer reads like the client teal. */
-.cdx-ti:hover,
-.cdx-ti.is-on { background: var(--cdx-chip-bg); }
-.cdx-ti.is-archived { opacity: 0.6; }
+.cdx-cohorts-listpane .cdx-rail-row:hover,
+.cdx-cohorts-listpane .cdx-rail-row.is-on { background: var(--cdx-chip-bg); }
+.cdx-cohorts-listpane .cdx-rail-row.is-archived { opacity: 0.6; }
 .cdx-ti-main { flex: 1; min-width: 0; }
 .cdx-ti-t {
   font-size: 0.86rem;
@@ -1159,18 +1175,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
   overflow: hidden;
   text-overflow: ellipsis;
 }
-/* Client sections: a thin labelled divider grouping ativos / futuros / inativos. */
-.cdx-cg-section {
-  font-size: 0.62rem;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.06em;
-  color: var(--text-secondary);
-  padding: 0.6rem 0.6rem 0.45rem;
-  border-top: 1px solid var(--border);
-  margin-top: 1.4rem;
-}
-.cdx-cg-section:first-child { border-top: none; margin-top: 0.2rem; }
+/* The ativos / futuros / inativos dividers are the rail's BANDS now (.cdx-rail-band-h in
+   css/list-rail.css), which carries this exact look as its default — nothing to add here. */
 
 /* ----- Dossier: phase pill + trilha-link strip (moved per-turma actions) ----- */
 

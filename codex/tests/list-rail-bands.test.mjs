@@ -133,6 +133,70 @@ test('bands are ignored without sections (they group sections, nothing else)', (
   assert.match(el.innerHTML, /data-seclist="__flat"/, 'it stays the flat list');
 });
 
+// rowClass: state that must live on the row ELEMENT, which renderRow's inner html cannot
+// reach. Clientes paints the turma phase as the row's own left border and dims archived ones.
+test('rowClass stamps consumer classes on the row element, alongside is-on', () => {
+  const { html } = build({
+    cfg: {
+      selectedId: () => 't1',
+      rowClass: (t) => (t.id === 't1' ? 'cdx-ph-live' : 'cdx-ph-done is-archived'),
+    },
+  });
+  assert.match(html, /class="cdx-rail-row is-on cdx-ph-live" data-id="t1"/, 'selected row keeps is-on AND the extra');
+  assert.match(html, /class="cdx-rail-row cdx-ph-done is-archived" data-id="t2"/, 'unselected row gets only the extra');
+});
+
+test('rowClass is optional: without it the row class is unchanged', () => {
+  const { html } = build();
+  assert.match(html, /class="cdx-rail-row" data-id="t1"/, 'no trailing space, no stray class');
+});
+
+// A client with no turmas yet still has to say so. The text goes INSIDE .cdx-rail-seclist so
+// the section stays a drop container — putting it outside would break cross-section drag.
+test('an empty section shows emptyText; a filled one never does', () => {
+  const EMPTY_CLIENT = CLIENTS.concat([{ id: 'vazio', title: 'Vazio', status: 'ativos' }]);
+  const el = makeEl();
+  const rail = mountRail(el, {
+    items: () => TURMAS,
+    getId: (t) => t.id,
+    renderRow: (t) => ({ main: t.name }),
+    sections: { of: (t) => t.client, list: () => EMPTY_CLIENT, emptyText: 'Nenhuma turma cadastrada.' },
+    bands: { of: (sec) => sec.status, list: () => BANDS },
+  });
+  rail.render();
+  const h = el.innerHTML;
+  assert.match(h, /data-seclist="vazio"><div class="cdx-rail-secempty">Nenhuma turma cadastrada\.<\/div>/,
+    'the client with no turmas says so');
+  assert.equal((h.match(/cdx-rail-secempty/g) || []).length, 1, 'only the empty section shows it');
+  assert.match(h, /data-seclist="acme">/, 'the filled sections still hold their rows');
+  assert.ok(!/data-seclist="acme"><div class="cdx-rail-secempty"/.test(h), 'a filled section never shows it');
+});
+
+// The bug: bodyHtml used to take the empty path on "no items", so a screen with clients but
+// no turmas yet showed "Nenhum cliente" over a list that HAS clients.
+test('no items but sections exist: the sections render, not the empty line', () => {
+  const el = makeEl();
+  const rail = mountRail(el, {
+    items: () => [],
+    getId: (t) => t.id,
+    renderRow: (t) => ({ main: t.name }),
+    emptyText: 'Nenhum cliente.',
+    sections: { of: (t) => t.client, list: () => CLIENTS, emptyText: 'Nenhuma turma cadastrada.' },
+    bands: { of: (sec) => sec.status, list: () => BANDS },
+  });
+  rail.render();
+  assert.ok(!/cdx-rail-empty/.test(el.innerHTML), 'the whole-list empty line must NOT win');
+  assert.match(el.innerHTML, /data-sec="acme"/, 'the clients are still listed');
+  assert.equal((el.innerHTML.match(/cdx-rail-secempty/g) || []).length, 3, 'each says it has no turmas');
+});
+
+test('genuinely nothing (no items, no sections) still shows the empty line', () => {
+  const el = makeEl();
+  const rail = mountRail(el, { items: () => [], getId: (t) => t.id, emptyText: 'Nenhum cliente.' });
+  rail.render();
+  assert.match(el.innerHTML, /<div class="cdx-rail-empty">Nenhum cliente\.<\/div>/);
+});
+
 test('the 8 migrated rails are untouched: no bands + no exclusive still renders 1 level', () => {
   const el = makeEl();
   const rail = mountRail(el, {
