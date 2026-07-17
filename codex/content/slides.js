@@ -327,17 +327,25 @@ async function _renameDeck(slug) {
   }
 }
 
-async function _createDeck() {
-  const title = t('slides.new_default_title');
-  const slug = _slugify(title) + '-' + String(Date.now()).slice(-6);
+// `title` given -> create it and RETURN the row without opening it (the editor's "share to a
+// new deck" picker: the point is to stay where you are and send the slide there). No title ->
+// the sidebar's "+ nova apresentação": default name, and open it.
+async function _createDeck(title) {
+  const named = !!title;
+  const finalTitle = title || t('slides.new_default_title');
+  const slug = _slugify(finalTitle) + '-' + String(Date.now()).slice(-6);
   try {
-    await api.register({ slug, title, engine: DECK_ENGINE });
+    await api.register({ slug, title: finalTitle, engine: DECK_ENGINE });
     await _loadDecks();
+    if (named) return { slug, title: finalTitle };
     _openDeck(slug, /* fresh */ true);
+    return { slug, title: finalTitle };
   } catch (e) {
     notice.internal(e);
+    if (named) return null;
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+    return null;
   }
 }
 
@@ -455,6 +463,10 @@ async function _openDeck(slug, fresh, initialDeck) {
     // Resolve an origin slug to its CURRENT title for the +slide Biblioteca sections, so a
     // renamed deck renames its section instead of freezing the name it had when shared.
     deckTitleOf: (s2) => deckTitle(_deckBySlug(s2)),
+    // The "share to which deck?" picker: the live list, and the door to a new one without
+    // leaving the slide you are on.
+    deckList: () => _decks.map((d) => ({ slug: d.slug, title: d.title || '' })),
+    createDeck: (title) => _createDeck(title),
     notify: toast.ok,
   });
   _openSlug = slug;

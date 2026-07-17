@@ -35,23 +35,20 @@
 // keyed by slideId, never inside the slide, which is exactly how the template library
 // has always behaved, so linking adds no new inconsistency here.
 // Globals: window.bsLog (debug pill, backstage/js/debug.js)
-import { clone } from '../js/core/schema.js';
+import { clone, slideContent } from '../js/core/schema.js';
 
 // A slide that is a bare link (never rendered as-is; hydrate resolves it first).
 export const isRef = (s) => !!(s && s.ref && !s.layout);
 // A hydrated slide that came from the library (content + its ref).
 export const isLinked = (s) => !!(s && s.ref);
 
-// The library-owned half of a hydrated slide: everything except the deck-local id and
-// the ref itself. This is what gets written back, and what dirty-checking compares.
-export function sharedContent(slide) {
-  const out = clone(slide);
-  delete out.id;
-  delete out.ref;
-  delete out.name; // library-only metadata, never a slide field
-  delete out.from; // ditto: the origin deck is a property of the ENTRY, not of the slide
-  return out;
-}
+// The library-owned half of a hydrated slide: what gets written back, and what the
+// dirty-check compares. It IS core/schema's slideContent: the editor needs the same answer
+// (app.js keeps same-ref siblings in step inside one deck) and cannot import this layer, so
+// the definition lives in the pure core. Two answers to "what is shared" would drift, and
+// the drift would be invisible until a slide quietly lost a field. Re-exported so this
+// layer's callers keep importing it from here.
+export const sharedContent = slideContent;
 
 // The placeholder a broken ref renders as: the target was deleted from the library (or
 // the library failed to load). Degrade LOUDLY but never destroy, `ref` is kept, so a
@@ -129,12 +126,20 @@ export function createSharedSlides({ library, message } = {}) {
       const linked = deck.slides.filter(isLinked);
       if (!linked.length) return deck;
 
+      // DEDUPE BY REF FIRST. One deck may hold the same shared slide in several positions
+      // (paste-linked into the deck it came from), and each is a separate object, so a naive
+      // map emits two entries for one library id. updateMany would then apply both in order
+      // and the LAST would win: whichever twin the editor had not just touched would
+      // overwrite the edit. app.syncSameRef keeps the twins identical, which makes this a
+      // belt-and-braces, but the write path must not DEPEND on that to be non-destructive.
+      const byRef = new Map();
+      for (const s of linked) if (!s._broken && !byRef.has(s.ref)) byRef.set(s.ref, s);
+
       // Write back only what actually differs, so the 800ms autosave does not rewrite the
       // whole library container on every change to an unrelated slide. A broken
       // placeholder is never written back: that would publish "not found" as the content.
-      const dirty = linked
-        .filter((s) => !s._broken)
-        .map((s) => ({ id: s.ref, slide: sharedContent(s) }))
+      const dirty = [...byRef.entries()]
+        .map(([ref, s]) => ({ id: ref, slide: sharedContent(s) }))
         .filter((e) => changed(e.id, e.slide));
 
       if (dirty.length && library) {

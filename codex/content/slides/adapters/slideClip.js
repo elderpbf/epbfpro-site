@@ -114,6 +114,42 @@ export function createSlideClip({ facade, library, storage, onOpenDeck } = {}) {
     },
 
     /**
+     * Append slides to a deck that is NOT open, by id-ref ("compartilhar para outro deck").
+     * The mirror of linkSource: that one converts an origin, this one feeds a destination.
+     * Appends at the END, because there is no selected slide in a deck nobody is looking at.
+     */
+    async sendLinked(slug, refs) {
+      return this._append(slug, (refs || []).map((ref) => ({ id: uid(), ref })));
+    },
+
+    /** Same, with detached copies: nothing is published, the target just gets its own slides. */
+    async sendLoose(slug, contents) {
+      return this._append(slug, (contents || []).map((c) => ({ ...clone(c), id: uid() })));
+    },
+
+    async _append(slug, slides) {
+      if (!slug || !slides.length) return { error: 'nothing-to-send' };
+      try {
+        let deck = null;
+        try {
+          const res = await api.getDeck({ slug });
+          deck = res && res.data;
+        } catch (e) {
+          // A deck registered but never opened has no json yet and the frozen action rejects
+          // "not found" (the same scar as library._load). Sending INTO it is still valid.
+          if (!/not\s*found/i.test((e && e.message) || String(e))) throw e;
+        }
+        if (!deck) deck = { slides: [] };
+        if (!Array.isArray(deck.slides)) deck.slides = [];
+        deck.slides.push(...slides);
+        await api.saveDeck({ slug, data: deck });
+        return { ok: true, count: slides.length };
+      } catch (e) {
+        return { error: (e && e.message) || 'send-failed' };
+      }
+    },
+
+    /**
      * Rewrite the SOURCE deck so its copied slides become refs.
      *
      * Returns the ids it could NOT convert. Never throws: the paste already happened, and

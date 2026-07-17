@@ -248,22 +248,57 @@ test('o botão de compartilhar EXISTE e diz os dois estados', () => {
   const src = methodOf('syncShareBtn');
   assert.match(src, /shr_share/, 'slide comum -> compartilhar');
   assert.match(src, /shr_detach/, 'slide vinculado -> destacar');
-  assert.match(methodOf('shareCurrentSlide'), /_library\.save/, 'e ele publica de verdade');
 });
 
-test('compartilhar pelo botão carimba o deck de origem, igual ao colar', () => {
-  // Senão a entrada cai no catch-all "sem deck de origem" da tab Biblioteca, e a MESMA ação
-  // secciona ou não dependendo de por qual porta passou.
-  const src = methodOf('shareCurrentSlide');
-  assert.match(src, /from: \{ slug: this\._slug, title: this\._deckTitle \}/);
-  assert.match(src, /if \(s\.ref\) return \{ error: "already-shared" \}/, 'não cria 2ª entrada pro mesmo slide');
+test('compartilhar NÃO pede nome: pergunta o DECK, depois vinculado ou solto', () => {
+  // Élder 2026-07-17: "ele deve abrir um modal perguntando se é para esse deck ou outro, com
+  // opção de criar um novo ali; depois abre o modal de vincular ou solto". O nome sai de
+  // cena: era um passo por slide, e a entrada é achada pelo deck de origem na tab Biblioteca.
+  assert.doesNotMatch(APP_SRC, /shr_share_prompt/, 'o prompt de nome morreu');
+  assert.match(APP_SRC, /shr_where_title/, '1ª pergunta: qual deck');
+  assert.match(APP_SRC, /shr_where_new/, 'com a opção de criar um deck novo ali');
+  const where = APP_SRC.indexOf('shr_where_title');
+  const how = APP_SRC.indexOf('shr_how_title');
+  assert.ok(where > 0 && how > where, 'e a 2ª pergunta (como) vem DEPOIS da 1ª (onde)');
+  // A 2ª pergunta usa as MESMAS chaves do colar: um ato, um vocabulário.
+  assert.match(APP_SRC, /clip_paste_linked/, 'reusa as opções do colar, não inventa outras');
 });
 
-test('o paste insere logo APÓS o slide selecionado, nunca no fim', () => {
+test('compartilhar e colar carimbam o mesmo deck de origem', () => {
+  // Senão a MESMA entrada secciona ou não na tab Biblioteca dependendo da porta por onde passou.
+  assert.match(methodOf('shareCurrentTo'), /from: \{ slug: this\._slug, title: this\._deckTitle \}/);
+});
+
+test('compartilhar SOLTO não publica nada na biblioteca', () => {
+  // Solto = cópia independente. Publicar seria criar uma entrada que ninguém acompanha,
+  // que é justamente o "compartilhar infinitas vezes" que o Élder mandou matar.
+  const src = methodOf('shareCurrentTo');
+  const loose = src.indexOf('if (mode === "loose")');
+  const save = src.indexOf('this._library.save');
+  assert.ok(loose > 0 && save > loose, 'o caminho solto sai antes de qualquer publicação');
+  assert.match(src, /this\.duplicate\(\)/, 'solto no mesmo deck é literalmente duplicar');
+});
+
+test('compartilhar VINCULADO reusa o ref quando o slide já é compartilhado', () => {
+  const src = methodOf('shareCurrentTo');
+  assert.match(src, /let ref = s\.ref;[\s\S]{0,40}if \(!ref\)/, 'só publica se ainda não tem entrada');
+});
+
+test('inserir cai logo APÓS o slide selecionado, nunca no fim', () => {
   // Élder 2026-07-17: "deve inserir logo após o slide que está selecionado na barra".
-  for (const m of ['pasteClip', 'linkTemplate', 'insertTemplate', 'addSlide']) {
+  for (const m of ['linkTemplate', 'insertTemplate', 'addSlide']) {
     assert.match(methodOf(m), /splice\(this\.index \+ 1, 0/, `${m} insere depois do atual`);
   }
+});
+
+test('colar cai depois do ÚLTIMO slide da seleção, não depois do atual', () => {
+  // Élder 2026-07-17: "se eu seleciono 1 e 2 e colo eles mesmos, vai ficar 1 e 2 (originais)
+  // depois 1 e 2 colados". Com `index + 1` sairia 1, 1', 2', 2: a cópia no meio do original.
+  const src = methodOf('pasteClip');
+  assert.match(src, /Math\.max\(\.\.\.this\.picked\(\)\) \+ 1/, 'o ponto é o fim da seleção');
+  const at = src.indexOf('const at =');
+  const clear = src.indexOf('this.clearPick()');
+  assert.ok(at > 0 && clear > at, 'picked() é lido ANTES de limpar, senão a seleção já sumiu');
 });
 
 // ── library.updateMany: o lote que o dehydrate usa ───────────────────────────
@@ -334,4 +369,90 @@ test('os cards de preview do +slide seguem a mesma regra (o mesmo bug latente)',
   assert.ok(i > 0, 'card() recebe o parent: sem ele não dá pra anexar antes');
   const body = src.slice(i, src.indexOf('\n  }', i));
   assert.ok(body.indexOf('parent.appendChild(btn)') < body.indexOf('renderInto('), 'anexa antes de renderizar');
+});
+
+test('dois slides com o MESMO ref num deck: o save nunca deixa o gêmeo velho comer a edição', async () => {
+  // Élder 2026-07-17: colou vinculado no mesmo deck, editou, "a mudança só apareceu no
+  // original depois de dar refresh". Pior que desatualizado: os dois viram entrada pro MESMO
+  // id da biblioteca, o updateMany aplicava as duas em ordem e a ÚLTIMA vencia. Ou seja o
+  // gêmeo que você NÃO acabou de editar sobrescrevia a sua edição. Perda de dado silenciosa.
+  const lib = fakeLibrary([tpl('L1', 'v1')]);
+  const shared = createSharedSlides({ library: lib });
+  const deck = deckWith([{ id: 'a', ref: 'L1' }, { id: 'b', ref: 'L1' }]);
+  await shared.hydrate(deck);
+
+  deck.slides[0].slots.text = 'editado no A'; // o B continua com 'v1' em memória
+
+  await shared.dehydrate(deck);
+
+  assert.equal(lib._peek('L1').slide.slots.text, 'editado no A',
+    'a edição sobrevive: o B (velho) não pode ser gravado por cima');
+});
+
+test('app.commit sincroniza os gêmeos do mesmo ref (é o que evita o "só depois do refresh")', () => {
+  // A invariante que um slide vinculado promete é UM slide, N lugares. Dentro de um deck os
+  // gêmeos são objetos diferentes, então alguém tem de mantê-los iguais; o commit é o funil
+  // por onde TODA mutação passa a caminho do store, então é o único lugar que fecha isso.
+  assert.match(methodOf('commit'), /this\.syncSameRef\(\)/, 'o commit sincroniza');
+  const src = methodOf('syncSameRef');
+  assert.match(src, /o\.ref !== s\.ref/, 'só mexe em quem tem o mesmo ref');
+  assert.match(src, /id: o\.id/, 'cada gêmeo mantém o próprio id local do deck');
+  assert.match(src, /s\._broken/, 'o placeholder quebrado não espalha "não encontrado" pros irmãos');
+  assert.match(methodOf('commit'), /renderNav/, 'e a régua reflete na hora, sem refresh');
+});
+
+test('excluir da biblioteca é RECUSADO enquanto algum deck vincula', async () => {
+  // Élder apagou entradas e ficou com decks cheios de "Slide compartilhado não encontrado",
+  // sem aviso nenhum. A regra do Codex pra coisa em uso é recusar o hard-delete (é o que o
+  // curso faz com turma apontando pra ele), não confirmar e quebrar.
+  const decks = [{ slug: 'jurista', title: 'Deck Jurista', engine: 'codex-deck' }];
+  const json = { jurista: { slides: [{ id: 's1', ref: 'L1' }, { id: 's2', ref: 'L1' }] } };
+  let removed = false;
+  const facade = {
+    async list() { return { presentations: [...decks, { slug: '__library__', engine: 'codex-library' }] }; },
+    async getDeck({ slug }) {
+      if (slug === '__library__') return { data: { slides: [{ id: 'L1', name: 'Abertura' }] } };
+      return { data: json[slug] };
+    },
+    async saveDeck() { removed = true; return { ok: true }; },
+    async register() { return { ok: true }; },
+  };
+  const lib = createLibrary({ facade });
+
+  const used = await lib.usedBy('L1');
+
+  assert.equal(used.length, 1);
+  assert.equal(used[0].title, 'Deck Jurista');
+  assert.equal(used[0].count, 2, 'conta as DUAS posições, não o deck uma vez');
+  assert.equal(removed, false, 'usedBy é read-only');
+
+  // E o container da biblioteca não se conta a si mesmo (ele não é um deck nosso).
+  const none = await lib.usedBy('SEM-USO');
+  assert.deepEqual(none, [], 'entrada sem uso nenhum: nada segura a exclusão');
+});
+
+test('usedBy prefere o deck ABERTO em memória ao json salvo dele', async () => {
+  // O deck na tela pode ter um vínculo que o autosave ainda não gravou. Ler o json salvo diria
+  // "não está em uso" e a exclusão passaria, quebrando o slide que está na frente do Élder.
+  const facade = {
+    async list() { return { presentations: [{ slug: 'aberto', title: 'Aberto', engine: 'codex-deck' }] }; },
+    async getDeck() { return { data: { slides: [] } } ; }, // o SALVO não tem o vínculo ainda
+    async saveDeck() { return { ok: true }; },
+    async register() { return { ok: true }; },
+  };
+  const lib = createLibrary({ facade });
+  const openDeck = { slug: 'aberto', deck: { slides: [{ id: 'x', ref: 'L1' }] } };
+
+  const used = await lib.usedBy('L1', openDeck);
+
+  assert.equal(used.length, 1, 'o vínculo ainda-não-salvo conta');
+  assert.equal(used[0].count, 1);
+});
+
+test('app.deleteTemplate devolve inUse em vez de apagar', () => {
+  const src = methodOf('deleteTemplate');
+  const check = src.indexOf('usedBy');
+  const remove = src.indexOf('this._library.remove');
+  assert.ok(check > 0 && remove > check, 'checa o uso ANTES de remover');
+  assert.match(src, /if \(used\.length\) return \{ inUse: used \}/, 'e devolve pra UI dizer onde');
 });

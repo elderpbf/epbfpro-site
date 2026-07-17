@@ -189,9 +189,20 @@ export function initAddSlide(app, root) {
     });
     mkBtn("🗑", t("slides.tpl_delete"), async (e) => {
       e.stopPropagation();
+      // Ask FIRST, then check usage: the usage scan reads every deck, so it is not something
+      // to run on a mis-click. The refusal below is the real guard; this is just the brake.
       // eslint-disable-next-line no-alert
       if (!window.confirm(t("slides.tpl_delete_confirm"))) return;
-      await app.deleteTemplate(tpl.id);
+      const res = await app.deleteTemplate(tpl.id);
+      if (res && res.inUse) {
+        const where = res.inUse
+          .map((d) => "• " + d.title + (d.count > 1 ? " (" + d.count + "x)" : ""))
+          .join("\n");
+        // eslint-disable-next-line no-alert
+        window.alert(t("slides.tpl_delete_inuse") + "\n\n" + where + "\n\n" + t("slides.tpl_delete_inuse_how"));
+        return;
+      }
+      if (res && res.error && window.bsLog) window.bsLog("Delete template: " + res.error, "error");
       open();
     });
     wrap.appendChild(acts);

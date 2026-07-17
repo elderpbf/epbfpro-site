@@ -5,7 +5,7 @@
 import * as registry from "./layouts/registry.js";
 import { createMemoryStore } from "./core/store.js";
 import { createHistory } from "./core/history.js";
-import { uid, migrateDeck, clone, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck, clampToCanvas } from "./core/schema.js";
+import { uid, migrateDeck, clone, slideContent, clearTextOverrides, setPath, canvasForAspect, ASPECTS, reanchorDeck, clampToCanvas } from "./core/schema.js";
 import { newDeck, newSlide, duplicateSlide } from "./core/deck.js";
 import { addImage, removeImage, getImage } from "./core/gallery.js";
 import { makeDataUrlStore } from "./core/files.js";
@@ -170,6 +170,8 @@ export function mount(root, ctx = {}) {
     _slug: ctx.slug || null,
     _deckTitle: ctx.deckTitle || "",
     _deckTitleOf: ctx.deckTitleOf || null, // slug -> current deck title (+slide library sections)
+    _deckList: ctx.deckList || null,       // () -> [{slug,title}] for the "share to which deck" picker
+    _createDeck: ctx.createDeck || null,   // (title) -> {slug,title}, the picker's "create a new one here"
     _imageStore: imageStore,
     _drivePicker: drivePicker,
     _notify: notify, // injected toast (Codex boot passes toast.ok); presenter "notes saved"
@@ -209,7 +211,33 @@ export function mount(root, ctx = {}) {
     effMax() { return this._stepMode() ? this.maxStep() : 0; },
     scaleNow() { return player.scaleOf(this.stage, this.deck().canvas.w); },
     fit() { return player.fit(this.stagewrap, this.stagebox, this.stage, this.deck().canvas, this.presenting ? 0 : 40); },
-    commit() { store.touch(); },
+    // EVERY mutation funnels through here on its way to the store, which makes it the one
+    // place that can hold the invariant a linked slide promises: ONE slide, N places. Two
+    // slides with the same ref in the SAME deck are two objects, so editing one left the
+    // other stale until a reload (Élder 2026-07-17: "a mudança só apareceu no original
+    // depois de dar refresh"). Worse than stale: dehydrate then wrote BOTH to the same
+    // library id and the LAST one won, so the stale twin silently ate the edit.
+    commit() { if (this.syncSameRef()) this.renderNav(); store.touch(); },
+
+    // Copy the current slide's content onto every OTHER slide in this deck with the same
+    // ref, keeping each one's deck-local id. Returns true if anything changed (so commit
+    // only re-renders the rail when it must; this runs on every keystroke). A slide showing
+    // the broken placeholder is skipped: it has no content to spread, only a warning.
+    syncSameRef() {
+      const s = this.cur();
+      if (!s || !s.ref || s._broken) return false;
+      const sl = this.deck().slides;
+      let hit = false;
+      for (let i = 0; i < sl.length; i++) {
+        const o = sl[i];
+        if (o === s || !o || o.ref !== s.ref) continue;
+        const next = { ...slideContent(s), id: o.id, ref: o.ref };
+        if (JSON.stringify(o) === JSON.stringify(next)) continue;
+        sl[i] = next;
+        hit = true;
+      }
+      return hit;
+    },
     // The top bar wraps to 2 rows on narrow windows; nav + stage track its real
     // height via --chrome-h so the first thumbnail isn't clipped under the bar.
     syncChrome() {
@@ -617,11 +645,21 @@ export function mount(root, ctx = {}) {
       try { await this._library.rename(id, name); return { ok: true }; }
       catch (e) { return { error: (e && e.message) || "rename-failed" }; }
     },
-    // Delete a saved layout. Detached: any deck that already inserted a copy is safe.
+    // Delete a library entry. REFUSED while any deck still links it: that is the Codex rule
+    // for a thing in use (a curso a turma points at is not hard-deleted either), and here it
+    // is not a nicety. Élder deleted entries and got decks full of "slide compartilhado nao
+    // encontrado" with no warning (2026-07-17). Detached copies are unaffected either way,
+    // so they never block. Returns { inUse: [{title, count}] } for the caller to show.
     async deleteTemplate(id) {
       if (!this._library) return { error: "no-library" };
-      try { await this._library.remove(id); return { ok: true }; }
-      catch (e) { return { error: (e && e.message) || "delete-failed" }; }
+      try {
+        const used = await this._library.usedBy(id, { slug: this._slug, deck: this.deck() });
+        if (used.length) return { inUse: used };
+        await this._library.remove(id);
+        return { ok: true };
+      } catch (e) {
+        return { error: (e && e.message) || "delete-failed" };
+      }
     },
     // Insert a DETACHED deep-clone of a template after the current slide: a fresh
     // slide id so it shares no identity with the library copy, and the library-only
@@ -704,29 +742,64 @@ export function mount(root, ctx = {}) {
       this.commit();
     },
 
-    // Publish the current inline slide to the library and link it IN PLACE. The rarely-used
-    // door (Ctrl+C/Ctrl+V into the target deck is the everyday one), and the only one that
-    // works with no second deck to paste into. Stamps the origin deck, same as a paste does,
-    // so it sections correctly in the +slide Biblioteca tab.
-    async shareCurrentSlide(name) {
+    // "Compartilhar": send the current slide TO a deck. Same two questions the paste asks,
+    // in the same order, because it is the same act with a picker instead of a clipboard
+    // (Élder 2026-07-17: "deve abrir um modal perguntando se é para esse deck ou outro (...)
+    // depois abre o modal de vincular ou solto"). It asks for NO name: a name the user has to
+    // invent per slide is a step, and the entry is found by its origin deck in the Biblioteca
+    // tab anyway. autoName() derives one from the slide itself.
+    //
+    // `target`: { slug, title } of the destination, or null meaning THIS deck.
+    // `mode`: "linked" | "loose".
+    async shareCurrentTo(target, mode) {
       if (!this._library) return { error: "no-library" };
       const s = this.cur();
       if (!s) return { error: "no-slide" };
-      if (s.ref) return { error: "already-shared" }; // no second entry for the same slide
-      // `s` raw is the content: library.save clones it and overwrites id + name itself, and a
-      // slide that reaches here has no ref (guarded above). Stripping it through the adapter's
-      // sharedContent() is not an option, the core must not import the adapters layer.
+      const here = !target || target.slug === this._slug;
       try {
-        const tpl = await this._library.save(s, name, {
-          from: { slug: this._slug, title: this._deckTitle },
-        });
-        this.record();
-        s.ref = tpl.id;
-        this.refresh();
-        return { ok: true, tpl };
+        // LOOSE into this deck is just a duplicate, and loose into another deck needs no
+        // library entry at all: nothing is shared, so nothing is published.
+        if (mode === "loose") {
+          if (here) { this.duplicate(); return { ok: true, mode, here }; }
+          return await this._clip.sendLoose(target.slug, [slideContent(s)])
+            .then((r) => (r.ok ? { ok: true, mode, here, target } : { error: r.error }));
+        }
+        // LINKED: publish once (or reuse the entry if this slide is already shared), link
+        // this slide, and drop a link into the target when the target is elsewhere.
+        let ref = s.ref;
+        if (!ref) {
+          const tpl = await this._library.save(slideContent(s), this.autoName(s), {
+            from: { slug: this._slug, title: this._deckTitle },
+          });
+          ref = tpl.id;
+          this.record();
+          s.ref = ref;
+          this.refresh();
+        }
+        if (here) {
+          // A 2nd copy of the same shared slide in THIS deck: legitimate, and syncSameRef
+          // keeps the two in step from now on.
+          this.record();
+          this.deck().slides.splice(this.index + 1, 0, { ...slideContent(s), id: uid(), ref });
+          this.goTo(this.index + 1);
+          this.commit();
+          return { ok: true, mode, here };
+        }
+        const r = await this._clip.sendLinked(target.slug, [ref]);
+        return r.ok ? { ok: true, mode, here, target } : { error: r.error };
       } catch (e) {
         return { error: (e && e.message) || "share-failed" };
       }
+    },
+
+    // A library entry's display name, derived instead of asked for. The slide's own title-ish
+    // text if it has one, else the layout's label: both are what the user would have typed.
+    autoName(s) {
+      const sl = s.slots || {};
+      const first = [sl.title, sl.text, sl.quote, sl.term, sl.kicker].find((v) => typeof v === "string" && v.trim());
+      if (first) return first.trim().replace(/\s+/g, " ").slice(0, 60);
+      const L = registry.get(s.layout);
+      return (L && this._layoutLabel(L)) || s.layout || "";
     },
 
     // Ctrl+C: snapshot the picked slides onto the clipboard. No side effect on the deck,
@@ -760,10 +833,15 @@ export function mount(root, ctx = {}) {
         } else {
           slides = this._clip.pasteLoose(clip);
         }
+        // After the LAST slide of the pick, not after the current one (Élder 2026-07-17):
+        // pick 1+2 and paste, and you want 1 2 1' 2', not 1 1' 2' 2. picked() is read BEFORE
+        // clearPick, and falls back to [index] when nothing is picked, which is the
+        // single-slide case unchanged.
+        const at = Math.max(...this.picked()) + 1;
         this.record();
         this.clearPick();
-        this.deck().slides.splice(this.index + 1, 0, ...slides);
-        this.goTo(this.index + 1);
+        this.deck().slides.splice(at, 0, ...slides);
+        this.goTo(at);
         this.commit(); // goTo does not touch the store, and an unsaved paste never happened
         return { ok: true, count: slides.length, sourceFailed };
       } catch (e) {
@@ -1080,12 +1158,11 @@ function wireChrome(app, root) {
   }
 
   // Compartilhar / Destacar (track-35 C). The state is app.syncShareBtn's on every render;
-  // only the click lives here. Both directions are deliberate, named acts: sharing asks for
-  // the name the slide takes in the library, detaching confirms (it is undoable only through
-  // undo, not through the library).
+  // only the click lives here. Sharing asks TWO questions in Élder's order: which deck, then
+  // linked or loose. Detaching confirms (it is undoable only through undo, not the library).
   const shareBtn = $("#shareBtn");
   if (shareBtn) {
-    shareBtn.onclick = () => {
+    shareBtn.onclick = async () => {
       if (!app._library) return;
       if (app.isShared(app.cur())) {
         // eslint-disable-next-line no-alert
@@ -1093,12 +1170,45 @@ function wireChrome(app, root) {
         app.detachCurrent();
         return;
       }
-      // eslint-disable-next-line no-alert
-      const name = window.prompt(t("slides.shr_share_prompt"), "");
-      if (name == null) return; // cancelled
-      app.shareCurrentSlide(name).then((res) => {
-        if (res && res.error && window.bsLog) window.bsLog("Share slide: " + res.error, "error");
+      // 1) WHERE. This deck, another one, or a new one created right here.
+      const decks = (app._deckList ? app._deckList() : []).filter((d) => d.slug !== app._slug);
+      const target = await askChoice(app.root, {
+        title: t("slides.shr_where_title"),
+        message: t("slides.shr_where_msg"),
+        options: [
+          { value: "__here__", label: t("slides.shr_where_here"), hint: app._deckTitle, primary: true },
+          ...decks.map((d) => ({ value: d.slug, label: d.title || d.slug })),
+          { value: "__new__", label: t("slides.shr_where_new") },
+        ],
       });
+      if (!target) return;
+      let dest = null;
+      if (target === "__new__") {
+        // eslint-disable-next-line no-alert
+        const title = window.prompt(t("slides.shr_new_deck_prompt"), "");
+        if (title == null || !title.trim()) return;
+        const made = await app._createDeck(title.trim());
+        if (!made || !made.slug) { if (window.bsLog) window.bsLog("Share: new deck failed", "error"); return; }
+        dest = made;
+      } else if (target !== "__here__") {
+        dest = decks.find((d) => d.slug === target) || null;
+      }
+      // 2) HOW. The same question the paste asks, same words: one act, one vocabulary.
+      const mode = await askChoice(app.root, {
+        title: t("slides.shr_how_title"),
+        message: dest ? t("slides.clip_paste_from").replace("{deck}", dest.title || dest.slug) : app._deckTitle,
+        options: [
+          { value: "linked", label: t("slides.clip_paste_linked"), hint: t("slides.clip_paste_linked_hint"), primary: true },
+          { value: "loose", label: t("slides.clip_paste_loose"), hint: t("slides.clip_paste_loose_hint") },
+        ],
+      });
+      if (!mode) return;
+      const res = await app.shareCurrentTo(dest, mode);
+      if (res && res.error) { if (window.bsLog) window.bsLog("Share slide: " + res.error, "error"); return; }
+      if (app._notify) {
+        app._notify(res.here ? t("slides.shr_done_here")
+          : t("slides.shr_done_there").replace("{deck}", (res.target && res.target.title) || ""));
+      }
     };
   }
 

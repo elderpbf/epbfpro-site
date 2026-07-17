@@ -123,6 +123,28 @@ export function resolveStyleObj(slots, ref) {
 }
 
 /**
+ * The SHARED half of a slide: everything except what belongs to the deck holding it.
+ * `id` is the deck-local slot, `ref` is the link, `name`/`from` are library-entry
+ * metadata. What is left is the slide itself (layout, slots, notes, build/buildFx,
+ * overrides, textStyle) and is what a linked slide has ONE of, no matter how many decks
+ * or how many positions in one deck show it.
+ *
+ * Lives here, in the pure-data core, because BOTH sides need the same answer: the editor
+ * (app.js, keeping same-ref siblings in step inside one deck) and the adapters
+ * (sharedSlides/slideClip, reading and writing the library). Two definitions of "what is
+ * shared" would drift, and the drift would be invisible until a slide lost a field.
+ */
+export function slideContent(slide) {
+  const out = clone(slide);
+  delete out.id;
+  delete out.ref;
+  delete out.name;
+  delete out.from;
+  delete out._broken;
+  return out;
+}
+
+/**
  * Deck schema version. Bumped when the on-disk shape changes so migrateDeck can
  * run a one-time upgrade and never re-run it. v2 = D1 stable identity:
  * cards carry an id, topics are {id,text}, geometry overrides + per-item text

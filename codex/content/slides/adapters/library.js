@@ -22,6 +22,9 @@ import { uid, clone } from '../js/core/schema.js';
 
 export const LIBRARY_SLUG = '__library__';
 export const LIBRARY_ENGINE = 'codex-library';
+// The engine tag content/slides.js stamps on OUR authored decks. usedBy() scans those and
+// only those: other rows on the shared table are not ours and hold no refs.
+const DECK_ENGINE = 'codex-deck';
 
 export function createLibrary({ facade } = {}) {
   const api = facade || slidesApi;
@@ -118,8 +121,42 @@ export function createLibrary({ facade } = {}) {
       return _asTemplate(tpl);
     },
 
-    // Remove a template by id. Detached model: removing a template never touches a
-    // deck that already inserted a copy.
+    /**
+     * Which decks LINK entry `id` -> [{slug, title, count}].
+     *
+     * Exists because deleting an entry is not a local act any more: a detached copy does not
+     * care, but every `{ref}` pointing here turns into "slide compartilhado nao encontrado".
+     * Élder hit exactly that (2026-07-17: deleted the library entries, then "ao voltar para o
+     * deck original, aparece Slide compartilhado nao encontrado, tem varias inconsistencias").
+     *
+     * There is no index of refs, so this reads the decks. That is N round trips, which is why
+     * only DELETE calls it: it is a rare, deliberate act, and the alternative is a delete
+     * that silently breaks other decks. `openDeck` ({slug, deck}) lets the caller supply the
+     * deck on screen, whose in-memory copy is fresher than its saved json.
+     */
+    async usedBy(id, openDeck) {
+      const res = await api.list();
+      const rows = ((res && res.presentations) || []).filter((p) => p && p.engine === DECK_ENGINE);
+      const out = [];
+      for (const row of rows) {
+        let deck = null;
+        if (openDeck && openDeck.slug === row.slug) deck = openDeck.deck;
+        else {
+          try {
+            const r = await api.getDeck({ slug: row.slug });
+            deck = r && r.data;
+          } catch (_) { continue; } // never saved / unreadable: it holds no refs to break
+        }
+        const count = ((deck && deck.slides) || []).filter((s) => s && s.ref === id).length;
+        if (count) out.push({ slug: row.slug, title: row.title || row.slug, count });
+      }
+      return out;
+    },
+
+    // Remove a template by id. Detached copies never cared; LINKS do, so the caller is
+    // expected to check usedBy() first and refuse (the Codex rule for a thing in use, same
+    // as a curso a turma still points at). This stays a plain delete: the guard belongs to
+    // the caller that can ask the user, not to the storage.
     async remove(id) {
       const c = await _load();
       if (!c || !Array.isArray(c.slides)) return;
