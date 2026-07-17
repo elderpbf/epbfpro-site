@@ -1,5 +1,7 @@
 // render/helpers.js — shared slot-rendering helpers used by every layout module.
 // Layouts compose their own HTML but share these so image-slot markup never drifts.
+import { t } from "../../../../js/i18n.js";
+import { glyphSvg } from "../../../../js/glyphs.js";
 
 /** CSS background value for a colour/gradient mask fill. */
 export function fillCss(m) {
@@ -18,15 +20,18 @@ export function maskOverlay(src, mask) {
  *  (Slice 2) pass false and drive replace/mask from the stage-docked selection bar;
  *  card images still pass true until Slice 3 migrates them off freeform. */
 export function imgInner(path, img, tools = false) {
-  const t = `translate(${img.tx || 0}px,${img.ty || 0}px) scale(${img.zoom || 1})`;
+  // `tf`, not `t`: t() is the imported translator now, and this file shadowing it
+  // with a CSS transform string is how a future t() call here would silently emit
+  // "translate(0px,0px) scale(1)" instead of a label.
+  const tf = `translate(${img.tx || 0}px,${img.ty || 0}px) scale(${img.zoom || 1})`;
   return (
-    `<div class="slotimg" data-img="${path}" style="transform:${t}">` +
+    `<div class="slotimg" data-img="${path}" style="transform:${tf}">` +
     `<img src="${img.src}" draggable="false">${maskOverlay(img.src, img.mask)}</div>` +
     (tools
-      ? `<div class="imgtools editoronly"><button data-replace="${path}">trocar</button>` +
-        `<button data-mask="${path}">máscara</button></div>`
+      ? `<div class="imgtools editoronly"><button data-replace="${path}">${t("slides.ed_replace")}</button>` +
+        `<button data-mask="${path}">${t("slides.ed_mask")}</button></div>`
       : "") +
-    `<div class="panhint editoronly">scroll = zoom · arraste a moldura</div>`
+    `<div class="panhint editoronly">${t("slides.ed_pan_hint")}</div>`
   );
 }
 
@@ -34,14 +39,18 @@ export function imgInner(path, img, tools = false) {
 // ghost"): a photo glyph + "adicionar imagem". The box is a transparent,
 // hairline-framed region (styled in slide.css). The box itself selects on
 // single-click; the context bar's "adicionar imagem" button does the pick.
-const IMG_GLYPH =
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">` +
-  `<rect x="3" y="5" width="18" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6"/>` +
-  `<circle cx="8.5" cy="10" r="1.9" fill="currentColor"/>` +
-  `<path d="M5 17.5l4.7-5.2 3.2 3.4L16.3 11l3.2 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
+//
+// The library's `image`, not a Slides-only drawing (Élder 2026-07-16, track-35 E). I had
+// registered the old hand-drawn frame as its own key to keep the pixels, arguing the cue
+// renders to the AUDIENCE in presentation. Élder killed that argument: the audience is not
+// meant to see an empty slot at all, an empty slot in a talk is the presenter's fault, so the
+// cue is an EDITOR affordance and its exact shape protects nothing. Two drawings for one
+// meaning was the real cost, and this file's own law forbids it.
+// size:null lets slide.css size it (30px * scales), as the hand-drawn svg did by carrying no
+// width/height; strokeWidth 1.6 keeps the hairline weight the cue is drawn with.
 export function imgCue() {
-  return `<div class="imgcue">${IMG_GLYPH}<span class="imgcue-lbl">adicionar imagem</span></div>`;
+  const glyph = glyphSvg("image", { size: null, strokeWidth: 1.6 });
+  return `<div class="imgcue">${glyph}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
 }
 
 /** A drop-target image slot, the unified "image box". `path` is the deck path the
@@ -92,21 +101,22 @@ export function edPlain(tag, path, value, cls = "", styleRef = "") {
  * helpers are the single renderer, shared by the layouts AND inherited by the
  * navigator thumbnails and the presenter window. */
 
-/** One topic bullet. `t` is a {id,text,style?,step?} object; `i` is its current index.
+/** One topic bullet. `item` is a {id,text,style?,step?} object; `i` is its current index.
  *  `active` (when i === active) marks the row "on" for layouts with a current/active
- *  marker (agenda's "now"), derived from slots.active, never stored on the item. */
-export function topicItem(t, i, listName = "topics", fields, active) {
+ *  marker (agenda's "now"), derived from slots.active, never stored on the item.
+ *  (Named `item`, not `t`: `t` is the imported translator at the top of this file.) */
+export function topicItem(item, i, listName = "topics", fields, active) {
   // `fields` lets a list item carry MORE than one editable field (define's
   // term+def, agenda's time+label). Each field is { key, cls? }; default is a single
   // "text" field, so topics/compare/etc. are unchanged. All fields share the item's
   // style-ref so per-item style survives reorder.
   const flds = fields && fields.length ? fields : [{ key: "text" }];
-  const step = t.step != null ? t.step : (i + 1);
+  const step = item.step != null ? item.step : (i + 1);
   const cls = `${step > 0 ? "reveal" : ""}${active != null && i === active ? " on" : ""}`.trim();
   const inner = flds
-    .map((f) => edPlain("span", `${listName}.${i}.${f.key}`, t[f.key], f.cls || "", `${listName}.${t.id}`))
+    .map((f) => edPlain("span", `${listName}.${i}.${f.key}`, item[f.key], f.cls || "", `${listName}.${item.id}`))
     .join("");
-  return `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${t.id}">${inner}</li>`;
+  return `<li class="${cls}" data-step="${step}" data-fkey="${listName}.${item.id}">${inner}</li>`;
 }
 
 /** The topic list (<ul>). `listName` lets ONE layout host several independent lists
@@ -116,7 +126,7 @@ export function topicItem(t, i, listName = "topics", fields, active) {
  *  list name. Defaults to "topics" so topics/split/imagebox keep the one-arg call.
  *  `active` (a row index) marks one row "on" for an active/now marker (agenda). */
 export function topicList(topics, listName = "topics", fields, active) {
-  return `<ul class="topiclist" data-list="${listName}">${topics.map((t, i) => topicItem(t, i, listName, fields, active)).join("")}</ul>`;
+  return `<ul class="topiclist" data-list="${listName}">${topics.map((item, i) => topicItem(item, i, listName, fields, active)).join("")}</ul>`;
 }
 
 // The card renderer (cardItem) + the card PART registry now live in

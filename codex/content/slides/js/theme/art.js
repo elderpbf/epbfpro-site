@@ -10,12 +10,12 @@
 // a plain constant (it is frame, not decoration). "Allow more than one" falls out: a
 // kit's cover()/content() can return as many pieces as it likes.
 
-export const CIRCUITSVG = `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22 H38 V52 H68 M68 52 V82 M38 52 V92 M68 52 H94 M52 8 V34 H82"/><g fill="currentColor" stroke="none"><circle cx="8" cy="22" r="3"/><circle cx="38" cy="52" r="3"/><circle cx="68" cy="52" r="3"/><circle cx="68" cy="82" r="3"/><circle cx="38" cy="92" r="3"/><circle cx="94" cy="52" r="3"/><circle cx="52" cy="8" r="3"/><circle cx="82" cy="34" r="3"/></g></svg>`;
+const CIRCUITSVG = `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="2"><path d="M8 22 H38 V52 H68 M68 52 V82 M38 52 V92 M68 52 H94 M52 8 V34 H82"/><g fill="currentColor" stroke="none"><circle cx="8" cy="22" r="3"/><circle cx="38" cy="52" r="3"/><circle cx="68" cy="52" r="3"/><circle cx="68" cy="82" r="3"/><circle cx="38" cy="92" r="3"/><circle cx="94" cy="52" r="3"/><circle cx="52" cy="8" r="3"/><circle cx="82" cy="34" r="3"/></g></svg>`;
 
-export const NEURALSVG = `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 24 L52 16 L52 50 L20 24 M52 16 L84 30 M52 50 L84 30 M52 50 L48 84 M84 30 L48 84 M20 24 L48 84"/><g fill="currentColor" stroke="none"><circle cx="20" cy="24" r="4"/><circle cx="52" cy="16" r="4"/><circle cx="84" cy="30" r="4"/><circle cx="52" cy="50" r="4"/><circle cx="48" cy="84" r="4"/></g></svg>`;
+const NEURALSVG = `<svg viewBox="0 0 100 100" fill="none" stroke="currentColor" stroke-width="1.6"><path d="M20 24 L52 16 L52 50 L20 24 M52 16 L84 30 M52 50 L84 30 M52 50 L48 84 M84 30 L48 84 M20 24 L48 84"/><g fill="currentColor" stroke="none"><circle cx="20" cy="24" r="4"/><circle cx="52" cy="16" r="4"/><circle cx="84" cy="30" r="4"/><circle cx="52" cy="50" r="4"/><circle cx="48" cy="84" r="4"/></g></svg>`;
 
 export const circuit = (pos) => `<div class="motif circuit ${pos}">${CIRCUITSVG}</div>`;
-export const NEURAL = `<div class="motif neural">${NEURALSVG}</div>`;
+const NEURAL = `<div class="motif neural">${NEURALSVG}</div>`;
 
 // One self-contained entry per art style. "circuito" reproduces today's exact motifs.
 export const ARTKITS = [

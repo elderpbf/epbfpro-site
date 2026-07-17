@@ -39,7 +39,5 @@ export function createHistory({ getSnapshot, applySnapshot, max = 80, window = 7
       lastLabel = null;
       return true;
     },
-    canUndo: () => past.length > 0,
-    canRedo: () => future.length > 0,
   };
 }

@@ -17,7 +17,8 @@ export { DEFAULT_LOGO };
 // maps to a brand SVG already coloured for its background, so no CSS filters are needed.
 const logoAsset = (v) => new URL(`../../assets/logo-${["light", "dark", "teal", "mark"].includes(v) ? v : "light"}.png`, import.meta.url).href;
 
-export function layoutOf(slide) {
+// Private: player.js is the only caller (app.js keeps its own layoutOf method on the controller).
+function layoutOf(slide) {
   return registry.get(slide.layout);
 }
 

@@ -65,10 +65,14 @@ function dropdown(cls, btnLabel, options, current, onPick) {
   return wrap;
 }
 
-// Entrance effects (labels literal, as the Phase 9 fx buttons they replace were). "surgir" =
-// the default rise+fade (the deck-wide entrance), i.e. an ON unit with no explicit fx override.
-const FX_OPTS = [["surgir", "Surgir"], ["fade", "Fade"], ["slide", "Deslizar"], ["zoom", "Zoom"]];
-const FX_LABEL = { surgir: "Surgir", fade: "Fade", slide: "Deslizar", zoom: "Zoom" };
+// Entrance effects. "surgir" = the default rise+fade (the deck-wide entrance), i.e. an ON unit
+// with no explicit fx override. Built as FUNCTIONS, not constants: t() must be read at render
+// time, not at module load, or the labels freeze in whatever language was active on first import
+// and the toggle stops moving them (Élder 2026-07-16: "palavras em português com a língua em
+// inglês"). "Off" stays literal, it reads the same in both.
+const FX_OPTS = () => [["surgir", t("slides.fx_surgir")], ["fade", t("slides.fx_fade")],
+  ["slide", t("slides.fx_slide")], ["zoom", t("slides.fx_zoom")]];
+const FX_LABEL = (fx) => t("slides.fx_" + (fx || "surgir"));
 
 // One row. `onList` is the current ordered ON units (for the drag reorder math).
 function unitRow(app, u, onList) {
@@ -110,13 +114,13 @@ function unitRow(app, u, onList) {
       [["none", "Off"], ["each", t("slides.ed_anim_each")], ["unit", t("slides.ed_anim_unit")]],
       mode, (v) => app.animListMode(u.list, v)));
     // Effect droplist (only when animated); a deck's timing (each/unit) is separate from its effect.
-    if (on) ctl.appendChild(dropdown("ap-fxdd", FX_LABEL[fx || "surgir"], FX_OPTS, fx || "surgir",
+    if (on) ctl.appendChild(dropdown("ap-fxdd", FX_LABEL(fx), FX_OPTS(), fx || "surgir",
       (v) => app.animFx(key, v === "surgir" ? null : v)));
   } else {
     // Singleton: ONE droplist folding on/off + effect. Off → "Animar"; else the effect name.
     const cur = on ? (fx || "surgir") : "off";
-    const btnLbl = on ? FX_LABEL[fx || "surgir"] : t("slides.ed_animate");
-    ctl.appendChild(dropdown("ap-fxdd", btnLbl, [["off", "Off"], ...FX_OPTS], cur, (v) => {
+    const btnLbl = on ? FX_LABEL(fx) : t("slides.ed_animate");
+    ctl.appendChild(dropdown("ap-fxdd", btnLbl, [["off", "Off"], ...FX_OPTS()], cur, (v) => {
       if (v === "off") { if (on) app.animToggle(u.key, false); return; }
       if (v === "surgir") { if (on) app.animFx(u.key, null); else app.animToggle(u.key, true); return; }
       if (!on) app.animToggle(u.key, true);
@@ -126,7 +130,7 @@ function unitRow(app, u, onList) {
     if (on) {
       const w = meta.timing === "with";
       const j = btn("ap-with", "⇤", w, () => app.animTiming(u.key, w ? "after" : "with"));
-      j.title = "Entra junto com o item anterior (mesmo clique)";
+      j.title = t("slides.ed_with_prev");
       ctl.appendChild(j);
     }
   }
@@ -159,10 +163,10 @@ function build(app) {
 
   // Transição slide-a-slide (deck-level, Phase 9): Nenhuma / Fade / Empurrar.
   const tr = el("section", "ap-sec");
-  tr.appendChild(el("div", "ap-sec-h", "Transição"));
+  tr.appendChild(el("div", "ap-sec-h", t("slides.ed_transition")));
   const tro = el("div", "ap-ent");
   const curT = app.deck().transition || "none";
-  [["none", "Nenhuma"], ["fade", "Fade"], ["push", "Empurrar"]].forEach(([v, lbl]) =>
+  [["none", t("slides.tr_none")], ["fade", t("slides.tr_fade")], ["push", t("slides.tr_push")]].forEach(([v, lbl]) =>
     tro.appendChild(btn("ap-ent-o", lbl, curT === v, () => { app.setTransition(v); rebuild(); })));
   tr.appendChild(tro);
   box.appendChild(tr);
