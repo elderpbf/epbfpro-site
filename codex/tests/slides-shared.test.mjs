@@ -8,8 +8,22 @@
 // testes é o par hydrate/dehydrate, não a UI.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import { fileURLToPath } from 'node:url';
 import { createSharedSlides, sharedContent, isRef, isLinked } from '../content/slides/adapters/sharedSlides.js';
 import { createLibrary } from '../content/slides/adapters/library.js';
+
+// O núcleo (app.js) monta com DOM, então a costura app->adapter é lida da FONTE. É o
+// idioma dos outros contract tests do repo (modules.test.mjs, slides-i18n-menus).
+const APP_SRC = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/app.js', import.meta.url)), 'utf8');
+const methodOf = (name) => {
+  let i = APP_SRC.indexOf(`    ${name}(`);
+  if (i < 0) i = APP_SRC.indexOf(`    async ${name}(`); // shareCurrentSlide é async
+  assert.ok(i > 0, `${name} existe no app.js`);
+  const end = APP_SRC.indexOf('\n    },', i);
+  assert.ok(end > i, `${name} termina no fecho de método esperado`);
+  return APP_SRC.slice(i, end);
+};
 
 // Uma biblioteca de mentira com a superfície que o sharedSlides usa. `writes` conta as
 // idas ao servidor, que é o que o dirty-check promete economizar.
@@ -196,6 +210,42 @@ test('isRef vs isLinked: stub em disco vs slide hidratado', () => {
   assert.equal(isRef({ id: 's', layout: 'cover' }), false);
   assert.equal(isLinked({ id: 's', ref: 'L1', layout: 'cover' }), true);
   assert.equal(isLinked({ id: 's', layout: 'cover' }), false);
+});
+
+// ── A costura app -> adapter (é o que o Élder exercita na mão no preview) ────
+
+test('app.linkTemplate produz um slide que o adapter reconhece como vinculado', () => {
+  const src = methodOf('linkTemplate');
+  assert.match(src, /s\.ref = tpl\.id/, 'o vínculo aponta pro id da entrada da biblioteca');
+  assert.match(src, /s\.id = uid\(\)/, 'o id local do deck é fresco (não colide com outro deck)');
+  assert.match(src, /delete s\.name/, '`name` é metadado de biblioteca, não vai pro slide');
+  assert.match(src, /this\.commit\(\)/,
+    'commit() explícito: goTo não toca o store, e vínculo não persistido = vínculo que não aconteceu');
+  // O que ele monta tem de passar pelos guards do adapter.
+  const built = { id: 'novo', ref: 'L1', layout: 'statement', slots: { text: 'x' } };
+  assert.equal(isLinked(built), true);
+  assert.equal(isRef(built), false, 'já hidratado, não é stub');
+});
+
+test('app.insertTemplate (COPIAR) continua sem ref: é o default e não pode ter mudado', () => {
+  const src = methodOf('insertTemplate');
+  assert.doesNotMatch(src, /\.ref\s*=/, 'copiar NUNCA cria vínculo');
+  assert.match(src, /s\.id = uid\(\)/);
+});
+
+test('app.detachCurrent tira o vínculo e o estado de quebrado, mantendo o conteúdo', () => {
+  const src = methodOf('detachCurrent');
+  assert.match(src, /delete s\.ref/, 'sem ref => o dehydrate persiste o slide inteiro no deck');
+  assert.match(src, /delete s\._broken/, 'destacar um ref quebrado tem de limpar o placeholder');
+  assert.match(src, /this\.record\(\)/, 'é desfazível pelo undo');
+});
+
+test('app.shareCurrentSlide promove: grava na biblioteca e SÓ então vincula', () => {
+  const src = methodOf('shareCurrentSlide');
+  assert.match(src, /if \(s\.ref\) return \{ error: "already-shared" \}/, 'não re-compartilha o já vinculado');
+  const save = src.indexOf('this._library.save');
+  const ref = src.indexOf('s.ref = tpl.id');
+  assert.ok(save > 0 && ref > save, 'o ref só existe depois de a entrada existir de verdade');
 });
 
 // ── library.updateMany: o lote que o dehydrate usa ───────────────────────────

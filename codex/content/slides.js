@@ -66,6 +66,7 @@ let _openSlug = null;         // slug of the deck currently open in the editor
 let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _deckOpen = false;        // true while a deck is open (sidebar auto-hides)
 let _saveTimer = null;
+let _flushSave = null;        // fires the pending debounced save NOW (see _teardownEditor)
 let _topChromeTimer = null;   // focus-mode hide timer for the Codex topbar reveal
 let _cleanup = [];
 
@@ -338,6 +339,10 @@ async function _importDeck(file) {
 // initialDeck (optional): a deck object to seed the store with (e.g. a freshly
 // imported pptx). When given, it is treated like a fresh deck, set + persisted.
 async function _openDeck(slug, fresh, initialDeck) {
+  // FIRST, before this function touches any module state: land whatever the deck being
+  // left still has in flight. An edit made inside the autosave's 800ms window used to be
+  // thrown away by _teardownEditor's clearTimeout when the user clicked another deck.
+  _flushPendingSave();
   // Shared slides (track-35 C): resolve `{id, ref}` link stubs into content on load and
   // collapse them back (writing any edit through to the library) on save. Per OPEN DECK,
   // not per session: its dirty-tracking is about THIS deck's links, and a stale map from
@@ -358,14 +363,18 @@ async function _openDeck(slug, fresh, initialDeck) {
   // Debounced autosave on any later deck change (the R2 path). On a successful save we
   // ping the presenter window over the deck channel so it can toast "saved" (notes edited
   // in the presenter view round-trip here to be persisted; the ping confirms the REAL save).
+  const _save = () => store.save()
+    .then(() => { const a = _editorHandles && _editorHandles.app; if (a && a.channel) a.channel.postMessage({ type: 'saved' }); })
+    .catch((e) => notice.internal(e));
   store.on('change', () => {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => {
-      store.save()
-        .then(() => { const a = _editorHandles && _editorHandles.app; if (a && a.channel) a.channel.postMessage({ type: 'saved' }); })
-        .catch((e) => notice.internal(e));
-    }, 800);
+    _saveTimer = setTimeout(_save, 800);
   });
+  // Closing this deck must FIRE the pending save, not cancel it, and only _save knows which
+  // store/slug it belongs to. Assigned AFTER the flush at the top of _openDeck, never before:
+  // _saveTimer is module-wide, so overwriting the handle while the PREVIOUS deck's timer is
+  // still pending would flush that timer through THIS deck's save.
+  _flushSave = () => { if (!_saveTimer) return null; clearTimeout(_saveTimer); _saveTimer = null; return _save(); };
   // Persist the initial deck (fresh OR imported) so it survives a reload.
   if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
 
@@ -388,7 +397,17 @@ async function _openDeck(slug, fresh, initialDeck) {
   _renderList();
 }
 
+// Fire the open deck's pending debounced save instead of dropping it. Fire-and-forget on
+// purpose: the save closes over its own store + slug, so it completes correctly while the
+// next deck opens, and awaiting it would freeze the UI on every deck switch. Errors still
+// reach the debug pill through _save's own catch.
+function _flushPendingSave() {
+  const flush = _flushSave;
+  if (flush) flush();
+}
+
 function _teardownEditor() {
+  _flushPendingSave();
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   if (_editorHandles) {
     // mount() returns { app, unmount }; call its own teardown (closes the
