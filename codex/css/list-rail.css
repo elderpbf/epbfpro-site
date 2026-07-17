@@ -33,8 +33,14 @@
    with the list: it is chrome, so it stays flex-shrink:0 like the head it belongs to. */
 .cdx-rail-headpanel { flex-shrink:0; padding:.5rem .8rem .7rem; border-bottom:1px solid var(--border); }
 
-/* body: the ONLY scrolling region */
-.cdx-rail-body   { flex:1; min-height:0; overflow-y:auto; padding:.4rem; }
+/* body: the ONLY scrolling region. Its scrollbar is thin + themed, never the OS default (which
+   is a fat white bar even in dark mode — Élder 2026-07-18). Part of the module so EVERY rail is
+   thin and on-theme; brought over from the old Lessons sidebar (var(--border) thumb, 6px). */
+.cdx-rail-body   { flex:1; min-height:0; overflow-y:auto; padding:.4rem;
+                   scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.cdx-rail-body::-webkit-scrollbar       { width:6px; }
+.cdx-rail-body::-webkit-scrollbar-track { background:transparent; }
+.cdx-rail-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 .cdx-rail-empty  { padding:1rem .6rem; color:var(--text-secondary); font-size:.82rem; text-align:center; }
 
 /* rows */
