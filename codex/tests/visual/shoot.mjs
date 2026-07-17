@@ -68,7 +68,7 @@ async function shoot(name, width, height, act, query = '') {
 
 // Each module's shot list is its own function, so registering the next one (lessons) is
 // adding a case here + a SRC entry in harness.html. Shots are named for what they must prove.
-const SHOTS = { cohorts: shootCohorts, sessions: shootSessions };
+const SHOTS = { cohorts: shootCohorts, sessions: shootSessions, lessons: shootLessons };
 if (!SHOTS[mod]) { console.error('no shot list for module ' + mod); process.exit(1); }
 
 // The rails clear the chrome with a hardcoded `padding-top: 94px`. If the real topbar + sub-row
@@ -245,6 +245,182 @@ async function shootSessions() {
 
   // Phone. Sessões is the screen Élder named: it has NO hamburger at all today.
   await shoot('05-phone', 390, 844);
+}
+
+// Lessons: the one screen that does NOT adopt the rail's markup — its look is the product and
+// is frozen, so it keeps its own cards and only the drag engine is shared
+// (js/pointer-reorder.js). That makes "it still looks the same" true by construction, and moves
+// the whole risk onto the drag, which is what these shots hammer.
+//
+// A REAL pointer drag (mouse.down -> move -> up), never a synthetic event: the module has no
+// grip, so "a press under 4px is still a click, past it is a drag" is the entire contract, and
+// only a real pointer stream can tell those two apart. Source-regex tests are what this track
+// exists to stop trusting.
+async function shootLessons() {
+  const NO_FOCUS = '&focus=0';
+  const secSel = (k) => '.cdx-lessons-sidebar-body .cdx-lesson-section[data-sec="' + k + '"]';
+  const order = (p) => p.$$eval('.cdx-lessons-sidebar-body .cdx-lesson-section[data-sec]', (els) =>
+    els.map((e) => e.getAttribute('data-sec')));
+  const stored = (p, k) => p.evaluate((key) => localStorage.getItem(key), k);
+
+  // Open `key` if it is not already. NOT a blind click: the accordion opens one section at
+  // mount (favourites when something is starred, else items), so a click "to make sure" is as
+  // likely to shut it. Idempotent setup, or the test fails on its own fixture.
+  async function ensureOpen(p, key) {
+    if (await p.locator(secSel(key) + '.is-collapsed').count()) {
+      await p.click(secSel(key) + ' > .cdx-rail-sec-h');
+      await p.waitForTimeout(150);
+    }
+  }
+
+  // Press on `pressSel`, drop onto `toSel`, in steps (one jump would skip the 4px threshold
+  // check and land as a single move the module could never see travelling).
+  //
+  // pressSel is the HANDLE, not the thing that moves: a section drags by its head, and its
+  // box spans head + body, so pressing at its centre lands on a card and starts nothing.
+  // That is the module's rule, not a test detail (handleSel), so the test states it.
+  async function drag(p, pressSel, toSel, edge = 'above') {
+    const a = await p.locator(pressSel).boundingBox();
+    const b = await p.locator(toSel).boundingBox();
+    if (!a || !b) throw new Error('drag: missing ' + pressSel + ' or ' + toSel);
+    const y = edge === 'above' ? b.y + b.height * 0.25 : b.y + b.height * 0.75;
+    await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await p.mouse.down();
+    await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2 + 12, { steps: 4 });
+    await p.mouse.move(b.x + b.width / 2, y, { steps: 12 });
+    await p.mouse.up();
+    await p.waitForTimeout(150);
+  }
+
+  // The resting screen. Nothing stored = the order Élder designed, untouched by this work.
+  await shoot('01-sidebar-default-order', 1440, 900, async (p) => {
+    const got = await order(p);
+    const want = ['llm', 'external', 'labs', 'items', 'drive', 'apostila', 'tarefas']
+      .filter((k) => got.includes(k));
+    if (got.join(',') !== want.join(',')) {
+      throw new Error('the default section order moved:\n  got:  ' + got.join(',') + '\n  want: ' + want.join(','));
+    }
+  }, NO_FOCUS);
+
+  // Favoritos renders (and in the STORED order, not vault order — the list is what a drag
+  // rewrites, so rendering it any other way would show the drag being ignored).
+  await shoot('02-favorites-section', 1440, 900, async (p) => {
+    const ids = await p.$$eval('.cdx-lesson-section--favorites .cdx-rail-row',
+      (els) => els.map((e) => e.getAttribute('data-id')));
+    if (ids.join(',') !== '105,101,103') throw new Error('favourites are not in stored order: ' + ids.join(','));
+  }, NO_FOCUS + '&favs=105,101,103');
+
+  // THE section drag. Drag `items` above `llm` and it must stay there AND persist.
+  await shoot('03-section-drag-persists', 1440, 900, async (p) => {
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
+    const got = await order(p);
+    if (got.indexOf('items') > got.indexOf('llm')) {
+      throw new Error('the section did not move: ' + got.join(','));
+    }
+    const raw = await stored(p, 'cv_section_order_v1');
+    if (!raw) throw new Error('the drag did not persist (cv_section_order_v1 is empty)');
+    const saved = JSON.parse(raw);
+    if (saved.indexOf('items') > saved.indexOf('llm')) throw new Error('persisted the OLD order: ' + raw);
+    // The sections that were not on screen must still be in there (see applyVisibleOrder).
+    for (const k of ['preset', 'favorites']) {
+      if (!saved.includes(k)) throw new Error('the drag dropped the off-screen section "' + k + '": ' + raw);
+    }
+  }, NO_FOCUS);
+
+  // The bug the swallowed click exists for: a section head toggles the accordion on click, and
+  // a drag ENDS in a click on that head. Left alone, every drop collapses the section it just
+  // moved. Assert the section is still open, not merely that it moved.
+  await shoot('04-drop-does-not-collapse', 1440, 900, async (p) => {
+    await ensureOpen(p, 'items');
+    const openBefore = await p.locator(secSel('items') + ':not(.is-collapsed)').count();
+    if (!openBefore) throw new Error('setup: items did not open');
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
+    const openAfter = await p.locator(secSel('items') + ':not(.is-collapsed)').count();
+    if (!openAfter) throw new Error('the drop ALSO toggled the section shut (the click was not swallowed)');
+  }, NO_FOCUS);
+
+  // The other half of the same contract: under the threshold it is STILL a click. A drag engine
+  // that eats the click breaks selecting an item, which is the sidebar's whole job.
+  await shoot('05-click-still-selects', 1440, 900, async (p) => {
+    // apostila, not items: the Items section sub-groups by type and every type group SEEDS
+    // ITSELF COLLAPSED, so its cards are not on screen to click. apostila renders cards directly.
+    await ensureOpen(p, 'apostila');
+    const card = p.locator(secSel('apostila') + ' .cdx-rail-row').first();
+    await card.click();
+    await p.waitForTimeout(250);
+    if (!await p.locator('.cdx-rail-row.is-on').count()) {
+      throw new Error('a plain click no longer selects the item (the drag engine ate it)');
+    }
+  }, NO_FOCUS);
+
+  // THE favourites drag: reorder inside Favoritos, and it persists.
+  await shoot('06-favorite-drag-persists', 1440, 900, async (p) => {
+    const favSel = (id) => '.cdx-lesson-section--favorites [data-id="' + id + '"]';
+    await drag(p, favSel('103'), favSel('105'), 'above');
+    const raw = await stored(p, 'cv_favorites_v1');
+    const saved = JSON.parse(raw);
+    if (saved.indexOf('103') > saved.indexOf('105')) throw new Error('the favourite did not move: ' + raw);
+    if (!saved.includes('lab:x')) throw new Error('the drag unstarred the favourite that section never showed: ' + raw);
+  }, NO_FOCUS + '&favs=105,101,lab:x,103');
+
+  // A card in a NON-favourite section must not be draggable: the favourites instance is scoped
+  // by listSel, and if that scoping fails it silently rewrites the favourites list from a
+  // section it has no business reading.
+  await shoot('07-non-favorite-card-not-draggable', 1440, 900, async (p) => {
+    await ensureOpen(p, 'apostila');
+    const cards = p.locator(secSel('apostila') + ' .cdx-rail-row');
+    if (await cards.count() < 2) throw new Error('setup: apostila needs 2+ cards to attempt a drag');
+    const a = await cards.nth(1).boundingBox();
+    const b = await cards.nth(0).boundingBox();
+    await p.mouse.move(a.x + a.width / 2, a.y + a.height / 2);
+    await p.mouse.down();
+    await p.mouse.move(b.x + b.width / 2, b.y + b.height * 0.25, { steps: 12 });
+    await p.mouse.up();
+    await p.waitForTimeout(150);
+    const raw = await stored(p, 'cv_favorites_v1');
+    if (JSON.parse(raw).join(',') !== '105,101,103') {
+      throw new Error('dragging a card OUTSIDE Favoritos rewrote the favourites list: ' + raw);
+    }
+  }, NO_FOCUS + '&favs=105,101,103');
+
+  // A stored order must be READ BACK and painted, not just written. 03 proves the write; without
+  // this, "the drag sticks" rests on a unit test and an obvious .map().
+  await shoot('09-stored-order-is-painted-on-boot', 1440, 900, async (p) => {
+    const got = await order(p);
+    if (got[0] !== 'tarefas' || got[1] !== 'items') {
+      throw new Error('the stored order was not honoured at mount: ' + got.join(','));
+    }
+    if (!got.includes('llm')) throw new Error('a section missing from the stored order vanished: ' + got.join(','));
+  }, NO_FOCUS + '&order=tarefas,items');
+
+  // THE state Élder actually teaches in: focus mode is ON by default above 700px, so the sidebar
+  // is tucked away and he reveals it at the left edge BEFORE dragging. Every other shot here
+  // forces it off for determinism, which left the first drag he will ever try unverified — the
+  // exact "it works on my harness" this track exists to kill. The reveal holds while the cursor
+  // is over the sidebar (_overSide cancels the hide timer), and a drag never leaves it.
+  await shoot('10-drag-with-focus-mode-on', 1440, 900, async (p) => {
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus'))) {
+      throw new Error('setup: focus mode is not on, so this shot proves nothing');
+    }
+    await p.mouse.move(2, 450);            // the edge reveal
+    await p.waitForTimeout(300);
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus--side'))) {
+      throw new Error('setup: the edge did not reveal the sidebar');
+    }
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
+    const got = await order(p);
+    if (got.indexOf('items') > got.indexOf('llm')) {
+      throw new Error('the drag does not work in focus mode (the state he actually uses): ' + got.join(','));
+    }
+    // And the sidebar must still be revealed: a drag that lets it tuck away mid-carry would
+    // drop the section into thin air.
+    if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus--side'))) {
+      throw new Error('the sidebar tucked itself away during the drag');
+    }
+  }, '&focus=1');
+
+  // Phone: below 700px focus mode is skipped anyway and the sidebar is the drawer.
+  await shoot('08-phone', 390, 844, null, NO_FOCUS);
 }
 
 try {

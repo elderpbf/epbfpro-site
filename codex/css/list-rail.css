@@ -14,8 +14,9 @@
 /* An autohide rail is a full-height SIDEBAR (the page's primary nav), not an in-page left
    panel, so its head carries the page-title weight: 1.25rem, matching the dossiê title next
    to it. Keyed on the mode class the module stamps, so Clientes and Sessões cannot drift
-   apart again (they did: Sessões came out smaller — Élder 2026-07-17) and Lessons inherits
-   it for free. The 8 in-page rails keep .95rem. */
+   apart again (they did: Sessões came out smaller, Élder 2026-07-17). The 8 in-page rails
+   keep .95rem. (Lessons is NOT one of these: it is a fixed 340px left panel and its
+   reveal is focus-mode, a different mechanism entirely.) */
 .cdx-rail--autohide .cdx-rail-head  { padding:.75rem 1rem; }
 .cdx-rail--autohide .cdx-rail-title { font-size:1.25rem; }
 .cdx-rail-add    { flex:0 0 auto; }
@@ -32,8 +33,14 @@
    with the list: it is chrome, so it stays flex-shrink:0 like the head it belongs to. */
 .cdx-rail-headpanel { flex-shrink:0; padding:.5rem .8rem .7rem; border-bottom:1px solid var(--border); }
 
-/* body: the ONLY scrolling region */
-.cdx-rail-body   { flex:1; min-height:0; overflow-y:auto; padding:.4rem; }
+/* body: the ONLY scrolling region. Its scrollbar is thin + themed, never the OS default (which
+   is a fat white bar even in dark mode — Élder 2026-07-18). Part of the module so EVERY rail is
+   thin and on-theme; brought over from the old Lessons sidebar (var(--border) thumb, 6px). */
+.cdx-rail-body   { flex:1; min-height:0; overflow-y:auto; padding:.4rem;
+                   scrollbar-width:thin; scrollbar-color:var(--border) transparent; }
+.cdx-rail-body::-webkit-scrollbar       { width:6px; }
+.cdx-rail-body::-webkit-scrollbar-track { background:transparent; }
+.cdx-rail-body::-webkit-scrollbar-thumb { background:var(--border); border-radius:3px; }
 .cdx-rail-empty  { padding:1rem .6rem; color:var(--text-secondary); font-size:.82rem; text-align:center; }
 
 /* rows */
@@ -59,6 +66,10 @@
 .cdx-rail-sec.is-collapsed .cdx-rail-sec-caret { transform:none; }
 .cdx-rail-sec:not(.is-collapsed) .cdx-rail-sec-caret { transform:rotate(90deg); }
 .cdx-rail-sec.is-collapsed .cdx-rail-seclist { display:none; }
+/* A collapsed group hides its NESTED groups too, not only its own row list. Latent until a
+   consumer nested two collapsible levels (Lessons: section > type sub-group); the 10 one-level
+   rails have no child .cdx-rail-sec, so this rule matches nothing there. */
+.cdx-rail-sec.is-collapsed > .cdx-rail-sec { display:none; }
 .cdx-rail-sec-title { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cdx-rail-sec-count { opacity:.6; }
 .cdx-rail-sec-acts { display:flex; gap:.15rem; opacity:0; transition:opacity .12s; }

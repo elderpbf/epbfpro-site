@@ -5,6 +5,10 @@
  * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
  * surface/text/border values come from the tokens, never hex literals. */
 
+/* Scrollbars (thin + themed, app-wide) moved to css/theme.css: it is the ONE stylesheet both the
+ * Codex admin and the student trilha load, so the primitive now reaches every surface, not just the
+ * admin. Do not re-add it here. */
+
 /* ── Codex topbar: full-width bar with a centered tab strip ───
  * The shell's --with-tabs inner caps at 1400px + centers it; drop that cap here
  * so the bar spans the full viewport, matching the now full-width content below.

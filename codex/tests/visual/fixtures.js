@@ -65,11 +65,48 @@ export const SESSIONS = [
   { code: 'JKL012', title: '', status: 'closed', created_at: '2026-05-11T10:00:00Z' },  // -> "sem título"
 ];
 
+// Lessons (Aula): the released vault of one turma. Shaped so EVERY sidebar section renders at
+// once — classifyVault sorts by type/set_id, so one row per bucket is what fills the screen:
+//   llm -> type 'llm' · external -> 'popup_url' · drive -> 'drive_file' · apostila -> set_id
+//   tarefas -> 'tarefa' · items -> everything else, sub-grouped by type
+// A section that does not render is a section the drag test cannot drag.
+export const VAULT = [
+  { id: 101, title: 'ChatGPT da turma', type: 'llm', type_label: 'LLM', summary: 'Conta compartilhada',
+    meta_json: { url: 'https://chatgpt.com/' } },
+  { id: 102, title: 'Portal do CNJ', type: 'popup_url', type_label: 'Link',
+    meta_json: { url: 'https://www.cnj.jus.br/' } },
+  { id: 103, title: 'Apostila — módulo 1', type: 'conteudo', type_label: 'Conteúdo', set_id: 7,
+    body_md: '# Módulo 1\n\nTexto da apostila.' },
+  // A SECOND apostila row, so one non-favourites section holds two cards side by side. That is
+  // the only way to attempt a drag outside Favoritos and prove the favourites list is untouched.
+  { id: 108, title: 'Apostila — módulo 2', type: 'conteudo', type_label: 'Conteúdo', set_id: 7,
+    body_md: '# Módulo 2\n\nMais texto.' },
+  { id: 104, title: 'Tarefa 1 — redigir despacho', type: 'tarefa', type_label: 'Tarefa',
+    body_md: 'Enunciado da tarefa.' },
+  { id: 105, title: 'Slides da aula 1', type: 'slide', type_label: 'Slides',
+    meta_json: { url: 'https://example.invalid/slides' } },
+  { id: 106, title: 'Prompt de resumo', type: 'prompt', type_label: 'Prompt',
+    body_md: 'Resuma o acórdão a seguir.' },
+  { id: 107, title: 'Guia rápido.pdf', type: 'drive_file', type_label: 'Drive',
+    meta_json: { file_id: 'abc', folder_name: 'Aula 1', mimeType: 'application/pdf' } },
+];
+
 // Each module reaches for a small, known set of actions; anything else throws loudly rather
 // than resolving to {} — a silent empty response would paint a "working" screenshot of nothing.
 export function stubWorker(p) {
   if (p.action === 'ct_list_clients') return Promise.resolve({ clients: CLIENTS });
   if (p.action === 'ct_list_turmas')  return Promise.resolve({ turmas: TURMAS[p.client_slug] || [] });
   if (p.action === 'list_sessions')   return Promise.resolve({ sessions: SESSIONS });
+  // Lessons
+  if (p.action === 'ct_list_all_turmas') {
+    const all = [];
+    for (const slug of Object.keys(TURMAS)) {
+      for (const t of TURMAS[slug]) all.push(Object.assign({}, t, { client_slug: slug, turma_slug: t.slug }));
+    }
+    return Promise.resolve({ turmas: all });
+  }
+  if (p.action === 'cv_get_codex_view')     return Promise.resolve({ vault: VAULT });
+  if (p.action === 'cv_list_presets')       return Promise.resolve({ presets: [] });
+  if (p.action === 'cp_get_live_session')   return Promise.resolve({ session: null });
   return Promise.reject(new Error('harness: unstubbed action ' + p.action));
 }
