@@ -14,7 +14,9 @@
 //     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
 //     rowClass:(it)=>'extra classes',   // per-row state the consumer's CSS keys off
 //     selectedId:()=>id, onSelect:(id)=>{},
-//     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
+//     emptyText: str|()=>str, emptyHtml:()=>html,   // whole list empty (Html wins; rich states)
+//     add:{label,title,onAdd}, headPanel:()=>html,   // head expands to reveal it ('' = collapsed)
+//     reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
 //               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
@@ -140,6 +142,9 @@ export function mountRail(container, cfg) {
     // ARE content (Clientes with clients but no turmas yet must still list the clients, each
     // showing its own empty text — not one "no clients" line over a screen that has clients).
     if (!its.length && !list.length) {
+      // emptyHtml: a RICH empty state owned by the consumer (Sessões has an icon over a line),
+      // same seam as renderRow/renderHead/footer. emptyText stays the escaped-text default.
+      if (cfg.emptyHtml) return cfg.emptyHtml();
       const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
       return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }
@@ -196,7 +201,13 @@ export function mountRail(container, cfg) {
     const head = (cfg.title || add)
       ? '<div class="cdx-rail-head"><span class="cdx-rail-title">' + esc(cfg.title || '') + '</span>' + addBtn + '</div>'
       : '';
-    return head + filters;
+    // headPanel(): the head EXPANDS to reveal consumer html under it — same shape as the filter
+    // row, and the consumer owns whether it is showing (return '' when collapsed). Sessões puts
+    // its create-session form here: Élder wanted the title + `+` on top like Clientes, but a `+`
+    // that opens a modal would add a click and a surface to a flow he runs live at the start of
+    // every class. Expanding in place keeps type-and-submit and still frees the top.
+    const panel = cfg.headPanel ? (cfg.headPanel() || '') : '';
+    return head + filters + (panel ? '<div class="cdx-rail-headpanel">' + panel + '</div>' : '');
   }
 
   function render() {
@@ -206,8 +217,12 @@ export function mountRail(container, cfg) {
     // list (e.g. labs) when render() runs on every selection. Carry it over.
     const prevBody = container.querySelector('.cdx-rail-body');
     const prevScroll = prevBody ? prevBody.scrollTop : 0;
+    // The mode is a CSS fact too, not just behaviour: an autohide rail is a full-height
+    // sidebar and is styled as one (see css/list-rail.css). Stamped by the module so no
+    // consumer has to remember, and so two sidebars cannot drift apart.
+    const modeClass = (cfg.width && cfg.width.mode === 'autohide') ? ' cdx-rail--autohide' : '';
     container.innerHTML =
-      '<div class="cdx-rail">' +
+      '<div class="cdx-rail' + modeClass + '">' +
         headHtml() +
         '<div class="cdx-rail-body">' + bodyHtml() + '</div>' +
         (cfg.footer ? '<div class="cdx-rail-foot">' + cfg.footer() + '</div>' : '') +

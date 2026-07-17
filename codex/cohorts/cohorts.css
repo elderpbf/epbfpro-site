@@ -56,7 +56,10 @@
     width: 320px;
     z-index: 80;
     box-sizing: border-box;
-    padding-top: 94px;                         /* clears the topbar + Turmas sub-row */
+    /* Clears the chrome, whatever it actually measures: js/codex-topbar.js publishes its own
+     * height. The old hardcoded 94px assumed the persistent sub-BAR, but 'pill' is the default
+     * sub-tab mode and has none, so the default left a 29px gap under the topbar. */
+    padding-top: var(--cdx-chrome-h, 94px);
     transform: translateX(-100%);
     transition: transform 0.2s ease, box-shadow 0.2s ease;
   }
@@ -1100,9 +1103,8 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 .cdx-cohorts-listpane .cdx-rail-sec-acts:focus-within { opacity: 1; }
 .cdx-cohorts-listpane .cdx-rail-sec-acts { gap: 0.2rem; flex: 0 0 auto; }
 
-/* The pane title matched the dossiê title (1.25rem); the rail's default is .95rem. */
-.cdx-cohorts-listpane .cdx-rail-head { padding: 0.75rem 1rem; }
-.cdx-cohorts-listpane .cdx-rail-title { font-size: 1.25rem; }
+/* The head's size/padding is the rail's `--autohide` skin now (css/list-rail.css), shared with
+ * Sessões, so it is not duplicated here. */
 .cdx-cohorts-listpane .cdx-rail-body { padding: 0.5rem; }   /* was .cdx-pane-body's inset */
 
 .cdx-cg-ava {
