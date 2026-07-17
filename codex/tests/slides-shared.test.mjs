@@ -292,3 +292,13 @@ test('updateMany ignora id que não existe mais (template excluído não ressusc
   assert.equal(facade.calls.save, 0, 'nada pra atualizar => nem salva');
   assert.equal(facade._peek().slides.length, 1, 'o excluído continua excluído');
 });
+
+test('TODA op que remexe slides[] limpa a multi-seleção da régua', () => {
+  // `_pick` guarda ÍNDICES. Selecione 2-3-4, apague o 2, e o array anda mas o set continua
+  // {2,3,4}: os thumbs acesos passam a ser OUTROS slides e o Ctrl+C copia os errados, com o
+  // destaque certo. Achado numa revisão, não por teste, e o comentário do `_pick` chegou a
+  // AFIRMAR que isso já acontecia quando não acontecia em 5 das 7 ops.
+  const MUTATORS = ['addSlide', 'duplicate', 'removeSlide', 'reorder', 'insertTemplate', 'linkTemplate', 'pasteClip'];
+  const missing = MUTATORS.filter((m) => !/this\.clearPick\(\)/.test(methodOf(m)));
+  assert.deepEqual(missing, [], 'estas remexem slides[] sem limpar a seleção por índice');
+});

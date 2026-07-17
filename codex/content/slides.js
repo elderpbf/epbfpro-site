@@ -280,6 +280,10 @@ function _openDeckMenu(btn) {
 // is why this does not re-upload anything; deleting the source could orphan the copy's
 // images, which is worth knowing before deck deletion ever starts reaping R2.
 async function _duplicateDeck(slug) {
+  // The copy is made from the last SAVED json, so land any pending autosave first AND wait
+  // for it: the gear is one mouse trip away from an edit, which is well inside the 800ms
+  // window, and getDeck would otherwise race it and copy the pre-edit deck.
+  await _flushPendingSave();
   const d = _deckBySlug(slug);
   const title = ((d && d.title) || t('slides.untitled')) + ' ' + t('slides.copy_suffix');
   const newSlug = _slugify(title) + '-' + String(Date.now()).slice(-6);
@@ -459,13 +463,14 @@ async function _openDeck(slug, fresh, initialDeck) {
   _renderList();
 }
 
-// Fire the open deck's pending debounced save instead of dropping it. Fire-and-forget on
-// purpose: the save closes over its own store + slug, so it completes correctly while the
-// next deck opens, and awaiting it would freeze the UI on every deck switch. Errors still
-// reach the debug pill through _save's own catch.
+// Fire the open deck's pending debounced save instead of dropping it. Returns the save's
+// promise (or null when nothing was pending) so a caller that READS the saved json right
+// after can await it; the deck-switch callers deliberately do not, because the save closes
+// over its own store + slug and completes correctly while the next deck opens, and awaiting
+// would freeze the UI on every switch. Errors reach the debug pill through _save's catch.
 function _flushPendingSave() {
   const flush = _flushSave;
-  if (flush) flush();
+  return flush ? flush() : null;
 }
 
 function _teardownEditor() {

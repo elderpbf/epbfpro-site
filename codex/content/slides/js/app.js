@@ -625,6 +625,7 @@ export function mount(root, ctx = {}) {
     insertTemplate(tpl) {
       if (!tpl || !tpl.slide) return;
       this.record();
+      this.clearPick();
       const s = clone(tpl.slide);
       s.id = uid();
       delete s.name;
@@ -645,8 +646,10 @@ export function mount(root, ctx = {}) {
     // Deliberately NOT js/select/: that model owns what is selected INSIDE a slide (§9 of
     // the architecture), one record + per-kind descriptors. A set of slides is a different
     // noun with one gesture and no controls, so it is 4 lines here instead of a kind there.
-    // `_pick` holds slide INDICES; it is dropped on any deck mutation (see clearPick
-    // callers) because an index set outlives nothing that reorders the array.
+    // `_pick` holds slide INDICES, so it MUST be dropped by every op that reshuffles
+    // slides[]: pick 2-3-4, delete 2, and the set still says {2,3,4} while those are now
+    // different slides, so Ctrl+C copies the wrong ones with the right highlight. Every
+    // mutator below calls clearPick(); a new one has to too.
     _pick: null,
     isMultiPicked(i) { return !!(this._pick && this._pick.has(i)); },
     picked() {
@@ -686,6 +689,7 @@ export function mount(root, ctx = {}) {
     linkTemplate(tpl) {
       if (!tpl || !tpl.slide) return;
       this.record();
+      this.clearPick();
       const s = clone(tpl.slide);
       s.id = uid();
       s.ref = tpl.id;
@@ -849,10 +853,11 @@ export function mount(root, ctx = {}) {
         this.refresh();
       }
     },
-    addSlide(layoutId) { this.record(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.goTo(this.index + 1); },
-    duplicate() { this.record(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.goTo(this.index + 1); },
+    addSlide(layoutId) { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, newSlide(layoutId)); this.goTo(this.index + 1); },
+    duplicate() { this.record(); this.clearPick(); this.deck().slides.splice(this.index + 1, 0, duplicateSlide(this.cur())); this.goTo(this.index + 1); },
     removeSlide(i) {
       this.record();
+      this.clearPick();
       const sl = this.deck().slides;
       sl.splice(i, 1);
       if (!sl.length) sl.push(newSlide("cover"));
@@ -863,6 +868,7 @@ export function mount(root, ctx = {}) {
     reorder(from, to) {
       if (from == null || from === to) return;
       this.record();
+      this.clearPick();
       const sl = this.deck().slides;
       const [s] = sl.splice(from, 1);
       sl.splice(to, 0, s);
