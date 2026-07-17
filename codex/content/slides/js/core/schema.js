@@ -123,6 +123,28 @@ export function resolveStyleObj(slots, ref) {
 }
 
 /**
+ * The SHARED half of a slide: everything except what belongs to the deck holding it.
+ * `id` is the deck-local slot, `ref` is the link, `name`/`from` are library-entry
+ * metadata. What is left is the slide itself (layout, slots, notes, build/buildFx,
+ * overrides, textStyle) and is what a linked slide has ONE of, no matter how many decks
+ * or how many positions in one deck show it.
+ *
+ * Lives here, in the pure-data core, because BOTH sides need the same answer: the editor
+ * (app.js, keeping same-ref siblings in step inside one deck) and the adapters
+ * (sharedSlides/slideClip, reading and writing the library). Two definitions of "what is
+ * shared" would drift, and the drift would be invisible until a slide lost a field.
+ */
+export function slideContent(slide) {
+  const out = clone(slide);
+  delete out.id;
+  delete out.ref;
+  delete out.name;
+  delete out.from;
+  delete out._broken;
+  return out;
+}
+
+/**
  * Deck schema version. Bumped when the on-disk shape changes so migrateDeck can
  * run a one-time upgrade and never re-run it. v2 = D1 stable identity:
  * cards carry an id, topics are {id,text}, geometry overrides + per-item text
@@ -139,8 +161,14 @@ export function resolveStyleObj(slots, ref) {
  * its row and the per-card override is dropped. Cards then render at the row size.
  * v6 = deck-level `aspect` ('16:9' | '4:3') driving `deck.canvas` dims; legacy decks
  * get aspect inferred from their canvas (always 16:9) and a missing canvas backfilled.
+ * v7 = SHARED slides (track-35 C): a slide may be stored as a LINK, `{id, ref}`,
+ * where `ref` is the id of a slide living in the reserved __library__ container. The
+ * ref is resolved to full content on load and re-collapsed on save by
+ * adapters/sharedSlides.js: the core only ever sees a hydrated slide that still
+ * carries its `.ref`. Nothing to migrate (no existing deck has a ref); the bump
+ * records that a v7 deck's slides[] may not be self-contained.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).

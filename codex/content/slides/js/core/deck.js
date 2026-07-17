@@ -15,9 +15,21 @@ export function newSlide(layoutId, slots) {
 }
 
 /** Deep copy of a slide with a new id. */
+/**
+ * An INDEPENDENT copy of a slide. Drops `ref`, so duplicating a SHARED slide gives a
+ * detached copy that can drift, not a second window onto the same library entry.
+ *
+ * That is what "duplicar" means everywhere else, and the two are not interchangeable here
+ * (track-35 C): a silent linked twin would edit other decks from a button that promises a
+ * copy. A second LINKED instance is a different, named act: compartilhar -> este deck ->
+ * vinculado, or Ctrl+C / Ctrl+V -> vinculado. `_broken` goes too: duplicating a
+ * "nao encontrado" placeholder must not spread the warning as if it were content.
+ */
 export function duplicateSlide(slide) {
   const copy = clone(slide);
   copy.id = uid();
+  delete copy.ref;
+  delete copy._broken;
   return copy;
 }
 
