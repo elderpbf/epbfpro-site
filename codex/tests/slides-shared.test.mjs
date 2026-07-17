@@ -239,11 +239,12 @@ test('app.insertTemplate (COPIAR) continua sem ref: é o default e não pode ter
   assert.match(src, /s\.id = uid\(\)/);
 });
 
-test('app.detachCurrent tira o vínculo e o estado de quebrado, mantendo o conteúdo', () => {
-  const src = methodOf('detachCurrent');
+test('app.detachSet tira o vínculo e o estado de quebrado, mantendo o conteúdo', () => {
+  const src = methodOf('detachSet');
   assert.match(src, /delete s\.ref/, 'sem ref => o dehydrate persiste o slide inteiro no deck');
-  assert.match(src, /delete s\._broken/, 'destacar um ref quebrado tem de limpar o placeholder');
+  assert.match(src, /delete s\._broken/, 'desvincular um ref limpa o placeholder junto');
   assert.match(src, /this\.record\(\)/, 'é desfazível pelo undo');
+  assert.match(methodOf('detachCurrent'), /this\.detachSet\(\[this\.cur\(\)\]\)/, 'o singular é o conjunto de um só');
 });
 
 test('o botão de compartilhar EXISTE e diz os dois estados', () => {
@@ -257,52 +258,91 @@ test('o botão de compartilhar EXISTE e diz os dois estados', () => {
   assert.doesNotMatch(src, /shr_detach/, 'o botão NÃO vira "destacar" (Élder: sem esse notice ao compartilhar de novo)');
 });
 
-test('compartilhar um slide JÁ compartilhado não força o destacar; oferece como opção', () => {
-  // Élder 2026-07-17: clicar em compartilhar num slide já compartilhado abria "Destacar este
-  // slide?". Compartilhar de novo é seguro (só aponta mais decks pra mesma entrada), então o
-  // clique vai pro fluxo de sempre; destacar continua lá, mas como escolha explícita e confirmada.
-  const i = APP_SRC.indexOf('shareBtn.onclick');
-  const block = APP_SRC.slice(i, i + 3600);
-  const where = block.indexOf('shr_where_title');
-  const confirm = block.indexOf('shr_detach_confirm');
-  assert.ok(where > 0, 'o clique abre o WHERE');
-  assert.ok(confirm > where, 'o confirm de destacar vem DENTRO do fluxo, nunca antes de perguntar o deck');
-  assert.match(block, /value: "__detach__"/, 'destacar é uma OPÇÃO, escolhida de propósito');
-  assert.match(block, /target === "__detach__"[\s\S]{0,360}shr_detach_confirm[\s\S]{0,120}detachCurrent\(\)/, 'e escolhê-la confirma e destaca');
+// O fluxo (qual deck? vinculado ou solto? desvincular?) mora em edit/shareflow.js, não mais
+// inline no wireChrome (Élder 2026-07-17: "nada a gente escreve inline"). Os testes de fluxo
+// leem a FONTE do módulo, como o resto do repo faz com o núcleo montado.
+const SHAREFLOW_SRC = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/shareflow.js', import.meta.url)), 'utf8');
+const shareFlowFn = (name) => {
+  const start = SHAREFLOW_SRC.indexOf('function ' + name + '(');
+  assert.ok(start >= 0, name + ' existe em shareflow.js');
+  const end = SHAREFLOW_SRC.indexOf('\n}\n', start);
+  return SHAREFLOW_SRC.slice(start, end > start ? end : undefined);
+};
+
+test('desvincular não é forçado ao compartilhar: é opção, só quando TODOS estão vinculados', () => {
+  // Élder 2026-07-17: clicar em compartilhar num slide já compartilhado abria "Desvincular?".
+  // Compartilhar de novo é seguro (só aponta mais decks pra mesma entrada), então o clique vai
+  // pro fluxo normal; desvincular é uma OPÇÃO, e só aparece quando a seleção inteira é vinculada
+  // (mistura = só compartilhar). O confirm só dispara quando o usuário escolhe desvincular.
+  const src = shareFlowFn('openShareFlow');
+  assert.match(src, /if \(allLinked\) options\.push\(\{ value: "__unlink__"/, 'desvincular só quando allLinked');
+  assert.match(src, /const allLinked = nonBroken\.every\(\(s\) => app\.isShared\(s\)\)/, 'allLinked = todos vinculados');
+  assert.match(src, /if \(target === "__unlink__"\)[\s\S]{0,400}window\.confirm[\s\S]{0,120}app\.detachSet/, 'escolher desvincular confirma e desvincula o conjunto');
+  const where = src.indexOf('__here__');
+  const unlink = src.indexOf('__unlink__');
+  assert.ok(where > 0 && unlink > where, 'desvincular fica DEPOIS dos destinos, no fim da lista');
+});
+
+test('este deck só aparece se ALGO ainda não é vinculado (senão não há o que publicar)', () => {
+  const src = shareFlowFn('openShareFlow');
+  assert.match(src, /const someUnlinked = nonBroken\.some\(\(s\) => !app\.isShared\(s\)\)/);
+  assert.match(src, /if \(someUnlinked\) options\.push\(\{ value: "__here__"/, 'sem slide solto na seleção, some o "este deck"');
+});
+
+test('o glifo de vínculo na régua é um ATALHO clicável pro mesmo fluxo', () => {
+  // Élder 2026-07-17: "os slides vinculados já têm aquele glifo... clicar nele deveria abrir o
+  // modal de desvinculação, usando o que a gente tem". O selo virou <button data-lnk> e leva
+  // ao MESMO app.openShareFlow, com stopPropagation pra não virar navegação do thumb.
+  const nav = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/navigator.js', import.meta.url)), 'utf8');
+  assert.match(nav, /<button[^>]*class="lnkbadge[^"]*"[^>]*data-lnk="\$\{i\}"/, 'o selo é um button com data-lnk');
+  assert.match(nav, /\[data-lnk\][\s\S]{0,220}stopPropagation\(\)[\s\S]{0,120}app\.openShareFlow\(\[s\]\)/, 'clicar abre o fluxo pra aquele slide, sem navegar');
+});
+
+test('o botão de compartilhar opera na SELEÇÃO da régua, não só no slide atual', () => {
+  // Multi-pick + clicar compartilhar = agir sobre todos os selecionados (Élder 2026-07-17:
+  // "pode selecionar vários e clicar no botão de compartilhar", tudo no mesmo modal).
+  assert.match(APP_SRC, /shareBtn\.onclick = \(\) => app\.openShareFlow\(app\.pickedSlides\(\)\)/, 'o botão passa a seleção pro fluxo');
+  assert.match(methodOf('pickedSlides'), /this\.picked\(\)\.map/, 'pickedSlides = a seleção como objetos');
+  // E shareSetTo trata um conjunto: manda o array inteiro pro sendLinked/sendLoose.
+  assert.match(methodOf('shareSetTo'), /sendLoose\(target\.slug, set\.map/, 'solto pra fora manda o conjunto');
+  assert.match(methodOf('shareSetTo'), /sendLinked\(target\.slug, refs\)/, 'vinculado pra fora manda todos os refs');
 });
 
 test('compartilhar NÃO pede nome: pergunta o DECK, depois vinculado ou solto', () => {
-  // Élder 2026-07-17: "ele deve abrir um modal perguntando se é para esse deck ou outro, com
-  // opção de criar um novo ali; depois abre o modal de vincular ou solto". O nome sai de
-  // cena: era um passo por slide, e a entrada é achada pelo deck de origem na tab Biblioteca.
-  assert.doesNotMatch(APP_SRC, /shr_share_prompt/, 'o prompt de nome morreu');
-  assert.match(APP_SRC, /shr_where_title/, '1ª pergunta: qual deck');
-  assert.match(APP_SRC, /shr_where_new/, 'com a opção de criar um deck novo ali');
-  const where = APP_SRC.indexOf('shr_where_title');
-  const how = APP_SRC.indexOf('shr_how_title');
-  assert.ok(where > 0 && how > where, 'e a 2ª pergunta (como) vem DEPOIS da 1ª (onde)');
-  // A 2ª pergunta usa as MESMAS chaves do colar: um ato, um vocabulário.
-  assert.match(APP_SRC, /clip_paste_linked/, 'reusa as opções do colar, não inventa outras');
+  // Élder 2026-07-17: "modal perguntando se é para esse deck ou outro, com opção de criar um
+  // novo ali; depois abre o modal de vincular ou solto". Nome sai de cena.
+  assert.doesNotMatch(SHAREFLOW_SRC, /window\.prompt/, 'nenhum prompt de nome no fluxo');
+  assert.match(SHAREFLOW_SRC, /shr_where_title/, '1ª pergunta: qual deck');
+  assert.match(SHAREFLOW_SRC, /shr_where_new/, 'com a opção de criar um deck novo ali');
+  const src = shareFlowFn('openShareFlow');
+  const where = src.indexOf('askChoice(app.root');
+  const how = src.indexOf('askHowMode(app.root');
+  assert.ok(where > 0 && how > where, 'a 2ª pergunta (como) vem DEPOIS da 1ª (onde)');
+  // O "como?" é askHowMode, a MESMA função que o colar usa: um ato, um vocabulário.
+  assert.match(shareFlowFn('askHowMode'), /clip_paste_linked/, 'reusa as opções do colar, não inventa outras');
+  assert.match(methodOf('onPaste'), /askHowMode\(/, 'e o colar chama a mesma função (sem duplicar o askChoice inline)');
 });
 
-test('compartilhar e colar carimbam o mesmo deck de origem', () => {
+test('compartilhar carimba o mesmo deck de origem que o colar', () => {
   // Senão a MESMA entrada secciona ou não na tab Biblioteca dependendo da porta por onde passou.
-  assert.match(methodOf('shareCurrentTo'), /from: \{ slug: this\._slug, title: this\._deckTitle \}/);
+  assert.match(methodOf('shareSetTo'), /from: \{ slug: this\._slug, title: this\._deckTitle \}/);
 });
 
 test('compartilhar SOLTO não publica nada na biblioteca', () => {
-  // Solto = cópia independente. Publicar seria criar uma entrada que ninguém acompanha,
-  // que é justamente o "compartilhar infinitas vezes" que o Élder mandou matar.
-  const src = methodOf('shareCurrentTo');
+  // Solto = cópia independente. Publicar seria criar uma entrada que ninguém acompanha.
+  const src = methodOf('shareSetTo');
   const loose = src.indexOf('if (mode === "loose")');
   const save = src.indexOf('this._library.save');
   assert.ok(loose > 0 && save > loose, 'o caminho solto sai antes de qualquer publicação');
-  assert.match(src, /this\.duplicate\(\)/, 'solto no mesmo deck é literalmente duplicar');
+  assert.match(src, /duplicateSlide\(s\)/, 'solto no mesmo deck é duplicar cada um (cópia independente)');
 });
 
-test('compartilhar VINCULADO reusa o ref quando o slide já é compartilhado', () => {
-  const src = methodOf('shareCurrentTo');
+test('compartilhar VINCULADO reusa o ref e NÃO cria gêmeo (publica no lugar)', () => {
+  const src = methodOf('shareSetTo');
   assert.match(src, /let ref = s\.ref;[\s\S]{0,40}if \(!ref\)/, 'só publica se ainda não tem entrada');
+  assert.match(src, /s\.ref = ref;/, 'publica NO LUGAR: o próprio slide vira o compartilhado');
+  assert.match(src, /if \(here\) return \{ ok: true, mode, here/, 'este deck + vinculado NÃO insere 2ª cópia (sem gêmeo)');
+  assert.doesNotMatch(src, /splice\([^)]*slideContent/, 'nunca faz splice de uma cópia do conteúdo (o gêmeo morto)');
 });
 
 test('inserir cai logo APÓS o slide selecionado, nunca no fim', () => {
@@ -408,7 +448,7 @@ test('destacar NÃO é o conserto de um vínculo quebrado', () => {
   // vivia na entrada da biblioteca que foi excluída, e o deck só guarda {id, ref}. Destacar um
   // slide quebrado congelava esse aviso como conteúdo do slide e jogava o ref fora, ou seja,
   // entregava lixo chamando de conserto. E o shr_broken_tip mandava fazer exatamente isso.
-  assert.match(methodOf('detachCurrent'), /if \(!s \|\| !s\.ref \|\| s\._broken\) return false;/, 'recusa no quebrado');
+  assert.match(methodOf('detachSet'), /!s\.ref \|\| !s\._broken\) return false|s && s\.ref && !s\._broken/, 'o quebrado é filtrado fora do desvincular');
   assert.match(methodOf('resetBroken'), /if \(!s \|\| !s\._broken\) return false;/, 'e é o único que aceita');
   assert.match(methodOf('resetBroken'), /s\.slots = \{ text: "" \}/, 'limpa o aviso em vez de promovê-lo a conteúdo');
 });
@@ -585,13 +625,13 @@ test('criar deck novo é um deck DE VERDADE, não uma linha vazia (o "abre quebr
 });
 
 test('o botão compartilhar->novo NÃO pede nome e cria sem abrir', () => {
-  // Élder: "ele me perguntou o nome ao invés de dar um nome". O handler não deve mais chamar
+  // Élder: "ele me perguntou o nome ao invés de dar um nome". O fluxo não deve chamar
   // window.prompt pro deck novo; auto-nomeia e cria com open:false pra ficar no slide atual.
-  const i = APP_SRC.indexOf('target === "__new__"');
-  const block = APP_SRC.slice(i, i + 400);
+  const i = SHAREFLOW_SRC.indexOf('target === "__new__"');
+  const block = SHAREFLOW_SRC.slice(i, i + 400);
   assert.ok(!/window\.prompt/.test(block), 'sem prompt de nome no ramo do deck novo');
   assert.match(block, /_createDeck\(null, \{ open: false \}\)/, 'auto-nome + não abre');
-  assert.ok(!/shr_new_deck_prompt/.test(APP_SRC), 'e a string de prompt morreu');
+  assert.ok(!/shr_new_deck_prompt/.test(SHAREFLOW_SRC), 'e a string de prompt morreu');
 });
 
 test('duplicar deck e renomear também garantem nome único', () => {

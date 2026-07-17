@@ -56,8 +56,10 @@
    on (unlike revbadge) so the tooltip is readable: it is the only place that warns
    an edit here reaches other decks. `broken` = the library entry is gone; it borrows
    the danger token rather than inventing a colour. */
-.cdx-deck-editor .thumb .lnkbadge { position: absolute; right: 4px; bottom: 4px; z-index: 3; display: flex; line-height: 0; background: rgba(19, 78, 74, .78); color: #99f6e4; border: 1px solid var(--teal-l); border-radius: 6px; padding: 2px; }
+.cdx-deck-editor .thumb .lnkbadge { position: absolute; right: 4px; bottom: 4px; z-index: 3; display: flex; line-height: 0; background: rgba(19, 78, 74, .78); color: #99f6e4; border: 1px solid var(--teal-l); border-radius: 6px; padding: 2px; cursor: pointer; appearance: none; font: inherit; }
+.cdx-deck-editor .thumb .lnkbadge:hover { background: var(--teal); color: #04211f; }
 .cdx-deck-editor .thumb .lnkbadge.broken { background: rgba(127, 29, 29, .8); color: #fecaca; border-color: var(--danger); }
+.cdx-deck-editor .thumb .lnkbadge.broken:hover { background: var(--danger); color: #fff; }
 /* The share button carries the same link glyph in both directions; `linked` tints it so
    "this slide IS shared" (and so the click means DETACH) reads without the tooltip. */
 .cdx-deck-editor #chrome #shareBtn.linked { color: var(--teal); border-color: var(--teal-l); }

@@ -44,9 +44,11 @@ export function createNavigator(app) {
       th.innerHTML =
         `<div class="num">${i + 1}</div>` +
         // A shared slide is marked on the rail because its blast radius is not local:
-        // editing it here edits it in every deck that links it. A broken ref (the
-        // library entry is gone) says so in the tooltip instead of pretending to be fine.
-        (s.ref ? `<div class="lnkbadge${s._broken ? " broken" : ""}" title="${t(s._broken ? "slides.shr_broken_tip" : "slides.shr_badge_tip")}">${glyphSvg("link", { size: 11 })}</div>` : "") +
+        // editing it here edits it in every deck that links it. A broken ref (the library
+        // entry is gone) says so in the tooltip instead of pretending to be fine. The badge
+        // is a BUTTON: clicking it is the shortcut into the same compartilhar/desvincular flow
+        // for that slide (Élder 2026-07-17), so a linked slide is one click from desvincular.
+        (s.ref ? `<button type="button" class="lnkbadge${s._broken ? " broken" : ""}" data-lnk="${i}" title="${t(s._broken ? "slides.shr_broken_tip" : "slides.shr_badge_tip")}">${glyphSvg("link", { size: 11 })}</button>` : "") +
         (s.reflowWarn ? `<div class="revbadge" title="${t("slides.ed_reflow_warn")}">⚠</div>` : "") +
         `<div class="tctl"><button data-up="${i}">↑</button><button data-down="${i}">↓</button><button data-rm="${i}">✕</button></div>` +
         `<div class="mini"><div class="scale"></div></div>`;
@@ -82,6 +84,13 @@ export function createNavigator(app) {
     nav.querySelectorAll("[data-up]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.up, -1); }));
     nav.querySelectorAll("[data-down]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.down, 1); }));
     nav.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.removeSlide(+b.dataset.rm); }));
+    // The link glyph is a shortcut into the share/unlink flow for THAT slide. stopPropagation
+    // so it never doubles as the thumb's navigate/pick click.
+    nav.querySelectorAll("[data-lnk]").forEach((b) => (b.onclick = (e) => {
+      e.stopPropagation();
+      const s = app.deck().slides[+b.dataset.lnk];
+      if (s) app.openShareFlow([s]);
+    }));
 
     let dragI = null;
     nav.querySelectorAll(".thumb").forEach((th) => {

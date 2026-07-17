@@ -23,7 +23,7 @@ import { openThemeBox, refreshThemeBox, closeThemeBox } from "./edit/themebox.js
 import { openAnimPanel, closeAnimPanel } from "./edit/animpanel.js";
 import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
-import { askChoice } from "./ui/choice.js";
+import { initShareFlow, askHowMode } from "./edit/shareflow.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
 import { glyphSvg } from "../../../js/glyphs.js";
@@ -725,6 +725,10 @@ export function mount(root, ctx = {}) {
       this.renderNav();
     },
     clearPick() { if (this._pick) { this._pick = null; this.renderNav(); } },
+    // The picked slides as OBJECTS (what shareflow + copyPicked act on), rail order, always
+    // including the current slide when nothing is shift-picked. Read via picked() so the
+    // "nothing picked = this slide" fallback lives in one place.
+    pickedSlides() { const sl = this.deck().slides; return this.picked().map((i) => sl[i]).filter(Boolean); },
 
     // ── Shared slides (track-35 C) ────────────────────────────────────────────
     // COPY vs LINK are two insertion modes over the SAME library: insertTemplate above
@@ -754,51 +758,61 @@ export function mount(root, ctx = {}) {
       this.commit();
     },
 
-    // "Compartilhar": send the current slide TO a deck. Same two questions the paste asks,
-    // in the same order, because it is the same act with a picker instead of a clipboard
-    // (Élder 2026-07-17: "deve abrir um modal perguntando se é para esse deck ou outro (...)
-    // depois abre o modal de vincular ou solto"). It asks for NO name: a name the user has to
-    // invent per slide is a step, and the entry is found by its origin deck in the Biblioteca
-    // tab anyway. autoName() derives one from the slide itself.
+    // "Compartilhar": send a SET of slides TO a deck. The one share path (the single-slide
+    // button and the multi-pick both come through here; a lone next to a plural implementation
+    // is the "fixed one path, missed the other" trap this session already sprang twice). Asks
+    // for NO name: the entry is found by its origin deck in the Biblioteca tab. autoName()
+    // derives one per slide. The UI (which deck? vinculado ou solto?) lives in edit/shareflow.js.
     //
-    // `target`: { slug, title } of the destination, or null meaning THIS deck.
-    // `mode`: "linked" | "loose".
-    async shareCurrentTo(target, mode) {
+    // `slides`: the set to send. `target`: { slug, title } of the destination, or null = THIS
+    // deck. `mode`: "linked" | "loose".
+    //
+    // NO twin. "este deck + vinculado" PUBLISHES each slide in place (it becomes the shared
+    // one); it does not splice a second linked copy after it. The old surprise second copy was
+    // the inconsistency flagged twice; "compartilhar este slide" plainly means "make it shared".
+    async shareSetTo(slides, target, mode) {
       if (!this._library) return { error: "no-library" };
-      const s = this.cur();
-      if (!s) return { error: "no-slide" };
+      const set = (slides || []).filter(Boolean);
+      if (!set.length) return { error: "no-slide" };
       const here = !target || target.slug === this._slug;
       try {
-        // LOOSE into this deck is just a duplicate, and loose into another deck needs no
-        // library entry at all: nothing is shared, so nothing is published.
         if (mode === "loose") {
-          if (here) { this.duplicate(); return { ok: true, mode, here }; }
-          return await this._clip.sendLoose(target.slug, [slideContent(s)])
-            .then((r) => (r.ok ? { ok: true, mode, here, target } : { error: r.error }));
+          // LOOSE into this deck = independent duplicates, after the last of the selection.
+          // Loose into another deck needs no library entry: nothing is shared, nothing published.
+          if (here) {
+            const sl = this.deck().slides;
+            const at = Math.max(...set.map((s) => sl.indexOf(s))) + 1;
+            const copies = set.map((s) => duplicateSlide(s));
+            this.record();
+            this.clearPick();
+            sl.splice(at, 0, ...copies);
+            this.goTo(at);
+            this.commit();
+            return { ok: true, mode, here, count: copies.length };
+          }
+          const r = await this._clip.sendLoose(target.slug, set.map((s) => slideContent(s)));
+          return r.ok ? { ok: true, mode, here, target, count: set.length } : { error: r.error };
         }
-        // LINKED: publish once (or reuse the entry if this slide is already shared), link
-        // this slide, and drop a link into the target when the target is elsewhere.
-        let ref = s.ref;
-        if (!ref) {
-          const tpl = await this._library.save(slideContent(s), this.autoName(s), {
-            from: { slug: this._slug, title: this._deckTitle },
-          });
-          ref = tpl.id;
-          this.record();
-          s.ref = ref;
-          this.refresh();
+        // LINKED: every slide must be a ref. Publish the ones that are not yet (in place, no
+        // twin), reuse the entry for the ones that already are. One undo step for the batch.
+        const toPublish = set.filter((s) => !s.ref);
+        if (toPublish.length) this.record();
+        const refs = [];
+        for (const s of set) {
+          let ref = s.ref;
+          if (!ref) {
+            const tpl = await this._library.save(slideContent(s), this.autoName(s), {
+              from: { slug: this._slug, title: this._deckTitle },
+            });
+            ref = tpl.id;
+            s.ref = ref; // publish IN PLACE: the slide itself is the shared one now
+          }
+          refs.push(ref);
         }
-        if (here) {
-          // A 2nd copy of the same shared slide in THIS deck: legitimate, and syncSameRef
-          // keeps the two in step from now on.
-          this.record();
-          this.deck().slides.splice(this.index + 1, 0, { ...slideContent(s), id: uid(), ref });
-          this.goTo(this.index + 1);
-          this.commit();
-          return { ok: true, mode, here };
-        }
-        const r = await this._clip.sendLinked(target.slug, [ref]);
-        return r.ok ? { ok: true, mode, here, target } : { error: r.error };
+        if (toPublish.length) this.refresh();
+        if (here) return { ok: true, mode, here, count: set.length }; // shared in place, done
+        const r = await this._clip.sendLinked(target.slug, refs);
+        return r.ok ? { ok: true, mode, here, target, count: set.length } : { error: r.error };
       } catch (e) {
         return { error: (e && e.message) || "share-failed" };
       }
@@ -819,9 +833,7 @@ export function mount(root, ctx = {}) {
     // PASTE's question (Élder 2026-07-17). Returns how many were taken, for the toast.
     copyPicked() {
       if (!this._clip) return 0;
-      const sl = this.deck().slides;
-      const slides = this.picked().map((i) => sl[i]).filter(Boolean);
-      const out = this._clip.copy(slides, { srcSlug: this._slug, srcTitle: this._deckTitle });
+      const out = this._clip.copy(this.pickedSlides(), { srcSlug: this._slug, srcTitle: this._deckTitle });
       return out ? out.items.length : 0;
     },
 
@@ -875,13 +887,11 @@ export function mount(root, ctx = {}) {
       if (!this._clip || !this._clip.read()) return;
       const clip = this._clip.read();
       const n = clip.items.length;
-      const mode = await askChoice(this.root, {
+      // The vinculado|solto options are shareflow.askHowMode: paste and share ask the exact
+      // same question, so it is defined ONCE. Paste keeps its own "Colar N slides" heading.
+      const mode = await askHowMode(this.root, {
         title: t(n === 1 ? "slides.clip_paste_title_one" : "slides.clip_paste_title_n").replace("{n}", n),
         message: clip.srcTitle ? t("slides.clip_paste_from").replace("{deck}", clip.srcTitle) : "",
-        options: [
-          { value: "linked", label: t("slides.clip_paste_linked"), hint: t("slides.clip_paste_linked_hint"), primary: true },
-          { value: "loose", label: t("slides.clip_paste_loose"), hint: t("slides.clip_paste_loose_hint") },
-        ],
       });
       if (!mode) return; // backed out
       const res = await this.pasteClip(mode);
@@ -914,26 +924,27 @@ export function mount(root, ctx = {}) {
       return true; // the deck IS open: handled here whether or not the slides still exist
     },
 
-    // "Destacar": keep the content, drop the link. This slide becomes a private copy of
-    // whatever it was showing; the library entry and every other deck linking it are
-    // untouched. This is how a near-identical deck diverges on the few slides that
-    // differ (architecture/slides.md §10).
+    // "Desvincular": keep the content, drop the link. Each slide becomes a private copy of
+    // whatever it was showing; the library entry and every other deck linking it are untouched.
+    // This is how a near-identical deck diverges on the few slides that differ (§10), and it
+    // takes a SET so the multi-pick can desvincular in one undo step (shareflow gates it on
+    // "every picked slide is linked").
     //
-    // NOT the escape hatch out of a broken ref, which is what this used to claim and what
-    // shr_broken_tip still told the user to do. A broken slide is showing the PLACEHOLDER
-    // ("slide compartilhado nao encontrado"), because its content lived in the library entry
-    // that is gone; detaching it would freeze that warning as the slide's own content and
-    // throw away the ref, i.e. hand the user a garbage slide and call it a repair. Refused
-    // here so it cannot happen by accident; resetBroken() is the honest answer.
-    detachCurrent() {
-      const s = this.cur();
-      if (!s || !s.ref || s._broken) return false;
+    // A BROKEN slide is skipped, never detached: it is showing the PLACEHOLDER ("slide
+    // compartilhado nao encontrado") because its content lived in the library entry that is
+    // gone. Detaching it would freeze that warning as the slide's own content and throw away
+    // the ref, i.e. hand the user a garbage slide and call it a repair. resetBroken() is the
+    // honest answer for that one.
+    detachSet(slides) {
+      const set = (slides || []).filter((s) => s && s.ref && !s._broken);
+      if (!set.length) return false;
       this.record();
-      delete s.ref;
-      delete s._broken;
+      for (const s of set) { delete s.ref; delete s._broken; }
+      this.clearPick();
       this.refresh();
       return true;
     },
+    detachCurrent() { return this.detachSet([this.cur()]); },
 
     // The other half: a slide whose library entry is gone. There is nothing to recover (a
     // linked slide stores {id, ref} and NOTHING else on disk), so the only honest outcomes
@@ -1149,6 +1160,7 @@ export function mount(root, ctx = {}) {
   initReorder(app); // drag-and-drop reorder for cards + topics (grips injected post-render)
   initMaskPanel(app, root); // the recolour-mask popover (#maskpop): owns app.openMask
   initAddSlide(app, root); // the +slide modal preview picker: owns app.openAddSlide
+  initShareFlow(app); // the compartilhar/desvincular flow: owns app.openShareFlow (button + rail glyph)
   app.renderNav = createNavigator(app).render;
   app.broadcast = createSync(app).broadcast;
 
@@ -1197,85 +1209,12 @@ function wireChrome(app, root) {
     }
   }
 
-  // Compartilhar / Destacar (track-35 C). The state is app.syncShareBtn's on every render;
-  // only the click lives here. Sharing asks TWO questions in Élder's order: which deck, then
-  // linked or loose. Detaching confirms (it is undoable only through undo, not the library).
+  // Compartilhar / Desvincular (track-35 C). The whole flow (which deck? vinculado ou solto?
+  // desvincular? o vínculo quebrado?) lives in edit/shareflow.js so it is not a 65-line onclick
+  // inline here (Élder 2026-07-17: "nada a gente escreve inline"). The button just hands it the
+  // rail selection; syncShareBtn owns the button's look.
   const shareBtn = $("#shareBtn");
-  if (shareBtn) {
-    shareBtn.onclick = async () => {
-      if (!app._library) return;
-      // BROKEN link: the entry it pointed at was deleted, so the content is gone for good
-      // (the deck only ever stored {id, ref}). "Destacar" here would freeze the warning text
-      // as this slide's content and call it a repair, which is what the old tip promised.
-      // Ask instead, and let both answers be honest ones.
-      if (app.cur() && app.cur()._broken) {
-        const what = await askChoice(app.root, {
-          title: t("slides.shr_broken_title"),
-          message: t("slides.shr_broken_msg"),
-          options: [
-            { value: "remove", label: t("slides.shr_broken_remove"), hint: t("slides.shr_broken_remove_hint"), primary: true },
-            { value: "blank", label: t("slides.shr_broken_blank"), hint: t("slides.shr_broken_blank_hint") },
-          ],
-        });
-        if (what === "remove") app.removeSlide(app.index);
-        else if (what === "blank") app.resetBroken();
-        return;
-      }
-      // An already-shared slide is SAFE to share again (it only points more decks at the same
-      // library entry), so clicking share must NOT jump to the detach confirm any more (Élder
-      // 2026-07-17). Detach stays reachable, but as a deliberate, confirmed option in the list.
-      const alreadyShared = app.isShared(app.cur());
-      // 1) WHERE. This deck, another one, a new one created right here, or (if already shared)
-      // "destacar".
-      const decks = (app._deckList ? app._deckList() : []).filter((d) => d.slug !== app._slug);
-      const target = await askChoice(app.root, {
-        title: t("slides.shr_where_title"),
-        message: t("slides.shr_where_msg"),
-        options: [
-          { value: "__here__", label: t("slides.shr_where_here"), hint: app._deckTitle, primary: true },
-          ...decks.map((d) => ({ value: d.slug, label: d.title || d.slug })),
-          { value: "__new__", label: t("slides.shr_where_new") },
-          ...(alreadyShared ? [{ value: "__detach__", label: t("slides.shr_detach"), hint: t("slides.shr_detach_tip") }] : []),
-        ],
-      });
-      if (!target) return;
-      if (target === "__detach__") {
-        // Detach IS destructive (the slide stops following the library), so it keeps its
-        // confirm; what changed is that it only fires when the user picks it on purpose.
-        // eslint-disable-next-line no-alert
-        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
-        app.detachCurrent();
-        return;
-      }
-      let dest = null;
-      if (target === "__new__") {
-        // No name prompt: the deck is auto-named (unique) like "+ nova apresentação", the same
-        // rule as the share button never asking for a slide name. `open:false` keeps you on
-        // THIS slide while the new deck is created behind you and the slide is sent into it.
-        const made = app._createDeck ? await app._createDeck(null, { open: false }) : null;
-        if (!made || !made.slug) { if (window.bsLog) window.bsLog("Share: new deck failed", "error"); return; }
-        dest = made;
-      } else if (target !== "__here__") {
-        dest = decks.find((d) => d.slug === target) || null;
-      }
-      // 2) HOW. The same question the paste asks, same words: one act, one vocabulary.
-      const mode = await askChoice(app.root, {
-        title: t("slides.shr_how_title"),
-        message: dest ? t("slides.clip_paste_from").replace("{deck}", dest.title || dest.slug) : app._deckTitle,
-        options: [
-          { value: "linked", label: t("slides.clip_paste_linked"), hint: t("slides.clip_paste_linked_hint"), primary: true },
-          { value: "loose", label: t("slides.clip_paste_loose"), hint: t("slides.clip_paste_loose_hint") },
-        ],
-      });
-      if (!mode) return;
-      const res = await app.shareCurrentTo(dest, mode);
-      if (res && res.error) { if (window.bsLog) window.bsLog("Share slide: " + res.error, "error"); return; }
-      if (app._notify) {
-        app._notify(res.here ? t("slides.shr_done_here")
-          : t("slides.shr_done_there").replace("{deck}", (res.target && res.target.title) || ""));
-      }
-    };
-  }
+  if (shareBtn) shareBtn.onclick = () => app.openShareFlow(app.pickedSlides());
 
   $("#flip").onclick = () => {
     const s = app.cur().slots;
