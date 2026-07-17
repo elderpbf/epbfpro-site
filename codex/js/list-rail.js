@@ -36,6 +36,7 @@
 //   rail.destroy();  // on unmount
 import { esc } from './dom.js';
 import { installResizer } from './resizable.js';
+import { buildTree } from './list-tree.js';
 
 const GRIP = '⠿'; // ⠿ drag-handle glyph
 const DRAG_THRESHOLD = 4; // px before a press becomes a drag (lets a tap still select)
@@ -138,24 +139,19 @@ export function mountRail(container, cfg) {
   }
 
   // ── grouping: N levels, outermost first ─────────────────────────────────────
-  // `levels` is the general form; `sections`/`bands` are sugar over it (normalizeLevels below),
-  // so the 10 live consumers never changed. Generalized because the alternative is what this
-  // whole track exists to undo — a consumer that needs a shape the module lacks forks its own,
-  // and then everyone has their own (Élder 2026-07-17: "temos que poder aceitar, senão... cada
-  // um faz do seu jeito"). Lessons is the first with 3 levels AND mixed depth.
+  // The ENGINE lives in js/list-tree.js (pure, no markup); this file is its PAINTER. They were
+  // one function until Élder called it (2026-07-17: "não entendi pq o levels e o módulo não podem
+  // atuar por trás... a ideia toda do módulo é unificar") — fused, the module could only serve a
+  // consumer willing to take .cdx-rail-* pixels, so Lessons (frozen look) had to fork the logic,
+  // which is the duplication this track exists to undo. Split, Lessons walks the same tree and
+  // paints its own cards.
   //
-  // Each level: {
-  //   of:(item)=>groupId|null,     // an item names its group AT THIS LEVEL; null = not here
-  //   list:()=>[{id,title,parent}] // groups, in render order; `parent` = the id one level OUT
-  //   collapsible: bool,           // true = .cdx-rail-sec (caret, toggle, DROP TARGET)
-  //                                // false = .cdx-rail-band (plain divider, never a drop target)
-  //   hideWhenEmpty: bool,         // drop the group when nothing lands in it or under it
-  //   exclusive, openId, onToggle, collapsed, renderHead, emptyText, editable
-  // }
-  //
-  // An item only names its DEEPEST group; the ancestors come from `parent`. That is what lets a
-  // level be SKIPPED per item (mixed depth): Lessons' `items`/`drive` sections have a type/folder
-  // sub-group, the other seven go straight to rows, and both live in one tree.
+  // `sections`/`bands` are sugar over `levels` (normalizeLevels above), so the 10 live consumers
+  // never changed. Each level: the engine reads `of`/`list`/`hideWhenEmpty` (see list-tree.js);
+  // everything below is THIS painter's:
+  //   collapsible: bool,   // true = .cdx-rail-sec (caret, toggle, DROP TARGET)
+  //                        // false = .cdx-rail-band (plain divider, never a drop target)
+  //   exclusive, openId, onToggle, collapsed, renderHead, emptyText, editable, onMoveItem
   function levelCfg(i) { return levels[i] || {}; }
   function levelList(i) {
     const l = levelCfg(i);
@@ -205,23 +201,10 @@ export function mountRail(container, cfg) {
     '</div>';
   }
 
-  // Render one level under `parentId`, recursively. Returns '' when nothing survives, so an
-  // outer group can decide to hide itself.
-  function levelHtml(depth, parentId, rowsByGroup) {
-    if (depth >= levels.length) return '';
-    const lv = levelCfg(depth);
-    const groups = levelList(depth).filter((g) => {
-      const p = g.parent == null ? null : String(g.parent);
-      return p === (parentId == null ? null : String(parentId));
-    });
-    let out = '';
-    for (const g of groups) {
-      const kids = levelHtml(depth + 1, g.id, rowsByGroup);
-      const rows = rowsByGroup.get(String(g.id)) || [];
-      if (lv.hideWhenEmpty && !kids && !rows.length) continue;
-      out += groupHtml(depth, g, kids, rows);
-    }
-    return out;
+  // Paint one node of the engine's tree, children first (so a mixed-depth group shows its
+  // sub-groups above its own rows). The engine already dropped whatever hideWhenEmpty drops.
+  function nodeHtml(n) {
+    return groupHtml(n.depth, n.group, n.children.map(nodeHtml).join(''), n.items.map(rowHtml));
   }
 
   function bodyHtml() {
@@ -240,24 +223,13 @@ export function mountRail(container, cfg) {
     if (!levels.length) {
       return '<div class="cdx-rail-list" data-seclist="__flat">' + its.map(rowHtml).join('') + '</div>';
     }
-    // Bucket every item into its DEEPEST named group; anything unplaced falls to the loose
-    // bucket at the top of the body (a consumer's null section, e.g. a course with no section).
-    const known = levels.map((_, i) => new Set(levelList(i).map((g) => String(g.id))));
-    const rowsByGroup = new Map();
-    const loose = [];
-    for (const it of its) {
-      let placed = null;
-      for (let i = levels.length - 1; i >= 0; i--) {
-        const gid = levelCfg(i).of ? levelCfg(i).of(it) : null;
-        if (gid != null && known[i].has(String(gid))) { placed = String(gid); break; }
-      }
-      if (placed == null) { loose.push(rowHtml(it)); continue; }
-      if (!rowsByGroup.has(placed)) rowsByGroup.set(placed, []);
-      rowsByGroup.get(placed).push(rowHtml(it));
-    }
+    // The engine buckets every item into its DEEPEST named group and drops the empties; anything
+    // unplaced comes back as `loose` and gets a bucket at the top of the body (a consumer's null
+    // section, e.g. a course with no section).
+    const { nodes, loose } = buildTree(its, levels);
     let html = '';
-    if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.join('') + '</div>';
-    html += levelHtml(0, null, rowsByGroup);
+    if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.map(rowHtml).join('') + '</div>';
+    html += nodes.map(nodeHtml).join('');
     // "+ Nova seção" sits at the END of the body (never the header), for whichever level is
     // editable. Only one level ever is, so the first match wins.
     const editable = levels.find((l) => l.editable);
