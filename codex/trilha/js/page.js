@@ -10,6 +10,7 @@ import { trail, isTransientError } from './api.js';
 import { startNexo } from './nexo.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { initials } from '../../js/initials.js';
+import { glyphSvg } from '../../js/glyphs.js';
 import { t, setLang } from '../i18n.js';
 import { extractEnrollToken, isLoggedIn, clearToken, getToken, setToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
 import { openLoginModal } from './student-login-modal.js';
@@ -538,6 +539,24 @@ function stripEt() {
   } catch (_) { /* noop */ }
 }
 
+// The mobile bottom-nav mark per tab (desktop hides it: trilha.css `.cdx-tr-tab-ico{display:none}`).
+// These six were six hand-drawn <svg> in trilha/index.html, and FOUR were byte-identical copies of
+// drawings js/glyphs.js already owned, with `checklist` a re-encoding of the same vertices and
+// `lines` the only mark the library lacked (registered there now). Élder 2026-07-16: the icon comes
+// from the library, always. Injected here because HTML cannot call glyphSvg; no pop-in, since the
+// tabs start `hidden` in the markup and renderTabs is what unhides them. size:null because
+// mobile.css owns width/height/stroke/fill (.cdx-tr-tab-ico), down to stroke-width 1.9.
+const TAB_GLYPH = {
+  aulas: 'lines', tarefas: 'checklist', forum: 'message-square',
+  outros: 'folder', apps: 'grid', apostila: 'book',
+};
+
+function _tabGlyph(btn) {
+  const key = TAB_GLYPH[btn.dataset.tab];
+  if (!key || btn.querySelector('.cdx-tr-tab-ico')) return; // renderTabs re-runs; inject once
+  btn.insertAdjacentHTML('afterbegin', glyphSvg(key, { size: null, cls: 'cdx-tr-tab-ico' }));
+}
+
 function renderTabs(root) {
   const data = state.data || {};
   const turma = data.turma || {};
@@ -585,6 +604,7 @@ function renderTabs(root) {
     const key = 'page.tabshort_' + btn.dataset.tab;
     const short = t(key);
     if (short && short !== key) btn.setAttribute('data-short', short);
+    _tabGlyph(btn);
     btn.addEventListener('click', () => {
       if (_win) _win.location.hash = '#' + btn.dataset.tab;
       else onHashChange(btn.dataset.tab);

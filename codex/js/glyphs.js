@@ -76,6 +76,12 @@ const GLYPHS = {
   'copy':       '<rect x="9" y="9" width="13" height="13" rx="2" ry="2"/><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"/>',
   'layers':     '<polygon points="12 2 2 7 12 12 22 7 12 2"/><polyline points="2 17 12 22 22 17"/><polyline points="2 12 12 17 22 12"/>',
   'list':       '<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/><line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>',
+  // Three bare lines, the last one short. `list` is this WITH bullet marks and means an
+  // enumeration; this one is plain ruled lines and reads as "a body of text / a sequence".
+  // Registered because trilha/index.html hand-drew it for the Aulas tab of the mobile bottom
+  // nav; the drawing is lifted from there verbatim, so that tab renders the same mark Élder
+  // approved in the b2 mock. Not a restyle of `list`: different mark, different meaning.
+  'lines':      '<path d="M4 6h16M4 12h16M4 18h10"/>',
   // A list with a solid header bar: a template, i.e. a list whose first row is fixed.
   'preset':     '<rect x="3" y="5" width="18" height="4" rx="1"/><path d="M3 13h18"/><path d="M3 19h18"/>',
   'type':       '<polyline points="4 7 4 4 20 4 20 7"/><line x1="9" y1="20" x2="15" y2="20"/><line x1="12" y1="4" x2="12" y2="20"/>',

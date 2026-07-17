@@ -57,9 +57,11 @@ const layoutLabel = (L) => (LAYOUT_LABEL_KEY[L.id] ? t(LAYOUT_LABEL_KEY[L.id]) :
 // (there is no standalone store adapter, no standalone entry HTML, and the core already
 // imported js/i18n.js from outside), so the boundary now allows shared presentation-only
 // libraries by rule. `stopwatch`/`hourglass` are these exact drawings, moved to the library.
-const G_CLOCK = glyphSvg("clock", { size: 15 });
-const G_STOPWATCH = glyphSvg("stopwatch", { size: 17 });
-const G_HOURGLASS = glyphSvg("hourglass", { size: 17 });
+// size:null: ui.css owns the size (.pvt .pvg svg), so emitting width/height here would only
+// print attributes the stylesheet overrides.
+const G_CLOCK = glyphSvg("clock", { size: null });
+const G_STOPWATCH = glyphSvg("stopwatch", { size: null });
+const G_HOURGLASS = glyphSvg("hourglass", { size: null });
 
 // SHELL is built per-mount so every user-facing string resolves through t() in
 // the active language (the dictionary may switch between mounts).
