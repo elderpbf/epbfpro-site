@@ -249,7 +249,7 @@ export function mount(root, ctx = {}) {
       b.classList.toggle("linked", shared);
       b.innerHTML = glyphSvg("link", { size: 15 });
       const lbl = t(shared ? "slides.shr_detach" : "slides.shr_share");
-      b.title = lbl + " — " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
+      b.title = lbl + ": " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
       b.setAttribute("aria-label", lbl);
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
