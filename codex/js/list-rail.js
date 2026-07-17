@@ -22,6 +22,10 @@
 //               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
 //               renderHead:(sec,count)=>({main,act}), emptyText},
 //     bands:{of:(sec)=>bandId, list:()=>[{id,title}]},   // OUTER level: band > section > row
+//     levels:[{of,list,collapsible,hideWhenEmpty,exclusive,openId,onToggle,collapsed,
+//              renderHead,emptyText,editable,onMoveItem}, ...],  // N levels, outermost first.
+//         sections/bands are SUGAR over this; reach for levels only when you need 3+ levels or
+//         mixed depth (see the grouping block below).
 //     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
 //     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max}
 //         | {mode:'autohide', layoutEl, openClass, revealZone, hideDelay, pinned},
@@ -45,6 +49,42 @@ export function mountRail(container, cfg) {
   const reorder = cfg.reorder || null;
   const filter = cfg.filter || null;
   const add = cfg.add || null;
+
+  // `sections`/`bands` are SUGAR over the general `levels` (see the grouping block below). They
+  // stay the public API: 10 live consumers use them and rewriting those to `levels` would be
+  // pure blast radius for zero gain. Only a consumer that actually needs 3+ levels or mixed
+  // depth reaches for `levels` directly.
+  const levels = normalizeLevels();
+  function normalizeLevels() {
+    if (Array.isArray(cfg.levels) && cfg.levels.length) return cfg.levels;
+    if (!sections) return [];
+    const secLevel = {
+      of: sections.of,
+      list: sections.list,
+      collapsible: true,
+      hideWhenEmpty: false,     // an empty client still shows (with its emptyText)
+      exclusive: sections.exclusive,
+      openId: sections.openId,
+      onToggle: sections.onToggle,
+      collapsed: sections.collapsed,
+      renderHead: sections.renderHead,
+      emptyText: sections.emptyText,
+      editable: sections.editable,
+    };
+    if (!bands) return [secLevel];
+    // `bands.of(sec)` answers "which band is this SECTION in", which in `levels` terms is the
+    // section's `parent`. Computed once per render, not per item (that lookup was O(n²) bait).
+    return [
+      { of: () => null,          // an item never sits directly in a band
+        list: bands.list,
+        collapsible: false,      // a band is a divider, not a control
+        hideWhenEmpty: true },   // a status band with no clients does not render
+      Object.assign({}, secLevel, {
+        list: () => (typeof sections.list === 'function' ? sections.list() : (sections.list || []))
+          .map((s) => Object.assign({}, s, { parent: bands.of(s) })),
+      }),
+    ];
+  }
 
   let resizerDestroy = null;
   let drag = null;       // active pointer-drag state
@@ -83,101 +123,145 @@ export function mountRail(container, cfg) {
     '</div>';
   }
 
-  // A section head. `sections.renderHead(sec, count) -> {main, act}` lets a consumer own the
-  // head's guts (Clientes needs an avatar there) while the module keeps the caret, the row
-  // shell and the toggle wiring. Default = the plain title + count.
-  function sectionHeadInner(sec, count) {
-    const rh = sections.renderHead ? sections.renderHead(sec, count) : null;
+  // A group head. `renderHead(g, count) -> {main, act}` lets a consumer own the head's guts
+  // (Clientes needs an avatar there) while the module keeps the caret, the row shell and the
+  // toggle wiring. Default = the plain title + count.
+  function headInner(lv, g, count) {
+    const rh = lv.renderHead ? lv.renderHead(g, count) : null;
     if (rh) {
       return '<span class="cdx-rail-sec-title">' + (rh.main || '') + '</span>' +
         (rh.act ? '<span class="cdx-rail-sec-acts">' + rh.act + '</span>' : '');
     }
-    return '<span class="cdx-rail-sec-title">' + esc(sec.title || '') + '</span>' +
+    return '<span class="cdx-rail-sec-title">' + esc(g.title || '') + '</span>' +
       '<span class="cdx-rail-sec-count">' + count + '</span>' +
-      (sections.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(sec.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(sec.id)) + '" title="Excluir">×</button></span>' : '');
+      (lv.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(g.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(g.id)) + '" title="Excluir">×</button></span>' : '');
   }
 
-  // `sections.exclusive` = accordion: at most ONE section open, and the open one is the
-  // CONSUMER's state (`sections.openId()`), not a CSS class the module toggles behind its
-  // back — Clientes already tracks `_expandedClient` and re-renders from it, so the module
-  // must not hold a second copy of that truth.
-  function sectionHtml(sec, rows) {
-    const open = sections.exclusive
-      ? (sections.openId && String(sections.openId()) === String(sec.id))
-      : !(sections.collapsed && sections.collapsed(sec));
-    return '<div class="cdx-rail-sec' + (open ? ' is-open' : ' is-collapsed') + '" data-sec="' + esc(String(sec.id)) + '">' +
-      '<div class="cdx-rail-sec-h" data-sec-toggle="' + esc(String(sec.id)) + '">' +
+  // ── grouping: N levels, outermost first ─────────────────────────────────────
+  // `levels` is the general form; `sections`/`bands` are sugar over it (normalizeLevels below),
+  // so the 10 live consumers never changed. Generalized because the alternative is what this
+  // whole track exists to undo — a consumer that needs a shape the module lacks forks its own,
+  // and then everyone has their own (Élder 2026-07-17: "temos que poder aceitar, senão... cada
+  // um faz do seu jeito"). Lessons is the first with 3 levels AND mixed depth.
+  //
+  // Each level: {
+  //   of:(item)=>groupId|null,     // an item names its group AT THIS LEVEL; null = not here
+  //   list:()=>[{id,title,parent}] // groups, in render order; `parent` = the id one level OUT
+  //   collapsible: bool,           // true = .cdx-rail-sec (caret, toggle, DROP TARGET)
+  //                                // false = .cdx-rail-band (plain divider, never a drop target)
+  //   hideWhenEmpty: bool,         // drop the group when nothing lands in it or under it
+  //   exclusive, openId, onToggle, collapsed, renderHead, emptyText, editable
+  // }
+  //
+  // An item only names its DEEPEST group; the ancestors come from `parent`. That is what lets a
+  // level be SKIPPED per item (mixed depth): Lessons' `items`/`drive` sections have a type/folder
+  // sub-group, the other seven go straight to rows, and both live in one tree.
+  function levelCfg(i) { return levels[i] || {}; }
+  function levelList(i) {
+    const l = levelCfg(i);
+    return (typeof l.list === 'function' ? l.list() : (l.list || [])).slice();
+  }
+  // Which level owns this group id? A click lands on a `data-sec-toggle` and each level has its
+  // own exclusive/onToggle/onRename, so "the sections config" is no longer a single answer.
+  function levelOfGroup(gid) {
+    for (let i = 0; i < levels.length; i++) {
+      if (levelList(i).some((g) => String(g.id) === String(gid))) return levels[i];
+    }
+    return null;
+  }
+
+  function groupOpen(lv, g) {
+    if (lv.exclusive) return !!(lv.openId && String(lv.openId()) === String(g.id));
+    return !(lv.collapsed && lv.collapsed(g));
+  }
+
+  // A collapsible group: caret + head + its own .cdx-rail-seclist (the drop container). Any
+  // child groups render ABOVE the row list, so a mixed-depth group shows sub-groups then rows.
+  function groupHtml(depth, g, childrenHtml, rows) {
+    const lv = levelCfg(depth);
+    if (!lv.collapsible) {
+      // A band: plain divider, no caret, NOT a drop target — the drag contract stays on
+      // .cdx-rail-seclist, so nesting never disturbs reorder.
+      return '<div class="cdx-rail-band" data-band="' + esc(String(g.id)) + '">' +
+        '<div class="cdx-rail-band-h">' + esc(g.title || '') + '</div>' +
+        childrenHtml +
+        (rows.length ? '<div class="cdx-rail-seclist" data-seclist="' + esc(String(g.id)) + '">' + rows.join('') + '</div>' : '') +
+      '</div>';
+    }
+    const open = groupOpen(lv, g);
+    return '<div class="cdx-rail-sec' + (open ? ' is-open' : ' is-collapsed') + '" data-sec="' + esc(String(g.id)) + '">' +
+      '<div class="cdx-rail-sec-h" data-sec-toggle="' + esc(String(g.id)) + '">' +
         '<span class="cdx-rail-sec-caret" aria-hidden="true">▸</span>' +
-        sectionHeadInner(sec, rows.length) +
+        headInner(lv, g, rows.length) +
       '</div>' +
-      // `sections.emptyText` fills a section that has no rows (Clientes: a client with no
-      // turmas yet). It goes INSIDE .cdx-rail-seclist so the section stays a drop container.
-      '<div class="cdx-rail-seclist" data-seclist="' + esc(String(sec.id)) + '">' +
-        (rows.length || !sections.emptyText
+      childrenHtml +
+      // `emptyText` fills a group with no rows (Clientes: a client with no turmas yet). It goes
+      // INSIDE .cdx-rail-seclist so the group stays a drop container.
+      '<div class="cdx-rail-seclist" data-seclist="' + esc(String(g.id)) + '">' +
+        (rows.length || !lv.emptyText
           ? rows.join('')
-          : '<div class="cdx-rail-secempty">' + esc(sections.emptyText) + '</div>') +
+          : '<div class="cdx-rail-secempty">' + esc(lv.emptyText) + '</div>') +
       '</div>' +
     '</div>';
   }
 
-  // An outer band groups SECTIONS (two levels: band > section > row). Clientes is the first
-  // consumer: status band (ativos/futuros/inativos) > client group > turma rows. A band is a
-  // plain divider, never collapsible and never a drop target — the drag contract stays on
-  // .cdx-rail-seclist, so reorder is unaffected by nesting.
-  function bandHtml(band, secsHtml) {
-    return '<div class="cdx-rail-band" data-band="' + esc(String(band.id)) + '">' +
-      '<div class="cdx-rail-band-h">' + esc(band.title || '') + '</div>' +
-      secsHtml.join('') +
-    '</div>';
+  // Render one level under `parentId`, recursively. Returns '' when nothing survives, so an
+  // outer group can decide to hide itself.
+  function levelHtml(depth, parentId, rowsByGroup) {
+    if (depth >= levels.length) return '';
+    const lv = levelCfg(depth);
+    const groups = levelList(depth).filter((g) => {
+      const p = g.parent == null ? null : String(g.parent);
+      return p === (parentId == null ? null : String(parentId));
+    });
+    let out = '';
+    for (const g of groups) {
+      const kids = levelHtml(depth + 1, g.id, rowsByGroup);
+      const rows = rowsByGroup.get(String(g.id)) || [];
+      if (lv.hideWhenEmpty && !kids && !rows.length) continue;
+      out += groupHtml(depth, g, kids, rows);
+    }
+    return out;
   }
 
   function bodyHtml() {
     const its = readItems();
-    // grouped: one .cdx-rail-seclist per section (each is a drop container for cross-section
-    // drag), in the section list's order; items whose section is missing fall into a null bucket.
-    const list = sections
-      ? (typeof sections.list === 'function' ? sections.list() : (sections.list || [])).slice()
-      : [];
-    // "No items" is only "empty" when there are no sections either: with sections, the heads
-    // ARE content (Clientes with clients but no turmas yet must still list the clients, each
-    // showing its own empty text — not one "no clients" line over a screen that has clients).
-    if (!its.length && !list.length) {
+    // "No items" is only "empty" when there are no groups either: with groups, the heads ARE
+    // content (Clientes with clients but no turmas yet must still list the clients, each showing
+    // its own empty text — not one "no clients" line over a screen that HAS clients).
+    const anyGroups = levels.length && levels.some((_, i) => levelList(i).length);
+    if (!its.length && !anyGroups) {
       // emptyHtml: a RICH empty state owned by the consumer (Sessões has an icon over a line),
       // same seam as renderRow/renderHead/footer. emptyText stays the escaped-text default.
       if (cfg.emptyHtml) return cfg.emptyHtml();
       const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
       return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }
-    if (!sections) {
+    if (!levels.length) {
       return '<div class="cdx-rail-list" data-seclist="__flat">' + its.map(rowHtml).join('') + '</div>';
     }
-    const byId = new Map(list.map((s) => [String(s.id), s]));
-    const groups = new Map(list.map((s) => [String(s.id), []]));
+    // Bucket every item into its DEEPEST named group; anything unplaced falls to the loose
+    // bucket at the top of the body (a consumer's null section, e.g. a course with no section).
+    const known = levels.map((_, i) => new Set(levelList(i).map((g) => String(g.id))));
+    const rowsByGroup = new Map();
     const loose = [];
-    its.forEach((it) => {
-      const sid = sections.of ? sections.of(it) : null;
-      if (sid != null && groups.has(String(sid))) groups.get(String(sid)).push(rowHtml(it));
-      else loose.push(rowHtml(it));
-    });
+    for (const it of its) {
+      let placed = null;
+      for (let i = levels.length - 1; i >= 0; i--) {
+        const gid = levelCfg(i).of ? levelCfg(i).of(it) : null;
+        if (gid != null && known[i].has(String(gid))) { placed = String(gid); break; }
+      }
+      if (placed == null) { loose.push(rowHtml(it)); continue; }
+      if (!rowsByGroup.has(placed)) rowsByGroup.set(placed, []);
+      rowsByGroup.get(placed).push(rowHtml(it));
+    }
     let html = '';
     if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.join('') + '</div>';
-    const secHtmlFor = (s) => sectionHtml(s, groups.get(String(s.id)) || []);
-    if (bands) {
-      // Two levels. A band with no sections is skipped (Clientes hides an empty status band),
-      // and a section whose band is unknown falls through to the bandless tail below.
-      const bandList = (typeof bands.list === 'function' ? bands.list() : (bands.list || [])).slice();
-      const seen = new Set();
-      bandList.forEach((b) => {
-        const secs = list.filter((s) => String(bands.of(s)) === String(b.id));
-        secs.forEach((s) => seen.add(String(s.id)));
-        if (!secs.length) return;
-        html += bandHtml(b, secs.map(secHtmlFor));
-      });
-      list.filter((s) => !seen.has(String(s.id))).forEach((s) => { html += secHtmlFor(s); });
-    } else {
-      list.forEach((s) => { html += secHtmlFor(s); });
-    }
-    if (sections.editable) {
+    html += levelHtml(0, null, rowsByGroup);
+    // "+ Nova seção" sits at the END of the body (never the header), for whichever level is
+    // editable. Only one level ever is, so the first match wins.
+    const editable = levels.find((l) => l.editable);
+    if (editable) {
       html += '<button type="button" class="cdx-rail-newsec" data-newsec>' + esc(cfg.newSectionLabel || '+ Nova seção') + '</button>';
     }
     return html;
@@ -241,11 +325,11 @@ export function mountRail(container, cfg) {
     if (addBtn) { if (add && add.onAdd) add.onAdd(); return; }
     const chip = e.target.closest('[data-rail-filter]');
     if (chip) { if (filter && filter.onFilter) filter.onFilter(chip.getAttribute('data-rail-filter')); return; }
-    if (sections) {
+    if (levels.length) {
       const ren = e.target.closest('[data-sec-ren]');
-      if (ren) { if (sections.onRename) sections.onRename(ren.getAttribute('data-sec-ren')); return; }
+      if (ren) { const lv = levelOfGroup(ren.getAttribute('data-sec-ren')); if (lv && lv.onRename) lv.onRename(ren.getAttribute('data-sec-ren')); return; }
       const del = e.target.closest('[data-sec-del]');
-      if (del) { if (sections.onDelete) sections.onDelete(del.getAttribute('data-sec-del')); return; }
+      if (del) { const lv = levelOfGroup(del.getAttribute('data-sec-del')); if (lv && lv.onDelete) lv.onDelete(del.getAttribute('data-sec-del')); return; }
       // The acts corner of a head is NOT the toggle. The module's own buttons (ren/del) are
       // already handled and returned above, so anything left in there belongs to the consumer
       // (Clientes puts + nova-turma / ⚙ editar-cliente there) and is wired by its own
@@ -254,15 +338,18 @@ export function mountRail(container, cfg) {
       const tog = e.target.closest('[data-sec-toggle]');
       if (tog) {
         const sid = tog.getAttribute('data-sec-toggle');
-        // Exclusive (accordion): the open section is the CONSUMER's state. Hand it the click
+        // Route to the level this group belongs to: with N levels each one has its own
+        // exclusive/onToggle, so "the sections config" is no longer a single answer.
+        const lv = levelOfGroup(sid) || {};
+        // Exclusive (accordion): the open group is the CONSUMER's state. Hand it the click
         // and let its re-render decide — toggling the class here would fight that state and
         // silently win until the next render(), which is the classic two-truths bug.
-        if (sections.exclusive) { if (sections.onToggle) sections.onToggle(sid); return; }
+        if (lv.exclusive) { if (lv.onToggle) lv.onToggle(sid); return; }
         tog.closest('.cdx-rail-sec').classList.toggle('is-collapsed');
-        if (sections.onToggle) sections.onToggle(sid);
+        if (lv.onToggle) lv.onToggle(sid);
         return;
       }
-      if (e.target.closest('[data-newsec]')) { if (sections.onCreate) sections.onCreate(); return; }
+      if (e.target.closest('[data-newsec]')) { const lv = levels.find((l) => l.editable); if (lv && lv.onCreate) lv.onCreate(); return; }
     }
     const row = e.target.closest('.cdx-rail-row');
     if (row && cfg.onSelect) {
@@ -302,7 +389,7 @@ export function mountRail(container, cfg) {
       const rect = overRow.getBoundingClientRect();
       const after = (e.clientY - rect.top) > rect.height / 2;
       overRow.parentNode.insertBefore(drag.row, after ? overRow.nextSibling : overRow);
-    } else if (overList && sections && overList !== drag.row.parentNode && container.contains(overList) && !overList.querySelector('.cdx-rail-row')) {
+    } else if (overList && levels.length && overList !== drag.row.parentNode && container.contains(overList) && !overList.querySelector('.cdx-rail-row')) {
       // dropping into an empty section list
       overList.appendChild(drag.row);
     }
@@ -315,14 +402,19 @@ export function mountRail(container, cfg) {
     if (!d.moved) return; // it was a press without movement, not a reorder
     const nowList = d.row.parentNode;
     const idsIn = (listEl) => Array.from(listEl.querySelectorAll(':scope > .cdx-rail-row')).map((r) => r.getAttribute('data-id'));
-    if (sections && nowList.getAttribute && nowList.getAttribute('data-seclist') && nowList !== d.fromList) {
+    // A cross-group move is handled by the level that OWNS the destination group. Only the
+    // collapsible levels emit a .cdx-rail-seclist, so a band can never be a drop target.
+    if (levels.length && nowList.getAttribute && nowList.getAttribute('data-seclist') && nowList !== d.fromList) {
       const secId = nowList.getAttribute('data-seclist');
-      if (sections.onMoveItem) sections.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
+      const lv = secId === '__none' ? levels.find((l) => l.onMoveItem) : levelOfGroup(secId);
+      if (lv && lv.onMoveItem) lv.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
     } else if (reorder && reorder.onReorder) {
       reorder.onReorder(idsIn(nowList));
-    } else if (sections && sections.onMoveItem) {
-      const secId = nowList.getAttribute('data-seclist');
-      sections.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
+    } else {
+      // Reorder WITHIN a group, on a rail that only declared onMoveItem (no reorder config).
+      const secId = nowList.getAttribute && nowList.getAttribute('data-seclist');
+      const lv = secId === '__none' ? levels.find((l) => l.onMoveItem) : levelOfGroup(secId);
+      if (lv && lv.onMoveItem) lv.onMoveItem(d.id, secId === '__none' ? null : secId, idsIn(nowList));
     }
   }
 
