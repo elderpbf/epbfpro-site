@@ -171,7 +171,7 @@ export function mount(root, ctx = {}) {
     _deckTitle: ctx.deckTitle || "",
     _deckTitleOf: ctx.deckTitleOf || null, // slug -> current deck title (+slide library sections)
     _deckList: ctx.deckList || null,       // () -> [{slug,title}] for the "share to which deck" picker
-    _createDeck: ctx.createDeck || null,   // (title) -> {slug,title}, the picker's "create a new one here"
+    _createDeck: ctx.createDeck || null,   // (title, {open}) -> {slug,title}, the picker's "create a new one here"
     _imageStore: imageStore,
     _drivePicker: drivePicker,
     _notify: notify, // injected toast (Codex boot passes toast.ok); presenter "notes saved"
@@ -1241,10 +1241,10 @@ function wireChrome(app, root) {
       if (!target) return;
       let dest = null;
       if (target === "__new__") {
-        // eslint-disable-next-line no-alert
-        const title = window.prompt(t("slides.shr_new_deck_prompt"), "");
-        if (title == null || !title.trim()) return;
-        const made = await app._createDeck(title.trim());
+        // No name prompt: the deck is auto-named (unique) like "+ nova apresentação", the same
+        // rule as the share button never asking for a slide name. `open:false` keeps you on
+        // THIS slide while the new deck is created behind you and the slide is sent into it.
+        const made = app._createDeck ? await app._createDeck(null, { open: false }) : null;
         if (!made || !made.slug) { if (window.bsLog) window.bsLog("Share: new deck failed", "error"); return; }
         dest = made;
       } else if (target !== "__here__") {

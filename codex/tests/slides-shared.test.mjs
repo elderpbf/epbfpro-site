@@ -534,3 +534,52 @@ test('o dehydrate escreve UMA vez por ref e escolhe o gêmeo EDITADO', async () 
   assert.equal(lib.writes, 1, 'uma gravação, não duas correndo pro mesmo id');
   assert.equal(lib._peek('L1').slide.slots.text, 'editado no B');
 });
+
+// ── compartilhar -> criar deck novo (Élder 2026-07-17: "ela abre quebrada") ───────────────
+const SLIDES_JS = fs.readFileSync(fileURLToPath(new URL('../content/slides.js', import.meta.url)), 'utf8');
+const fnOf = (name) => {
+  const i = SLIDES_JS.indexOf('function ' + name + '(');
+  const a = SLIDES_JS.indexOf('async function ' + name + '(');
+  const start = i < 0 ? a : (a < 0 ? i : Math.min(i, a));
+  assert.ok(start >= 0, name + ' existe em slides.js');
+  const end = SLIDES_JS.indexOf('\n}\n', start);
+  assert.ok(end > start, name + ' fecha');
+  return SLIDES_JS.slice(start, end);
+};
+
+test('uniqueTitle: nome livre passa, nome tomado ganha (1), (2)…', async () => {
+  const { uniqueTitle } = await import('../content/slides.js');
+  assert.equal(uniqueTitle('Aula', []), 'Aula', 'livre passa igual');
+  assert.equal(uniqueTitle('Aula', ['Aula']), 'Aula (1)', 'tomado ganha (1)');
+  assert.equal(uniqueTitle('Aula', ['Aula', 'Aula (1)']), 'Aula (2)', 'sobe até achar vaga');
+  assert.equal(uniqueTitle('Aula', ['aula']), 'Aula (1)', 'colisão é sem caixa e sem espaço nas pontas');
+  assert.equal(uniqueTitle('  Aula  ', ['Aula']), 'Aula (1)', 'e o espaço nas pontas some');
+});
+
+test('criar deck novo é um deck DE VERDADE, não uma linha vazia (o "abre quebrada")', () => {
+  // O caminho de compartilhar-para-novo registrava só a linha (D1) e deixava o _append gravar
+  // um {slides:[…]} sem canvas/tema/logo/slides-padrão: abria em branco, fora da tela, lista
+  // vazia. Agora _createDeck monta um newDeck() completo e PERSISTE (saveDeck) antes de mandar
+  // o slide, tanto na aba (open) quanto no compartilhar (open:false).
+  const src = fnOf('_createDeck');
+  assert.match(src, /newDeck\(\)/, 'sempre parte de um newDeck() (canvas + tema + 3 slides padrão)');
+  assert.match(src, /_uniqueTitle\(/, 'e o nome é único');
+  assert.match(src, /api\.saveDeck\(\{ slug, data: deck \}\)/, 'o caminho open:false PERSISTE o esqueleto');
+  assert.ok(!/return \{ slug, title: finalTitle \};[\s\S]{0,40}catch/.test(src) || /saveDeck/.test(src),
+    'não volta antes de gravar');
+});
+
+test('o botão compartilhar->novo NÃO pede nome e cria sem abrir', () => {
+  // Élder: "ele me perguntou o nome ao invés de dar um nome". O handler não deve mais chamar
+  // window.prompt pro deck novo; auto-nomeia e cria com open:false pra ficar no slide atual.
+  const i = APP_SRC.indexOf('target === "__new__"');
+  const block = APP_SRC.slice(i, i + 400);
+  assert.ok(!/window\.prompt/.test(block), 'sem prompt de nome no ramo do deck novo');
+  assert.match(block, /_createDeck\(null, \{ open: false \}\)/, 'auto-nome + não abre');
+  assert.ok(!/shr_new_deck_prompt/.test(APP_SRC), 'e a string de prompt morreu');
+});
+
+test('duplicar deck e renomear também garantem nome único', () => {
+  assert.match(fnOf('_duplicateDeck'), /_uniqueTitle\(/, 'duplicar não gera dois nomes iguais');
+  assert.match(fnOf('_renameDeck'), /_uniqueTitle\([^,]+, slug\)/, 'renomear exclui o próprio deck da colisão');
+});

@@ -1680,7 +1680,6 @@ export default {
   'slides.shr_where_msg':     'Depois você escolhe se ele vai vinculado ou solto.',
   'slides.shr_where_here':    'Este mesmo deck',
   'slides.shr_where_new':     'Criar um deck novo...',
-  'slides.shr_new_deck_prompt': 'Nome do deck novo:',
   'slides.shr_how_title':     'Como?',
   'slides.shr_done_here':     'Slide compartilhado neste deck',
   'slides.shr_done_there':    'Slide enviado para {deck}',

@@ -99,6 +99,27 @@ function _fmtDate(ts) {
 function _deckBySlug(slug) { return _decks.find((d) => d.slug === slug) || null; }
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 
+// Deck titles must be unique among our decks (Élder 2026-07-17: "não podemos ter
+// apresentações com nomes iguais"). A collision gets " (1)", " (2)", … appended.
+// PURE + exported so it is unit-testable without the DOM: `want` against `taken` (a list of
+// existing titles). Case-insensitive + trimmed.
+export function uniqueTitle(want, taken) {
+  const base = (want || '').trim();
+  const set = new Set((taken || []).map((s) => (s || '').trim().toLowerCase()));
+  if (!base || !set.has(base.toLowerCase())) return base;
+  for (let n = 1; ; n++) {
+    const cand = base + ' (' + n + ')';
+    if (!set.has(cand.toLowerCase())) return cand;
+  }
+}
+
+// Module wrapper: resolve the default title + build the taken list from the loaded decks.
+// `exceptSlug` drops one deck, so renaming a deck never collides with its OWN current title.
+function _uniqueTitle(base, exceptSlug) {
+  const want = (base || '').trim() || t('slides.new_default_title');
+  return uniqueTitle(want, _decks.filter((d) => d.slug !== exceptSlug).map((d) => d.title || ''));
+}
+
 // ── Rendering ────────────────────────────────────────────────────────────────
 function _render() {
   _viewEl.innerHTML =
@@ -285,7 +306,8 @@ async function _duplicateDeck(slug) {
   // window, and getDeck would otherwise race it and copy the pre-edit deck.
   await _flushPendingSave();
   const d = _deckBySlug(slug);
-  const title = ((d && d.title) || t('slides.untitled')) + ' ' + t('slides.copy_suffix');
+  // Unique, so duplicating twice gives "X (cópia)" then "X (cópia) (1)", never two identical.
+  const title = _uniqueTitle(((d && d.title) || t('slides.untitled')) + ' ' + t('slides.copy_suffix'));
   const newSlug = _slugify(title) + '-' + String(Date.now()).slice(-6);
   try {
     await api.register({ slug: newSlug, title, engine: DECK_ENGINE });
@@ -315,8 +337,9 @@ async function _renameDeck(slug) {
   // eslint-disable-next-line no-alert -- lightweight guard; modal parity is a follow-up (mirrors _deleteDeck)
   const next = window.prompt(t('slides.rename_prompt'), current);
   if (next == null) return;                          // cancelled
-  const title = next.trim();
-  if (!title || title === current) return;           // empty or unchanged -> no-op
+  const typed = next.trim();
+  if (!typed || typed === current) return;           // empty or unchanged -> no-op
+  const title = _uniqueTitle(typed, slug);           // no two decks share a name (self excluded)
   try {
     await api.register({ slug, title, engine: DECK_ENGINE });
     await _loadDecks();                              // re-renders the sidebar; the open deck stays open
@@ -327,22 +350,36 @@ async function _renameDeck(slug) {
   }
 }
 
-// `title` given -> create it and RETURN the row without opening it (the editor's "share to a
-// new deck" picker: the point is to stay where you are and send the slide there). No title ->
-// the sidebar's "+ nova apresentação": default name, and open it.
-async function _createDeck(title) {
-  const named = !!title;
-  const finalTitle = title || t('slides.new_default_title');
+// Create a new deck. It is ALWAYS a full newDeck() (canvas + theme + logo + the 3 starter
+// slides), whichever caller asks:
+//   open:true  (default) -> the sidebar "+ nova apresentação": open it in the editor.
+//   open:false           -> the editor's "share to a NEW deck": stay on the current slide,
+//                           just register + persist the skeleton, and RETURN the row so the
+//                           caller can send a slide into a deck that is already real.
+// `title` is auto-named (and uniquified) when absent. The old share path registered a BARE
+// ROW and let _clip._append write a skeleton-less {slides:[…]} into it; with no canvas/theme
+// and none of the defaults it opened blank and off-screen (Élder 2026-07-17: "ela abre
+// quebrada, a lista de slides está vazia, a visualização em branco e quase toda fora da tela").
+async function _createDeck(title, { open = true } = {}) {
+  const finalTitle = _uniqueTitle(title);
   const slug = _slugify(finalTitle) + '-' + String(Date.now()).slice(-6);
+  const deck = newDeck();
+  deck.title = finalTitle;
   try {
     await api.register({ slug, title: finalTitle, engine: DECK_ENGINE });
+    if (open) {
+      await _loadDecks();
+      _openDeck(slug, /* fresh */ false, deck); // seeds the store AND persists the skeleton
+      return { slug, title: finalTitle };
+    }
+    // Not opening: persist the skeleton HERE, so the deck is a real deck before the caller's
+    // send appends a slide to it (otherwise _append starts from {slides:[]} and it is broken).
+    await api.saveDeck({ slug, data: deck });
     await _loadDecks();
-    if (named) return { slug, title: finalTitle };
-    _openDeck(slug, /* fresh */ true);
     return { slug, title: finalTitle };
   } catch (e) {
     notice.internal(e);
-    if (named) return null;
+    if (!open) return null;
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
     return null;
@@ -466,7 +503,7 @@ async function _openDeck(slug, fresh, initialDeck) {
     // The "share to which deck?" picker: the live list, and the door to a new one without
     // leaving the slide you are on.
     deckList: () => _decks.map((d) => ({ slug: d.slug, title: d.title || '' })),
-    createDeck: (title) => _createDeck(title),
+    createDeck: (title, opts) => _createDeck(title, opts),
     notify: toast.ok,
   });
   _openSlug = slug;

@@ -1674,7 +1674,6 @@ export default {
   'slides.shr_where_msg':     'You will pick linked or loose next.',
   'slides.shr_where_here':    'This same deck',
   'slides.shr_where_new':     'Create a new deck...',
-  'slides.shr_new_deck_prompt': 'New deck name:',
   'slides.shr_how_title':     'How?',
   'slides.shr_done_here':     'Slide shared in this deck',
   'slides.shr_done_there':    'Slide sent to {deck}',
