@@ -73,14 +73,21 @@ test('turma actions update in place, not via a full reload', () => {
     'lifecycle actions do not call _loadAll');
 });
 
-test('client groups are an accordion: collapsed by default, one open', () => {
-  // rows wrapped so CSS can collapse them; is-open keyed to the single _expandedClient.
-  assert.match(cohortsJs, /class="cdx-cg-rows"/);
-  assert.match(cohortsJs, /client\.slug === _expandedClient \? ' is-open'/);
-  assert.match(cohortsJs, /function _toggleClient\(/);
-  const css = read('../cohorts/cohorts.css');
-  assert.match(css, /\.cdx-cg-rows \{ display: none/);
-  assert.match(css, /\.cdx-cg\.is-open \.cdx-cg-rows \{ display: block/);
+// The accordion moved into the shared rail (track-41), so its BEHAVIOUR is proven where it
+// lives — tests/list-rail-bands.test.mjs renders it and counts the open sections. What is
+// still cohorts' own, and is what this guards, is the wiring: it asks for the accordion, it
+// keeps the truth of which client is open, and a toggle goes through a re-render.
+test('client groups are an accordion whose open client THIS module owns', () => {
+  assert.match(cohortsJs, /exclusive: true/, 'asks the rail for the accordion');
+  assert.match(cohortsJs, /openId: \(\) => _expandedClient/, 'the open client is this module state');
+  assert.match(cohortsJs, /onToggle: \(slug\) => _toggleClient\(slug\)/);
+  // _toggleClient must flip _expandedClient and re-render — never poke the DOM class itself,
+  // which would fight sections.openId and silently win until the next render.
+  const fn = /function _toggleClient\(slug\) \{([\s\S]*?)\n\}/.exec(cohortsJs);
+  assert.ok(fn, 'has _toggleClient');
+  assert.match(fn[1], /_expandedClient = \(_expandedClient === slug\) \? null : slug/);
+  assert.match(fn[1], /_renderList\(\)/, 'a toggle re-renders from the new state');
+  assert.ok(!/classList/.test(fn[1]), '_toggleClient must not hand-flip classes');
 });
 
 test('phase uses aula-derived dates (a turma with future classes reads live)', () => {
@@ -88,23 +95,32 @@ test('phase uses aula-derived dates (a turma with future classes reads live)', (
   assert.match(cohortsJs, /computed_date_end \|\| tm\.date_end/);
 });
 
-test('the list sections clients into ativos / futuros / inativos', () => {
+test('the list bands clients into ativos / futuros / inativos', () => {
   assert.match(cohortsJs, /_SECTIONS = \['ativo', 'futuro', 'inativo'\]/);
   assert.match(cohortsJs, /function _clientStatus\(/);
   assert.match(cohortsJs, /function _sortTurmas\(/);
-  assert.match(cohortsJs, /class="cdx-cg-section"/);
+  // The status divider is the rail's BAND (its outer level), not a hand-emitted div.
+  assert.match(cohortsJs, /bands: \{[\s\S]*?of: \(sec\) => sec\.band/, 'bands read the client band');
+  assert.match(cohortsJs, /list: \(\) => _SECTIONS\.map/, '...in the ativo/futuro/inativo order');
   for (const key of ['cohorts.section_ativo', 'cohorts.section_futuro', 'cohorts.section_inativo']) {
     assert.ok(ptJs.includes(`'${key}'`) && enJs.includes(`'${key}'`), `${key} in both dicts`);
   }
 });
 
 test('turma phase is a left bar (not a dot); client uses its own icon; hover = selected teal', () => {
-  assert.match(cohortsJs, /class="cdx-ti ' \+ ph\.cls/);
+  // The phase class has to reach the ROW ELEMENT, which through the rail means rowClass —
+  // markup inside renderRow could not carry the row's own left border.
+  assert.match(cohortsJs, /rowClass: \(tm\) => _turmaPhase\(tm\)\.cls/);
   assert.ok(!/cdx-ti-dot/.test(cohortsJs), 'phase dot removed');
   // icon goes through _iconSrc (R2 key -> served URL), with an initials fallback
   assert.match(cohortsJs, /src="' \+ _esc\(_iconSrc\(client\.icon_path\)\)/);
   assert.match(cohortsJs, /function _wireAvatars\(/);
+  // The rail replaces its whole body on render, so the <img> error handlers must be
+  // re-attached every time — not once at mount, which was the bug this pins.
+  assert.match(cohortsJs, /_navRail\.render\(\);\s*\n[\s\S]{0,220}?_wireAvatars\(_q\(IDS\.list\)\)/,
+    '_renderList re-wires the avatars after every rail render');
   const css = read('../cohorts/cohorts.css');
-  assert.match(css, /border-left: 3px solid var\(--ph/);
-  assert.match(css, /\.cdx-ti:hover,\s*\.cdx-ti\.is-on \{ background: var\(--cdx-chip-bg\)/);
+  // Scoped to this rail: the other eight must not inherit the accent bar or the teal.
+  assert.match(css, /\.cdx-cohorts-listpane \.cdx-rail-row \{[^}]*border-left: 3px solid var\(--ph/);
+  assert.match(css, /\.cdx-cohorts-listpane \.cdx-rail-row:hover,\s*\.cdx-cohorts-listpane \.cdx-rail-row\.is-on \{ background: var\(--cdx-chip-bg\)/);
 });

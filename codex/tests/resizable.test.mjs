@@ -34,13 +34,19 @@ test('the resizer persists to localStorage via the --cdx-rz-w var', () => {
   assert.match(resizableJs, /class="cdx-rz-grip"|className = 'cdx-rz-grip'/, 'creates the grip element');
 });
 
-test('the split surfaces install the shared resizer (no duplicated drag code)', () => {
-  for (const [name, src] of [['releases', releasesJs], ['tarefas', tarefasJs]]) {
-    assert.match(src, /from '\.\.\/js\/resizable\.js'/, `${name} imports the helper`);
-    assert.match(src, /installResizer\(/, `${name} installs the resizer`);
-  }
+// TAREFAS SAIU DAQUI em 2026-07-16 (track-41). Ela nunca foi um "split consumer" de verdade:
+// o `_renderShell` só emitia o pane t1b, então NINGUÉM criava `#cdx-tarefas-split` e o
+// `installResizer(_q('cdx-tarefas-split'))` rodava sobre `null`, atrás de um ramo
+// `_lockedAula == null` inalcançável (content.js monta bankOnly, cohorts.js sempre passa
+// aulaNumber). Este teste lia só o FONTE, então passava verde sobre código morto. Contraste
+// que prova: `releases.js` EMITE `<div class="cdx-items-split cdx-releases-split" ...>`; o
+// tarefas.js não emitia nada equivalente. O CSS `.cdx-tarefas-split` fica (regra órfã não
+// pinta nada, e mexer em CSS é onde mora o risco de desvio visual).
+test('the split surface installs the shared resizer (no duplicated drag code)', () => {
+  assert.match(releasesJs, /from '\.\.\/js\/resizable\.js'/, 'releases imports the helper');
+  assert.match(releasesJs, /installResizer\(/, 'releases installs the resizer');
   assert.match(releasesJs, /cdx-releases-split'[\s\S]{0,80}cdx_rz_releases_split|cdx_rz_releases_split/, 'releases installs on its split');
-  assert.match(tarefasJs, /cdx_rz_tarefas_split/, 'tarefas installs on its split');
+  assert.ok(!/installResizer/.test(tarefasJs), 'tarefas no longer installs a resizer (it has no split to resize)');
   // The CLIENTES nav is the auto-hide rail (no resizer there). The Aulas hub IS a
   // resizable list | detail split, but it now adopts the shared list-rail (track-21),
   // so the resizer is wired through the rail's width:resize capability — the module

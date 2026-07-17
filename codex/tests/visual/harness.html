@@ -1,0 +1,75 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Codex — visual harness</title>
+<!--
+  Boots a REAL Codex tab module in a REAL browser against fixture data, so a screenshot
+  can answer the one question no node:test can: does it still LOOK the same.
+
+  Why this exists (track-41): the whole risk of moving a bespoke sidebar onto the shared
+  list-rail is that the generic .cdx-rail-* CSS paints differently from the hand-made CSS
+  it replaces. Stub-DOM tests pin class strings over a DOM that never paints, never loads
+  an image and never hovers — the same false confidence this track was born from (three
+  green source-regex tests guarding tarefas code that never ran).
+
+  No stubbing of the module: window.callWorker is codex-api.js's own declared test seam,
+  so the real facade and the real module run. Only the network is fake.
+
+  ?mod=cohorts  — which module to mount (add cases as sessions/lessons migrate).
+-->
+<link rel="stylesheet" href="/codex/css/theme.css">
+<link rel="stylesheet" href="/codex/css/tokens.css">
+<link rel="stylesheet" href="/codex/css/components.css">
+<link rel="stylesheet" href="/codex/css/codex.css">
+<link rel="stylesheet" href="/codex/css/list-rail.css">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css">
+<style>
+  /* The tab view inside the real app chrome: full viewport, no topbar. The nav's
+     auto-hide is position-driven, so the harness must give it the same box the app does. */
+  html, body { margin: 0; height: 100%; background: var(--background); }
+  #view { height: 100vh; padding: 0.6rem; box-sizing: border-box; }
+</style>
+
+<div id="view"></div>
+
+<script type="module">
+  import { stubWorker } from './fixtures.js';
+
+  // The transport seam (see codex-api.js header). Must be set BEFORE the module boots.
+  window.WORKER_URL = '';
+  window.callWorker = stubWorker;
+  window.bsLog = (m, lvl) => { (window.__harnessLog = window.__harnessLog || []).push([lvl, m]); };
+
+  // Deterministic: LS_LAST ("continuar de onde eu estava") would otherwise carry a
+  // previous run's turma into this one and change what the screenshot shows.
+  try { localStorage.clear(); } catch (_) {}
+
+  const qs = new URLSearchParams(location.search);
+  // ?last=client/turma seeds LS_LAST, i.e. stages a REFRESH: the module must reopen that
+  // turma, with its client section expanded and the rail unpinned. That path is the whole
+  // reason this work started ("all the time when i refresh it closes everything"), so it
+  // needs a case — the default boot always takes the no-deep-link branch and never proves it.
+  const last = qs.get('last');
+  if (last) { try { localStorage.setItem('cdx_cohorts_last', last.replace('/', '\n')); } catch (_) {} }
+
+  const mod = qs.get('mod') || 'cohorts';
+  const SRC = { cohorts: '/codex/cohorts/cohorts.js' };
+  if (!SRC[mod]) throw new Error('harness: unknown module ' + mod);
+
+  const m = await import(SRC[mod]);
+  m.mount(document.getElementById('view'), {});
+
+  // shoot.mjs polls this flag instead of sleeping: _loadAll is async (clients, then every
+  // client's turmas), so "rendered" is when the list has actually replaced its loading
+  // state with real children. A plain flag, not a Promise: this script is dynamically
+  // imported, so the load event can fire before it runs and page.evaluate would read
+  // undefined off window and call it "not ready".
+  window.__harnessReady = false;
+  const tick = () => {
+    const el = document.querySelector('#cdx-cohorts-list');
+    // Era-neutral on purpose (bespoke .cdx-cg today, .cdx-rail-sec after the migration):
+    // has children AND is past the .cdx-empty loading/error placeholder.
+    if (el && el.children.length && !el.querySelector('.cdx-empty')) { window.__harnessReady = true; return; }
+    setTimeout(tick, 30);
+  };
+  tick();
+</script>

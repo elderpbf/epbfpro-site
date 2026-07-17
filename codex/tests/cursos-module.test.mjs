@@ -118,20 +118,27 @@ test('turma dossier (Concept A) replaces the cramped aulas pane', () => {
 });
 
 test('cohorts merges Clientes+Turmas into one grouped list (Concept A left merge)', () => {
-  // The merged list, search, and the kept mobile-drawer wrapper.
-  for (const id of ['cdx-cohorts-list', 'cdx-cohorts-search', 'cdx-cohorts-nav']) {
+  // The merged list + the kept mobile-drawer wrapper. .cdx-cohorts-nav must survive the
+  // rail migration verbatim: codex-topbar.js's DRAWER_SEL still matches it by name, so
+  // dropping it silently costs Clientes its hamburger.
+  for (const id of ['cdx-cohorts-list', 'cdx-cohorts-nav']) {
     assert.ok(cohorts.includes(id), `shell has #${id}`);
   }
-  for (const fn of ['_loadAll', '_renderList', '_renderGroup', '_renderTurmaRow', '_onListClick', '_turmaPhase']) {
+  for (const fn of ['_loadAll', '_renderList', '_navModel', '_clientHead', '_turmaRowMain', '_turmaPhase']) {
     assert.ok(cohorts.includes(fn), `has ${fn}`);
   }
   // The old two-pane structure is gone.
   for (const dead of ['cdx-clients-list', 'cdx-turmas-list', '_renderClients', '_onTurmasClick']) {
     assert.ok(!cohorts.includes(dead), `removed ${dead}`);
   }
-  // Turma rows keep data-turma-slug so the mobile drawer closes on pick.
-  assert.ok(cohorts.includes('class="cdx-ti'), 'renders turma rows (.cdx-ti)');
-  assert.ok(cohorts.includes('data-turma-slug="'), 'turma row carries data-turma-slug');
+  // The nav IS the shared rail now — no second hand-rolled list, and no hand-rolled
+  // auto-hide beside it (that duplication is exactly what track-41 exists to kill).
+  assert.match(cohorts, /_navRail = mountRail\(/, 'the CLIENTES nav is the shared rail');
+  assert.match(cohorts, /mode: 'autohide'/, '...in autohide mode, from the module');
+  for (const gone of ['_openNav', '_closeNav', '_maybeHideNav', '_navPinned', 'NAV_REVEAL_ZONE'])
+    assert.ok(!cohorts.includes(gone), `hand-rolled auto-hide gone: ${gone}`);
+  // The pair is the row id: turma slugs are unique only within a client.
+  assert.match(cohorts, /getId: \(tm\) => tm\.client_slug \+ '\/' \+ tm\.slug/, 'row id is client/turma');
 });
 
 test('per-turma actions moved into the dossier (nothing lost in the merge)', () => {

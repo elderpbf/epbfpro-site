@@ -90,11 +90,18 @@ test('releases supports a turma-bound (picker-less) mount', () => {
   assert.match(releasesJs, /_loadReleases\(ctx\.clientSlug, ctx\.turmaSlug\)/, 'loads the bound turma directly');
 });
 
-test('tarefas supports a turma-bound (picker-less) mount', () => {
+// Tarefas é turma-bound SEMPRE (track-41, 2026-07-16), então não há mais "picker-less mount"
+// como um DOS DOIS modos: o outro modo não existia. O `else` do picker montava o
+// turmaPicker em `_q('cdx-tar-picker')`, e esse id nunca era emitido por shell nenhum
+// (`_renderShell` só emitia o pane t1b) — ou seja, montava sobre `null`. Inalcançável na
+// prática: content.js monta `{bankOnly:true}` e cohorts.js sempre passa clientSlug+turmaSlug
+// +aulaNumber. Removido junto com o resto do standalone. `releases.js` (acima) segue com os
+// DOIS modos de verdade, e é por isso que o teste dele continua cobrando o condicional.
+test('tarefas mounts turma-bound, always (no picker branch)', () => {
   assert.match(tarefasJs, /export function mount\(viewEl, ctx = \{\}\)/, 'mount accepts a ctx');
-  assert.match(tarefasJs, /if \(ctx\.clientSlug && ctx\.turmaSlug\)/, 'embedded when clientSlug+turmaSlug given');
-  assert.match(tarefasJs, /_q\('cdx-tar-picker'\); if \(pk\) pk\.style\.display = 'none'/, 'picker hidden when embedded');
   assert.match(tarefasJs, /_loadTarefas\(ctx\.clientSlug, ctx\.turmaSlug\)/, 'loads the bound turma directly');
+  assert.ok(!/cdx-tar-picker/.test(tarefasJs), 'no picker: the element was never emitted by any shell');
+  assert.ok(!/turma-picker\.js/.test(tarefasJs), 'no turmaPicker import (releases.js is its real consumer)');
 });
 
 test('per-turma remove unreleases (never a global delete); delete-from-bank is separate + guarded', () => {
