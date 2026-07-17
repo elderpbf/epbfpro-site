@@ -58,10 +58,29 @@
    the danger token rather than inventing a colour. */
 .cdx-deck-editor .thumb .lnkbadge { position: absolute; right: 4px; bottom: 4px; z-index: 3; display: flex; line-height: 0; background: rgba(19, 78, 74, .78); color: #99f6e4; border: 1px solid var(--teal-l); border-radius: 6px; padding: 2px; }
 .cdx-deck-editor .thumb .lnkbadge.broken { background: rgba(127, 29, 29, .8); color: #fecaca; border-color: var(--danger); }
-/* The share/detach button carries the same link glyph in both states; `linked` tints it
-   so "this slide IS shared" reads from the bar without opening the tooltip. */
-.cdx-deck-editor #chrome #shareBtn { display: inline-flex; align-items: center; gap: 5px; }
-.cdx-deck-editor #chrome #shareBtn.linked { color: var(--teal); border-color: var(--teal-l); }
+/* "Destacar" only appears on a slide that IS linked, so it is always the teal state: there
+   is no share button any more (sharing is Ctrl+C / Ctrl+V into the target deck). */
+.cdx-deck-editor #chrome #shareBtn { display: inline-flex; align-items: center; gap: 5px; color: var(--teal); border-color: var(--teal-l); }
+/* Rail multi-pick (Shift/Ctrl+click), what Ctrl+C takes. Distinct from `.active` (the slide
+   ON the stage): active is the primary border, picked is a teal wash, and one thumb is
+   routinely both. */
+.cdx-deck-editor .thumb.picked { border-color: var(--teal-l); box-shadow: inset 0 0 0 999px rgba(20, 184, 166, .18); }
+
+/* ui/choice.js: the modal that asks a question with named answers (the paste's
+   solto-or-vinculado). Scoped like every other editor overlay; the box mirrors
+   #add-slide-box so the two read as the same app. */
+.cdx-deck-editor .choice-overlay { position: absolute; inset: 0; z-index: 90; display: flex; align-items: center; justify-content: center; background: var(--overlay-strong, rgba(0, 0, 0, .5)); padding: 24px; }
+.cdx-deck-editor .choice-box { width: 460px; max-width: 92%; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; padding: 18px; box-shadow: 0 16px 48px var(--overlay-strong); }
+.cdx-deck-editor .choice-title { font-size: 15px; font-weight: 700; color: var(--text); }
+.cdx-deck-editor .choice-msg { font-size: 12px; color: var(--muted); margin-top: 4px; }
+.cdx-deck-editor .choice-opts { display: flex; flex-direction: column; gap: 8px; margin: 14px 0 10px; }
+.cdx-deck-editor .choice-opt { font: inherit; text-align: left; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 10px; padding: 10px 12px; cursor: pointer; display: flex; flex-direction: column; gap: 3px; }
+.cdx-deck-editor .choice-opt:hover, .cdx-deck-editor .choice-opt:focus-visible { background: var(--btn-hover); border-color: var(--primary); }
+.cdx-deck-editor .choice-opt.primary { border-color: var(--teal-l); }
+.cdx-deck-editor .choice-opt-lbl { font-size: 13px; font-weight: 700; }
+.cdx-deck-editor .choice-opt-hint { font-size: 11px; color: var(--muted); line-height: 1.45; white-space: normal; }
+.cdx-deck-editor .choice-cancel { font: inherit; font-size: 12px; color: var(--muted); background: transparent; border: 0; padding: 4px; cursor: pointer; }
+.cdx-deck-editor .choice-cancel:hover { color: var(--text); text-decoration: underline; }
 /* Phase 9: per-unit effect picker in the animation panel row (Fade/Deslizar/Zoom). */
 .cdx-deck-editor .ap-with { font-size: 12px; line-height: 1; padding: 3px 6px; border: 1px solid var(--btn-bd); background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer; }
 .cdx-deck-editor .ap-with.on { background: var(--teal); color: #fff; border-color: transparent; }
@@ -157,6 +176,18 @@
 .cdx-deck-editor .as-card-wrap:hover .as-actions { opacity: 1; }
 .cdx-deck-editor .as-act { font: inherit; font-size: 11px; line-height: 1; color: var(--text); background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 3px 5px; cursor: pointer; box-shadow: 0 1px 3px var(--overlay-strong); }
 .cdx-deck-editor .as-act:hover { background: var(--btn-hover); border-color: var(--primary); }
+/* An svg action glyph (the copy/link ones come from js/glyphs.js) has to sit on the same
+   baseline box as the text ones (Aa, the pencil), hence the flex + line-height:0. */
+.cdx-deck-editor .as-act svg { display: block; }
+.cdx-deck-editor .as-act:has(svg) { display: flex; align-items: center; line-height: 0; padding: 4px; }
+
+/* track-35 C: the +slide modal is two tabs, Templates | Biblioteca (Élder 2026-07-17).
+   The tab row sits in the sticky head, between the title and the ✕. */
+.cdx-deck-editor #add-slide-box .as-tabs { display: flex; gap: 4px; margin-left: auto; margin-right: 10px; }
+.cdx-deck-editor #add-slide-box .as-tab { font: inherit; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 5px 12px; cursor: pointer; }
+.cdx-deck-editor #add-slide-box .as-tab:hover { background: var(--btn-hover); }
+.cdx-deck-editor #add-slide-box .as-tab.is-on { color: var(--text); background: var(--btn-bg); border-color: var(--btn-bd); font-weight: 700; }
+.cdx-deck-editor .as-empty { color: var(--muted); font-size: 13px; line-height: 1.6; padding: 28px 8px; text-align: center; }
 
 /* unified selection model (js/select/): THE context bar + the selection frame.
    The context bar is one lean, content-width PILL overlaying the top of the stage

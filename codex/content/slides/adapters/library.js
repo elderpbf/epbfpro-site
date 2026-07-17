@@ -52,8 +52,13 @@ export function createLibrary({ facade } = {}) {
   }
 
   // A stored template slide -> the public shape the picker + tests consume.
+  // `from` = the deck this entry was shared OUT of ({slug, title}), the section key of the
+  // +slide "Biblioteca" tab (track-35 C, Élder 2026-07-17: sectioned by the origin deck).
+  // Absent on entries saved before that, and on anything saved from outside a deck, so the
+  // picker owns a catch-all section rather than this owning a fake origin. Exactly the
+  // extensibility this file's header promised: another property, never a migration.
   function _asTemplate(s) {
-    return { id: s.id, name: s.name || '', layout: s.layout, slide: s };
+    return { id: s.id, name: s.name || '', layout: s.layout, from: s.from || null, slide: s };
   }
 
   return {
@@ -81,13 +86,17 @@ export function createLibrary({ facade } = {}) {
     // Save `slide` as a reusable template named `name`. Deep-clones the slide,
     // gives it a fresh id (detached from the source), tags the trimmed name, and
     // appends to the container. Returns the stored template.
-    async save(slide, name) {
+    // `opts.from` ({slug, title}) records which deck it was shared out of; omitted by the
+    // save-as-layout button, which has no origin deck to claim.
+    async save(slide, name, opts) {
       await _ensure();
       const c = (await _load()) || { slides: [] };
       if (!Array.isArray(c.slides)) c.slides = [];
       const tpl = clone(slide);
       tpl.id = uid();
       tpl.name = String(name == null ? '' : name).trim();
+      const from = opts && opts.from;
+      if (from && from.slug) tpl.from = { slug: from.slug, title: String(from.title || '') };
       c.slides.push(tpl);
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
       return _asTemplate(tpl);
@@ -128,6 +137,9 @@ export function createLibrary({ facade } = {}) {
       const tpl = clone(slide);
       tpl.id = id;
       tpl.name = name == null ? (c.slides[i].name || '') : String(name).trim();
+      // `from` (the origin deck) belongs to the ENTRY, not to the content being written
+      // over it: `slide` here is a deck copy and never carries it. Same rule as `name`.
+      if (c.slides[i].from) tpl.from = c.slides[i].from;
       c.slides[i] = tpl;
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
       return _asTemplate(tpl);
@@ -152,6 +164,7 @@ export function createLibrary({ facade } = {}) {
         const tpl = clone(e.slide);
         tpl.id = e.id;
         tpl.name = c.slides[i].name || '';
+        if (c.slides[i].from) tpl.from = c.slides[i].from; // entry metadata, see update()
         c.slides[i] = tpl;
         out.push(_asTemplate(tpl));
       }

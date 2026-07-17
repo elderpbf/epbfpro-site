@@ -56,8 +56,17 @@ export function createNavigator(app) {
         const sc = th.querySelector(".scale");
         if (sc) sc.style.transform = `scale(${mini.clientWidth / deck.canvas.w})`;
       });
+      if (app.isMultiPicked(i)) th.classList.add("picked");
       th.addEventListener("click", (e) => {
         if (e.target.closest("button")) return;
+        // Shift = pick a RANGE from the current slide to this one; Ctrl/Cmd = toggle this
+        // one. The range anchor is app.index (the slide on the stage), so shift-clicking
+        // never moves the stage: the whole point is picking slides to copy while still
+        // looking at one of them. A plain click clears the pick and navigates, so the
+        // multi-selection can never survive invisibly into the next gesture.
+        if (e.shiftKey) { e.preventDefault(); app.pickRange(i); return; }
+        if (e.ctrlKey || e.metaKey) { e.preventDefault(); app.pickToggle(i); return; }
+        app.clearPick();
         app.goTo(i);
       });
       nav.appendChild(th);

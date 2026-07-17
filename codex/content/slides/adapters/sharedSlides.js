@@ -49,6 +49,7 @@ export function sharedContent(slide) {
   delete out.id;
   delete out.ref;
   delete out.name; // library-only metadata, never a slide field
+  delete out.from; // ditto: the origin deck is a property of the ENTRY, not of the slide
   return out;
 }
 

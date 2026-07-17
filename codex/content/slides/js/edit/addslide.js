@@ -35,12 +35,39 @@ export function groupLayouts(layouts) {
   return out;
 }
 
+// Group the library entries by the deck they were shared OUT of (track-35 C, Élder
+// 2026-07-17). The section key is the origin slug; entries with no origin (saved by the
+// "salvar como layout" button, or from before `from` existed) fall into ONE catch-all
+// section rendered last, rather than being hidden or given a fake origin. `deckTitle`
+// resolves a slug to its CURRENT title, so renaming a deck renames its section; the title
+// stamped at share time is the fallback for a deck that is gone. Pure (testable).
+export function groupTemplates(templates, deckTitle) {
+  const buckets = new Map();
+  for (const tpl of templates) {
+    const slug = (tpl.from && tpl.from.slug) || null;
+    const key = slug || "__none__";
+    if (!buckets.has(key)) {
+      const live = slug && deckTitle ? deckTitle(slug) : null;
+      buckets.set(key, { key, slug, title: live || (tpl.from && tpl.from.title) || "", items: [] });
+    }
+    buckets.get(key).items.push(tpl);
+  }
+  const out = [...buckets.values()].filter((b) => b.key !== "__none__");
+  out.sort((a, b) => a.title.localeCompare(b.title));
+  if (buckets.has("__none__")) out.push(buckets.get("__none__"));
+  return out;
+}
+
 export function addSlidePanelHTML() {
   return `
 <div id="add-slide-overlay" style="display:none">
   <div id="add-slide-box">
     <div class="as-head">
       <span class="as-title">${t("slides.add_slide_title")}</span>
+      <div class="as-tabs" role="tablist">
+        <button class="as-tab is-on" type="button" data-tab="tpl" role="tab">${t("slides.add_tab_templates")}</button>
+        <button class="as-tab" type="button" data-tab="lib" role="tab">${t("slides.add_tab_library")}</button>
+      </div>
       <button id="add-slide-close" type="button" aria-label="${t("slides.add_close")}">✕</button>
     </div>
     <div id="add-slide-groups"></div>
@@ -117,7 +144,11 @@ export function initAddSlide(app, root) {
     const wrap = document.createElement("div");
     wrap.className = "as-card-wrap";
     const slide = { ...tpl.slide, id: "__prev_" + tpl.id };
-    wrap.appendChild(card(tpl.name || tpl.layout, slide, () => app.insertTemplate(tpl)));
+    // Body = insert LINKED. This tab is the shared library, so the obvious gesture is the
+    // shared one; "inserir solto" is an action, not the default. (Before the tabs, the
+    // saved cards lived in a "Salvos" group of the layout picker and the body inserted a
+    // detached copy; nothing carries over, because the group no longer exists.)
+    wrap.appendChild(card(tpl.name || tpl.layout, slide, () => app.linkTemplate(tpl)));
     const acts = document.createElement("div");
     acts.className = "as-actions";
     // `isHtml` = the label is markup (an svg from the glyph library), not a text glyph.
@@ -132,13 +163,11 @@ export function initAddSlide(app, root) {
       b.addEventListener("click", onClick);
       acts.appendChild(b);
     };
-    // Vincular (track-35 C): the card BODY still inserts a detached copy, so copy stays
-    // the default and nothing an old deck does changes; this action inserts a LINK
-    // instead. Two insertion modes over one saved slide, which is why they are one card
-    // and not two grids.
-    mkBtn(glyphSvg("link", { size: 13 }), t("slides.shr_link"), (e) => {
+    // The other insertion mode: a detached copy. Same store, same card, two modes (the
+    // "Copiar | Vincular" of track-35 C); the body owns the linked one.
+    mkBtn(glyphSvg("copy", { size: 13 }), t("slides.shr_loose"), (e) => {
       e.stopPropagation();
-      app.linkTemplate(tpl);
+      app.insertTemplate(tpl);
       close();
     }, true);
     mkBtn("✎", t("slides.tpl_edit"), (e) => {
@@ -165,9 +194,10 @@ export function initAddSlide(app, root) {
     return wrap;
   }
 
-  async function open() {
+  // TEMPLATES tab: the built-in layouts, grouped by category. Every insert lands right
+  // AFTER the slide picked on the rail (app.addSlide splices at index+1), never at the end.
+  function renderTemplates() {
     host.innerHTML = "";
-    // Built-in layouts, grouped by category.
     for (const g of groupLayouts(registry.list())) {
       const grid = groupBlock(groupLabel(g.key));
       for (const L of g.items) {
@@ -175,25 +205,42 @@ export function initAddSlide(app, root) {
         grid.appendChild(card(labelOf(L), slide, () => app.addSlide(L.id)));
       }
     }
-    // Show the modal NOW with the built-in previews (so they are laid out and scale
-    // correctly); the saved layouts append below once their async list resolves.
-    overlay.style.display = "";
-    // Saved layouts (4c.1 library), if any, under "Salvos", just more cards.
-    if (app._library) {
-      let templates = [];
-      try { templates = await app._library.list(); } catch (_) { templates = []; }
-      if (templates.length) {
-        const grid = groupBlock(groupLabel("saved"));
-        for (const tpl of templates) {
-          grid.appendChild(savedCard(tpl));
-        }
-      }
+  }
+
+  // BIBLIOTECA tab: the shared slides, sectioned by the deck each was shared out of.
+  // The card BODY inserts a LINK here, the inverse of the old "Salvos" group: this tab IS
+  // the shared library, so linking is what it is for. "inserir solto" stays one action away.
+  async function renderLibrary() {
+    host.innerHTML = "";
+    if (!app._library) return;
+    let templates = [];
+    try { templates = await app._library.list(); } catch (_) { templates = []; }
+    if (!templates.length) {
+      host.innerHTML = `<div class="as-empty">${t("slides.add_lib_empty")}</div>`;
+      return;
     }
+    for (const g of groupTemplates(templates, app._deckTitleOf)) {
+      const grid = groupBlock(g.title || t("slides.add_lib_nodeck"));
+      for (const tpl of g.items) grid.appendChild(savedCard(tpl));
+    }
+  }
+
+  let _tab = "tpl";
+  async function open() {
+    // Show the modal BEFORE rendering: the preview cards scale against their box width,
+    // and a display:none box measures 0 (the old cropped-to-the-corner bug).
+    overlay.style.display = "";
+    overlay.querySelectorAll(".as-tab").forEach((b) => b.classList.toggle("is-on", b.dataset.tab === _tab));
+    if (_tab === "tpl") renderTemplates();
+    else await renderLibrary();
   }
   function close() { overlay.style.display = "none"; }
 
-  app.openAddSlide = open;
+  app.openAddSlide = () => { _tab = "tpl"; return open(); };
 
+  overlay.querySelectorAll(".as-tab").forEach((b) => {
+    b.addEventListener("click", () => { _tab = b.dataset.tab; open(); });
+  });
   $("#add-slide-close").onclick = close;
   // Click the dim backdrop (outside the box) to dismiss.
   overlay.addEventListener("mousedown", (e) => { if (e.target === overlay) close(); });

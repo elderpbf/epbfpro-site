@@ -18,10 +18,13 @@
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
 import { createSharedSlides } from './slides/adapters/sharedSlides.js';
+import { createSlideClip } from './slides/adapters/slideClip.js';
+import { glyphSvg } from '../js/glyphs.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
 import { createDrivePicker } from './slides/adapters/drivePicker.js';
 
@@ -134,8 +137,11 @@ function _renderList() {
         '<div class="cdx-slides-row-title">' + title + '</div>' +
         (sub ? '<div class="cdx-slides-row-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
       '</div>' +
+      // A GEAR, not a pencil (Élder 2026-07-17): it never edited anything, it opens the
+      // deck's options (renomear / duplicar / excluir), and a pencil promised editing.
       '<button class="cdx-slides-row-menu" data-act="menu" data-slug="' + _esc(d.slug) + '" ' +
-        'title="' + _esc(t('slides.edit')) + '" aria-label="' + _esc(t('slides.edit')) + '" aria-haspopup="menu">&#9998;</button>' +
+        'title="' + _esc(t('slides.deck_opts')) + '" aria-label="' + _esc(t('slides.deck_opts')) + '" aria-haspopup="menu">' +
+        glyphSvg('settings', { size: 15 }) + '</button>' +
     '</div>';
   }).join('');
 }
@@ -251,14 +257,49 @@ async function _deleteDeck(slug) {
   }
 }
 
-// The per-row ✎ glyph opens a small action menu (rename + delete live here, off
-// the row itself). `btn` is the trigger, the menu anchors to it.
+// The per-row gear opens the deck's options. `btn` is the trigger, the menu anchors to it.
 function _openDeckMenu(btn) {
   const slug = btn.getAttribute('data-slug');
   openMenu(btn, [
     { label: t('slides.rename'), onClick: () => _renameDeck(slug) },
+    { label: t('slides.duplicate'), onClick: () => _duplicateDeck(slug) },
     { label: t('slides.delete'), danger: true, onClick: () => _deleteDeck(slug) },
   ]);
+}
+
+// Duplicate a deck: a new presentation row + a copy of the source's deck JSON.
+//
+// The copy is BYTE-FOR-BYTE, which is the point: a shared slide is stored as {id, ref}, so
+// the duplicate keeps pointing at the same library entries and the two decks stay in sync
+// on exactly the slides that were shared. That IS the "linked variant" of
+// architecture/slides.md §10 (jurista vs advogado), for free, with "destacar" as the way to
+// diverge on the few that differ. A copy that re-materialised the refs would silently break it.
+//
+// Image URLs are copied as-is, so both decks point at the SOURCE slug's R2 objects. That is
+// how the deck JSON already works (origin-less /r2/ paths, re-absolutized on load) and it
+// is why this does not re-upload anything; deleting the source could orphan the copy's
+// images, which is worth knowing before deck deletion ever starts reaping R2.
+async function _duplicateDeck(slug) {
+  const d = _deckBySlug(slug);
+  const title = ((d && d.title) || t('slides.untitled')) + ' ' + t('slides.copy_suffix');
+  const newSlug = _slugify(title) + '-' + String(Date.now()).slice(-6);
+  try {
+    await api.register({ slug: newSlug, title, engine: DECK_ENGINE });
+    // A deck with no saved JSON yet (registered, never opened) makes the frozen load action
+    // reject "not found"; treat that as an empty duplicate rather than a failed one.
+    let data = null;
+    try {
+      const res = await api.getDeck({ slug });
+      data = (res && res.data) || null;
+    } catch (e) {
+      if (!/not\s*found/i.test((e && e.message) || String(e))) throw e;
+    }
+    if (data) await api.saveDeck({ slug: newSlug, data });
+    await _loadDecks();
+    _openDeck(newSlug, /* fresh */ !data);
+  } catch (e) {
+    notice.internal(e);
+  }
 }
 
 // Rename a deck: re-register the same slug with the new title (the *_presentation
@@ -390,7 +431,28 @@ async function _openDeck(slug, fresh, initialDeck) {
   // inert until GOOGLE_PICKER_API_KEY is set, so the option simply stays disabled till then.
   ensurePickerKey(); // fetch the Picker key once per session (non-blocking; resolves before the gallery is opened)
   const drivePicker = createDrivePicker({ getApiKey: () => _pickerKey, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker });
+  // The slide clipboard (track-35 C): Ctrl+C here, Ctrl+V in any deck, and the paste asks
+  // solto-or-vinculado. onOpenDeck: when a linked paste has to turn the SOURCE slides into
+  // refs and the source is the deck ON SCREEN, the editor does it in memory. Writing that
+  // deck's JSON through the facade instead would be clobbered by its own next autosave.
+  const clip = createSlideClip({
+    facade: api,
+    library: _library,
+    onOpenDeck: (srcSlug, entries) => {
+      const a = _editorHandles && _editorHandles.app;
+      if (!a || srcSlug !== _openSlug) return false;
+      return a.linkOpenSource(entries);
+    },
+  });
+  const deckTitle = (d) => (d && d.title) || '';
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), {
+    store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker, clip,
+    slug, deckTitle: deckTitle(_deckBySlug(slug)),
+    // Resolve an origin slug to its CURRENT title for the +slide Biblioteca sections, so a
+    // renamed deck renames its section instead of freezing the name it had when shared.
+    deckTitleOf: (s2) => deckTitle(_deckBySlug(s2)),
+    notify: toast.ok,
+  });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);

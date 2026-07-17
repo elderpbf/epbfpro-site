@@ -23,6 +23,7 @@ import { openThemeBox, refreshThemeBox, closeThemeBox } from "./edit/themebox.js
 import { openAnimPanel, closeAnimPanel } from "./edit/animpanel.js";
 import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
+import { askChoice } from "./ui/choice.js";
 import { createSync, initPresenter } from "./present/presenter.js";
 import { t } from "../../../js/i18n.js";
 import { glyphSvg } from "../../../js/glyphs.js";
@@ -143,6 +144,11 @@ export function mount(root, ctx = {}) {
   // ctx.library: the template library service (same injection rule as aiService).
   // Absent in the standalone dev build, so the template UI stays hidden there.
   const library = ctx.library || null;
+  // ctx.clip: the slide clipboard (adapters/slideClip.js), the sharing gesture itself.
+  // ctx.slug / ctx.deckTitle: which deck this editor IS, which the clipboard stamps on a
+  // copy so a linked paste knows whose slide it is publishing and can convert the source.
+  // All injected like library/aiService: the vendored core never reaches the facade.
+  const clip = ctx.clip || null;
   // ctx.imageStore: the gallery's storage seam (R2 upload in the deployed app, data-URL
   // otherwise). Absent in the standalone/harness build -> embed images as data URLs, so
   // the gallery still works. See adapters/imageStore.js.
@@ -160,6 +166,10 @@ export function mount(root, ctx = {}) {
     store,
     _aiService: aiService,
     _library: library,
+    _clip: clip,
+    _slug: ctx.slug || null,
+    _deckTitle: ctx.deckTitle || "",
+    _deckTitleOf: ctx.deckTitleOf || null, // slug -> current deck title (+slide library sections)
     _imageStore: imageStore,
     _drivePicker: drivePicker,
     _notify: notify, // injected toast (Codex boot passes toast.ok); presenter "notes saved"
@@ -223,20 +233,19 @@ export function mount(root, ctx = {}) {
       this.syncShareBtn();
       this.syncNotes();
     },
-    // ONE button for both directions of the shared-slide link, reading the current
-    // slide's state, the Section B pattern (a closed control says what it IS, not what
-    // it does). Inline slide -> "Compartilhar" (promote); linked slide -> "Destacar"
-    // (cut the link). Hidden entirely when no library is injected (standalone build),
-    // like the save-as-layout button next to it.
+    // "Destacar" only, and only on a slide that IS linked. There is deliberately no
+    // "compartilhar" button any more (Élder 2026-07-17): publishing with no destination is
+    // what let the same slide be shared over and over, so sharing now happens by pasting
+    // into the deck that is meant to have it. Detaching has no such gesture, so it keeps a
+    // button. Hidden with no library injected (standalone build), like the one next to it.
     syncShareBtn() {
       const b = this.root.querySelector("#shareBtn");
       if (!b) return;
-      if (!this._library) { b.style.display = "none"; return; }
-      const shared = this.isShared(this.cur());
-      b.classList.toggle("linked", shared);
-      b.innerHTML = glyphSvg("link", { size: 13 }) +
-        " " + t(shared ? "slides.shr_detach" : "slides.shr_share");
-      b.title = t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
+      const shared = this._library && this.isShared(this.cur());
+      b.style.display = shared ? "" : "none";
+      if (!shared) return;
+      b.innerHTML = glyphSvg("link", { size: 13 }) + " " + t("slides.shr_detach");
+      b.title = t("slides.shr_detach_tip");
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
     // it's being typed in). Written back on input by the wiring in wireChrome; the same
@@ -632,6 +641,34 @@ export function mount(root, ctx = {}) {
       this._editingTpl = { id: tpl.id, slideId: this.cur().id, name: tpl.name || "" };
     },
 
+    // ── Rail multi-pick (track-35 C, feeds Ctrl+C) ────────────────────────────
+    // Deliberately NOT js/select/: that model owns what is selected INSIDE a slide (§9 of
+    // the architecture), one record + per-kind descriptors. A set of slides is a different
+    // noun with one gesture and no controls, so it is 4 lines here instead of a kind there.
+    // `_pick` holds slide INDICES; it is dropped on any deck mutation (see clearPick
+    // callers) because an index set outlives nothing that reorders the array.
+    _pick: null,
+    isMultiPicked(i) { return !!(this._pick && this._pick.has(i)); },
+    picked() {
+      // Always in rail order, and always including the current slide: Ctrl+C with nothing
+      // shift-picked has to mean "this slide", not "nothing".
+      if (!this._pick || !this._pick.size) return [this.index];
+      return [...this._pick].sort((a, b) => a - b);
+    },
+    pickRange(i) {
+      const [a, b] = i < this.index ? [i, this.index] : [this.index, i];
+      this._pick = new Set();
+      for (let k = a; k <= b; k++) this._pick.add(k);
+      this.renderNav();
+    },
+    pickToggle(i) {
+      if (!this._pick) this._pick = new Set([this.index]);
+      if (this._pick.has(i)) this._pick.delete(i); else this._pick.add(i);
+      if (!this._pick.size) this._pick = null;
+      this.renderNav();
+    },
+    clearPick() { if (this._pick) { this._pick = null; this.renderNav(); } },
+
     // ── Shared slides (track-35 C) ────────────────────────────────────────────
     // COPY vs LINK are two insertion modes over the SAME library: insertTemplate above
     // drops a detached clone, linkTemplate drops a live reference. The core only ever
@@ -658,23 +695,99 @@ export function mount(root, ctx = {}) {
       this.commit();
     },
 
-    // Promote the current inline slide to a SHARED one: it becomes a library entry and
-    // this deck's copy turns into a link to it. The "vincular num 2º deck" flow starts
-    // here; detachCurrent is the exact reverse.
-    async shareCurrentSlide(name) {
-      if (!this._library) return { error: "no-library" };
-      const s = this.cur();
-      if (!s) return { error: "no-slide" };
-      if (s.ref) return { error: "already-shared" };
+    // Ctrl+C: snapshot the picked slides onto the clipboard. No side effect on the deck,
+    // and nothing is published: whether these become copies or shared slides is the
+    // PASTE's question (Élder 2026-07-17). Returns how many were taken, for the toast.
+    copyPicked() {
+      if (!this._clip) return 0;
+      const sl = this.deck().slides;
+      const slides = this.picked().map((i) => sl[i]).filter(Boolean);
+      const out = this._clip.copy(slides, { srcSlug: this._slug, srcTitle: this._deckTitle });
+      return out ? out.items.length : 0;
+    },
+
+    // Ctrl+V: insert the clipboard after the current slide, in the mode the caller already
+    // asked the user about ("solto" | "vinculado"). The mode arrives decided because the
+    // question is UI (ui/choice.js) and this is the deck op.
+    //
+    // "vinculado" also converts the SOURCE slides to refs, so BOTH ends track the library:
+    // a link that only points one way would be a worse lie than a copy. When the source
+    // cannot be converted, the paste still lands and the caller is handed the failures.
+    async pasteClip(mode) {
+      if (!this._clip) return { error: "no-clip" };
+      const clip = this._clip.read();
+      if (!clip) return { error: "empty" };
       try {
-        const tpl = await this._library.save(s, name);
+        let slides, sourceFailed = [];
+        if (mode === "linked") {
+          const res = await this._clip.pasteLinked(clip, { name: clip.srcTitle });
+          slides = res.slides;
+          sourceFailed = res.sourceFailed;
+        } else {
+          slides = this._clip.pasteLoose(clip);
+        }
         this.record();
-        s.ref = tpl.id;
-        this.refresh();
-        return { ok: true, tpl };
+        this.clearPick();
+        this.deck().slides.splice(this.index + 1, 0, ...slides);
+        this.goTo(this.index + 1);
+        this.commit(); // goTo does not touch the store, and an unsaved paste never happened
+        return { ok: true, count: slides.length, sourceFailed };
       } catch (e) {
-        return { error: (e && e.message) || "share-failed" };
+        return { error: (e && e.message) || "paste-failed" };
       }
+    },
+
+    // Ctrl+C, with the feedback: a copy that says nothing is a copy the user repeats.
+    onCopy() {
+      const n = this.copyPicked();
+      if (n && this._notify) this._notify(t(n === 1 ? "slides.clip_copied_one" : "slides.clip_copied_n").replace("{n}", n));
+    },
+
+    // Ctrl+V. The QUESTION lives here (Élder 2026-07-17: paste always asks, even inside the
+    // same deck) because it is UI; pasteClip is the deck op and takes the answer decided.
+    // Answering is not optional and there is no remembered default: "solto" and "vinculado"
+    // are not degrees of the same thing, they are different slides afterwards.
+    async onPaste() {
+      if (!this._clip || !this._clip.read()) return;
+      const clip = this._clip.read();
+      const n = clip.items.length;
+      const mode = await askChoice(this.root, {
+        title: t(n === 1 ? "slides.clip_paste_title_one" : "slides.clip_paste_title_n").replace("{n}", n),
+        message: clip.srcTitle ? t("slides.clip_paste_from").replace("{deck}", clip.srcTitle) : "",
+        options: [
+          { value: "linked", label: t("slides.clip_paste_linked"), hint: t("slides.clip_paste_linked_hint"), primary: true },
+          { value: "loose", label: t("slides.clip_paste_loose"), hint: t("slides.clip_paste_loose_hint") },
+        ],
+      });
+      if (!mode) return; // backed out
+      const res = await this.pasteClip(mode);
+      if (res && res.error) {
+        if (window.bsLog) window.bsLog("Paste slides: " + res.error, "error");
+        return;
+      }
+      // A linked paste whose SOURCE could not be converted is half-linked: this deck follows
+      // the library, the origin does not. Never let that pass as success.
+      if (res.sourceFailed && res.sourceFailed.length && window.bsLog) {
+        window.bsLog("Paste linked: source deck not updated for " + res.sourceFailed.length + " slide(s)", "error");
+      }
+      if (this._notify) this._notify(t(mode === "linked" ? "slides.clip_pasted_linked" : "slides.clip_pasted_loose"));
+    },
+
+    // The source deck of a paste is USUALLY closed, so slideClip rewrites its JSON through
+    // the facade. When it is the deck on screen, that write would be clobbered by this
+    // editor's own next autosave, so convert in memory instead and let autosave carry it.
+    // Returns true when it handled the conversion (slideClip.linkSource's contract).
+    linkOpenSource(entries) {
+      const sl = this.deck().slides;
+      let hit = false;
+      for (const e of entries) {
+        const s = sl.find((x) => x && x.id === e.slideId);
+        if (!s) continue;
+        s.ref = e.ref;
+        hit = true;
+      }
+      if (hit) this.refresh();
+      return true; // the deck IS open: handled here whether or not the slides still exist
     },
 
     // "Destacar": keep the content, drop the link. This slide becomes a private copy of
@@ -930,26 +1043,16 @@ function wireChrome(app, root) {
     }
   }
 
-  // The shared-slide button (track-35 C). Its LABEL is state, owned by app.syncShareBtn
-  // on every render; only the click lives here. Both directions are deliberate, named
-  // acts: promoting asks for the name the slide gets in the library, detaching confirms
-  // (it is not undoable through the library, only through undo).
+  // Destacar (track-35 C). Visibility + label are state, owned by app.syncShareBtn on
+  // every render; only the click lives here. It confirms because cutting a link is not
+  // undoable through the library, only through undo.
   const shareBtn = $("#shareBtn");
   if (shareBtn) {
     shareBtn.onclick = () => {
-      if (!app._library) return;
-      if (app.isShared(app.cur())) {
-        // eslint-disable-next-line no-alert
-        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
-        app.detachCurrent();
-        return;
-      }
+      if (!app._library || !app.isShared(app.cur())) return;
       // eslint-disable-next-line no-alert
-      const name = window.prompt(t("slides.shr_share_prompt"), "");
-      if (name == null) return; // cancelled
-      app.shareCurrentSlide(name).then((res) => {
-        if (res && res.error && window.bsLog) window.bsLog("Share slide: " + res.error, "error");
-      });
+      if (!window.confirm(t("slides.shr_detach_confirm"))) return;
+      app.detachCurrent();
     };
   }
 
@@ -1096,6 +1199,12 @@ function wireChrome(app, root) {
       const k = e.key.toLowerCase();
       if (k === "z" && !e.shiftKey) { e.preventDefault(); app.undo(); return; }
       if (k === "y" || (k === "z" && e.shiftKey)) { e.preventDefault(); app.redo(); return; }
+      // Ctrl+C / Ctrl+V on SLIDES (track-35 C). Gated on `typing`, unlike undo/redo above:
+      // copying text inside a slide must stay the browser's job, so these only fire when
+      // the focus is not in an editable. Copy takes the rail pick (or the current slide);
+      // paste asks solto-or-vinculado, which is the whole sharing gesture.
+      if (!typing && k === "c" && !e.shiftKey && app._clip) { e.preventDefault(); app.onCopy(); return; }
+      if (!typing && k === "v" && !e.shiftKey && app._clip) { e.preventDefault(); app.onPaste(); return; }
     }
     if (typing) return;
     if (e.key === "ArrowRight" || e.key === " ") { e.preventDefault(); app.go(1); }

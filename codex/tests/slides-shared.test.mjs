@@ -240,12 +240,19 @@ test('app.detachCurrent tira o vínculo e o estado de quebrado, mantendo o conte
   assert.match(src, /this\.record\(\)/, 'é desfazível pelo undo');
 });
 
-test('app.shareCurrentSlide promove: grava na biblioteca e SÓ então vincula', () => {
-  const src = methodOf('shareCurrentSlide');
-  assert.match(src, /if \(s\.ref\) return \{ error: "already-shared" \}/, 'não re-compartilha o já vinculado');
-  const save = src.indexOf('this._library.save');
-  const ref = src.indexOf('s.ref = tpl.id');
-  assert.ok(save > 0 && ref > save, 'o ref só existe depois de a entrada existir de verdade');
+test('NÃO existe mais botão de compartilhar avulso: o Ctrl+V é que compartilha', () => {
+  // Élder 2026-07-17: publicar sem destino é o que deixava compartilhar o mesmo slide
+  // infinitas vezes. O compartilhamento passa a ser dirigido ao deck onde se cola.
+  assert.doesNotMatch(APP_SRC, /shareCurrentSlide/, 'o promover-avulso foi removido, não só escondido');
+  assert.doesNotMatch(APP_SRC, /slides\.shr_share\b/, 'e as chaves i18n dele foram junto');
+  assert.match(methodOf('syncShareBtn'), /shr_detach/, 'o botão que sobra é só o destacar');
+});
+
+test('o paste insere logo APÓS o slide selecionado, nunca no fim', () => {
+  // Élder 2026-07-17: "deve inserir logo após o slide que está selecionado na barra".
+  for (const m of ['pasteClip', 'linkTemplate', 'insertTemplate', 'addSlide']) {
+    assert.match(methodOf(m), /splice\(this\.index \+ 1, 0/, `${m} insere depois do atual`);
+  }
 });
 
 // ── library.updateMany: o lote que o dehydrate usa ───────────────────────────
