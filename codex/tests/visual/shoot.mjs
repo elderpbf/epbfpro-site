@@ -50,12 +50,12 @@ const browser = await chromium.launch();
 mkdirSync(outDir, { recursive: true });
 
 // Each shot is a state a regression would hide in. Named after what it must prove.
-async function shoot(name, width, height, act) {
+async function shoot(name, width, height, act, query = '') {
   const page = await browser.newPage({ viewport: { width, height } });
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') errs.push(m.text()); });
-  await page.goto(base + '/codex/tests/visual/harness.html?mod=' + mod);
+  await page.goto(base + '/codex/tests/visual/harness.html?mod=' + mod + query);
   await page.waitForFunction(() => window.__harnessReady === true, null, { timeout: 8000 })
     .catch(() => { throw new Error(name + ': the list never painted (harness stuck on its loading state)'); });
   if (act) await act(page);
@@ -130,6 +130,21 @@ try {
     const stillOpen = await p.locator('#cdx-cohorts-list [data-sec="tjmg"].is-open, #cdx-cohorts-list [data-client-slug="tjmg"].is-open').count();
     if (!stillOpen) throw new Error('the head + ALSO toggled the client shut (the rail swallowed the acts click)');
   });
+
+  // THE refresh. Élder's complaint that started this: "all the time when i refresh it closes
+  // everything and goes back to showing the list closed instead of continuing in the page i
+  // was". Booting with LS_LAST set must reopen that turma — client section expanded, rail
+  // unpinned, dossiê loaded — not the pinned empty prompt.
+  await shoot('09-refresh-reopens-last-turma', 1440, 900, async (p) => {
+    await p.mouse.move(700, 500);
+    await p.waitForTimeout(1900);   // let the unpinned rail hide, proving it is NOT pinned
+    const open = await p.locator('#cdx-cohorts-list [data-sec="tjmg"].is-open').count();
+    if (!open) throw new Error('refresh: the restored turma\'s client section did not reopen');
+    const on = await p.locator('#cdx-cohorts-list .cdx-rail-row.is-on[data-id="tjmg/turma-1"]').count();
+    if (!on) throw new Error('refresh: the restored turma is not the selected row');
+    const pinned = await p.locator('.cdx-three-pane.cdx-sm--open').count();
+    if (pinned) throw new Error('refresh: the rail stayed pinned open instead of yielding to the dossiê');
+  }, '&last=tjmg/turma-1');
   console.log('shots -> ' + outDir);
 } finally {
   await browser.close();

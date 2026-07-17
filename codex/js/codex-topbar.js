@@ -534,6 +534,14 @@ export function init(opts) {
   // closes it. One shared wiring for every tab, each tab's sidebar matches
   // DRAWER_SEL; CSS owns the off-canvas transform and the phone breakpoint.
   const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav';
+  // What counts as "picking a primary item" (closes the drawer to reveal the content).
+  // `.cdx-rail-row` is the shared rail's row, so every migrated rail is covered by BEING a
+  // rail — the same direction DRAWER_SEL itself has to go (see architecture/list-rail.md and
+  // track-41: this list of per-tab class names is the coupling, not the design).
+  // It replaced `[data-turma-slug]`, which cohorts' bespoke turma row used to carry and which
+  // the migration to mountRail retired — leaving the selector matching NOTHING in the repo,
+  // i.e. tapping a turma on a phone updated the dossiê behind a drawer that stayed open.
+  const DRAWER_PICK_SEL = 'a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row, .cdx-rail-row';
   const drawerBackdrop = document.createElement('div');
   drawerBackdrop.className = 'cdx-drawer-backdrop';
   document.body.appendChild(drawerBackdrop);
@@ -550,7 +558,7 @@ export function init(opts) {
   document.addEventListener('click', (e) => {
     if (!drawerBackdrop.classList.contains('is-open')) return;
     const d = _drawer();
-    if (d && d.contains(e.target) && e.target.closest('a[href], [data-act="pick"], [data-act="variaveis"], .cdx-item-row, [data-turma-slug]')) _closeDrawer();
+    if (d && d.contains(e.target) && e.target.closest(DRAWER_PICK_SEL)) _closeDrawer();
   }, true);
 
   // Shared shell services; the sub-tab mode toggle leads the drawer sections.

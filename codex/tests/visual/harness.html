@@ -43,7 +43,15 @@
   // previous run's turma into this one and change what the screenshot shows.
   try { localStorage.clear(); } catch (_) {}
 
-  const mod = new URLSearchParams(location.search).get('mod') || 'cohorts';
+  const qs = new URLSearchParams(location.search);
+  // ?last=client/turma seeds LS_LAST, i.e. stages a REFRESH: the module must reopen that
+  // turma, with its client section expanded and the rail unpinned. That path is the whole
+  // reason this work started ("all the time when i refresh it closes everything"), so it
+  // needs a case — the default boot always takes the no-deep-link branch and never proves it.
+  const last = qs.get('last');
+  if (last) { try { localStorage.setItem('cdx_cohorts_last', last.replace('/', '\n')); } catch (_) {} }
+
+  const mod = qs.get('mod') || 'cohorts';
   const SRC = { cohorts: '/codex/cohorts/cohorts.js' };
   if (!SRC[mod]) throw new Error('harness: unknown module ' + mod);
 

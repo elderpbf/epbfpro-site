@@ -11,6 +11,11 @@
 // CONSUMER's state — the module must never hold a second copy.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
+import { dirname, join } from 'node:path';
+
+const root = join(dirname(fileURLToPath(import.meta.url)), '..');
 
 function makeEl() {
   let html = '';
@@ -195,6 +200,30 @@ test('genuinely nothing (no items, no sections) still shows the empty line', () 
   const rail = mountRail(el, { items: () => [], getId: (t) => t.id, emptyText: 'Nenhum cliente.' });
   rail.render();
   assert.match(el.innerHTML, /<div class="cdx-rail-empty">Nenhum cliente\.<\/div>/);
+});
+
+// The mobile drawer closes when you pick "a primary item", and the topbar decides that with a
+// selector list it holds by class name. cohorts' bespoke row carried [data-turma-slug] and the
+// list named it; migrating to mountRail retired that attribute, so the selector silently matched
+// NOTHING and a phone tap updated the dossiê behind a drawer that stayed open.
+//
+// Two REAL artefacts, compared: the class the rail actually emits, and the selector the topbar
+// actually uses. String-matching either one alone is what let this through the first time.
+test('the mobile drawer closes on a rail row pick: the topbar selector matches a REAL rail row', () => {
+  const { html } = build();
+  const rowClasses = /<div class="(cdx-rail-row[^"]*)"/.exec(html);
+  assert.ok(rowClasses, 'the rail emits a row');
+  const classList = rowClasses[1].split(/\s+/);
+
+  const topbar = readFileSync(join(root, 'js/codex-topbar.js'), 'utf8');
+  const decl = /const DRAWER_PICK_SEL = '([^']+)'/.exec(topbar);
+  assert.ok(decl, 'codex-topbar declares DRAWER_PICK_SEL');
+  const matches = decl[1].split(',').map((s) => s.trim())
+    .some((s) => s.startsWith('.') && classList.includes(s.slice(1)));
+  assert.ok(matches, 'a rail row must match the drawer pick selector; it is ' + decl[1]);
+
+  // ...and it must be the selector the handler actually consults.
+  assert.match(topbar, /e\.target\.closest\(DRAWER_PICK_SEL\)/);
 });
 
 test('the 8 migrated rails are untouched: no bands + no exclusive still renders 1 level', () => {
