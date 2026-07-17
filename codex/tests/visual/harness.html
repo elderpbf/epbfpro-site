@@ -22,6 +22,7 @@
 <link rel="stylesheet" href="/codex/css/codex.css">
 <link rel="stylesheet" href="/codex/css/list-rail.css">
 <link rel="stylesheet" href="/codex/cohorts/cohorts.css">
+<link rel="stylesheet" href="/codex/questions/questions.css">
 <style>
   /* The tab view inside the real app chrome: full viewport, no topbar. The nav's
      auto-hide is position-driven, so the harness must give it the same box the app does. */
@@ -52,8 +53,20 @@
   if (last) { try { localStorage.setItem('cdx_cohorts_last', last.replace('/', '\n')); } catch (_) {} }
 
   const mod = qs.get('mod') || 'cohorts';
-  const SRC = { cohorts: '/codex/cohorts/cohorts.js' };
+  const SRC = {
+    cohorts:  '/codex/cohorts/cohorts.js',
+    sessions: '/codex/questions/sessions.js',
+  };
   if (!SRC[mod]) throw new Error('harness: unknown module ' + mod);
+  // "Painted" = a real ROW exists. Era-neutral by listing both the bespoke row and the rail's
+  // (a migration is exactly when this file must keep working), and it is a POSITIVE signal:
+  // the previous probe watched for a loading placeholder to disappear, which a migration made
+  // vacuously true the moment the placeholder's class changed — it would have raced silently
+  // rather than failed. If a fixture ever has no rows, this times out loudly, which is right.
+  const ROW = {
+    cohorts:  '#cdx-cohorts-list .cdx-ti, #cdx-cohorts-list .cdx-rail-row',
+    sessions: '#cdx-sessions-sidebar .cdx-session-card, #cdx-sessions-sidebar .cdx-rail-row',
+  };
 
   const m = await import(SRC[mod]);
   m.mount(document.getElementById('view'), {});
@@ -65,10 +78,7 @@
   // undefined off window and call it "not ready".
   window.__harnessReady = false;
   const tick = () => {
-    const el = document.querySelector('#cdx-cohorts-list');
-    // Era-neutral on purpose (bespoke .cdx-cg today, .cdx-rail-sec after the migration):
-    // has children AND is past the .cdx-empty loading/error placeholder.
-    if (el && el.children.length && !el.querySelector('.cdx-empty')) { window.__harnessReady = true; return; }
+    if (document.querySelector(ROW[mod])) { window.__harnessReady = true; return; }
     setTimeout(tick, 30);
   };
   tick();

@@ -533,7 +533,10 @@ export function init(opts) {
   // left over a dim backdrop; backdrop tap, Escape, or picking a primary item
   // closes it. One shared wiring for every tab, each tab's sidebar matches
   // DRAWER_SEL; CSS owns the off-canvas transform and the phone breakpoint.
-  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav';
+  // `.cdx-sessions-sidebar` joined this list in track-41: Sessões had NO hamburger at all —
+  // not a CSS bug, it was simply never registered here, which is the coupling this list IS
+  // (the chrome knowing each tab's interior by class name). Élder: "all should have them".
+  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar';
   // What counts as "picking a primary item" (closes the drawer to reveal the content).
   // `.cdx-rail-row` is the shared rail's row, so every migrated rail is covered by BEING a
   // rail — the same direction DRAWER_SEL itself has to go (see architecture/list-rail.md and

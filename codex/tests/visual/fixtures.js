@@ -53,10 +53,23 @@ export const TURMAS = {
   ],
 };
 
-// The nav only reaches for these two actions; anything else throws loudly rather than
-// resolving to {} — a silent empty response would paint a "working" screenshot of nothing.
+// Questions > Sessões: a FLAT list (no grouping), mixing the two card shapes the picker has —
+// a turma-linked session (labelled "Cliente · Turma") and a standalone one keeping its title —
+// plus an open one, which is the only one that shows the live dot.
+export const SESSIONS = [
+  { code: 'ABC123', title: 'Aula ao vivo', status: 'open',   created_at: '2026-07-14T10:00:00Z',
+    client_name: 'TJMG', turma_name: 'Turma 1' },
+  { code: 'DEF456', title: 'Sessão avulsa de Q&A', status: 'closed', created_at: '2026-07-02T10:00:00Z' },
+  { code: 'GHI789', title: '', status: 'closed', created_at: '2026-06-20T10:00:00Z',
+    client_name: 'JFSE', turma_name: 'Turma Teste' },
+  { code: 'JKL012', title: '', status: 'closed', created_at: '2026-05-11T10:00:00Z' },  // -> "sem título"
+];
+
+// Each module reaches for a small, known set of actions; anything else throws loudly rather
+// than resolving to {} — a silent empty response would paint a "working" screenshot of nothing.
 export function stubWorker(p) {
   if (p.action === 'ct_list_clients') return Promise.resolve({ clients: CLIENTS });
   if (p.action === 'ct_list_turmas')  return Promise.resolve({ turmas: TURMAS[p.client_slug] || [] });
+  if (p.action === 'list_sessions')   return Promise.resolve({ sessions: SESSIONS });
   return Promise.reject(new Error('harness: unstubbed action ' + p.action));
 }

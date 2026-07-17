@@ -14,6 +14,7 @@
 //     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
 //     rowClass:(it)=>'extra classes',   // per-row state the consumer's CSS keys off
 //     selectedId:()=>id, onSelect:(id)=>{},
+//     emptyText: str|()=>str, emptyHtml:()=>html,   // whole list empty (Html wins; rich states)
 //     add:{label,title,onAdd}, reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
@@ -140,6 +141,9 @@ export function mountRail(container, cfg) {
     // ARE content (Clientes with clients but no turmas yet must still list the clients, each
     // showing its own empty text — not one "no clients" line over a screen that has clients).
     if (!its.length && !list.length) {
+      // emptyHtml: a RICH empty state owned by the consumer (Sessões has an icon over a line),
+      // same seam as renderRow/renderHead/footer. emptyText stays the escaped-text default.
+      if (cfg.emptyHtml) return cfg.emptyHtml();
       const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
       return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }

@@ -76,20 +76,47 @@ test('sessions i18n keys exist in BOTH dictionaries', async () => {
   }
 });
 
-test('sessions re-ports the faithful card layout (cp-session-card -> cdx-session-card)', () => {
+// The card shell is the shared rail's row since track-41, so the faithful bits are what goes
+// INSIDE it (renderRow) plus the skin in questions.css. Both still have to exist.
+test('sessions re-ports the faithful card layout (the guts survive the rail migration)', () => {
   const src = read('../questions/sessions.js');
-  assert.match(src, /cdx-session-card/, 'renders faithful session cards');
+  assert.match(src, /cdx-session-info/, 'the card guts are still the ported layout');
+  assert.match(src, /cdx-session-title/);
+  assert.match(src, /cdx-session-meta/);
   assert.match(src, /cdx-live/, 'renders the legacy live indicator on open sessions');
+  assert.match(src, /renderRow:\s*\(s\)\s*=>\s*\(\{\s*main:\s*_cardMain\(s\),\s*act:\s*_cardAct\(s\)/,
+    'the live pill is the row act slot (right side), as in the bespoke card');
+  // The bespoke shell must be gone, not left behind as a second way to draw a card.
+  assert.ok(!/cdx-session-card/.test(src), 'the hand-made card shell is gone (the rail owns the row)');
+  const css = read('../questions/questions.css');
+  assert.match(css, /\.cdx-sessions-sidebar \.cdx-rail-row/, 'the card look is re-skinned onto the rail row, scoped to this rail');
 });
 
-test('sessions re-ports the floating sidebar picker + main host area', () => {
+// The reveal/hide BEHAVIOUR moved into the module and is proven there
+// (tests/list-rail-autohide.test.mjs: edge reveal, leave-timer, Escape, pinned, destroy).
+// What is still sessions' own, and is what this guards, is that it ASKS for it and no longer
+// hand-rolls a second copy beside it.
+test('the sidebar picker is the shared rail in autohide mode, not a hand-rolled copy', () => {
   const src = read('../questions/sessions.js');
-  assert.match(src, /cdx-sessions-sidebar/, 'has the floating left-edge sidebar');
-  assert.match(src, /cdx-sm--open/, 'toggles the cv-sm reveal class');
-  assert.match(src, /mousemove/, 'reveals on left-edge hover');
-  assert.match(src, /clientX/, 'uses the cursor left-edge zone');
+  assert.match(src, /cdx-sessions-sidebar/, 'keeps the sidebar class (it is the drawer hook too)');
+  assert.match(src, /_rail = mountRail\(/, 'the picker IS the shared rail');
+  assert.match(src, /mode:\s*'autohide'/, 'in autohide mode');
+  assert.match(src, /openClass:\s*'cdx-sm--open'/, 'still the cv-sm reveal class, now stamped by the module');
+  assert.match(src, /pinned:\s*!pre/, 'a deep-link opens straight into the host, unpinned');
+  for (const gone of ['REVEAL_ZONE', 'HIDE_DELAY', '_openSidebar', '_closeSidebar', '_maybeHide', '_overSidebar', '_sidebarPinned'])
+    assert.ok(!src.includes(gone), `hand-rolled auto-hide gone: ${gone}`);
+  assert.ok(!/clientX/.test(src), 'the left-edge zone is the module\'s, not a second copy here');
   assert.match(src, /cdx-sessions-(main|detail)/, 'has the main host area');
   assert.match(src, /sessions_placeholder/, 'shows the empty-selection placeholder');
+});
+
+// Sessões had NO hamburger at all: it was simply never registered in the topbar's list.
+// Élder: "all should have them". Both files must name it, because the list is duplicated.
+test('Sessões is registered for the mobile drawer (it had no hamburger at all)', () => {
+  assert.match(read('../js/codex-topbar.js'), /const DRAWER_SEL = '[^']*\.cdx-sessions-sidebar/,
+    'the topbar knows the sidebar is a drawer');
+  const css = read('../css/codex.css');
+  assert.match(css, /\.cdx-sessions-sidebar\.is-open/, 'and codex.css slides it in (the SAME list, by hand, twice)');
 });
 
 test('lifecycle (Iniciar/Encerrar) lives on the host bar, not the sessions detail', () => {
@@ -126,7 +153,17 @@ test('per-session delete is wired from the host (onDelete -> deleteSession), not
 
 test('sessions unmount tears down the document-level reveal listeners', () => {
   const src = read('../questions/sessions.js');
-  // mousemove/keydown are bound on document, so they MUST be cleaned up to
-  // avoid leaking across tab switches. Assert they go through the tracked _on.
-  assert.match(src, /_on\(\s*document/, 'document listeners are registered via the tracked helper');
+  // Same intent as before the rail migration: mousemove/keydown are bound on DOCUMENT, so they
+  // MUST be cleaned up or they leak one set per tab switch. They are the rail's now, and
+  // rail.destroy() is the only thing that unhooks them (proven in list-rail-autohide.test.mjs),
+  // so unmount has to call it. Forgetting it is silent: nothing breaks, it just leaks forever.
+  const un = /export function unmount\(\)[\s\S]*?\n\}/.exec(src);
+  assert.ok(un, 'has unmount');
+  assert.match(un[0], /_rail\.destroy\(\)/, 'unmount destroys the rail (that is what unhooks document)');
+  assert.match(un[0], /_rail = null/, 'and drops the reference');
+  // Anything this file still binds on document must go through the tracked _on helper.
+  const docBinds = src.match(/addEventListener/g) || [];
+  const tracked = src.match(/_on\(/g) || [];
+  assert.ok(!/document\.addEventListener/.test(src), 'no untracked document listener here');
+  assert.ok(tracked.length >= docBinds.length, 'listeners are registered through the tracked helper');
 });
