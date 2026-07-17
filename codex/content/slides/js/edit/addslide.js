@@ -6,6 +6,7 @@
 // library) are ONE concept here: a saved slide is just another card, under the
 // "Salvos" group. Mirrors the maskpanel.js extraction so app.js stays thin.
 import { t } from "../../../../js/i18n.js";
+import { glyphSvg } from "../../../../js/glyphs.js";
 import * as registry from "../layouts/registry.js";
 import { renderInto } from "../render/player.js";
 
@@ -119,15 +120,27 @@ export function initAddSlide(app, root) {
     wrap.appendChild(card(tpl.name || tpl.layout, slide, () => app.insertTemplate(tpl)));
     const acts = document.createElement("div");
     acts.className = "as-actions";
-    const mkBtn = (glyph, title, onClick) => {
+    // `isHtml` = the label is markup (an svg from the glyph library), not a text glyph.
+    // textContent for the rest, so a translated title can never inject markup.
+    const mkBtn = (glyph, title, onClick, isHtml) => {
       const b = document.createElement("button");
       b.type = "button";
       b.className = "as-act";
       b.title = title;
-      b.textContent = glyph;
+      if (isHtml) b.innerHTML = glyph;
+      else b.textContent = glyph;
       b.addEventListener("click", onClick);
       acts.appendChild(b);
     };
+    // Vincular (track-35 C): the card BODY still inserts a detached copy, so copy stays
+    // the default and nothing an old deck does changes; this action inserts a LINK
+    // instead. Two insertion modes over one saved slide, which is why they are one card
+    // and not two grids.
+    mkBtn(glyphSvg("link", { size: 13 }), t("slides.shr_link"), (e) => {
+      e.stopPropagation();
+      app.linkTemplate(tpl);
+      close();
+    }, true);
     mkBtn("✎", t("slides.tpl_edit"), (e) => {
       e.stopPropagation();
       app.editTemplate(tpl);

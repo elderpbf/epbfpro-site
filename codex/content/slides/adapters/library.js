@@ -132,5 +132,32 @@ export function createLibrary({ facade } = {}) {
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
       return _asTemplate(tpl);
     },
+
+    // Batch form of update(): N entries [{id, slide}] in ONE load + ONE save.
+    // Exists because a deck save (track-35 C) writes back every SHARED slide it holds,
+    // and doing that through update() would be 2N round-trips per autosave. Same
+    // contract per entry: content overwritten, id + name preserved. Entries whose id is
+    // no longer in the library are skipped, not appended: a template deleted while a
+    // deck was open must stay deleted (the deck's link degrades to broken on next load),
+    // never be resurrected by a save.
+    async updateMany(entries) {
+      const list = (entries || []).filter((e) => e && e.id && e.slide);
+      if (!list.length) return [];
+      const c = await _load();
+      if (!c || !Array.isArray(c.slides)) return [];
+      const out = [];
+      for (const e of list) {
+        const i = c.slides.findIndex((x) => x && x.id === e.id);
+        if (i < 0) continue;
+        const tpl = clone(e.slide);
+        tpl.id = e.id;
+        tpl.name = c.slides[i].name || '';
+        c.slides[i] = tpl;
+        out.push(_asTemplate(tpl));
+      }
+      if (!out.length) return [];
+      await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
+      return out;
+    },
   };
 }

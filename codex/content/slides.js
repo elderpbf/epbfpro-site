@@ -21,6 +21,7 @@ import * as notice from '../js/notice.js';
 import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
+import { createSharedSlides } from './slides/adapters/sharedSlides.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
 import { createDrivePicker } from './slides/adapters/drivePicker.js';
 
@@ -337,7 +338,12 @@ async function _importDeck(file) {
 // initialDeck (optional): a deck object to seed the store with (e.g. a freshly
 // imported pptx). When given, it is treated like a fresh deck, set + persisted.
 async function _openDeck(slug, fresh, initialDeck) {
-  const store = createCodexStore({ slug });
+  // Shared slides (track-35 C): resolve `{id, ref}` link stubs into content on load and
+  // collapse them back (writing any edit through to the library) on save. Per OPEN DECK,
+  // not per session: its dirty-tracking is about THIS deck's links, and a stale map from
+  // a previously opened deck would make the first save skip a real write-back.
+  const shared = createSharedSlides({ library: _library, message: t('slides.shr_broken') });
+  const store = createCodexStore({ slug, hydrate: shared.hydrate, dehydrate: shared.dehydrate });
   const seeded = !!initialDeck;
 
   if (initialDeck) {

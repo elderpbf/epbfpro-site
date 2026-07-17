@@ -70,6 +70,7 @@ const shellHTML = () => `
 <div id="chrome">
   <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
   <button id="tplSaveBtn">⊕ ${t("slides.tpl_save")}</button>
+  <button id="shareBtn"></button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
@@ -219,7 +220,23 @@ export function mount(root, ctx = {}) {
       // ⇄ Inverter only does something on layouts that carry a `flip` slot (split)
       const fb = root.querySelector("#flip");
       if (fb) fb.style.display = "flip" in s.slots ? "" : "none";
+      this.syncShareBtn();
       this.syncNotes();
+    },
+    // ONE button for both directions of the shared-slide link, reading the current
+    // slide's state, the Section B pattern (a closed control says what it IS, not what
+    // it does). Inline slide -> "Compartilhar" (promote); linked slide -> "Destacar"
+    // (cut the link). Hidden entirely when no library is injected (standalone build),
+    // like the save-as-layout button next to it.
+    syncShareBtn() {
+      const b = this.root.querySelector("#shareBtn");
+      if (!b) return;
+      if (!this._library) { b.style.display = "none"; return; }
+      const shared = this.isShared(this.cur());
+      b.classList.toggle("linked", shared);
+      b.innerHTML = glyphSvg("link", { size: 13 }) +
+        " " + t(shared ? "slides.shr_detach" : "slides.shr_share");
+      b.title = t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
     // it's being typed in). Written back on input by the wiring in wireChrome; the same
@@ -615,6 +632,64 @@ export function mount(root, ctx = {}) {
       this._editingTpl = { id: tpl.id, slideId: this.cur().id, name: tpl.name || "" };
     },
 
+    // ── Shared slides (track-35 C) ────────────────────────────────────────────
+    // COPY vs LINK are two insertion modes over the SAME library: insertTemplate above
+    // drops a detached clone, linkTemplate drops a live reference. The core only ever
+    // holds HYDRATED slides (content + `.ref`); resolving the ref on load and collapsing
+    // it on save is the adapter's job (adapters/sharedSlides.js), so nothing here, not
+    // the editor, not history, not undo, has to know a slide is shared to render it.
+    // `isShared` is the one thing the UI does read, and it is just a field.
+    isShared(s) { return !!(s && s.ref); },
+
+    // Insert a LINK to a library slide after the current one: same content as
+    // insertTemplate, but `.ref` survives to disk, so editing it here changes it in
+    // every OTHER deck that links it too (on their next open). commit() explicitly:
+    // goTo does not touch the store, and a link that is not persisted before the user
+    // navigates away is a link that silently never happened.
+    linkTemplate(tpl) {
+      if (!tpl || !tpl.slide) return;
+      this.record();
+      const s = clone(tpl.slide);
+      s.id = uid();
+      s.ref = tpl.id;
+      delete s.name;
+      this.deck().slides.splice(this.index + 1, 0, s);
+      this.goTo(this.index + 1);
+      this.commit();
+    },
+
+    // Promote the current inline slide to a SHARED one: it becomes a library entry and
+    // this deck's copy turns into a link to it. The "vincular num 2º deck" flow starts
+    // here; detachCurrent is the exact reverse.
+    async shareCurrentSlide(name) {
+      if (!this._library) return { error: "no-library" };
+      const s = this.cur();
+      if (!s) return { error: "no-slide" };
+      if (s.ref) return { error: "already-shared" };
+      try {
+        const tpl = await this._library.save(s, name);
+        this.record();
+        s.ref = tpl.id;
+        this.refresh();
+        return { ok: true, tpl };
+      } catch (e) {
+        return { error: (e && e.message) || "share-failed" };
+      }
+    },
+
+    // "Destacar": keep the content, drop the link. This slide becomes a private copy of
+    // whatever it was showing; the library entry and every other deck linking it are
+    // untouched. This is how a near-identical deck diverges on the few slides that
+    // differ (architecture/slides.md §10), and the escape hatch out of a broken ref.
+    detachCurrent() {
+      const s = this.cur();
+      if (!s || !s.ref) return;
+      this.record();
+      delete s.ref;
+      delete s._broken;
+      this.refresh();
+    },
+
     // insert a free element (movable on any slide) of the given type
     insertElement(type) {
       const c = this.deck().canvas;
@@ -853,6 +928,29 @@ function wireChrome(app, root) {
         });
       };
     }
+  }
+
+  // The shared-slide button (track-35 C). Its LABEL is state, owned by app.syncShareBtn
+  // on every render; only the click lives here. Both directions are deliberate, named
+  // acts: promoting asks for the name the slide gets in the library, detaching confirms
+  // (it is not undoable through the library, only through undo).
+  const shareBtn = $("#shareBtn");
+  if (shareBtn) {
+    shareBtn.onclick = () => {
+      if (!app._library) return;
+      if (app.isShared(app.cur())) {
+        // eslint-disable-next-line no-alert
+        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
+        app.detachCurrent();
+        return;
+      }
+      // eslint-disable-next-line no-alert
+      const name = window.prompt(t("slides.shr_share_prompt"), "");
+      if (name == null) return; // cancelled
+      app.shareCurrentSlide(name).then((res) => {
+        if (res && res.error && window.bsLog) window.bsLog("Share slide: " + res.error, "error");
+      });
+    };
   }
 
   $("#flip").onclick = () => {

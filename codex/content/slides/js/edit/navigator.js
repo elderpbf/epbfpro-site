@@ -2,6 +2,7 @@
 // add/duplicate/remove are deck ops on the app controller.
 import { renderInto } from "../render/player.js";
 import { t } from "../../../../js/i18n.js";
+import { glyphSvg } from "../../../../js/glyphs.js";
 
 export function createNavigator(app) {
   const nav = app.nav;
@@ -42,6 +43,10 @@ export function createNavigator(app) {
       th.dataset.i = i;
       th.innerHTML =
         `<div class="num">${i + 1}</div>` +
+        // A shared slide is marked on the rail because its blast radius is not local:
+        // editing it here edits it in every deck that links it. A broken ref (the
+        // library entry is gone) says so in the tooltip instead of pretending to be fine.
+        (s.ref ? `<div class="lnkbadge${s._broken ? " broken" : ""}" title="${t(s._broken ? "slides.shr_broken_tip" : "slides.shr_badge_tip")}">${glyphSvg("link", { size: 11 })}</div>` : "") +
         (s.reflowWarn ? `<div class="revbadge" title="${t("slides.ed_reflow_warn")}">⚠</div>` : "") +
         `<div class="tctl"><button data-up="${i}">↑</button><button data-down="${i}">↓</button><button data-rm="${i}">✕</button></div>` +
         `<div class="mini"><div class="scale"></div></div>`;

@@ -139,8 +139,14 @@ export function resolveStyleObj(slots, ref) {
  * its row and the per-card override is dropped. Cards then render at the row size.
  * v6 = deck-level `aspect` ('16:9' | '4:3') driving `deck.canvas` dims; legacy decks
  * get aspect inferred from their canvas (always 16:9) and a missing canvas backfilled.
+ * v7 = SHARED slides (track-35 C): a slide may be stored as a LINK, `{id, ref}`,
+ * where `ref` is the id of a slide living in the reserved __library__ container. The
+ * ref is resolved to full content on load and re-collapsed on save by
+ * adapters/sharedSlides.js: the core only ever sees a hydrated slide that still
+ * carries its `.ref`. Nothing to migrate (no existing deck has a ref); the bump
+ * records that a v7 deck's slides[] may not be self-contained.
  */
-export const SCHEMA_VERSION = 6;
+export const SCHEMA_VERSION = 7;
 
 /**
  * Upgrade a deck in place to the current schema (idempotent, version-gated).

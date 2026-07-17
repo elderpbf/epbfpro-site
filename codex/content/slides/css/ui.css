@@ -51,6 +51,17 @@
 .cdx-deck-editor .thumb .mini { width: 100%; aspect-ratio: var(--canvas-ar); background: #fff; border-radius: 6px; overflow: hidden; position: relative; pointer-events: none; }
 .cdx-deck-editor .thumb .mini > .scale { position: absolute; top: 0; left: 0; width: var(--canvas-w); height: var(--canvas-h); transform-origin: top left; }
 .cdx-deck-editor .thumb .revbadge { position: absolute; left: 4px; bottom: 4px; z-index: 3; font-size: 12px; line-height: 1; background: #fde68a; color: #92400e; border: 1px solid #f59e0b; border-radius: 6px; padding: 1px 4px; pointer-events: none; }
+/* track-35 C: the shared-slide mark on the rail thumb. Sits at bottom-RIGHT because
+   .revbadge already owns bottom-left and a slide can carry both. pointer-events stay
+   on (unlike revbadge) so the tooltip is readable: it is the only place that warns
+   an edit here reaches other decks. `broken` = the library entry is gone; it borrows
+   the danger token rather than inventing a colour. */
+.cdx-deck-editor .thumb .lnkbadge { position: absolute; right: 4px; bottom: 4px; z-index: 3; display: flex; line-height: 0; background: rgba(19, 78, 74, .78); color: #99f6e4; border: 1px solid var(--teal-l); border-radius: 6px; padding: 2px; }
+.cdx-deck-editor .thumb .lnkbadge.broken { background: rgba(127, 29, 29, .8); color: #fecaca; border-color: var(--danger); }
+/* The share/detach button carries the same link glyph in both states; `linked` tints it
+   so "this slide IS shared" reads from the bar without opening the tooltip. */
+.cdx-deck-editor #chrome #shareBtn { display: inline-flex; align-items: center; gap: 5px; }
+.cdx-deck-editor #chrome #shareBtn.linked { color: var(--teal); border-color: var(--teal-l); }
 /* Phase 9: per-unit effect picker in the animation panel row (Fade/Deslizar/Zoom). */
 .cdx-deck-editor .ap-with { font-size: 12px; line-height: 1; padding: 3px 6px; border: 1px solid var(--btn-bd); background: transparent; color: var(--muted); border-radius: 6px; cursor: pointer; }
 .cdx-deck-editor .ap-with.on { background: var(--teal); color: #fff; border-color: transparent; }
