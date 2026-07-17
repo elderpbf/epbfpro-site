@@ -246,10 +246,15 @@
  * and let it fill. The sidebar body already supplies the 12px inset the old list had, so the
  * rail body adds none — otherwise every card drifts 2px and no border lines up with before. */
 .cdx-lessons-sidebar-body .cdx-rail { border: none; border-radius: 0; background: transparent; height: 100%; }
-/* No horizontal inset (the sidebar body already gives 12px, so cards line up with before), but a
- * few px on top: the first card lifts 1px on hover, and its glow would otherwise clip against the
- * scroll container's top edge (Élder 2026-07-18). */
-.cdx-lessons-sidebar-body .cdx-rail-body { padding: 6px 0 0; }
+/* The rail fills the sidebar body EDGE-TO-EDGE so its scrollbar sits flush against the sidebar's
+ * right margin, exactly like production (verified 2026-07-18: there the scroll container IS the
+ * sidebar body, padding 4px 12px 14px, and the bar rides the right edge). So the sidebar body
+ * drops its own inset and the rail body takes it over: 12px sides = the old content inset (the
+ * bar overlays that right gutter, not the cards), 14px bottom, 10px top = room for the first
+ * card's 1px hover lift. `:has()` scopes it to the mounted rail, leaving the loading state's
+ * padding intact. */
+.cdx-lessons-sidebar-body:has(> .cdx-rail) { padding: 0; }
+.cdx-lessons-sidebar-body .cdx-rail-body { padding: 10px 12px 14px; }
 
 /* Top section head = the neon accent card (the old .cdx-lesson-section-head). --sec comes from
  * .cdx-lesson-section--<key>; the constant .cdx-lesson-section class is on the rail's section. */
