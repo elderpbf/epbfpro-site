@@ -28,6 +28,7 @@ import {
   makeFavorites, makeSectionOrder, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
 import { mountReorder } from '../js/pointer-reorder.js';
+import { buildTree } from '../js/list-tree.js';
 
 // ── Module state ─────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -241,17 +242,17 @@ function _seedCollapsed(key) {
   if (!_seeded.has(key)) { _seeded.add(key); _collapsed.add(key); }
 }
 
-function _renderTypeGroup(group) {
-  const subKey = 'type:' + group.typeKey;
-  _seedCollapsed(subKey);
-  const collapsed = _collapsed.has(subKey);
-  const label = (group.items[0] && group.items[0].type_label) || group.typeKey;
-  return '<button type="button" class="cdx-lesson-subsection' + (collapsed ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!collapsed) + '">' +
+// One subsection (a type group under `items`, a folder under `drive`). These were two
+// hand-copied renderers with identical markup until the tree made the two shapes one.
+function _paintSub(node) {
+  const key = String(node.group.id);
+  const collapsed = _collapsed.has(key);
+  return '<button type="button" class="cdx-lesson-subsection' + (collapsed ? ' is-collapsed' : '') + '" data-section="' + _esc(key) + '" aria-expanded="' + (!collapsed) + '">' +
       '<span class="cdx-lesson-subsection-chev">&#9662;</span>' +
-      '<span class="cdx-lesson-subsection-label">' + _esc(label) + '</span>' +
-      '<span class="cdx-lesson-subsection-count">' + group.items.length + '</span>' +
+      '<span class="cdx-lesson-subsection-label">' + _esc(node.group.title) + '</span>' +
+      '<span class="cdx-lesson-subsection-count">' + node.items.length + '</span>' +
     '</button>' +
-    (collapsed ? '' : group.items.map(_renderSubCard).join(''));
+    (collapsed ? '' : node.items.map((e) => _renderSubCard(e.it)).join(''));
 }
 
 // data-sec-key: the section's identity for the drag (js/pointer-reorder.js reads it to write
@@ -274,105 +275,92 @@ function _emptyInline() {
   return '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>';
 }
 
-function _renderSection(section) {
-  const collapsed = _collapsed.has(section.key);
-  let body = '';
-  if (!collapsed) {
-    if (section.key === 'items') {
-      body = section.items.length ? groupItemsByType(section.items).map(_renderTypeGroup).join('') : _emptyInline();
-    } else {
-      body = section.items.length ? section.items.map(_renderSubCard).join('') : _emptyInline();
-    }
-  }
-  return _sectionCard(section.key, section.items.length, body);
+function _llmLauncherHtml(l) {
+  return '<a class="cdx-lesson-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+      '<img class="cdx-lesson-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+      '<span class="cdx-lesson-llm-name">' + _esc(l.name) + '</span>' +
+    '</a>';
 }
 
-function _renderFavoritesSection() {
-  // Ordered BY THE STORED LIST, not by vault order: the list is what a drag rewrites, so
-  // rendering it in any other order would show the drag being ignored. Resolution stays
-  // vault-only (a starred lab has never appeared here, and this is not the change that
-  // starts it).
+// The count on a section's badge is everything UNDER it, sub-groups included (items/drive show
+// a total, not a group count). LLMs adds its hardcoded launchers, which are not vault rows.
+function _countFor(node) {
+  const n = node.items.length + node.children.reduce((a, c) => a + c.items.length, 0);
+  return node.group.id === 'llm' ? LLM_LAUNCHERS.length + n : n;
+}
+
+function _paintSection(node) {
+  const key = String(node.group.id);
+  const collapsed = _collapsed.has(key);
+  let body = '';
+  if (!collapsed) {
+    // Sub-groups first, then the section's own rows: that is what mixed depth looks like here
+    // (items/drive are all sub-groups, their seven siblings are all rows, and nothing in the
+    // middle needs a special case any more).
+    body = (key === 'llm' ? LLM_LAUNCHERS.map(_llmLauncherHtml).join('') : '') +
+      node.children.map(_paintSub).join('') +
+      node.items.map((e) => _renderSubCard(e.it)).join('');
+    if (!body) body = _emptyInline();   // only `items` can reach this: the rest hide when empty
+  }
+  return _sectionCard(key, _countFor(node), body);
+}
+
+// ONE entry per (item × section it appears in). The same item shows in Favoritos AND in its type
+// bucket AND in Preset, and today all of them light up together because `is-active` matches by
+// item id. So the entry carries the item and `getId` stays the item's: a synthetic per-pair id
+// would light only one, and the look cannot change.
+//
+// This is the shape I had called a blocker for reusing the module. It never was: it was a
+// question about pixel identity, and the engine (js/list-tree.js) has no pixels to be identical
+// about. It just asks who is under whom.
+const _ALWAYS_SHOWN = ['llm', 'items'];   // llm has its launchers; items is the home bucket
+
+function _navModel() {
+  const buckets = classifyVault(_vault);
+  const entries = [];
+  const subs = [];
+  const push = (it, sec, sub) => entries.push({ it, sec, sub: sub || null });
+
+  for (const it of _presetItems) push(it, 'preset');
+  // Favoritos: ordered BY THE STORED LIST, not by vault order (the list is what a drag
+  // rewrites). Resolution stays vault-only, so a starred lab still does not surface here.
   const byId = new Map(_vault.map((it) => [String(it.id), it]));
-  const items = _favs.all().map((id) => byId.get(String(id))).filter(Boolean);
-  if (!items.length) return '';
-  const collapsed = _collapsed.has('favorites');
-  const body = collapsed ? '' : items.map(_renderSubCard).join('');
-  return _sectionCard('favorites', items.length, body);
-}
-
-function _renderPresetSection() {
-  if (!_presetId || !_presetItems.length) return '';
-  const collapsed = _collapsed.has('preset');
-  const body = collapsed ? '' : _presetItems.map(_renderSubCard).join('');
-  return _sectionCard('preset', _presetItems.length, body);
-}
-
-function _renderLLMSection(dbItems) {
-  dbItems = dbItems || [];
-  const collapsed = _collapsed.has('llm');
-  let body = '';
-  if (!collapsed) {
-    body = LLM_LAUNCHERS.map((l) =>
-      '<a class="cdx-lesson-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
-        '<img class="cdx-lesson-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
-        '<span class="cdx-lesson-llm-name">' + _esc(l.name) + '</span>' +
-      '</a>').join('') +
-      dbItems.map(_renderSubCard).join('');
+  for (const id of _favs.all()) { const it = byId.get(String(id)); if (it) push(it, 'favorites'); }
+  for (const it of buckets.llm) push(it, 'llm');
+  for (const it of buckets.external) push(it, 'external');
+  for (const it of labItems()) push(it, 'labs');
+  for (const g of groupItemsByType(buckets.items)) {
+    const key = 'type:' + g.typeKey;
+    _seedCollapsed(key);
+    subs.push({ id: key, title: (g.items[0] && g.items[0].type_label) || g.typeKey, parent: 'items' });
+    for (const it of g.items) push(it, 'items', key);
   }
-  return _sectionCard('llm', LLM_LAUNCHERS.length + dbItems.length, body);
-}
-
-function _renderDriveSection(driveItems) {
-  driveItems = driveItems || [];
-  const collapsed = _collapsed.has('drive');
-  let body = '';
-  if (!collapsed) {
-    body = driveItems.length
-      ? groupDriveByFolder(driveItems).map((g) => {
-          const subKey = 'drive:' + g.folder;
-          _seedCollapsed(subKey);
-          const c = _collapsed.has(subKey);
-          return '<button type="button" class="cdx-lesson-subsection' + (c ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!c) + '">' +
-              '<span class="cdx-lesson-subsection-chev">&#9662;</span>' +
-              '<span class="cdx-lesson-subsection-label">' + _esc(g.folder) + '</span>' +
-              '<span class="cdx-lesson-subsection-count">' + g.items.length + '</span>' +
-            '</button>' +
-            (c ? '' : g.items.map(_renderSubCard).join(''));
-        }).join('')
-      : _emptyInline();
+  for (const g of groupDriveByFolder(buckets.drive)) {
+    const key = 'drive:' + g.folder;
+    _seedCollapsed(key);
+    subs.push({ id: key, title: g.folder, parent: 'drive' });
+    for (const it of g.items) push(it, 'drive', key);
   }
-  return _sectionCard('drive', driveItems.length, body);
+  for (const it of buckets.apostila) push(it, 'apostila');
+  for (const it of buckets.tarefas) push(it, 'tarefas');
+
+  // The section ORDER is the admin's stored preference, falling back to the order Élder
+  // designed (2026-06-01). With nothing stored this is the screen exactly as it always was.
+  const secs = _secOrder.get().map((k) => ({ id: k, title: _sectionLabel(k) }));
+  return {
+    entries,
+    levels: [
+      { of: (e) => e.sec, list: () => secs, hideWhenEmpty: (g) => _ALWAYS_SHOWN.indexOf(String(g.id)) === -1 },
+      { of: (e) => e.sub, list: () => subs },
+    ],
+  };
 }
 
-function _renderLabsSection() {
-  const labs = labItems();
-  if (!labs.length) return '';
-  const collapsed = _collapsed.has('labs');
-  const body = collapsed ? '' : labs.map(_renderSubCard).join('');
-  return _sectionCard('labs', labs.length, body);
-}
-
-// Each section decides FOR ITSELF whether it renders ('' = not now); the ORDER comes from
-// the admin's stored preference, which falls back to the order Elder designed (2026-06-01:
-// LLMs, Labs, Items, Drive, apostila, tarefas, External right after LLMs, preset/favourites
-// pinned on top). With nothing stored this emits exactly what it always did.
 function _renderSidebar() {
   const body = _q('.cdx-lessons-sidebar-body');
   if (!body) return;
-  const buckets = classifyVault(_vault);
-  const bucketSection = (key) => (buckets[key].length ? _renderSection({ key, items: buckets[key] }) : '');
-  const make = {
-    preset:    () => _renderPresetSection(),
-    favorites: () => _renderFavoritesSection(),
-    llm:       () => _renderLLMSection(buckets.llm),
-    external:  () => bucketSection('external'),
-    labs:      () => _renderLabsSection(),
-    items:     () => _renderSection({ key: 'items', items: buckets.items }),  // always shows
-    drive:     () => (buckets.drive.length ? _renderDriveSection(buckets.drive) : ''),
-    apostila:  () => bucketSection('apostila'),
-    tarefas:   () => bucketSection('tarefas'),
-  };
-  body.innerHTML = _secOrder.get().map((k) => (make[k] ? make[k]() : '')).join('');
+  const { entries, levels } = _navModel();
+  body.innerHTML = buildTree(entries, levels).nodes.map(_paintSection).join('');
   _applySearch();
 }
 
