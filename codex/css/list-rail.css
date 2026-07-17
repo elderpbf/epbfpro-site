@@ -60,6 +60,10 @@
 .cdx-rail-sec.is-collapsed .cdx-rail-sec-caret { transform:none; }
 .cdx-rail-sec:not(.is-collapsed) .cdx-rail-sec-caret { transform:rotate(90deg); }
 .cdx-rail-sec.is-collapsed .cdx-rail-seclist { display:none; }
+/* A collapsed group hides its NESTED groups too, not only its own row list. Latent until a
+   consumer nested two collapsible levels (Lessons: section > type sub-group); the 10 one-level
+   rails have no child .cdx-rail-sec, so this rule matches nothing there. */
+.cdx-rail-sec.is-collapsed > .cdx-rail-sec { display:none; }
 .cdx-rail-sec-title { flex:1; min-width:0; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .cdx-rail-sec-count { opacity:.6; }
 .cdx-rail-sec-acts { display:flex; gap:.15rem; opacity:0; transition:opacity .12s; }

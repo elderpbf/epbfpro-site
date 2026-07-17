@@ -258,9 +258,9 @@ async function shootSessions() {
 // exists to stop trusting.
 async function shootLessons() {
   const NO_FOCUS = '&focus=0';
-  const secSel = (k) => '.cdx-lessons-sidebar-body [data-sec-key="' + k + '"]';
-  const order = (p) => p.$$eval('.cdx-lessons-sidebar-body [data-sec-key]', (els) =>
-    els.map((e) => e.getAttribute('data-sec-key')));
+  const secSel = (k) => '.cdx-lessons-sidebar-body .cdx-lesson-section[data-sec="' + k + '"]';
+  const order = (p) => p.$$eval('.cdx-lessons-sidebar-body .cdx-lesson-section[data-sec]', (els) =>
+    els.map((e) => e.getAttribute('data-sec')));
   const stored = (p, k) => p.evaluate((key) => localStorage.getItem(key), k);
 
   // Open `key` if it is not already. NOT a blind click: the accordion opens one section at
@@ -268,7 +268,7 @@ async function shootLessons() {
   // likely to shut it. Idempotent setup, or the test fails on its own fixture.
   async function ensureOpen(p, key) {
     if (await p.locator(secSel(key) + '.is-collapsed').count()) {
-      await p.click(secSel(key) + ' .cdx-lesson-section-head');
+      await p.click(secSel(key) + ' > .cdx-rail-sec-h');
       await p.waitForTimeout(150);
     }
   }
@@ -305,14 +305,14 @@ async function shootLessons() {
   // Favoritos renders (and in the STORED order, not vault order — the list is what a drag
   // rewrites, so rendering it any other way would show the drag being ignored).
   await shoot('02-favorites-section', 1440, 900, async (p) => {
-    const ids = await p.$$eval('.cdx-lesson-section--favorites .cdx-lesson-sub',
-      (els) => els.map((e) => e.getAttribute('data-item-id')));
+    const ids = await p.$$eval('.cdx-lesson-section--favorites .cdx-rail-row',
+      (els) => els.map((e) => e.getAttribute('data-id')));
     if (ids.join(',') !== '105,101,103') throw new Error('favourites are not in stored order: ' + ids.join(','));
   }, NO_FOCUS + '&favs=105,101,103');
 
   // THE section drag. Drag `items` above `llm` and it must stay there AND persist.
   await shoot('03-section-drag-persists', 1440, 900, async (p) => {
-    await drag(p, secSel('items') + ' .cdx-lesson-section-head', secSel('llm'), 'above');
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
     const got = await order(p);
     if (got.indexOf('items') > got.indexOf('llm')) {
       throw new Error('the section did not move: ' + got.join(','));
@@ -334,7 +334,7 @@ async function shootLessons() {
     await ensureOpen(p, 'items');
     const openBefore = await p.locator(secSel('items') + ':not(.is-collapsed)').count();
     if (!openBefore) throw new Error('setup: items did not open');
-    await drag(p, secSel('items') + ' .cdx-lesson-section-head', secSel('llm'), 'above');
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
     const openAfter = await p.locator(secSel('items') + ':not(.is-collapsed)').count();
     if (!openAfter) throw new Error('the drop ALSO toggled the section shut (the click was not swallowed)');
   }, NO_FOCUS);
@@ -345,17 +345,17 @@ async function shootLessons() {
     // apostila, not items: the Items section sub-groups by type and every type group SEEDS
     // ITSELF COLLAPSED, so its cards are not on screen to click. apostila renders cards directly.
     await ensureOpen(p, 'apostila');
-    const card = p.locator(secSel('apostila') + ' .cdx-lesson-sub').first();
+    const card = p.locator(secSel('apostila') + ' .cdx-rail-row').first();
     await card.click();
     await p.waitForTimeout(250);
-    if (!await p.locator('.cdx-lesson-sub.is-active').count()) {
+    if (!await p.locator('.cdx-rail-row.is-on').count()) {
       throw new Error('a plain click no longer selects the item (the drag engine ate it)');
     }
   }, NO_FOCUS);
 
   // THE favourites drag: reorder inside Favoritos, and it persists.
   await shoot('06-favorite-drag-persists', 1440, 900, async (p) => {
-    const favSel = (id) => '.cdx-lesson-section--favorites [data-item-id="' + id + '"]';
+    const favSel = (id) => '.cdx-lesson-section--favorites [data-id="' + id + '"]';
     await drag(p, favSel('103'), favSel('105'), 'above');
     const raw = await stored(p, 'cv_favorites_v1');
     const saved = JSON.parse(raw);
@@ -368,7 +368,7 @@ async function shootLessons() {
   // section it has no business reading.
   await shoot('07-non-favorite-card-not-draggable', 1440, 900, async (p) => {
     await ensureOpen(p, 'apostila');
-    const cards = p.locator(secSel('apostila') + ' .cdx-lesson-sub');
+    const cards = p.locator(secSel('apostila') + ' .cdx-rail-row');
     if (await cards.count() < 2) throw new Error('setup: apostila needs 2+ cards to attempt a drag');
     const a = await cards.nth(1).boundingBox();
     const b = await cards.nth(0).boundingBox();
@@ -407,7 +407,7 @@ async function shootLessons() {
     if (!await p.evaluate(() => document.body.classList.contains('cdx-lessons-focus--side'))) {
       throw new Error('setup: the edge did not reveal the sidebar');
     }
-    await drag(p, secSel('items') + ' .cdx-lesson-section-head', secSel('llm'), 'above');
+    await drag(p, secSel('items') + ' > .cdx-rail-sec-h', secSel('llm'), 'above');
     const got = await order(p);
     if (got.indexOf('items') > got.indexOf('llm')) {
       throw new Error('the drag does not work in focus mode (the state he actually uses): ' + got.join(','));

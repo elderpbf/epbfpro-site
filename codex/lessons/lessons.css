@@ -233,7 +233,83 @@
  * grab cursor to give it away: a press under the 4px threshold is still a plain click. The
  * only thing that paints is the element being carried. */
 .cdx-lesson-section.is-dragging,
-.cdx-lesson-sub.is-dragging { opacity: 0.5; }
+.cdx-rail-row.is-dragging { opacity: 0.5; }
+
+/* ═══ Lessons on the shared rail (js/list-rail.js) — FIRST PASS ══════════════
+ * Élder 2026-07-17: render the sidebar through the shared rail's markup, then reskin it here to
+ * approximate today. Scoped to `.cdx-lessons-sidebar-body`, so the rail's other 10 consumers are
+ * untouched. This is the "vamos ver como fica" pass, meant to be refined, not the frozen final.
+ * Uses the module's new opt-in capabilities: glyph (icon), groupClass (per-section accent via
+ * `--sec`), prefix (the LLM launchers). */
+
+/* The rail draws itself as a bordered card; inside the sidebar it IS the body, so drop the frame
+ * and let it fill. The sidebar body already supplies the 12px inset the old list had, so the
+ * rail body adds none — otherwise every card drifts 2px and no border lines up with before. */
+.cdx-lessons-sidebar-body .cdx-rail { border: none; border-radius: 0; background: transparent; height: 100%; }
+.cdx-lessons-sidebar-body .cdx-rail-body { padding: 0; }
+
+/* Top section head = the neon accent card (the old .cdx-lesson-section-head). --sec comes from
+ * .cdx-lesson-section--<key>; the constant .cdx-lesson-section class is on the rail's section. */
+.cdx-lessons-sidebar-body .cdx-lesson-section { margin-bottom: 7px; }
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h {
+  font: inherit; font-size: 0.84rem; font-weight: 800; letter-spacing: -0.005em; text-transform: none;
+  color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) var(--acc-mix-bg), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 10px; padding: 9px 12px; margin: 8px 0 7px; gap: 10px;
+  transition: box-shadow 0.18s, border-color 0.15s, transform 0.15s;
+}
+.cdx-lessons-sidebar-body .cdx-lesson-section:first-child > .cdx-rail-sec-h { margin-top: 0; }
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h:hover {
+  border-color: var(--sec, var(--primary));
+  box-shadow: 0 0 0 1px color-mix(in oklab, var(--sec, var(--primary)) 25%, transparent),
+              0 6px 22px -10px var(--sec, var(--primary));
+  transform: translateY(-1px);
+}
+[data-theme="dark"] .cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h {
+  box-shadow: 0 0 16px -8px color-mix(in oklab, var(--sec, var(--primary)) 60%, transparent);
+}
+[data-theme="dark"] .cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h:hover {
+  box-shadow: 0 0 24px -6px var(--sec, var(--primary));
+}
+
+/* The glyph capability. */
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h .cdx-rail-sec-glyph {
+  width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  color: var(--sec, var(--primary)); flex-shrink: 0;
+}
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h .cdx-rail-sec-glyph svg {
+  width: 18px; height: 18px;
+  filter: drop-shadow(0 0 4px color-mix(in oklab, var(--sec, var(--primary)) 50%, transparent));
+}
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h .cdx-rail-sec-title { flex: 1; min-width: 0; }
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h .cdx-rail-sec-count {
+  min-width: 22px; height: 22px; display: inline-flex; align-items: center; justify-content: center;
+  font-size: 0.7rem; font-weight: 800; opacity: 1; color: var(--text-primary);
+  background: color-mix(in oklab, var(--sec, var(--primary)) var(--acc-mix-bg), var(--surface));
+  border: 1px solid color-mix(in oklab, var(--sec, var(--primary)) 35%, transparent);
+  border-radius: 999px; padding: 0 7px;
+}
+/* The old design put the chevron on the RIGHT; the rail emits the caret on the left. Push it over
+ * and tint it. */
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-sec-h .cdx-rail-sec-caret {
+  order: 9; color: var(--sec, var(--primary)); opacity: 0.7;
+}
+.cdx-lessons-sidebar-body .cdx-lesson-section > .cdx-rail-seclist { min-height: 0; padding: 0 0 4px; }
+
+/* Item row = the 58px card (old .cdx-lesson-sub); its guts (zone, meta, star) live unchanged
+ * inside .cdx-rail-main, which becomes the card's flex row. */
+.cdx-lessons-sidebar-body .cdx-rail-row {
+  padding: 0; gap: 0; border: 1px solid var(--border); background: var(--surface);
+  border-radius: 9px; overflow: hidden; min-height: 58px; align-items: stretch; margin-bottom: 6px;
+  transition: border-color 0.12s, box-shadow 0.15s;
+}
+.cdx-lessons-sidebar-body .cdx-rail-row:hover { background: var(--surface); border-color: var(--primary-light); box-shadow: 0 3px 10px -5px var(--shadow); }
+.cdx-lessons-sidebar-body .cdx-rail-row.is-on { background: var(--surface); border-color: var(--primary); box-shadow: 0 4px 14px -6px rgba(20, 184, 166, 0.32); }
+.cdx-lessons-sidebar-body .cdx-rail-main { display: flex; align-items: stretch; min-width: 0; }
+/* The star was invisible until the card is hovered (or is a favourite), exactly as before. */
+.cdx-lessons-sidebar-body .cdx-rail-row:hover .cdx-lesson-sub-fav { opacity: 0.55; }
+.cdx-lessons-sidebar-body .cdx-rail-row .cdx-lesson-sub-fav.is-on { opacity: 1; }
 
 .cdx-empty--inline { padding: 10px 12px 14px; font-size: 0.78rem; color: var(--text-dim, var(--text-secondary)); }
 

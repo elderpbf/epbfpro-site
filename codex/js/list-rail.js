@@ -71,6 +71,11 @@ export function mountRail(container, cfg) {
       renderHead: sections.renderHead,
       emptyText: sections.emptyText,
       editable: sections.editable,
+      // The opt-in head/body capabilities, passed through so a plain `sections:` consumer can
+      // reach them too and not have to drop down to `levels` just for an icon.
+      glyph: sections.glyph,
+      groupClass: sections.groupClass,
+      prefix: sections.prefix,
     };
     if (!bands) return [secLevel];
     // `bands.of(sec)` answers "which band is this SECTION in", which in `levels` terms is the
@@ -127,13 +132,24 @@ export function mountRail(container, cfg) {
   // A group head. `renderHead(g, count) -> {main, act}` lets a consumer own the head's guts
   // (Clientes needs an avatar there) while the module keeps the caret, the row shell and the
   // toggle wiring. Default = the plain title + count.
+  //
+  // `glyph(g) -> html` (Élder 2026-07-17: "talvez antes precise adicionar capacidades ao módulo
+  // como a inclusão de glyphs e cores diferentes; aí outros poderão ter isso no futuro também;
+  // de forma que o que já tem não mude, mas pode ativar outras coisas") — an icon before the
+  // title. OFF by default: no callback, no span, so the 10 live rails emit what they always did.
+  // It goes through headInner rather than into renderHead so a consumer can have an icon WITHOUT
+  // taking over the head (renderHead drops the count, which Lessons needs).
   function headInner(lv, g, count) {
+    const glyph = lv.glyph ? (lv.glyph(g) || '') : '';
+    const glyphHtml = glyph ? '<span class="cdx-rail-sec-glyph">' + glyph + '</span>' : '';
     const rh = lv.renderHead ? lv.renderHead(g, count) : null;
     if (rh) {
-      return '<span class="cdx-rail-sec-title">' + (rh.main || '') + '</span>' +
+      return glyphHtml +
+        '<span class="cdx-rail-sec-title">' + (rh.main || '') + '</span>' +
         (rh.act ? '<span class="cdx-rail-sec-acts">' + rh.act + '</span>' : '');
     }
-    return '<span class="cdx-rail-sec-title">' + esc(g.title || '') + '</span>' +
+    return glyphHtml +
+      '<span class="cdx-rail-sec-title">' + esc(g.title || '') + '</span>' +
       '<span class="cdx-rail-sec-count">' + count + '</span>' +
       (lv.editable ? '<span class="cdx-rail-sec-acts"><button type="button" class="cdx-rail-sec-ren" data-sec-ren="' + esc(String(g.id)) + '" title="Renomear">✎</button><button type="button" class="cdx-rail-sec-del" data-sec-del="' + esc(String(g.id)) + '" title="Excluir">×</button></span>' : '');
   }
@@ -173,7 +189,16 @@ export function mountRail(container, cfg) {
 
   // A collapsible group: caret + head + its own .cdx-rail-seclist (the drop container). Any
   // child groups render ABOVE the row list, so a mixed-depth group shows sub-groups then rows.
-  function groupHtml(depth, g, childrenHtml, rows) {
+  //
+  // `groupClass(g) -> str` is `rowClass`'s missing twin: extra classes on the group ELEMENT, for
+  // state the consumer's CSS keys off and that renderHead cannot express. Lessons paints each
+  // section's accent that way (a --sec custom property set by a cdx-lesson-section--* class), the
+  // same shape Clientes already uses per ROW for the turma phase. OFF by default.
+  //
+  // `count` is everything UNDER the group, sub-groups included: a mixed-depth group with all its
+  // rows in sub-groups would otherwise badge a 0. Identical to rows.length for every one-level
+  // consumer, so the 10 live rails do not move.
+  function groupHtml(depth, g, childrenHtml, rows, count) {
     const lv = levelCfg(depth);
     if (!lv.collapsible) {
       // A band: plain divider, no caret, NOT a drop target — the drag contract stays on
@@ -185,17 +210,32 @@ export function mountRail(container, cfg) {
       '</div>';
     }
     const open = groupOpen(lv, g);
-    return '<div class="cdx-rail-sec' + (open ? ' is-open' : ' is-collapsed') + '" data-sec="' + esc(String(g.id)) + '">' +
+    const extra = lv.groupClass ? String(lv.groupClass(g) || '').trim() : '';
+    // `prefix(g) -> html`: consumer html at the TOP of a group's collapsible body, above the
+    // rows. Lessons' LLMs section leads with six hardcoded launcher links that are not vault rows
+    // and must stay real <a> elements (middle-click, open-in-new-tab); as rows they would be divs
+    // behind onSelect, a behaviour regression dressed as reuse. It goes INSIDE .cdx-rail-seclist
+    // so collapsing the group hides it too (a prefix outside would stay visible when collapsed).
+    // OFF by default; non-rows there are ignored by the drag (it filters to .cdx-rail-row).
+    const prefix = lv.prefix ? (lv.prefix(g) || '') : '';
+    // `count(g, deep) -> n`: override the head badge. Default = everything under the group. Lessons
+    // adds its launcher count (they are prefix html, not rows, so `deep` cannot see them). OFF by
+    // default: no callback, badge = deep, so the 10 live rails do not move.
+    const deep = count == null ? rows.length : count;
+    const shown = lv.count ? lv.count(g, deep) : deep;
+    const listBody = prefix + rows.join('');
+    return '<div class="cdx-rail-sec' + (open ? ' is-open' : ' is-collapsed') + (extra ? ' ' + extra : '') + '" data-sec="' + esc(String(g.id)) + '">' +
       '<div class="cdx-rail-sec-h" data-sec-toggle="' + esc(String(g.id)) + '">' +
         '<span class="cdx-rail-sec-caret" aria-hidden="true">▸</span>' +
-        headInner(lv, g, rows.length) +
+        headInner(lv, g, shown) +
       '</div>' +
       childrenHtml +
-      // `emptyText` fills a group with no rows (Clientes: a client with no turmas yet). It goes
-      // INSIDE .cdx-rail-seclist so the group stays a drop container.
+      // `emptyText` fills a group with nothing under it — no rows, no prefix AND no sub-groups
+      // (Clientes: a client with no turmas yet). A section that only holds sub-groups is NOT
+      // empty, so it must not show it. Inside .cdx-rail-seclist so the group stays a drop target.
       '<div class="cdx-rail-seclist" data-seclist="' + esc(String(g.id)) + '">' +
-        (rows.length || !lv.emptyText
-          ? rows.join('')
+        (listBody || childrenHtml || !lv.emptyText
+          ? listBody
           : '<div class="cdx-rail-secempty">' + esc(lv.emptyText) + '</div>') +
       '</div>' +
     '</div>';
@@ -203,8 +243,11 @@ export function mountRail(container, cfg) {
 
   // Paint one node of the engine's tree, children first (so a mixed-depth group shows its
   // sub-groups above its own rows). The engine already dropped whatever hideWhenEmpty drops.
+  function deepCount(n) {
+    return n.items.length + n.children.reduce((a, c) => a + deepCount(c), 0);
+  }
   function nodeHtml(n) {
-    return groupHtml(n.depth, n.group, n.children.map(nodeHtml).join(''), n.items.map(rowHtml));
+    return groupHtml(n.depth, n.group, n.children.map(nodeHtml).join(''), n.items.map(rowHtml), deepCount(n));
   }
 
   function bodyHtml() {
