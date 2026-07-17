@@ -5,22 +5,9 @@
  * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
  * surface/text/border values come from the tokens, never hex literals. */
 
-/* ── Scrollbars: thin + themed, EVERYWHERE (Élder 2026-07-18) ──────────────────
- * The OS default is a fat white bar even in dark mode; nothing should use it. This is the shared
- * "scroll primitive" the whole app leans on instead of each surface re-styling its own bar (a
- * rail, a modal, a drawer, the reading pane, the slides editor). Two means, because the two
- * standard props differ: `scrollbar-color` IS inherited but `scrollbar-width` is NOT, so the
- * width has to be set with a universal selector, not just at the root. `*` is a no-op on any
- * element without a scrollbar, so it is safe.
- *   - `*` standard props: Chrome 121+, Edge, Firefox.
- *   - a universal `::-webkit-scrollbar` for browsers that predate those props (old webkit /
- *     Safari); it also reaches <body>-appended overlays (modals, popovers) outside .bs-app.
- * A more specific rule may still override per surface (list-rail's 6px nav bar on webkit). */
-* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
-::-webkit-scrollbar        { width: 8px; height: 8px; }
-::-webkit-scrollbar-track  { background: transparent; }
-::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 4px; }
-::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+/* Scrollbars (thin + themed, app-wide) moved to css/theme.css: it is the ONE stylesheet both the
+ * Codex admin and the student trilha load, so the primitive now reaches every surface, not just the
+ * admin. Do not re-add it here. */
 
 /* ── Codex topbar: full-width bar with a centered tab strip ───
  * The shell's --with-tabs inner caps at 1400px + centers it; drop that cap here
