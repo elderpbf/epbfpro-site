@@ -34,6 +34,20 @@
 //   rail.render();   // idempotent, after loads/mutations
 //   rail.pin(bool);  // width:autohide only — pin(true)=pinned+open, pin(false)=unpinned+close
 //   rail.destroy();  // on unmount
+//
+// ── Decomposition: shared primitives out, one at a time (Élder 2026-07-18) ────
+// End state: nothing duplicated, everything pluggable. Pieces leave this file for their own
+// module the MOMENT a second consumer needs them (not preemptively — a one-consumer split is
+// just indirection). Extraction is only safe behind a gate that proves the move inert: the
+// snapshot (HTML byte-identical) for markup, a behavioural test for behaviour.
+//   ALREADY OUT (this session): the grouping engine -> js/list-tree.js; pointer-drag -> js/
+//     pointer-reorder.js (Lessons uses it; the rail's OWN drag below still duplicates it and
+//     must collapse into it once the rail's drag has behavioural coverage — today it is guarded
+//     by source-regex only, so the move is not yet gated).
+//   NEXT OUT, when a 2nd consumer appears: the width:autohide edge-reveal (a generic "reveal a
+//     panel from the screen edge" — any off-canvas drawer wants it); the filter chips; the
+//     resizer wiring (already thin, wraps js/resizable.js). Scrollbars are ALREADY shared, as a
+//     CSS primitive at the root (css/codex.css), not a JS module — the rail just inherits it.
 import { esc } from './dom.js';
 import { installResizer } from './resizable.js';
 import { buildTree } from './list-tree.js';
