@@ -63,7 +63,6 @@ export function addSlidePanelHTML() {
 <div id="add-slide-overlay" style="display:none">
   <div id="add-slide-box">
     <div class="as-head">
-      <span class="as-title">${t("slides.add_slide_title")}</span>
       <div class="as-tabs" role="tablist">
         <button class="as-tab is-on" type="button" data-tab="tpl" role="tab">${t("slides.add_tab_templates")}</button>
         <button class="as-tab" type="button" data-tab="lib" role="tab">${t("slides.add_tab_library")}</button>
@@ -95,13 +94,17 @@ export function initAddSlide(app, root) {
   }
 
   // One preview card: a scaled live render of `slide` + a label; onPick adds it.
-  function card(labelText, slide, onPick) {
+  // `parent` is required and the card is attached BEFORE it renders: applyOverrides ->
+  // freedStyle walks offsetParent, which is null on a detached node, so a freed element
+  // renders against the wrong container and disappears (the same bug the navigator had).
+  function card(parent, labelText, slide, onPick) {
     const btn = document.createElement("button");
     btn.className = "as-card";
     btn.type = "button";
     // .mini reuses the thumbnail treatment (hides editor-only chrome, kills inner
     // pointer events); the white slide background is on .as-prev in the CSS.
     btn.innerHTML = `<span class="as-prev mini"><span class="as-scale"></span></span><span class="as-label">${labelText}</span>`;
+    parent.appendChild(btn);
     const scale = btn.querySelector(".as-scale");
     renderInto(scale, previewDeck(), slide);
     const prev = btn.querySelector(".as-prev");
@@ -140,15 +143,16 @@ export function initAddSlide(app, root) {
   // manual editing (the next save-as-layout overwrites it); "renomear" and
   // "excluir" hit the library and rebuild the modal so the Salvos grid refreshes.
   // Built-in cards have no action bar (they are not editable).
-  function savedCard(tpl) {
+  function savedCard(parent, tpl) {
     const wrap = document.createElement("div");
     wrap.className = "as-card-wrap";
+    parent.appendChild(wrap); // attach before card() renders into it (see card()'s note)
     const slide = { ...tpl.slide, id: "__prev_" + tpl.id };
     // Body = insert LINKED. This tab is the shared library, so the obvious gesture is the
     // shared one; "inserir solto" is an action, not the default. (Before the tabs, the
     // saved cards lived in a "Salvos" group of the layout picker and the body inserted a
     // detached copy; nothing carries over, because the group no longer exists.)
-    wrap.appendChild(card(tpl.name || tpl.layout, slide, () => app.linkTemplate(tpl)));
+    card(wrap, tpl.name || tpl.layout, slide, () => app.linkTemplate(tpl));
     const acts = document.createElement("div");
     acts.className = "as-actions";
     // `isHtml` = the label is markup (an svg from the glyph library), not a text glyph.
@@ -191,7 +195,6 @@ export function initAddSlide(app, root) {
       open();
     });
     wrap.appendChild(acts);
-    return wrap;
   }
 
   // TEMPLATES tab: the built-in layouts, grouped by category. Every insert lands right
@@ -202,7 +205,7 @@ export function initAddSlide(app, root) {
       const grid = groupBlock(groupLabel(g.key));
       for (const L of g.items) {
         const slide = { id: "__prev_" + L.id, layout: L.id, slots: L.defaults() };
-        grid.appendChild(card(labelOf(L), slide, () => app.addSlide(L.id)));
+        card(grid, labelOf(L), slide, () => app.addSlide(L.id));
       }
     }
   }
@@ -221,7 +224,7 @@ export function initAddSlide(app, root) {
     }
     for (const g of groupTemplates(templates, app._deckTitleOf)) {
       const grid = groupBlock(g.title || t("slides.add_lib_nodeck"));
-      for (const tpl of g.items) grid.appendChild(savedCard(tpl));
+      for (const tpl of g.items) savedCard(grid, tpl);
     }
   }
 

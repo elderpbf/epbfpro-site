@@ -58,9 +58,9 @@
    the danger token rather than inventing a colour. */
 .cdx-deck-editor .thumb .lnkbadge { position: absolute; right: 4px; bottom: 4px; z-index: 3; display: flex; line-height: 0; background: rgba(19, 78, 74, .78); color: #99f6e4; border: 1px solid var(--teal-l); border-radius: 6px; padding: 2px; }
 .cdx-deck-editor .thumb .lnkbadge.broken { background: rgba(127, 29, 29, .8); color: #fecaca; border-color: var(--danger); }
-/* "Destacar" only appears on a slide that IS linked, so it is always the teal state: there
-   is no share button any more (sharing is Ctrl+C / Ctrl+V into the target deck). */
-.cdx-deck-editor #chrome #shareBtn { display: inline-flex; align-items: center; gap: 5px; color: var(--teal); border-color: var(--teal-l); }
+/* The share button carries the same link glyph in both directions; `linked` tints it so
+   "this slide IS shared" (and so the click means DETACH) reads without the tooltip. */
+.cdx-deck-editor #chrome #shareBtn.linked { color: var(--teal); border-color: var(--teal-l); }
 /* Rail multi-pick (Shift/Ctrl+click), what Ctrl+C takes. Distinct from `.active` (the slide
    ON the stage): active is the primary border, picked is a teal wash, and one thumb is
    routinely both. */
@@ -156,9 +156,15 @@
    that JS shrinks with transform:scale; pointer-events:none so the preview never
    eats the card click. Same overlay mechanics as #ai-fill-overlay. */
 .cdx-deck-editor #add-slide-overlay { position: absolute; inset: 0; z-index: 70; display: flex; align-items: center; justify-content: center; background: var(--overlay-strong, rgba(0, 0, 0, .5)); padding: 24px; }
-.cdx-deck-editor #add-slide-box { display: flex; flex-direction: column; gap: 4px; width: 880px; max-width: 100%; max-height: 88%; overflow: auto; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; padding: 16px 20px 20px; box-shadow: 0 16px 48px var(--overlay-strong); }
-.cdx-deck-editor #add-slide-box .as-head { display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; background: var(--panel); padding-bottom: 8px; }
-.cdx-deck-editor #add-slide-box .as-title { font-size: 15px; font-weight: 700; color: var(--text); }
+/* The box is a FIXED size, not one that hugs its content (Élder 2026-07-17): the Biblioteca
+   tab can be empty, and a modal that collapses under the cursor moves the tab you were about
+   to click. height, not max-height; the groups pane owns the scrolling. */
+.cdx-deck-editor #add-slide-box { display: flex; flex-direction: column; gap: 4px; width: 880px; max-width: 100%; height: 88%; overflow: hidden; background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 12px; padding: 16px 20px 20px; box-shadow: 0 16px 48px var(--overlay-strong); }
+.cdx-deck-editor #add-slide-groups { flex: 1; min-height: 0; overflow-y: auto; }
+/* The tab row IS the head (it replaced the "Adicionar slide" title): centred in the box, with
+   the ✕ absolute so it never pulls the centring off. */
+.cdx-deck-editor #add-slide-box .as-head { position: relative; display: flex; align-items: center; justify-content: center; flex: 0 0 auto; padding-bottom: 10px; }
+.cdx-deck-editor #add-slide-box #add-slide-close { position: absolute; right: 0; top: 0; }
 .cdx-deck-editor #add-slide-close { font: inherit; font-size: 15px; line-height: 1; color: var(--text); background: var(--btn-bg); border: 1px solid var(--btn-bd); border-radius: 8px; padding: 5px 10px; cursor: pointer; }
 .cdx-deck-editor #add-slide-close:hover { background: var(--btn-hover); }
 .cdx-deck-editor .as-group-label { font-size: 11px; font-weight: 700; letter-spacing: .06em; text-transform: uppercase; color: var(--muted, #94a3b8); margin: 12px 2px 8px; }
@@ -176,6 +182,11 @@
 .cdx-deck-editor .as-card-wrap:hover .as-actions { opacity: 1; }
 .cdx-deck-editor .as-act { font: inherit; font-size: 11px; line-height: 1; color: var(--text); background: var(--panel); border: 1px solid var(--btn-bd); border-radius: 6px; padding: 3px 5px; cursor: pointer; box-shadow: 0 1px 3px var(--overlay-strong); }
 .cdx-deck-editor .as-act:hover { background: var(--btn-hover); border-color: var(--primary); }
+/* Icon-only chrome buttons (duplicar / salvar como layout / compartilhar): the glyph is the
+   button and the title carries the verb (Élder 2026-07-17). Square, so the trio reads as one
+   group next to the labelled buttons. */
+.cdx-deck-editor #chrome button.icobtn { display: inline-flex; align-items: center; justify-content: center; padding: 6px; line-height: 0; }
+.cdx-deck-editor #chrome button.icobtn svg { display: block; }
 /* An svg action glyph (the copy/link ones come from js/glyphs.js) has to sit on the same
    baseline box as the text ones (Aa, the pencil), hence the flex + line-height:0. */
 .cdx-deck-editor .as-act svg { display: block; }
@@ -183,7 +194,7 @@
 
 /* track-35 C: the +slide modal is two tabs, Templates | Biblioteca (Élder 2026-07-17).
    The tab row sits in the sticky head, between the title and the ✕. */
-.cdx-deck-editor #add-slide-box .as-tabs { display: flex; gap: 4px; margin-left: auto; margin-right: 10px; }
+.cdx-deck-editor #add-slide-box .as-tabs { display: inline-flex; gap: 4px; padding: 3px; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; }
 .cdx-deck-editor #add-slide-box .as-tab { font: inherit; font-size: 12px; color: var(--muted); background: transparent; border: 1px solid transparent; border-radius: 8px; padding: 5px 12px; cursor: pointer; }
 .cdx-deck-editor #add-slide-box .as-tab:hover { background: var(--btn-hover); }
 .cdx-deck-editor #add-slide-box .as-tab.is-on { color: var(--text); background: var(--btn-bg); border-color: var(--btn-bd); font-weight: 700; }

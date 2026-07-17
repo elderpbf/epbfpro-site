@@ -1668,6 +1668,9 @@ export default {
   'slides.tpl_delete':        'delete',
   'slides.tpl_delete_confirm': 'Delete this saved layout?',
   // Shared slides (track-35 C): the same slide living in several decks.
+  'slides.shr_share':         'share',
+  'slides.shr_share_tip':     'Publishes this slide to the library and links it here: editing it will change it in every linked deck. (Rarely needed: the usual way is Ctrl+C here and Ctrl+V in the other deck.)',
+  'slides.shr_share_prompt':  'Shared slide name:',
   'slides.shr_detach':        'detach',
   'slides.shr_detach_tip':    'Cut the link: this slide becomes a private copy in this deck. Other decks are unaffected.',
   'slides.shr_detach_confirm': 'Detach this slide? It becomes a private copy and stops following the library.',

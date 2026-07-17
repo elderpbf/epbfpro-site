@@ -50,6 +50,14 @@ export function createNavigator(app) {
         (s.reflowWarn ? `<div class="revbadge" title="${t("slides.ed_reflow_warn")}">⚠</div>` : "") +
         `<div class="tctl"><button data-up="${i}">↑</button><button data-down="${i}">↓</button><button data-rm="${i}">✕</button></div>` +
         `<div class="mini"><div class="scale"></div></div>`;
+      // APPEND FIRST, then render. applyOverrides -> freedStyle walks offsetParent to turn a
+      // freed element's canvas coords into coords relative to the render root, and a DETACHED
+      // node has offsetParent === null: the walk is skipped, every offset reads 0, and the
+      // element is placed against whatever container it lands in once attached. On a full
+      // slide it lands outside the box and vanishes. That is Élder's 2026-07-17 report: an
+      // image "deixa de mostrar na preview na barra" once resized, i.e. exactly once it has an
+      // override. Nothing else in this loop cares about the order.
+      nav.appendChild(th);
       renderInto(th.querySelector(".scale"), deck, s);
       const mini = th.querySelector(".mini");
       requestAnimationFrame(() => {
@@ -69,7 +77,6 @@ export function createNavigator(app) {
         app.clearPick();
         app.goTo(i);
       });
-      nav.appendChild(th);
     });
 
     nav.querySelectorAll("[data-up]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.up, -1); }));

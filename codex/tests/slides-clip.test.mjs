@@ -220,3 +220,45 @@ test('entradas SEM origem (salvar-como-layout, ou de antes do `from`) viram UMA 
   assert.equal(out[1].key, '__none__', 'o catch-all é o último, sempre');
   assert.deepEqual(out[1].items.map((t2) => t2.id), ['legado', 'outro-legado'], 'nada é escondido');
 });
+
+// ── O bug do "colar vinculado: nada aconteceu" (Élder 2026-07-17) ────────────
+import { createLibrary } from '../content/slides/adapters/library.js';
+
+test('a PRIMEIRA gravação na biblioteca funciona (a ação congelada rejeita, não devolve vazio)', async () => {
+  // O estado exato: _ensure() acabou de REGISTRAR a linha, então ela existe e não tem json.
+  // Nesse instante o get_presentation_json REJEITA "not found". O _load() jurava devolver
+  // null aí, e não devolvia: jogava. Toda 1ª publicação na biblioteca morria, e o throw só
+  // chegava na pílula de debug, então na tela "nada acontecia".
+  const rows = [];
+  let container = null;
+  const facade = {
+    async list() { return { presentations: rows }; },
+    async register({ slug }) { rows.push({ slug }); return { ok: true }; },
+    async getDeck() {
+      if (container === null) throw new Error('not found');
+      return { data: container };
+    },
+    async saveDeck({ data }) { container = data; return { ok: true }; },
+  };
+  const lib = createLibrary({ facade });
+
+  const tpl = await lib.save({ layout: 'cover', slots: { title: 'oi' } }, 'Primeira');
+
+  assert.equal(tpl.name, 'Primeira');
+  assert.equal(container.slides.length, 1, 'a entrada existe de verdade no container');
+  // E a segunda continua funcionando (agora o _load acha json).
+  await lib.save({ layout: 'cover', slots: { title: 'dois' } }, 'Segunda');
+  assert.equal(container.slides.length, 2);
+});
+
+test('falha de verdade (rede/auth) na biblioteca ainda PROPAGA: só not-found é container vazio', async () => {
+  const facade = {
+    async list() { return { presentations: [{ slug: '__library__' }] }; },
+    async register() { return { ok: true }; },
+    async getDeck() { throw new Error('401 unauthorized'); },
+    async saveDeck() { return { ok: true }; },
+  };
+  const lib = createLibrary({ facade });
+  await assert.rejects(() => lib.save({ layout: 'cover' }, 'x'), /401/,
+    'engolir isto como "container vazio" apagaria a biblioteca inteira na próxima gravação');
+});

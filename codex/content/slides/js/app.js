@@ -69,9 +69,9 @@ const G_HOURGLASS = glyphSvg("hourglass", { size: 17 });
 // the active language (the dictionary may switch between mounts).
 const shellHTML = () => `
 <div id="chrome">
-  <button id="dupBtn">⧉ ${t("slides.ed_duplicate")}</button>
-  <button id="tplSaveBtn">⊕ ${t("slides.tpl_save")}</button>
-  <button id="shareBtn"></button>
+  <button id="dupBtn" class="icobtn" title="${t("slides.ed_duplicate")}" aria-label="${t("slides.ed_duplicate")}">${glyphSvg("copy", { size: 15 })}</button>
+  <button id="tplSaveBtn" class="icobtn" title="${t("slides.tpl_save")}" aria-label="${t("slides.tpl_save")}">${glyphSvg("bookmark", { size: 15 })}</button>
+  <button id="shareBtn" class="icobtn"></button>
   <button id="flip">⇄ ${t("slides.ed_flip")}</button>
   <span class="spacer"></span>
   <button id="insertBtn">＋ ${t("slides.ed_insert")} ▾</button>
@@ -233,19 +233,24 @@ export function mount(root, ctx = {}) {
       this.syncShareBtn();
       this.syncNotes();
     },
-    // "Destacar" only, and only on a slide that IS linked. There is deliberately no
-    // "compartilhar" button any more (Élder 2026-07-17): publishing with no destination is
-    // what let the same slide be shared over and over, so sharing now happens by pasting
-    // into the deck that is meant to have it. Detaching has no such gesture, so it keeps a
-    // button. Hidden with no library injected (standalone build), like the one next to it.
+    // ONE button, both directions, reading the current slide's state (the Section B pattern:
+    // a control says what it IS). Inline -> "compartilhar" (publish + link in place);
+    // linked -> "destacar". It stays even though Ctrl+C/Ctrl+V is now the everyday way to
+    // share (Élder 2026-07-17: "só disse que ele seria pouco usado, não que deveria deixar
+    // de existir") -- copy/paste needs a second place to paste into, and this does not.
+    // Icon-only: the glyph is the same link in both states, the TITLE carries the verb.
+    // Hidden with no library injected (standalone build), like the one next to it.
     syncShareBtn() {
       const b = this.root.querySelector("#shareBtn");
       if (!b) return;
-      const shared = this._library && this.isShared(this.cur());
-      b.style.display = shared ? "" : "none";
-      if (!shared) return;
-      b.innerHTML = glyphSvg("link", { size: 13 }) + " " + t("slides.shr_detach");
-      b.title = t("slides.shr_detach_tip");
+      if (!this._library) { b.style.display = "none"; return; }
+      const shared = this.isShared(this.cur());
+      b.style.display = "";
+      b.classList.toggle("linked", shared);
+      b.innerHTML = glyphSvg("link", { size: 15 });
+      const lbl = t(shared ? "slides.shr_detach" : "slides.shr_share");
+      b.title = lbl + " — " + t(shared ? "slides.shr_detach_tip" : "slides.shr_share_tip");
+      b.setAttribute("aria-label", lbl);
     },
     // Notes authoring: mirror the current slide's notes into the notes textarea (unless
     // it's being typed in). Written back on input by the wiring in wireChrome; the same
@@ -699,6 +704,31 @@ export function mount(root, ctx = {}) {
       this.commit();
     },
 
+    // Publish the current inline slide to the library and link it IN PLACE. The rarely-used
+    // door (Ctrl+C/Ctrl+V into the target deck is the everyday one), and the only one that
+    // works with no second deck to paste into. Stamps the origin deck, same as a paste does,
+    // so it sections correctly in the +slide Biblioteca tab.
+    async shareCurrentSlide(name) {
+      if (!this._library) return { error: "no-library" };
+      const s = this.cur();
+      if (!s) return { error: "no-slide" };
+      if (s.ref) return { error: "already-shared" }; // no second entry for the same slide
+      // `s` raw is the content: library.save clones it and overwrites id + name itself, and a
+      // slide that reaches here has no ref (guarded above). Stripping it through the adapter's
+      // sharedContent() is not an option, the core must not import the adapters layer.
+      try {
+        const tpl = await this._library.save(s, name, {
+          from: { slug: this._slug, title: this._deckTitle },
+        });
+        this.record();
+        s.ref = tpl.id;
+        this.refresh();
+        return { ok: true, tpl };
+      } catch (e) {
+        return { error: (e && e.message) || "share-failed" };
+      }
+    },
+
     // Ctrl+C: snapshot the picked slides onto the clipboard. No side effect on the deck,
     // and nothing is published: whether these become copies or shared slides is the
     // PASTE's question (Élder 2026-07-17). Returns how many were taken, for the toast.
@@ -1049,16 +1079,26 @@ function wireChrome(app, root) {
     }
   }
 
-  // Destacar (track-35 C). Visibility + label are state, owned by app.syncShareBtn on
-  // every render; only the click lives here. It confirms because cutting a link is not
-  // undoable through the library, only through undo.
+  // Compartilhar / Destacar (track-35 C). The state is app.syncShareBtn's on every render;
+  // only the click lives here. Both directions are deliberate, named acts: sharing asks for
+  // the name the slide takes in the library, detaching confirms (it is undoable only through
+  // undo, not through the library).
   const shareBtn = $("#shareBtn");
   if (shareBtn) {
     shareBtn.onclick = () => {
-      if (!app._library || !app.isShared(app.cur())) return;
+      if (!app._library) return;
+      if (app.isShared(app.cur())) {
+        // eslint-disable-next-line no-alert
+        if (!window.confirm(t("slides.shr_detach_confirm"))) return;
+        app.detachCurrent();
+        return;
+      }
       // eslint-disable-next-line no-alert
-      if (!window.confirm(t("slides.shr_detach_confirm"))) return;
-      app.detachCurrent();
+      const name = window.prompt(t("slides.shr_share_prompt"), "");
+      if (name == null) return; // cancelled
+      app.shareCurrentSlide(name).then((res) => {
+        if (res && res.error && window.bsLog) window.bsLog("Share slide: " + res.error, "error");
+      });
     };
   }
 

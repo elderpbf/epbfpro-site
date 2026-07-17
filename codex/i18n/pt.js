@@ -1674,6 +1674,9 @@ export default {
   'slides.tpl_delete':        'excluir',
   'slides.tpl_delete_confirm': 'Excluir este layout salvo?',
   // Slides compartilhados (track-35 C): o mesmo slide vivendo em vários decks.
+  'slides.shr_share':         'compartilhar',
+  'slides.shr_share_tip':     'Publica este slide na biblioteca e vincula aqui: editá-lo passa a mudá-lo em todos os decks vinculados. (Pouco usado: o normal é Ctrl+C aqui e Ctrl+V no outro deck.)',
+  'slides.shr_share_prompt':  'Nome do slide compartilhado:',
   'slides.shr_detach':        'destacar',
   'slides.shr_detach_tip':    'Cortar o vínculo: este slide vira uma cópia privada deste deck. Os outros decks não mudam.',
   'slides.shr_detach_confirm': 'Destacar este slide? Ele vira uma cópia privada e para de acompanhar a biblioteca.',

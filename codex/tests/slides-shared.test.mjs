@@ -240,12 +240,23 @@ test('app.detachCurrent tira o vínculo e o estado de quebrado, mantendo o conte
   assert.match(src, /this\.record\(\)/, 'é desfazível pelo undo');
 });
 
-test('NÃO existe mais botão de compartilhar avulso: o Ctrl+V é que compartilha', () => {
-  // Élder 2026-07-17: publicar sem destino é o que deixava compartilhar o mesmo slide
-  // infinitas vezes. O compartilhamento passa a ser dirigido ao deck onde se cola.
-  assert.doesNotMatch(APP_SRC, /shareCurrentSlide/, 'o promover-avulso foi removido, não só escondido');
-  assert.doesNotMatch(APP_SRC, /slides\.shr_share\b/, 'e as chaves i18n dele foram junto');
-  assert.match(methodOf('syncShareBtn'), /shr_detach/, 'o botão que sobra é só o destacar');
+test('o botão de compartilhar EXISTE e diz os dois estados', () => {
+  // Eu REMOVI o botão lendo "ele seria pouco usado" como "tire ele". O Élder corrigiu na
+  // hora (2026-07-17): "só disse que ele seria pouco usado, não que deveria deixar de
+  // existir". É a única porta que funciona sem um 2º deck pra colar dentro. Este teste
+  // existe pra eu não podar de novo o que ele mandou manter.
+  const src = methodOf('syncShareBtn');
+  assert.match(src, /shr_share/, 'slide comum -> compartilhar');
+  assert.match(src, /shr_detach/, 'slide vinculado -> destacar');
+  assert.match(methodOf('shareCurrentSlide'), /_library\.save/, 'e ele publica de verdade');
+});
+
+test('compartilhar pelo botão carimba o deck de origem, igual ao colar', () => {
+  // Senão a entrada cai no catch-all "sem deck de origem" da tab Biblioteca, e a MESMA ação
+  // secciona ou não dependendo de por qual porta passou.
+  const src = methodOf('shareCurrentSlide');
+  assert.match(src, /from: \{ slug: this\._slug, title: this\._deckTitle \}/);
+  assert.match(src, /if \(s\.ref\) return \{ error: "already-shared" \}/, 'não cria 2ª entrada pro mesmo slide');
 });
 
 test('o paste insere logo APÓS o slide selecionado, nunca no fim', () => {
@@ -301,4 +312,26 @@ test('TODA op que remexe slides[] limpa a multi-seleção da régua', () => {
   const MUTATORS = ['addSlide', 'duplicate', 'removeSlide', 'reorder', 'insertTemplate', 'linkTemplate', 'pasteClip'];
   const missing = MUTATORS.filter((m) => !/this\.clearPick\(\)/.test(methodOf(m)));
   assert.deepEqual(missing, [], 'estas remexem slides[] sem limpar a seleção por índice');
+});
+
+test('a preview da régua ANEXA o thumb antes de renderizar (senão o slide freed some)', () => {
+  // Élder 2026-07-17: "se a imagem dentro de um frame de imagem for resized, ela deixa de
+  // mostrar na preview na barra". Causa: applyOverrides -> freedStyle anda pelo offsetParent
+  // pra converter a coordenada de canvas do elemento freed em coordenada relativa à raiz do
+  // render. Num nó DESTACADO, offsetParent é null: a volta é pulada, todo offset lê 0, e o
+  // elemento é posicionado contra o container errado quando finalmente entra no DOM. Some.
+  // Só aparece DEPOIS de o elemento ter override, que é exatamente "depois de resized".
+  const src = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/navigator.js', import.meta.url)), 'utf8');
+  const append = src.indexOf('nav.appendChild(th)');
+  const render = src.indexOf('renderInto(th.querySelector(".scale")');
+  assert.ok(append > 0 && render > 0, 'as duas linhas existem');
+  assert.ok(append < render, 'anexar TEM de vir antes de renderizar');
+});
+
+test('os cards de preview do +slide seguem a mesma regra (o mesmo bug latente)', () => {
+  const src = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/addslide.js', import.meta.url)), 'utf8');
+  const i = src.indexOf('function card(parent, labelText, slide, onPick)');
+  assert.ok(i > 0, 'card() recebe o parent: sem ele não dá pra anexar antes');
+  const body = src.slice(i, src.indexOf('\n  }', i));
+  assert.ok(body.indexOf('parent.appendChild(btn)') < body.indexOf('renderInto('), 'anexa antes de renderizar');
 });

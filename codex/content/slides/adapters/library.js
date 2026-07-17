@@ -28,8 +28,24 @@ export function createLibrary({ facade } = {}) {
   let _ensured = false; // session cache: the container row exists, skip re-checking
 
   // The container deck JSON, or null if it has never been saved.
+  //
+  // "null if never saved" is what this always CLAIMED, and it was false: the frozen
+  // deck-load action REJECTS with "not found" for a presentation row that exists with no
+  // JSON yet, rather than returning empty data (the same scar codexStore.load documents).
+  // The container hits that state for exactly one moment, and it is the worst one: _ensure()
+  // has just REGISTERED the row, so the very FIRST save to the library threw. Élder, on the
+  // first ever "colar vinculado": "nada aconteceu" (the throw became {error} in pasteClip
+  // and only ever reached the debug pill).
+  //
+  // Genuine failures (network, auth) still propagate: only not-found is the empty container.
   async function _load() {
-    const res = await api.getDeck({ slug: LIBRARY_SLUG });
+    let res;
+    try {
+      res = await api.getDeck({ slug: LIBRARY_SLUG });
+    } catch (e) {
+      if (!/not\s*found/i.test((e && e.message) || String(e))) throw e;
+      return null;
+    }
     return (res && res.data) || null;
   }
 
