@@ -13,9 +13,15 @@ import { fileURLToPath } from 'node:url';
 import { createSharedSlides, sharedContent, isRef, isLinked } from '../content/slides/adapters/sharedSlides.js';
 import { createLibrary } from '../content/slides/adapters/library.js';
 
+// Lê a FONTE de um arquivo do slides, SEMPRE normalizando CRLF -> LF. O gate de deploy roda
+// num checkout novo onde o git (autocrlf) entrega os arquivos em CRLF; helpers que procuram
+// `\n}\n` ou `\n    },` pra achar o fim de uma função quebram sob `\r\n`. Isso passou aqui
+// (worktree em LF) e falhou no worktree de merge, exatamente o que o gate existe pra pegar.
+const readSrc = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8').replace(/\r\n/g, '\n');
+
 // O núcleo (app.js) monta com DOM, então a costura app->adapter é lida da FONTE. É o
 // idioma dos outros contract tests do repo (modules.test.mjs, slides-i18n-menus).
-const APP_SRC = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/app.js', import.meta.url)), 'utf8');
+const APP_SRC = readSrc('../content/slides/js/app.js');
 // Métodos de UMA LINHA (`addSlide(id) { ...; },`) param na própria linha. Sem isso o corte
 // ia até o `\n    },` do PRÓXIMO método multi-linha e devolvia o corpo de três métodos
 // juntos: um guard perguntando "addSlide chama commit?" respondia sim porque o removeSlide
@@ -261,7 +267,7 @@ test('o botão de compartilhar EXISTE e diz os dois estados', () => {
 // O fluxo (qual deck? vinculado ou solto? desvincular?) mora em edit/shareflow.js, não mais
 // inline no wireChrome (Élder 2026-07-17: "nada a gente escreve inline"). Os testes de fluxo
 // leem a FONTE do módulo, como o resto do repo faz com o núcleo montado.
-const SHAREFLOW_SRC = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/shareflow.js', import.meta.url)), 'utf8');
+const SHAREFLOW_SRC = readSrc('../content/slides/js/edit/shareflow.js');
 const shareFlowFn = (name) => {
   const start = SHAREFLOW_SRC.indexOf('function ' + name + '(');
   assert.ok(start >= 0, name + ' existe em shareflow.js');
@@ -293,7 +299,7 @@ test('o glifo de vínculo na régua é um ATALHO clicável pro mesmo fluxo', () 
   // Élder 2026-07-17: "os slides vinculados já têm aquele glifo... clicar nele deveria abrir o
   // modal de desvinculação, usando o que a gente tem". O selo virou <button data-lnk> e leva
   // ao MESMO app.openShareFlow, com stopPropagation pra não virar navegação do thumb.
-  const nav = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/navigator.js', import.meta.url)), 'utf8');
+  const nav = readSrc('../content/slides/js/edit/navigator.js');
   assert.match(nav, /<button[^>]*class="lnkbadge[^"]*"[^>]*data-lnk="\$\{i\}"/, 'o selo é um button com data-lnk');
   assert.match(nav, /\[data-lnk\][\s\S]{0,220}stopPropagation\(\)[\s\S]{0,120}app\.openShareFlow\(\[s\]\)/, 'clicar abre o fluxo pra aquele slide, sem navegar');
 });
@@ -439,7 +445,7 @@ test('a sincronia de gêmeos parte do slide EDITADO, não do que está na tela',
   // existe pra impedir, no único ponto onde quem edita não é quem está na tela.
   assert.match(methodOf('syncSameRef'), /const s = from \|\| this\.cur\(\)/);
   assert.match(methodOf('commit'), /syncSameRef\(from\)/);
-  const pres = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/present/presenter.js', import.meta.url)), 'utf8');
+  const pres = readSrc('../content/slides/js/present/presenter.js');
   assert.match(pres, /s\.notes = m\.notes; app\.commit\(s\)/, 'o presenter passa o slide que editou');
 });
 
@@ -460,7 +466,7 @@ test('a preview da régua ANEXA o thumb antes de renderizar (senão o slide free
   // render. Num nó DESTACADO, offsetParent é null: a volta é pulada, todo offset lê 0, e o
   // elemento é posicionado contra o container errado quando finalmente entra no DOM. Some.
   // Só aparece DEPOIS de o elemento ter override, que é exatamente "depois de resized".
-  const src = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/navigator.js', import.meta.url)), 'utf8');
+  const src = readSrc('../content/slides/js/edit/navigator.js');
   const append = src.indexOf('nav.appendChild(th)');
   const render = src.indexOf('renderInto(th.querySelector(".scale")');
   assert.ok(append > 0 && render > 0, 'as duas linhas existem');
@@ -468,7 +474,7 @@ test('a preview da régua ANEXA o thumb antes de renderizar (senão o slide free
 });
 
 test('os cards de preview do +slide seguem a mesma regra (o mesmo bug latente)', () => {
-  const src = fs.readFileSync(fileURLToPath(new URL('../content/slides/js/edit/addslide.js', import.meta.url)), 'utf8');
+  const src = readSrc('../content/slides/js/edit/addslide.js');
   const i = src.indexOf('function card(parent, labelText, slide, onPick)');
   assert.ok(i > 0, 'card() recebe o parent: sem ele não dá pra anexar antes');
   const body = src.slice(i, src.indexOf('\n  }', i));
@@ -591,7 +597,7 @@ test('o dehydrate escreve UMA vez por ref e escolhe o gêmeo EDITADO', async () 
 });
 
 // ── compartilhar -> criar deck novo (Élder 2026-07-17: "ela abre quebrada") ───────────────
-const SLIDES_JS = fs.readFileSync(fileURLToPath(new URL('../content/slides.js', import.meta.url)), 'utf8');
+const SLIDES_JS = readSrc('../content/slides.js');
 const fnOf = (name) => {
   const i = SLIDES_JS.indexOf('function ' + name + '(');
   const a = SLIDES_JS.indexOf('async function ' + name + '(');
