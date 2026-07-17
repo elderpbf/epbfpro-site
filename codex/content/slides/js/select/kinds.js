@@ -259,9 +259,10 @@ register({
   id: "textSlot",
   geometry: "freeformSlot",
   match(el) {
-    const t = el.closest && el.closest('.editable[data-fkey][data-path][data-edit="1"]');
-    if (!t || (t.closest && t.closest(".card"))) return null;
-    return { kind: "textSlot", ref: t.dataset.fkey };
+    // `ed`, not `t`: this file imports the translator as `t` (see the navigator scar).
+    const ed = el.closest && el.closest('.editable[data-fkey][data-path][data-edit="1"]');
+    if (!ed || (ed.closest && ed.closest(".card"))) return null;
+    return { kind: "textSlot", ref: ed.dataset.fkey };
   },
   el(app, sel) {
     return app.stage.querySelector(`[data-fkey="${sel.ref}"]`);

@@ -31,27 +31,31 @@ export function createNavigator(app) {
     hdr.querySelector("[data-next]").onclick = (e) => { e.stopPropagation(); app.go(1); };
     hdr.querySelector("[data-add]").onclick = (e) => { e.stopPropagation(); app.openAddSlide(); };
 
+    // `th`, NOT `t`: this file imports the translator as `t`, and a local `const t`
+    // shadows it for the whole closure. The ⚠ badge below calls t() INSIDE this
+    // scope, so naming the thumb `t` turned every reflow-flagged slide into a
+    // "t is not a function" TypeError that killed the entire rail render.
     deck.slides.forEach((s, i) => {
-      const t = document.createElement("div");
-      t.className = "thumb" + (i === app.index ? " active" : "");
-      t.draggable = true;
-      t.dataset.i = i;
-      t.innerHTML =
+      const th = document.createElement("div");
+      th.className = "thumb" + (i === app.index ? " active" : "");
+      th.draggable = true;
+      th.dataset.i = i;
+      th.innerHTML =
         `<div class="num">${i + 1}</div>` +
         (s.reflowWarn ? `<div class="revbadge" title="${t("slides.ed_reflow_warn")}">⚠</div>` : "") +
         `<div class="tctl"><button data-up="${i}">↑</button><button data-down="${i}">↓</button><button data-rm="${i}">✕</button></div>` +
         `<div class="mini"><div class="scale"></div></div>`;
-      renderInto(t.querySelector(".scale"), deck, s);
-      const mini = t.querySelector(".mini");
+      renderInto(th.querySelector(".scale"), deck, s);
+      const mini = th.querySelector(".mini");
       requestAnimationFrame(() => {
-        const sc = t.querySelector(".scale");
+        const sc = th.querySelector(".scale");
         if (sc) sc.style.transform = `scale(${mini.clientWidth / deck.canvas.w})`;
       });
-      t.addEventListener("click", (e) => {
+      th.addEventListener("click", (e) => {
         if (e.target.closest("button")) return;
         app.goTo(i);
       });
-      nav.appendChild(t);
+      nav.appendChild(th);
     });
 
     nav.querySelectorAll("[data-up]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.move(+b.dataset.up, -1); }));
@@ -59,11 +63,11 @@ export function createNavigator(app) {
     nav.querySelectorAll("[data-rm]").forEach((b) => (b.onclick = (e) => { e.stopPropagation(); app.removeSlide(+b.dataset.rm); }));
 
     let dragI = null;
-    nav.querySelectorAll(".thumb").forEach((t) => {
-      t.addEventListener("dragstart", () => (dragI = +t.dataset.i));
-      t.addEventListener("dragover", (e) => { e.preventDefault(); t.classList.add("dragover"); });
-      t.addEventListener("dragleave", () => t.classList.remove("dragover"));
-      t.addEventListener("drop", (e) => { e.preventDefault(); t.classList.remove("dragover"); app.reorder(dragI, +t.dataset.i); });
+    nav.querySelectorAll(".thumb").forEach((th) => {
+      th.addEventListener("dragstart", () => (dragI = +th.dataset.i));
+      th.addEventListener("dragover", (e) => { e.preventDefault(); th.classList.add("dragover"); });
+      th.addEventListener("dragleave", () => th.classList.remove("dragover"));
+      th.addEventListener("drop", (e) => { e.preventDefault(); th.classList.remove("dragover"); app.reorder(dragI, +th.dataset.i); });
     });
   }
 
