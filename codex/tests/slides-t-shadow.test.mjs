@@ -1,4 +1,4 @@
-// slides-t-shadow.test.mjs — num arquivo que importa o tradutor como `t`, o
+// slides-t-shadow.test.mjs, num arquivo que importa o tradutor como `t`, o
 // identificador `t` é RESERVADO: nada pode redeclarar.
 //
 // Existe por um bug que eu mesmo pus em produção (commit 11f1061, 2026-07-16, ao

@@ -22,14 +22,33 @@ import { uid, clone } from '../js/core/schema.js';
 
 export const LIBRARY_SLUG = '__library__';
 export const LIBRARY_ENGINE = 'codex-library';
+// The engine tag content/slides.js stamps on OUR authored decks. usedBy() scans those and
+// only those: other rows on the shared table are not ours and hold no refs.
+const DECK_ENGINE = 'codex-deck';
 
 export function createLibrary({ facade } = {}) {
   const api = facade || slidesApi;
   let _ensured = false; // session cache: the container row exists, skip re-checking
 
   // The container deck JSON, or null if it has never been saved.
+  //
+  // "null if never saved" is what this always CLAIMED, and it was false: the frozen
+  // deck-load action REJECTS with "not found" for a presentation row that exists with no
+  // JSON yet, rather than returning empty data (the same scar codexStore.load documents).
+  // The container hits that state for exactly one moment, and it is the worst one: _ensure()
+  // has just REGISTERED the row, so the very FIRST save to the library threw. Élder, on the
+  // first ever "colar vinculado": "nada aconteceu" (the throw became {error} in pasteClip
+  // and only ever reached the debug pill).
+  //
+  // Genuine failures (network, auth) still propagate: only not-found is the empty container.
   async function _load() {
-    const res = await api.getDeck({ slug: LIBRARY_SLUG });
+    let res;
+    try {
+      res = await api.getDeck({ slug: LIBRARY_SLUG });
+    } catch (e) {
+      if (!/not\s*found/i.test((e && e.message) || String(e))) throw e;
+      return null;
+    }
     return (res && res.data) || null;
   }
 
@@ -52,8 +71,13 @@ export function createLibrary({ facade } = {}) {
   }
 
   // A stored template slide -> the public shape the picker + tests consume.
+  // `from` = the deck this entry was shared OUT of ({slug, title}), the section key of the
+  // +slide "Biblioteca" tab (track-35 C, Élder 2026-07-17: sectioned by the origin deck).
+  // Absent on entries saved before that, and on anything saved from outside a deck, so the
+  // picker owns a catch-all section rather than this owning a fake origin. Exactly the
+  // extensibility this file's header promised: another property, never a migration.
   function _asTemplate(s) {
-    return { id: s.id, name: s.name || '', layout: s.layout, slide: s };
+    return { id: s.id, name: s.name || '', layout: s.layout, from: s.from || null, slide: s };
   }
 
   return {
@@ -81,20 +105,58 @@ export function createLibrary({ facade } = {}) {
     // Save `slide` as a reusable template named `name`. Deep-clones the slide,
     // gives it a fresh id (detached from the source), tags the trimmed name, and
     // appends to the container. Returns the stored template.
-    async save(slide, name) {
+    // `opts.from` ({slug, title}) records which deck it was shared out of; omitted by the
+    // save-as-layout button, which has no origin deck to claim.
+    async save(slide, name, opts) {
       await _ensure();
       const c = (await _load()) || { slides: [] };
       if (!Array.isArray(c.slides)) c.slides = [];
       const tpl = clone(slide);
       tpl.id = uid();
       tpl.name = String(name == null ? '' : name).trim();
+      const from = opts && opts.from;
+      if (from && from.slug) tpl.from = { slug: from.slug, title: String(from.title || '') };
       c.slides.push(tpl);
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
       return _asTemplate(tpl);
     },
 
-    // Remove a template by id. Detached model: removing a template never touches a
-    // deck that already inserted a copy.
+    /**
+     * Which decks LINK entry `id` -> [{slug, title, count}].
+     *
+     * Exists because deleting an entry is not a local act any more: a detached copy does not
+     * care, but every `{ref}` pointing here turns into "slide compartilhado nao encontrado".
+     * Élder hit exactly that (2026-07-17: deleted the library entries, then "ao voltar para o
+     * deck original, aparece Slide compartilhado nao encontrado, tem varias inconsistencias").
+     *
+     * There is no index of refs, so this reads the decks. That is N round trips, which is why
+     * only DELETE calls it: it is a rare, deliberate act, and the alternative is a delete
+     * that silently breaks other decks. `openDeck` ({slug, deck}) lets the caller supply the
+     * deck on screen, whose in-memory copy is fresher than its saved json.
+     */
+    async usedBy(id, openDeck) {
+      const res = await api.list();
+      const rows = ((res && res.presentations) || []).filter((p) => p && p.engine === DECK_ENGINE);
+      const out = [];
+      for (const row of rows) {
+        let deck = null;
+        if (openDeck && openDeck.slug === row.slug) deck = openDeck.deck;
+        else {
+          try {
+            const r = await api.getDeck({ slug: row.slug });
+            deck = r && r.data;
+          } catch (_) { continue; } // never saved / unreadable: it holds no refs to break
+        }
+        const count = ((deck && deck.slides) || []).filter((s) => s && s.ref === id).length;
+        if (count) out.push({ slug: row.slug, title: row.title || row.slug, count });
+      }
+      return out;
+    },
+
+    // Remove a template by id. Detached copies never cared; LINKS do, so the caller is
+    // expected to check usedBy() first and refuse (the Codex rule for a thing in use, same
+    // as a curso a turma still points at). This stays a plain delete: the guard belongs to
+    // the caller that can ask the user, not to the storage.
     async remove(id) {
       const c = await _load();
       if (!c || !Array.isArray(c.slides)) return;
@@ -128,9 +190,40 @@ export function createLibrary({ facade } = {}) {
       const tpl = clone(slide);
       tpl.id = id;
       tpl.name = name == null ? (c.slides[i].name || '') : String(name).trim();
+      // `from` (the origin deck) belongs to the ENTRY, not to the content being written
+      // over it: `slide` here is a deck copy and never carries it. Same rule as `name`.
+      if (c.slides[i].from) tpl.from = c.slides[i].from;
       c.slides[i] = tpl;
       await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
       return _asTemplate(tpl);
+    },
+
+    // Batch form of update(): N entries [{id, slide}] in ONE load + ONE save.
+    // Exists because a deck save (track-35 C) writes back every SHARED slide it holds,
+    // and doing that through update() would be 2N round-trips per autosave. Same
+    // contract per entry: content overwritten, id + name preserved. Entries whose id is
+    // no longer in the library are skipped, not appended: a template deleted while a
+    // deck was open must stay deleted (the deck's link degrades to broken on next load),
+    // never be resurrected by a save.
+    async updateMany(entries) {
+      const list = (entries || []).filter((e) => e && e.id && e.slide);
+      if (!list.length) return [];
+      const c = await _load();
+      if (!c || !Array.isArray(c.slides)) return [];
+      const out = [];
+      for (const e of list) {
+        const i = c.slides.findIndex((x) => x && x.id === e.id);
+        if (i < 0) continue;
+        const tpl = clone(e.slide);
+        tpl.id = e.id;
+        tpl.name = c.slides[i].name || '';
+        if (c.slides[i].from) tpl.from = c.slides[i].from; // entry metadata, see update()
+        c.slides[i] = tpl;
+        out.push(_asTemplate(tpl));
+      }
+      if (!out.length) return [];
+      await api.saveDeck({ slug: LIBRARY_SLUG, data: c });
+      return out;
     },
   };
 }
