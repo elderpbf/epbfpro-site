@@ -76,21 +76,13 @@ export function initChromeTheme() {
   return saved;
 }
 
-export function setChromeTheme(mode) {
+// Private: initChromeTheme is the only caller. The chrome theme is the HOST's (Codex owns
+// data-theme via bs_theme); the editor only fills in when the host set nothing.
+function setChromeTheme(mode) {
   document.documentElement.setAttribute("data-theme", mode);
   try {
     localStorage.setItem(THEME_KEY, mode);
   } catch (e) {
     /* private mode: keep in-DOM only */
   }
-}
-
-export function currentChromeTheme() {
-  return document.documentElement.getAttribute("data-theme") || "dark";
-}
-
-export function toggleChromeTheme() {
-  const next = currentChromeTheme() === "dark" ? "light" : "dark";
-  setChromeTheme(next);
-  return next;
 }

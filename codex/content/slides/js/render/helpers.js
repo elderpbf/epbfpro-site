@@ -1,6 +1,7 @@
 // render/helpers.js — shared slot-rendering helpers used by every layout module.
 // Layouts compose their own HTML but share these so image-slot markup never drifts.
 import { t } from "../../../../js/i18n.js";
+import { glyphSvg } from "../../../../js/glyphs.js";
 
 /** CSS background value for a colour/gradient mask fill. */
 export function fillCss(m) {
@@ -38,14 +39,18 @@ export function imgInner(path, img, tools = false) {
 // ghost"): a photo glyph + "adicionar imagem". The box is a transparent,
 // hairline-framed region (styled in slide.css). The box itself selects on
 // single-click; the context bar's "adicionar imagem" button does the pick.
-const IMG_GLYPH =
-  `<svg viewBox="0 0 24 24" fill="none" aria-hidden="true">` +
-  `<rect x="3" y="5" width="18" height="14" rx="2.4" stroke="currentColor" stroke-width="1.6"/>` +
-  `<circle cx="8.5" cy="10" r="1.9" fill="currentColor"/>` +
-  `<path d="M5 17.5l4.7-5.2 3.2 3.4L16.3 11l3.2 4.8" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"/></svg>`;
-
+//
+// The library's `image`, not a Slides-only drawing (Élder 2026-07-16, track-35 E). I had
+// registered the old hand-drawn frame as its own key to keep the pixels, arguing the cue
+// renders to the AUDIENCE in presentation. Élder killed that argument: the audience is not
+// meant to see an empty slot at all, an empty slot in a talk is the presenter's fault, so the
+// cue is an EDITOR affordance and its exact shape protects nothing. Two drawings for one
+// meaning was the real cost, and this file's own law forbids it.
+// size:null lets slide.css size it (30px * scales), as the hand-drawn svg did by carrying no
+// width/height; strokeWidth 1.6 keeps the hairline weight the cue is drawn with.
 export function imgCue() {
-  return `<div class="imgcue">${IMG_GLYPH}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
+  const glyph = glyphSvg("image", { size: null, strokeWidth: 1.6 });
+  return `<div class="imgcue">${glyph}<span class="imgcue-lbl">${t("slides.ed_add_image")}</span></div>`;
 }
 
 /** A drop-target image slot, the unified "image box". `path` is the deck path the

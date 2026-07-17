@@ -90,6 +90,13 @@ const SLIDES_INBOUND_ALLOWLIST = new Set([
 // allowed to use the js/codex-api.js facade, so it is NOT part of the core.
 const SLIDES_CORE_PREFIX = 'content/slides/js/';
 
+// The ONLY modules the sealed core may import from outside content/slides/. Membership rule
+// + the honest caveats: see Test 4's header. Adding an entry is an architecture decision
+// (track-35 E), not a convenience: check the candidate against the rule and say so here.
+//   js/i18n.js    t(): keys -> strings. No state, no backend.
+//   js/glyphs.js  glyphSvg(): key -> inline SVG. No state, no backend.
+const SLIDES_CORE_OUTBOUND = new Set(['js/i18n.js', 'js/glyphs.js']);
+
 // Tab directories.
 const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];
 
@@ -169,11 +176,21 @@ test('Slides boundary intact inbound', () => {
 });
 
 // ── Test 4: Slides boundary intact outbound (vendored core) ──────────────────
-// The VENDORED CORE (content/slides/js/) is the standalone app: any import whose
-// resolved path escapes the content/slides/ tree must be "js/i18n.js" (t()) and
-// nothing else. The Codex integration glue (content/slides.js wrapper +
-// content/slides/adapters/) is NOT part of the sealed core; it is the seam to the
+// The VENDORED CORE (content/slides/js/) may reach OUT of content/slides/ only into the
+// modules on SLIDES_CORE_OUTBOUND below. The Codex integration glue (content/slides.js
+// wrapper + content/slides/adapters/) is NOT part of the sealed core; it is the seam to the
 // backend and may use the js/codex-api.js facade, so it is exempt from this rule.
+//
+// The criterion for membership (track-35 E, Élder 2026-07-16), so this never degrades into
+// "whatever someone needed that day": a shared PRESENTATION-ONLY library — it turns data into
+// strings/markup, holds no app state, and never reaches the store, the facade or the network.
+// That is a rule you can check a candidate against; the old rule was the bare list "i18n and
+// nothing else", which answered "may glyphs.js in?" with taste instead of a reason.
+//
+// What this does NOT claim, because it is not true: that these are dependency-free leaves.
+// js/i18n.js pulls i18n/pt.js + i18n/en.js, js/glyphs.js pulls js/dom.js. The test also only
+// inspects DIRECT imports, so those tails are not checked here. The bar is the ROLE of the
+// module the core names, not the size of its tail.
 test('Slides boundary intact outbound (vendored core)', () => {
   const coreFiles = allJs.filter((f) => f.startsWith(SLIDES_CORE_PREFIX));
   for (const f of coreFiles) {
@@ -182,10 +199,9 @@ test('Slides boundary intact outbound (vendored core)', () => {
     for (const imp of imports) {
       const resolved = resolveImport(f, imp);
       if (!resolved.startsWith(SLIDES_PREFIX)) {
-        // This import escapes the slides tree; the core may only reach js/i18n.js.
         assert.ok(
-          resolved === 'js/i18n.js',
-          `"${f}" imports "${imp}" which escapes content/slides/ to "${resolved}"; the vendored core may only reach js/i18n.js (use the codexStore adapter for backend access)`,
+          SLIDES_CORE_OUTBOUND.has(resolved),
+          `"${f}" imports "${imp}" which escapes content/slides/ to "${resolved}"; the vendored core may only reach ${[...SLIDES_CORE_OUTBOUND].join(' / ')} (shared presentation-only libraries). Use the codexStore adapter for backend access.`,
         );
       }
     }
