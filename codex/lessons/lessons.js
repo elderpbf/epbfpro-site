@@ -18,6 +18,7 @@ import * as toast from '../js/toast.js';
 import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
 import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
+import { findItem as findInterativoItem, getAllItems as interativoItems } from '../js/interativos-registry.js';
 import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
 import { mountPresetLoader } from '../js/preset-loader.js';
 import {
@@ -67,7 +68,7 @@ let _overSide = false;
 let _overBottom = false;
 
 // All accordion section keys: used in mount reset + exclusive-open logic.
-const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs'];
+const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs', 'interativos'];
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 import { esc as _esc } from '../js/dom.js';
@@ -77,10 +78,11 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _itemIcon(item) { return typeIconHtml(item && item.type_icon, { size: 18 }); }
 function _sectionLabel(key) { return t('lessons.section_' + key); }
 
-// Locate an item: vault rows first, then synthetic lab items.
+// Locate an item: vault rows first, then synthetic lab + interativo items.
 function _findItem(id) {
   let item = _vault.find((it) => String(it.id) === String(id));
   if (!item) item = findLabItem(id);
+  if (!item) item = findInterativoItem(id);
   return item || null;
 }
 
@@ -215,6 +217,7 @@ const SECTION_GLYPHS = {
   apostila: glyphSvg('book', { size: null }),
   tarefas:  glyphSvg('checklist', { size: null }),
   labs:     glyphSvg('flask', { size: null }),
+  interativos: glyphSvg('compass', { size: null }),
 };
 
 function _renderSubCard(item) {
@@ -342,6 +345,15 @@ function _renderLabsSection() {
   return _sectionCard('labs', labs.length, body);
 }
 
+// Interativos: its own section right below Labs (same synthetic-registry pattern).
+function _renderInterativosSection() {
+  const interativos = interativoItems();
+  if (!interativos.length) return '';
+  const collapsed = _collapsed.has('interativos');
+  const body = collapsed ? '' : interativos.map(_renderSubCard).join('');
+  return _sectionCard('interativos', interativos.length, body);
+}
+
 function _renderSidebar() {
   const body = _q('.cdx-lessons-sidebar-body');
   if (!body) return;
@@ -351,13 +363,15 @@ function _renderSidebar() {
   if (preset) html.push(preset);
   const fav = _renderFavoritesSection();
   if (fav) html.push(fav);
-  // Section order (Elder, 2026-06-01): LLMs, Labs, Items, Drive, Course content
-  // (apostila), Assignments (tarefas). External links stay right after LLMs
-  // (conditional, only when present).
+  // Section order (Elder, 2026-06-01): LLMs, Labs, Interativos, Items, Drive, Course
+  // content (apostila), Assignments (tarefas). Interativos sits right below Labs (same
+  // shipped-registry pattern). External links stay right after LLMs (conditional).
   html.push(_renderLLMSection(buckets.llm));
   if (buckets.external.length) html.push(_renderSection({ key: 'external', items: buckets.external }));
   const labs = _renderLabsSection();
   if (labs) html.push(labs);
+  const interativos = _renderInterativosSection();
+  if (interativos) html.push(interativos);
   html.push(_renderSection({ key: 'items', items: buckets.items }));
   if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
   if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));

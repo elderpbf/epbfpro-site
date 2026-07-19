@@ -43,6 +43,7 @@ test('rendererStrategy maps types to the legacy registry strategies', () => {
   assert.equal(m.rendererStrategy('slide'), 'iframe');
   assert.equal(m.rendererStrategy('embed'), 'iframe');
   assert.equal(m.rendererStrategy('lab'), 'iframe');
+  assert.equal(m.rendererStrategy('interativo'), 'iframe');
   assert.equal(m.rendererStrategy('popup_url'), 'popup');
   assert.equal(m.rendererStrategy('drive_folder'), 'drive_folder');
   assert.equal(m.rendererStrategy('drive_file'), 'drive_file');

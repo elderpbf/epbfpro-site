@@ -58,7 +58,7 @@ export function findItem(itemId, ctx) {
 // Returns the strategy key for an item type. 'fallback' renders the Markdown card
 // via the shared renderer; the rest are iframe/card embeds (Phase 3A-ii).
 const _STRATEGY = {
-  slide: 'iframe', embed: 'iframe', lab: 'iframe',
+  slide: 'iframe', embed: 'iframe', lab: 'iframe', interativo: 'iframe',
   popup_url: 'popup', drive_folder: 'drive_folder', drive_file: 'drive_file', video: 'video',
 };
 export function rendererStrategy(type) {
@@ -102,7 +102,7 @@ export function zoneClassFor(type) {
 
 // Iframe types control their own font, so the +A/-A text-resize is off for them;
 // any item with body_md (rendered by the Markdown card) is resizable.
-const _IFRAME_TYPES = new Set(['slide', 'embed', 'lab', 'video', 'drive_file', 'drive_folder']);
+const _IFRAME_TYPES = new Set(['slide', 'embed', 'lab', 'interativo', 'video', 'drive_file', 'drive_folder']);
 export function supportsTextResize(item) {
   if (!item) return false;
   if (_IFRAME_TYPES.has(item.type)) return false;

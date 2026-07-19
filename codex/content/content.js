@@ -11,6 +11,7 @@ import * as items from './items.js';
 import * as presets from './presets.js';
 import * as apostila from './apostila.js';
 import * as labs from './labs.js';
+import * as interativos from './interativos.js';
 import * as drive from './drive.js';
 import * as slides from './slides.js';
 import * as tarefas from './tarefas.js';
@@ -31,6 +32,9 @@ export const SUBTABS = [
   { key: 'drive',    labelKey: 'content.sub_drive',    module: drive },
   { key: 'slides',   labelKey: 'content.sub_slides',   module: slides },
   { key: 'labs',     labelKey: 'content.sub_labs',     module: labs },
+  // Interativos: the sub-tab label reuses the single provisional type-name key
+  // (interativos.type), same source the registry stamps on each item's type_label.
+  { key: 'interativos', labelKey: 'interativos.type',  module: interativos },
   { key: 'presets',  labelKey: 'content.sub_presets',  module: presets },
   { key: 'apps',     labelKey: 'content.sub_apps',     module: apps },
 ];

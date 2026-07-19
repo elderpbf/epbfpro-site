@@ -19,6 +19,7 @@ import {
   attachmentHtml,
   pdfEmbedHtml,
   paperShellHtml,
+  interativoHtml,
 } from '../js/item-render.js';
 
 // ── dispatch ─────────────────────────────────────────────────────────────────
@@ -30,8 +31,30 @@ test('dispatchType: maps known types, falls back to markdown', () => {
   assert.equal(dispatchType('paper'), 'paper');
   assert.equal(dispatchType('model_info'), 'model_info');
   assert.equal(dispatchType('google_doc'), 'google_doc');
+  assert.equal(dispatchType('lab'), 'lab');
+  assert.equal(dispatchType('interativo'), 'interativo');
   assert.equal(dispatchType('anything_else'), 'markdown');
   assert.equal(dispatchType(undefined), 'markdown');
+});
+
+// ── interativo ────────────────────────────────────────────────────────────────
+test('interativoHtml renders the three beats + an Abrir button carrying the url', () => {
+  const item = {
+    type: 'interativo', title: 'X',
+    summary: 'S', description: 'D', objective: 'O',
+    meta_json: { url: '/codex/interativos/demo-peca/' },
+  };
+  const html = interativoHtml(item);
+  assert.match(html, /ctr-lab-summary">S</);
+  assert.match(html, /ctr-lab-desc">D</);
+  assert.match(html, /ctr-lab-objective/);
+  assert.match(html, /data-interativo-url="\/codex\/interativos\/demo-peca\/"/);
+  assert.match(html, />Abrir<\/button>/);
+});
+
+test('interativoHtml suppresses the Abrir button in preview mode', () => {
+  const item = { type: 'interativo', title: 'X', summary: 'S', meta_json: { url: '/codex/interativos/demo-peca/' } };
+  assert.ok(!/ctr-lab-open-btn/.test(interativoHtml(item, { preview: true })), 'no open button in preview');
 });
 
 // ── prompt (verbatim, NEVER markdown) ────────────────────────────────────────

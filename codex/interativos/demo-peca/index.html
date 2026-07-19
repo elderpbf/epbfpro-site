@@ -1,0 +1,743 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Escrever para a IA: a mesma causa, dois jeitos</title>
+<style>
+  :root {
+    --navy: #061a51;
+    --teal: #14b8a6;
+    --ink: #1c2333;
+    --paper: #ffffff;
+    --wash: #f4f6fa;
+    --line: #dfe4ee;
+    --muted: #6b7488;
+
+    --antes-bg: rgba(200, 30, 30, 0.13);
+    --antes-edge: #b91c1c;
+    --depois-bg: rgba(20, 184, 166, 0.20);
+    --depois-edge: #0d9488;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
+    color: var(--ink);
+    background: var(--wash);
+    font-size: 17px;
+    line-height: 1.6;
+  }
+
+  /* ---------- chrome ---------- */
+
+  header.top {
+    background: var(--navy);
+    color: #fff;
+    padding: 14px 28px;
+    display: flex;
+    align-items: center;
+    gap: 18px;
+    flex-wrap: wrap;
+    position: sticky;
+    top: 0;
+    z-index: 30;
+  }
+  header.top h1 { font-size: 1.1rem; margin: 0; font-weight: 600; }
+  header.top .sub { font-size: .85rem; opacity: .75; }
+
+  .zoom { display: flex; gap: 4px; align-items: center; margin-left: auto; }
+  .zoom button {
+    font: inherit; font-size: .8rem; min-width: 34px; padding: 6px 9px;
+    border-radius: 6px; border: 1px solid rgba(255,255,255,.3);
+    background: transparent; color: #fff; cursor: pointer;
+  }
+  .zoom button:hover { background: rgba(255,255,255,.14); }
+  .zoom #zreset { min-width: 56px; font-variant-numeric: tabular-nums; }
+
+  .versions { display: flex; gap: 8px; }
+  .versions button {
+    font: inherit; font-size: .85rem; padding: 7px 16px;
+    border-radius: 999px; border: 1px solid rgba(255,255,255,.35);
+    background: transparent; color: #fff; cursor: pointer; transition: all .15s;
+  }
+  .versions button:hover { background: rgba(255,255,255,.12); }
+  .versions button[aria-pressed="true"] {
+    background: var(--teal); border-color: var(--teal); color: #05221f; font-weight: 600;
+  }
+
+  /* ---------- rail: zona de borda que revela a lista (autohide, sem botão) ---------- */
+
+  #rail {
+    position: fixed;
+    left: 0;
+    top: 62px;
+    bottom: 0;
+    width: 22px;
+    z-index: 24;
+    background: linear-gradient(to right, rgba(6,26,81,.13), rgba(6,26,81,0));
+  }
+
+  /* ---------- layout ---------- */
+
+  /* overflow-x: sob zoom alto o documento passa da largura do contêiner e o realce
+     ficaria cortado à direita, sem barra para alcançar */
+  .wrap { display: block; padding: 26px 26px 26px 40px; max-width: 1180px; margin: 0 auto; overflow-x: auto; }
+
+  aside {
+    position: fixed;
+    left: 0;
+    top: 70px;
+    width: 300px;
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 0 10px 10px 0;
+    padding: 18px;
+    max-height: calc(100vh - 88px);
+    overflow-y: auto;
+    z-index: 26;
+    transform: translateX(-102%);
+    transition: transform .22s ease;
+    box-shadow: 0 10px 34px rgba(6, 26, 81, .20);
+  }
+  aside.show { transform: translateX(0); }
+
+  aside h2 { font-size: .95rem; margin: 0 0 4px; }
+  aside .hint { font-size: .78rem; color: var(--muted); margin: 0 0 14px; }
+
+  .tech { display: flex; flex-direction: column; gap: 5px; }
+  .tech button {
+    font: inherit; font-size: .87rem; text-align: left;
+    padding: 9px 11px; border-radius: 7px;
+    border: 1px solid transparent; background: transparent; color: var(--ink);
+    cursor: pointer; border-left: 4px solid var(--line);
+    transition: background .12s, border-color .2s;
+  }
+  .tech button:hover { background: var(--wash); }
+  .tech[data-v="rascunho"] button { border-left-color: var(--antes-edge); }
+  .tech[data-v="ia"] button { border-left-color: var(--depois-edge); }
+  .tech button[aria-pressed="true"] { background: var(--wash); font-weight: 600; border-color: var(--line); }
+  .tech[data-v="rascunho"] button[aria-pressed="true"] { border-left-color: var(--antes-edge); }
+  .tech[data-v="ia"] button[aria-pressed="true"] { border-left-color: var(--depois-edge); }
+  .tech button.dim { opacity: .35; }
+
+  .controls { display: flex; gap: 8px; margin-top: 16px; }
+  .controls button {
+    font: inherit; font-size: .8rem; padding: 7px 12px; border-radius: 7px;
+    border: 1px solid var(--line); background: var(--paper); cursor: pointer; flex: 1;
+  }
+  .controls button:hover { background: var(--wash); }
+
+  .legend { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); font-size: .78rem; color: var(--muted); }
+  .legend div { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+  .swatch { width: 26px; height: 12px; border-radius: 3px; flex: 0 0 auto; }
+  .swatch.antes { background: var(--antes-bg); border-left: 3px solid var(--antes-edge); }
+  .swatch.depois { background: var(--depois-bg); border-left: 3px solid var(--depois-edge); }
+
+  /* ---------- the document ---------- */
+
+  main {
+    background: var(--paper);
+    border: 1px solid var(--line);
+    border-radius: 10px;
+    padding: 52px 60px;
+    font-family: Georgia, "Times New Roman", serif;
+    line-height: 1.75;
+    min-width: 0;
+  }
+
+  .doc { display: none; }
+  .doc.on { display: block; }
+
+  .doc h2 { font-size: 1.05rem; font-family: -apple-system, "Segoe UI", sans-serif; letter-spacing: .04em; text-transform: uppercase; margin: 34px 0 12px; }
+  .doc h3 { font-size: .95rem; font-family: -apple-system, "Segoe UI", sans-serif; margin: 24px 0 8px; }
+  .doc p { margin: 0 0 14px; text-align: justify; }
+  .doc .court { text-transform: uppercase; font-weight: bold; margin-bottom: 32px; }
+  .doc .action { text-align: center; font-weight: bold; text-transform: uppercase; margin: 22px 0; }
+
+  /* citação longa: recuo de 4cm, corpo menor, entrelinha simples (padrão ABNT/praxe forense) */
+  .doc blockquote {
+    margin: 16px 0 16px 4cm;
+    padding: 0;
+    border: 0;
+    font-size: .88rem;
+    line-height: 1.35;
+    color: #2b3348;
+    text-align: justify;
+  }
+  .doc blockquote .cite { display: block; margin-top: 8px; font-size: .85em; color: var(--muted); font-style: italic; text-align: left; }
+  .doc .ementa-quote { text-transform: uppercase; font-size: .82rem; }
+  .doc ul { margin: 0 0 14px; padding-left: 22px; }
+  .doc li { margin-bottom: 5px; }
+  .doc hr { border: 0; border-top: 1px solid var(--line); margin: 30px 0; }
+  .doc .sign { margin-top: 34px; text-align: center; }
+  .doc .sign p { text-align: center; margin-bottom: 4px; }
+
+  .doc table { border-collapse: collapse; width: 100%; margin: 4px 0 18px; font-family: -apple-system, "Segoe UI", sans-serif; font-size: .88rem; }
+  .doc th, .doc td { border: 1px solid var(--line); padding: 8px 11px; text-align: left; vertical-align: top; }
+  .doc th { background: var(--wash); font-weight: 600; }
+  .table-scroll { overflow-x: auto; }
+
+  .fakeimg {
+    border: 2px dashed #c3cbdb; background: #eef1f7; color: var(--muted);
+    padding: 34px; text-align: center; font-family: -apple-system, sans-serif;
+    font-size: .85rem; margin: 16px 0; border-radius: 6px;
+  }
+
+  .resumo-box { border: 1px solid var(--line); background: var(--wash); border-radius: 8px; padding: 18px 22px; margin-bottom: 26px; }
+  .resumo-box h2 { margin-top: 0; }
+  .resumo-box p:last-child { margin-bottom: 0; }
+
+  /* ---------- highlighting ---------- */
+
+  mark.r { background: transparent; color: inherit; padding: 0; transition: background .2s; }
+
+  .r.hit { border-radius: 3px; box-decoration-break: clone; -webkit-box-decoration-break: clone; }
+  .r.hit[data-cat="antes"]  { background: var(--antes-bg);  box-shadow: -3px 0 0 0 var(--antes-edge); }
+  .r.hit[data-cat="depois"] { background: var(--depois-bg); box-shadow: -3px 0 0 0 var(--depois-edge); }
+
+  div.r.hit, table.r.hit, blockquote.r.hit, .resumo-box.r.hit, ul.r.hit, .table-scroll.r.hit, p.r.hit, h2.r.hit, h3.r.hit {
+    box-shadow: none;
+    padding-left: 14px;
+    margin-left: -17px;
+  }
+  blockquote.r.hit { margin-left: calc(4cm - 17px); }
+  div.r.hit[data-cat="antes"], table.r.hit[data-cat="antes"], blockquote.r.hit[data-cat="antes"], ul.r.hit[data-cat="antes"], .table-scroll.r.hit[data-cat="antes"], p.r.hit[data-cat="antes"], h2.r.hit[data-cat="antes"], h3.r.hit[data-cat="antes"] { border-left: 4px solid var(--antes-edge); }
+  div.r.hit[data-cat="depois"], table.r.hit[data-cat="depois"], blockquote.r.hit[data-cat="depois"], .resumo-box.r.hit[data-cat="depois"], ul.r.hit[data-cat="depois"], .table-scroll.r.hit[data-cat="depois"], p.r.hit[data-cat="depois"], h2.r.hit[data-cat="depois"], h3.r.hit[data-cat="depois"] { border-left: 4px solid var(--depois-edge); }
+
+  .flash[data-cat="antes"]  { animation: flashAntes 1.1s ease-out 1; }
+  .flash[data-cat="depois"] { animation: flashDepois 1.1s ease-out 1; }
+  @keyframes flashAntes  { 0% { background: rgba(200,30,30,.45); } 100% { background: inherit; } }
+  @keyframes flashDepois { 0% { background: rgba(20,184,166,.5); } 100% { background: inherit; } }
+
+  @media (prefers-reduced-motion: reduce) {
+    * { animation-duration: .01ms !important; transition-duration: .01ms !important; }
+  }
+
+  @media (max-width: 1080px) {
+    .wrap { padding-left: 34px; }
+    aside { width: 84vw; max-width: 320px; }
+    main { padding: 32px 26px; }
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <h1>A mesma causa, escrita de dois jeitos</h1>
+  <span class="sub">vício oculto · Smart TV · JEC Aracaju</span>
+
+  <div class="zoom" role="group" aria-label="zoom do documento">
+    <button id="zout" aria-label="diminuir">A-</button>
+    <button id="zreset" aria-label="tamanho original">100%</button>
+    <button id="zin" aria-label="aumentar">A+</button>
+  </div>
+
+  <div class="versions" role="group" aria-label="versões da peça">
+    <button data-v="rascunho" aria-pressed="true">Rascunho</button>
+    <button data-v="ia" aria-pressed="false">Escrita para a IA</button>
+  </div>
+</header>
+
+<div id="rail" aria-hidden="true"></div>
+
+<aside id="aside">
+  <h2>Regras para a sua peça</h2>
+  <p class="hint">Clique numa regra para acender onde ela vive no texto. Alterne as versões com a mesma regra acesa.</p>
+
+    <div class="tech" id="tech" data-v="rascunho">
+      <button data-rule="ementa">Comece pela ementa</button>
+      <button data-rule="imagem">Imagem vira anexo, texto no corpo</button>
+      <button data-rule="hierarquia">Numere e hierarquize</button>
+      <button data-rule="negrito">Grife o essencial em negrito</button>
+      <button data-rule="cronologia">Cronologia em tabela</button>
+      <button data-rule="pedidos">Pedidos em tabela</button>
+      <button data-rule="anexos">Índice de anexos no fim</button>
+      <button data-rule="ancora">Ancore a prova na referência</button>
+      <button data-rule="jurisprudencia">Jurisprudência com indexação completa</button>
+      <button data-rule="precedente">Precedente colado, fatos comparados</button>
+      <button data-rule="direto">Escreva direto</button>
+    </div>
+
+    <div class="controls">
+      <button id="all">Acender todas</button>
+      <button id="clear">Limpar</button>
+    </div>
+
+    <div class="legend">
+      <div><span class="swatch antes"></span> antes: onde a peça falha</div>
+      <div><span class="swatch depois"></span> depois: onde ela acerta</div>
+    </div>
+</aside>
+
+<div class="wrap">
+  <main id="main">
+
+    <!-- ══════════════════════════════ RASCUNHO ══════════════════════════════ -->
+    <section class="doc on" data-v="rascunho">
+
+      <div class="r" data-rule="ementa" data-cat="antes">
+        <p class="court">Ao Juízo do Juizado Especial Cível da Comarca de Aracaju do Estado de Sergipe</p>
+
+        <p>AUTOR, brasileiro, casado, [qualificação], vem, respeitosamente, <mark class="r" data-rule="direto" data-cat="antes">à augusta presença de Vossa Excelência</mark>, <mark class="r" data-rule="direto" data-cat="antes">com fulcro nos</mark> dispositivos legais aplicáveis à espécie, propor a presente</p>
+
+        <p class="action">Ação de Obrigação de Fazer c/c Indenização por Danos Materiais e Morais</p>
+
+        <p>em face de SAMSUNG ELETRÔNICA DA AMAZÔNIA LTDA, pessoa jurídica de direito privado inscrita no CNPJ sob o nº 00.280.273/0001-37, com sede na Avenida dos Oitis, nº 1.460, Distrito Industrial, Manaus/AM, pelos fatos e fundamentos que passa a expor.</p>
+      </div>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="antes">Dos Fatos</h2>
+
+      <p class="r" data-rule="cronologia" data-cat="antes"><mark class="r" data-rule="direto" data-cat="antes">Compulsando-se</mark> a documentação <mark class="r" data-rule="direto" data-cat="antes">acostada</mark>, verifica-se que o requerente, em meados do ano de 2023, mais precisamente no dia 21 de junho, <mark class="r" data-rule="direto" data-cat="antes">houve por bem</mark> adquirir uma Smart TV da marca Samsung, modelo CU8000, de 65 polegadas, pelo valor de <mark class="r" data-rule="negrito" data-cat="antes">R$ 3.904,00</mark>, <mark class="r" data-rule="ancora" data-cat="antes">conforme se depreende da nota fiscal em anexo</mark>, produto este fabricado pela <mark class="r" data-rule="direto" data-cat="antes">ora</mark> requerida, o qual, após período de uso absolutamente normal e ordinário, sem que jamais tivesse sofrido queda, impacto, exposição a líquidos ou qualquer outro evento externo que pudesse comprometer sua <mark class="r" data-rule="direto" data-cat="antes">higidez</mark>, veio a apresentar, de forma inteiramente espontânea, defeito consistente em duas linhas verticais de coloração diversa da imagem, próximas ao centro da tela, defeito este que se tornava especialmente perceptível em cenas de fundo uniforme, comprometendo <mark class="r" data-rule="direto" data-cat="antes">sobremaneira</mark> a fruição do bem, tendo o requerente, diante de tal quadro, entrado em contato com a requerida através de seu canal oficial de atendimento, oportunidade em que foi atendido por <mark class="r" data-rule="direto" data-cat="antes">preposto</mark> que, <mark class="r" data-rule="direto" data-cat="antes">de plano</mark>, e sem qualquer análise técnica prévia, já declarou não haver cobertura pela garantia, encaminhando o caso para visita técnica domiciliar, <mark class="r" data-rule="direto" data-cat="antes">sendo certo que</mark> a assistência técnica vinculada à requerida, dias depois, formalizou <mark class="r" data-rule="ancora" data-cat="antes">ordem de serviço</mark> na qual registrou como sintoma linha na tela e como descrição do serviço troca do painel, apresentando, pelo aplicativo WhatsApp, orçamento no <mark class="r" data-rule="direto" data-cat="antes">importe</mark> de <mark class="r" data-rule="negrito" data-cat="antes">R$ 2.720,00</mark> tão somente pela peça, sem que <mark class="r" data-rule="direto" data-cat="antes">se dignasse</mark> a apresentar qualquer laudo técnico que diagnosticasse causa atribuível ao consumidor, conforme se vê do print colado abaixo:</p>
+
+      <div class="fakeimg r" data-rule="imagem" data-cat="antes">[ print do orçamento colado no meio do corpo da peça ]</div>
+
+      <p class="r" data-rule="cronologia" data-cat="antes">Posteriormente, o requerente protocolou reclamação no portal Consumidor.gov.br, tendo a requerida apresentado resposta na qual se limitou a afirmar que o aparelho havia ultrapassado o período de doze meses, oferecendo visita técnica a ser cobrada do próprio consumidor, tendo o requerente apresentado tréplica recusando <mark class="r" data-rule="direto" data-cat="antes">peremptoriamente</mark> tal proposta e, na sequência, a requerida mantido a <mark class="r" data-rule="direto" data-cat="antes">mesmíssima</mark> posição em resposta final, razão pela qual a reclamação <mark class="r" data-rule="direto" data-cat="antes">restou</mark> por ele avaliada como não resolvida. <mark class="r" data-rule="direto" data-cat="antes">Impende ressaltar, outrossim</mark>, que, já na fase final de preparo da presente peça, durante uso absolutamente normal do aparelho, o vício evoluiu para falha total, deixando o aparelho de exibir qualquer imagem e passando a apresentar ciclos sucessivos e automáticos de acionamento e desligamento do backlight, com breve resgate do áudio do conteúdo anterior, sem responder a qualquer comando do controle remoto, exigindo a desconexão da tomada para cessar o ciclo, <mark class="r" data-rule="direto" data-cat="antes">sendo certo que</mark>, ao se religar o aparelho, o ciclo recomeça espontaneamente, tudo conforme se encontra devidamente documentado <mark class="r" data-rule="ancora" data-cat="antes">nos vídeos que acompanham a inicial</mark>.</p>
+
+      <p>Eis a síntese da lide.</p>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="antes">Do Direito</h2>
+
+      <p>A relação jurídica <mark class="r" data-rule="direto" data-cat="antes">entabulada</mark> entre as partes é típica relação de consumo, não havendo que se falar em qualquer outra natureza, <mark class="r" data-rule="direto" data-cat="antes">porquanto</mark> o autor é destinatário final do produto e a requerida é fabricante de eletroeletrônicos. <mark class="r" data-rule="direto" data-cat="antes">Como é cediço</mark>, e <mark class="r" data-rule="jurisprudencia" data-cat="antes">conforme entendimento pacífico e reiterado do Superior Tribunal de Justiça</mark>, o art. 18 do Código de Defesa do Consumidor impõe a responsabilidade solidária de toda a cadeia de fornecedores, conferindo ao consumidor a possibilidade de demandar qualquer deles, indistintamente, pelo vício do produto, <mark class="r" data-rule="direto" data-cat="antes">de sorte que</mark> a requerida, na qualidade de fabricante que inclusive abriu ordem de serviço própria para diagnosticar o defeito, é <mark class="r" data-rule="direto" data-cat="antes">inequivocamente</mark> parte legítima para figurar no polo passivo da presente demanda.</p>
+
+      <p>No que <mark class="r" data-rule="direto" data-cat="antes">tange</mark> ao mérito propriamente dito, <mark class="r" data-rule="direto" data-cat="antes">cumpre asseverar</mark> que o defeito apresentado é, juridicamente, vício oculto, assim entendida a anormalidade preexistente à venda, decorrente da própria fabricação, que se revela com o uso ordinário do bem dentro do período de vida útil que dele se espera. <mark class="r" data-rule="jurisprudencia" data-cat="antes">O Superior Tribunal de Justiça já se manifestou reiteradas vezes no sentido de que</mark> o Código de Defesa do Consumidor, ao tratar dos vícios ocultos, adotou o critério da vida útil do bem e não o da garantia contratual, podendo o fornecedor responsabilizar-se pelo vício mesmo depois de expirada a garantia, entendimento este que, <mark class="r" data-rule="direto" data-cat="antes">aliás, também é perfilhado</mark> pelo <mark class="r" data-rule="precedente" data-cat="antes">Tribunal de Justiça do Estado de Sergipe, que já decidiu nesse exato sentido em caso análogo envolvendo a própria requerida, bem como por outros tribunais pátrios em casos versando sobre aparelhos televisores</mark>. A vida útil esperada de uma Smart TV de 65 polegadas é, <mark class="r" data-rule="direto" data-cat="antes">à toda evidência</mark>, manifestamente superior ao <mark class="r" data-rule="direto" data-cat="antes">lapso temporal</mark> aqui verificado, sendo certo que pesquisas de institutos de defesa do consumidor apontam ciclo de vida médio bastante superior para televisores no Brasil.</p>
+
+      <p><mark class="r" data-rule="direto" data-cat="antes">Demais disso</mark>, o ônus de demonstrar eventual mau uso do produto é do fornecedor e não do consumidor, valendo destacar que a requerida não alegou mau uso em nenhum momento da fase extrajudicial, tendo toda a sua argumentação se restringido à expiração da garantia contratual, <mark class="r" data-rule="direto" data-cat="antes">ao passo que</mark> a sua própria assistência técnica reconheceu o defeito e orçou a troca do painel, o que, <mark class="r" data-rule="direto" data-cat="antes">por si só</mark>, dispensa qualquer laudo técnico independente por parte do autor, <mark class="r" data-rule="direto" data-cat="antes">impondo-se, ademais</mark>, a inversão do ônus da prova em favor do consumidor, dado o seu manifesto déficit probatório. Também é desnecessária a produção de prova pericial formal, na medida em que a simples afirmação de necessidade de prova complexa não afasta a competência do Juizado, <mark class="r" data-rule="direto" data-cat="antes">mormente</mark> quando sequer <mark class="r" data-rule="direto" data-cat="antes">exauridos</mark> os instrumentos de investigação <mark class="r" data-rule="direto" data-cat="antes">abarcados</mark> pela lei de regência.</p>
+
+      <p>Quanto à escolha da alternativa cabível, é prerrogativa do consumidor, e <mark class="r" data-rule="direto" data-cat="antes">no caso vertente</mark> o orçamento de reparo apresentado pela própria requerida corresponde a aproximadamente setenta por cento do valor de aquisição do bem, além do que a troca do painel em Smart TV de 65 polegadas implica a reconstrução do componente central do produto, com risco de comprometimento de suas características, encontrando-se, ainda, rompida a confiança contratual em razão do descaso da resposta extrajudicial, razão pela qual a restituição integral é o pedido que se impõe. No que <mark class="r" data-rule="direto" data-cat="antes">concerne</mark> aos danos morais, é certo que o mero vício do produto configura, em regra, simples aborrecimento, <mark class="r" data-rule="direto" data-cat="antes">todavia</mark>, no caso concreto concorrem elementos que ultrapassam largamente esse patamar, <mark class="r" data-rule="direto" data-cat="antes">a saber</mark>, o descaso da requerida, a cobrança indevida pelo reparo de defeito por ela mesma reconhecido, a essencialidade do bem <mark class="r" data-rule="direto" data-cat="antes">nos dias que correm</mark> e a perda integral da fruição, elementos que, somados, autorizam a fixação de indenização em patamar condizente, conforme, <mark class="r" data-rule="direto" data-cat="antes">aliás</mark>, <mark class="r" data-rule="jurisprudencia" data-cat="antes">vem reiteradamente decidindo a Turma Recursal deste Estado em casos que guardam <mark class="r" data-rule="direto" data-cat="antes">similitude</mark> com o presente</mark>.</p>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="antes">Dos Pedidos</h2>
+
+      <p class="r" data-rule="pedidos" data-cat="antes"><mark class="r" data-rule="direto" data-cat="antes">Ante todo o exposto</mark>, requer a Vossa Excelência <mark class="r" data-rule="direto" data-cat="antes">se digne de determinar</mark> a citação da requerida para, querendo, comparecer à audiência de conciliação, instrução e julgamento, apresentando contestação no momento oportuno, sob pena de revelia, bem como que, ao final, seja julgado inteiramente procedente o pedido, condenando-se a requerida a restituir ao autor a quantia <mark class="r" data-rule="direto" data-cat="antes">despendida</mark> na aquisição do bem, devidamente corrigida e acrescida dos juros legais, ou, subsidiariamente, caso assim entenda <mark class="r" data-rule="direto" data-cat="antes">esse Douto Juízo</mark>, a substituição do produto por outro de modelo equivalente, em estado de novo, sem qualquer custo, requerendo, ainda, a condenação da requerida ao pagamento de indenização por danos morais em valor a ser arbitrado por este Juízo, bem como a inversão do ônus da prova, o afastamento de eventual perícia formal e que todas as intimações sejam encaminhadas ao endereço eletrônico do subscritor.</p>
+
+      <p>Protesta provar o alegado por todos os meios de prova em direito admitidos, <mark class="r" data-rule="anexos" data-cat="antes">notadamente pelos documentos que instruem a presente</mark>.</p>
+
+      <p>Dá-se à causa o valor de R$ 7.904,00.</p>
+
+      <div class="sign">
+        <p>Nesses termos, pede deferimento.</p>
+        <p>Aracaju/SE, [data do protocolo].</p>
+        <p>AUTOR</p>
+      </div>
+    </section>
+
+    <!-- ══════════════════════════════ ESCRITA PARA A IA ══════════════════════════════ -->
+    <section class="doc" data-v="ia">
+
+      <p class="court">Ao Juízo do Juizado Especial Cível da Comarca de Aracaju do Estado de Sergipe</p>
+
+      <div class="resumo-box r" data-rule="ementa" data-cat="depois">
+        <h2>Do que se trata esta peça</h2>
+        <p>Consumidor comprou uma Smart TV Samsung de 65 polegadas por <strong>R$ 3.904,00</strong> em 21/06/2023. Depois de quase três anos de uso normal, o painel apresentou vício oculto que evoluiu para falha total.</p>
+        <p>A assistência técnica da própria ré reconheceu o defeito ("LINHA NA TELA" / "TROCA DO PAINEL") e orçou o reparo em <strong>R$ 2.720,00</strong>, 70% do valor do bem. A ré recusou cobertura invocando apenas a garantia contratual de 12 meses, sem nunca alegar mau uso e sem apresentar laudo técnico.</p>
+        <p>Pede-se a <strong>restituição de R$ 3.904,00</strong> e <strong>dano moral de R$ 4.000,00</strong>, com fundamento no critério da vida útil do bem (CDC art. 26, §3º), e não no da garantia contratual.</p>
+      </div>
+
+      <p>AUTOR, brasileiro, casado, [qualificação], vem, <mark class="r" data-rule="direto" data-cat="depois">em causa própria (Lei 9.099/95, art. 9º)</mark>, <mark class="r" data-rule="direto" data-cat="depois">à presença de Vossa Excelência</mark>, propor a presente</p>
+
+      <p class="action">Ação de Obrigação de Fazer c/c Indenização por Danos Materiais e Morais</p>
+
+      <p>em face de <mark class="r" data-rule="negrito" data-cat="depois"><strong>SAMSUNG ELETRÔNICA DA AMAZÔNIA LTDA</strong></mark>, pessoa jurídica de direito privado, inscrita no CNPJ sob o nº 00.280.273/0001-37, com sede na Avenida dos Oitis, nº 1.460, Distrito Industrial, Manaus/AM, CEP 69.007-002, pelos fatos e fundamentos a seguir expostos.</p>
+
+      <hr>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="depois">1 - Dos Fatos</h2>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">1.1 - A história</h3>
+
+      <p>Em 21/06/2023 o autor comprou uma Smart TV Samsung Crystal 4K de 65 polegadas, modelo CU8000, por <mark class="r" data-rule="negrito" data-cat="depois"><strong>R$ 3.904,00</strong></mark>, pela Amazon <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 01)</mark>. Em 13/04/2026, <mark class="r" data-rule="direto" data-cat="depois">depois de quase três anos de uso normal</mark>, <mark class="r" data-rule="direto" data-cat="depois">sem queda, impacto ou contato com líquido</mark>, o painel apresentou duas linhas verticais próximas ao centro da tela, visíveis sobretudo em cenas de fundo uniforme <mark class="r" data-rule="ancora" data-cat="depois">(Docs. 02 a 05)</mark>. <mark class="r" data-rule="direto" data-cat="depois">O autor procurou a ré</mark> no chat oficial no mesmo dia <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 06)</mark>: o atendente encaminhou visita técnica e <mark class="r" data-rule="direto" data-cat="depois">já avisou, antes de qualquer análise</mark>, que não haveria cobertura. Em 15/04/2026 a assistência técnica da própria ré abriu a OS nº 4175581426, registrou o sintoma como "LINHA NA TELA" e o serviço como "TROCA DO PAINEL", e orçou <mark class="r" data-rule="negrito" data-cat="depois"><strong>R$ 2.720,00</strong></mark> pela peça, <mark class="r" data-rule="direto" data-cat="depois">sem nenhum laudo que apontasse culpa do consumidor</mark> <mark class="r" data-rule="ancora" data-cat="depois">(Docs. 07 e 08)</mark>.</p>
+
+      <p>Em 18/04/2026 o autor reclamou no Consumidor.gov.br <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 11)</mark>. A ré respondeu em 24/04/2026 invocando apenas os 12 meses de garantia e oferecendo visita paga <mark class="r" data-rule="ancora" data-cat="depois">(Docs. 09 e 10)</mark>. O autor recusou em 26/04/2026, e em 27/04/2026 a ré manteve a recusa, <mark class="r" data-rule="direto" data-cat="depois">sem refutar o vício e sem prova técnica</mark>; a reclamação foi encerrada como <mark class="r" data-rule="negrito" data-cat="depois"><strong>não resolvida</strong></mark> <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 11)</mark>. Na noite de 27/04/2026, durante uso normal, <mark class="r" data-rule="direto" data-cat="depois">o defeito virou falha total</mark>: a TV parou de exibir imagem e entrou em ciclos automáticos de backlight, sem responder ao controle. <mark class="r" data-rule="direto" data-cat="depois">Ao religar, o ciclo recomeça sozinho</mark> <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 12)</mark>.</p>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">1.2 - Linha do tempo</h3>
+
+      <div class="table-scroll r" data-rule="cronologia" data-cat="depois">
+        <table>
+          <thead>
+            <tr><th style="width:16%">Data</th><th>Evento</th><th style="width:22%">Prova</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>21/06/2023</td>
+              <td>Compra da Smart TV Samsung Crystal 4K 65" CU8000 (UN65CU8000GXZD), série Y57W3X5W401782J, por <mark class="r" data-rule="negrito" data-cat="depois"><strong>R$ 3.904,00</strong></mark>, via Amazon Serviços de Varejo do Brasil Ltda</td>
+              <td>Doc. 01 (NF-e nº 043.235.490)</td>
+            </tr>
+            <tr>
+              <td>13/04/2026</td>
+              <td>Painel apresenta, sozinho, duas linhas verticais próximas ao centro da tela, após uso normal e sem qualquer evento externo</td>
+              <td>Docs. 02 a 05</td>
+            </tr>
+            <tr>
+              <td>13/04/2026</td>
+              <td>Autor contata a ré pelo chat oficial (protocolo nº 354937232). O atendente encaminha visita técnica e <strong>já declara que não haverá cobertura</strong>, antes de qualquer análise</td>
+              <td>Doc. 06</td>
+            </tr>
+            <tr>
+              <td>15/04/2026</td>
+              <td>Assistência técnica da ré abre a OS nº 4175581426. <mark class="r" data-rule="imagem" data-cat="depois">Sintoma registrado: "LINHA NA TELA". Serviço: "TROCA DO PAINEL". Peça CY-SC065HGCV11</mark>. Orçamento de <mark class="r" data-rule="negrito" data-cat="depois"><strong>R$ 2.720,00</strong></mark>, <strong>sem laudo técnico</strong> que atribua causa ao consumidor</td>
+              <td>Docs. 07 e 08</td>
+            </tr>
+            <tr>
+              <td>18/04/2026</td>
+              <td>Autor protocola reclamação no Consumidor.gov.br nº 2026.04/00014309821</td>
+              <td>Doc. 11</td>
+            </tr>
+            <tr>
+              <td>24/04/2026</td>
+              <td>Ré responde (protocolo Samsung nº 3102737321) invocando <strong>apenas</strong> a ultrapassagem dos 12 meses de garantia e oferecendo visita técnica paga</td>
+              <td>Docs. 09 e 10</td>
+            </tr>
+            <tr>
+              <td>26/04/2026</td>
+              <td>Autor apresenta tréplica recusando a proposta</td>
+              <td>Doc. 11</td>
+            </tr>
+            <tr>
+              <td>27/04/2026</td>
+              <td>Ré mantém a recusa em resposta final, <strong>sem refutar o vício oculto</strong> e sem prova técnica. Autor avalia a reclamação como não resolvida</td>
+              <td>Doc. 11</td>
+            </tr>
+            <tr>
+              <td>27/04/2026<br>22h30</td>
+              <td>Vício evolui para <strong>falha total</strong>: sem imagem, ciclos automáticos de backlight, sem resposta ao controle remoto. <strong>Reprodutível sozinho</strong> ao religar o aparelho</td>
+              <td>Doc. 12</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="depois">2 - Do Direito</h2>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.1 - Da relação de consumo e da legitimidade passiva da ré</h3>
+
+      <p>A relação entre as partes <mark class="r" data-rule="direto" data-cat="depois">é de consumo, e não de outra natureza</mark> (CDC, arts. 2º e 3º): o autor é destinatário final do produto e a ré é fabricante de eletroeletrônicos. O art. 18 do CDC <mark class="r" data-rule="direto" data-cat="depois">torna toda a cadeia de fornecedores solidária</mark>, e o consumidor pode demandar qualquer um deles. O STJ, em julgado originário do próprio Estado de Sergipe, pacificou:</p>
+
+      <blockquote>
+        "Ademais, o art. 18 do CDC, ao impor a responsabilidade solidária da cadeia de fornecedores, confere ao consumidor a possibilidade de demandar qualquer deles, indistintamente, pelo vício do produto, de modo que, surgindo o vício durante a garantia contratual oferecida pelo fabricante, pode o consumidor exercer o direito de reclamar contra o comerciante."
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(STJ, REsp 1.734.541/SE, Rel. Min. Nancy Andrighi, 3ª Turma, julg. 13/11/2018)</span>
+      </blockquote>
+
+      <p>A ré é fabricante e abriu ordem de serviço própria para diagnosticar o defeito <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark>. <mark class="r" data-rule="direto" data-cat="depois">É parte legítima no polo passivo</mark>.</p>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.2 - Do vício oculto e da teoria da vida útil</h3>
+
+      <p>O defeito é vício oculto: <mark class="r" data-rule="direto" data-cat="depois">um problema que já existia na venda, veio da fabricação, e só apareceu com o uso normal</mark>, dentro da vida útil que se espera do produto. O STJ, no leading case sobre o tema, fixou:</p>
+
+      <blockquote>
+        "Com efeito, em se tratando de vício oculto não decorrente do desgaste natural gerado pela fruição ordinária do produto, mas da própria fabricação, e relativo a projeto, cálculo estrutural, resistência de materiais, entre outros, o prazo para reclamar pela reparação se inicia no momento em que ficar evidenciado o defeito, não obstante tenha isso ocorrido depois de expirado o prazo contratual de garantia, devendo ter-se sempre em vista o critério da vida útil do bem."
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(STJ, REsp 984.106/SC, Rel. Min. Luis Felipe Salomão, 4ª Turma, julg. 04/10/2012)</span>
+      </blockquote>
+
+      <p><mark class="r" data-rule="direto" data-cat="depois">O mesmo tribunal reafirmou o critério</mark>, somando a ele o ônus do fornecedor de provar o mau uso:</p>
+
+      <blockquote>
+        "No caso, os vícios observados nos produtos adquiridos pela recorrente apareceram durante o período de vida útil do produto, e não foi produzida nenhuma prova de que o mau funcionamento dos eletrodomésticos decorreu de uso inadequado pelo consumidor, a evidenciar responsabilidade da fornecedora."
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(STJ, REsp 1.787.287/SP, Rel. Min. Ricardo Villas Bôas Cueva, 3ª Turma, julg. 16/12/2021)</span>
+      </blockquote>
+
+      <p>Em precedente direto <strong>contra a própria ré deste processo</strong>, o TJSE julgou:</p>
+
+      <blockquote class="ementa-quote">
+        Aplicação do CDC. Aparelho celular. Constatação de vício oculto manifestado após o termo final da garantia contratual. Prova pericial que comprovou que o defeito verificado na tela do telefone não fora decorrente de mau uso pelo demandante. Responsabilidade do fabricante pelo período razoável de vida útil do bem. Devida restituição do valor do bem.
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(TJSE, Apelação Cível nº 202457630, Rel. Des. Cezário Siqueira Neto, 1ª Câmara Cível, julg. 18/10/2024, unânime)</span>
+      </blockquote>
+
+      <p>A vida útil esperada de uma Smart TV de 65 polegadas <mark class="r" data-rule="direto" data-cat="depois">é muito maior que isso</mark>. No REsp 1.787.287/SP já citado, o STJ <mark class="r" data-rule="direto" data-cat="depois">aceitou</mark> a pesquisa do IDEC e do Instituto Market Analysis ("Ciclo de vida de eletroeletrônicos", outubro de 2013) como fonte objetiva para medir vida útil. Essa pesquisa aponta ciclo de vida médio de <mark class="r" data-rule="negrito" data-cat="depois"><strong>7,6 anos</strong></mark> para televisores no Brasil. <mark class="r" data-rule="direto" data-cat="depois">O uso até o defeito aparecer</mark> foi de <strong>menos da metade</strong> desse período.</p>
+
+      <p class="r" data-rule="precedente" data-cat="depois"><strong>Comparação com o precedente do TJDFT (Acórdão nº 1999581).</strong> Naquele caso: aparelho televisor, garantia contratual de 12 meses expirada, vício oculto, rito do JEC, cobrança adicional para reparo, restituição do valor pago e dano moral de R$ 2.000,00. Neste caso: (a) também aparelho televisor; (b) também garantia de 12 meses expirada; (c) também vício oculto sem alegação de mau uso pela fornecedora; (d) também cobrança adicional, aqui de R$ 2.720,00 <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark>; e (e) aqui há um agravante que lá não havia, a perda <strong>integral</strong> da fruição antes mesmo do ajuizamento <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 12)</mark>. O TJDFT assentou textualmente:</p>
+
+      <blockquote class="r" data-rule="precedente" data-cat="depois">
+        "não é aceitável que um bem de consumo durável como aparelho televisor venha a apresentar defeito em tão pouco tempo de uso, haja vista a vida útil esperada para este tipo de produto"
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(TJDFT, Acórdão nº 1999581, Rel. Juíza Rita de Cássia de Cerqueira Lima Rocha, 1ª Turma Recursal dos Juizados Especiais, julg. 23/05/2025, unânime)</span>
+      </blockquote>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.3 - Da inocorrência de decadência</h3>
+
+      <p><mark class="r" data-rule="direto" data-cat="depois">O defeito ficou evidente</mark> em 13/04/2026 <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark> e a reclamação no Consumidor.gov.br foi protocolada em 18/04/2026 <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 11)</mark>. <mark class="r" data-rule="direto" data-cat="depois">Reclamar a qualquer fornecedor da cadeia trava o prazo</mark> em face de todos eles:</p>
+
+      <blockquote>
+        "A regra do art. 18 do CDC induz à conclusão de que a reclamação direcionada a qualquer dos fornecedores é ato capaz de obstar o prazo decadencial previsto no art. 26 em face de toda a cadeia, porque é a demonstração inequívoca da intenção do consumidor de ver sanado o vício, sob pena de exercer seu direito de exigir a adoção das medidas previstas no § 1º daquele dispositivo legal."
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(STJ, REsp 1.734.541/SE, Rel. Min. Nancy Andrighi, 3ª Turma, julg. 13/11/2018)</span>
+      </blockquote>
+
+      <p>A ação é ajuizada dentro dos 90 dias contados da recusa final da ré, em 27/04/2026 <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 11)</mark>, <mark class="r" data-rule="direto" data-cat="depois">como manda o CDC art. 26, II</mark>. Não há decadência.</p>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.4 - Da inversão do ônus da prova e da ausência de alegação de mau uso</h3>
+
+      <p><mark class="r" data-rule="direto" data-cat="depois">Provar o mau uso é ônus do fornecedor</mark>, não do consumidor. A Turma Recursal de Sergipe é expressa:</p>
+
+      <blockquote class="ementa-quote">
+        Alegação de vício oculto. Ônus da prova do fornecedor de demonstrar a natureza do vício do produto. Vício oculto evidenciado. Critério da vida útil do bem e não da garantia. Direito de reclamar a partir de quando for evidenciado o defeito. Responsabilidade do fornecedor em restituir o valor pago pelo produto. Danos morais caracterizados.
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(TJSE, Recurso Inominado nº 202332636, Rel. Desa. Rosa Maria Mattos Alves de Santana Britto, Turma Recursal, julg. 18/08/2023, unânime)</span>
+      </blockquote>
+
+      <p>A ré <mark class="r" data-rule="direto" data-cat="depois">nunca alegou mau uso</mark>: nem no chat <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 06)</mark>, nem na OS <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark>, nem no Consumidor.gov.br <mark class="r" data-rule="ancora" data-cat="depois">(Docs. 09 e 10)</mark>. Toda a sua defesa extrajudicial foi a garantia contratual. <mark class="r" data-rule="direto" data-cat="depois">Além disso</mark>, a própria assistência técnica da ré reconheceu o defeito e orçou a troca do painel em R$ 2.720,00 <mark class="r" data-rule="ancora" data-cat="depois">(Docs. 07 e 08)</mark>, o que dispensa laudo independente do autor. <mark class="r" data-rule="direto" data-cat="depois">Cabe a inversão do ônus da prova</mark> (CDC, art. 6º, VIII).</p>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.5 - Da desnecessidade de perícia formal</h3>
+
+      <p>Perícia formal é desnecessária. <mark class="r" data-rule="direto" data-cat="depois">Dizer que a prova é complexa, sozinho, não tira o caso do Juizado</mark>:</p>
+
+      <blockquote>
+        "Simples afirmação da necessidade de realizar prova complexa não afasta a competência do Juizado Especial, mormente quando não exauridos os instrumentos de investigação abarcados pela Lei n.º 9.099/95."
+        <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(Enunciado 13, Turma Recursal de Sergipe, TJSE/CIJESE)</span>
+      </blockquote>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.6 - Da restituição como pedido cabível</h3>
+
+      <p><mark class="r" data-rule="direto" data-cat="depois">Escolher entre as alternativas do art. 18, §1º, do CDC é direito do consumidor</mark>. O orçamento da própria ré, de R$ 2.720,00 <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark>, equivale a 70% do valor de compra, e <mark class="r" data-rule="direto" data-cat="depois">trocar o painel de uma TV de 65 polegadas é refazer o componente central do produto</mark>. Somada a isso, a confiança contratual está rompida pelo descaso da resposta extrajudicial. A restituição integral é o pedido cabível.</p>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">2.7 - Dos danos morais</h3>
+
+      <p>O vício do produto, sozinho, é mero aborrecimento. <mark class="r" data-rule="direto" data-cat="depois">Aqui, quatro elementos passam desse patamar</mark>: (a) o descaso da ré na resposta extrajudicial, que só repetiu a cláusula de garantia; (b) a cobrança de R$ 2.720,00 por um defeito que a própria ré reconheceu <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 08)</mark>; (c) a essencialidade do bem <mark class="r" data-rule="direto" data-cat="depois">hoje</mark>; e (d) a perda integral da fruição <mark class="r" data-rule="ancora" data-cat="depois">(Doc. 12)</mark>. A Turma Recursal de Sergipe arbitra entre R$ 1.000,00 <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(TJSE, Recurso Inominado nº 202436608, Rel. Desa. Marta Suzana Lopes Vasconcelos, 1ª Turma Recursal, julg. 18/07/2024)</span> e R$ 2.000,00 <span class="cite r" data-rule="jurisprudencia" data-cat="depois">(TJSE, Recurso Inominado nº 202332636, já citado)</span> em casos de vício <strong>parcial</strong>; aqui a TV ficou <strong>inteiramente inutilizável</strong>, o que justifica <mark class="r" data-rule="negrito" data-cat="depois"><strong>R$ 4.000,00</strong></mark>.</p>
+
+      <hr>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="depois">3 - Dos Pedidos</h2>
+
+      <p>Diante do exposto, requer a Vossa Excelência:</p>
+
+      <ul>
+        <li>a) a citação da ré para a audiência de conciliação, instrução e julgamento, sob pena de revelia;</li>
+        <li>b) a restituição de <strong>R$ 3.904,00</strong>, corrigidos pelo IPCA desde 21/06/2023 e com juros de mora desde a citação, mediante entrega do produto à ré (CDC, art. 18, §1º, II);</li>
+        <li>c) subsidiariamente, a substituição do produto por outro de modelo equivalente, em estado de novo, sem custo ao autor (CDC, art. 18, §1º, I);</li>
+        <li>d) a condenação da ré ao pagamento de <strong>R$ 4.000,00</strong> por dano moral, ou outro valor a ser arbitrado;</li>
+        <li>e) a inversão do ônus da prova (CDC, art. 6º, VIII);</li>
+        <li>f) o afastamento de perícia formal (Enunciado 13 da Turma Recursal de Sergipe) e, subsidiariamente, sua substituição por vistoria simples;</li>
+        <li>g) que as intimações sejam encaminhadas por meio eletrônico.</li>
+      </ul>
+
+      <h3 class="r" data-rule="hierarquia" data-cat="depois">3.1 - Quadro dos pedidos</h3>
+
+      <div class="table-scroll r" data-rule="pedidos" data-cat="depois">
+        <table>
+          <thead>
+            <tr><th style="width:44%">Pedido</th><th style="width:36%">Fundamento</th><th style="width:20%">Valor</th></tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>Citação da ré para a audiência de conciliação, instrução e julgamento, sob pena de revelia</td>
+              <td>Lei 9.099/95</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td><strong>Principal:</strong> restituição do valor pago, corrigido pelo IPCA desde 21/06/2023 e com juros de mora desde a citação, mediante entrega do produto à ré</td>
+              <td>CDC, art. 18, §1º, II</td>
+              <td><strong>R$ 3.904,00</strong></td>
+            </tr>
+            <tr>
+              <td><strong>Subsidiário:</strong> substituição do produto por outro de modelo equivalente, em estado de novo, sem custo ao autor</td>
+              <td>CDC, art. 18, §1º, I</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Indenização por dano moral</td>
+              <td>CDC; TJSE, Recurso Inominado nº 202332636</td>
+              <td><strong>R$ 4.000,00</strong></td>
+            </tr>
+            <tr>
+              <td>Inversão do ônus da prova</td>
+              <td>CDC, art. 6º, VIII</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Afastamento de perícia formal; subsidiariamente, substituição por vistoria simples</td>
+              <td>Enunciado 13, Turma Recursal de Sergipe</td>
+              <td></td>
+            </tr>
+            <tr>
+              <td>Intimações por meio eletrônico</td>
+              <td></td>
+              <td></td>
+            </tr>
+            <tr>
+              <td colspan="2"><strong>Valor da causa</strong> (restituição + dano moral), inferior ao teto de 20 salários mínimos da Lei 9.099/95</td>
+              <td><strong>R$ 7.904,00</strong></td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr>
+
+      <h2 class="r" data-rule="hierarquia" data-cat="depois">4 - Índice de Anexos</h2>
+
+      <div class="table-scroll r" data-rule="anexos" data-cat="depois">
+        <table>
+          <thead>
+            <tr><th style="width:12%">Doc.</th><th>Conteúdo</th><th style="width:24%">Prova o quê</th></tr>
+          </thead>
+          <tbody>
+            <tr><td><strong>Doc. 01</strong></td><td>NF-e nº 043.235.490 (compra em 21/06/2023, R$ 3.904,00)</td><td>Data e valor da compra</td></tr>
+            <tr><td><strong>Doc. 02</strong></td><td>Foto do defeito (20260413_213943.jpg)</td><td>Existência do vício</td></tr>
+            <tr><td><strong>Doc. 03</strong></td><td>Vídeo do defeito (20260413_214739.mp4)</td><td>Existência do vício</td></tr>
+            <tr><td><strong>Doc. 04</strong></td><td>Vídeo (WhatsApp Video 2026-04-13 at 21.48.16.mp4)</td><td>Existência do vício</td></tr>
+            <tr><td><strong>Doc. 05</strong></td><td>Vídeo (WhatsApp Video 2026-04-13 at 21.57.42.mp4)</td><td>Existência do vício</td></tr>
+            <tr><td><strong>Doc. 06</strong></td><td>Transcript do chat Samsung 13/04/2026 (protocolo nº 354937232)</td><td>Recusa antes de análise técnica</td></tr>
+            <tr><td><strong>Doc. 07</strong></td><td>Prints do orçamento WhatsApp Samsung</td><td>Cobrança de R$ 2.720,00</td></tr>
+            <tr><td><strong>Doc. 08</strong></td><td>OS oficial Samsung nº 4175581426 (sintoma "LINHA NA TELA"; serviço "TROCA DO PAINEL"; peça CY-SC065HGCV11; total R$ 2.720,00)</td><td>Reconhecimento do defeito pela ré</td></tr>
+            <tr><td><strong>Doc. 09</strong></td><td>Resposta da ré pelo Consumidor.gov.br (protocolo Samsung nº 3102737321)</td><td>Recusa fundada só na garantia</td></tr>
+            <tr><td><strong>Doc. 10</strong></td><td>Resposta da ré por e-mail Atendimento VOC Senacon</td><td>Recusa fundada só na garantia</td></tr>
+            <tr><td><strong>Doc. 11</strong></td><td>Extrato consolidado Consumidor.gov.br nº 2026.04/00014309821</td><td>Tramitação e recusa final</td></tr>
+            <tr><td><strong>Doc. 12</strong></td><td>Vídeos da falha total em 27/04/2026 às 22h30</td><td>Perda integral da fruição</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="sign">
+        <p>Nesses termos, pede deferimento.</p>
+        <p>Aracaju/SE, [data do protocolo].</p>
+        <p>AUTOR, em causa própria, Lei 9.099/95, art. 9º</p>
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<script>
+(function () {
+  var docs = document.querySelectorAll('.doc');
+  var vBtns = document.querySelectorAll('.versions button');
+  var tBtns = document.querySelectorAll('.tech button');
+  var tech = document.getElementById('tech');
+  var main = document.getElementById('main');
+  var rail = document.getElementById('rail');
+  var aside = document.getElementById('aside');
+
+  function activeDoc() { return document.querySelector('.doc.on'); }
+
+  function currentRules() {
+    var out = [];
+    tBtns.forEach(function (b) { if (b.getAttribute('aria-pressed') === 'true') out.push(b.dataset.rule); });
+    return out;
+  }
+
+  function clearMarks() {
+    document.querySelectorAll('.r.hit').forEach(function (el) { el.classList.remove('hit', 'flash'); });
+  }
+
+  function paint(rule, scroll) {
+    var hits = activeDoc().querySelectorAll('.r[data-rule="' + rule + '"]');
+    hits.forEach(function (el) { el.classList.add('hit'); });
+    if (hits.length && scroll) {
+      hits[0].scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+      hits[0].classList.add('flash');
+      setTimeout(function () { hits[0].classList.remove('flash'); }, 1200);
+    }
+  }
+
+  function refreshDim() {
+    var doc = activeDoc();
+    tBtns.forEach(function (b) {
+      var has = doc.querySelectorAll('.r[data-rule="' + b.dataset.rule + '"]').length > 0;
+      b.classList.toggle('dim', !has);
+    });
+  }
+
+  /* ---------- regras ---------- */
+
+  tBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var wasOn = b.getAttribute('aria-pressed') === 'true';
+      clearMarks();
+      tBtns.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      if (!wasOn) {
+        b.setAttribute('aria-pressed', 'true');
+        paint(b.dataset.rule, true);
+      }
+    });
+  });
+
+  document.getElementById('all').addEventListener('click', function () {
+    clearMarks();
+    tBtns.forEach(function (b) {
+      b.setAttribute('aria-pressed', 'true');
+      paint(b.dataset.rule, false);
+    });
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  });
+
+  document.getElementById('clear').addEventListener('click', function () {
+    clearMarks();
+    tBtns.forEach(function (b) { b.setAttribute('aria-pressed', 'false'); });
+  });
+
+  /* ---------- versões (a troca preserva o realce) ---------- */
+
+  vBtns.forEach(function (b) {
+    b.addEventListener('click', function () {
+      var keep = currentRules();
+      clearMarks();
+      vBtns.forEach(function (x) { x.setAttribute('aria-pressed', 'false'); });
+      b.setAttribute('aria-pressed', 'true');
+      docs.forEach(function (d) { d.classList.toggle('on', d.dataset.v === b.dataset.v); });
+      tech.dataset.v = b.dataset.v;
+      refreshDim();
+      keep.forEach(function (r) { paint(r, false); });
+      if (keep.length === 1) {
+        var first = activeDoc().querySelector('.r[data-rule="' + keep[0] + '"].hit');
+        if (first) { first.scrollIntoView({ behavior: 'smooth', block: 'center' }); return; }
+      }
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    });
+  });
+
+  /* ---------- lista com autohide: some sozinha, volta na borda esquerda ---------- */
+
+  var hideTimer = null;
+
+  function showAside() {
+    clearTimeout(hideTimer);
+    aside.classList.add('show');
+    aside.removeAttribute('inert');
+    aside.removeAttribute('aria-hidden');
+  }
+  function hideAside() {
+    clearTimeout(hideTimer);
+    hideTimer = setTimeout(function () {
+      aside.classList.remove('show');
+      // fora da tela ela nao pode receber foco de Tab nem ser lida por leitor de tela
+      aside.setAttribute('inert', '');
+      aside.setAttribute('aria-hidden', 'true');
+    }, 260);
+  }
+
+  rail.addEventListener('mouseenter', showAside);
+  rail.addEventListener('mouseleave', hideAside);
+  aside.addEventListener('mouseenter', showAside);
+  aside.addEventListener('mouseleave', hideAside);
+
+  aside.setAttribute('inert', '');
+  aside.setAttribute('aria-hidden', 'true');
+
+  /* ---------- zoom do documento ---------- */
+
+  var scale = 1;
+  var zreset = document.getElementById('zreset');
+  function applyZoom() {
+    main.style.zoom = scale;
+    zreset.textContent = Math.round(scale * 100) + '%';
+  }
+  function bump(d) { scale = Math.min(2.2, Math.max(0.7, Math.round((scale + d) * 10) / 10)); applyZoom(); }
+  document.getElementById('zin').addEventListener('click', function () { bump(0.1); });
+  document.getElementById('zout').addEventListener('click', function () { bump(-0.1); });
+  zreset.addEventListener('click', function () { scale = 1; applyZoom(); });
+
+  document.addEventListener('keydown', function (e) {
+    if (e.ctrlKey || e.metaKey || e.altKey) return;
+    if (e.target.tagName === 'INPUT' || e.target.tagName === 'TEXTAREA') return;
+    if (e.key === '+' || e.key === '=') bump(0.1);
+    else if (e.key === '-' || e.key === '_') bump(-0.1);
+    else if (e.key === '0') { scale = 1; applyZoom(); }
+  });
+
+  refreshDim();
+  applyZoom();
+})();
+</script>
+
+</body>
+</html>
