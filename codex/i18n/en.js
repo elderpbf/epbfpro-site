@@ -567,6 +567,27 @@ export default {
   'cohorts.aula_select_prompt':     'Select a lesson on the left.',
   'cohorts.aula_mark_happened':     'Mark as held',
   'cohorts.aula_hours_unit':        'h',
+  'cohorts.aula_tab_roteiro':       'Script',
+
+  // Roteiro sub-tab (Cohorts aula hub, track-46 fatia 1 — dev-only, gated cdx-dev-only)
+  'roteiro.empty':                  'No blocks in the script yet.',
+  'roteiro.no_rotulo':              '(no label)',
+  'roteiro.select_ponto_prompt':    'Select a point on the left.',
+  'roteiro.meter_planned':          'Planned',
+  'roteiro.meter_reserve':          'Reserve',
+  'roteiro.meter_overflow':         'Over the lesson\'s time',
+  'roteiro.field_chamada':          'Call-out line',
+  'roteiro.field_chamada_placeholder': 'E.g. "Who has been through this?"',
+  'roteiro.field_notas':            'Notes',
+  'roteiro.notas_empty':            'No notes yet.',
+  'roteiro.notas_add_placeholder':  'Add a short note…',
+  'roteiro.notas_add_btn':          'Add',
+  'roteiro.nota_remove_title':      'Remove note',
+  'roteiro.tipo_resgate':           'Recap',
+  'roteiro.tipo_expositivo':        'Lecture',
+  'roteiro.tipo_pratica':           'Practice',
+  'roteiro.tipo_fechamento':        'Wrap-up',
+  'roteiro.tipo_pausa':             'Break',
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'happened on',

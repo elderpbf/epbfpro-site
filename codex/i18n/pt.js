@@ -571,6 +571,27 @@ export default {
   'cohorts.aula_select_prompt':     'Selecione uma aula à esquerda.',
   'cohorts.aula_mark_happened':     'Marcar como ocorrida',
   'cohorts.aula_hours_unit':        'h',
+  'cohorts.aula_tab_roteiro':       'Roteiro',
+
+  // Roteiro sub-tab (Cohorts aula hub, track-46 fatia 1 — dev-only, gated cdx-dev-only)
+  'roteiro.empty':                  'Nenhum bloco no roteiro ainda.',
+  'roteiro.no_rotulo':              '(sem rótulo)',
+  'roteiro.select_ponto_prompt':    'Selecione um ponto à esquerda.',
+  'roteiro.meter_planned':          'Planejado',
+  'roteiro.meter_reserve':          'Reserva',
+  'roteiro.meter_overflow':         'Estourou o tempo da aula',
+  'roteiro.field_chamada':          'Fala de chamada',
+  'roteiro.field_chamada_placeholder': 'Ex: "Quem já passou por isso?"',
+  'roteiro.field_notas':            'Anotações',
+  'roteiro.notas_empty':            'Nenhuma anotação ainda.',
+  'roteiro.notas_add_placeholder':  'Adicionar anotação curta…',
+  'roteiro.notas_add_btn':          'Adicionar',
+  'roteiro.nota_remove_title':      'Remover anotação',
+  'roteiro.tipo_resgate':           'Resgate',
+  'roteiro.tipo_expositivo':        'Expositivo',
+  'roteiro.tipo_pratica':           'Prática',
+  'roteiro.tipo_fechamento':        'Fechamento',
+  'roteiro.tipo_pausa':             'Pausa',
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'ocorreu em',

@@ -33,6 +33,10 @@ import * as students from './students.js';
 import * as releasesAdmin from '../content/releases.js';
 import * as tarefasAdmin from '../content/tarefas.js';
 import * as appRelease from './app-release.js';
+// track-46 fatia 1: the aula's 4th sub-tab, dev-only (gated cdx-dev-only) until
+// fatia 2 ships the real backend. Store is the dev localStorage stub, injected.
+import * as roteiroView from '../roteiro/roteiro-view.js';
+import * as roteiroStoreStub from '../roteiro/roteiro-store-stub.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 // Cohorts gained sub-tabs with the Cursos data model: the operational
@@ -89,8 +93,8 @@ let _dossierDtab = 'dados';   // the ACTIVE dossier sub-tab, remembered across r
 let _deepAula = null;   // aula_number to auto-select
 let _deepItem = null;   // tarefa item_id to focus in the Tarefas pane
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
-let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
-let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false }; // which detail embed is live
+let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas' | 'roteiro'
+let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false }; // which detail embed is live
 
 // CLIENTES rail: the shared list-rail (js/list-rail.js) in width:autohide mode. It starts
 // OPEN + pinned with the dossiê on the empty prompt; the first turma pick unpins it into the
@@ -193,6 +197,13 @@ const IDS = {
 
 // ── DOM refs (set in mount after render) ────────────────────────────────────
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
+
+// Debug gate: the shared Backstage bs_debug flag (mirrors content/releases.js
+// _isDebug). Read at render time so toggling it just needs a reload. Gates the
+// Roteiro aula sub-tab (track-46 fatia 1) — dev-only until fatia 2 ships.
+function _isDebug() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
+}
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
 // Delegated to the shared js/modal.js primitives. The Escape-key cleanup is now
@@ -1757,14 +1768,21 @@ function _renderAulaDetail(turma) {
   const markBtn = (aula.scheduled_for && !aula.happened_on)
     ? '<button type="button" class="cdx-btn cdx-btn-sm" data-aula-mark="' + _esc(aula.id) + '">' + _esc(t('cohorts.aula_mark_happened')) + '</button>'
     : '';
-  // An unsaved new aula has no id yet, so Liberações/Tarefas (which release content TO
-  // an aula) can't bind to it; show only Dados until it is saved.
+  // An unsaved new aula has no id yet, so Liberações/Tarefas/Roteiro (which bind TO
+  // an aula) can't attach to it; show only Dados until it is saved.
+  // Roteiro (track-46 fatia 1) is dev-only: the button itself only renders with
+  // localStorage.bs_debug==='1' (read here — the VIEW never touches localStorage).
+  const roteiroTab = _isDebug()
+    ? '<button type="button" class="cdx-aula-stab cdx-dev-only' + (_aulaTab === 'roteiro' ? ' is-on' : '') + '" data-aulatab="roteiro" role="tab">' + _esc(t('cohorts.aula_tab_roteiro')) + '</button>'
+    : '';
   const subtabs = aula._isNew
     ? '<button type="button" class="cdx-aula-stab is-on" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>'
     : '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'dados' ? ' is-on' : '') + '" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>' +
       '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'liberacoes' ? ' is-on' : '') + '" data-aulatab="liberacoes" role="tab">' + _esc(t('cohorts.doss_liberacoes')) + ' <span class="cdx-aula-stab-b">' + counts.total + '</span></button>' +
-      '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'tarefas' ? ' is-on' : '') + '" data-aulatab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + ' <span class="cdx-aula-stab-b">' + counts.tarefa + '</span></button>';
+      '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'tarefas' ? ' is-on' : '') + '" data-aulatab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + ' <span class="cdx-aula-stab-b">' + counts.tarefa + '</span></button>' +
+      roteiroTab;
   if (aula._isNew) _aulaTab = 'dados';
+  if (_aulaTab === 'roteiro' && !roteiroTab) _aulaTab = 'dados'; // debug turned off mid-session: fall back off the hidden tab
 
   detailEl.innerHTML =
     '<div class="cdx-aula-dh">' +
@@ -1818,6 +1836,13 @@ function _renderAulaPane(turma, aula) {
     tarefasAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aulaNumber: aula.aula_number,
       revealOn: !!turma.reveal_on_completion, aulaHappened: !!aula.happened_on, onChange, focusItemId });
     _aulaEmbedMounted.tarefas = true;
+    return;
+  }
+  if (_aulaTab === 'roteiro') {
+    // track-46 fatia 1: dev-only, store is the localStorage stub (swapped for the
+    // real codex-api backend in fatia 2 — only this wiring line changes then).
+    roteiroView.mount(paneEl, { store: roteiroStoreStub, aula, t });
+    _aulaEmbedMounted.roteiro = true;
     return;
   }
   paneEl.innerHTML = '<div class="cdx-aula-dados">' + _renderAulaColEditor(aula, turma) + '</div>';
@@ -2097,6 +2122,7 @@ function _unmountAulaEmbeds() {
   if (_aulaEmbedMounted.liberacoes) { try { releasesAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.liberacoes = false; }
   if (_aulaEmbedMounted.apps) { try { appRelease.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.apps = false; }
   if (_aulaEmbedMounted.tarefas) { try { tarefasAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.tarefas = false; }
+  if (_aulaEmbedMounted.roteiro) { try { roteiroView.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.roteiro = false; }
 }
 
 // #27: recompute the dossier's DERIVED facts (Carga horária = SUM of saved aula
@@ -2140,7 +2166,7 @@ export function mount(viewEl, ctx) {
   _turmaViewItems = [];
   _selectedAulaId = null;
   _aulaTab = 'dados';
-  _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false };
+  _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false };
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default
   // (Concept A) merged Turmas+Clientes list → dossier view is the shell below.
