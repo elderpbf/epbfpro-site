@@ -319,6 +319,12 @@ function renderHeaderActions() {
             });
             return;
           }
+          // Comunicado: the message body rides in the item — open it in place (a modal), never
+          // navigate. The old fall-through to deeplink just reloaded the trilha showing nothing.
+          if (item && item.type === 'comunicado') {
+            import('./comunicado-modal.js').then((m) => m.openComunicado(item)).catch(() => {});
+            return;
+          }
           if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
           if (item && item.deeplink && typeof location !== 'undefined') {
             let url = item.deeplink;

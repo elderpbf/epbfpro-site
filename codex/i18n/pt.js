@@ -253,6 +253,7 @@ export default {
   'comunicados.recent':        'Enviados recentes',
   'comunicados.none':          'Nenhum comunicado ainda.',
   'comunicados.turmas_word':   'turmas',
+  'comunicados.to_label':      'Para',
   // Alunos (cross-turma deduped roster, track-28a2)
   'alunos.search_ph':      'Buscar por nome ou e-mail…',
   'alunos.filter_multi':   'Só em várias turmas',

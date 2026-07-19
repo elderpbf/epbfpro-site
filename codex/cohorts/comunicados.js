@@ -163,25 +163,72 @@ async function _loadRecent() {
     const r = await api.list({ limit: 30 });
     const rows = (r && r.comunicados) || [];
     if (!rows.length) { list.innerHTML = '<p class="cdx-cm-muted">' + _esc(t('comunicados.none')) + '</p>'; return; }
-    list.innerHTML = rows.map((c) => {
-      const scopeLabel = c.scope === 'global' ? t('comunicados.scope_global')
-        : (c.scope === 'turmas' ? _scopeTurmasLabel(c.turma_ids) : '');
-      return '<div class="cdx-cm-item">' +
-        '<div class="cdx-cm-item-main">' +
-          '<span class="cdx-cm-item-title">' + _esc(c.title || '') + '</span>' +
-          '<span class="cdx-cm-item-meta">' + _esc(scopeLabel) + '</span>' +
-        '</div>' +
-      '</div>';
-    }).join('');
+    list.innerHTML = rows.map(_recentItemHtml).join('');
+    // Each card expands in place (title + date + destination on the head; message + channels
+    // + recipient detail on click) — no navigation, no second fetch.
+    list.querySelectorAll('.cdx-cm-item-head').forEach((h) => {
+      h.addEventListener('click', () => {
+        const detail = h.parentElement && h.parentElement.querySelector('.cdx-cm-item-detail');
+        if (!detail) return;
+        const open = detail.hidden;
+        detail.hidden = !open;
+        h.setAttribute('aria-expanded', open ? 'true' : 'false');
+      });
+    });
   } catch (e) {
     list.innerHTML = '<p class="cdx-cm-muted">' + _esc(t('comunicados.none')) + '</p>';
   }
 }
 
-function _scopeTurmasLabel(turmaIdsJson) {
+function _recentItemHtml(c) {
+  const when = _fmtDate(c.created_at);
+  const scope = _scopeLabel(c);
+  const channels = _channelsLabel(c.channels);
+  const sub = [when, scope].filter(Boolean).join(' · ');
+  return '<div class="cdx-cm-item">' +
+    '<button type="button" class="cdx-cm-item-head" aria-expanded="false">' +
+      '<span class="cdx-cm-item-title">' + _esc(c.title || '') + '</span>' +
+      (sub ? '<span class="cdx-cm-item-sub">' + _esc(sub) + '</span>' : '') +
+      '<span class="cdx-cm-item-chev" aria-hidden="true">▾</span>' +
+    '</button>' +
+    '<div class="cdx-cm-item-detail" hidden>' +
+      '<div class="cdx-cm-detail-body">' + _esc(c.body || '') + '</div>' +
+      '<div class="cdx-cm-detail-meta">' +
+        '<span><strong>' + _esc(t('comunicados.to_label')) + ':</strong> ' + _esc(scope || '—') + '</span>' +
+        (channels ? '<span><strong>' + _esc(t('comunicados.channels')) + ':</strong> ' + _esc(channels) + '</span>' : '') +
+      '</div>' +
+    '</div>' +
+  '</div>';
+}
+
+function _fmtDate(createdAt) {
+  if (!createdAt) return '';
+  try {
+    return new Date(createdAt * 1000).toLocaleString(undefined, {
+      day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
+    });
+  } catch (_) { return ''; }
+}
+
+function _scopeLabel(c) {
+  if (c.scope === 'global') return t('comunicados.scope_global');
   let ids = [];
-  try { ids = JSON.parse(turmaIdsJson || '[]'); } catch (_) { ids = []; }
+  try { ids = JSON.parse(c.turma_ids || '[]'); } catch (_) { ids = []; }
   if (!ids.length) return '';
-  if (ids.length === _turmas.length) return t('comunicados.scope_all');
+  if (_turmas.length && ids.length === _turmas.length) return t('comunicados.scope_all');
+  const names = ids
+    .map((id) => { const tm = _turmas.find((x) => Number(x.id) === Number(id)); return tm ? _turmaLabel(tm) : null; })
+    .filter(Boolean);
+  if (names.length) return names.join(', ');
   return ids.length + ' ' + t('comunicados.turmas_word');
+}
+
+function _channelsLabel(channelsJson) {
+  let ch = {};
+  try { ch = JSON.parse(channelsJson || '{}'); } catch (_) { ch = {}; }
+  const bits = [];
+  if (ch.bell) bits.push(t('comunicados.ch_bell'));
+  if (ch.email) bits.push(t('comunicados.ch_email'));
+  if (ch.push) bits.push(t('comunicados.ch_push'));
+  return bits.join(', ');
 }

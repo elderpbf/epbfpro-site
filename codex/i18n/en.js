@@ -252,6 +252,7 @@ export default {
   'comunicados.recent':        'Recently sent',
   'comunicados.none':          'No announcements yet.',
   'comunicados.turmas_word':   'cohorts',
+  'comunicados.to_label':      'To',
   // Alunos (cross-turma deduped roster, track-28a2)
   'alunos.search_ph':      'Search by name or e-mail…',
   'alunos.filter_multi':   'Multi-class only',
