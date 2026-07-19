@@ -1165,6 +1165,20 @@ export default {
   'tarefas.section_delete_title':'Delete section',
   'tarefas.section_delete_warning':'The section is removed; its assignments become section-less (they are not deleted).',
 
+  // track-45 Slice 1: AI response synthesis (dev-only preview, no real worker call)
+  'tarefas.eval_btn':          'Evaluate responses (preview)',
+  'tarefas.eval_panel_title':  'Response synthesis (AI, preview)',
+  'tarefas.eval_run':          'Synthesize responses',
+  'tarefas.eval_loading':      'Synthesizing responses...',
+  'tarefas.eval_idle':         'Click "Synthesize responses" for the AI to group the class responses into adherent, one relevant point, and diverged.',
+  'tarefas.eval_error':        'Could not synthesize the responses right now. Try again.',
+  'tarefas.eval_rate_limited': 'AI usage limit reached right now. Try again shortly.',
+  'tarefas.eval_empty':        'No responses to synthesize.',
+  'tarefas.eval_col_empty':    'No responses in this group.',
+  'tarefas.eval_group_adherent':'Most adherent',
+  'tarefas.eval_group_point':  'Raise a relevant point',
+  'tarefas.eval_group_diverged':'Diverged',
+
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',
   'labs.title':               'Labs',

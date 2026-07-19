@@ -422,4 +422,77 @@
 .cdx-file-picked { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
 .cdx-file-picked-name { font-weight: 600; font-size: 0.9rem; }
 .cdx-file-mode { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+
+/* ── track-45 Fatia 1: AI tarefa-response synthesis (dev-only preview) ───────
+ * content/tarefa-eval-view.js, mounted inside a modal opened from the Respostas
+ * pane (content/tarefas.js). Only anonymous excerpts render here, grouped by
+ * adherence to the enunciado. Every color below is an EXISTING token
+ * (success/amber/error/surface/text/border/background), already themed for
+ * [data-theme="dark"] in css/theme.css, so no new custom property or dark
+ * override is introduced here. */
+.cdx-teval-modal { width: min(94vw, 980px); }
+.cdx-teval-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.9rem; }
+.cdx-teval-empty,
+.cdx-teval-loading,
+.cdx-teval-error {
+  padding: 1.2rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.cdx-teval-error { color: var(--error, #ef4444); border-color: var(--error, #ef4444); }
+.cdx-teval-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+@media (max-width: 720px) {
+  .cdx-teval-groups { grid-template-columns: 1fr; }
+}
+.cdx-teval-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+.cdx-teval-col--adherent { border-top: 3px solid var(--success, #10b981); }
+.cdx-teval-col--point    { border-top: 3px solid var(--amber, #b45309); }
+.cdx-teval-col--diverged { border-top: 3px solid var(--error, #ef4444); }
+.cdx-teval-col-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.cdx-teval-col-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.cdx-teval-col-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-teval-item {
+  background: var(--background);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+.cdx-teval-item-note {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.cdx-teval-col-empty { color: var(--text-secondary); font-size: 0.82rem; font-style: italic; }
 .cdx-radio-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }

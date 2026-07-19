@@ -9,13 +9,19 @@
 //
 // The tarefa field registry is now a Codex module (js/tarefa-fields.js),
 // imported below.
-import { content as api, releases as relApi, cohorts as cohortsApi } from '../js/codex-api.js';
+import { content as api, releases as relApi, cohorts as cohortsApi, ai } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { getField, listFields } from '../js/tarefa-fields.js';
 import { renderEditor, readEditor, wireEditor } from '../js/tarefa-editor.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
+// track-45 Fatia 1: AI synthesis of tarefa responses, a dev-only preview (no
+// worker/backend change here). The model + prompt/parse logic lives in
+// js/tarefa-eval.js (pure, injectable); the projectable 3-group screen is
+// content/tarefa-eval-view.js, mounted inside a modal opened from this file.
+import * as tarefaEvalView from './tarefa-eval-view.js';
+import { makeWorkerEval, SEED_RESPONSES } from '../js/tarefa-eval.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -65,6 +71,9 @@ let _editCard = null;
 // Bank-only mode (Content > Tarefas sub-tab): the bank page with NO turma, NO aula-release
 // actions and NO answers, just create/edit/delete tarefas (guarded). Reuses the add-block bank.
 let _bankOnly = false;
+// track-45 Fatia 1: the AI-synthesis preview modal backdrop, while open (else null). Tracked
+// so unmount() can tear down the mounted view too, not just the DOM.
+let _tevalBd = null;
 
 // ── Pure rules (exported for tests) ──────────────────────────────────────────
 export function parseMeta(metaJson) {
@@ -104,6 +113,12 @@ function _formatTs(unix) {
       day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit',
     });
   } catch (_) { return ''; }
+}
+
+// Debug gate: the shared Backstage bs_debug flag (same flag content/releases.js and
+// questions/live-host.js read). Read at render time so toggling it just needs a reload.
+function _isDebug() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
 }
 
 // ── Modal helpers (mirror the Items sub-tab) ─────────────────────────────────
@@ -201,6 +216,8 @@ function _renderSubmissions(itemId) {
     '<div class="cdx-resp-toolbar">' +
       '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-resp-export"' + (count === 0 ? ' disabled' : '') + '>' + t('tarefas.export_csv') + '</button>' +
+      // track-45 Fatia 1: AI synthesis preview, dev-only (bs_debug). Never shows in production.
+      (_isDebug() ? '<button class="cdx-btn cdx-btn-sm cdx-dev-only cdx-teval-open" type="button">' + _esc(t('tarefas.eval_btn')) + '</button>' : '') +
     '</div>' +
     '<div class="cdx-resp-list">' +
       (count === 0
@@ -208,6 +225,9 @@ function _renderSubmissions(itemId) {
         : subs.map((s) => _submissionCardHtml(s, flags)).join('')) +
     '</div>';
 
+  pane.querySelectorAll('.cdx-teval-open').forEach((btn) => {
+    btn.addEventListener('click', () => _openTevalModal());
+  });
   pane.querySelectorAll('.cdx-resp-flag').forEach((btn) => {
     btn.addEventListener('click', () => _toggleFlag(itemId, btn.dataset.flag));
   });
@@ -363,6 +383,37 @@ function _openConfirmSimple(message, onConfirm) {
   const bd = openModal(html);
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); onConfirm(); });
+}
+
+// ── track-45 Fatia 1: AI synthesis preview modal (dev-only) ──────────────────
+// A modal (not an inline panel) so it survives whatever the answers pane does
+// underneath it (toggling a flag, saving a reply/grade all re-render
+// _renderSubmissions's innerHTML). Fatia 1 always evaluates the deterministic
+// SEED_RESPONSES fixture, not the real submissions on screen: this is a design
+// preview of the synthesis SCREEN, not yet wired to real answers.
+function _openTevalModal() {
+  const html =
+    '<div class="cdx-modal cdx-modal--lg cdx-teval-modal">' +
+      '<div class="cdx-modal-title">' + t('tarefas.eval_panel_title') + '</div>' +
+      '<div class="cdx-teval-host" id="cdx-teval-host"></div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="close">' + t('content.cancel') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  _tevalBd = bd;
+  bd.querySelector('[data-act="close"]').addEventListener('click', _closeTevalModal);
+  const host = bd.querySelector('#cdx-teval-host');
+  tarefaEvalView.mount(host, {
+    evalFn: makeWorkerEval(ai.chat),
+    statement: SEED_RESPONSES.statement,
+    responses: SEED_RESPONSES.responses,
+  });
+}
+function _closeTevalModal() {
+  tarefaEvalView.unmount();
+  if (_tevalBd) closeModal(_tevalBd);
+  _tevalBd = null;
 }
 
 // ── CSV export ────────────────────────────────────────────────────────────────
@@ -1086,6 +1137,7 @@ function _renderBankShell() {
 // ── Tab contract ─────────────────────────────────────────────────────────────
 export function mount(viewEl, ctx = {}) {
   _viewEl = viewEl;
+  _tevalBd = null;
   _client = null;
   _turma = null;
   _items = [];
@@ -1128,6 +1180,9 @@ export function unmount() {
   _focusItemId = null;
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
+  // track-45 Fatia 1: tear down the AI-synthesis preview view too, not just its DOM
+  // (the generic modal-backdrop sweep below only removes the node).
+  if (_tevalBd) { tarefaEvalView.unmount(); _tevalBd = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
   _selectedId = null;

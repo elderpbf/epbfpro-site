@@ -1171,6 +1171,20 @@ export default {
   'tarefas.section_delete_title':'Excluir seção',
   'tarefas.section_delete_warning':'A seção some; as tarefas dela ficam sem seção (não são apagadas).',
 
+  // track-45 Fatia 1: síntese de respostas por IA (preview dev-only, sem worker real)
+  'tarefas.eval_btn':          'Avaliar respostas (preview)',
+  'tarefas.eval_panel_title':  'Síntese das respostas (IA, preview)',
+  'tarefas.eval_run':          'Sintetizar respostas',
+  'tarefas.eval_loading':      'Sintetizando respostas...',
+  'tarefas.eval_idle':         'Clique em "Sintetizar respostas" para a IA agrupar as respostas da turma em aderentes, com ponto relevante e divergentes.',
+  'tarefas.eval_error':        'Não foi possível sintetizar as respostas agora. Tente novamente.',
+  'tarefas.eval_rate_limited': 'Limite de uso da IA atingido no momento. Tente novamente em instantes.',
+  'tarefas.eval_empty':        'Nenhuma resposta para sintetizar.',
+  'tarefas.eval_col_empty':    'Nenhuma resposta neste grupo.',
+  'tarefas.eval_group_adherent':'Mais aderentes',
+  'tarefas.eval_group_point':  'Levantam um ponto relevante',
+  'tarefas.eval_group_diverged':'Divergiram',
+
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',
   'labs.title':               'Labs',
