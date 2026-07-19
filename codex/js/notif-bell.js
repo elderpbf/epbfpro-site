@@ -13,7 +13,7 @@
 // after open. A collapsed "Histórico" holds what was already cleared this session,
 // split into two named mini-tabs. Refresh policy: on creation + every window focus.
 import { relTime } from './rel-time.js';
-import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
+import { dismissalFor, clearsOnRead, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
 import { esc } from './dom.js';
 import { glyphSvg } from './glyphs.js';
 import * as notifBus from './notif-bus.js';
@@ -155,7 +155,21 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
       a.addEventListener('click', () => {
         const it = items[parseInt(a.getAttribute('data-bell-i'), 10)];
         closePanel();
-        if (markSeen) Promise.resolve(markSeen()).then(refresh).catch(() => {});
+        // Opening a read-completes ACIONÁVEL (notif-policy clearsOnRead) IS the dismissal: it
+        // stops counting and drops into the Acionáveis history, exactly as its × does. Same
+        // optimistic-then-server order as the × handler, and deliberately NO refresh — a
+        // re-fetch here would race the dismissal write and bring the row straight back.
+        // Everything else keeps the old path (Dispensáveis clear on tray-open; an ACIONÁVEL
+        // that needs WORK done must survive the click that goes to do it).
+        if (it && _isAct(it) && dismissItem && clearsOnRead(it, role)) {
+          _histPush('act', it);
+          _items = _items.filter((i) => i !== it);
+          setBadge(_items.filter((i) => !i.seen).length);
+          renderHist();
+          Promise.resolve(dismissItem(it)).catch(() => {});
+        } else if (markSeen) {
+          Promise.resolve(markSeen()).then(refresh).catch(() => {});
+        }
         if (onNavigate && it) onNavigate(it);
       });
     });

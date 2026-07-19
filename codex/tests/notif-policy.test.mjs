@@ -5,7 +5,7 @@
 // (aluno enviou) and the student's 'tarefa_feedback' (professor respondeu) are mirrors.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from '../js/notif-policy.js';
+import { dismissalFor, clearsOnRead, DISMISS_OPEN, DISMISS_ACT } from '../js/notif-policy.js';
 
 test('the tier tags are distinct string constants', () => {
   assert.equal(DISMISS_OPEN, 'open');
@@ -43,4 +43,30 @@ test('student tier split: the teacher reply/nota on my tarefa is ACT', () => {
   assert.equal(dismissalFor({ type: 'tarefa_feedback' }, 'student'), DISMISS_ACT);
   assert.equal(dismissalFor({ type: 'tarefa_feedback' }, undefined), DISMISS_OPEN); // role-gated
   assert.equal(dismissalFor({ type: 'tarefa_feedback' }, 'admin'), DISMISS_OPEN);   // not the teacher's row
+});
+
+// track-44: a comunicado is a MESSAGE — Acionável for whoever receives it (it must survive
+// bell-open, or the student glances once and the message is gone), and role-independent,
+// because both directions are reading the same thing.
+test('comunicado is ACT for every role', () => {
+  for (const role of ['student', 'admin', undefined]) {
+    assert.equal(dismissalFor({ type: 'comunicado' }, role), DISMISS_ACT, `role ${role}`);
+  }
+});
+
+// Élder 2026-07-19: an Acionável clears TWO ways — the × or opening it ("abri, li a mensagem,
+// tem que deixar de contar e ir pro histórico"). That only holds where the action IS reading.
+// An item that needs WORK done must SURVIVE the very click that navigates over to do it,
+// otherwise the teacher destroys their own queue by opening it.
+test('clearsOnRead: only read-completes items clear by being opened', () => {
+  assert.equal(clearsOnRead({ type: 'comunicado' }, 'student'), true);
+  assert.equal(clearsOnRead({ type: 'comunicado' }, 'admin'), true);
+  assert.equal(clearsOnRead({ type: 'tarefa_feedback' }, 'student'), true);
+  // The work-required Acionáveis — clicking through to DO the work must not clear them.
+  assert.equal(clearsOnRead({ type: 'tarefa_submission' }, 'admin'), false);
+  assert.equal(clearsOnRead({ type: 'student_pending' }, 'admin'), false);
+  assert.equal(clearsOnRead({ type: 'forum_post', kind: 'new_thread' }, 'admin'), false);
+  assert.equal(clearsOnRead({ type: 'tarefa_feedback' }, 'admin'), false); // not the teacher's row
+  assert.equal(clearsOnRead(null, 'student'), false);
+  assert.equal(clearsOnRead({ type: 'whatever' }, 'student'), false);
 });

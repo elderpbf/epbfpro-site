@@ -32,6 +32,10 @@ export const DISMISS_ACT = 'act';
 //   item: { type, kind?, mine?, ... } (the generic notification shape)
 //   role: 'student' | 'admin' (defaults to 'student')
 export function dismissalFor(item, role) {
+  // A comunicado (track-44) is ACIONÁVEL for whoever receives it: it is a MESSAGE, and a
+  // message clears when the person read it or dismissed it by hand — never merely because
+  // the tray was opened. Role-independent, so it holds in both directions.
+  if (item && item.type === 'comunicado') return DISMISS_ACT;
   if (role === 'admin' && item) {
     if (item.type === 'tarefa_submission') return DISMISS_ACT;
     if (item.type === 'forum_post' && item.kind === 'new_thread') return DISMISS_ACT;
@@ -41,4 +45,20 @@ export function dismissalFor(item, role) {
     if (item.type === 'tarefa_feedback') return DISMISS_ACT;   // resposta/nota do professor: ir ler
   }
   return DISMISS_OPEN;
+}
+
+// clearsOnRead(item, role) -> boolean
+// Which ACIONÁVEIS are DONE the moment they are opened, so opening one clears it exactly as
+// its × does (Élder 2026-07-19: "ou eu clico no xinho, ou eu abro, li a mensagem — ela tem
+// que deixar de contar como nova e ir pro histórico, na categoria correta").
+//
+// The split is deliberate and load-bearing: an item whose action IS READING is complete once
+// read (a comunicado IS its message; the professor's resposta is read on the tarefa). An item
+// that needs WORK done — grade the tarefa, approve the pending student — must NOT vanish just
+// because the teacher clicked through to go do it. Those still clear only via × / "marcar tudo".
+export function clearsOnRead(item, role) {
+  if (!item) return false;
+  if (item.type === 'comunicado') return true;
+  if (role === 'student' && item.type === 'tarefa_feedback') return true;
+  return false;
 }
