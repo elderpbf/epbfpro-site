@@ -430,7 +430,11 @@
  * (success/amber/error/surface/text/border/background), already themed for
  * [data-theme="dark"] in css/theme.css, so no new custom property or dark
  * override is introduced here. */
-.cdx-teval-modal { width: min(94vw, 980px); }
+/* Own the width against .cdx-modal{width:100%;max-width:460px} (cohorts.css, loaded
+   later): a two-class selector (0,2,0) beats the single-class base regardless of load
+   order, so the projected synthesis gets its full width instead of the 460/520px cap.
+   No cdx-modal--<tier> is stacked on this modal (they'd re-introduce the cap). */
+.cdx-modal.cdx-teval-modal { width: min(94vw, 980px); max-width: min(94vw, 980px); max-height: 90vh; overflow-y: auto; }
 .cdx-teval-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.9rem; }
 .cdx-teval-empty,
 .cdx-teval-loading,

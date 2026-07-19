@@ -393,7 +393,7 @@ function _openConfirmSimple(message, onConfirm) {
 // preview of the synthesis SCREEN, not yet wired to real answers.
 function _openTevalModal() {
   const html =
-    '<div class="cdx-modal cdx-modal--lg cdx-teval-modal">' +
+    '<div class="cdx-modal cdx-teval-modal">' +
       '<div class="cdx-modal-title">' + t('tarefas.eval_panel_title') + '</div>' +
       '<div class="cdx-teval-host" id="cdx-teval-host"></div>' +
       '<div class="cdx-modal-actions">' +
