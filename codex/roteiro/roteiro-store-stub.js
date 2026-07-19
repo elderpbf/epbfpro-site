@@ -82,7 +82,15 @@ export function load(aulaId) {
 
 export function save(aulaId, roteiro) {
   const r = normalizeRoteiro(roteiro);
-  try { localStorage.setItem(_key(aulaId), JSON.stringify(r)); } catch (_) { /* dev stub: best-effort only */ }
+  try {
+    localStorage.setItem(_key(aulaId), JSON.stringify(r));
+  } catch (e) {
+    // Hard rule (Codex/CLAUDE.md): a caught error must still reach the debug pill,
+    // never be swallowed. A quota/private-mode setItem failure is diagnosable here.
+    if (typeof window !== 'undefined' && typeof window.bsLog === 'function') {
+      window.bsLog('codex: roteiro stub save failed: ' + ((e && e.message) || e), 'error');
+    }
+  }
   return r;
 }
 
