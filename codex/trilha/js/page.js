@@ -375,6 +375,18 @@ function renderHeaderActions() {
         onMyData: (data.participant)
           ? (() => openMyData(data.participant, contextFromState(state), { root: _root }))
           : undefined,
+        // Delivery preferences (track-44): the category × channel grid, server-side per identity.
+        // Loaded lazily — the grid is only fetched if the student actually opens it, so the header
+        // costs no extra round-trip. pushAvailable stays false until Etapa B wires the push channel;
+        // the column renders disabled with "em breve" rather than lying about delivery.
+        onNotifChannels: () => import('./notif-channels.js').then((m) => m.openNotifChannels({
+          root: _root,
+          pushAvailable: false,
+          fetchPrefs: () => trail.notifPrefsGet({ session_token: state.sessionToken, _silent: true }),
+          savePref: (category, channel, enabled) => trail.notifPrefsSet({
+            session_token: state.sessionToken, category, channel, enabled,
+          }),
+        })),
         onLogout: async () => {
           // Server round-trip first (track-36 d): clear the HttpOnly cookie + revoke, then reload.
           await logoutStudent(state.clientSlug, state.turmaSlug);

@@ -73,6 +73,11 @@ export const trail = {
   // Durable bell history (track-44): what this student already dismissed, resolved back from
   // ct_notif_dismissed — so the tray's "Histórico" survives a reload instead of living in the page.
   notifHistory:     (p) => call('ct_notif_history', p),       // { session_token } -> { ok, count, items }
+  // Delivery preferences (track-44): the category × channel grid the worker's router reads before
+  // fanning a notification out. Keyed by IDENTITY (ct_students.id), unlike the bell's read-state,
+  // which is per-participant — see architecture/notifications.md §3.
+  notifPrefsGet:    (p) => call('ct_notif_prefs_get', p),     // { session_token } -> { ok, prefs }
+  notifPrefsSet:    (p) => call('ct_notif_prefs_set', p),     // { session_token, category, channel, enabled } -> { ok }
 
   // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
   // live session is open; the device stores it and offers it at login so being in

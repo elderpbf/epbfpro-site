@@ -61,7 +61,10 @@ function escAttr(s) { return String(s == null ? '' : s).replace(/&/g, '&amp;').r
 //   turmas   : the OTHER turmas on this device ({ name, client, url, clientSlug, turmaSlug }),
 //              the "trocar de turma" list; onForget(clientSlug, turmaSlug) removes a saved one;
 //              onMyData opens the read-only "Meus dados" card (track-42)
-export function createNotifSettings({ initials, turmaKey, onChange, onLogout, onInstallApp, onMyData, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
+//   onNotifChannels : opens the DELIVERY preferences grid (notif-channels.js, track-44) — which
+//              channels carry which category to this person, server-side. Distinct from the
+//              `showPrefs` toggles above, which only filter what the BELL displays for this turma.
+export function createNotifSettings({ initials, turmaKey, onChange, onLogout, onInstallApp, onMyData, onNotifChannels, showPrefs = true, turmas = [], onForget, btnClass = 'ph-action-btn' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-ns-wrap';
 
@@ -104,6 +107,10 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, on
           '<div class="cdx-ns-opts">' + optsHtml() + '</div>'
         : '') +
       turmasHtml() +
+      // Delivery preferences (track-44). It sits next to the display toggles above because to the
+      // student they are one subject ("minhas notificações"), even though one is per-turma display
+      // and the other is per-identity delivery.
+      (onNotifChannels ? '<button type="button" class="cdx-ns-channels">' + escAttr(t('nchan.pill')) + '</button>' : '') +
       // "Meus dados" (track-42): read-only, right where the person already is. It goes ABOVE Sair
       // because logging out is the last thing in this panel, not a peer of looking at your data.
       (onMyData ? '<button type="button" class="cdx-ns-mydata">' + escAttr(t('mydata.pill')) + '</button>' : '') +
@@ -136,6 +143,9 @@ export function createNotifSettings({ initials, turmaKey, onChange, onLogout, on
 
   const installBtn = wrap.querySelector('.cdx-ns-install');
   if (installBtn && onInstallApp) installBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onInstallApp(); });
+
+  const channelsBtn = wrap.querySelector('.cdx-ns-channels');
+  if (channelsBtn && onNotifChannels) channelsBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onNotifChannels(); });
 
   const myDataBtn = wrap.querySelector('.cdx-ns-mydata');
   if (myDataBtn && onMyData) myDataBtn.addEventListener('click', (e) => { if (e.stopPropagation) e.stopPropagation(); close(); onMyData(); });

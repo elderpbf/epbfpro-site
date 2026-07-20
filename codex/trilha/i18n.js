@@ -223,6 +223,23 @@ const pt = {
   'notif.opt_all':          'Tudo no fórum',
   'notif.switch_turma':     'Trocar de turma',
   'notif.forget_turma':     'Esquecer esta turma',
+  // Delivery preferences (track-44): categoria × canal, gravadas no servidor. O sino é o piso
+  // (sempre ligado); o aluno escolhe os canais EXTRAS.
+  'nchan.pill':             'Notificações',
+  'nchan.title':            'Como quero ser avisado',
+  'nchan.subtitle':         'Escolha por onde cada tipo de aviso chega até você.',
+  'nchan.cat_comunicado':   'Comunicados da turma',
+  'nchan.cat_tarefa':       'Resposta nas minhas tarefas',
+  'nchan.cat_forum':        'Fórum',
+  'nchan.cat_noticia':      'Notícias da PensoIA',
+  'nchan.ch_bell':          'Sino',
+  'nchan.ch_email':         'E-mail',
+  'nchan.ch_push':          'Celular',
+  'nchan.soon':             'em breve',
+  'nchan.note':             'O sino fica sempre ligado: é como você vê o que aconteceu aqui dentro. O e-mail e o celular são os avisos extras.',
+  'nchan.loading':          'Carregando suas preferências…',
+  'nchan.error':            'Não foi possível carregar suas preferências. Tente novamente em instantes.',
+  'nchan.save_failed':      'Não foi possível salvar essa preferência. Tente de novo.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -438,6 +455,21 @@ const en = {
   'notif.opt_all':          'Everything in the forum',
   'notif.switch_turma':     'Switch class',
   'notif.forget_turma':     'Forget this class',
+  'nchan.pill':             'Notifications',
+  'nchan.title':            'How I want to be notified',
+  'nchan.subtitle':         'Choose where each kind of notice reaches you.',
+  'nchan.cat_comunicado':   'Class announcements',
+  'nchan.cat_tarefa':       'Replies on my assignments',
+  'nchan.cat_forum':        'Forum',
+  'nchan.cat_noticia':      'PensoIA news',
+  'nchan.ch_bell':          'Bell',
+  'nchan.ch_email':         'Email',
+  'nchan.ch_push':          'Phone',
+  'nchan.soon':             'soon',
+  'nchan.note':             'The bell stays on: it is how you see what happened in here. Email and phone are the extra notices.',
+  'nchan.loading':          'Loading your preferences…',
+  'nchan.error':            'Could not load your preferences. Please try again in a moment.',
+  'nchan.save_failed':      'Could not save that preference. Please try again.',
 };
 
 const DICTS = { 'pt-BR': pt, en };
