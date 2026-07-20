@@ -80,9 +80,20 @@ export const REPOS = {
 
 const SITE_ROOT = fileURLToPath(new URL('../..', import.meta.url));
 
+// Os repos irmãos são OPT-IN por env, de propósito, e não resolvidos por convenção.
+// A tentação era apontar backstage para `../backstage`, e isso está errado por dois
+// motivos: aquele clone é COMPARTILHADO entre sessões paralelas, então a suíte do Codex
+// ficaria refém do galho em que outra pessoa deixou a árvore; e o Brand nem repo git é,
+// mora na Drive, e caminho de Drive não é o mesmo em toda máquina.
+//
+// Consequência assumida: sem env, este teste confere só o `site` e ANUNCIA quantos
+// alvos não conferiu. A varredura cross-repo deliberada é:
+//   BRAND_BACKSTAGE_ROOT=... BRAND_PROJECT_ROOT=... node --test tests/brand-sync.test.mjs
+// e o portão de verdade antes de publicar marca é `node tools/brand-build.mjs --check`
+// com as mesmas variáveis, que é onde a checagem dos três repos pertence.
 export function repoRoot(key) {
   if (key === 'site') return SITE_ROOT;
-  if (key === 'backstage') return process.env.BRAND_BACKSTAGE_ROOT || path.resolve(SITE_ROOT, '../backstage');
+  if (key === 'backstage') return process.env.BRAND_BACKSTAGE_ROOT || null;
   if (key === 'brand') return process.env.BRAND_PROJECT_ROOT || null;
   return null;
 }
