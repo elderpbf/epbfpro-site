@@ -209,13 +209,53 @@ export function makeEvalCache(storage, ns) {
 
 // Strip optional ```json ... ``` fences, or extract the first {...} span from
 // surrounding prose. Mirrors aiService.js's parseFillResponse.
+// Brace-matched extraction, string-aware (so a '}' inside a note's text does not
+// end the object early). Replaces a greedy /\{[\s\S]*\}/, which silently returned a
+// span ending at the LAST '}' anywhere in the reply, i.e. at the closing brace of
+// the nested "notes" object whenever the root brace was missing.
+//
+// Measured on staging 2026-07-20: qwen3-30b-a3b intermittently omits the FINAL root
+// '}' (1 failure in 6 live calls, reply length ~492, nowhere near the token budget,
+// so this is not truncation). Every field is present and well-formed; only the
+// closing punctuation is absent. Closing it is a faithful repair of a complete
+// payload, not a guess at missing content, so `repaired` is reported for
+// diagnosability rather than hidden.
+function _extractJsonObject(raw) {
+  const start = raw.indexOf('{');
+  if (start < 0) return { text: raw, repaired: false };
+  let depth = 0;
+  let inStr = false;
+  let esc = false;
+  for (let i = start; i < raw.length; i++) {
+    const c = raw[i];
+    if (esc) { esc = false; continue; }
+    if (c === '\\') { if (inStr) esc = true; continue; }
+    if (c === '"') { inStr = !inStr; continue; }
+    if (inStr) continue;
+    if (c === '{') depth++;
+    else if (c === '}') {
+      depth--;
+      if (depth === 0) return { text: raw.slice(start, i + 1), repaired: false };
+    }
+  }
+  // Ran out mid-object. Two shapes seen live: the root '}' simply absent, and a
+  // reply cut inside a note's string (which leaves inStr true, so the braces alone
+  // would not save it). Close the open string first, then the open braces. The
+  // groups are emitted BEFORE notes, so this recovers the whole classification and
+  // at worst loses the tail of one explanatory note. If the cut landed somewhere
+  // this cannot rescue (mid-array, mid-key), JSON.parse still fails and the caller
+  // gets the error: the repair never invents a classification.
+  if (inStr || depth > 0) {
+    return { text: raw.slice(start) + (inStr ? '"' : '') + '}'.repeat(Math.max(0, depth)), repaired: true };
+  }
+  return { text: raw.slice(start), repaired: false };
+}
+
 function _stripFence(raw) {
   raw = (raw || '').trim();
   const fenced = raw.match(/```(?:json)?\s*([\s\S]*?)\s*```/);
-  if (fenced) return fenced[1].trim();
-  const objMatch = raw.match(/\{[\s\S]*\}/);
-  if (objMatch) return objMatch[0];
-  return raw;
+  if (fenced) return _extractJsonObject(fenced[1].trim());
+  return _extractJsonObject(raw);
 }
 
 function _toIndexArray(v) {
@@ -230,7 +270,8 @@ export function parseEvalResponse(text) {
   if (typeof text !== 'string' || !text.trim()) {
     return { error: 'empty reply' };
   }
-  const raw = _stripFence(text);
+  const extracted = _stripFence(text);
+  const raw = extracted.text;
   let parsed;
   try {
     parsed = JSON.parse(raw);
@@ -250,6 +291,7 @@ export function parseEvalResponse(text) {
     diverged: _toIndexArray(parsed.diverged),
   };
   const out = { groups };
+  if (extracted.repaired) out.repaired = true;
   if (parsed.notes && typeof parsed.notes === 'object' && !Array.isArray(parsed.notes)) {
     out.notes = parsed.notes;
   }
@@ -346,8 +388,22 @@ export function makeWorkerEval(aiChat, opts) {
     const replyText = res.text != null ? res.text : res.reply;
     if (!replyText) return { error: 'no reply from AI (empty)' };
 
-    const parsed = parseEvalResponse(replyText);
-    if (parsed.error) return parsed;
+    let parsed = parseEvalResponse(replyText);
+    if (parsed.error) {
+      // Measured on staging 2026-07-20: even after the brace/string repair, roughly 1
+      // call in 25 comes back as JSON the parser cannot rescue. This is a click made
+      // live, in front of a class, so one clean retry is worth ~US$0.0002. Exactly
+      // one: a loop would turn a systematic prompt problem into a stall.
+      _logInfo('tarefa-eval: resposta ilegível, tentando de novo uma vez');
+      let retry = null;
+      try { retry = await _ask(prompt, !usedFallback); } catch (_) { retry = null; }
+      const retryText = retry && (retry.text != null ? retry.text : retry.reply);
+      if (retryText) {
+        const reparsed = parseEvalResponse(retryText);
+        if (!reparsed.error) { parsed = reparsed; res = retry; }
+      }
+      if (parsed.error) return parsed;
+    }
 
     const rec = reconcileGroups({ groups: parsed.groups, responses });
     if (rec.missing.length) {

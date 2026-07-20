@@ -149,12 +149,22 @@ test('parseEvalResponse: an UNCLOSED ```json fence still parses when the JSON bo
   assert.deepEqual(out.groups, { adherent: [1, 2, 3, 6], point: [4, 5], diverged: [7, 8] });
 });
 
-test('parseEvalResponse: a genuinely truncated reply returns {error} carrying the length, never throws', () => {
+// Was: "a truncated reply returns {error}". Superseded 2026-07-20. A reply cut inside
+// a note now RECOVERS, because the groups are emitted before the notes and losing an
+// explanatory tail is not a reason to throw the whole classification away.
+test('parseEvalResponse: a reply truncated inside a note recovers the classification, never throws', () => {
   const text = '```json\n{"adherent":[1,2,3,6],"point":[4,5],"notes":{"4":"comeca aqui e corta';
   assert.doesNotThrow(() => parseEvalResponse(text));
   const out = parseEvalResponse(text);
+  assert.ok(!out.error);
+  assert.deepEqual(out.groups.adherent, [1, 2, 3, 6]);
+  assert.equal(out.repaired, true);
+});
+
+test('parseEvalResponse: an unrecoverable reply still reports its length, for the debug pill', () => {
+  const out = parseEvalResponse('{"adherent":[1,2,');
   assert.equal(typeof out.error, 'string');
-  assert.match(out.error, /\d+\s*chars/, 'the error reports the reply length, so a truncation is diagnosable from the debug pill');
+  assert.match(out.error, /\d+\s*chars/, 'the error reports the reply length, so a truncation is diagnosable');
 });
 
 // ── makeStubEval ─────────────────────────────────────────────────────────────
@@ -266,6 +276,81 @@ test('tarefa-eval-view mount: with answers there is a redo button and NO synthes
   assert.ok(/data-act="redo"/.test(el.innerHTML), 'the redo escape hatch renders');
   assert.ok(el.innerHTML.includes(t('tarefas.eval_redo_hint')), 'redo carries the "from zero" tooltip');
   tarefaEvalView.unmount();
+});
+
+// ── the missing root brace ───────────────────────────────────────────────────
+// Reproduced live on staging 2026-07-20: qwen3-30b-a3b intermittently omits the
+// FINAL '}' (1 in 6 real calls). The old greedy /\{[\s\S]*\}/ then matched up to the
+// closing brace of the nested "notes" object, handing JSON.parse a span that could
+// never parse. Verbatim tail of the failing reply is reproduced here.
+test('parseEvalResponse: a reply missing only the final root brace is repaired, not rejected', () => {
+  const reply = '{"adherent":[1,2,3,5,6],"point":[4],"diverged":[7,8],"notes":' +
+    '{"4":"levanta um ponto relevante sobre o art. 39 do CDC",' +
+    '"8":"desvia completamente do pedido, demonstrando falta de tentativa de resposta com base no direito aplicável"}';
+  const out = parseEvalResponse(reply);
+  assert.ok(!out.error, 'must parse: every field is present, only the closing brace is missing');
+  assert.deepEqual(out.groups, { adherent: [1, 2, 3, 5, 6], point: [4], diverged: [7, 8] });
+  assert.equal(out.notes['8'].includes('aplicável'), true);
+  assert.equal(out.repaired, true, 'the repair is reported, not hidden');
+});
+
+// The second live shape: cut INSIDE a note's string. Braces alone cannot save it,
+// because the scanner is still inside an unterminated string. The groups are emitted
+// before notes, so the classification survives and only one note loses its tail.
+test('parseEvalResponse: a reply cut mid-note recovers the full classification', () => {
+  const reply = '{"adherent":[1,2,3,5,6],"point":[4],"diverged":[7,8],"notes":' +
+    '{"4":"levanta um ponto relevante sobre o art. 39 do CDC","8":"desvia completa';
+  const out = parseEvalResponse(reply);
+  assert.ok(!out.error, 'the classification must survive a cut inside a note');
+  assert.deepEqual(out.groups, { adherent: [1, 2, 3, 5, 6], point: [4], diverged: [7, 8] });
+  assert.equal(out.repaired, true);
+  assert.equal(out.notes['4'], 'levanta um ponto relevante sobre o art. 39 do CDC', 'the intact note is untouched');
+});
+
+// The repair must never invent a classification out of a cut it cannot read.
+test('parseEvalResponse: a cut mid-array still errors rather than guessing', () => {
+  const out = parseEvalResponse('{"adherent":[1,2,');
+  assert.equal(typeof out.error, 'string');
+});
+
+test('makeWorkerEval: an unparseable reply is retried exactly once, then succeeds', async () => {
+  let n = 0;
+  const fakeChat = async () => {
+    n++;
+    return { text: n === 1 ? 'desculpe, nao consegui' : '{"adherent":[1],"point":[],"diverged":[]}' };
+  };
+  const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(n, 2, 'exactly one retry');
+  assert.deepEqual(out.groups, { adherent: [1], point: [], diverged: [] });
+});
+
+test('makeWorkerEval: two unparseable replies give up instead of looping', async () => {
+  let n = 0;
+  const fakeChat = async () => { n++; return { text: 'nao e json' }; };
+  const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(n, 2, 'one retry, never a loop');
+  assert.equal(typeof out.error, 'string');
+});
+
+test('parseEvalResponse: a well-formed reply is NOT flagged as repaired', () => {
+  const out = parseEvalResponse('{"adherent":[1],"point":[],"diverged":[],"notes":{"1":"ok"}}');
+  assert.ok(!out.error);
+  assert.equal(out.repaired, undefined);
+});
+
+// A '}' inside a note's text must not be mistaken for the end of the object, which
+// is exactly what a brace counter that ignores strings would do.
+test('parseEvalResponse: a brace inside a note string does not end the object early', () => {
+  const out = parseEvalResponse('{"adherent":[1],"point":[],"diverged":[],"notes":{"1":"cita o trecho } e segue"}}');
+  assert.ok(!out.error);
+  assert.deepEqual(out.groups.adherent, [1]);
+  assert.equal(out.notes['1'], 'cita o trecho } e segue');
+});
+
+test('parseEvalResponse: an escaped quote inside a note does not break string tracking', () => {
+  const out = parseEvalResponse('{"adherent":[1],"point":[],"diverged":[],"notes":{"1":"diz \\"abusiva\\" e para"}}');
+  assert.ok(!out.error);
+  assert.equal(out.notes['1'], 'diz "abusiva" e para');
 });
 
 // ── no truncation: measure, do not cut ───────────────────────────────────────
