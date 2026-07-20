@@ -435,7 +435,19 @@
    order, so the projected synthesis gets its full width instead of the 460/520px cap.
    No cdx-modal--<tier> is stacked on this modal (they'd re-introduce the cap). */
 .cdx-modal.cdx-teval-modal { width: min(94vw, 980px); max-width: min(94vw, 980px); max-height: 90vh; overflow-y: auto; }
-.cdx-teval-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.9rem; }
+/* Toolbar: provenance on the left, the redo escape hatch on the right. There is no
+   "synthesize" button any more, opening the modal is the trigger. */
+.cdx-teval-toolbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 0.8rem; margin-bottom: 0.9rem; flex-wrap: wrap;
+}
+.cdx-teval-toolbar > .cdx-teval-redo { margin-left: auto; flex: none; }
+.cdx-teval-meta { font-size: 0.78rem; opacity: 0.7; align-self: center; }
+.cdx-teval-warn {
+  flex-basis: 100%; order: 3;
+  font-size: 0.78rem; padding: 0.45rem 0.6rem; border-radius: 6px;
+  background: rgba(220, 150, 40, 0.14); border: 1px solid rgba(220, 150, 40, 0.35);
+}
 .cdx-teval-empty,
 .cdx-teval-loading,
 .cdx-teval-error {

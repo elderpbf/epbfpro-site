@@ -14,8 +14,11 @@
 //   buildEvalInput(rows)                       -> { responses, idByIndex } (real submissions -> anonymous payload)
 //   buildEvalPrompt({ statement, responses })  -> { system, messages }
 //   parseEvalResponse(replyText)               -> { groups, notes? } | { error }
-//   fitResponsesToBudget({ statement, responses, ... }) -> { statement, responses, truncatedCount }
-//   makeWorkerEval(aiChat)                     -> async ({statement,responses}) => groups | {error}
+//   measureEvalPayload({ statement, responses }) -> { chars, limit, fits }
+//   hashText(s) / buildFingerprint({statement, rows}) -> change detection
+//   groupsToIds / groupsFromIds                -> index space <-> submission-id space
+//   makeEvalCache(storage)                     -> { read, write, clear } storage seam
+//   makeWorkerEval(aiChat, opts)               -> async ({statement,responses}) => groups | {error}
 //   makeStubEval()                             -> async (...) => canned groups
 //   SEED_RESPONSES                             -> TEST FIXTURE ONLY, see the comment on it below
 
@@ -78,55 +81,130 @@ export function buildEvalPrompt({ statement, responses }) {
   return { system, messages };
 }
 
-// fitResponsesToBudget, pure, no I/O. Verified worker contract (codex-api's
-// src/ai.js:363-373, read-only from here): `messages` max 50 entries, and
-// totalChars = the sum of every message.content.length must be <= 20000; `system`
-// is SEPARATE and capped at 10000, so it never counts toward that 20000. Our
-// single user message is 'ENUNCIADO:\n'+statement+'\n\nRESPOSTAS:\n'+list, and a
-// tarefa with many/long real answers can blow well past 20000 (the live error,
-// 2026-07-19: "ai_chat: messages exceed 20000 char total limit"). This trims
-// statement + each response's text so the built prompt fits inside `limit`,
-// BEFORE the model ever sees it; the view keeps the full text always (only
-// makeWorkerEval calls this, right before buildEvalPrompt).
-// Never mutates the caller's rows: every kept response is a fresh {index,text}
-// literal, same anonymity-by-construction guarantee as buildEvalInput.
-// The `<= limit` guarantee is UNCONDITIONAL, at any class size. Note that a
-// readability floor can only ever exceed the even share when the budget is
-// already tight, which is exactly the case where honouring it would blow the
-// limit, so a floor applied as max(floor, share) is not a nicety, it is the bug
-// (it would have re-broken this past ~77 long answers). Fitting wins: the cap is
-// the even share, and `belowFloor` reports when answers had to be cut shorter
-// than minPerResponse, instead of silently shipping an over-limit payload.
-// A class big enough to trip `belowFloor` is the point where batching into
-// several AI calls becomes the real answer; this only guarantees we never blow
-// the worker's ceiling in the meantime.
-export function fitResponsesToBudget({ statement, responses, limit = 19000, statementMax = 3000, minPerResponse = 200 }) {
-  const stmt = statement || '';
-  const cappedStatement = stmt.length > statementMax ? stmt.slice(0, statementMax) : stmt;
-  const list = responses || [];
-  const count = list.length;
-  if (!count) {
-    return { statement: cappedStatement, responses: [], truncatedCount: 0 };
+// Worker contract, verified in codex-api/src/ai.js (read-only from here): `messages`
+// max 50 entries; the sum of every message.content.length must be <= `max_chars`,
+// which now DEFAULTS to 20000 but is settable per call and clamped to a 200000
+// ceiling; `system` is SEPARATE and capped at 10000, so it never counts here.
+//
+// We deliberately do NOT truncate. Élder's rule: "não podemos perder conteúdo".
+// The old 20000 wall was our own validation constant, not a model limit, and the
+// three buckets are a COMPARATIVE judgment, so cutting answers (or splitting the
+// cohort into batches) degrades exactly the thing the feature exists to produce.
+// The benchmark measured this: judging part of a cohort in isolation moved 100% of
+// the earlier placements. So: send the whole cohort, in full, in ONE pass, with
+// max_chars raised. If a cohort genuinely exceeds even the raised ceiling, say so
+// and refuse rather than silently shipping a lossy synthesis.
+export const AI_CHAT_MAX_CHARS = 200000;
+
+// Model for this feature. Picked on measured evidence (bench 2026-07-20): matches
+// the strongest reasoner tested (gpt-5-mini) bucket-for-bucket on the full pass, at
+// 0% run-to-run noise, 6/6 availability, ~4x faster and ~1/15 the cost. The free
+// gemini chain is NOT used here: it returned HTTP 503 unpredictably (6/6 fine in one
+// sitting, 4/6 failures an hour later) and showed 75% run-to-run noise on an
+// ambiguous cohort, which is disqualifying for a live, in-class click.
+// Reversible: this is a per-call param, and OPENROUTER_MODEL overrides by env.
+export const EVAL_PROVIDER = 'openrouter';
+export const EVAL_MODEL = 'qwen/qwen3-30b-a3b-instruct-2507';
+
+// measureEvalPayload, pure. Measures the REAL assembled payload instead of guessing
+// a per-response cap up front (Élder: "pq não olhar qual o tamanho do texto que será
+// enviado antes de setar o número de caracteres?"). Counts exactly what the worker
+// counts: the summed length of message.content, system excluded.
+export function measureEvalPayload({ statement, responses }) {
+  const { messages } = buildEvalPrompt({ statement, responses });
+  const chars = messages.reduce((sum, m) => sum + ((m && m.content) || '').length, 0);
+  return { chars, limit: AI_CHAT_MAX_CHARS, fits: chars <= AI_CHAT_MAX_CHARS };
+}
+
+// hashText, pure. FNV-1a 32-bit, hex. Not cryptographic and does not need to be:
+// it only has to change when the text changes, to invalidate a cached synthesis.
+export function hashText(s) {
+  const str = String(s == null ? '' : s);
+  let h = 0x811c9dc5;
+  for (let i = 0; i < str.length; i++) {
+    h ^= str.charCodeAt(i);
+    h = Math.imul(h, 0x01000193) >>> 0;
   }
-  // Mirrors buildEvalPrompt's exact scaffolding so the budget math matches the
-  // real built string: 'ENUNCIADO:\n' + statement + '\n\nRESPOSTAS:\n' + list,
-  // where list is every 'Resposta '+index+': '+text joined by '\n'.
-  const headerLen = 'ENUNCIADO:\n'.length + cappedStatement.length + '\n\nRESPOSTAS:\n'.length;
-  let scaffoldOverhead = count - 1; // the (count-1) '\n' joins between response entries
-  list.forEach((r) => { scaffoldOverhead += ('Resposta ' + r.index + ': ').length; });
-  const remaining = Math.max(0, limit - headerLen - scaffoldOverhead);
-  const perResponseCap = Math.max(1, Math.floor(remaining / count));
-  const belowFloor = perResponseCap < minPerResponse;
-  let truncatedCount = 0;
-  const fitted = list.map((r) => {
-    const text = (r && r.text) || '';
-    if (text.length > perResponseCap) {
-      truncatedCount++;
-      return { index: r.index, text: text.slice(0, Math.max(0, perResponseCap - 1)) + '…' };
-    }
-    return { index: r.index, text };
+  return h.toString(16).padStart(8, '0');
+}
+
+// buildFingerprint, pure. The "did anything change since last time?" key.
+// Includes the ENUNCIADO hash, not just the answers: editing the statement
+// invalidates the synthesis even when every answer is byte-identical, and missing
+// that would show a stale result as if it were fresh.
+// Sorted by (id, texthash) so merely reordering the answers on screen does not
+// invalidate a still-valid cache, while an edit to any answer does.
+export function buildFingerprint({ statement, rows }) {
+  const parts = (rows || [])
+    .map((r) => String((r && r.id) != null ? r.id : '?') + ':' + hashText((r && r.text) || ''))
+    .sort();
+  return 'v1|' + hashText(statement || '') + '|' + parts.length + '|' + hashText(parts.join(','));
+}
+
+const _GROUP_KEYS = ['adherent', 'point', 'diverged'];
+
+// groupsToIds / groupsFromIds, pure. The model answers in INDEX space (1..N), but a
+// cache keyed by index is silently wrong: one new answer shifts every index, and the
+// stored result would then point at the wrong submissions. So anything persisted is
+// keyed by SUBMISSION ID, and translated back to whatever index space is current at
+// render time. An id that no longer has an index (answer deleted) is dropped; an
+// index with no id behind it is dropped too.
+export function groupsToIds({ groups, notes, idByIndex }) {
+  const groupsById = { adherent: [], point: [], diverged: [] };
+  const notesById = {};
+  _GROUP_KEYS.forEach((k) => {
+    ((groups && groups[k]) || []).forEach((idx) => {
+      const id = idByIndex ? idByIndex[idx] : undefined;
+      if (id == null) return;
+      groupsById[k].push(id);
+      const n = notes ? (notes[idx] != null ? notes[idx] : notes[String(idx)]) : null;
+      if (n) notesById[id] = n;
+    });
   });
-  return { statement: cappedStatement, responses: fitted, truncatedCount, belowFloor };
+  return { groupsById, notesById };
+}
+
+export function groupsFromIds({ groupsById, notesById, idByIndex }) {
+  const indexById = {};
+  Object.keys(idByIndex || {}).forEach((idx) => {
+    const id = idByIndex[idx];
+    if (id != null) indexById[String(id)] = Number(idx);
+  });
+  const groups = { adherent: [], point: [], diverged: [] };
+  const notes = {};
+  _GROUP_KEYS.forEach((k) => {
+    ((groupsById && groupsById[k]) || []).forEach((id) => {
+      const idx = indexById[String(id)];
+      if (idx == null) return;
+      groups[k].push(idx);
+      const n = notesById ? notesById[id] : null;
+      if (n) notes[idx] = n;
+    });
+  });
+  return { groups, notes };
+}
+
+// makeEvalCache: the storage SEAM. Backed by localStorage today, which is per-device
+// and per-browser on purpose: the stored shape is still settling, and freezing a D1
+// table + a codex-api action around it before the design lands would buy debt early.
+// Swapping to a server-side adapter later means replacing this factory only, because
+// nothing above it knows where the bytes live. Never throws (private mode, quota).
+export function makeEvalCache(storage, ns) {
+  const prefix = (ns || 'cdx_teval') + ':';
+  return {
+    read(key) {
+      try {
+        const raw = storage.getItem(prefix + key);
+        return raw ? JSON.parse(raw) : null;
+      } catch (_) { return null; }
+    },
+    write(key, value) {
+      try { storage.setItem(prefix + key, JSON.stringify(value)); return true; } catch (_) { return false; }
+    },
+    clear(key) {
+      try { storage.removeItem(prefix + key); return true; } catch (_) { return false; }
+    },
+  };
 }
 
 // Strip optional ```json ... ``` fences, or extract the first {...} span from
@@ -187,39 +265,102 @@ export function parseEvalResponse(text) {
 // MODEL sees is shortened; the view (content/tarefa-eval-view.js) is handed the
 // caller's original, full-length statement/responses and never sees the fitted
 // copy, so the instructor still reads every answer in full on screen.
-export function makeWorkerEval(aiChat) {
+// reconcileGroups, pure. The model is told every index must appear exactly once, but
+// nothing enforces it. Without this, an index the model simply forgot vanishes from
+// the screen with no trace, and the instructor reads "8 answers" as the whole class
+// when it was 10. Reports what is missing (and any index invented out of thin air)
+// so the UI can say so out loud instead of quietly under-reporting.
+export function reconcileGroups({ groups, responses }) {
+  const expected = (responses || []).map((r) => Number(r.index));
+  const expectedSet = new Set(expected);
+  const seen = new Set();
+  const clean = { adherent: [], point: [], diverged: [] };
+  _GROUP_KEYS.forEach((k) => {
+    ((groups && groups[k]) || []).forEach((idx) => {
+      const n = Number(idx);
+      if (!expectedSet.has(n) || seen.has(n)) return; // invented or duplicated
+      seen.add(n);
+      clean[k].push(n);
+    });
+  });
+  const missing = expected.filter((i) => !seen.has(i));
+  return { groups: clean, missing, total: expected.length, classified: seen.size };
+}
+
+export function makeWorkerEval(aiChat, opts) {
+  const provider = (opts && opts.provider !== undefined) ? opts.provider : EVAL_PROVIDER;
+  const model = (opts && opts.model) || EVAL_MODEL;
+
+  async function _ask(prompt, pinned) {
+    const params = {
+      system: prompt.system,
+      messages: prompt.messages,
+      temperature: 0.3,
+      // Headroom, not a target. A cap only ever prevents truncation; it does not make
+      // the model produce more. At 900 the reply was cut off mid-JSON (staging
+      // 2026-07-19), and a reasoning model spends "thinking" out of this same budget.
+      max_tokens: 4000,
+      max_chars: AI_CHAT_MAX_CHARS,
+    };
+    if (pinned && provider) {
+      params.provider = provider;
+      if (provider === 'openrouter' && model) params.openrouter_model = model;
+    }
+    return aiChat(params);
+  }
+
   return async function evalResponses({ statement, responses }) {
-    const fitted = fitResponsesToBudget({ statement, responses });
-    if (fitted.truncatedCount > 0) {
-      _logInfo('tarefa-eval: ' + fitted.truncatedCount + ' resposta(s) encurtada(s) para caber no limite da IA (20000 chars)');
+    // Measure the real payload FIRST, instead of pre-emptively capping each answer.
+    // Nothing is trimmed: either the whole cohort goes, or we refuse and say why.
+    const measured = measureEvalPayload({ statement, responses });
+    if (!measured.fits) {
+      _logError('tarefa-eval: payload ' + measured.chars + ' chars excede o teto ' + measured.limit);
+      return { error: 'payload_too_large', chars: measured.chars, limit: measured.limit };
     }
-    const prompt = buildEvalPrompt({ statement: fitted.statement, responses: fitted.responses });
-    let res;
+
+    const prompt = buildEvalPrompt({ statement, responses });
+    let res = null;
+    let usedFallback = false;
     try {
-      res = await aiChat({
-        system: prompt.system,
-        messages: prompt.messages,
-        temperature: 0.3,
-        // Headroom, not a target: the worker's own default is 2000, and the chat path
-        // runs gemini-2.5-flash, which spends "thinking" tokens out of this SAME budget
-        // and (unlike the non-chat path) does not force responseMimeType json. At 900
-        // the reply was cut off mid-JSON on staging 2026-07-19. A cap only ever prevents
-        // truncation; it does not make the model produce more.
-        max_tokens: 4000,
-      });
+      res = await _ask(prompt, true);
     } catch (e) {
-      const msg = 'tarefa-eval: ai call failed: ' + ((e && e.message) || String(e));
-      _logError(msg);
-      return { error: msg };
+      _logInfo('tarefa-eval: provedor fixado falhou (' + ((e && e.message) || String(e)) + '), tentando a cadeia padrão');
+      res = null;
     }
-    if (!res) {
-      return { error: 'rate_limited' };
+    if (!res && provider) {
+      // The pin buys us the model we measured; the unpinned retry buys availability.
+      // Degrading to the default chain is better than dead-ending in front of a class,
+      // but it is NOT silent: `fallback` is reported so the UI can say a different
+      // model answered, since the benchmark showed the fallback models are less stable.
+      usedFallback = true;
+      try {
+        res = await _ask(prompt, false);
+      } catch (e) {
+        const msg = 'tarefa-eval: ai call failed: ' + ((e && e.message) || String(e));
+        _logError(msg);
+        return { error: msg };
+      }
     }
+    if (!res) return { error: 'rate_limited' };
+
     const replyText = res.text != null ? res.text : res.reply;
-    if (!replyText) {
-      return { error: 'no reply from AI (empty)' };
+    if (!replyText) return { error: 'no reply from AI (empty)' };
+
+    const parsed = parseEvalResponse(replyText);
+    if (parsed.error) return parsed;
+
+    const rec = reconcileGroups({ groups: parsed.groups, responses });
+    if (rec.missing.length) {
+      _logInfo('tarefa-eval: ' + rec.missing.length + ' resposta(s) não classificada(s) pelo modelo: ' + rec.missing.join(', '));
     }
-    return parseEvalResponse(replyText);
+    return {
+      groups: rec.groups,
+      notes: parsed.notes,
+      missing: rec.missing,
+      total: rec.total,
+      provider: res.provider || null,
+      fallback: usedFallback,
+    };
   };
 }
 

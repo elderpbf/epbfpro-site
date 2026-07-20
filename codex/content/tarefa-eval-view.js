@@ -21,10 +21,14 @@ let _responses = [];
 let _idByIndex = {};        // index -> real submission id, so a click can find it in the answers pane
 let _onOpenResponse = null; // (index) => void, opens the real answer in the list; null when the caller has none to jump to
 let _status = 'idle';   // 'idle' | 'loading' | 'done' | 'error'
-let _result = null;     // { groups, notes? }
+let _result = null;     // { groups, notes?, missing?, total?, fallback? }
 let _errorCode = null;
+let _errorDetail = null;
 let _onClick = null;
 let _noAnswers = false; // true when ctx.responses is empty: no run button renders, the AI is structurally uncallable
+let _onResult = null;   // (result) => void, so the caller can persist a fresh synthesis
+let _synthesizedAt = null; // epoch ms of the synthesis on screen (from cache or from this run)
+let _fromCache = false;    // true while what is shown was restored, not just computed
 
 function _log(msg) {
   if (typeof window !== 'undefined' && typeof window.bsLog === 'function') window.bsLog(msg, 'error');
@@ -36,7 +40,43 @@ function _responseText(idx) {
 }
 
 function _errorMessage() {
-  return _errorCode === 'rate_limited' ? t('tarefas.eval_rate_limited') : t('tarefas.eval_error');
+  if (_errorCode === 'rate_limited') return t('tarefas.eval_rate_limited');
+  if (_errorCode === 'payload_too_large') {
+    // Never silently truncate: say the cohort is too big for one pass and let the
+    // instructor decide, rather than shipping a synthesis that quietly lost content.
+    return t('tarefas.eval_too_large')
+      .replace('{chars}', String((_errorDetail && _errorDetail.chars) || '?'))
+      .replace('{limit}', String((_errorDetail && _errorDetail.limit) || '?'));
+  }
+  return t('tarefas.eval_error');
+}
+
+function _clock(ts) {
+  const d = new Date(ts);
+  const p = (n) => String(n).padStart(2, '0');
+  return p(d.getHours()) + ':' + p(d.getMinutes());
+}
+
+// The discreet provenance line, so a restored synthesis is never mistaken for a
+// fresh one. Also carries the two honesty warnings: answers the model failed to
+// classify, and a run that had to fall back off the chosen model.
+function _metaHtml() {
+  if (_status !== 'done' || !_result) return '';
+  const bits = [];
+  if (_synthesizedAt) {
+    bits.push(_esc((_fromCache ? t('tarefas.eval_meta_cached') : t('tarefas.eval_meta_fresh')).replace('{time}', _clock(_synthesizedAt))));
+  }
+  if (_result.total) bits.push(_esc(t('tarefas.eval_meta_count').replace('{n}', String(_result.total))));
+  let html = '<div class="cdx-teval-meta">' + bits.join(' · ') + '</div>';
+  if (_result.missing && _result.missing.length) {
+    html += '<div class="cdx-teval-warn">' +
+      _esc(t('tarefas.eval_missing').replace('{n}', String(_result.missing.length))) +
+    '</div>';
+  }
+  if (_result.fallback) {
+    html += '<div class="cdx-teval-warn">' + _esc(t('tarefas.eval_fallback_used')) + '</div>';
+  }
+  return html;
 }
 
 // Each item is a clickable comment, never a name: the header line identifies WHICH
@@ -99,11 +139,16 @@ function _render() {
     return;
   }
   const busy = _status === 'loading';
+  // No "sintetizar" button: opening IS the trigger (mount auto-runs unless a valid
+  // cached synthesis was handed in). The only button left is the explicit escape
+  // hatch, which always ignores the cache and recomputes from scratch.
   _viewEl.innerHTML =
     '<div class="cdx-teval">' +
       '<div class="cdx-teval-toolbar">' +
-        '<button class="cdx-btn cdx-btn-primary cdx-teval-run" data-act="run" type="button"' + (busy ? ' disabled' : '') + '>' +
-          _esc(busy ? t('tarefas.eval_loading') : t('tarefas.eval_run')) +
+        _metaHtml() +
+        '<button class="cdx-btn cdx-btn-vazado cdx-teval-redo" data-act="redo" type="button"' +
+          ' title="' + _esc(t('tarefas.eval_redo_hint')) + '"' + (busy ? ' disabled' : '') + '>' +
+          _esc(t('tarefas.eval_redo')) +
         '</button>' +
       '</div>' +
       _bodyHtml() +
@@ -113,23 +158,32 @@ function _render() {
 function _run() {
   if (_noAnswers || _status === 'loading' || typeof _evalFn !== 'function') return;
   _status = 'loading';
+  _errorCode = null;
+  _errorDetail = null;
   _render();
   Promise.resolve(_evalFn({ statement: _statement, responses: _responses })).then((res) => {
     if (!_viewEl) return; // unmounted meanwhile
     if (res && res.error) {
       _status = 'error';
       _errorCode = res.error;
+      _errorDetail = res;
       _log('tarefa-eval-view: ' + res.error);
       toast.err(_errorMessage());
     } else {
       _status = 'done';
       _result = res;
+      _fromCache = false;
+      _synthesizedAt = Date.now();
+      if (typeof _onResult === 'function') {
+        try { _onResult(res); } catch (e) { _log('tarefa-eval-view: onResult failed: ' + ((e && e.message) || e)); }
+      }
     }
     _render();
   }).catch((e) => {
     if (!_viewEl) return;
     _status = 'error';
     _errorCode = (e && e.message) || String(e);
+    _errorDetail = null;
     _log('tarefa-eval-view: ' + _errorCode);
     toast.err(_errorMessage());
     _render();
@@ -144,13 +198,29 @@ export function mount(viewEl, ctx) {
   _responses = ctx.responses || [];
   _idByIndex = ctx.idByIndex || {};
   _onOpenResponse = typeof ctx.onOpenResponse === 'function' ? ctx.onOpenResponse : null;
+  _onResult = typeof ctx.onResult === 'function' ? ctx.onResult : null;
   _status = 'idle';
   _result = null;
   _errorCode = null;
+  _errorDetail = null;
   _noAnswers = _responses.length === 0;
+  _fromCache = false;
+  _synthesizedAt = null;
+  // A previously saved synthesis for this exact cohort+enunciado, already translated
+  // back into the CURRENT index space by the caller. When present, show it instantly
+  // and do NOT call the AI: that is what makes auto-run-on-open safe, since without
+  // the cache gate every reopen would fire a fresh call.
+  if (!_noAnswers && ctx.initialResult) {
+    _status = 'done';
+    _result = ctx.initialResult;
+    _fromCache = true;
+    _synthesizedAt = ctx.initialAt || null;
+  }
   _render();
+  if (!_noAnswers && _status === 'idle') _run();
   _onClick = (e) => {
-    if (e.target.closest('[data-act="run"]')) { e.preventDefault(); _run(); return; }
+    // "Refazer análise": always from zero, cache ignored (the caller clears it).
+    if (e.target.closest('[data-act="redo"]')) { e.preventDefault(); _run(); return; }
     // Check "open" BEFORE "toggle": both live on the same li (a single delegated
     // listener sees both selectors match on the same click), and opening the real
     // answer must never also flip the excerpt's expand state.
@@ -178,6 +248,10 @@ export function unmount() {
   _status = 'idle';
   _result = null;
   _errorCode = null;
+  _errorDetail = null;
   _onClick = null;
   _noAnswers = false;
+  _onResult = null;
+  _synthesizedAt = null;
+  _fromCache = false;
 }

@@ -13,7 +13,16 @@ import {
   parseEvalResponse,
   makeStubEval,
   makeWorkerEval,
-  fitResponsesToBudget,
+  measureEvalPayload,
+  reconcileGroups,
+  hashText,
+  buildFingerprint,
+  groupsToIds,
+  groupsFromIds,
+  makeEvalCache,
+  AI_CHAT_MAX_CHARS,
+  EVAL_MODEL,
+  EVAL_PROVIDER,
   SEED_RESPONSES,
 } from '../js/tarefa-eval.js';
 import * as tarefaEvalView from '../content/tarefa-eval-view.js';
@@ -148,19 +157,6 @@ test('parseEvalResponse: a genuinely truncated reply returns {error} carrying th
   assert.match(out.error, /\d+\s*chars/, 'the error reports the reply length, so a truncation is diagnosable from the debug pill');
 });
 
-// A class big enough that a readability floor would exceed the even share is exactly
-// where max(floor, share) blew the ceiling again (~77+ long answers). The guarantee is
-// unconditional, so this asserts the REAL worker ceiling, not just our own limit.
-test('fitResponsesToBudget: stays under the worker ceiling even for a very large class', () => {
-  const responses = Array.from({ length: 200 }, (_, i) => ({ index: i + 1, text: 'x'.repeat(2000) }));
-  const fit = fitResponsesToBudget({ statement: 'y'.repeat(9000), responses });
-  const prompt = buildEvalPrompt({ statement: fit.statement, responses: fit.responses });
-  const total = prompt.messages.reduce((sum, m) => sum + m.content.length, 0);
-  assert.ok(total <= 19000, 'fitted prompt must respect the requested limit, got ' + total);
-  assert.ok(total <= 20000, 'and must never exceed the real ai_chat ceiling of 20000');
-  assert.equal(fit.belowFloor, true, 'reports that answers were cut below the readability floor');
-});
-
 // ── makeStubEval ─────────────────────────────────────────────────────────────
 test('makeStubEval: resolves to a valid canned {groups:{adherent,point,diverged}} shape', async () => {
   const evalFn = makeStubEval();
@@ -189,12 +185,12 @@ test('makeWorkerEval: asks the worker for a generous output budget (thinking tok
   assert.ok(seen && seen.max_tokens >= 2000, 'max_tokens must not sit below the worker default of 2000');
 });
 
-// Regression guard for the live 2026-07-19 error: "ai_chat: messages exceed 20000
-// char total limit". makeWorkerEval must fit the prompt to the worker's REAL
-// ceiling (verified codex-api/src/ai.js:363-373: messages content total <= 20000,
-// system is separate and capped at 10000) before ever calling aiChat, even when
-// the caller hands it a huge, untruncated set of real answers.
-test('makeWorkerEval: a huge input still calls aiChat with a payload under the worker\'s 20000-char ceiling', async () => {
+// Successor to the 2026-07-19 regression guard ("ai_chat: messages exceed 20000
+// char total limit"). That error was our OWN validation constant, and the fix then
+// was to truncate. Élder overruled it ("não podemos perder conteúdo"), so the wall
+// moved instead: ai_chat now takes a per-call max_chars. The guard is no longer
+// "did we cut it down" but "did we send it whole AND raise the budget to match".
+test('makeWorkerEval: a huge cohort goes to the worker WHOLE, with the budget raised to match', async () => {
   let seen = null;
   const fakeChat = async (p) => { seen = p; return { text: '{"adherent":[1],"point":[],"diverged":[]}' }; };
   const statement = 'E'.repeat(9000);
@@ -202,7 +198,9 @@ test('makeWorkerEval: a huge input still calls aiChat with a payload under the w
   await makeWorkerEval(fakeChat)({ statement, responses });
   assert.ok(seen, 'aiChat was called');
   const totalChars = seen.messages.reduce((sum, m) => sum + (m.content || '').length, 0);
-  assert.ok(totalChars <= 20000, 'total message content stays under the worker ceiling: ' + totalChars);
+  assert.ok(totalChars > 20000, 'the payload really is past the old wall: ' + totalChars);
+  assert.ok(totalChars <= seen.max_chars, 'and the call raised max_chars to cover it');
+  assert.ok(seen.messages[0].content.includes('R'.repeat(2000)), 'every answer went in full');
 });
 
 test('makeWorkerEval: injected aiChat resolving to null (rate-limit) resolves to {error}, never throws', async () => {
@@ -233,58 +231,6 @@ test('SEED_RESPONSES: a realistic PT-BR statement + a varied set of responses (6
   });
 });
 
-// ── fitResponsesToBudget ──────────────────────────────────────────────────────
-// The worker's ai_chat hard-caps total message content at 20000 chars (system is
-// separate and capped at 10000, verified codex-api/src/ai.js:363-373, so it never
-// counts here). Before the model ever sees the prompt, fitResponsesToBudget trims
-// statement + responses so the built message stays inside that ceiling, WITHOUT
-// touching what the view shows (the view always keeps the full text).
-test('fitResponsesToBudget: short input passes through untouched (truncatedCount === 0)', () => {
-  const statement = 'Enunciado curto.';
-  const responses = [
-    { index: 1, text: 'Resposta curta um.' },
-    { index: 2, text: 'Resposta curta dois.' },
-  ];
-  const out = fitResponsesToBudget({ statement, responses });
-  assert.equal(out.truncatedCount, 0);
-  assert.equal(out.statement, statement);
-  assert.deepEqual(out.responses, responses);
-});
-
-test('fitResponsesToBudget: a statement longer than statementMax is capped', () => {
-  const longStatement = 'x'.repeat(5000);
-  const out = fitResponsesToBudget({
-    statement: longStatement,
-    responses: [{ index: 1, text: 'a' }],
-    statementMax: 3000,
-  });
-  assert.ok(out.statement.length <= 3000, 'statement never exceeds statementMax');
-  assert.equal(out.statement.length, 3000);
-});
-
-test('fitResponsesToBudget: returned responses carry ONLY index/text keys (anonymity backstop through fitting)', () => {
-  const responses = [
-    { index: 1, text: 'a'.repeat(50), student_name: 'Fulano SECRETO' },
-    { index: 2, text: 'b'.repeat(50), student_name: 'Beltrana SECRETA' },
-  ];
-  const out = fitResponsesToBudget({ statement: 'Enunciado.', responses });
-  out.responses.forEach((r) => assert.deepEqual(Object.keys(r), ['index', 'text']));
-  const serialized = JSON.stringify(out.responses);
-  assert.ok(!serialized.includes('SECRETO') && !serialized.includes('SECRETA'), 'no student name survives fitting');
-});
-
-// Regression guard for the live 2026-07-19 error: "ai_chat: messages exceed 20000
-// char total limit". A real tarefa with many long real answers must never build a
-// prompt bigger than the worker's hard ceiling.
-test('fitResponsesToBudget: pathological input (40 responses x 2000 chars + 9000-char statement) fits the worker ceiling', () => {
-  const statement = 'E'.repeat(9000);
-  const responses = Array.from({ length: 40 }, (_, i) => ({ index: i + 1, text: 'R'.repeat(2000) }));
-  const out = fitResponsesToBudget({ statement, responses });
-  assert.ok(out.truncatedCount > 0, 'some responses were actually shortened');
-  const prompt = buildEvalPrompt({ statement: out.statement, responses: out.responses });
-  assert.ok(prompt.messages[0].content.length <= 19000, 'fitted prompt stays under the 19000 budget: got ' + prompt.messages[0].content.length);
-});
-
 // ── tarefa-eval-view: zero real answers ──────────────────────────────────────
 // Élder's rule (verbatim intent): "Essa opção de teste só pode existir enquanto a
 // gente estiver aqui. Em produção não pode existir. Ele só vai dizer que não
@@ -309,13 +255,293 @@ test('tarefa-eval-view mount: zero responses renders the no-answers message and 
   tarefaEvalView.unmount();
 });
 
-test('tarefa-eval-view mount: at least one response still renders the run button (no regression)', () => {
+test('tarefa-eval-view mount: with answers there is a redo button and NO synthesize button', () => {
   const el = _fakeViewEl();
   tarefaEvalView.mount(el, {
     statement: 'Enunciado.',
     responses: [{ index: 1, text: 'Resposta.' }],
     evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] } }),
   });
-  assert.ok(/data-act="run"/.test(el.innerHTML), 'run button still renders when there is at least one real answer');
+  assert.ok(!/data-act="run"/.test(el.innerHTML), 'the "sintetizar" button is gone: opening is the trigger');
+  assert.ok(/data-act="redo"/.test(el.innerHTML), 'the redo escape hatch renders');
+  assert.ok(el.innerHTML.includes(t('tarefas.eval_redo_hint')), 'redo carries the "from zero" tooltip');
+  tarefaEvalView.unmount();
+});
+
+// ── no truncation: measure, do not cut ───────────────────────────────────────
+// Élder: "pq cortar, pa não pode mandar tudo?; não podemos perder conteúdo".
+// The old 20000 wall was our OWN validation constant in codex-api, not a model
+// limit. It is now a per-call `max_chars` (default 20000, ceiling 200000), so the
+// whole cohort goes in one comparative pass and nothing is trimmed.
+
+test('measureEvalPayload: counts exactly what the worker counts (messages only, system excluded)', () => {
+  const statement = 'Enunciado.';
+  const responses = [{ index: 1, text: 'a'.repeat(100) }, { index: 2, text: 'b'.repeat(100) }];
+  const built = buildEvalPrompt({ statement, responses });
+  const m = measureEvalPayload({ statement, responses });
+  assert.equal(m.chars, built.messages.reduce((s, x) => s + x.content.length, 0));
+  assert.ok(m.chars < built.system.length + m.chars, 'system is a separate budget and must not be counted');
+  assert.equal(m.fits, true);
+  assert.equal(m.limit, AI_CHAT_MAX_CHARS);
+});
+
+// The exact cohort that used to force truncation now fits with room to spare.
+test('measureEvalPayload: 40 answers x 2000 chars + a 9000-char statement now FITS, no cutting needed', () => {
+  const statement = 'E'.repeat(9000);
+  const responses = Array.from({ length: 40 }, (_, i) => ({ index: i + 1, text: 'R'.repeat(2000) }));
+  const m = measureEvalPayload({ statement, responses });
+  assert.ok(m.chars > 20000, 'this really is past the OLD 20000 wall: ' + m.chars);
+  assert.equal(m.fits, true, 'and it fits comfortably under the raised ceiling');
+});
+
+test('makeWorkerEval: sends every answer byte-for-byte, never truncated', async () => {
+  let seen = null;
+  const fakeChat = async (p) => { seen = p; return { text: '{"adherent":[1,2],"point":[],"diverged":[]}' }; };
+  const long = 'Z'.repeat(9000);
+  const responses = [{ index: 1, text: long }, { index: 2, text: long }];
+  await makeWorkerEval(fakeChat)({ statement: 'S', responses });
+  const sent = seen.messages.map((m) => m.content).join('');
+  assert.ok(sent.includes(long), 'the full answer text reaches the model');
+  assert.ok(!sent.includes('…'), 'no ellipsis: nothing was shortened');
+});
+
+test('makeWorkerEval: raises max_chars and pins the benchmarked model', async () => {
+  let seen = null;
+  const fakeChat = async (p) => { seen = p; return { text: '{"adherent":[1],"point":[],"diverged":[]}' }; };
+  await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(seen.max_chars, AI_CHAT_MAX_CHARS);
+  assert.equal(seen.provider, EVAL_PROVIDER);
+  assert.equal(seen.openrouter_model, EVAL_MODEL);
+});
+
+// Refusing beats a silently lossy synthesis: if a cohort really is bigger than the
+// raised ceiling, say so and do not call the AI at all.
+test('makeWorkerEval: a cohort past the ceiling errors out WITHOUT calling the AI', async () => {
+  let called = 0;
+  const fakeChat = async () => { called++; return { text: '{}' }; };
+  const responses = Array.from({ length: 200 }, (_, i) => ({ index: i + 1, text: 'x'.repeat(2000) }));
+  const out = await makeWorkerEval(fakeChat)({ statement: 'y'.repeat(9000), responses });
+  assert.equal(out.error, 'payload_too_large');
+  assert.ok(out.chars > AI_CHAT_MAX_CHARS);
+  assert.equal(called, 0, 'the AI must never be called with a payload we know will be rejected');
+});
+
+// Availability without hiding it: the pin buys the measured model, the unpinned
+// retry buys a working answer, and `fallback` makes the swap visible.
+test('makeWorkerEval: a failing pinned call retries unpinned and reports fallback', async () => {
+  const calls = [];
+  const fakeChat = async (p) => {
+    calls.push(p);
+    if (p.provider) throw new Error('openrouter down');
+    return { text: '{"adherent":[1],"point":[],"diverged":[]}', provider: 'gemini' };
+  };
+  const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(calls.length, 2);
+  assert.equal(calls[0].provider, EVAL_PROVIDER);
+  assert.equal(calls[1].provider, undefined, 'the retry must NOT pin, so the free chain can answer');
+  assert.deepEqual(out.groups, { adherent: [1], point: [], diverged: [] });
+  assert.equal(out.fallback, true, 'the UI has to be able to say a different model answered');
+});
+
+// ── reconcileGroups: no silent drops ─────────────────────────────────────────
+test('reconcileGroups: reports answers the model forgot instead of letting them vanish', () => {
+  const responses = [{ index: 1 }, { index: 2 }, { index: 3 }].map((r) => ({ ...r, text: 'x' }));
+  const out = reconcileGroups({ groups: { adherent: [1], point: [], diverged: [] }, responses });
+  assert.deepEqual(out.missing, [2, 3]);
+  assert.equal(out.total, 3);
+  assert.equal(out.classified, 1);
+});
+
+test('reconcileGroups: drops invented indexes and duplicates', () => {
+  const responses = [{ index: 1, text: 'x' }, { index: 2, text: 'y' }];
+  const out = reconcileGroups({ groups: { adherent: [1, 1, 99], point: [2], diverged: [2] }, responses });
+  assert.deepEqual(out.groups.adherent, [1], 'no duplicate, no index 99 that never existed');
+  assert.deepEqual(out.groups.point, [2]);
+  assert.deepEqual(out.groups.diverged, [], 'the second claim on index 2 loses');
+  assert.deepEqual(out.missing, []);
+});
+
+// ── fingerprint: what counts as "nothing changed" ────────────────────────────
+test('hashText: stable for the same input, different when the text changes', () => {
+  assert.equal(hashText('abc'), hashText('abc'));
+  assert.notEqual(hashText('abc'), hashText('abd'));
+  assert.equal(hashText(null), hashText(''));
+});
+
+test('buildFingerprint: identical input -> identical fingerprint', () => {
+  const rows = [{ id: 7, text: 'um' }, { id: 9, text: 'dois' }];
+  assert.equal(buildFingerprint({ statement: 'E', rows }), buildFingerprint({ statement: 'E', rows }));
+});
+
+// The one that is easy to forget: editing the enunciado invalidates the synthesis
+// even when every answer is byte-identical. Without this, a stale result shows as fresh.
+test('buildFingerprint: editing the STATEMENT invalidates, even with identical answers', () => {
+  const rows = [{ id: 7, text: 'um' }];
+  assert.notEqual(buildFingerprint({ statement: 'E1', rows }), buildFingerprint({ statement: 'E2', rows }));
+});
+
+test('buildFingerprint: editing one answer invalidates; merely reordering does not', () => {
+  const a = [{ id: 7, text: 'um' }, { id: 9, text: 'dois' }];
+  const edited = [{ id: 7, text: 'um EDITADO' }, { id: 9, text: 'dois' }];
+  const reordered = [{ id: 9, text: 'dois' }, { id: 7, text: 'um' }];
+  assert.notEqual(buildFingerprint({ statement: 'E', rows: a }), buildFingerprint({ statement: 'E', rows: edited }));
+  assert.equal(buildFingerprint({ statement: 'E', rows: a }), buildFingerprint({ statement: 'E', rows: reordered }),
+    'display order is not a change; a cache must not be thrown away for it');
+});
+
+test('buildFingerprint: a new answer invalidates', () => {
+  const a = [{ id: 7, text: 'um' }];
+  const b = [{ id: 7, text: 'um' }, { id: 8, text: 'novo' }];
+  assert.notEqual(buildFingerprint({ statement: 'E', rows: a }), buildFingerprint({ statement: 'E', rows: b }));
+});
+
+// ── index space vs submission-id space ───────────────────────────────────────
+test('groupsToIds -> groupsFromIds: round-trips through submission ids', () => {
+  const idByIndex = { 1: 101, 2: 102, 3: 103 };
+  const groups = { adherent: [1, 3], point: [2], diverged: [] };
+  const notes = { 2: 'levanta um ponto' };
+  const stored = groupsToIds({ groups, notes, idByIndex });
+  assert.deepEqual(stored.groupsById.adherent, [101, 103]);
+  assert.deepEqual(stored.notesById, { 102: 'levanta um ponto' });
+  const back = groupsFromIds({ ...stored, idByIndex });
+  assert.deepEqual(back.groups, groups);
+  assert.deepEqual(back.notes, notes);
+});
+
+// THE reason the cache is keyed by id. A new answer arriving FIRST renumbers every
+// index; an index-keyed cache would then label the wrong answers, silently.
+test('groupsFromIds: a new answer shifting every index still maps to the RIGHT answers', () => {
+  const before = { 1: 101, 2: 102 };
+  const stored = groupsToIds({ groups: { adherent: [1], point: [2], diverged: [] }, notes: {}, idByIndex: before });
+  // answer 100 arrives and sorts first: 101 is now index 2, 102 is now index 3
+  const after = { 1: 100, 2: 101, 3: 102 };
+  const back = groupsFromIds({ ...stored, idByIndex: after });
+  assert.deepEqual(back.groups.adherent, [2], 'submission 101 followed its answer to index 2');
+  assert.deepEqual(back.groups.point, [3], 'submission 102 followed its answer to index 3');
+});
+
+test('groupsFromIds: an answer that no longer exists is dropped, not mapped to a stranger', () => {
+  const stored = groupsToIds({ groups: { adherent: [1, 2], point: [], diverged: [] }, notes: {}, idByIndex: { 1: 101, 2: 102 } });
+  const back = groupsFromIds({ ...stored, idByIndex: { 1: 101 } }); // 102 was deleted
+  assert.deepEqual(back.groups.adherent, [1]);
+});
+
+// ── cache seam ───────────────────────────────────────────────────────────────
+function _fakeStorage() {
+  const m = new Map();
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, v),
+    removeItem: (k) => m.delete(k),
+    _map: m,
+  };
+}
+
+test('makeEvalCache: writes, reads back, and clears', () => {
+  const store = _fakeStorage();
+  const cache = makeEvalCache(store, 'ns');
+  assert.equal(cache.read('k'), null);
+  cache.write('k', { a: 1 });
+  assert.deepEqual(cache.read('k'), { a: 1 });
+  assert.ok([...store._map.keys()][0].startsWith('ns:'), 'namespaced, so it cannot collide with other codex keys');
+  cache.clear('k');
+  assert.equal(cache.read('k'), null);
+});
+
+test('makeEvalCache: a throwing storage (private mode / quota) degrades, never throws', () => {
+  const hostile = { getItem() { throw new Error('nope'); }, setItem() { throw new Error('quota'); }, removeItem() { throw new Error('nope'); } };
+  const cache = makeEvalCache(hostile);
+  assert.doesNotThrow(() => cache.read('k'));
+  assert.equal(cache.read('k'), null);
+  assert.equal(cache.write('k', { a: 1 }), false);
+});
+
+test('makeEvalCache: corrupt stored JSON reads as a miss instead of throwing', () => {
+  const store = _fakeStorage();
+  store.setItem('cdx_teval:k', '{not json');
+  assert.equal(makeEvalCache(store).read('k'), null);
+});
+
+// ── the view: auto-run gated by the cache ────────────────────────────────────
+const _tick = () => new Promise((r) => setTimeout(r, 0));
+
+test('view: with answers and NO cached result, mount runs the synthesis by itself', async () => {
+  const el = _fakeViewEl();
+  let called = 0;
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'a' }],
+    evalFn: async () => { called++; return { groups: { adherent: [1], point: [], diverged: [] }, total: 1 }; },
+  });
+  await _tick();
+  assert.equal(called, 1, 'opening IS the trigger, no second click needed');
+  tarefaEvalView.unmount();
+});
+
+// This gate is what makes auto-run safe: without it, every reopen would fire a call.
+test('view: a cached result is shown instantly and the AI is NOT called', async () => {
+  const el = _fakeViewEl();
+  let called = 0;
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'resposta guardada' }],
+    evalFn: async () => { called++; return { groups: { adherent: [1], point: [], diverged: [] } }; },
+    initialResult: { groups: { adherent: [1], point: [], diverged: [] }, total: 1 },
+    initialAt: Date.parse('2026-07-20T21:04:00'),
+  });
+  await _tick();
+  assert.equal(called, 0, 'nothing changed since last time, so nothing is recomputed');
+  assert.ok(el.innerHTML.includes('21:04'), 'and the provenance line says when it was synthesized');
+  tarefaEvalView.unmount();
+});
+
+test('view: onResult fires with the fresh synthesis so the caller can persist it', async () => {
+  const el = _fakeViewEl();
+  let saved = null;
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'a' }],
+    evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] }, total: 1 }),
+    onResult: (r) => { saved = r; },
+  });
+  await _tick();
+  assert.ok(saved && saved.groups, 'the caller receives the result to store');
+  tarefaEvalView.unmount();
+});
+
+test('view: unclassified answers are surfaced, never swallowed', async () => {
+  const el = _fakeViewEl();
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'a' }, { index: 2, text: 'b' }],
+    evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] }, missing: [2], total: 2 }),
+  });
+  await _tick();
+  assert.ok(el.innerHTML.includes(t('tarefas.eval_missing').replace('{n}', '1')), 'the instructor is told one answer went unclassified');
+  tarefaEvalView.unmount();
+});
+
+test('view: a fallback run says so, since the backup model is less stable', async () => {
+  const el = _fakeViewEl();
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'a' }],
+    evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] }, total: 1, fallback: true }),
+  });
+  await _tick();
+  assert.ok(el.innerHTML.includes(t('tarefas.eval_fallback_used')));
+  tarefaEvalView.unmount();
+});
+
+test('view: a too-large cohort explains itself and states nothing was cut', async () => {
+  const el = _fakeViewEl();
+  tarefaEvalView.mount(el, {
+    statement: 'E',
+    responses: [{ index: 1, text: 'a' }],
+    evalFn: async () => ({ error: 'payload_too_large', chars: 250000, limit: AI_CHAT_MAX_CHARS }),
+  });
+  await _tick();
+  assert.ok(el.innerHTML.includes('250000'), 'the real size is shown');
+  assert.ok(!/data-act="run"/.test(el.innerHTML));
   tarefaEvalView.unmount();
 });

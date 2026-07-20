@@ -21,7 +21,9 @@ import * as toast from '../js/toast.js';
 // js/tarefa-eval.js (pure, injectable); the projectable 3-group screen is
 // content/tarefa-eval-view.js, mounted inside a modal opened from this file.
 import * as tarefaEvalView from './tarefa-eval-view.js';
-import { makeWorkerEval, buildEvalInput } from '../js/tarefa-eval.js';
+import {
+  makeWorkerEval, buildEvalInput, buildFingerprint, makeEvalCache, groupsToIds, groupsFromIds,
+} from '../js/tarefa-eval.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -400,7 +402,33 @@ function _openTevalModal(itemId) {
   const subs = _submissions[itemId] || [];
   const rows = subs.map((s) => ({ id: s.id, text: _field(s.answer_type || 'text').toCsvValue(s.answer_json) }));
   const item = _items.find((i) => Number(i.id) === Number(itemId)) || {};
-  const built = { statement: item.body_md || '', ...buildEvalInput(rows) };
+  const statement = item.body_md || '';
+  const built = { statement, ...buildEvalInput(rows) };
+
+  // Cache: keyed by client+turma+item, because the same tarefa released to two turmas
+  // has two different sets of answers. The fingerprint covers the enunciado AND every
+  // answer's text, so an edit on either side invalidates the saved synthesis.
+  const cache = makeEvalCache(window.localStorage);
+  const cacheKey = _client + ':' + _turma + ':' + itemId;
+  const fingerprint = buildFingerprint({ statement, rows });
+  const saved = cache.read(cacheKey);
+  let initialResult = null;
+  let initialAt = null;
+  if (saved && saved.fingerprint === fingerprint) {
+    // Stored in submission-id space; translate into the index space of THIS render.
+    const restored = groupsFromIds({
+      groupsById: saved.groupsById, notesById: saved.notesById, idByIndex: built.idByIndex,
+    });
+    initialResult = {
+      groups: restored.groups,
+      notes: restored.notes,
+      missing: saved.missing || [],
+      total: saved.total || rows.length,
+      fallback: !!saved.fallback,
+    };
+    initialAt = saved.at || null;
+  }
+
   const html =
     '<div class="cdx-modal cdx-teval-modal">' +
       '<div class="cdx-modal-title">' + t('tarefas.eval_panel_title') + '</div>' +
@@ -418,6 +446,22 @@ function _openTevalModal(itemId) {
     statement: built.statement,
     responses: built.responses,
     idByIndex: built.idByIndex,
+    initialResult,
+    initialAt,
+    // Persist by SUBMISSION ID, never by index: one new answer renumbers every index,
+    // so an index-keyed cache would point at the wrong answers on the next open.
+    onResult: (res) => {
+      const ids = groupsToIds({ groups: res.groups, notes: res.notes, idByIndex: built.idByIndex });
+      cache.write(cacheKey, {
+        fingerprint,
+        at: Date.now(),
+        groupsById: ids.groupsById,
+        notesById: ids.notesById,
+        missing: res.missing || [],
+        total: res.total || rows.length,
+        fallback: !!res.fallback,
+      });
+    },
     onOpenResponse: (index) => _openResponseInList(itemId, built.idByIndex[index]),
   });
 }
