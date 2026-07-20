@@ -173,3 +173,38 @@ test('a transformação para script clássico não deixa sintaxe de módulo para
   for (const g of ['stdColors', 'mark', 'fontWordmark', 'glyphWordmark', 'glyphWordmarkTag', 'embedSvg'])
     assert.ok(twin.includes(`\nfunction ${g}(`), `o global ${g}() sumiu do gêmeo`);
 });
+
+// ── Os PNG (track-47 4.d) ────────────────────────────────────────────────────
+// Rasterizar exige browser, e a suíte é zero-dependência de propósito. Então o portão
+// de todo dia não regenera o PNG: confere o disco contra o sha256 que o
+// tools/brand-raster.mjs gravou quando emitiu. Pega edição à mão e arquivo velho, que
+// é o que este track existe para pegar. Regerar de verdade é `brand-raster --check`.
+const LOCK = JSON.parse(fs.readFileSync(new URL('../tools/brand-raster.lock.json', import.meta.url), 'utf8'));
+
+test('todo PNG declarado tem linha no lockfile, e vice-versa', () => {
+  const declarados = RASTER_ARTIFACTS.flatMap(a => a.targets.filter(inTree).map(t => t.path)).sort();
+  assert.deepEqual(Object.keys(LOCK).sort(), declarados,
+    'manifesto e lockfile discordam sobre quais PNG existem');
+});
+
+test('cada PNG em disco é o que o rasterizador emitiu (sha256)', () => {
+  const fora = [];
+  for (const [rel, meta] of Object.entries(LOCK)) {
+    const abs = path.join(SITE_ROOT, rel);
+    if (!fs.existsSync(abs)) { fora.push(`${rel}  <- AUSENTE`); continue; }
+    const atual = crypto.createHash('sha256').update(fs.readFileSync(abs)).digest('hex');
+    if (atual !== meta.sha256) fora.push(`${rel}  <- ${atual.slice(0, 12)} != ${meta.sha256.slice(0, 12)}`);
+  }
+  assert.deepEqual(fora, [],
+    'PNG de marca fora de sincronia. Não edite PNG à mão: rode tools/brand-raster.mjs.\n  ' + fora.join('\n  '));
+});
+
+test('o lockfile registra a variante e o tamanho, não só o hash', () => {
+  // Um lockfile que guarda só hash diz "mudou" e não diz DE QUE. Com variante e tamanho
+  // dá para saber, lendo o arquivo, que logo-mark é a placa redonda e não a marca solta
+  // (que foi a hipótese errada que o diff de pixel derrubou).
+  for (const [rel, m] of Object.entries(LOCK)) {
+    assert.ok(m.variant && m.bg, `${rel}: lockfile sem variante/fundo`);
+    assert.ok(Number.isInteger(m.w) && Number.isInteger(m.h) && m.w > 0 && m.h > 0, `${rel}: lockfile sem tamanho`);
+  }
+});

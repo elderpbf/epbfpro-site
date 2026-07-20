@@ -192,16 +192,25 @@ export const ARTIFACTS = [
 // through Chrome headless (--headless=new --screenshot), so the pipeline is one step
 // longer, not one source more. Declared now so the coverage test counts them as an
 // open gap instead of leaving them invisible the way they are today.
+// Cada variante foi IDENTIFICADA por diff de pixel contra o arquivo que já estava em
+// disco, não deduzida do nome (track-47 4.d, Chromium 149). Dois palpites caíram:
+// `logo-mark` não é a marca solta, é a placa REDONDA; e `email-logo` é a variante navy,
+// não a branca. O `email-logo` bateu com diff ZERO no tamanho nativo 2400x870, o que
+// prova de quebra que o rasterizador original era Chromium e que ninguém recomprimiu
+// o arquivo depois.
 export const RASTER_ARTIFACTS = [
-  { variant: 'glyph-wordmark', bg: 'navy', format: 'png', targets: [
+  { variant: 'glyph-wordmark', bg: 'navy', format: 'png', width: 1024, targets: [
     { repo: 'site', path: 'codex/content/slides/assets/logo-dark.png' } ] },
-  { variant: 'glyph-wordmark', bg: 'white', format: 'png', targets: [
-    { repo: 'site', path: 'codex/content/slides/assets/logo-light.png' } ] },
-  { variant: 'mark', bg: 'transp', format: 'png', targets: [
-    { repo: 'site', path: 'codex/content/slides/assets/logo-mark.png' } ] },
-  { variant: 'glyph-wordmark', bg: 'teal', format: 'png', targets: [
+  // codex-logo.png é byte-idêntico ao logo-light.png: mais um arquivo que era cópia
+  // mantida à mão e agora é o mesmo artefato com dois destinos.
+  { variant: 'glyph-wordmark', bg: 'white', format: 'png', width: 1024, targets: [
+    { repo: 'site', path: 'codex/content/slides/assets/logo-light.png' },
+    { repo: 'site', path: 'codex/content/slides/codex-logo.png' } ] },
+  { variant: 'glyph-wordmark', bg: 'teal', format: 'png', width: 1024, targets: [
     { repo: 'site', path: 'codex/content/slides/assets/logo-teal.png' } ] },
-  { variant: 'glyph-wordmark', bg: 'white', format: 'png', targets: [
+  { variant: 'favicon-circle', bg: 'white', format: 'png', width: 1024, targets: [
+    { repo: 'site', path: 'codex/content/slides/assets/logo-mark.png' } ] },
+  { variant: 'glyph-wordmark', bg: 'navy', format: 'png', width: 2400, targets: [
     { repo: 'site', path: 'images/brand/email-logo.png' } ] }
 ];
 
