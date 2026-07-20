@@ -16,20 +16,8 @@
 // Conventions), então isto é node puro e roda de qualquer lugar.
 import fs from 'node:fs';
 import path from 'node:path';
-import { fileURLToPath } from 'node:url';
-import { ARTIFACTS, RASTER_ARTIFACTS, UNBUILT_VARIANTS, REPOS, emit } from './brand-manifest.js';
-
-const CODEX = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
-const SITE = path.resolve(CODEX, '..');
-
-// Onde cada repo consumidor mora nesta máquina. O `site` é aqui; os outros são
-// resolvidos por convenção e sobrescrevíveis por env, porque um clone fora da Drive
-// não tem caminho fixo. Um repo que não existir é PULADO com aviso, nunca em silêncio.
-const ROOTS = {
-  site: SITE,
-  backstage: process.env.BRAND_BACKSTAGE_ROOT || path.resolve(SITE, '../backstage'),
-  brand: process.env.BRAND_PROJECT_ROOT || null
-};
+import { ARTIFACTS, RASTER_ARTIFACTS, UNBUILT_VARIANTS, REPOS, TWIN, repoRoot, emit } from './brand-manifest.js';
+import { emitTwin } from './brand-twin.js';
 
 const check = process.argv.includes('--check');
 const onlyArg = process.argv.find(a => a.startsWith('--only='));
@@ -42,7 +30,7 @@ const pulados = [];
 
 function alvo(t) {
   if (only && !only.has(t.repo)) { pulados.push(`${t.repo}:${t.path}  (fora do --only)`); return null; }
-  const root = ROOTS[t.repo];
+  const root = repoRoot(t.repo);
   if (!root || !fs.existsSync(root)) {
     pulados.push(`${t.repo}:${t.path}  (raiz do repo não encontrada: ${root || 'não configurada'})`);
     return null;
@@ -50,19 +38,25 @@ function alvo(t) {
   return path.join(root, t.path);
 }
 
+function escrever(t, bytes) {
+  const dest = alvo(t);
+  if (!dest) return;
+  const atual = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8').replace(/\r\n/g, '\n') : null;
+  if (atual === bytes) { inalterados.push(`${t.repo}:${t.path}`); return; }
+  if (check) { mudariam.push(`${t.repo}:${t.path}`); return; }
+  fs.mkdirSync(path.dirname(dest), { recursive: true });
+  fs.writeFileSync(dest, bytes, 'utf8');
+  escritos.push(`${t.repo}:${t.path}`);
+}
+
 for (const a of ARTIFACTS) {
   const bytes = emit(a);
-  for (const t of a.targets) {
-    const dest = alvo(t);
-    if (!dest) continue;
-    const atual = fs.existsSync(dest) ? fs.readFileSync(dest, 'utf8').replace(/\r\n/g, '\n') : null;
-    if (atual === bytes) { inalterados.push(`${t.repo}:${t.path}`); continue; }
-    if (check) { mudariam.push(`${t.repo}:${t.path}`); continue; }
-    fs.mkdirSync(path.dirname(dest), { recursive: true });
-    fs.writeFileSync(dest, bytes, 'utf8');
-    escritos.push(`${t.repo}:${t.path}`);
-  }
+  for (const t of a.targets) escrever(t, bytes);
 }
+
+// O gêmeo do backstage sai daqui também: ele é o MESMO gerador em formato de script
+// clássico, não um segundo gerador. Ver tools/brand-twin.js.
+escrever(TWIN, emitTwin());
 
 const linha = (n, txt) => `  ${String(n).padStart(3)}  ${txt}`;
 console.log(`\nbrand-build ${check ? '--check' : ''}`);

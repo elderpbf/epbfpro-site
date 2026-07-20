@@ -13,6 +13,9 @@
 // The header lives here rather than in brand-logos.js on purpose: every runtime
 // SVG the topbar renders would otherwise pay ~750 bytes for a comment nobody opens.
 
+import fs from 'node:fs';
+import path from 'node:path';
+import { fileURLToPath } from 'node:url';
 import * as logos from '../js/brand-logos.js';
 
 // One builder per variant family, each a function of the background key. Key = the
@@ -63,13 +66,36 @@ export function emit(entry) {
   return svg.includes('@font-face') ? svg.replace('<style>', '<style>' + FILE_HEADER) : svg;
 }
 
-// repo keys. Only `site` is reachable from this tree; the others are declared so the
-// sync test can COUNT what it cannot check rather than pretend full coverage.
+// repo keys, and how to find each one on this machine. `site` is this tree. The other
+// two are separate checkouts whose location is not fixed (the clones live off-Drive, and
+// the Brand project lives ON the Drive), so they resolve by convention and are
+// overridable by env. A root that does not resolve is SKIPPED AND COUNTED, never
+// silently dropped: a sync test that quietly checks less than it claims is worse than
+// no sync test, because it reports green for files it never opened.
 export const REPOS = {
   site: 'git-repos/epbfpro-site',
   backstage: 'git-repos/backstage',
   brand: 'PensoIA/Brand'
 };
+
+const SITE_ROOT = fileURLToPath(new URL('../..', import.meta.url));
+
+export function repoRoot(key) {
+  if (key === 'site') return SITE_ROOT;
+  if (key === 'backstage') return process.env.BRAND_BACKSTAGE_ROOT || path.resolve(SITE_ROOT, '../backstage');
+  if (key === 'brand') return process.env.BRAND_PROJECT_ROOT || null;
+  return null;
+}
+
+export function repoReachable(key) {
+  const r = repoRoot(key);
+  return !!r && fs.existsSync(r);
+}
+
+// The backstage twin. It is not a copy anyone maintains: it is DERIVED from this repo's
+// ES modules by a mechanical transform (see tools/brand-twin.js) and verified by the
+// sync test, which is how "two generators" stops being two sources.
+export const TWIN = { repo: 'backstage', path: 'js/brand-logos.js' };
 
 export const ARTIFACTS = [
   { variant: 'mark', bg: 'white', format: 'svg', targets: [
