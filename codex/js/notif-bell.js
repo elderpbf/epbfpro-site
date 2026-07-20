@@ -189,19 +189,30 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     const bucket = split ? (_hist[_histTab] || []) : (_hist.act.length ? _hist.act : _hist.open);
     if (!bucket.length) { histList.innerHTML = '<div class="cdx-bell-empty">' + esc(t('notif.empty')) + '</div>'; return; }
     const now = Math.floor(Date.now() / 1000);
-    histList.innerHTML = bucket.map((it) => {
+    histList.innerHTML = bucket.map((it, i) => {
       const metaBits = [];
       if (it.group) metaBits.push(esc(it.group));
       if (it.meta) metaBits.push(esc(it.meta));
       metaBits.push(esc(relTime(it.created_at, now)));
-      return '<div class="cdx-bell-notif cdx-bell-notif--hist">' +
+      return '<a class="cdx-bell-notif cdx-bell-notif--hist" data-bell-h="' + i + '" role="menuitem">' +
           '<span class="cdx-bell-dot"></span>' +
           '<span class="cdx-bell-nbody">' +
             '<span class="cdx-bell-ntext">' + esc(it.title) + '</span>' +
             '<span class="cdx-bell-nmeta">' + metaBits.join(' · ') + '</span>' +
           '</span>' +
-        '</div>';
+        '</a>';
     }).join('');
+    // A dismissed notification is still READABLE (Élder 2026-07-19): clicking a history row
+    // re-opens the thing — the comunicado's message, the tarefa, the thread. It does NOT
+    // re-dismiss and does not move anything: the row is already in the history, it stays.
+    histList.querySelectorAll('[data-bell-h]').forEach((a) => {
+      a.addEventListener('click', () => {
+        const it = bucket[parseInt(a.getAttribute('data-bell-h'), 10)];
+        if (!it) return;
+        closePanel();
+        if (onNavigate) onNavigate(it);
+      });
+    });
   }
 
   // Adopt a feed, whatever brought it (our own fetch, or an envelope that rode back on some

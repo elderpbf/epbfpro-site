@@ -54,6 +54,31 @@ test('both surfaces pass their role to the bell', () => {
   assert.match(read('../js/codex-topbar.js'), /role: 'admin'/, 'admin bell gets role:admin');
   assert.match(read('../trilha/js/page.js'), /role: 'student'/, 'student bell gets role:student');
 });
+
+// ── the two dismissals + a readable history (Élder 2026-07-19) ───────────────
+// An ACIONÁVEL leaves exactly two ways: its × or a click on it. The same two for EVERY
+// acionável — an earlier pass invented a sub-rule inside 'act' ("clears on read" for some
+// but not others) and it was wrong; this test keeps it from coming back.
+test('an acionável clears BOTH ways, with no sub-rule inside act', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /data-bell-x/, 'renders the per-item dismiss ×');
+  assert.match(src, /_isAct\(it\) && dismissItem/, 'a click on an acionável dismisses it too');
+  assert.ok(!/clearsOnRead/.test(src), 'no sub-rule gating which acionáveis clear on click');
+});
+
+// A dismissed notification is still readable: the history is a list you can open, not a log.
+test('history rows are clickable and re-open the item', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /data-bell-h/, 'history rows carry a click handle');
+  assert.match(src, /\[data-bell-h\]/, 'and are wired to a handler');
+});
+
+// With one tier live, a two-tab history names a split the user cannot see.
+test('the history drops its two mini-tabs while only one tier is live', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /DISPENSAVEIS_ENABLED/, 'reads the tier switch from the policy');
+  assert.match(src, /histTabs\.hidden = !split/, 'hides the tabs when the history is not split');
+});
 test('the student trilha header mounts the bell + prefs only when enabled + logged in', () => {
   const src = read('../trilha/js/page.js');
   assert.match(src, /from '\.\.\/\.\.\/js\/notif-bell\.js'/, 'imports the bell');
