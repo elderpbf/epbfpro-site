@@ -148,6 +148,19 @@ test('parseEvalResponse: a genuinely truncated reply returns {error} carrying th
   assert.match(out.error, /\d+\s*chars/, 'the error reports the reply length, so a truncation is diagnosable from the debug pill');
 });
 
+// A class big enough that a readability floor would exceed the even share is exactly
+// where max(floor, share) blew the ceiling again (~77+ long answers). The guarantee is
+// unconditional, so this asserts the REAL worker ceiling, not just our own limit.
+test('fitResponsesToBudget: stays under the worker ceiling even for a very large class', () => {
+  const responses = Array.from({ length: 200 }, (_, i) => ({ index: i + 1, text: 'x'.repeat(2000) }));
+  const fit = fitResponsesToBudget({ statement: 'y'.repeat(9000), responses });
+  const prompt = buildEvalPrompt({ statement: fit.statement, responses: fit.responses });
+  const total = prompt.messages.reduce((sum, m) => sum + m.content.length, 0);
+  assert.ok(total <= 19000, 'fitted prompt must respect the requested limit, got ' + total);
+  assert.ok(total <= 20000, 'and must never exceed the real ai_chat ceiling of 20000');
+  assert.equal(fit.belowFloor, true, 'reports that answers were cut below the readability floor');
+});
+
 // ── makeStubEval ─────────────────────────────────────────────────────────────
 test('makeStubEval: resolves to a valid canned {groups:{adherent,point,diverged}} shape', async () => {
   const evalFn = makeStubEval();

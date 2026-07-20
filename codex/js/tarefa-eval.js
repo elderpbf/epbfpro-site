@@ -90,12 +90,16 @@ export function buildEvalPrompt({ statement, responses }) {
 // makeWorkerEval calls this, right before buildEvalPrompt).
 // Never mutates the caller's rows: every kept response is a fresh {index,text}
 // literal, same anonymity-by-construction guarantee as buildEvalInput.
-// minPerResponse is a readability floor, not a hard cap: the <= limit guarantee
-// holds as long as remaining/count >= minPerResponse (true for realistic class
-// sizes and the pathological case this ships with, ~40 long responses). Past
-// roughly a hundred long responses in one tarefa the floor can push the total
-// back over `limit`; that is a real class-size ceiling this fitting does not
-// solve, not a bug in the formula (which follows the dictated shape exactly).
+// The `<= limit` guarantee is UNCONDITIONAL, at any class size. Note that a
+// readability floor can only ever exceed the even share when the budget is
+// already tight, which is exactly the case where honouring it would blow the
+// limit, so a floor applied as max(floor, share) is not a nicety, it is the bug
+// (it would have re-broken this past ~77 long answers). Fitting wins: the cap is
+// the even share, and `belowFloor` reports when answers had to be cut shorter
+// than minPerResponse, instead of silently shipping an over-limit payload.
+// A class big enough to trip `belowFloor` is the point where batching into
+// several AI calls becomes the real answer; this only guarantees we never blow
+// the worker's ceiling in the meantime.
 export function fitResponsesToBudget({ statement, responses, limit = 19000, statementMax = 3000, minPerResponse = 200 }) {
   const stmt = statement || '';
   const cappedStatement = stmt.length > statementMax ? stmt.slice(0, statementMax) : stmt;
@@ -111,7 +115,8 @@ export function fitResponsesToBudget({ statement, responses, limit = 19000, stat
   let scaffoldOverhead = count - 1; // the (count-1) '\n' joins between response entries
   list.forEach((r) => { scaffoldOverhead += ('Resposta ' + r.index + ': ').length; });
   const remaining = Math.max(0, limit - headerLen - scaffoldOverhead);
-  const perResponseCap = Math.max(minPerResponse, Math.floor(remaining / count));
+  const perResponseCap = Math.max(1, Math.floor(remaining / count));
+  const belowFloor = perResponseCap < minPerResponse;
   let truncatedCount = 0;
   const fitted = list.map((r) => {
     const text = (r && r.text) || '';
@@ -121,7 +126,7 @@ export function fitResponsesToBudget({ statement, responses, limit = 19000, stat
     }
     return { index: r.index, text };
   });
-  return { statement: cappedStatement, responses: fitted, truncatedCount };
+  return { statement: cappedStatement, responses: fitted, truncatedCount, belowFloor };
 }
 
 // Strip optional ```json ... ``` fences, or extract the first {...} span from
