@@ -3,7 +3,7 @@
 //
 // Globals (shared Backstage scripts, loaded before the module boot):
 //   window.callWorker   (../js/worker-call.js, Codex-owned; was backstage/js/api-client.js)
-import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, releases as relApi, assetUrl } from '../js/codex-api.js';
+import { cohorts as api, cp as cpApi, courses as coursesApi, certificates as certApi, releases as relApi, roteiro as roteiroApi, assetUrl } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
@@ -33,10 +33,15 @@ import * as students from './students.js';
 import * as releasesAdmin from '../content/releases.js';
 import * as tarefasAdmin from '../content/tarefas.js';
 import * as appRelease from './app-release.js';
-// track-46 fatia 1: the aula's 4th sub-tab, dev-only (gated cdx-dev-only) until
-// fatia 2 ships the real backend. Store is the dev localStorage stub, injected.
+// track-46 fatia 2: the aula's 4th sub-tab, still dev-only (gated cdx-dev-only,
+// production-dormant this fatia) but now on the real backend. roteiroView is the
+// plain two-panel component (store-injected, also reused unchanged by
+// cohorts/courses.js for the curso base editor); roteiro-store.js is the real
+// per-aula store (replaces the fatia-1 localStorage stub); roteiro-base.js is the
+// base selector + promote controls mounted alongside the two-panel view.
 import * as roteiroView from '../roteiro/roteiro-view.js';
-import * as roteiroStoreStub from '../roteiro/roteiro-store-stub.js';
+import { createRoteiroStore } from '../roteiro/roteiro-store.js';
+import * as roteiroBase from '../roteiro/roteiro-base.js';
 
 // ── Sub-tab registry ──────────────────────────────────────────────────────────
 // Cohorts gained sub-tabs with the Cursos data model: the operational
@@ -94,7 +99,12 @@ let _deepAula = null;   // aula_number to auto-select
 let _deepItem = null;   // tarefa item_id to focus in the Tarefas pane
 let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
 let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas' | 'roteiro'
-let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false }; // which detail embed is live
+let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false, roteiroBase: false }; // which detail embed is live
+// The Roteiro pane's ct_get_aula_roteiro fetch is async (mount can no longer be
+// synchronous once the store hits the real backend); this token guards against
+// a stale response landing after the teacher already switched aula/sub-tab away
+// (bumped by _unmountAulaEmbeds and re-set fresh on every roteiro pane mount).
+let _roteiroLoadToken = 0;
 
 // CLIENTES rail: the shared list-rail (js/list-rail.js) in width:autohide mode. It starts
 // OPEN + pinned with the dossiê on the empty prompt; the first turma pick unpins it into the
@@ -1839,14 +1849,59 @@ function _renderAulaPane(turma, aula) {
     return;
   }
   if (_aulaTab === 'roteiro') {
-    // track-46 fatia 1: dev-only, store is the localStorage stub (swapped for the
-    // real codex-api backend in fatia 2 — only this wiring line changes then).
-    roteiroView.mount(paneEl, { store: roteiroStoreStub, aula, t });
-    _aulaEmbedMounted.roteiro = true;
+    _mountRoteiroPane(paneEl, turma, aula);
     return;
   }
   paneEl.innerHTML = '<div class="cdx-aula-dados">' + _renderAulaColEditor(aula, turma) + '</div>';
   _wireAulaDadosEditor(paneEl, aula, turma);
+}
+
+// Roteiro pane (track-46 fatia 2): fetch the aula's saved roteiro ONCE up front
+// (ct_get_aula_roteiro), then mount the base selector + the two-panel view, both
+// seeded from that single response. roteiroView.mount() itself stays fully
+// synchronous (its store.load() contract from fatia 1 is unchanged); the network
+// round-trip happens here, before mount, not inside the view.
+function _mountRoteiroPane(paneEl, turma, aula) {
+  paneEl.innerHTML =
+    '<div id="cdx-aula-roteiro-base"></div>' +
+    '<div class="cdx-aula-pane" id="cdx-aula-roteiro-view"></div>';
+  const token = ++_roteiroLoadToken;
+  if (aula.id == null) {
+    // Unsaved 'new' aula: nothing to fetch yet, mount both on a blank seed so the
+    // pane is still usable the instant the aula is saved and re-selected.
+    _mountRoteiroEmbeds(paneEl, turma, aula, null);
+    return;
+  }
+  roteiroApi.getAula({ id: aula.id }).then((seed) => {
+    if (token !== _roteiroLoadToken) return; // switched aula/sub-tab meanwhile
+    _mountRoteiroEmbeds(paneEl, turma, aula, seed);
+  }).catch((e) => {
+    if (token !== _roteiroLoadToken) return;
+    notice.internal(t('cohorts.error') + ': ' + ((e && e.message) || e));
+  });
+}
+
+function _mountRoteiroEmbeds(paneEl, turma, aula, seed) {
+  const baseEl = paneEl.querySelector('#cdx-aula-roteiro-base');
+  const viewEl = paneEl.querySelector('#cdx-aula-roteiro-view');
+  if (!baseEl || !viewEl) return; // pane was replaced meanwhile
+  roteiroBase.mount(baseEl, {
+    turma, aula, seed, turmaAulas: _turmaAulas,
+    onApplied: (applied) => {
+      // The base selector already persisted the copy-down/blank via setAula.
+      // createRoteiroStore's load() replays a FROZEN seed captured at creation
+      // time (the view's store.load() contract stays synchronous, see
+      // roteiro-store.js), so re-using the OLD store here would still hand the
+      // remounted view the pre-copy content. Build a FRESH store off the applied
+      // payload instead, so the copied-down/blank roteiro shows immediately, not
+      // only after navigating away and back.
+      roteiroView.unmount();
+      roteiroView.mount(viewEl, { store: createRoteiroStore(aula.id, applied), aula, t });
+    },
+  });
+  _aulaEmbedMounted.roteiroBase = true;
+  roteiroView.mount(viewEl, { store: createRoteiroStore(aula.id, seed), aula, t });
+  _aulaEmbedMounted.roteiro = true;
 }
 
 // A Liberações/Tarefas embed changed the released set: refetch the view so the row
@@ -2119,10 +2174,12 @@ function _wireAulaDadosEditor(container, aula, turma) {
 // Tear down whichever Liberações/Tarefas embed is currently mounted in the detail
 // pane (they are module singletons, so this stops esc-handler leaks across switches).
 function _unmountAulaEmbeds() {
+  _roteiroLoadToken++; // invalidate any in-flight ct_get_aula_roteiro fetch
   if (_aulaEmbedMounted.liberacoes) { try { releasesAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.liberacoes = false; }
   if (_aulaEmbedMounted.apps) { try { appRelease.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.apps = false; }
   if (_aulaEmbedMounted.tarefas) { try { tarefasAdmin.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.tarefas = false; }
   if (_aulaEmbedMounted.roteiro) { try { roteiroView.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.roteiro = false; }
+  if (_aulaEmbedMounted.roteiroBase) { try { roteiroBase.unmount(); } catch (_) { /* already gone */ } _aulaEmbedMounted.roteiroBase = false; }
 }
 
 // #27: recompute the dossier's DERIVED facts (Carga horária = SUM of saved aula
@@ -2166,7 +2223,7 @@ export function mount(viewEl, ctx) {
   _turmaViewItems = [];
   _selectedAulaId = null;
   _aulaTab = 'dados';
-  _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false };
+  _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false, roteiro: false, roteiroBase: false };
 
   // Route by sub-tab. The Cursos sub-view is its own module; the default
   // (Concept A) merged Turmas+Clientes list → dossier view is the shell below.

@@ -87,3 +87,41 @@
   flex: 1; min-width: 0; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: .88rem;
 }
+
+/* ── Base selector (roteiro/roteiro-base.js, track-46 fatia 2b) ────────────── */
+.cdx-roteiro-base {
+  flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); margin-bottom: 4px;
+}
+.cdx-roteiro-base-nocourse { padding: 8px 10px; font-size: .85rem; color: var(--text-secondary); }
+.cdx-roteiro-base-summary {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+  font-size: .88rem; color: var(--text-secondary); list-style: none;
+}
+.cdx-roteiro-base-summary::-webkit-details-marker { display: none; }
+.cdx-roteiro-base-summary::before { content: '\25b8'; margin-right: 2px; color: var(--text-muted); }
+details[open] > .cdx-roteiro-base-summary::before { content: '\25be'; }
+.cdx-roteiro-base-current { color: var(--text-primary); }
+.cdx-roteiro-base-body { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 10px 10px; }
+.cdx-roteiro-base-loading { font-size: .85rem; color: var(--text-secondary); }
+.cdx-roteiro-base-select {
+  padding: 5px 7px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font-size: .86rem;
+}
+.cdx-roteiro-base-numinput {
+  width: 4.5em; padding: 5px 7px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font-size: .86rem;
+}
+
+/* ── Promote modal (este ponto / esta aula / todas as aulas) ───────────────── */
+.cdx-roteiro-promote-scopes { display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+.cdx-roteiro-promote-scopes label { display: flex; align-items: center; gap: 5px; font-size: .88rem; color: var(--text-primary); }
+.cdx-roteiro-promote-field { margin-bottom: 12px; }
+.cdx-roteiro-promote-target-opt { display: flex; align-items: center; gap: 6px; font-size: .88rem; color: var(--text-primary); margin-bottom: 6px; }
+.cdx-roteiro-promote-hint { font-size: .8rem; color: var(--text-secondary); margin-bottom: 12px; }
+
+/* ── Reused by cohorts/courses.js (base editor): no per-aula hours target exists
+   for a curso base, so the aula-specific time meter is hidden in that context.
+   Scoped to the wrapper id courses.js mounts into, never touches the meter's own
+   rules above (still used verbatim on the aula's Roteiro sub-tab). */
+#cdx-cur-roteiro-view .cdx-roteiro-meter { display: none; }

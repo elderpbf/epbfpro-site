@@ -111,3 +111,43 @@ export function fmtDur(min) {
   const rem = m % 60;
   return rem === 0 ? (h + 'h') : (h + 'h' + String(rem).padStart(2, '0'));
 }
+
+// ── Fatia 2: promover (aula -> curso base) helpers ─────────────────────────
+// Promote scope "ponto": patch ONE ponto from `source` (the aula's roteiro) into
+// `target` (a curso base roteiro), leaving everything else in target untouched.
+// Matched by the ponto's stable `n` first (survives target/source drifting apart
+// in bloco order); falls back to the same bi/pi position when `n` is null (the
+// pausa) or has no match. A ponto found nowhere in target's bloco is APPENDED to
+// that bloco (never silently dropped); a target with fewer blocos than `ref.bi`
+// gets a new bloco appended at the end, carrying just this ponto (best-effort
+// placement, never throws, never mutates the inputs). No merge beyond this one
+// field, no versioning: last write wins, matching the promote design.
+export function patchPonto(target, source, ref) {
+  const t = normalizeRoteiro(target);
+  const s = normalizeRoteiro(source);
+  const bi = ref && ref.bi;
+  const pi = ref && ref.pi;
+  const srcBloco = s.blocos[bi];
+  const srcPonto = srcBloco && srcBloco.pontos[pi];
+  if (!srcPonto) return t;
+  const copy = Object.assign({}, srcPonto, { notas: srcPonto.notas.slice() });
+  const bloco = t.blocos[bi];
+  if (!bloco) {
+    t.blocos.push({ nome: srcBloco.nome, pausa: !!srcBloco.pausa, pontos: [copy] });
+    return t;
+  }
+  let idx = -1;
+  if (copy.n != null) idx = bloco.pontos.findIndex((p) => p.n === copy.n);
+  if (idx === -1 && pi < bloco.pontos.length) idx = pi;
+  if (idx === -1) bloco.pontos.push(copy);
+  else bloco.pontos[idx] = copy;
+  return t;
+}
+
+// The next free curso base number given the ones already in use (1 if none).
+// Used by the "promover > nova base" and "Cursos > + Nova base" flows.
+export function nextBaseNumber(existingNumbers) {
+  const nums = (Array.isArray(existingNumbers) ? existingNumbers : [])
+    .map(Number).filter((n) => Number.isFinite(n));
+  return nums.length ? Math.max(...nums) + 1 : 1;
+}

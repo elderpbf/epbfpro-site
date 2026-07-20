@@ -15,7 +15,7 @@
 // estruturar" (ementa.parseEmenta) stays as the offline, no-LLM path.
 // The "De uma apostila" source is deferred (needs multi-apostila in Conteúdo).
 
-import { courses as api, ai, content as contentApi } from '../js/codex-api.js';
+import { courses as api, ai, content as contentApi, roteiro as roteiroApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -26,6 +26,14 @@ import {
   emptyEmenta, normalizeEmenta, ementaStats, parseEmenta,
   buildEmentaAIPrompt, parseEmentaAIResponse,
 } from '../js/ementa.js';
+// track-46 fatia 2b: the curso's numbered base roteiros are edited by reusing
+// roteiro-view.js VERBATIM (the same two-panel component the aula Roteiro
+// sub-tab mounts), swapping in a store bound to this curso's bases instead of an
+// aula. That reuse is the whole point of the view's injected-store seam: no fork,
+// no duplicate component. normalizeRoteiro/nextBaseNumber are the pure model
+// helpers the local _courseRoteiroStore()/"+ Nova base" flow below need.
+import * as roteiroView from '../roteiro/roteiro-view.js';
+import { normalizeRoteiro, nextBaseNumber } from '../js/roteiro-model.js';
 
 let _viewEl = null;
 let _courses = [];
@@ -37,6 +45,10 @@ let _aiMsgs = [];          // assistant chat history ({role, content}) for ai.ch
 let _apostilas = [];       // Conteúdo apostila sets, lazy-loaded for "De uma apostila"
 let _rail = null;          // the shared left-panel rail (js/list-rail.js); Cursos = 1st adopter
 let _sections = [];        // ct_course_sections (rail groups); [] until the admin creates one
+let _courseRoteiros = [];  // this course's numbered base roteiros: [{id, aula_number, roteiro_json}]
+let _courseRoteirosLoaded = false; // has the listCourseBases fetch settled for the selected course?
+let _selectedBaseNumber = null; // which base is open in the reused roteiro-view.js editor
+let _roteiroMounted = false;    // is roteiro-view.js currently mounted into #cdx-cur-roteiro-view?
 
 const IDS = {
   rail:   'cdx-cursos-rail',
@@ -249,6 +261,10 @@ function _onDeleteSection(id) {
 function _selectCourse(id) {
   _selectedId = id;
   _aiMsgs = []; // fresh chat per course
+  _unmountRoteiroEditor();
+  _courseRoteiros = [];
+  _courseRoteirosLoaded = false;
+  _selectedBaseNumber = null;
   if (_rail) _rail.render();
   const el = _q(IDS.main);
   if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.loading')) + '</div>';
@@ -256,9 +272,31 @@ function _selectCourse(id) {
     _course = (d && d.course) || null;
     _ementa = normalizeEmenta(_course && _course.ementa_json);
     _renderMain();
+    _loadCourseRoteiros(id);
   }).catch(() => {
     const el2 = _q(IDS.main);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error_loading')) + '</div>';
+  });
+}
+
+// Roteiro bases fetch independently of the course/ementa load (its own failure
+// must not blank the whole Cursos main panel): the base editor section just
+// stays on its own "carregando" state a little longer, then shows the error.
+function _loadCourseRoteiros(courseId) {
+  roteiroApi.listCourseBases({ course_id: courseId }).then((rd) => {
+    if (_selectedId !== courseId) return; // switched course meanwhile
+    _courseRoteiros = (rd && rd.roteiros) || [];
+    _courseRoteirosLoaded = true;
+    _selectedBaseNumber = _courseRoteiros.length
+      ? Math.min(..._courseRoteiros.map((r) => Number(r.aula_number)))
+      : null;
+    _rerenderRoteiroTabs();
+    _mountRoteiroEditor();
+  }).catch((err) => {
+    if (_selectedId !== courseId) return;
+    _courseRoteirosLoaded = true;
+    _rerenderRoteiroTabs();
+    notice.internal(t('cohorts.error') + ': ' + ((err && err.message) || err));
   });
 }
 
@@ -319,9 +357,11 @@ function _renderMain() {
         '<div class="cdx-cursos-ementa" id="cdx-cur-ementa">' + _renderEmenta() + '</div>' +
       '</div>' +
       _renderAssistant() +
-    '</div>';
+    '</div>' +
+    _renderRoteirosSectionHtml();
 
   _wireMain();
+  _wireRoteirosSection();
 }
 
 // ── AI assistant panel (conversational ementa builder) ──────────────────────────
@@ -757,6 +797,120 @@ function _openPasteModal() {
   });
 }
 
+// ── Roteiros-base editor (track-46 fatia 2b) ─────────────────────────────────
+// The curso's numbered base roteiros, one per aula position. Edited by reusing
+// roteiro-view.js verbatim (the same two-panel component the aula Roteiro
+// sub-tab mounts, cohorts.js), swapping in _courseRoteiroStore() below instead
+// of the aula-backed store: `id`/aula.id here IS the base number
+// (_selectedBaseNumber), not an aula id, since a course has no aulas of its own.
+// The view's time meter is meaningless for a base with no specific aula.hours,
+// so it is hidden by a scoped rule in roteiro/roteiro.css (#cdx-cur-roteiro-view).
+
+function _renderRoteirosSectionHtml() {
+  return '<div class="cdx-cursos-roteiros">' +
+    '<div class="cdx-cursos-panel-h">' +
+      '<b>' + esc(t('cohorts.cursos_roteiros_title')) + '</b>' +
+      '<span class="cdx-cursos-sp"></span>' +
+      '<button class="cdx-btn cdx-btn-sm" id="cdx-cur-roteiro-new">' + esc(t('cohorts.cursos_roteiro_new')) + '</button>' +
+    '</div>' +
+    '<div class="cdx-cursos-roteiro-tabs" id="cdx-cur-roteiro-tabs">' + _roteiroTabsHtml() + '</div>' +
+    '<div class="cdx-cursos-roteiro-view" id="cdx-cur-roteiro-view"></div>' +
+  '</div>';
+}
+
+function _roteiroTabsHtml() {
+  if (!_courseRoteirosLoaded) return '<span class="cdx-cursos-roteiro-msg">' + esc(t('cohorts.loading')) + '</span>';
+  if (!_courseRoteiros.length) return '<span class="cdx-cursos-roteiro-msg">' + esc(t('cohorts.cursos_roteiro_empty')) + '</span>';
+  return _courseRoteiros.slice().sort((a, b) => Number(a.aula_number) - Number(b.aula_number)).map((r) => {
+    const n = Number(r.aula_number);
+    const on = n === _selectedBaseNumber ? ' is-on' : '';
+    return '<button type="button" class="cdx-cursos-roteiro-tab' + on + '" data-roteiro-base="' + n + '">' +
+      esc(t('roteiro.base_option').replace('{n}', String(n))) + '</button>';
+  }).join('');
+}
+
+function _wireRoteirosSection() {
+  const tabsEl = _q('cdx-cur-roteiro-tabs');
+  if (tabsEl) tabsEl.addEventListener('click', (e) => {
+    const btn = e.target.closest('[data-roteiro-base]');
+    if (btn) _selectBase(Number(btn.dataset.roteiroBase));
+  });
+  const newBtn = _q('cdx-cur-roteiro-new');
+  if (newBtn) newBtn.addEventListener('click', _onNewBase);
+  _mountRoteiroEditor();
+}
+
+function _selectBase(n) {
+  if (n === _selectedBaseNumber) return;
+  _selectedBaseNumber = n;
+  _rerenderRoteiroTabs();
+  _mountRoteiroEditor();
+}
+
+function _rerenderRoteiroTabs() {
+  const tabsEl = _q('cdx-cur-roteiro-tabs');
+  if (tabsEl) tabsEl.innerHTML = _roteiroTabsHtml();
+}
+
+function _mountRoteiroEditor() {
+  _unmountRoteiroEditor();
+  const el = _q('cdx-cur-roteiro-view');
+  if (!el || _selectedBaseNumber == null) return;
+  roteiroView.mount(el, { store: _courseRoteiroStore(), aula: { id: _selectedBaseNumber }, t });
+  _roteiroMounted = true;
+}
+
+function _unmountRoteiroEditor() {
+  if (_roteiroMounted) { try { roteiroView.unmount(); } catch (_) { /* already gone */ } _roteiroMounted = false; }
+}
+
+function _onNewBase() {
+  if (!_course) return;
+  const n = nextBaseNumber(_courseRoteiros.map((r) => r.aula_number));
+  const blank = JSON.stringify({ blocos: [] });
+  const btn = _q('cdx-cur-roteiro-new');
+  if (btn) btn.disabled = true;
+  roteiroApi.saveCourseBase({ course_id: _course.id, aula_number: n, roteiro_json: blank }).then((res) => {
+    if (btn) btn.disabled = false;
+    _courseRoteiros.push({ id: res && res.id, aula_number: n, roteiro_json: blank });
+    _selectedBaseNumber = n;
+    _rerenderRoteiroTabs();
+    _mountRoteiroEditor();
+    toast.ok(t('cohorts.cursos_roteiro_created'));
+  }).catch((err) => {
+    if (btn) btn.disabled = false;
+    notice.internal(t('cohorts.error') + ': ' + ((err && err.message) || err));
+  });
+}
+
+// Store adapter for roteiro-view.js: `id` (aula.id in the view's vocabulary) is
+// the base number. Single consumer (this section), so it stays a local factory
+// rather than a third roteiro/*-store.js file -- the injected-store SEAM is what
+// makes reusing the view possible, not a shared store file.
+function _courseRoteiroStore() {
+  return {
+    load() {
+      const row = _courseRoteiros.find((r) => Number(r.aula_number) === Number(_selectedBaseNumber));
+      return normalizeRoteiro(row && row.roteiro_json);
+    },
+    save(id, roteiro) {
+      const n = _selectedBaseNumber;
+      const r = normalizeRoteiro(roteiro);
+      const json = JSON.stringify(r);
+      return roteiroApi.saveCourseBase({ course_id: _course.id, aula_number: n, roteiro_json: json }).then((res) => {
+        const row = _courseRoteiros.find((x) => Number(x.aula_number) === Number(n));
+        if (row) row.roteiro_json = json;
+        else _courseRoteiros.push({ id: res && res.id, aula_number: n, roteiro_json: json });
+      }).catch((e) => {
+        // Hard rule (Codex/CLAUDE.md): a caught error must still reach the debug
+        // pill. save() is fire-and-forget from the view's side, so this catch is
+        // the only place a failed persist surfaces.
+        if (window.bsLog) window.bsLog('codex: cursos roteiro-base save failed: ' + ((e && e.message) || e), 'error');
+      });
+    },
+  };
+}
+
 // ── Public (called by cohorts.js when sub === 'cursos') ─────────────────────────
 
 export function mount(viewEl) {
@@ -768,12 +922,17 @@ export function mount(viewEl) {
   _ementa = emptyEmenta();
   _aiMsgs = [];
   _apostilas = [];
+  _courseRoteiros = [];
+  _courseRoteirosLoaded = false;
+  _selectedBaseNumber = null;
+  _roteiroMounted = false;
   _renderShell();
   _buildRail();
   _loadCourses();
 }
 
 export function unmount() {
+  _unmountRoteiroEditor();
   if (_rail) { _rail.destroy(); _rail = null; }
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
@@ -784,4 +943,7 @@ export function unmount() {
   _ementa = emptyEmenta();
   _aiMsgs = [];
   _apostilas = [];
+  _courseRoteiros = [];
+  _courseRoteirosLoaded = false;
+  _selectedBaseNumber = null;
 }
