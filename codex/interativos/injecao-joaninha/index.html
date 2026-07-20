@@ -20,6 +20,23 @@
   })();
 </script>
 <style>
+  /* ---- Fonte da marca (Comfortaa), embutida --------------------------------
+     A logomarca PensoIA e o mesmo SVG dos Labs, e nele "ensoIA" e um <text> em
+     Comfortaa, nao um path. Sem a fonte o navegador cai numa sans generica e a
+     marca sai errada -- e o que acontecia no celular (no desktop do Elder a
+     Comfortaa esta instalada no sistema, entao o erro ficava invisivel).
+     Um Interativo nao pode buscar nada na rede, entao a fonte vem embutida:
+     subset de 6 glifos (e n s o I A) nos pesos 400 e 700, ~760 B cada.
+     NAO use esta familia para texto corrido: so esses 6 glifos existem.        */
+  @font-face {
+    font-family: 'Comfortaa'; font-style: normal; font-weight: 400; font-display: block;
+    src: url(data:font/woff2;base64,d09GMgABAAAAAAL4AAsAAAAABMwAAAKtAAMa4QAAAAAAAAAAAAAAAAAAAAAAAAAABmAAVBEICoUEhCIBNgIkAxwLEAAEIAUGByAbmQMgLgpsh8spBBID73Zx2ZFO8/nWzD+zG7qEDwjJIUsEVWCJKmhbFqayLx2ouJgrAYD/m9M2OltPWnruO7rp0Wm2MLIo8UT2Bl5UemEgzwkGVOCDE1kcMKfbZKJEjxlSyzraAJbOkw1wALpEywBk+hxSgwCSBpcSHEosL0jGe8RjkOnXmwCHQ7JoLHVkxEM7MAAoIIIRGBCaRdw+EfigYBGPdDSjF4N6PSxQPZ/d3w7yFJfQkRQAAQ8BEoAA7VeAGIMHwGKAgoCAptc3ZiWe5hKZLEi4dG/ZeSxcNm8/vDVYOjfpELbtnJaWiouFS9eEM38jXL4CO3dZv6TRELRaYWo15i4NREQcdqLRGKhSYU6tFqb13L8w3j00eq6Sek2Y+e3S4OSYQ80X7elFRWhSPMdOSpaVIFRVKShm79h0/8z46obKdl5TcgZ57x4Y7ZybXPNPxNzdx2S1+gPmVKpw0+B+5xfXlhbXLi8XGo1FnpWKI1ujo0zP4BfWCXtzD8vyYvk7M/oLkM/mT6WkTOcXJEwNp2Zn9SVFj+fIAmRXcU/3As/KvMCw8OJgn5ro6KDqyuAopzSzgsvH/c/Chc1O8JUXy9gYn9w810D/HGfveI9Qm9iG9rD41N6IuP4CVlb8VpEk1yBRyGdHAwer3bzp1NTpvHwoKZOXN5XqQJO06baUmxxRGRxYHRUVWCNuxICgGu3Sn4AZGznoGnoT/Wnl0WSOtV9GfADjlOiTLWqSVueGBgYnltuHJNZ5a4jU+fNmJd7CMzTey8F0/mNbhrDEJ8fZNySlzhUAMAMCgLH41rP/q7XSqH98hvkLgMbtwRwAfi+eV0Oinz5jxAC4oAAAAnzrhL4jAPgTIIiWR/vhilVigibagmh6hoqhpK0lIkFIBIIKjgXPBQM5PQIAAA==) format('woff2');
+  }
+  @font-face {
+    font-family: 'Comfortaa'; font-style: normal; font-weight: 700; font-display: block;
+    src: url(data:font/woff2;base64,d09GMgABAAAAAAL0AAsAAAAABMwAAAKpAAMa4QAAAAAAAAAAAAAAAAAAAAAAAAAABmAAVBEICoUEhB0BNgIkAxwLEAAEIAUGByAblAMoBh7oPevNpMtyla7AM9AeYHzB+X9nHqVxmiUWJZ7Qp07g3jjRgYx4QMdNs9MwYNuh2zzEnkB8xoIlO/pqQSdt8hAOUKwBULmOaEaqqEDJgl2lG9YqyzFK6K301FRwcBBVxHUZphiBYBRAAsDhiYJo01EMGHBGkvESKtKW7vTWNGCoWzbtmLZfW6LN0WYinrFi8ElmQOAEgAlwAS6DsAAAOgBAIhBIJMJLZ4rzMVks6XrbFr/OS/X2gI7zN7naNqjN9E1mrapf31hXb9sgHEZu1NvXoxuxrqXtzh0x8u5dvf32bUasczUIY/aKO3dcbbduMeL2bb39btTcvV6rF4fvu9XVtkGIkUI8husQ0hrOQfEKZXHrVj07qYiRG6TNwjlLo9bu9lp/W2+/6rfwSr275YTZizxn7VE3XHC1nWPE+vNllztuepay/k8PeC95ERp+wmfZxksB5mXNfrT3/9O++9bIjVF1J0TVZZ76WF1tfaRaL1lXq5dppNQeUa7CkJq1ygwZWK56te5lcgdU95jnObPGNLuIqFY2ITWnRkpMvayslLr1U3KCitXCD8EXTB4G3zYhRKFeUr/nxJQvF5oYWzpkQERRUX6rjjmlynbJLexZ+7t6aXvcOGK9qFoPWo+oh6ip1BxcrtyQmrXKDRlcrmYNQmrVLNtUo2F69aT42llZ8XXAphOcUAcn1P4BgpVy/WL5WsFQ1OaJrBScmHvaaNxY1djGo1H13LS8Uk2D00q1jbn11P3P772fx0+PjL8c4B7fr1ElU72EJtGJyRWbxQEwDAEovs9XfXZ82Nyc/81ZUd4B3Ine6gPwZvSapui1v3KvYgQckQAI+Ooc8ih6nOVeBJ2cZE8ilBWRTBvZlUK5gUZyJaQg0hEagHaWNXVEQaUtIhUA) format('woff2');
+  }
+
   :root {
     --navy: #061a51;
     --teal: #14b8a6;
