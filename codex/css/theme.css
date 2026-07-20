@@ -89,3 +89,24 @@ body {
   margin: 0;
   -webkit-font-smoothing: antialiased;
 }
+
+/* ── Scrollbars: thin + themed, EVERYWHERE (Élder 2026-07-18) ──────────────────
+ * Lives HERE, with the tokens, because theme.css is the ONE stylesheet every app surface loads:
+ * the Codex admin AND the student trilha both link it (the trilha does not load codex.css, so a
+ * scroll primitive placed in codex.css never reached the student face, which is the whole point of
+ * moving it here). The OS default is a fat white bar even in dark mode; nothing should use it. This
+ * is the shared "scroll primitive" the app leans on instead of each surface re-styling its own bar
+ * (a rail, a modal, a drawer, the reading pane, the slides editor, a trilha card list). Two means,
+ * because the two standard props differ: `scrollbar-color` IS inherited but `scrollbar-width` is
+ * NOT, so the width has to be set with a universal selector, not just at the root. `*` is a no-op on
+ * any element without a scrollbar, so it is safe.
+ *   - `*` standard props: Chrome 121+, Edge, Firefox.
+ *   - a universal `::-webkit-scrollbar` for browsers that predate those props (old webkit / Safari);
+ *     it also reaches <body>-appended overlays (modals, popovers) outside .bs-app.
+ * A more specific rule may still override per surface (list-rail's 6px nav bar on webkit). The vars
+ * below (--border, --primary-light) are defined right above, so this block is self-contained. */
+* { scrollbar-width: thin; scrollbar-color: var(--border) transparent; }
+::-webkit-scrollbar        { width: 8px; height: 8px; }
+::-webkit-scrollbar-track  { background: transparent; }
+::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 4px; }
+::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }

@@ -91,7 +91,17 @@ test('the tarefa toggles are declared in one table, including allow_multi', () =
   assert.ok(!/flag === 'reply' \? 'reply_enabled' : 'grade_enabled'/.test(src), 'no ternary that silently excludes the third toggle');
 });
 
-test('the multi toggle is offered in BOTH the standalone pane and the aula card head', () => {
+// Era 'offered in BOTH the standalone pane and the aula card head' e exigia 2 call sites.
+// A fileira do "standalone pane" foi REMOVIDA em 2026-07-16 (track-41) porque NUNCA renderizou:
+// o _renderShell só emitia o pane t1b, então #cdx-tarefas-preview/#cdx-tarefas-list não existiam,
+// e a fileira morava atrás de um ramo _lockedAula == null que nenhum consumidor alcança
+// (content.js monta bankOnly, cohorts.js sempre passa aulaNumber). O teste passava lendo só o
+// FONTE, que é exatamente a falsa confiança que o CLAUDE.md nomeia ("passing unit tests on
+// [unmounted code] are false confidence"). Agora ele cobra a fileira que de fato renderiza.
+test('the aula card head offers all four per-instance toggles', () => {
+  for (const f of ['reply', 'grade', 'multi', 'anon']) {
+    assert.match(src, new RegExp("_flagToggleHtml\\('" + f + "'"), f + ' toggle in the card-head row');
+  }
   const hits = src.match(/_flagToggleHtml\('multi'/g) || [];
-  assert.equal(hits.length, 2, 'both toggle rows offer it, like reply/grade');
+  assert.equal(hits.length, 1, 'exactly ONE row renders now, so exactly one call site');
 });

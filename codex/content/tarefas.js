@@ -16,11 +16,6 @@ import { renderEditor, readEditor, wireEditor } from '../js/tarefa-editor.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
-import * as turmaPicker from './turma-picker.js';
-import { installResizer } from '../js/resizable.js';
-
-const LS_CLIENT = 'ct_admin_tarefas_last_client';
-const LS_TURMA = 'ct_admin_tarefas_last_turma';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -45,7 +40,6 @@ const FLAG_DEFS = {
 };
 const _noFlags = () => ({ reply_enabled: false, grade_enabled: false, allow_multi: false, allow_anon: false });
 let _selectedId = null;  // selected tarefa id (master-detail)
-let _picker = null;
 let _cleanup = [];
 // Aula-locked mode (embedded in the Cohorts aula hub): when set, the list is
 // filtered to this one aula and new tarefas are created bound to it; _onChange
@@ -94,12 +88,10 @@ export function sortTarefas(items) {
 import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
-// Where the answers list renders: inside the open instance card (t1b aula-locked) or the
-// right pane (standalone). One lookup so the submissions machinery is shared by both.
+// Where the answers list renders: inside the open instance card of the t1b aula pane.
 function _respPaneFor(itemId) {
   if (!_viewEl) return null;
-  if (_lockedAula != null) return _viewEl.querySelector('.cdx-t1b-answers[data-card="' + itemId + '"]');
-  return _viewEl.querySelector('#cdx-tarefas-preview [data-pane="resp"]');
+  return _viewEl.querySelector('.cdx-t1b-answers[data-card="' + itemId + '"]');
 }
 function _fields() { return listFields(); }
 function _field(type) { return getField(type || 'text'); }
@@ -124,12 +116,6 @@ function _loadTarefas(clientSlug, turmaSlug) {
   _selectedId = null;
   _editCard = null;
   if (!clientSlug || !turmaSlug) return;
-  const listEl = _q('cdx-tarefas-list');     // standalone only; null in the t1b pane
-  const metaEl = _q('cdx-tarefas-meta');
-  if (listEl) listEl.innerHTML = '<div class="cdx-empty">' + t('tarefas.loading') + '</div>';
-  if (metaEl) metaEl.innerHTML = '';
-  const pv = _q('cdx-tarefas-preview');
-  if (pv) pv.innerHTML = '<div class="cdx-preview-empty">' + t('tarefas.select') + '</div>';
   _submissions = {};
   _flags = {};   // estado da turma que esta saindo: sem isto, os toggles dela pintariam os cartoes da proxima ate o load chegar
 
@@ -173,7 +159,7 @@ function _loadTarefas(clientSlug, turmaSlug) {
     }
   }).catch((err) => {
     const msg = '<div class="cdx-empty">' + t('tarefas.error_loading') + ': ' + _esc((err && err.message) || err) + '</div>';
-    const host = _lockedAula != null ? _q('cdx-t1b-pane') : _q('cdx-tarefas-list');
+    const host = _q('cdx-t1b-pane');
     if (host) host.innerHTML = msg;
   });
 }
@@ -211,15 +197,7 @@ function _renderSubmissions(itemId) {
   const count = subs.length;
   pane.innerHTML =
     '<h4 class="cdx-tarefa-pane-title">' + t('tarefas.answers_title') + ' (' + count + ')</h4>' +
-    // t1b: the Resposta/Nota toggles live in the card head; standalone keeps them here.
-    (_lockedAula != null ? '' :
-      '<div class="cdx-resp-flags">' +
-        '<span class="cdx-resp-flags-label">' + t('tarefas.flags_label') + '</span>' +
-        _flagToggleHtml('reply', flags.reply_enabled, t('tarefas.reply_toggle')) +
-        _flagToggleHtml('grade', flags.grade_enabled, t('tarefas.grade_toggle')) +
-        _flagToggleHtml('multi', flags.allow_multi, t('tarefas.multi_toggle')) +
-        _flagToggleHtml('anon', flags.allow_anon, t('tarefas.anon_toggle')) +
-      '</div>') +
+    // The Resposta/Nota/multi/anon toggles live in the t1b card head, never in this pane.
     '<div class="cdx-resp-toolbar">' +
       '<input type="text" class="cdx-input cdx-resp-search" placeholder="' + _esc(t('tarefas.answers_search')) + '">' +
       '<button class="cdx-btn cdx-btn-sm cdx-resp-export"' + (count === 0 ? ' disabled' : '') + '>' + t('tarefas.export_csv') + '</button>' +
@@ -340,14 +318,12 @@ function _toggleFlag(itemId, flag) {
   payload[key] = next ? 1 : 0;
   api.setTarefaFlags(payload).then(() => {
     cur[key] = next; _flags[itemId] = cur;
-    // t1b: the toggle lives in the card head, flip just that button + re-render the answers
+    // The toggle lives in the t1b card head: flip just that button + re-render the answers
     // (so the reply/grade rows appear/disappear), never the whole pane.
-    if (_lockedAula != null) {
-      const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
-      const b = card && card.querySelector('.cdx-resp-flag[data-flag="' + flag + '"]');
-      if (b) { b.classList.toggle('is-on', next); b.innerHTML = (next ? '☑ ' : '☐ ') + _esc(t(def.label)); }
-      _renderSubmissions(itemId);
-    } else _renderSubmissions(itemId);
+    const card = _viewEl && _viewEl.querySelector('.cdx-t1b-card[data-card="' + itemId + '"]');
+    const b = card && card.querySelector('.cdx-resp-flag[data-flag="' + flag + '"]');
+    if (b) { b.classList.toggle('is-on', next); b.innerHTML = (next ? '☑ ' : '☐ ') + _esc(t(def.label)); }
+    _renderSubmissions(itemId);
   }).catch((err) => notice.internal(_err(err)));
 }
 function _saveReply(sid, reply, itemId) {
@@ -1090,10 +1066,8 @@ function _openPrompt(label, initial, onOk) {
 function _renderShell() {
   // Aula-locked embed: the t1b authoring pane (cards + inline editor + bank-add). The
   // aula hub already provides the list|detail + the aula header, so this is just the pane.
-  if (_lockedAula != null) {
-    _viewEl.innerHTML = '<div class="cdx-tarefas cdx-tarefas--t1b"><div class="cdx-t1b-pane" id="cdx-t1b-pane"></div></div>';
-    return;
-  }
+  // The ONLY other shell is _renderBankShell (Content > Tarefas), which returns before this.
+  _viewEl.innerHTML = '<div class="cdx-tarefas cdx-tarefas--t1b"><div class="cdx-t1b-pane" id="cdx-t1b-pane"></div></div>';
 }
 
 // Bank-only page shell (Content > Tarefas sub-tab): the bank panel + reusable editor, permanently
@@ -1136,27 +1110,12 @@ export function mount(viewEl, ctx = {}) {
   // Bank-only page (Content > Tarefas): render the always-open bank + editor, no turma/picker/split.
   if (_bankOnly) { _renderBankShell(); return; }
   _renderShell();
-  // Draggable divider only in the standalone split; the t1b aula-locked pane stacks cards.
-  if (_lockedAula == null) {
-    installResizer(_q('cdx-tarefas-split'), { storeKey: 'cdx_rz_tarefas_split', defaultPx: 380, min: 260, max: 680 });
-  }
-  // Embedded in a turma dossiê (ctx.clientSlug/turmaSlug given): turma already chosen,
-  // hide the picker and load it. Standalone (Content tab): the picker drives selection.
-  if (ctx.clientSlug && ctx.turmaSlug) {
-    const pk = _q('cdx-tar-picker'); if (pk) pk.style.display = 'none';
-    _loadTarefas(ctx.clientSlug, ctx.turmaSlug);
-  } else {
-    _picker = turmaPicker.mount(_q('cdx-tar-picker'), {
-      onSelect: (c, tu) => _loadTarefas(c, tu),
-      storageKey: { client: LS_CLIENT, turma: LS_TURMA },
-      autoRestore: true,
-    });
-  }
+  // Always embedded in a turma dossiê aula (cohorts.js passes clientSlug/turmaSlug/aulaNumber);
+  // the turma is already chosen, so there is no picker and no standalone split here.
+  _loadTarefas(ctx.clientSlug, ctx.turmaSlug);
 }
 
 export function unmount() {
-  if (_picker && _picker.destroy) _picker.destroy();
-  _picker = null;
   _lockedAula = null;
   _onChange = null;
   _adding = false;

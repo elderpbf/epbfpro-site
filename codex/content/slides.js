@@ -18,9 +18,13 @@
 import { slides as api, ai as aiApi, appConfig } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 import { openMenu, closeMenu } from '../js/menu.js';
 import { createCodexStore } from './slides/adapters/codexStore.js';
 import { createLibrary } from './slides/adapters/library.js';
+import { createSharedSlides } from './slides/adapters/sharedSlides.js';
+import { createSlideClip } from './slides/adapters/slideClip.js';
+import { glyphSvg } from '../js/glyphs.js';
 import { createImageStore } from './slides/adapters/imageStore.js';
 import { createDrivePicker } from './slides/adapters/drivePicker.js';
 
@@ -65,6 +69,7 @@ let _openSlug = null;         // slug of the deck currently open in the editor
 let _editorHandles = null;    // active editor mount handles ({ app, unmount }), or null
 let _deckOpen = false;        // true while a deck is open (sidebar auto-hides)
 let _saveTimer = null;
+let _flushSave = null;        // fires the pending debounced save NOW (see _teardownEditor)
 let _topChromeTimer = null;   // focus-mode hide timer for the Codex topbar reveal
 let _cleanup = [];
 
@@ -93,6 +98,27 @@ function _fmtDate(ts) {
 
 function _deckBySlug(slug) { return _decks.find((d) => d.slug === slug) || null; }
 function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
+
+// Deck titles must be unique among our decks (Élder 2026-07-17: "não podemos ter
+// apresentações com nomes iguais"). A collision gets " (1)", " (2)", … appended.
+// PURE + exported so it is unit-testable without the DOM: `want` against `taken` (a list of
+// existing titles). Case-insensitive + trimmed.
+export function uniqueTitle(want, taken) {
+  const base = (want || '').trim();
+  const set = new Set((taken || []).map((s) => (s || '').trim().toLowerCase()));
+  if (!base || !set.has(base.toLowerCase())) return base;
+  for (let n = 1; ; n++) {
+    const cand = base + ' (' + n + ')';
+    if (!set.has(cand.toLowerCase())) return cand;
+  }
+}
+
+// Module wrapper: resolve the default title + build the taken list from the loaded decks.
+// `exceptSlug` drops one deck, so renaming a deck never collides with its OWN current title.
+function _uniqueTitle(base, exceptSlug) {
+  const want = (base || '').trim() || t('slides.new_default_title');
+  return uniqueTitle(want, _decks.filter((d) => d.slug !== exceptSlug).map((d) => d.title || ''));
+}
 
 // ── Rendering ────────────────────────────────────────────────────────────────
 function _render() {
@@ -132,8 +158,11 @@ function _renderList() {
         '<div class="cdx-slides-row-title">' + title + '</div>' +
         (sub ? '<div class="cdx-slides-row-sub">' + _esc(t('slides.modified')) + ' ' + _esc(sub) + '</div>' : '') +
       '</div>' +
+      // A GEAR, not a pencil (Élder 2026-07-17): it never edited anything, it opens the
+      // deck's options (renomear / duplicar / excluir), and a pencil promised editing.
       '<button class="cdx-slides-row-menu" data-act="menu" data-slug="' + _esc(d.slug) + '" ' +
-        'title="' + _esc(t('slides.edit')) + '" aria-label="' + _esc(t('slides.edit')) + '" aria-haspopup="menu">&#9998;</button>' +
+        'title="' + _esc(t('slides.deck_opts')) + '" aria-label="' + _esc(t('slides.deck_opts')) + '" aria-haspopup="menu">' +
+        glyphSvg('settings', { size: 15 }) + '</button>' +
     '</div>';
   }).join('');
 }
@@ -249,14 +278,54 @@ async function _deleteDeck(slug) {
   }
 }
 
-// The per-row ✎ glyph opens a small action menu (rename + delete live here, off
-// the row itself). `btn` is the trigger, the menu anchors to it.
+// The per-row gear opens the deck's options. `btn` is the trigger, the menu anchors to it.
 function _openDeckMenu(btn) {
   const slug = btn.getAttribute('data-slug');
   openMenu(btn, [
     { label: t('slides.rename'), onClick: () => _renameDeck(slug) },
+    { label: t('slides.duplicate'), onClick: () => _duplicateDeck(slug) },
     { label: t('slides.delete'), danger: true, onClick: () => _deleteDeck(slug) },
   ]);
+}
+
+// Duplicate a deck: a new presentation row + a copy of the source's deck JSON.
+//
+// The copy is BYTE-FOR-BYTE, which is the point: a shared slide is stored as {id, ref}, so
+// the duplicate keeps pointing at the same library entries and the two decks stay in sync
+// on exactly the slides that were shared. That IS the "linked variant" of
+// architecture/slides.md §10 (jurista vs advogado), for free, with "destacar" as the way to
+// diverge on the few that differ. A copy that re-materialised the refs would silently break it.
+//
+// Image URLs are copied as-is, so both decks point at the SOURCE slug's R2 objects. That is
+// how the deck JSON already works (origin-less /r2/ paths, re-absolutized on load) and it
+// is why this does not re-upload anything; deleting the source could orphan the copy's
+// images, which is worth knowing before deck deletion ever starts reaping R2.
+async function _duplicateDeck(slug) {
+  // The copy is made from the last SAVED json, so land any pending autosave first AND wait
+  // for it: the gear is one mouse trip away from an edit, which is well inside the 800ms
+  // window, and getDeck would otherwise race it and copy the pre-edit deck.
+  await _flushPendingSave();
+  const d = _deckBySlug(slug);
+  // Unique, so duplicating twice gives "X (cópia)" then "X (cópia) (1)", never two identical.
+  const title = _uniqueTitle(((d && d.title) || t('slides.untitled')) + ' ' + t('slides.copy_suffix'));
+  const newSlug = _slugify(title) + '-' + String(Date.now()).slice(-6);
+  try {
+    await api.register({ slug: newSlug, title, engine: DECK_ENGINE });
+    // A deck with no saved JSON yet (registered, never opened) makes the frozen load action
+    // reject "not found"; treat that as an empty duplicate rather than a failed one.
+    let data = null;
+    try {
+      const res = await api.getDeck({ slug });
+      data = (res && res.data) || null;
+    } catch (e) {
+      if (!/not\s*found/i.test((e && e.message) || String(e))) throw e;
+    }
+    if (data) await api.saveDeck({ slug: newSlug, data });
+    await _loadDecks();
+    _openDeck(newSlug, /* fresh */ !data);
+  } catch (e) {
+    notice.internal(e);
+  }
 }
 
 // Rename a deck: re-register the same slug with the new title (the *_presentation
@@ -268,8 +337,9 @@ async function _renameDeck(slug) {
   // eslint-disable-next-line no-alert -- lightweight guard; modal parity is a follow-up (mirrors _deleteDeck)
   const next = window.prompt(t('slides.rename_prompt'), current);
   if (next == null) return;                          // cancelled
-  const title = next.trim();
-  if (!title || title === current) return;           // empty or unchanged -> no-op
+  const typed = next.trim();
+  if (!typed || typed === current) return;           // empty or unchanged -> no-op
+  const title = _uniqueTitle(typed, slug);           // no two decks share a name (self excluded)
   try {
     await api.register({ slug, title, engine: DECK_ENGINE });
     await _loadDecks();                              // re-renders the sidebar; the open deck stays open
@@ -280,17 +350,39 @@ async function _renameDeck(slug) {
   }
 }
 
-async function _createDeck() {
-  const title = t('slides.new_default_title');
-  const slug = _slugify(title) + '-' + String(Date.now()).slice(-6);
+// Create a new deck. It is ALWAYS a full newDeck() (canvas + theme + logo + the 3 starter
+// slides), whichever caller asks:
+//   open:true  (default) -> the sidebar "+ nova apresentação": open it in the editor.
+//   open:false           -> the editor's "share to a NEW deck": stay on the current slide,
+//                           just register + persist the skeleton, and RETURN the row so the
+//                           caller can send a slide into a deck that is already real.
+// `title` is auto-named (and uniquified) when absent. The old share path registered a BARE
+// ROW and let _clip._append write a skeleton-less {slides:[…]} into it; with no canvas/theme
+// and none of the defaults it opened blank and off-screen (Élder 2026-07-17: "ela abre
+// quebrada, a lista de slides está vazia, a visualização em branco e quase toda fora da tela").
+async function _createDeck(title, { open = true } = {}) {
+  const finalTitle = _uniqueTitle(title);
+  const slug = _slugify(finalTitle) + '-' + String(Date.now()).slice(-6);
+  const deck = newDeck();
+  deck.title = finalTitle;
   try {
-    await api.register({ slug, title, engine: DECK_ENGINE });
+    await api.register({ slug, title: finalTitle, engine: DECK_ENGINE });
+    if (open) {
+      await _loadDecks();
+      _openDeck(slug, /* fresh */ false, deck); // seeds the store AND persists the skeleton
+      return { slug, title: finalTitle };
+    }
+    // Not opening: persist the skeleton HERE, so the deck is a real deck before the caller's
+    // send appends a slide to it (otherwise _append starts from {slides:[]} and it is broken).
+    await api.saveDeck({ slug, data: deck });
     await _loadDecks();
-    _openDeck(slug, /* fresh */ true);
+    return { slug, title: finalTitle };
   } catch (e) {
     notice.internal(e);
+    if (!open) return null;
     const list = _q('#cdx-slides-list');
     if (list) list.innerHTML = '<div class="cdx-empty">' + _esc(t('slides.error_loading')) + '</div>';
+    return null;
   }
 }
 
@@ -337,7 +429,16 @@ async function _importDeck(file) {
 // initialDeck (optional): a deck object to seed the store with (e.g. a freshly
 // imported pptx). When given, it is treated like a fresh deck, set + persisted.
 async function _openDeck(slug, fresh, initialDeck) {
-  const store = createCodexStore({ slug });
+  // FIRST, before this function touches any module state: land whatever the deck being
+  // left still has in flight. An edit made inside the autosave's 800ms window used to be
+  // thrown away by _teardownEditor's clearTimeout when the user clicked another deck.
+  _flushPendingSave();
+  // Shared slides (track-35 C): resolve `{id, ref}` link stubs into content on load and
+  // collapse them back (writing any edit through to the library) on save. Per OPEN DECK,
+  // not per session: its dirty-tracking is about THIS deck's links, and a stale map from
+  // a previously opened deck would make the first save skip a real write-back.
+  const shared = createSharedSlides({ library: _library, message: t('slides.shr_broken') });
+  const store = createCodexStore({ slug, hydrate: shared.hydrate, dehydrate: shared.dehydrate });
   const seeded = !!initialDeck;
 
   if (initialDeck) {
@@ -352,14 +453,18 @@ async function _openDeck(slug, fresh, initialDeck) {
   // Debounced autosave on any later deck change (the R2 path). On a successful save we
   // ping the presenter window over the deck channel so it can toast "saved" (notes edited
   // in the presenter view round-trip here to be persisted; the ping confirms the REAL save).
+  const _save = () => store.save()
+    .then(() => { const a = _editorHandles && _editorHandles.app; if (a && a.channel) a.channel.postMessage({ type: 'saved' }); })
+    .catch((e) => notice.internal(e));
   store.on('change', () => {
     if (_saveTimer) clearTimeout(_saveTimer);
-    _saveTimer = setTimeout(() => {
-      store.save()
-        .then(() => { const a = _editorHandles && _editorHandles.app; if (a && a.channel) a.channel.postMessage({ type: 'saved' }); })
-        .catch((e) => notice.internal(e));
-    }, 800);
+    _saveTimer = setTimeout(_save, 800);
   });
+  // Closing this deck must FIRE the pending save, not cancel it, and only _save knows which
+  // store/slug it belongs to. Assigned AFTER the flush at the top of _openDeck, never before:
+  // _saveTimer is module-wide, so overwriting the handle while the PREVIOUS deck's timer is
+  // still pending would flush that timer through THIS deck's save.
+  _flushSave = () => { if (!_saveTimer) return null; clearTimeout(_saveTimer); _saveTimer = null; return _save(); };
   // Persist the initial deck (fresh OR imported) so it survives a reload.
   if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
 
@@ -375,14 +480,50 @@ async function _openDeck(slug, fresh, initialDeck) {
   // inert until GOOGLE_PICKER_API_KEY is set, so the option simply stays disabled till then.
   ensurePickerKey(); // fetch the Picker key once per session (non-blocking; resolves before the gallery is opened)
   const drivePicker = createDrivePicker({ getApiKey: () => _pickerKey, getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null) });
-  _editorHandles = editor.mount(_q('#cdx-slides-stage'), { store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker });
+  // The slide clipboard (track-35 C): Ctrl+C here, Ctrl+V in any deck, and the paste asks
+  // solto-or-vinculado. onOpenDeck: when a linked paste has to turn the SOURCE slides into
+  // refs and the source is the deck ON SCREEN, the editor does it in memory. Writing that
+  // deck's JSON through the facade instead would be clobbered by its own next autosave.
+  const clip = createSlideClip({
+    facade: api,
+    library: _library,
+    onOpenDeck: (srcSlug, entries) => {
+      const a = _editorHandles && _editorHandles.app;
+      if (!a || srcSlug !== _openSlug) return false;
+      return a.linkOpenSource(entries);
+    },
+  });
+  const deckTitle = (d) => (d && d.title) || '';
+  _editorHandles = editor.mount(_q('#cdx-slides-stage'), {
+    store, aiService: makeWorkerAi(aiApi.chat), library: _library, imageStore, drivePicker, clip,
+    slug, deckTitle: deckTitle(_deckBySlug(slug)),
+    // Resolve an origin slug to its CURRENT title for the +slide Biblioteca sections, so a
+    // renamed deck renames its section instead of freezing the name it had when shared.
+    deckTitleOf: (s2) => deckTitle(_deckBySlug(s2)),
+    // The "share to which deck?" picker: the live list, and the door to a new one without
+    // leaving the slide you are on.
+    deckList: () => _decks.map((d) => ({ slug: d.slug, title: d.title || '' })),
+    createDeck: (title, opts) => _createDeck(title, opts),
+    notify: toast.ok,
+  });
   _openSlug = slug;
   _writeDeckParam(slug);
   _setDeckOpen(true);
   _renderList();
 }
 
+// Fire the open deck's pending debounced save instead of dropping it. Returns the save's
+// promise (or null when nothing was pending) so a caller that READS the saved json right
+// after can await it; the deck-switch callers deliberately do not, because the save closes
+// over its own store + slug and completes correctly while the next deck opens, and awaiting
+// would freeze the UI on every switch. Errors reach the debug pill through _save's catch.
+function _flushPendingSave() {
+  const flush = _flushSave;
+  return flush ? flush() : null;
+}
+
 function _teardownEditor() {
+  _flushPendingSave();
   if (_saveTimer) { clearTimeout(_saveTimer); _saveTimer = null; }
   if (_editorHandles) {
     // mount() returns { app, unmount }; call its own teardown (closes the

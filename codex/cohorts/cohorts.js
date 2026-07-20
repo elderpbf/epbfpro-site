@@ -92,18 +92,29 @@ let _selectedAulaId = null; // selected aula id (string) | 'outros' | null
 let _aulaTab = 'dados';     // active per-aula sub-tab: 'dados' | 'liberacoes' | 'tarefas'
 let _aulaEmbedMounted = { liberacoes: false, tarefas: false, apps: false }; // which detail embed is live
 
-// CLIENTES rail (mirrors the Questions sessions sidebar). Starts OPEN + pinned
-// with the dossiê showing the empty prompt; the first turma pick flips it to the
-// hover-reveal overlay (left screen edge reveals, cursor-leave hides). Élder.
-let _overNav = false;
-let _navHideTimer = null;
-let _navPinned = true;       // open + pinned until the first turma is picked
-const NAV_REVEAL_ZONE = 6;   // px from the left edge that triggers the reveal
-const NAV_HIDE_DELAY = 1500; // ms after the cursor leaves the rail before it hides
-function _navLayoutEl() { return _viewEl && _viewEl.querySelector('.cdx-three-pane'); }
-function _openNav() { const l = _navLayoutEl(); if (l) l.classList.add('cdx-sm--open'); }
-function _closeNav() { const l = _navLayoutEl(); if (!l || _navPinned) return; l.classList.remove('cdx-sm--open'); }
-function _maybeHideNav() { if (!_overNav) _closeNav(); }
+// CLIENTES rail: the shared list-rail (js/list-rail.js) in width:autohide mode. It starts
+// OPEN + pinned with the dossiê on the empty prompt; the first turma pick unpins it into the
+// hover-reveal overlay (left screen edge reveals, cursor-leave hides). The reveal zone, the
+// hide timer, Escape and the open class all live in the module now — this file only says
+// WHEN it is pinned, through _navRail.pin(bool).
+let _navRail = null;
+let _navNotice = null;   // loading/error line shown in place of the list (via the rail's emptyText)
+// "Continuar de onde eu estava": a última turma aberta, pra sobreviver a um refresh.
+// O SET sempre existiu (em _selectTurma, com o comentário "reopen this turma after a
+// refresh"); o READ nunca foi escrito, então todo F5 caía no prompt vazio com o rail
+// pinado — a queixa do Élder. Um deep-link (?fclient/?fturma) tem precedência: é uma
+// intenção explícita, o último aberto é só o default.
+const LS_LAST = 'cdx_cohorts_last';
+function _lsLastSet(clientSlug, turmaSlug) {
+  try { localStorage.setItem(LS_LAST, clientSlug + '\n' + turmaSlug); } catch (_) { /* private mode */ }
+}
+function _lsLastGet() {
+  let raw = null;
+  try { raw = localStorage.getItem(LS_LAST); } catch (_) { return null; }
+  if (!raw) return null;
+  const [client, turma] = String(raw).split('\n');
+  return (client && turma) ? { client, turma } : null;
+}
 
 // ── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -257,27 +268,17 @@ function _openArchiveConfirm(opts) {
 
 function _renderShell() {
   _viewEl.innerHTML =
-    '<div class="cdx-three-pane' + (_navPinned ? ' cdx-sm--open' : '') + '">' +
+    // No cdx-sm--open here any more: the rail mounts pinned (width.pinned defaults true)
+    // and stamps the class itself on its first render, so the open state has ONE owner.
+    '<div class="cdx-three-pane">' +
 
-      // Concept A: ONE list, turmas grouped under their client. Kept inside
-      // .cdx-cohorts-nav so the mobile hamburger drawer (codex-topbar.js targets
-      // that selector) still works; display:contents makes the inner pane the
-      // real grid column on desktop.
+      // Concept A: ONE list, turmas grouped under their client — now the shared rail
+      // (js/list-rail.js), which brings its own head/body/foot, the auto-hide, and the
+      // band > section > row nesting. Still inside .cdx-cohorts-nav so the mobile
+      // hamburger drawer (codex-topbar.js targets that selector) keeps working;
+      // display:contents makes the listpane the real grid column on desktop.
       '<div class="cdx-cohorts-nav">' +
-        '<div class="cdx-pane cdx-cohorts-listpane">' +
-          // Few clients, so the search input is kept but hidden (re-enable by
-          // dropping the hidden attr); the header labels the left column as CLIENTES.
-          '<div class="cdx-pane-header">' +
-            '<div class="cdx-pane-title">' + t('cohorts.clients_title') + '</div>' +
-            '<input type="search" id="' + IDS.search + '" class="cdx-cohorts-search" placeholder="' + t('cohorts.search_turma') + '" autocomplete="off" hidden>' +
-          '</div>' +
-          '<div class="cdx-pane-body" id="' + IDS.list + '">' +
-            '<div class="cdx-empty">' + t('cohorts.loading') + '</div>' +
-          '</div>' +
-          '<div class="cdx-cohorts-listfoot">' +
-            '<button class="cdx-btn cdx-btn-sm cdx-btn-vazado" id="' + IDS.btnNewClient + '">' + t('cohorts.new_client') + '</button>' +
-          '</div>' +
-        '</div>' +
+        '<div class="cdx-cohorts-listpane" id="' + IDS.list + '"></div>' +
       '</div>' +
 
       // The turma DOSSIER (Concept A right pane). Surfaces the rich turma data the
@@ -291,34 +292,55 @@ function _renderShell() {
 
     '</div>';
 
-  _q(IDS.btnNewClient).addEventListener('click', () => _openClientForm(null));
-  // One delegated listener on the list container; innerHTML re-renders replace
-  // only inner content, so the listener survives every re-render.
-  _q(IDS.list).addEventListener('click', _onListClick);
-  const searchEl = _q(IDS.search);
-  if (searchEl) searchEl.addEventListener('input', () => { _turmaSearch = searchEl.value; _renderList(); });
-  // Auto-hide CLIENTES rail (mirrors the Questions sessions sidebar): the dossiê
-  // is full-width; the listpane is a fixed rail revealed by mousing to the left
-  // edge and hidden shortly after the cursor leaves. Document-level listeners are
-  // pushed to _cleanup so they tear down on unmount (no leak across tab switches).
-  const _sidebar = _viewEl.querySelector('.cdx-cohorts-listpane');
-  const _onNavMove = (e) => { if (e.clientX <= NAV_REVEAL_ZONE) _openNav(); };
-  const _onNavEnter = () => { _overNav = true; clearTimeout(_navHideTimer); };
-  const _onNavLeave = () => { _overNav = false; clearTimeout(_navHideTimer); _navHideTimer = setTimeout(_maybeHideNav, NAV_HIDE_DELAY); };
-  const _onNavKey = (e) => {
-    const tag = e.target && e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
-    if (e.key === 'Escape') _closeNav();
-  };
-  if (_sidebar) { _sidebar.addEventListener('mouseenter', _onNavEnter); _sidebar.addEventListener('mouseleave', _onNavLeave); }
-  document.addEventListener('mousemove', _onNavMove);
-  document.addEventListener('keydown', _onNavKey);
-  _cleanup.push(() => {
-    document.removeEventListener('mousemove', _onNavMove);
-    document.removeEventListener('keydown', _onNavKey);
-    if (_sidebar) { _sidebar.removeEventListener('mouseenter', _onNavEnter); _sidebar.removeEventListener('mouseleave', _onNavLeave); }
-    clearTimeout(_navHideTimer);
+  _buildNavRail();
+  // The client head's own buttons (+ nova turma / ⚙ editar cliente) are consumer html
+  // inside sections.renderHead, so the consumer wires them — the same split the aula rail
+  // in this file already uses for its Outros footer. The rail ignores clicks inside
+  // .cdx-rail-sec-acts, so this never races its accordion toggle.
+  const navEl = _q(IDS.list);
+  if (navEl) navEl.addEventListener('click', _onNavActionClick);
+}
+
+// The CLIENTES rail. Everything that used to be hand-rolled here — the hover-reveal
+// auto-hide, the status bands, the exclusive accordion — is now the shared module's
+// (js/list-rail.js), which is the whole point of track-41: ONE rail, not a bespoke copy
+// per screen. This file keeps only what is genuinely Clientes: which turmas exist, how a
+// client is classified, and what a head/row looks like inside.
+function _buildNavRail() {
+  const el = _q(IDS.list);
+  if (!el) return;
+  _navRail = mountRail(el, {
+    title: t('cohorts.clients_title'),
+    add: { label: '+', title: t('cohorts.new_client'), onAdd: () => _openClientForm(null) },
+    items: () => _navModel().reduce((all, g) => all.concat(g.turmas), []),
+    getId: (tm) => tm.client_slug + '/' + tm.slug,
+    // Turma slugs are unique only WITHIN a client, so the rail's single id must be the pair.
+    onSelect: (id) => { const i = id.indexOf('/'); _selectTurma(id.slice(0, i), id.slice(i + 1)); },
+    selectedId: () => (_relClientSlug && _relTurmaSlug ? _relClientSlug + '/' + _relTurmaSlug : null),
+    renderRow: (tm) => ({ main: _turmaRowMain(tm) }),
+    // Phase accent + archived dimming live on the row element itself (border-left: var(--ph)).
+    rowClass: (tm) => _turmaPhase(tm).cls + (tm.status === 'archived' ? ' is-archived' : ''),
+    emptyText: () => _navNotice || t(_turmaSearch.trim() ? 'cohorts.no_search_results' : 'cohorts.no_clients'),
+    sections: {
+      of: (tm) => tm.client_slug,
+      list: () => _navModel().map((g) => ({ id: g.client.slug, client: g.client, band: g.band })),
+      exclusive: true,                        // accordion: one client open at a time
+      openId: () => _expandedClient,          // ...and THIS file owns which one
+      onToggle: (slug) => _toggleClient(slug),
+      renderHead: (sec, count) => _clientHead(sec.client, count),
+      emptyText: t('cohorts.no_turmas'),
+    },
+    bands: {
+      of: (sec) => sec.band,
+      list: () => _SECTIONS.map((s) => ({ id: s, title: t('cohorts.section_' + s) })),
+    },
+    width: {
+      mode: 'autohide',
+      layoutEl: _viewEl.querySelector('.cdx-three-pane'),   // the class toggles on the layout, not the rail
+      openClass: 'cdx-sm--open',
+    },
   });
+  _renderList();
 }
 
 // ── Merged list: clients + their turmas (Concept A) ───────────────────────────
@@ -328,8 +350,8 @@ function _renderShell() {
 // render them as one grouped list. Re-binds the open dossier to the fresh turma
 // object so edits/archives reflect; falls back to selecting the first turma.
 function _loadAll() {
-  const el = _q(IDS.list);
-  if (el) el.innerHTML = '<div class="cdx-empty">' + t('cohorts.loading') + '</div>';
+  _navNotice = t('cohorts.loading');   // the rail owns its body now: say it through emptyText
+  _renderList();                       // rather than overwriting the container out from under it
   api.listClients().then((data) => {
     _clients = data.clients || [];
     return Promise.all(_clients.map((c) =>
@@ -340,21 +362,24 @@ function _loadAll() {
     // Set the selected client BEFORE rendering the list so its action buttons
     // (+ new-turma / edit) show open, not hover-gated (the row is already is-on).
     const cur = _turmas.find((tm) => tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug && tm.status !== 'archived');
+    // BEFORE the render: _expandedClient is what the rail reads back through sections.openId,
+    // so the restored/deep-linked turma's client must already be open on the first paint.
     if (cur) { _selectedClientSlug = cur.client_slug; _expandedClient = cur.client_slug; }
+    _navNotice = null;
     _renderList();
-    if (cur) { _navPinned = false; _closeNav(); _renderDossier(cur); }
+    if (cur) { _navRail.pin(false); _renderDossier(cur); }
     else {
       // No deep-link: start with the rail pinned open and the dossiê showing the
       // empty prompt until Élder opens a turma (mirrors the Questions picker).
       _relClientSlug = null; _relTurmaSlug = null;
-      _navPinned = true; _openNav();
+      _navRail.pin(true);
       const dEl = _q('cdx-turma-dossier');
       if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
     }
   }).catch((e) => {
     if (window.bsLog) window.bsLog(t('cohorts.error_loading') + ': ' + (e && e.message || e), 'error');
-    const el2 = _q(IDS.list);
-    if (el2) el2.innerHTML = '<div class="cdx-empty">' + t('cohorts.error_loading') + '</div>';
+    _navNotice = t('cohorts.error_loading');
+    _renderList();
   });
 }
 
@@ -402,43 +427,40 @@ function _clientStatus(turmas) {
 
 const _SECTIONS = ['ativo', 'futuro', 'inativo'];
 
-function _renderList() {
-  const el = _q(IDS.list);
-  if (!el) return;
+// The ONE shape both rail callbacks read (items + sections.list): the visible clients, each
+// with its sorted turmas and its status band. Derived, never stored — a single source means
+// the row list and the section list cannot disagree about what is on screen.
+function _navModel() {
   const q = (_turmaSearch || '').trim().toLowerCase();
   const byClient = {};
   _turmas.forEach((tm) => { (byClient[tm.client_slug] = byClient[tm.client_slug] || []).push(tm); });
-  let groups = _clients
+  return _clients
     .filter((c) => c.status !== 'archived')
     .map((c) => {
       const all = byClient[c.slug] || [];
-      let turmas = all;
-      if (q) turmas = all.filter((tm) =>
-        String(tm.name || '').toLowerCase().includes(q) ||
-        String(tm.display_name || '').toLowerCase().includes(q));
-      // status from ALL the client's turmas; rows sorted (future on top).
-      return { client: c, turmas: _sortTurmas(turmas), status: _clientStatus(all) };
-    });
-  if (q) groups = groups.filter((g) => g.turmas.length);
-  if (!groups.length) {
-    el.innerHTML = '<div class="cdx-empty">' + t(q ? 'cohorts.no_search_results' : 'cohorts.no_clients') + '</div>';
-    return;
-  }
-  // Clients fall into ativos / futuros / inativos sections, divided by a thin line.
-  let html = '';
-  for (const sec of _SECTIONS) {
-    const inSec = groups.filter((g) => g.status === sec);
-    if (!inSec.length) continue;
-    html += '<div class="cdx-cg-section">' + _esc(t('cohorts.section_' + sec)) + '</div>';
-    html += inSec.map((g) => _renderGroup(g.client, g.turmas)).join('');
-  }
-  el.innerHTML = html;
-  _wireAvatars(el);
+      const turmas = q
+        ? all.filter((tm) =>
+            String(tm.name || '').toLowerCase().includes(q) ||
+            String(tm.display_name || '').toLowerCase().includes(q))
+        : all;
+      // band from ALL the client's turmas; rows sorted (future on top).
+      return { client: c, turmas: _sortTurmas(turmas), band: _clientStatus(all) };
+    })
+    .filter((g) => !q || g.turmas.length);   // a search hides clients with no hit
+}
+
+function _renderList() {
+  if (!_navRail) return;
+  _navRail.render();
+  // Re-run after EVERY render: the rail replaces its body wholesale, so each render emits
+  // fresh <img> elements and the previous error handlers go with the old ones.
+  _wireAvatars(_q(IDS.list));
 }
 
 // If a client icon fails to load (missing/blocked R2 object), swap it for the
 // initials avatar so the head never shows a broken-image glyph.
 function _wireAvatars(el) {
+  if (!el) return;
   el.querySelectorAll('.cdx-cg-ava-img').forEach((img) => {
     img.addEventListener('error', () => {
       const span = document.createElement('span');
@@ -449,82 +471,59 @@ function _wireAvatars(el) {
   });
 }
 
-function _renderGroup(client, turmas) {
+// The guts of a client's section head. The rail owns the head shell, the caret and the
+// toggle wiring; this owns what Clientes puts inside it — the avatar and the two actions.
+function _clientHead(client, count) {
   const name = client.display_name || client.name;
-  const rows = turmas.length
-    ? turmas.map((tm) => _renderTurmaRow(tm)).join('')
-    : '<div class="cdx-cg-empty">' + t('cohorts.no_turmas') + '</div>';
   // Use the client's own icon when it has one (icon_path is an R2 key, so it goes
   // through _iconSrc to a served URL); fall back to the initials if it fails to load.
   const ava = client.icon_path
     ? '<img class="cdx-cg-ava cdx-cg-ava-img" src="' + _esc(_iconSrc(client.icon_path)) + '" alt="" data-initials="' + _esc(_initials(name)) + '">'
     : '<span class="cdx-cg-ava">' + _esc(_initials(name)) + '</span>';
-  // Accordion: a client group is collapsed unless it is the one open client
-  // (_expandedClient). The head toggles it; only one group is open at a time.
-  return (
-    '<div class="cdx-cg' + (client.slug === _expandedClient ? ' is-open' : '') + '" data-client-slug="' + _esc(client.slug) + '">' +
-      '<div class="cdx-cg-head">' +
-        '<span class="cdx-cg-caret" aria-hidden="true">&#9656;</span>' +
-        ava +
-        '<span class="cdx-cg-name">' + _esc(name) + '</span>' +
-        '<span class="cdx-cg-acts">' +
-          '<button type="button" class="cdx-cg-act" data-action="new-turma" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.new_turma') + '">+</button>' +
-          '<button type="button" class="cdx-cg-act" data-action="edit-client" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.edit') + '">&#9881;</button>' +
-        '</span>' +
-      '</div>' +
-      '<div class="cdx-cg-rows">' + rows + '</div>' +
-    '</div>'
-  );
+  return {
+    main: ava + '<span class="cdx-cg-name" title="' + _esc(name) + '">' + _esc(name) + '</span>',
+    act:
+      '<button type="button" class="cdx-cg-act" data-action="new-turma" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.new_turma') + '">+</button>' +
+      '<button type="button" class="cdx-cg-act" data-action="edit-client" data-client-slug="' + _esc(client.slug) + '" title="' + t('cohorts.edit') + '">&#9881;</button>',
+  };
 }
 
-function _renderTurmaRow(tm) {
-  const sel = (tm.client_slug === _relClientSlug && tm.slug === _relTurmaSlug) ? ' is-on' : '';
+// The inside of a turma row. The rail owns the row element (and stamps the phase/archived
+// classes from rowClass); this owns the two lines of text. The phase reads as the row's
+// left accent bar, colored via --ph from the phase class — hence rowClass, not markup here.
+function _turmaRowMain(tm) {
   const archived = tm.status === 'archived';
   const ph = _turmaPhase(tm);
   const course = tm.course_title ? _esc(tm.course_title) : t('cohorts.tf_no_course');
   const n = tm.aula_count || 0;
   const countLabel = n === 1 ? '1 ' + t('cohorts.aula_singular') : n + ' ' + t('cohorts.aula_plural');
   const archBadge = archived ? ' <span class="cdx-badge cdx-badge-danger">' + t('cohorts.archived') + '</span>' : '';
-  // The phase is now a left accent bar (the row's left border, colored via --ph
-  // from the phase class) instead of a dot on the right.
   return (
-    '<div class="cdx-ti ' + ph.cls + sel + (archived ? ' is-archived' : '') + '" data-client-slug="' + _esc(tm.client_slug) + '" data-turma-slug="' + _esc(tm.slug) + '" title="' + _esc(ph.label) + '">' +
-      '<div class="cdx-ti-main">' +
-        '<div class="cdx-ti-t">' + _esc(tm.name) + archBadge + '</div>' +
-        '<div class="cdx-ti-s">' + course + ' &middot; ' + _esc(countLabel) + '</div>' +
-      '</div>' +
+    '<div class="cdx-ti-main" title="' + _esc(ph.label) + '">' +
+      '<div class="cdx-ti-t">' + _esc(tm.name) + archBadge + '</div>' +
+      '<div class="cdx-ti-s">' + course + ' &middot; ' + _esc(countLabel) + '</div>' +
     '</div>'
   );
 }
 
-function _onListClick(e) {
+// The head actions are consumer html, so the consumer handles their clicks; the rail
+// deliberately ignores anything inside .cdx-rail-sec-acts (see list-rail.js onClick).
+function _onNavActionClick(e) {
   const actBtn = e.target.closest('[data-action]');
-  if (actBtn) {
-    e.stopPropagation();
-    const action = actBtn.dataset.action;
-    const cs = actBtn.dataset.clientSlug;
-    if (action === 'new-turma') { _selectedClientSlug = cs; _openTurmaForm(null); return; }
-    if (action === 'edit-client') { const c = _clients.find((x) => x.slug === cs); if (c) _openClientForm(c); return; }
-    return;
-  }
-  const row = e.target.closest('.cdx-ti');
-  if (row) { _selectTurma(row.dataset.clientSlug, row.dataset.turmaSlug); return; }
-  const head = e.target.closest('.cdx-cg-head');
-  if (head) {
-    const cg = head.closest('.cdx-cg');
-    if (cg && cg.dataset.clientSlug) _toggleClient(cg.dataset.clientSlug);
-  }
+  if (!actBtn) return;
+  const action = actBtn.dataset.action;
+  const cs = actBtn.dataset.clientSlug;
+  if (action === 'new-turma') { _selectedClientSlug = cs; _openTurmaForm(null); return; }
+  if (action === 'edit-client') { const c = _clients.find((x) => x.slug === cs); if (c) _openClientForm(c); }
 }
 
-// Accordion toggle: open the clicked client (closing whichever was open), or
-// collapse it if it was already open. Pure class flip, no list re-render.
+// Accordion toggle: open the clicked client (closing whichever was open), or collapse it
+// if it was already open. This file holds the truth (_expandedClient) and re-renders from
+// it; the rail reads it back through sections.openId and never keeps its own copy.
 function _toggleClient(slug) {
   _expandedClient = (_expandedClient === slug) ? null : slug;
   if (_expandedClient) _selectedClientSlug = _expandedClient;
-  const el = _q(IDS.list);
-  if (el) el.querySelectorAll('.cdx-cg').forEach((cg) => {
-    cg.classList.toggle('is-open', cg.dataset.clientSlug === _expandedClient);
-  });
+  _renderList();
 }
 
 function _archiveClient(slug) {
@@ -799,7 +798,7 @@ function _deleteTurma(turma) {
           // Back to the pinned picker with the empty prompt (mirrors Questions),
           // rather than auto-jumping to another turma.
           _relClientSlug = null; _relTurmaSlug = null; _dossierTurma = null;
-          _navPinned = true; _openNav();
+          _navRail.pin(true);
           const dEl = _q('cdx-turma-dossier');
           if (dEl) dEl.innerHTML = '<div class="cdx-placeholder">' + t('cohorts.select_turma_prompt') + '</div>';
         }
@@ -1094,14 +1093,13 @@ function _selectTurma(clientSlug, turmaSlug) {
   _dossierDtab = 'dados';
   _relClientSlug = clientSlug;
   _relTurmaSlug = turmaSlug;
-  try { localStorage.setItem('cdx_cohorts_last', clientSlug + '\n' + turmaSlug); } catch (_) {}  // reopen this turma after a refresh
+  _lsLastSet(clientSlug, turmaSlug);   // reopen this turma after a refresh (read back in mount)
   _selectedClientSlug = clientSlug; // new-turma / form context follows the selection
   _expandedClient = clientSlug;     // selecting a turma opens its client group
   const turma = _turmas.find((x) => x.client_slug === clientSlug && x.slug === turmaSlug);
   _renderDossier(turma);
   _renderList();
-  _navPinned = false;   // first pick flips the rail to the hover-reveal overlay
-  _closeNav();
+  _navRail.pin(false);   // first pick flips the rail to the hover-reveal overlay
 }
 
 // ── Turma dossier (Concept A: the rich right-pane detail) ─────────────────────
@@ -2124,13 +2122,20 @@ export function mount(viewEl, ctx) {
   _turmaAulas = [];
   _relClientSlug = (ctx && ctx.fclient) || null;
   _relTurmaSlug = (ctx && ctx.fturma) || null;
+  // Sem deep-link, retoma a última turma aberta (ver LS_LAST). Se ela sumiu ou foi
+  // arquivada, o _loadAll não a acha e cai no prompt vazio de sempre: sem guarda extra.
+  if (!_relClientSlug && !_relTurmaSlug) {
+    const last = _lsLastGet();
+    if (last) { _relClientSlug = last.client; _relTurmaSlug = last.turma; }
+  }
   _dossierDtab = (ctx && ctx.fdtab) || 'dados';   // deep-link (e-sino → participantes) seeds the sub-tab
   _deepAula = (ctx && ctx.faula != null && ctx.faula !== '') ? ctx.faula : null;
   _deepItem = (ctx && ctx.fitem != null && ctx.fitem !== '') ? ctx.fitem : null;
   _cpSessions = [];
   _dossierTurma = null;
   _dossierDepsTried = false;
-  _navPinned = true;
+  _expandedClient = null;
+  _navNotice = null;
   _cleanup = [];
   _turmaViewItems = [];
   _selectedAulaId = null;
@@ -2153,6 +2158,9 @@ export function unmount() {
   _unmountAulaEmbeds();
   _dossierDtab = 'dados'; _deepAula = null; _deepItem = null;
   if (_aulaRail) { _aulaRail.destroy(); _aulaRail = null; }
+  // The nav rail's autohide holds document-level listeners (mousemove/keydown); destroy()
+  // is what tears them down, so skipping it would leak one set per tab switch.
+  if (_navRail) { _navRail.destroy(); _navRail = null; }
   _cleanup.forEach(fn => fn());
   _cleanup = [];
   if (_viewEl) _viewEl.innerHTML = '';

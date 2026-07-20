@@ -57,10 +57,18 @@ function emitter() {
   };
 }
 
-// createCodexStore({ slug, facade }) — `facade` defaults to the real slides
-// facade and is injected in tests. Implements the editor's Store interface
-// (getDeck/setDeck/touch/on) plus load()/save() for the R2-backed deck JSON.
-export function createCodexStore({ slug, facade } = {}) {
+// createCodexStore({ slug, facade, hydrate, dehydrate }): `facade` defaults to
+// the real slides facade and is injected in tests. Implements the editor's Store
+// interface (getDeck/setDeck/touch/on) plus load()/save() for the R2-backed deck JSON.
+//
+// `hydrate(deck) -> deck` / `dehydrate(deck) -> deck` (both may be async) are the
+// SHARED-SLIDES hook (track-35 C, adapters/sharedSlides.js): the R2 form of a deck may
+// carry link stubs that must be resolved before the editor sees them and collapsed
+// again before they hit disk. They sit here, next to the R2-origin rewrite, because
+// this pair of methods is the only path between the deck JSON and the editor, the same
+// reason toRelativeR2/toAbsoluteR2 live here. The store itself stays ignorant of what
+// they do; omit them and it behaves exactly as before.
+export function createCodexStore({ slug, facade, hydrate, dehydrate } = {}) {
   const api = facade || slidesApi;
   let deck = null;
   const bus = emitter();
@@ -86,6 +94,7 @@ export function createCodexStore({ slug, facade } = {}) {
         res = null;
       }
       deck = toAbsoluteR2((res && res.data) || null);
+      if (deck && hydrate) deck = await hydrate(deck);
       bus.emit('change', deck);
       return deck;
     },
@@ -93,7 +102,11 @@ export function createCodexStore({ slug, facade } = {}) {
     // origin-less (/r2/...) so the deck is Worker-independent; the in-memory deck
     // the editor keeps using stays absolute (toRelativeR2 returns a clone).
     async save() {
-      const res = await api.saveDeck({ slug, data: toRelativeR2(deck) });
+      // dehydrate returns a CLONE (linked slides collapsed to {id, ref}); the in-memory
+      // deck the editor renders stays hydrated. Order matters: collapse first, then
+      // relativize, so the R2 rewrite never walks content that is about to be dropped.
+      const out = dehydrate ? await dehydrate(deck) : deck;
+      const res = await api.saveDeck({ slug, data: toRelativeR2(out) });
       bus.emit('saved', deck);
       return res;
     },

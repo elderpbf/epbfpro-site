@@ -22,12 +22,14 @@ import { findItem as findInterativoItem, getAllItems as interativoItems } from '
 import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
 import { mountPresetLoader } from '../js/preset-loader.js';
 import {
-  classifyVault, SECTION_ORDER, rendererStrategy,
+  classifyVault, LESSON_SECTION_ORDER, rendererStrategy,
   crumbActions, supportsTextResize, makeTextScale,
   driveFolderEmbedUrl, toVideoEmbedUrl, driveItemCanCopyText,
   groupItemsByType, zoneClassFor,
-  makeFavorites, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
+  makeFavorites, makeSectionOrder, makeContentWidth, groupDriveByFolder, LLM_LAUNCHERS,
 } from './lesson-model.js';
+import { mountReorder } from '../js/pointer-reorder.js';
+import { mountRail } from '../js/list-rail.js';
 
 // ── Module state ─────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -44,6 +46,14 @@ const _ls = typeof localStorage !== 'undefined' ? localStorage : null;
 const _scale = makeTextScale(_ls);
 const _width = makeContentWidth(_ls);
 const _favs = makeFavorites(_ls);
+const _secOrder = makeSectionOrder(_ls);
+let _reorders = [];
+let _rail = null;
+// The nav model, rebuilt each render into module state so the rail's `items`/`list` callbacks
+// read the current vault without recomputing three times per render.
+let _navEntries = [];
+let _navSecs = [];
+let _navSubs = [];
 // Preset filter
 let _presetId = null;
 let _presetItems = [];
@@ -67,8 +77,9 @@ let _overTop = false;
 let _overSide = false;
 let _overBottom = false;
 
-// All accordion section keys: used in mount reset + exclusive-open logic.
-const ALL_SECTION_KEYS = ['favorites', 'preset', ...SECTION_ORDER, 'labs', 'interativos'];
+// All accordion section keys: used in mount reset + exclusive-open logic. Same list the
+// sidebar renders from, so a new section cannot be added to one and forgotten in the other.
+const ALL_SECTION_KEYS = LESSON_SECTION_ORDER;
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
 import { esc as _esc } from '../js/dom.js';
@@ -220,163 +231,148 @@ const SECTION_GLYPHS = {
   interativos: glyphSvg('compass', { size: null }),
 };
 
-function _renderSubCard(item) {
+// ── Rail-backed sidebar (experiment: Lessons consuming js/list-rail.js) ────────
+// Élder 2026-07-17: "faça uma versão aplicando a sidebar de lessons usando o que o módulo tem
+// para oferecer... depois a gente vê como editar de forma que fique parecido com o que tem
+// hoje." So the sidebar now renders through the SHARED rail (its markup, its click/collapse/
+// select wiring), using capabilities that were added to the module OFF-by-default (glyph,
+// groupClass, prefix): the 10 live rails do not move, and Lessons opts in. The appearance is a
+// FIRST PASS meant to be looked at and then refined in CSS, not the frozen final.
+
+// The row's inner html (the rail wraps it in .cdx-rail-row > .cdx-rail-main). It is the SAME guts
+// the old .cdx-lesson-sub card had (coloured zone, meta, favourite star), so the item card looks
+// identical; only its outer element is now the rail's row instead of a bespoke div.
+function _rowMain(item) {
   const zone = zoneClassFor(item.type);
   const id = String(item.id);
   const faved = _favs.has(id);
-  return '<div class="cdx-lesson-sub' + (id === String(_activeItemId) ? ' is-active' : '') + '" data-item-id="' + _esc(id) + '">' +
-    '<span class="cdx-lesson-sub-zone' + (zone ? ' cdx-lesson-sub-zone--' + zone : '') + '">' + _itemIcon(item) + '</span>' +
+  return '<span class="cdx-lesson-sub-zone' + (zone ? ' cdx-lesson-sub-zone--' + zone : '') + '">' + _itemIcon(item) + '</span>' +
     '<span class="cdx-lesson-sub-meta">' +
       '<span class="cdx-lesson-sub-type">' + _esc(item.type_label || item.type) + '</span>' +
       '<span class="cdx-lesson-sub-title">' + _esc(item.title) + '</span>' +
       (item.summary ? '<span class="cdx-lesson-sub-sum">' + _esc(item.summary) + '</span>' : '') +
     '</span>' +
     '<button type="button" class="cdx-lesson-sub-fav' + (faved ? ' is-on' : '') + '" data-fav="' + _esc(id) + '" ' +
-      'title="' + _esc(t('lessons.favorite')) + '" aria-label="' + _esc(t('lessons.favorite')) + '" aria-pressed="' + faved + '">&#9733;</button>' +
-  '</div>';
+      'title="' + _esc(t('lessons.favorite')) + '" aria-label="' + _esc(t('lessons.favorite')) + '" aria-pressed="' + faved + '">&#9733;</button>';
+}
+
+function _llmLauncherHtml(l) {
+  return '<a class="cdx-lesson-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
+      '<img class="cdx-lesson-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
+      '<span class="cdx-lesson-llm-name">' + _esc(l.name) + '</span>' +
+    '</a>';
 }
 
 function _seedCollapsed(key) {
   if (!_seeded.has(key)) { _seeded.add(key); _collapsed.add(key); }
 }
 
-function _renderTypeGroup(group) {
-  const subKey = 'type:' + group.typeKey;
-  _seedCollapsed(subKey);
-  const collapsed = _collapsed.has(subKey);
-  const label = (group.items[0] && group.items[0].type_label) || group.typeKey;
-  return '<button type="button" class="cdx-lesson-subsection' + (collapsed ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!collapsed) + '">' +
-      '<span class="cdx-lesson-subsection-chev">&#9662;</span>' +
-      '<span class="cdx-lesson-subsection-label">' + _esc(label) + '</span>' +
-      '<span class="cdx-lesson-subsection-count">' + group.items.length + '</span>' +
-    '</button>' +
-    (collapsed ? '' : group.items.map(_renderSubCard).join(''));
+// Section accordion: exclusive, exactly as today (opening one closes the rest). The rail asks
+// via `openId()`; the state stays `_collapsed` so the rest of the module (search, preset) keeps
+// working unchanged.
+const _ALWAYS_SHOWN = ['llm', 'items'];   // llm has its launchers; items is the home bucket
+function _openSectionId() {
+  for (const s of _navSecs) if (!_collapsed.has(String(s.id))) return s.id;
+  return null;
+}
+function _toggleSection(key) {
+  if (_collapsed.has(key)) { ALL_SECTION_KEYS.forEach((k) => _collapsed.add(k)); _collapsed.delete(key); }
+  else { _collapsed.add(key); }
+}
+// Sub-groups (type under Itens, folder under Drive) are exclusive TOO now (Élder 2026-07-18:
+// "habilite nos de baixo também"). Same shape as the sections: open one, close the rest. It is
+// global across the level, but since only one section is open at a time (exclusive above), you
+// only ever see one parent's sub-groups, so global reads as one-per-section.
+function _openSubId() {
+  for (const s of _navSubs) if (!_collapsed.has(String(s.id))) return s.id;
+  return null;
+}
+function _toggleSub(key) {
+  if (_collapsed.has(key)) { _navSubs.forEach((s) => _collapsed.add(String(s.id))); _collapsed.delete(key); }
+  else { _collapsed.add(key); }
 }
 
-function _sectionCard(key, count, bodyHtml) {
-  const collapsed = _collapsed.has(key);
-  return '<div class="cdx-lesson-section cdx-lesson-section--' + _esc(key) + (collapsed ? ' is-collapsed' : '') + '">' +
-    '<button type="button" class="cdx-lesson-section-head" data-section="' + _esc(key) + '" aria-expanded="' + (!collapsed) + '">' +
-      '<span class="cdx-lesson-section-glyph">' + (SECTION_GLYPHS[key] || '') + '</span>' +
-      '<span class="cdx-lesson-section-label">' + _sectionLabel(key) + '</span>' +
-      '<span class="cdx-lesson-section-count">' + count + '</span>' +
-      '<span class="cdx-lesson-section-chev">&#9662;</span>' +
-    '</button>' +
-    (collapsed ? '' : '<div class="cdx-lesson-section-body">' + bodyHtml + '</div>') +
-  '</div>';
-}
+// ONE entry per (item × section it appears in). The same item shows in Favoritos AND in its type
+// bucket AND in Preset, and today all of them light up together because the active state matches
+// by item id. So the entry carries the item and getId stays the item's: a synthetic per-pair id
+// would light only one, and the look cannot change. (This is the shape I had wrongly called a
+// blocker for reuse; it was only ever about which PIXELS light, and the shared engine has none.)
+function _buildNav() {
+  const buckets = classifyVault(_vault);
+  const entries = [];
+  const subs = [];
+  const push = (it, sec, sub) => entries.push({ it, sec, sub: sub || null });
 
-function _emptyInline() {
-  return '<div class="cdx-empty cdx-empty--inline">' + t('lessons.empty_section') + '</div>';
-}
-
-function _renderSection(section) {
-  const collapsed = _collapsed.has(section.key);
-  let body = '';
-  if (!collapsed) {
-    if (section.key === 'items') {
-      body = section.items.length ? groupItemsByType(section.items).map(_renderTypeGroup).join('') : _emptyInline();
-    } else {
-      body = section.items.length ? section.items.map(_renderSubCard).join('') : _emptyInline();
-    }
+  for (const it of _presetItems) push(it, 'preset');
+  // Favoritos: ordered BY THE STORED LIST, not by vault order (the list is what a drag rewrites).
+  const byId = new Map(_vault.map((it) => [String(it.id), it]));
+  for (const id of _favs.all()) { const it = byId.get(String(id)); if (it) push(it, 'favorites'); }
+  for (const it of buckets.llm) push(it, 'llm');
+  for (const it of buckets.external) push(it, 'external');
+  for (const it of labItems()) push(it, 'labs');
+  for (const it of interativoItems()) push(it, 'interativos');
+  for (const g of groupItemsByType(buckets.items)) {
+    const key = 'type:' + g.typeKey;
+    _seedCollapsed(key);
+    subs.push({ id: key, title: (g.items[0] && g.items[0].type_label) || g.typeKey, parent: 'items' });
+    for (const it of g.items) push(it, 'items', key);
   }
-  return _sectionCard(section.key, section.items.length, body);
-}
-
-function _renderFavoritesSection() {
-  const ids = new Set(_favs.all());
-  if (!ids.size) return '';
-  const items = _vault.filter((it) => ids.has(String(it.id)));
-  if (!items.length) return '';
-  const collapsed = _collapsed.has('favorites');
-  const body = collapsed ? '' : items.map(_renderSubCard).join('');
-  return _sectionCard('favorites', items.length, body);
-}
-
-function _renderPresetSection() {
-  if (!_presetId || !_presetItems.length) return '';
-  const collapsed = _collapsed.has('preset');
-  const body = collapsed ? '' : _presetItems.map(_renderSubCard).join('');
-  return _sectionCard('preset', _presetItems.length, body);
-}
-
-function _renderLLMSection(dbItems) {
-  dbItems = dbItems || [];
-  const collapsed = _collapsed.has('llm');
-  let body = '';
-  if (!collapsed) {
-    body = LLM_LAUNCHERS.map((l) =>
-      '<a class="cdx-lesson-llm" href="' + _esc(l.url) + '" target="_blank" rel="noopener noreferrer">' +
-        '<img class="cdx-lesson-llm-favicon" src="https://www.google.com/s2/favicons?domain=' + _esc(l.domain) + '&sz=64" alt="" loading="lazy" referrerpolicy="no-referrer">' +
-        '<span class="cdx-lesson-llm-name">' + _esc(l.name) + '</span>' +
-      '</a>').join('') +
-      dbItems.map(_renderSubCard).join('');
+  for (const g of groupDriveByFolder(buckets.drive)) {
+    const key = 'drive:' + g.folder;
+    _seedCollapsed(key);
+    subs.push({ id: key, title: g.folder, parent: 'drive' });
+    for (const it of g.items) push(it, 'drive', key);
   }
-  return _sectionCard('llm', LLM_LAUNCHERS.length + dbItems.length, body);
+  for (const it of buckets.apostila) push(it, 'apostila');
+  for (const it of buckets.tarefas) push(it, 'tarefas');
+
+  _navEntries = entries;
+  _navSubs = subs;
+  // Section ORDER = the admin's stored preference, falling back to Élder's 2026-06-01 order.
+  _navSecs = _secOrder.get().map((k) => ({ id: k, title: _sectionLabel(k) }));
 }
 
-function _renderDriveSection(driveItems) {
-  driveItems = driveItems || [];
-  const collapsed = _collapsed.has('drive');
-  let body = '';
-  if (!collapsed) {
-    body = driveItems.length
-      ? groupDriveByFolder(driveItems).map((g) => {
-          const subKey = 'drive:' + g.folder;
-          _seedCollapsed(subKey);
-          const c = _collapsed.has(subKey);
-          return '<button type="button" class="cdx-lesson-subsection' + (c ? ' is-collapsed' : '') + '" data-section="' + _esc(subKey) + '" aria-expanded="' + (!c) + '">' +
-              '<span class="cdx-lesson-subsection-chev">&#9662;</span>' +
-              '<span class="cdx-lesson-subsection-label">' + _esc(g.folder) + '</span>' +
-              '<span class="cdx-lesson-subsection-count">' + g.items.length + '</span>' +
-            '</button>' +
-            (c ? '' : g.items.map(_renderSubCard).join(''));
-        }).join('')
-      : _emptyInline();
-  }
-  return _sectionCard('drive', driveItems.length, body);
-}
-
-function _renderLabsSection() {
-  const labs = labItems();
-  if (!labs.length) return '';
-  const collapsed = _collapsed.has('labs');
-  const body = collapsed ? '' : labs.map(_renderSubCard).join('');
-  return _sectionCard('labs', labs.length, body);
-}
-
-// Interativos: its own section right below Labs (same synthetic-registry pattern).
-function _renderInterativosSection() {
-  const interativos = interativoItems();
-  if (!interativos.length) return '';
-  const collapsed = _collapsed.has('interativos');
-  const body = collapsed ? '' : interativos.map(_renderSubCard).join('');
-  return _sectionCard('interativos', interativos.length, body);
+function _railCfg() {
+  return {
+    items: () => _navEntries,
+    getId: (e) => e.it.id,
+    selectedId: () => _activeItemId,
+    onSelect: (id) => _renderItem(id),
+    rowSelectIgnore: '.cdx-lesson-sub-fav',   // the star toggles, it does not select
+    renderRow: (e) => ({ main: _rowMain(e.it) }),
+    levels: [
+      {
+        of: (e) => e.sec,
+        list: () => _navSecs,
+        hideWhenEmpty: (g) => _ALWAYS_SHOWN.indexOf(String(g.id)) === -1,
+        collapsible: true,
+        exclusive: true,
+        openId: _openSectionId,
+        onToggle: (id) => { _toggleSection(id); _rail.render(); },
+        // The opt-in capabilities. A constant `cdx-lesson-section` class (plus the per-key accent)
+        // marks the TOP sections so the drag can target them without catching the sub-groups.
+        glyph: (g) => SECTION_GLYPHS[g.id] || '',
+        groupClass: (g) => 'cdx-lesson-section cdx-lesson-section--' + g.id,
+        prefix: (g) => (g.id === 'llm' ? LLM_LAUNCHERS.map(_llmLauncherHtml).join('') : ''),
+        // The LLMs badge counts its launchers too (they are prefix html, not vault rows).
+        count: (g, deep) => (g.id === 'llm' ? deep + LLM_LAUNCHERS.length : deep),
+        emptyText: t('lessons.empty_section'),
+      },
+      {
+        of: (e) => e.sub,
+        list: () => _navSubs,
+        collapsible: true,
+        exclusive: true,
+        openId: _openSubId,
+        onToggle: (id) => { _toggleSub(id); _rail.render(); },
+      },
+    ],
+  };
 }
 
 function _renderSidebar() {
-  const body = _q('.cdx-lessons-sidebar-body');
-  if (!body) return;
-  const buckets = classifyVault(_vault);
-  const html = [];
-  const preset = _renderPresetSection();
-  if (preset) html.push(preset);
-  const fav = _renderFavoritesSection();
-  if (fav) html.push(fav);
-  // Section order (Elder, 2026-06-01): LLMs, Labs, Interativos, Items, Drive, Course
-  // content (apostila), Assignments (tarefas). Interativos sits right below Labs (same
-  // shipped-registry pattern). External links stay right after LLMs (conditional).
-  html.push(_renderLLMSection(buckets.llm));
-  if (buckets.external.length) html.push(_renderSection({ key: 'external', items: buckets.external }));
-  const labs = _renderLabsSection();
-  if (labs) html.push(labs);
-  const interativos = _renderInterativosSection();
-  if (interativos) html.push(interativos);
-  html.push(_renderSection({ key: 'items', items: buckets.items }));
-  if (buckets.drive.length) html.push(_renderDriveSection(buckets.drive));
-  if (buckets.apostila.length) html.push(_renderSection({ key: 'apostila', items: buckets.apostila }));
-  if (buckets.tarefas.length) html.push(_renderSection({ key: 'tarefas', items: buckets.tarefas }));
-  body.innerHTML = html.join('');
+  _buildNav();
+  if (_rail) _rail.render();
   _applySearch();
 }
 
@@ -386,21 +382,19 @@ function _applySearch() {
   const body = _q('.cdx-lessons-sidebar-body');
   if (!body) return;
   if (!q) {
-    body.querySelectorAll('.cdx-lesson-sub').forEach((el) => { el.style.display = ''; });
+    body.querySelectorAll('.cdx-rail-row').forEach((el) => { el.style.display = ''; });
     return;
   }
+  // Iterate TOP sections only (the constant class the rail stamps), so a hit un-collapses the
+  // section, not each type sub-group inside it.
   body.querySelectorAll('.cdx-lesson-section').forEach((sec) => {
     let any = false;
-    sec.querySelectorAll('.cdx-lesson-sub').forEach((el) => {
+    sec.querySelectorAll('.cdx-rail-row').forEach((el) => {
       const hit = (el.textContent || '').toLowerCase().indexOf(q) !== -1;
       el.style.display = hit ? '' : 'none';
       if (hit) any = true;
     });
-    if (any) {
-      sec.classList.remove('is-collapsed');
-      const b = sec.querySelector('.cdx-lesson-section-body');
-      if (b) b.style.display = '';
-    }
+    if (any) sec.classList.remove('is-collapsed');
   });
 }
 
@@ -528,8 +522,10 @@ function _renderItem(id) {
   _activeItemId = id;
   _updateTopbarPin();
   if (_viewEl) {
-    _viewEl.querySelectorAll('.cdx-lesson-sub').forEach((el) =>
-      el.classList.toggle('is-active', String(el.dataset.itemId) === String(id)));
+    // The rail marks the active row with .is-on via selectedId(); update it in place rather than
+    // re-rendering the whole sidebar on every selection.
+    _viewEl.querySelectorAll('.cdx-rail-row').forEach((el) =>
+      el.classList.toggle('is-on', String(el.dataset.id) === String(id)));
   }
   const main = _q('.cdx-lessons-main');
   if (!main) return;
@@ -946,44 +942,52 @@ function _renderShell() {
   try { storedFocus = _ls && _ls.getItem('cv_focus_mode'); } catch (_) {}
   if (storedFocus !== '0' && window.innerWidth > 700) _focusEnable();
 
-  // Delegated sidebar clicks
-  _q('.cdx-lessons-sidebar-body').addEventListener('click', (e) => {
+  const sidebarBody = _q('.cdx-lessons-sidebar-body');
+
+  // Mount the shared rail INTO the sidebar body. The rail now owns section/sub collapse and
+  // row selection (was the delegated handler below); the module keeps only what the rail has no
+  // opinion about: the favourite star, the context menu, the drag.
+  _rail = mountRail(sidebarBody, _railCfg());
+
+  // Favourite star: the rail ignores it for selection (rowSelectIgnore); toggling + re-rendering
+  // is the module's, since favourites is a section the rail draws but does not own.
+  sidebarBody.addEventListener('click', (e) => {
     const fav = e.target.closest('.cdx-lesson-sub-fav');
-    if (fav) {
-      e.stopPropagation();
-      _favs.toggle(fav.dataset.fav);
-      _renderSidebar();
-      return;
-    }
-    const secHead = e.target.closest('.cdx-lesson-section-head');
-    if (secHead) {
-      const key = secHead.dataset.section;
-      if (_collapsed.has(key)) {
-        ALL_SECTION_KEYS.forEach((k) => _collapsed.add(k));
-        _collapsed.delete(key);
-      } else {
-        _collapsed.add(key);
-      }
-      _renderSidebar();
-      return;
-    }
-    const subHead = e.target.closest('.cdx-lesson-subsection');
-    if (subHead) {
-      const key = subHead.dataset.section;
-      if (_collapsed.has(key)) _collapsed.delete(key); else _collapsed.add(key);
-      _renderSidebar();
-      return;
-    }
-    const sub = e.target.closest('.cdx-lesson-sub');
-    if (sub) _renderItem(sub.dataset.itemId);
+    if (!fav) return;
+    e.stopPropagation();
+    _favs.toggle(fav.dataset.fav);
+    _renderSidebar();
   });
 
+  // Drag (Élder 2026-07-17, "pode inserir drag tb"): the two lists whose order is the ADMIN'S and
+  // nobody else's, so both persist client-side, no Worker action. Reordering items inside a
+  // section would be a shared, per-turma fact (a D1 column + a new action) and is not approved.
+  //
+  // Targets the rail's markup now. The top sections carry a constant `.cdx-lesson-section` class
+  // (the rail's groupClass), which is what lets the section drag pick them WITHOUT catching the
+  // type/folder sub-groups (also .cdx-rail-sec, but without that class). `handleSel` requires the
+  // head to be a DIRECT child of a top section, so a sub-group head never starts a section drag.
+  // Neither re-renders on drop: the DOM already is the new order.
+  _reorders.push(mountReorder(sidebarBody, {
+    itemSel: '.cdx-lesson-section',
+    handleSel: '.cdx-lesson-section > .cdx-rail-sec-h',
+    listSel: '.cdx-rail-body',
+    idAttr: 'data-sec',
+    onReorder: (keys) => { _secOrder.set(keys); },
+  }));
+  _reorders.push(mountReorder(sidebarBody, {
+    itemSel: '.cdx-rail-row',
+    listSel: '.cdx-rail-sec[data-sec="favorites"] .cdx-rail-seclist',
+    idAttr: 'data-id',
+    onReorder: (ids) => { _favs.reorder(ids); },
+  }));
+
   // Context menu on sidebar items
-  _q('.cdx-lessons-sidebar-body').addEventListener('contextmenu', (e) => {
-    const sub = e.target.closest('.cdx-lesson-sub');
-    if (!sub) return;
+  sidebarBody.addEventListener('contextmenu', (e) => {
+    const row = e.target.closest('.cdx-rail-row');
+    if (!row) return;
     e.preventDefault();
-    const item = _findItem(sub.dataset.itemId);
+    const item = _findItem(row.dataset.id);
     if (!item) return;
     _openContextMenu(item, e.clientX, e.clientY);
   });
@@ -1012,6 +1016,9 @@ export function mount(viewEl) {
   _detailCache = new Map();
   _previewReq = 0;
   _cleanup = [];
+  _reorders = [];
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _navEntries = []; _navSecs = []; _navSubs = [];
   _focusMountHotZones();
   _renderShellLoading();
   cohortsApi.listAllTurmas().then((d) => {
@@ -1038,6 +1045,10 @@ function _renderShellLoading() {
 export function unmount() {
   _cleanup.forEach((fn) => fn());
   _cleanup = [];
+  _reorders.forEach((r) => r.destroy());
+  _reorders = [];
+  if (_rail) { _rail.destroy(); _rail = null; }
+  _navEntries = []; _navSecs = []; _navSubs = [];
   _activeItemId = null;
   _detailCache = new Map();
   _liveSession = null;

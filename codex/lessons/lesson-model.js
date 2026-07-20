@@ -203,29 +203,96 @@ export function makeTextScale(storage, key) {
   };
 }
 
+// ── Ordering a partly-hidden list ────────────────────────────────────────────
+// Apply a reordering of a VISIBLE subset back onto the full list: the hidden entries keep
+// their slots, and the visible ones refill the slots they occupied, in their new sequence.
+//
+// Both draggable lists in the sidebar show a subset of what they store, so a naive "write
+// what the DOM says" would silently drop the rest. Sections: `tarefas` renders only when the
+// turma HAS tarefas, so dragging with it empty would delete it from the preference and it
+// would come back wherever the fallback puts it. Favourites: a starred lab lives in the
+// favourites list but never renders in that section (it is not a vault row), so one drag
+// would unstar it.
+export function applyVisibleOrder(full, visibleNext) {
+  const next = (visibleNext || []).map(String).filter((k) => full.indexOf(k) !== -1);
+  const moving = new Set(next);
+  const out = (full || []).slice();
+  const slots = [];
+  out.forEach((k, i) => { if (moving.has(String(k))) slots.push(i); });
+  slots.forEach((slot, n) => { out[slot] = next[n]; });
+  return out;
+}
+
 // ── Favorites store (localStorage-backed; storage injected for testability) ──
-// Stored as a JSON array of stringified ids (numeric, 'drive:<id>', 'lab:<key>').
+// Stored as a JSON array of stringified ids (numeric, 'drive:<id>', 'lab:<key>'). The array
+// is ORDERED (it is what the Favoritos section renders and what a drag rewrites), so it is
+// read as a list and only deduped, never round-tripped through a Set.
 export function makeFavorites(storage, key) {
   key = key || 'cv_favorites_v1';
   const _read = () => {
     try {
       const raw = storage && storage.getItem(key);
       const arr = raw ? JSON.parse(raw) : [];
-      return new Set(Array.isArray(arr) ? arr.map(String) : []);
-    } catch (_) { return new Set(); }
+      return Array.isArray(arr) ? Array.from(new Set(arr.map(String))) : [];
+    } catch (_) { return []; }
   };
-  const _write = (set) => {
-    try { if (storage) storage.setItem(key, JSON.stringify(Array.from(set))); } catch (_) { /* ignore */ }
+  const _write = (list) => {
+    try { if (storage) storage.setItem(key, JSON.stringify(list)); } catch (_) { /* ignore */ }
   };
   return {
-    has(id) { return _read().has(String(id)); },
-    all() { return Array.from(_read()); },
+    has(id) { return _read().indexOf(String(id)) !== -1; },
+    all() { return _read(); },
     toggle(id) {
-      const set = _read();
+      const list = _read();
       const k = String(id);
-      if (set.has(k)) set.delete(k); else set.add(k);
-      _write(set);
-      return set.has(k);
+      const at = list.indexOf(k);
+      if (at !== -1) list.splice(at, 1); else list.push(k);
+      _write(list);
+      return at === -1;
+    },
+    // ids = the favourites the section is showing, in their new order. Anything starred but
+    // not rendered there keeps its slot (see applyVisibleOrder).
+    reorder(ids) {
+      const next = applyVisibleOrder(_read(), ids);
+      _write(next);
+      return next;
+    },
+  };
+}
+
+// ── Sidebar section order (localStorage-backed; storage injected for testability) ──
+// The order the sidebar's accordion sections render in. The default is the order Elder
+// designed (2026-06-01: LLMs, Labs, Items, Drive, apostila, tarefas, with External right
+// after LLMs and preset/favourites pinned on top); the stored value is a per-admin override
+// written by a drag, so with nothing stored the screen is what it always was.
+export const LESSON_SECTION_ORDER = [
+  'preset', 'favorites', 'llm', 'external', 'labs', 'interativos', 'items', 'drive', 'apostila', 'tarefas',
+];
+export function makeSectionOrder(storage, key) {
+  key = key || 'cv_section_order_v1';
+  const DEFAULT = LESSON_SECTION_ORDER;
+  const get = () => {
+    let arr = [];
+    try {
+      const raw = storage && storage.getItem(key);
+      const parsed = raw ? JSON.parse(raw) : [];
+      if (Array.isArray(parsed)) arr = parsed.map(String);
+    } catch (_) { /* ignore */ }
+    // Stored keys first, then any key the stored order never heard of, in DEFAULT order. A
+    // section added to Codex later must APPEAR for an admin whose preference predates it,
+    // not vanish because it is missing from his list. Unknown keys are dropped the same way.
+    const known = arr.filter((k) => DEFAULT.indexOf(k) !== -1);
+    const seen = new Set(known);
+    return known.concat(DEFAULT.filter((k) => !seen.has(k)));
+  };
+  return {
+    DEFAULT,
+    get,
+    // keys = the sections on screen, in their new order (the hidden ones keep their slots).
+    set(keys) {
+      const next = applyVisibleOrder(get(), keys);
+      try { if (storage) storage.setItem(key, JSON.stringify(next)); } catch (_) { /* ignore */ }
+      return next;
     },
   };
 }

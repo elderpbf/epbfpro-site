@@ -16,17 +16,23 @@ import { t } from '../js/i18n.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as liveHost from './live-host.js';
+import { mountRail } from '../js/list-rail.js';
 
 let _viewEl = null;
 let _cleanup = [];
 let _sessions = [];
 let _selectedCode = null;
-let _sidebarPinned = true;  // open + pinned until the first session is picked
-let _overSidebar = false;
-let _hideTimer = null;
-
-const REVEAL_ZONE = 6;     // px from the left edge that triggers the reveal
-const HIDE_DELAY = 1500;   // ms after the cursor leaves the rail before it hides
+// The picker is the shared list-rail (js/list-rail.js) in width:autohide mode. The reveal zone,
+// the hide timer, Escape and the open class used to be hand-rolled right here, byte-for-byte the
+// same as cohorts' copy; both now come from the module. This file only says WHEN it is pinned.
+let _rail = null;
+// The create form is the rail's head panel, and render() replaces that DOM. Keeping the typed
+// title in module state makes that safe BY CONSTRUCTION: today nothing re-renders the list while
+// you type (no timer; only mount/create/delete/rename do), but "no caller does that yet" is the
+// kind of guarantee this track keeps finding broken.
+let _newTitle = '';
+let _creating = false;   // is the head's create panel expanded
+let _loading = false;
 
 // Server accuracy is a 0..1 ratio (or null when unscored). Render as a rounded
 // integer percent, or null so callers can show a non-numeric state. Private: the
@@ -56,66 +62,63 @@ function _fmtDate(iso) {
   return d.toLocaleDateString('pt-BR');
 }
 
-// ── Sidebar reveal (cv-sm pattern) ──────────────────────────
-function _layout() { return _viewEl && _viewEl.querySelector('#cdx-sessions-layout'); }
-
-function _openSidebar() {
-  const l = _layout();
-  if (!l) return;
-  l.classList.add('cdx-sm--open');
-  if (_sidebarPinned) return; // pinned: stays open, no hide timer
-  clearTimeout(_hideTimer);
-  _hideTimer = setTimeout(_maybeHide, HIDE_DELAY);
-}
-
-function _closeSidebar() {
-  const l = _layout();
-  if (!l) return;
-  clearTimeout(_hideTimer);
-  if (_sidebarPinned) return; // pinned: refuse to close until a session is picked
-  l.classList.remove('cdx-sm--open');
-}
-
-function _maybeHide() { if (!_overSidebar) _closeSidebar(); }
-
 // ── Session list (the picker) ───────────────────────────────
-function _card(s) {
-  const open = s.status === 'open';
-  const sel = (s.code === _selectedCode) ? ' is-selected' : '';
-  const live = open
-    ? '<span class="cdx-live"><span class="cdx-live-dot"></span><span class="cdx-live-label">' + t('questions.sessions_live_label') + '</span></span>'
-    : '';
-  // A turma-linked session is labeled "Cliente · Turma" (list_sessions joins the turma +
-  // client); a standalone (avulsa) Q&A session keeps its own title.
+// The rail owns the row shell; this is only the inside. A turma-linked session is labeled
+// "Cliente · Turma" (list_sessions joins the turma + client); a standalone (avulsa) Q&A
+// session keeps its own title. The live pill goes in the row's act slot, on the right,
+// which is exactly where the bespoke card had it.
+function _cardMain(s) {
   const title = (s.client_name && s.turma_name)
     ? _esc(s.client_name) + ' · ' + _esc(s.turma_name)
     : _esc(s.title || t('questions.sessions_untitled'));
-  return '<div class="cdx-session-card' + sel + '" data-code="' + _esc(s.code) + '">' +
-    '<div class="cdx-session-info">' +
+  return '<div class="cdx-session-info">' +
       '<div class="cdx-session-title">' + title + '</div>' +
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +
-    '</div>' +
-    live +
-  '</div>';
+    '</div>';
+}
+
+function _cardAct(s) {
+  return s.status === 'open'
+    ? '<span class="cdx-live"><span class="cdx-live-dot"></span><span class="cdx-live-label">' + t('questions.sessions_live_label') + '</span></span>'
+    : '';
+}
+
+// The create form, revealed by the head's + (rail headPanel). Élder wanted the title + `+` on
+// top like Clientes, but NOT behind a modal: the header expands in place, so creating a session
+// is still type-and-submit, which is what he does live at the start of every class.
+// Collapsed -> '' -> the rail renders no panel at all.
+// The value comes from _newTitle, so a re-render can never eat what you are typing.
+function _createFormHtml() {
+  if (!_creating) return '';
+  return '<form class="cdx-create-session" id="cdx-sessions-create">' +
+      '<label class="cdx-create-session-label" for="cdx-sessions-title">' + t('questions.sessions_title_label') + '</label>' +
+      '<input class="cdx-input" id="cdx-sessions-title" type="text" maxlength="120" autocomplete="off" value="' + _esc(_newTitle) + '" placeholder="' + _esc(t('questions.sessions_new_title')) + '">' +
+      '<button class="cdx-btn cdx-btn-primary" type="submit">' + t('questions.sessions_create') + '</button>' +
+    '</form>';
+}
+
+// The + toggles the panel. Focus lands in the field on open, so it stays keyboard-first: the
+// whole point of expanding instead of a modal is that + then type then Enter never leaves the rail.
+function _toggleCreate() {
+  _creating = !_creating;
+  _renderList();
+  if (!_creating) return;
+  const input = _viewEl && _viewEl.querySelector('#cdx-sessions-title');
+  if (input) input.focus();
 }
 
 function _renderList() {
-  if (!_viewEl) return;
-  const list = _viewEl.querySelector('#cdx-sessions-list');
-  if (!list) return;
-  list.innerHTML = _sessions.length
-    ? _sessions.map(_card).join('')
-    : '<div class="cdx-sessions-empty"><div class="cdx-sessions-empty-icon">\u{1F4CB}</div><p>' + t('questions.sessions_empty') + '</p></div>';
+  if (_rail) _rail.render();
 }
 
 async function _load() {
   if (!_viewEl) return;
-  const list = _viewEl.querySelector('#cdx-sessions-list');
-  if (!list) return;
-  list.innerHTML = '<div class="cdx-sessions-loading">' + t('questions.sessions_loading') + '</div>';
+  _loading = true;
+  _renderList();
   let res;
   try { res = await api.listSessions(); } catch (e) { notice.internal(e); res = null; }
-  if (!_viewEl || list !== _viewEl.querySelector('#cdx-sessions-list')) return; // unmounted/changed
+  if (!_viewEl) return; // unmounted mid-flight
+  _loading = false;
   _sessions = (res && res.sessions) || [];
   if (_selectedCode && !_sessions.some((s) => s.code === _selectedCode)) _selectedCode = null;
   _renderList();
@@ -239,8 +242,7 @@ async function _confirmDelete(code) {
   if (!res || res.error) { toast.err(t('questions.sessions_delete_error')); _renderList(); return; }
   if (_selectedCode === code) {
     _selectedCode = null;
-    _sidebarPinned = true;        // back to the pinned picker once nothing is selected
-    _openSidebar();
+    _rail.pin(true);              // back to the pinned picker once nothing is selected
   }
   _load();
 }
@@ -248,8 +250,7 @@ async function _confirmDelete(code) {
 function _select(code) {
   _selectedCode = code;
   // First pick flips the sidebar from pinned-open to hover-reveal overlay mode.
-  _sidebarPinned = false;
-  _closeSidebar();
+  _rail.pin(false);
   _renderList();
   _renderMain();
 }
@@ -264,71 +265,73 @@ export function mount(viewEl, ctx) {
   // it to `id`, but it is the same `code` that list_sessions returns under `code`).
   const pre = (ctx && ctx.session) ? String(ctx.session) : null;
   _selectedCode = pre;
-  _sidebarPinned = !pre;
-  _overSidebar = false;
+  _newTitle = '';
+  _creating = false;
+  _loading = false;
 
   viewEl.innerHTML =
-    '<div class="cdx-sessions-layout' + (_sidebarPinned ? ' cdx-sm--open' : '') + '" id="cdx-sessions-layout">' +
-      '<aside class="cdx-sessions-sidebar" id="cdx-sessions-sidebar">' +
-        '<form class="cdx-create-session" id="cdx-sessions-create">' +
-          '<h3 class="cdx-create-session-heading">' + t('questions.sessions_sidebar_heading') + '</h3>' +
-          '<label class="cdx-create-session-label" for="cdx-sessions-title">' + t('questions.sessions_title_label') + '</label>' +
-          '<input class="cdx-input" id="cdx-sessions-title" type="text" maxlength="120" autocomplete="off" placeholder="' + _esc(t('questions.sessions_new_title')) + '">' +
-          '<button class="cdx-btn cdx-btn-primary" type="submit">' + t('questions.sessions_create') + '</button>' +
-        '</form>' +
-        '<div class="cdx-sessions-list" id="cdx-sessions-list"></div>' +
-      '</aside>' +
+    '<div class="cdx-sessions-layout" id="cdx-sessions-layout">' +
+      // The rail mounts INTO the aside, which keeps .cdx-sessions-sidebar: that class is the
+      // mobile drawer's hook in codex-topbar.js (Sessões is newly registered there; it was the
+      // one screen with no hamburger at all, Élder: "all should have them").
+      // No cdx-sm--open here: the rail stamps it on its first render, so it has ONE owner.
+      '<aside class="cdx-sessions-sidebar" id="cdx-sessions-sidebar"></aside>' +
       '<main class="cdx-sessions-main" id="cdx-sessions-detail"></main>' +
     '</div>';
 
-  const form = viewEl.querySelector('#cdx-sessions-create');
-  const titleInput = viewEl.querySelector('#cdx-sessions-title');
-  const list = viewEl.querySelector('#cdx-sessions-list');
   const main = viewEl.querySelector('#cdx-sessions-detail');
   const sidebar = viewEl.querySelector('#cdx-sessions-sidebar');
 
-  _on(form, 'submit', async (e) => {
+  // Flat list = the clean adoption: no sections, no bands, no reorder. Title + `+` on top like
+  // Clientes (Élder 2026-07-17), with the create form as the head's expanding panel rather
+  // than a modal, so it stays type-and-submit.
+  _rail = mountRail(sidebar, {
+    // The title names what the rail LISTS ("Sessões"), like Clientes does, not the panel's
+    // action. sessions_sidebar_heading ("Nova sessão") is the + button's label instead.
+    title: t('questions.sub_sessions'),
+    add: { label: '+', title: t('questions.sessions_sidebar_heading'), onAdd: _toggleCreate },
+    headPanel: _createFormHtml,
+    items: () => _sessions,
+    getId: (s) => s.code,
+    renderRow: (s) => ({ main: _cardMain(s), act: _cardAct(s) }),
+    selectedId: () => _selectedCode,
+    onSelect: (code) => _select(code),
+    emptyHtml: () => (_loading
+      ? '<div class="cdx-sessions-loading">' + t('questions.sessions_loading') + '</div>'
+      : '<div class="cdx-sessions-empty"><div class="cdx-sessions-empty-icon">\u{1F4CB}</div><p>' + t('questions.sessions_empty') + '</p></div>'),
+    width: {
+      mode: 'autohide',
+      layoutEl: viewEl.querySelector('#cdx-sessions-layout'),  // the class toggles on the layout
+      openClass: 'cdx-sm--open',
+      pinned: !pre,          // a deep-link (?session=) opens straight into the host, unpinned
+    },
+  });
+
+  // The form is consumer html in the footer, so the consumer wires it, the same split cohorts
+  // uses for its head actions. Delegated on the sidebar, so it survives every rail re-render.
+  _on(sidebar, 'input', (e) => {
+    if (e.target && e.target.id === 'cdx-sessions-title') _newTitle = e.target.value;
+  });
+  _on(sidebar, 'submit', async (e) => {
+    if (!e.target.closest('#cdx-sessions-create')) return;
     e.preventDefault();
-    const title = titleInput.value.trim();
+    const title = _newTitle.trim();
     if (!title) return;
     let res;
     try { res = await api.createSession({ title }); } catch (err) { notice.internal(err); res = null; }
     if (!res || res.error || !res.code) { toast.err(t('questions.sessions_create_error')); return; }
-    titleInput.value = '';
+    _newTitle = '';
+    _creating = false;   // done: collapse the panel back
     // Like the legacy create flow, jump straight into hosting the new session.
     _selectedCode = res.code;
-    _sidebarPinned = false;
-    _closeSidebar();
+    _rail.pin(false);
     _load();
-  });
-
-  // Picker: clicking a card selects it and mounts the host. The batch-3 sidebar
-  // is intentionally bare (no card actions); per-session Stats/Delete placement
-  // is a post-port decision (see the retained helpers above).
-  _on(list, 'click', (e) => {
-    const card = e.target.closest('.cdx-session-card');
-    if (card) _select(card.getAttribute('data-code'));
   });
 
   // Main area only owns the stats overlay's Fechar; the live host (mounted here
   // when a session is selected) owns its own buttons.
   _on(main, 'click', (e) => {
     if (e.target.closest('[data-act="stats-close"]')) _renderMain();
-  });
-
-  // Sidebar hover-reveal (cv-sm). Document-level listeners are tracked so they
-  // are torn down on unmount (no leak across tab switches).
-  _on(sidebar, 'mouseenter', () => { _overSidebar = true; clearTimeout(_hideTimer); });
-  _on(sidebar, 'mouseleave', () => {
-    _overSidebar = false;
-    clearTimeout(_hideTimer);
-    _hideTimer = setTimeout(_maybeHide, HIDE_DELAY);
-  });
-  _on(document, 'mousemove', (e) => { if (e.clientX <= REVEAL_ZONE) _openSidebar(); });
-  _on(document, 'keydown', (e) => {
-    const tag = e.target && e.target.tagName;
-    if (tag === 'INPUT' || tag === 'TEXTAREA' || tag === 'SELECT' || (e.target && e.target.isContentEditable)) return;
-    if (e.key === 'Escape') _closeSidebar();
   });
 
   _renderMain();
@@ -339,12 +342,14 @@ export function unmount() {
   _teardownLiveHost();
   _cleanup.forEach((fn) => { try { fn(); } catch (_) { /* ignore */ } });
   _cleanup = [];
-  clearTimeout(_hideTimer);
-  _hideTimer = null;
+  // The rail's autohide holds document-level listeners (mousemove/keydown); destroy() is what
+  // tears them down, so skipping it leaks a set per tab switch.
+  if (_rail) { _rail.destroy(); _rail = null; }
   _sessions = [];
   _selectedCode = null;
-  _sidebarPinned = true;
-  _overSidebar = false;
+  _newTitle = '';
+  _creating = false;
+  _loading = false;
   if (_viewEl) _viewEl.innerHTML = '';
   _viewEl = null;
 }

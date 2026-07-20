@@ -1,0 +1,135 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>Codex — visual harness</title>
+<!--
+  Boots a REAL Codex tab module in a REAL browser against fixture data, so a screenshot
+  can answer the one question no node:test can: does it still LOOK the same.
+
+  Why this exists (track-41): the whole risk of moving a bespoke sidebar onto the shared
+  list-rail is that the generic .cdx-rail-* CSS paints differently from the hand-made CSS
+  it replaces. Stub-DOM tests pin class strings over a DOM that never paints, never loads
+  an image and never hovers — the same false confidence this track was born from (three
+  green source-regex tests guarding tarefas code that never ran).
+
+  No stubbing of the module: window.callWorker is codex-api.js's own declared test seam,
+  so the real facade and the real module run. Only the network is fake.
+
+  ?mod=cohorts  — which module to mount (add cases as sessions/lessons migrate).
+-->
+<link rel="stylesheet" href="/codex/css/theme.css">
+<link rel="stylesheet" href="/codex/css/tokens.css">
+<link rel="stylesheet" href="/codex/css/components.css">
+<link rel="stylesheet" href="/codex/css/codex.css">
+<link rel="stylesheet" href="/codex/css/list-rail.css">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css">
+<link rel="stylesheet" href="/codex/questions/questions.css">
+<link rel="stylesheet" href="/codex/lessons/lessons.css">
+<link rel="stylesheet" href="/codex/css/backstage.css">
+<link rel="stylesheet" href="/codex/css/settings-drawer.css">
+<link rel="stylesheet" href="/codex/css/notif-bell.css">
+<script src="/codex/js/theme-manager.js"></script>
+<style>
+  html, body { margin: 0; min-height: 100%; background: var(--background); }
+</style>
+
+<!-- The REAL app shell, not an approximation. The rails are position:fixed and clear the
+     chrome with a hardcoded `padding-top: 94px`, so a harness without a topbar cannot see
+     whether that number is right — and cannot see the hamburger/drawer at all. That blind
+     spot is not theoretical: it is how the [data-turma-slug] drawer regression shipped. -->
+<div id="screen-app" class="bs-app">
+  <main class="bs-main">
+    <div id="view" class="cdx-view"></div>
+  </main>
+</div>
+
+<script type="module">
+  import { stubWorker } from './fixtures.js';
+
+  // The transport seam (see codex-api.js header). Must be set BEFORE the module boots.
+  window.WORKER_URL = '';
+  window.callWorker = stubWorker;
+  window.bsLog = (m, lvl) => { (window.__harnessLog = window.__harnessLog || []).push([lvl, m]); };
+
+  // Deterministic: LS_LAST ("continuar de onde eu estava") would otherwise carry a
+  // previous run's turma into this one and change what the screenshot shows.
+  try { localStorage.clear(); } catch (_) {}
+
+  const qs = new URLSearchParams(location.search);
+  // ?last=client/turma seeds LS_LAST, i.e. stages a REFRESH: the module must reopen that
+  // turma, with its client section expanded and the rail unpinned. That path is the whole
+  // reason this work started ("all the time when i refresh it closes everything"), so it
+  // needs a case — the default boot always takes the no-deep-link branch and never proves it.
+  const last = qs.get('last');
+  if (last) { try { localStorage.setItem('cdx_cohorts_last', last.replace('/', '\n')); } catch (_) {} }
+
+  // ?subtab=bar|pill — the sub-tab display mode. It changes the CHROME'S HEIGHT (the bar adds a
+  // persistent row; the pill is a hover overlay and adds none), which is exactly what the rails
+  // must clear. 'pill' is the default, and the old hardcoded 94px only ever matched 'bar' — so
+  // the default shipped a 29px gap. Both modes have to be shot.
+  const subtab = qs.get('subtab');
+  if (subtab) { try { localStorage.setItem('codex_subtab_mode', subtab); } catch (_) {} }
+
+  // ?favs=1,2 seeds cv_favorites_v1, i.e. stages the Favoritos section. It only renders when
+  // something is starred, so without this the drag test has no list to drag.
+  const favs = qs.get('favs');
+  if (favs) { try { localStorage.setItem('cv_favorites_v1', JSON.stringify(favs.split(','))); } catch (_) {} }
+
+  // ?focus=0 turns Lessons' focus mode off. It defaults ON above 700px, and it TUCKS THE
+  // SIDEBAR AWAY until the cursor hits the left edge — fine for teaching, useless for a
+  // screenshot or a drag, which need the sidebar on screen deterministically. ?focus=1 is not
+  // redundant with omitting it: it says the shot MEANS to be in the default teaching state.
+  const focus = qs.get('focus');
+  if (focus) { try { localStorage.setItem('cv_focus_mode', focus); } catch (_) {} }
+
+  // ?order=tarefas,items seeds cv_section_order_v1, i.e. stages an admin who ALREADY dragged.
+  // Writing the order is one thing; painting it back on the next boot is the half a drag test
+  // cannot see, because it re-reads its own render rather than a fresh mount.
+  const secOrder = qs.get('order');
+  if (secOrder) { try { localStorage.setItem('cv_section_order_v1', JSON.stringify(secOrder.split(','))); } catch (_) {} }
+
+  const mod = qs.get('mod') || 'cohorts';
+  const SRC = {
+    cohorts:  '/codex/cohorts/cohorts.js',
+    sessions: '/codex/questions/sessions.js',
+    lessons:  '/codex/lessons/lessons.js',
+  };
+  if (!SRC[mod]) throw new Error('harness: unknown module ' + mod);
+  // "Painted" = a real ROW exists. Era-neutral by listing both the bespoke row and the rail's
+  // (a migration is exactly when this file must keep working), and it is a POSITIVE signal:
+  // the previous probe watched for a loading placeholder to disappear, which a migration made
+  // vacuously true the moment the placeholder's class changed — it would have raced silently
+  // rather than failed. If a fixture ever has no rows, this times out loudly, which is right.
+  const ROW = {
+    cohorts:  '#cdx-cohorts-list .cdx-ti, #cdx-cohorts-list .cdx-rail-row',
+    sessions: '#cdx-sessions-sidebar .cdx-session-card, #cdx-sessions-sidebar .cdx-rail-row',
+    // Lessons keeps its own markup by design (its look is the product and is frozen), so there
+    // is no rail row to wait for here and never will be.
+    lessons:  '.cdx-lessons-sidebar-body .cdx-lesson-section',
+  };
+
+  // The real topbar, so the chrome height and the hamburger are the app's, not a guess.
+  // Its tab/sub-tab strip is what the rails' `padding-top` has to clear.
+  const TAB = { cohorts: 'cohorts', sessions: 'questions', lessons: 'lessons' };
+  const SUBTABS = {
+    cohorts:  [{ label: 'Turmas', href: '#', active: true }, { label: 'Cursos', href: '#' }, { label: 'Alunos', href: '#' }],
+    sessions: [{ label: 'Sessões', href: '#', active: true }, { label: 'Bancos', href: '#' }],
+    lessons:  [],
+  };
+  const { init: topbar } = await import('/codex/js/codex-topbar.js');
+  topbar({ active: TAB[mod], subTabs: SUBTABS[mod], subTabsByTab: { [TAB[mod]]: SUBTABS[mod] } });
+
+  const m = await import(SRC[mod]);
+  m.mount(document.getElementById('view'), {});
+
+  // shoot.mjs polls this flag instead of sleeping: _loadAll is async (clients, then every
+  // client's turmas), so "rendered" is when the list has actually replaced its loading
+  // state with real children. A plain flag, not a Promise: this script is dynamically
+  // imported, so the load event can fire before it runs and page.evaluate would read
+  // undefined off window and call it "not ready".
+  window.__harnessReady = false;
+  const tick = () => {
+    if (document.querySelector(ROW[mod])) { window.__harnessReady = true; return; }
+    setTimeout(tick, 30);
+  };
+  tick();
+</script>

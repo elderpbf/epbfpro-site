@@ -5,6 +5,10 @@
  * shell chrome, and shared-components.css. Add ONLY Codex component rules here;
  * surface/text/border values come from the tokens, never hex literals. */
 
+/* Scrollbars (thin + themed, app-wide) moved to css/theme.css: it is the ONE stylesheet both the
+ * Codex admin and the student trilha load, so the primitive now reaches every surface, not just the
+ * admin. Do not re-add it here. */
+
 /* ── Codex topbar: full-width bar with a centered tab strip ───
  * The shell's --with-tabs inner caps at 1400px + centers it; drop that cap here
  * so the bar spans the full viewport, matching the now full-width content below.
@@ -191,7 +195,10 @@
    * later in source) so the wrapper forms a real box the drawer can position. */
   .cdx-three-pane .cdx-cohorts-nav { display: block; }
 
-  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav {
+  /* This list must stay in sync with DRAWER_SEL in js/codex-topbar.js — the same class list,
+   * by hand, in two shared files. That IS the coupling track-41 wants to replace with one
+   * class the rail stamps itself; until then, adding a drawer means editing both. */
+  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
     position: fixed; top: 0; left: 0; bottom: 0;
     width: 84vw; max-width: 340px;
     z-index: 120;
@@ -202,10 +209,14 @@
     box-sizing: border-box;
     background: var(--surface);   /* opaque panel (the bare cohorts wrapper has no bg of its own) */
   }
-  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open {
+  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open, .cdx-sessions-sidebar.is-open {
     transform: none;
     box-shadow: 4px 0 24px var(--shadow);
   }
+  /* Sessões' aside is position:fixed + translateX(-100%) at ALL widths (its own auto-hide
+   * rules, questions.css). On a phone the drawer owns it instead, so its desktop height /
+   * top-padding / 80vw width must not fight the rules above. */
+  .cdx-sessions-sidebar { height: auto; width: 84vw; padding-top: 64px; }
   .cdx-drawer-backdrop.is-open {
     display: block;
     position: fixed; inset: 0; z-index: 119;
