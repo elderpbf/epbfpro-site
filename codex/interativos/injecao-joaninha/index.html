@@ -4,6 +4,21 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Injeção em PDF: o que o olho vê e o que a IA lê</title>
+<script>
+  /* Tema, decidido ANTES de pintar (evita piscar claro/escuro):
+     1) o tema do app, se houver (localStorage bs_theme) — é o que os Labs usam,
+        então embutido no Codex/Trilha ele acompanha o resto da interface;
+     2) na falta dele (uso avulso/offline, em aula), a preferência do DISPOSITIVO. */
+  (function () {
+    var t = 'light';
+    try {
+      var stored = localStorage.getItem('bs_theme');
+      if (stored === 'dark' || stored === 'light') t = stored;
+      else if (window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches) t = 'dark';
+    } catch (e) {}
+    document.documentElement.setAttribute('data-theme', t);
+  })();
+</script>
 <style>
   :root {
     --navy: #061a51;
@@ -18,6 +33,33 @@
     --t2: #1f6fd0;  --t2bg: rgba(31,111,208,.13);
     --t3: #1e8449;  --t3bg: rgba(30,132,73,.14);
     --t4: #c0700f;  --t4bg: rgba(192,112,15,.15);
+
+    --table-line: #b9c1d2;
+    --rail-wash: rgba(6,26,81,.13);
+    --mode-olho-bg: #eef7f4;  --mode-olho-line: #bfe3d9;
+    --mode-ia-bg:   #fff4ec;  --mode-ia-line:   #f2ceac;
+  }
+
+  /* Modo escuro. O tema é decidido no <head> (pré-pintura): tema do app se houver,
+     senão a preferência do DISPOSITIVO. Toda cor abaixo é só troca de variável. */
+  [data-theme="dark"] {
+    --navy: #0b1533;
+    --teal: #2dd4bf;
+    --ink: #e7eaf3;
+    --paper: #151b2e;
+    --wash: #0e1322;
+    --line: #2b3454;
+    --muted: #9aa4c0;
+
+    --t1: #f87171;  --t1bg: rgba(248,113,113,.20);
+    --t2: #7cb3f5;  --t2bg: rgba(124,179,245,.20);
+    --t3: #5fd28a;  --t3bg: rgba(95,210,138,.20);
+    --t4: #f0b45c;  --t4bg: rgba(240,180,92,.22);
+
+    --table-line: #2b3454;
+    --rail-wash: rgba(255,255,255,.10);
+    --mode-olho-bg: #12241f;  --mode-olho-line: #1f4a3d;
+    --mode-ia-bg:   #2a1f14;  --mode-ia-line:   #5a3f22;
   }
 
   * { box-sizing: border-box; }
@@ -79,7 +121,7 @@
 
   #rail {
     position: fixed; left: 0; top: 62px; bottom: 0; width: 22px; z-index: 24;
-    background: linear-gradient(to right, rgba(6,26,81,.13), rgba(6,26,81,0));
+    background: linear-gradient(to right, var(--rail-wash), transparent);
     cursor: pointer;
   }
   /* afordância: sem uma aba visível, ninguém descobre que existe uma barra ali.
@@ -134,7 +176,7 @@
 
   .asknote { margin-top: 16px; padding-top: 14px; border-top: 1px solid var(--line); }
   .asknote h3 { font-size: .82rem; margin: 0 0 6px; }
-  .asknote ol { margin: 0; padding-left: 18px; font-size: .8rem; color: #333; }
+  .asknote ol { margin: 0; padding-left: 18px; font-size: .8rem; color: var(--ink); }
   .asknote li { margin-bottom: 4px; }
   .asknote .last { color: var(--teal); font-weight: 600; }
 
@@ -148,7 +190,7 @@
   main p { margin: 0 0 15px; text-align: justify; }
 
   main table { border-collapse: collapse; width: 100%; margin: 8px 0 18px; font-family: -apple-system, "Segoe UI", sans-serif; font-size: .92rem; }
-  main th, main td { border: 1px solid #b9c1d2; padding: 8px 11px; text-align: left; vertical-align: top; }
+  main th, main td { border: 1px solid var(--table-line); padding: 8px 11px; text-align: left; vertical-align: top; }
   main th { background: var(--wash); font-weight: 600; }
   td.n, th.n { text-align: center; width: 42px; }
   .fim { text-align: center; font-weight: bold; margin: 22px 0; }
@@ -193,9 +235,9 @@
   /* banner de modo */
   .modebar { max-width: 1180px; margin: 0 auto; padding: 12px 26px 0 40px; }
   .modebar .card { border-radius: 9px; padding: 10px 16px; font-size: .9rem; border: 1px solid var(--line); }
-  body.mode-olho .modebar .card { background: #eef7f4; border-color: #bfe3d9; }
+  body.mode-olho .modebar .card { background: var(--mode-olho-bg); border-color: var(--mode-olho-line); }
   body.mode-olho .modebar .card::before { content: "👁  O que o olho vê — "; font-weight: 700; }
-  body.mode-ia .modebar .card { background: #fff4ec; border-color: #f2ceac; }
+  body.mode-ia .modebar .card { background: var(--mode-ia-bg); border-color: var(--mode-ia-line); }
   body.mode-ia .modebar .card::before { content: "🤖  O que a IA lê — "; font-weight: 700; }
 
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
@@ -235,16 +277,17 @@
     aside.show { transform: translateY(0); }
     aside.dragging { transition: none; }   /* durante o arrasto a folha segue o dedo */
 
-    .aside-peek { display: block; padding: 0; background: var(--paper); flex-shrink: 0; border-radius: 14px 14px 0 0; }
+    /* touch-action:none na FAIXA INTEIRA: arrastar em qualquer ponto dela (inclusive
+       em cima dos botões) não rola a página atrás. Só a alça é que move a folha. */
+    .aside-peek { display: block; padding: 0; background: var(--paper); flex-shrink: 0; border-radius: 14px 14px 0 0; touch-action: none; }
 
-    /* a alça: barra fininha de largura inteira, com rótulo. touch-action:none
-       impede o navegador de rolar a PÁGINA ATRÁS quando o dedo arrasta aqui. */
+    /* a alça: barra fininha de largura inteira, ABAIXO dos botões */
     .aside-handle {
       display: flex; align-items: center; justify-content: center; gap: 7px;
-      width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--line);
+      width: 100%; padding: 10px 12px; border: 0; border-top: 1px solid var(--line);
       background: var(--wash); color: var(--muted); cursor: pointer;
       font: inherit; font-size: .78rem; font-weight: 600;
-      border-radius: 14px 14px 0 0; touch-action: none;
+      border-radius: 0; touch-action: none;
     }
     .aside-chev { width: 15px; height: 15px; transition: transform .3s ease; }
     aside.show .aside-chev { transform: rotate(180deg); }
@@ -308,15 +351,15 @@
 <aside id="aside">
   <!-- faixa sempre visível do dock (mobile); oculta no desktop, onde o aside é o rail por hover -->
   <div class="aside-peek">
+    <div class="versions" role="group" aria-label="versões">
+      <button data-mode="olho" aria-pressed="true">O olho vê</button>
+      <button data-mode="ia" aria-pressed="false">A IA lê</button>
+    </div>
     <button class="aside-handle" id="asideToggle" type="button" aria-expanded="false" aria-controls="asideBody">
       <svg class="aside-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
       <span class="txt-open">mais opções</span>
       <span class="txt-close">fechar</span>
     </button>
-    <div class="versions" role="group" aria-label="versões">
-      <button data-mode="olho" aria-pressed="true">O olho vê</button>
-      <button data-mode="ia" aria-pressed="false">A IA lê</button>
-    </div>
   </div>
 
   <div class="aside-body" id="asideBody">
@@ -451,23 +494,27 @@
   /* Arrastar a alça: a folha SEGUE O DEDO e a página atrás NÃO se move
      (touch-action:none no CSS + preventDefault aqui). Ao soltar, decide abrir ou
      fechar e a transição do CSS faz a animação. */
-  if (toggle) {
-    var dragY = null, baseY = 0, maxY = 0, movedY = 0;
-    toggle.addEventListener('touchstart', function (e) {
+  if (peekEl) {
+    var dragY = null, baseY = 0, maxY = 0, movedY = 0, fromHandle = false;
+
+    peekEl.addEventListener('touchstart', function (e) {
       if (!isMobile()) return;
-      maxY = aside.offsetHeight - (peekEl ? peekEl.offsetHeight : 96);
-      baseY = aside.classList.contains('show') ? 0 : maxY;
-      movedY = baseY;
+      fromHandle = !!(e.target.closest && e.target.closest('.aside-handle'));
       dragY = e.touches[0].clientY;
       didDrag = false;
+      if (!fromHandle) return;               /* nos botões não preparamos arrasto da folha */
+      maxY = aside.offsetHeight - peekEl.offsetHeight;
+      baseY = aside.classList.contains('show') ? 0 : maxY;
+      movedY = baseY;
       aside.classList.add('dragging');
     }, { passive: true });
 
-    toggle.addEventListener('touchmove', function (e) {
+    peekEl.addEventListener('touchmove', function (e) {
       if (dragY === null) return;
-      e.preventDefault();                    /* trava a rolagem da página atrás */
+      e.preventDefault();                    /* trava a página atrás em TODA a faixa */
       var dy = e.touches[0].clientY - dragY;
       if (Math.abs(dy) > 6) didDrag = true;
+      if (!fromHandle) return;               /* em cima dos botões: só trava, não move a folha */
       movedY = Math.min(Math.max(baseY + dy, 0), maxY);
       aside.style.transform = 'translateY(' + movedY + 'px)';
     }, { passive: false });
@@ -477,10 +524,11 @@
       dragY = null;
       aside.classList.remove('dragging');
       aside.style.transform = '';            /* devolve o controle pro CSS (anima) */
-      if (didDrag) { if (movedY < maxY * 0.5) openSheet(); else closeSheet(); }
+      if (fromHandle && didDrag) { if (movedY < maxY * 0.5) openSheet(); else closeSheet(); }
+      fromHandle = false;
     };
-    toggle.addEventListener('touchend', endDrag, { passive: true });
-    toggle.addEventListener('touchcancel', endDrag, { passive: true });
+    peekEl.addEventListener('touchend', endDrag, { passive: true });
+    peekEl.addEventListener('touchcancel', endDrag, { passive: true });
   }
 
   /* ---------- versão (olho / IA) ---------- */
@@ -490,7 +538,10 @@
     vBtns.forEach(function (b) { b.setAttribute('aria-pressed', b.dataset.mode === mode ? 'true' : 'false'); });
   }
   vBtns.forEach(function (b) {
-    b.addEventListener('click', function () { setMode(b.dataset.mode); });
+    b.addEventListener('click', function () {
+      if (didDrag) { didDrag = false; return; }   /* arrastar em cima do botão não troca a versão */
+      setMode(b.dataset.mode);
+    });
   });
 
   /* ---------- táticas (acender trechos) ---------- */
@@ -569,6 +620,25 @@
     if (e.key === '+' || e.key === '=') bump(0.1);
     else if (e.key === '-' || e.key === '_') bump(-0.1);
     else if (e.key === '0') { scale = 1; applyZoom(); }
+  });
+
+  /* ---------- tema ao vivo ---------- */
+  /* segue o DISPOSITIVO enquanto não houver tema do app, e acompanha o toggle do
+     app quando ele grava bs_theme (mesmo comportamento dos Labs). */
+  function storedTheme() { try { return localStorage.getItem('bs_theme'); } catch (e) { return null; } }
+  try {
+    var mq = window.matchMedia('(prefers-color-scheme: dark)');
+    var onScheme = function (e) {
+      var s = storedTheme();
+      if (s !== 'dark' && s !== 'light') document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+    };
+    if (mq.addEventListener) mq.addEventListener('change', onScheme);
+    else if (mq.addListener) mq.addListener(onScheme);
+  } catch (e) {}
+  window.addEventListener('storage', function (e) {
+    if (e.key === 'bs_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+      document.documentElement.setAttribute('data-theme', e.newValue);
+    }
   });
 
   applyZoom();
