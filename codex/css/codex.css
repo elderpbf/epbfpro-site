@@ -543,3 +543,39 @@
   box-shadow: 0 0 0 4px var(--success-bg);
 }
 .cdx-radio-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }
+
+/* ── Comunicações (broadcast composer, track-44) ─────────────────────────────────
+   Uses only tokens with a [data-theme=dark] override (--surface/--border/--text-*),
+   so dark mode adapts without a separate block. */
+.cdx-cm-wrap { max-width: 720px; margin: 0 auto; padding: 1rem 0.5rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+.cdx-cm-head { display: flex; flex-direction: column; gap: 0.25rem; }
+.cdx-cm-title { margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
+.cdx-cm-sub { margin: 0; font-size: 0.9rem; color: var(--text-muted); }
+.cdx-cm-muted { color: var(--text-muted); font-size: 0.9rem; margin: 0.25rem 0; }
+.cdx-cm-card { background: var(--surface); border: 1px solid var(--border); border-radius: 14px; padding: 1.1rem 1.2rem; display: flex; flex-direction: column; gap: 1.1rem; }
+.cdx-cm-field { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-cm-label { font-size: 0.85rem; font-weight: 600; color: var(--text-primary); }
+.cdx-cm-radio, .cdx-cm-check { display: inline-flex; align-items: center; gap: 0.45rem; font-size: 0.92rem; color: var(--text-primary); cursor: pointer; padding: 0.15rem 0; }
+.cdx-cm-radio input, .cdx-cm-check input { accent-color: var(--primary); }
+.cdx-cm-turmas { margin-top: 0.4rem; display: flex; flex-direction: column; gap: 0.3rem; max-height: 220px; overflow-y: auto; border: 1px solid var(--border); border-radius: 10px; padding: 0.5rem 0.7rem; }
+.cdx-cm-turma { display: flex; align-items: center; gap: 0.45rem; font-size: 0.9rem; cursor: pointer; }
+.cdx-cm-input, .cdx-cm-textarea { width: 100%; box-sizing: border-box; background: var(--surface); color: var(--text-primary); border: 1px solid var(--border); border-radius: 10px; padding: 0.6rem 0.7rem; font: inherit; }
+.cdx-cm-input:focus, .cdx-cm-textarea:focus { outline: none; border-color: var(--primary); }
+.cdx-cm-textarea { resize: vertical; min-height: 96px; }
+.cdx-cm-check--soon { color: var(--text-muted); }
+.cdx-cm-soon { font-size: 0.75rem; color: var(--text-muted); }
+.cdx-cm-actions { display: flex; align-items: center; gap: 0.9rem; flex-wrap: wrap; }
+.cdx-cm-result { font-size: 0.88rem; color: var(--text-muted); }
+.cdx-cm-recent { display: flex; flex-direction: column; gap: 0.5rem; }
+.cdx-cm-recent-title { margin: 0; font-size: 1rem; font-weight: 700; color: var(--text-primary); }
+.cdx-cm-list { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-cm-item { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.cdx-cm-item-head { width: 100%; box-sizing: border-box; display: flex; align-items: baseline; gap: 0.7rem; background: none; border: 0; cursor: pointer; text-align: left; padding: 0.6rem 0.8rem; color: inherit; font: inherit; }
+.cdx-cm-item-head:hover { background: var(--surface-hover); }
+.cdx-cm-item-title { font-weight: 600; font-size: 0.92rem; color: var(--text-primary); }
+.cdx-cm-item-sub { font-size: 0.8rem; color: var(--text-muted); margin-left: auto; white-space: nowrap; }
+.cdx-cm-item-chev { color: var(--text-muted); font-size: 0.8rem; transition: transform 0.15s; }
+.cdx-cm-item-head[aria-expanded="true"] .cdx-cm-item-chev { transform: rotate(180deg); }
+.cdx-cm-item-detail { padding: 0.2rem 0.8rem 0.7rem; display: flex; flex-direction: column; gap: 0.5rem; border-top: 1px solid var(--border); }
+.cdx-cm-detail-body { font-size: 0.9rem; line-height: 1.55; white-space: pre-wrap; color: var(--text-primary); }
+.cdx-cm-detail-meta { display: flex; flex-direction: column; gap: 0.2rem; font-size: 0.8rem; color: var(--text-muted); }

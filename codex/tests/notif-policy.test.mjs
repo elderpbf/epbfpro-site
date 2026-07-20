@@ -1,11 +1,31 @@
 // tests/notif-policy.test.mjs
-// The notification dismissal-tier policy (js/notif-policy.js). Pins the ROLE-AWARE split:
-// the same feed, the same bell, but a given item can be Acionável for one role and a mere
-// glance for the other. Both directions are live now — the admin's 'tarefa_submission'
-// (aluno enviou) and the student's 'tarefa_feedback' (professor respondeu) are mirrors.
+// The notification dismissal-tier policy (js/notif-policy.js).
+//
+// THE TWO DEFINITIONS, pinned here so they are never blurred again (Élder 2026-07-19):
+//   Dispensável ('open') — disappears on its OWN the moment the tray is OPENED.
+//   Acionável   ('act')  — leaves ONLY via its × or a click on the notification itself,
+//                          and then it goes to the history.
+// There is no sub-rule inside 'act': every acionável clears those same two ways. (An earlier
+// pass invented a "clears on read" split inside 'act'; it was wrong and these tests exist so
+// it cannot come back.)
+//
+// Right now only ACIONÁVEIS are live (DISPENSAVEIS_ENABLED === false), so dismissalFor answers
+// 'act' for everything. The per-type split is preserved in splitTierFor and tested here too,
+// so it cannot rot while it is dormant.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from '../js/notif-policy.js';
+import { dismissalFor, splitTierFor, DISPENSAVEIS_ENABLED, DISMISS_OPEN, DISMISS_ACT } from '../js/notif-policy.js';
+
+const EVERY_KIND = [
+  { type: 'comunicado' },
+  { type: 'tarefa_feedback' },
+  { type: 'tarefa_submission' },
+  { type: 'student_pending' },
+  { type: 'forum_post', kind: 'new_thread' },
+  { type: 'forum_post', kind: 'reply' },
+  { type: 'whatever' },
+  {},
+];
 
 test('the tier tags are distinct string constants', () => {
   assert.equal(DISMISS_OPEN, 'open');
@@ -13,34 +33,35 @@ test('the tier tags are distinct string constants', () => {
   assert.notEqual(DISMISS_OPEN, DISMISS_ACT);
 });
 
-test('admin tier split: submissions + new threads + pending students are ACT, replies + others are OPEN', () => {
-  assert.equal(dismissalFor({ type: 'tarefa_submission' }, 'admin'), DISMISS_ACT);
-  assert.equal(dismissalFor({ type: 'forum_post', kind: 'new_thread' }, 'admin'), DISMISS_ACT);
-  assert.equal(dismissalFor({ type: 'student_pending' }, 'admin'), DISMISS_ACT);   // e-sino
-  assert.equal(dismissalFor({ type: 'forum_post', kind: 'reply' }, 'admin'), DISMISS_OPEN);
-  assert.equal(dismissalFor({ type: 'whatever' }, 'admin'), DISMISS_OPEN);
-});
-
-test('student forum activity stays dismiss-on-open (incl. new threads)', () => {
-  const items = [
-    { type: 'forum_post', kind: 'reply', mine: true },
-    { type: 'forum_post', kind: 'new_thread', mine: false },
-    { type: 'tarefa_submission' },      // the admin's row: not the student's problem
-    { type: 'student_pending' },
-    { type: 'whatever' },
-    {},
-  ];
-  for (const role of ['student', undefined]) {
-    for (const it of items) {
-      assert.equal(dismissalFor(it, role), DISMISS_OPEN, `${JSON.stringify(it)} @ ${role}`);
+// The LIVE behaviour: one tier. Nothing may vanish merely because the tray was opened.
+test('with Dispensáveis off, EVERY item is acionável', () => {
+  assert.equal(DISPENSAVEIS_ENABLED, false);
+  for (const role of ['student', 'admin', undefined]) {
+    for (const it of EVERY_KIND) {
+      assert.equal(dismissalFor(it, role), DISMISS_ACT, `${JSON.stringify(it)} @ ${role}`);
     }
   }
 });
 
-// The mirror of the admin's 'tarefa_submission': the teacher answered/graded MY tarefa, so
-// I must go read it. It has to survive bell-open, or the student glances once and it is gone.
-test('student tier split: the teacher reply/nota on my tarefa is ACT', () => {
-  assert.equal(dismissalFor({ type: 'tarefa_feedback' }, 'student'), DISMISS_ACT);
-  assert.equal(dismissalFor({ type: 'tarefa_feedback' }, undefined), DISMISS_OPEN); // role-gated
-  assert.equal(dismissalFor({ type: 'tarefa_feedback' }, 'admin'), DISMISS_OPEN);   // not the teacher's row
+// The dormant map, kept alive: this is what comes back the day a glance-only source exists.
+test('splitTierFor (dormant): admin — submissions + new threads + pending students are ACT', () => {
+  assert.equal(splitTierFor({ type: 'tarefa_submission' }, 'admin'), DISMISS_ACT);
+  assert.equal(splitTierFor({ type: 'forum_post', kind: 'new_thread' }, 'admin'), DISMISS_ACT);
+  assert.equal(splitTierFor({ type: 'student_pending' }, 'admin'), DISMISS_ACT);   // e-sino
+  assert.equal(splitTierFor({ type: 'forum_post', kind: 'reply' }, 'admin'), DISMISS_OPEN);
+  assert.equal(splitTierFor({ type: 'whatever' }, 'admin'), DISMISS_OPEN);
+});
+
+test('splitTierFor (dormant): student — forum activity is a glance, the teacher reply is ACT', () => {
+  assert.equal(splitTierFor({ type: 'forum_post', kind: 'reply', mine: true }, 'student'), DISMISS_OPEN);
+  assert.equal(splitTierFor({ type: 'forum_post', kind: 'new_thread' }, 'student'), DISMISS_OPEN);
+  assert.equal(splitTierFor({ type: 'tarefa_feedback' }, 'student'), DISMISS_ACT);
+  assert.equal(splitTierFor({ type: 'tarefa_feedback' }, 'admin'), DISMISS_OPEN);  // not the teacher's row
+});
+
+// A comunicado is a MESSAGE: acionável for whoever receives it, in either mode.
+test('splitTierFor (dormant): a comunicado is ACT for every role', () => {
+  for (const role of ['student', 'admin', undefined]) {
+    assert.equal(splitTierFor({ type: 'comunicado' }, role), DISMISS_ACT, `role ${role}`);
+  }
 });

@@ -1,0 +1,129 @@
+/* roteiro/roteiro.css — layout only for the Roteiro sub-tab (track-46).
+   Injected at mount by roteiro-view.js (index.html is untouched, so this file
+   cannot ride the usual <link> boot). Colour comes only from CSS custom
+   properties; tipo hues reuse the existing theme-stable --acc-* accents
+   (css/tokens.css), so no new tokens (and no new dark-theme overrides) are
+   introduced here. */
+
+.cdx-roteiro { display: flex; flex-direction: column; height: 100%; min-height: 0; gap: 10px; }
+
+/* ── Time meter (compat(roteiro, aula.hours)) ──────────────────────────── */
+.cdx-roteiro-meter { flex-shrink: 0; display: flex; flex-direction: column; gap: 4px; }
+.cdx-roteiro-meter-track { height: 6px; border-radius: 3px; background: var(--border); overflow: hidden; }
+.cdx-roteiro-meter-fill { height: 100%; background: var(--primary); border-radius: 3px; transition: width .2s ease; }
+.cdx-roteiro-meter.is-over .cdx-roteiro-meter-fill { background: var(--danger); }
+.cdx-roteiro-meter-text { display: flex; flex-wrap: wrap; gap: 12px; font-size: .85rem; color: var(--text-secondary); }
+.cdx-roteiro-meter-item b { color: var(--text-primary); font-weight: 600; }
+.cdx-roteiro-meter-warn { color: var(--danger); font-weight: 600; }
+
+/* ── Two-panel body: LEFT = the list-rail (js/list-rail.js), RIGHT = the ponto
+   editor. Grid shape copied from .cdx-aulas-hub (cohorts.css ~365): the 1st
+   column rides the shared resizer var (js/resizable.js installResizer), grip
+   painted by the already-loaded .cdx-rz-grip rules (cohorts.css), inherited
+   here, not duplicated. Collapses to one column on small widths, same
+   breakpoint as .cdx-aulas-hub/.cdx-tarefas-split. ─────────────────────────── */
+.cdx-roteiro-body {
+  flex: 1; min-height: 0; position: relative;
+  display: grid; grid-template-columns: var(--cdx-rz-w, 320px) 1fr; gap: 14px;
+}
+@media (max-width: 980px) { .cdx-roteiro-body { grid-template-columns: 1fr; } }
+
+.cdx-roteiro-left { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cdx-roteiro-right {
+  min-width: 0; min-height: 0; overflow-y: auto;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;
+}
+.cdx-roteiro-empty { color: var(--text-secondary); font-size: .9rem; padding: 12px 4px; }
+
+/* ── Left: rail row content (renderRow) + section head content (renderHead) ── */
+.cdx-roteiro-row-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: .92rem; }
+.cdx-roteiro-row-dur { flex-shrink: 0; font-size: .8rem; color: var(--text-secondary); }
+.cdx-roteiro-sec-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-roteiro-sec-dur { flex-shrink: 0; font-size: .72rem; color: var(--text-secondary); font-weight: 600; margin-right: 4px; }
+.cdx-roteiro-add-pausa { width: 100%; }
+
+.cdx-roteiro-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--rot-color, var(--text-muted)); }
+.cdx-roteiro-dot--resgate     { --rot-color: var(--acc-blue); }
+.cdx-roteiro-dot--expositivo  { --rot-color: var(--primary); }
+.cdx-roteiro-dot--pratica     { --rot-color: var(--acc-amber); }
+.cdx-roteiro-dot--fechamento  { --rot-color: var(--acc-violet); }
+.cdx-roteiro-dot--pausa       { --rot-color: var(--text-muted); }
+
+/* ── Right: selected ponto detail ──────────────────────────────────────── */
+.cdx-roteiro-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cdx-roteiro-sp { flex: 1; }
+/* tokens.css: --acc-* are "theme-stable by contract (no dark override; NEVER
+   rendered as text)" — the dot/border/background tint carry the accent, the
+   label text itself always reads from --text-primary (fatia-1 sentinel WARN). */
+.cdx-roteiro-detail-badge {
+  display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
+  font-size: .75rem; font-weight: 600; color: var(--text-primary);
+  border: 1px solid var(--rot-color, var(--border));
+  background: color-mix(in oklab, var(--rot-color, var(--text-muted)) 14%, transparent);
+}
+.cdx-roteiro-field { margin-bottom: 14px; }
+.cdx-roteiro-field-row { display: flex; gap: 10px; }
+.cdx-roteiro-field-row .cdx-roteiro-field { flex: 1; min-width: 0; }
+.cdx-roteiro-field-label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
+.cdx-roteiro-field-input {
+  width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: .9rem;
+}
+.cdx-roteiro-field-textarea { resize: vertical; min-height: 4.5em; font-family: inherit; }
+
+.cdx-roteiro-notas-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
+.cdx-roteiro-notas-empty { color: var(--text-secondary); font-size: .85rem; }
+.cdx-roteiro-nota {
+  display: flex; align-items: center; justify-content: space-between; gap: 8px;
+  padding: 5px 8px; border-radius: 6px; background: var(--cdx-chip-bg); border: 1px solid var(--cdx-chip-border);
+}
+.cdx-roteiro-nota-text { flex: 1; min-width: 0; color: var(--text-primary); font-size: .88rem; word-break: break-word; }
+.cdx-roteiro-nota-rm {
+  flex-shrink: 0; border: none; background: none; color: var(--text-secondary);
+  cursor: pointer; font-size: 1rem; line-height: 1; padding: 0 2px;
+}
+.cdx-roteiro-nota-rm:hover { color: var(--danger); }
+
+.cdx-roteiro-notas-add { display: flex; gap: 6px; }
+.cdx-roteiro-notas-add-input {
+  flex: 1; min-width: 0; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: .88rem;
+}
+
+/* ── Base selector (roteiro/roteiro-base.js, track-46 fatia 2b) ────────────── */
+.cdx-roteiro-base {
+  flex-shrink: 0; border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface); margin-bottom: 4px;
+}
+.cdx-roteiro-base-nocourse { padding: 8px 10px; font-size: .85rem; color: var(--text-secondary); }
+.cdx-roteiro-base-summary {
+  display: flex; align-items: center; gap: 8px; padding: 8px 10px; cursor: pointer;
+  font-size: .88rem; color: var(--text-secondary); list-style: none;
+}
+.cdx-roteiro-base-summary::-webkit-details-marker { display: none; }
+.cdx-roteiro-base-summary::before { content: '\25b8'; margin-right: 2px; color: var(--text-muted); }
+details[open] > .cdx-roteiro-base-summary::before { content: '\25be'; }
+.cdx-roteiro-base-current { color: var(--text-primary); }
+.cdx-roteiro-base-body { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; padding: 0 10px 10px; }
+.cdx-roteiro-base-loading { font-size: .85rem; color: var(--text-secondary); }
+.cdx-roteiro-base-select {
+  padding: 5px 7px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font-size: .86rem;
+}
+.cdx-roteiro-base-numinput {
+  width: 4.5em; padding: 5px 7px; border-radius: 6px; border: 1px solid var(--border);
+  background: var(--surface); color: var(--text-primary); font-size: .86rem;
+}
+
+/* ── Promote modal (este ponto / esta aula / todas as aulas) ───────────────── */
+.cdx-roteiro-promote-scopes { display: flex; gap: 14px; margin-bottom: 12px; flex-wrap: wrap; }
+.cdx-roteiro-promote-scopes label { display: flex; align-items: center; gap: 5px; font-size: .88rem; color: var(--text-primary); }
+.cdx-roteiro-promote-field { margin-bottom: 12px; }
+.cdx-roteiro-promote-target-opt { display: flex; align-items: center; gap: 6px; font-size: .88rem; color: var(--text-primary); margin-bottom: 6px; }
+.cdx-roteiro-promote-hint { font-size: .8rem; color: var(--text-secondary); margin-bottom: 12px; }
+
+/* ── Reused by cohorts/courses.js (base editor): no per-aula hours target exists
+   for a curso base, so the aula-specific time meter is hidden in that context.
+   Scoped to the wrapper id courses.js mounts into, never touches the meter's own
+   rules above (still used verbatim on the aula's Roteiro sub-tab). */
+#cdx-cur-roteiro-view .cdx-roteiro-meter { display: none; }

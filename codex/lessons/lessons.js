@@ -18,6 +18,7 @@ import * as toast from '../js/toast.js';
 import * as itemForm from '../content/item-form.js';
 import { renderItem } from '../js/item-render.js';
 import { findItem as findLabItem, getAllItems as labItems } from '../js/labs-registry.js';
+import { findItem as findInterativoItem, getAllItems as interativoItems } from '../js/interativos-registry.js';
 import { mountInContainer as mountDriveFile } from '../js/drive-viewer.js';
 import { mountPresetLoader } from '../js/preset-loader.js';
 import {
@@ -88,10 +89,11 @@ function _q(sel) { return _viewEl ? _viewEl.querySelector(sel) : null; }
 function _itemIcon(item) { return typeIconHtml(item && item.type_icon, { size: 18 }); }
 function _sectionLabel(key) { return t('lessons.section_' + key); }
 
-// Locate an item: vault rows first, then synthetic lab items.
+// Locate an item: vault rows first, then synthetic lab + interativo items.
 function _findItem(id) {
   let item = _vault.find((it) => String(it.id) === String(id));
   if (!item) item = findLabItem(id);
+  if (!item) item = findInterativoItem(id);
   return item || null;
 }
 
@@ -226,6 +228,7 @@ const SECTION_GLYPHS = {
   apostila: glyphSvg('book', { size: null }),
   tarefas:  glyphSvg('checklist', { size: null }),
   labs:     glyphSvg('flask', { size: null }),
+  interativos: glyphSvg('compass', { size: null }),
 };
 
 // ── Rail-backed sidebar (experiment: Lessons consuming js/list-rail.js) ────────
@@ -307,6 +310,7 @@ function _buildNav() {
   for (const it of buckets.llm) push(it, 'llm');
   for (const it of buckets.external) push(it, 'external');
   for (const it of labItems()) push(it, 'labs');
+  for (const it of interativoItems()) push(it, 'interativos');
   for (const g of groupItemsByType(buckets.items)) {
     const key = 'type:' + g.typeKey;
     _seedCollapsed(key);

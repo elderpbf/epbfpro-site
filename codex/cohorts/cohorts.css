@@ -707,6 +707,16 @@ details.cdx-cursos-arch[open] > .cdx-cursos-arch-h::before { transform: rotate(9
   .cdx-cursos-duo { grid-template-columns: 1fr; }
 }
 
+/* Roteiros-base editor (track-46 fatia 2b): the curso's numbered base roteiros,
+   reusing roteiro-view.js unchanged (see cohorts/courses.js). Chip strip picks
+   the open base; the view mounts below into #cdx-cur-roteiro-view. */
+.cdx-cursos-roteiros { margin-top: 1rem; border: 1px solid var(--border); border-radius: 10px; background: var(--surface); padding: .9rem; }
+.cdx-cursos-roteiro-tabs { display: flex; flex-wrap: wrap; gap: .35rem; margin: .6rem 0 .8rem; }
+.cdx-cursos-roteiro-tab { background: var(--background); border: 1px solid var(--border); color: var(--text-secondary); border-radius: 999px; padding: .3rem .7rem; font: inherit; font-size: .78rem; font-weight: 600; cursor: pointer; }
+.cdx-cursos-roteiro-tab.is-on { color: var(--cdx-btn-primary-text); background: var(--primary); border-color: transparent; }
+.cdx-cursos-roteiro-msg { font-size: .82rem; color: var(--text-secondary); }
+.cdx-cursos-roteiro-view { min-height: 360px; }
+
 /* Turma form — course/instance section header + a 2-col field grid. */
 .cdx-tf-section { font-size: .72rem; text-transform: uppercase; letter-spacing: .06em; color: var(--text-secondary); font-weight: 700; margin: 1.1rem 0 .5rem; padding-bottom: .3rem; border-bottom: 1px solid var(--border); }
 .cdx-tf-grid { display: grid; grid-template-columns: 1fr 1fr; gap: .6rem .9rem; }
