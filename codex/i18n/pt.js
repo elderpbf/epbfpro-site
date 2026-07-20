@@ -1180,7 +1180,7 @@ export default {
   'tarefas.eval_meta_fresh':   'sintetizado agora, às {time}',
   'tarefas.eval_meta_count':   '{n} respostas',
   'tarefas.eval_missing':      '{n} resposta(s) não foram classificadas pela IA. Refaça a análise para tentar de novo.',
-  'tarefas.eval_fallback_used':'O modelo escolhido não respondeu; quem sintetizou foi o modelo reserva, que é menos estável.',
+  'tarefas.eval_credits_exhausted': 'Os créditos de IA acabaram. Avise o administrador para recarregar antes de tentar de novo.',
   'tarefas.eval_too_large':    'A turma é grande demais para uma análise única ({chars} caracteres, limite {limit}). Nada foi cortado.',
   'tarefas.eval_loading':      'Sintetizando respostas...',
   'tarefas.eval_idle':         'Preparando a síntese das respostas da turma...',

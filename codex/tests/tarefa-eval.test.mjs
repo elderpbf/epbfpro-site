@@ -411,21 +411,33 @@ test('makeWorkerEval: a cohort past the ceiling errors out WITHOUT calling the A
   assert.equal(called, 0, 'the AI must never be called with a payload we know will be rejected');
 });
 
-// Availability without hiding it: the pin buys the measured model, the unpinned
-// retry buys a working answer, and `fallback` makes the swap visible.
-test('makeWorkerEval: a failing pinned call retries unpinned and reports fallback', async () => {
-  const calls = [];
-  const fakeChat = async (p) => {
-    calls.push(p);
-    if (p.provider) throw new Error('openrouter down');
-    return { text: '{"adherent":[1],"point":[],"diverged":[]}', provider: 'gemini' };
-  };
+// Fail clean, Élder's rule (2026-07-20): if the pinned call fails, error out. No
+// silent retry against the unpinned default chain, which the benchmark measured as
+// less reliable (free gemini: 75% run-to-run noise, unpredictable HTTP 503).
+test('makeWorkerEval: a failing pinned call fails clean, no silent retry on the default chain', async () => {
+  let calls = 0;
+  const fakeChat = async () => { calls++; throw new Error('openrouter down'); };
   const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
-  assert.equal(calls.length, 2);
-  assert.equal(calls[0].provider, EVAL_PROVIDER);
-  assert.equal(calls[1].provider, undefined, 'the retry must NOT pin, so the free chain can answer');
-  assert.deepEqual(out.groups, { adherent: [1], point: [], diverged: [] });
-  assert.equal(out.fallback, true, 'the UI has to be able to say a different model answered');
+  assert.equal(calls, 1, 'exactly one attempt, no fallback retry');
+  assert.equal(out.error, 'openrouter down');
+});
+
+// A structured worker error carrying `insufficient_credits` (codex-api's aiChat
+// categorization of an OpenRouter HTTP 402) must read as its own distinct code, so
+// the instructor is told to top up credits instead of "try again later".
+test('makeWorkerEval: an insufficient-credits failure is reported distinctly', async () => {
+  const fakeChat = async () => { const e = new Error('HTTP 402'); e.data = { error: 'HTTP 402', insufficient_credits: true }; throw e; };
+  const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(out.error, 'credits_exhausted');
+});
+
+// The codex-api.js facade already converts a worker `rate_limited` error into a
+// resolved `null` before it ever throws (see ai.chat's own .catch). This guards a
+// caller that injects aiChat directly instead, so the code still lands correctly.
+test('makeWorkerEval: a thrown rate_limited error is still reported as rate_limited', async () => {
+  const fakeChat = async () => { const e = new Error('no keys'); e.data = { error: 'no keys', rate_limited: true }; throw e; };
+  const out = await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.equal(out.error, 'rate_limited');
 });
 
 // ── reconcileGroups: no silent drops ─────────────────────────────────────────
@@ -606,15 +618,16 @@ test('view: unclassified answers are surfaced, never swallowed', async () => {
   tarefaEvalView.unmount();
 });
 
-test('view: a fallback run says so, since the backup model is less stable', async () => {
+test('view: an insufficient-credits failure tells the instructor to top up, not to retry', async () => {
   const el = _fakeViewEl();
   tarefaEvalView.mount(el, {
     statement: 'E',
     responses: [{ index: 1, text: 'a' }],
-    evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] }, total: 1, fallback: true }),
+    evalFn: async () => ({ error: 'credits_exhausted' }),
   });
   await _tick();
-  assert.ok(el.innerHTML.includes(t('tarefas.eval_fallback_used')));
+  assert.ok(el.innerHTML.includes(t('tarefas.eval_credits_exhausted')));
+  assert.notEqual(t('tarefas.eval_credits_exhausted'), t('tarefas.eval_error'), 'must not collapse into the generic error message');
   tarefaEvalView.unmount();
 });
 

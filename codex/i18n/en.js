@@ -1174,7 +1174,7 @@ export default {
   'tarefas.eval_meta_fresh':   'synthesized just now, at {time}',
   'tarefas.eval_meta_count':   '{n} responses',
   'tarefas.eval_missing':      '{n} response(s) were not classified by the AI. Redo the analysis to try again.',
-  'tarefas.eval_fallback_used':'The chosen model did not answer; the backup model synthesized this, and it is less stable.',
+  'tarefas.eval_credits_exhausted': 'AI credits ran out. Ask the administrator to top up before trying again.',
   'tarefas.eval_too_large':    'This cohort is too large for a single analysis ({chars} characters, limit {limit}). Nothing was truncated.',
   'tarefas.eval_loading':      'Synthesizing responses...',
   'tarefas.eval_idle':         'Preparing the synthesis of the class responses...',

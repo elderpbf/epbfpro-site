@@ -41,6 +41,7 @@ function _responseText(idx) {
 
 function _errorMessage() {
   if (_errorCode === 'rate_limited') return t('tarefas.eval_rate_limited');
+  if (_errorCode === 'credits_exhausted') return t('tarefas.eval_credits_exhausted');
   if (_errorCode === 'payload_too_large') {
     // Never silently truncate: say the cohort is too big for one pass and let the
     // instructor decide, rather than shipping a synthesis that quietly lost content.
@@ -58,8 +59,9 @@ function _clock(ts) {
 }
 
 // The discreet provenance line, so a restored synthesis is never mistaken for a
-// fresh one. Also carries the two honesty warnings: answers the model failed to
-// classify, and a run that had to fall back off the chosen model.
+// fresh one. Also carries the one honesty warning left: answers the model failed
+// to classify (there is no fallback-model warning any more: a failed pinned call
+// now fails clean instead of silently degrading to a less reliable model).
 function _metaHtml() {
   if (_status !== 'done' || !_result) return '';
   const bits = [];
@@ -72,9 +74,6 @@ function _metaHtml() {
     html += '<div class="cdx-teval-warn">' +
       _esc(t('tarefas.eval_missing').replace('{n}', String(_result.missing.length))) +
     '</div>';
-  }
-  if (_result.fallback) {
-    html += '<div class="cdx-teval-warn">' + _esc(t('tarefas.eval_fallback_used')) + '</div>';
   }
   return html;
 }

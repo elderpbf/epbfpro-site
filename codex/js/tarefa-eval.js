@@ -329,11 +329,19 @@ export function reconcileGroups({ groups, responses }) {
   return { groups: clean, missing, total: expected.length, classified: seen.size };
 }
 
+// Fail clean, Élder's rule (2026-07-20): "aqui é melhor falhar limpo, inclusive
+// avisando se acabaram os créditos". There is no silent degrade to the unpinned
+// default chain any more: the benchmark measured that chain's free-tier leg as
+// unreliable (75% run-to-run noise, unpredictable HTTP 503), so quietly falling
+// back to it would trade a measured, chosen model for an unmeasured one without
+// telling the instructor. If the pinned qwen call fails, this errors out, and an
+// insufficient-credits failure (OpenRouter HTTP 402) is reported as its own code
+// so the instructor sees "sem créditos" instead of a generic failure message.
 export function makeWorkerEval(aiChat, opts) {
   const provider = (opts && opts.provider !== undefined) ? opts.provider : EVAL_PROVIDER;
   const model = (opts && opts.model) || EVAL_MODEL;
 
-  async function _ask(prompt, pinned) {
+  function _params(prompt) {
     const params = {
       system: prompt.system,
       messages: prompt.messages,
@@ -344,11 +352,11 @@ export function makeWorkerEval(aiChat, opts) {
       max_tokens: 4000,
       max_chars: AI_CHAT_MAX_CHARS,
     };
-    if (pinned && provider) {
+    if (provider) {
       params.provider = provider;
       if (provider === 'openrouter' && model) params.openrouter_model = model;
     }
-    return aiChat(params);
+    return params;
   }
 
   return async function evalResponses({ statement, responses }) {
@@ -362,26 +370,21 @@ export function makeWorkerEval(aiChat, opts) {
 
     const prompt = buildEvalPrompt({ statement, responses });
     let res = null;
-    let usedFallback = false;
     try {
-      res = await _ask(prompt, true);
+      res = await aiChat(_params(prompt));
     } catch (e) {
-      _logInfo('tarefa-eval: provedor fixado falhou (' + ((e && e.message) || String(e)) + '), tentando a cadeia padrão');
-      res = null;
-    }
-    if (!res && provider) {
-      // The pin buys us the model we measured; the unpinned retry buys availability.
-      // Degrading to the default chain is better than dead-ending in front of a class,
-      // but it is NOT silent: `fallback` is reported so the UI can say a different
-      // model answered, since the benchmark showed the fallback models are less stable.
-      usedFallback = true;
-      try {
-        res = await _ask(prompt, false);
-      } catch (e) {
-        const msg = 'tarefa-eval: ai call failed: ' + ((e && e.message) || String(e));
-        _logError(msg);
-        return { error: msg };
-      }
+      // A structured worker error (e.data) carries codex-api's aiChat categorization.
+      // insufficient_credits gets its own code so it never reads as "try again later"
+      // when the real fix is topping up the account. rate_limited is normally never
+      // seen here: the codex-api.js facade already converts it to a resolved `null`
+      // (handled by `if (!res)` below); this branch only guards a caller that injects
+      // aiChat directly (tests do) instead of going through the real facade.
+      const data = e && e.data;
+      if (data && data.insufficient_credits) return { error: 'credits_exhausted' };
+      if (data && data.rate_limited) return { error: 'rate_limited' };
+      const msg = (data && data.error) || (e && e.message) || String(e);
+      _logError('tarefa-eval: ai call failed: ' + msg);
+      return { error: msg };
     }
     if (!res) return { error: 'rate_limited' };
 
@@ -396,7 +399,7 @@ export function makeWorkerEval(aiChat, opts) {
       // one: a loop would turn a systematic prompt problem into a stall.
       _logInfo('tarefa-eval: resposta ilegível, tentando de novo uma vez');
       let retry = null;
-      try { retry = await _ask(prompt, !usedFallback); } catch (_) { retry = null; }
+      try { retry = await aiChat(_params(prompt)); } catch (_) { retry = null; }
       const retryText = retry && (retry.text != null ? retry.text : retry.reply);
       if (retryText) {
         const reparsed = parseEvalResponse(retryText);
@@ -415,7 +418,6 @@ export function makeWorkerEval(aiChat, opts) {
       missing: rec.missing,
       total: rec.total,
       provider: res.provider || null,
-      fallback: usedFallback,
     };
   };
 }
