@@ -21,7 +21,7 @@ import * as toast from '../js/toast.js';
 // js/tarefa-eval.js (pure, injectable); the projectable 3-group screen is
 // content/tarefa-eval-view.js, mounted inside a modal opened from this file.
 import * as tarefaEvalView from './tarefa-eval-view.js';
-import { makeWorkerEval, SEED_RESPONSES } from '../js/tarefa-eval.js';
+import { makeWorkerEval, buildEvalInput, SEED_RESPONSES } from '../js/tarefa-eval.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -226,7 +226,7 @@ function _renderSubmissions(itemId) {
     '</div>';
 
   pane.querySelectorAll('.cdx-teval-open').forEach((btn) => {
-    btn.addEventListener('click', () => _openTevalModal());
+    btn.addEventListener('click', () => _openTevalModal(itemId));
   });
   pane.querySelectorAll('.cdx-resp-flag').forEach((btn) => {
     btn.addEventListener('click', () => _toggleFlag(itemId, btn.dataset.flag));
@@ -284,7 +284,7 @@ function _submissionCardHtml(s, flags) {
   const hay = (s.student_name || '') + ' ' + rawText;
   const gradeBadge = (flags.grade_enabled && s.grade != null && s.grade !== '')
     ? '<span class="cdx-resp-grade-badge">' + t('tarefas.grade_toggle') + ' ' + _esc(s.grade) + '</span>' : '';
-  return '<div class="cdx-resp-card" data-search="' + _esc(hay) + '">' +
+  return '<div class="cdx-resp-card" data-sid="' + _esc(s.id) + '" data-search="' + _esc(hay) + '">' +
     '<div class="cdx-resp-meta">' +
       '<span class="' + whoCls + '">' + who + '</span>' + gradeBadge +
       '<span class="cdx-resp-when">' + _esc(_formatTs(s.submitted_at)) + '</span>' +
@@ -385,16 +385,30 @@ function _openConfirmSimple(message, onConfirm) {
   bd.querySelector('[data-act="ok"]').addEventListener('click', () => { closeModal(bd); onConfirm(); });
 }
 
-// ── track-45 Fatia 1: AI synthesis preview modal (dev-only) ──────────────────
+// ── track-45 Fatia 2: AI synthesis preview modal (dev-only) ──────────────────
 // A modal (not an inline panel) so it survives whatever the answers pane does
 // underneath it (toggling a flag, saving a reply/grade all re-render
-// _renderSubmissions's innerHTML). Fatia 1 always evaluates the deterministic
-// SEED_RESPONSES fixture, not the real submissions on screen: this is a design
-// preview of the synthesis SCREEN, not yet wired to real answers.
-function _openTevalModal() {
+// _renderSubmissions's innerHTML). Runs on the REAL submissions for this item
+// (anonymized through buildEvalInput before the model ever sees them); only
+// when the tarefa has zero real answers does it fall back to the deterministic
+// SEED_RESPONSES fixture, so the screen still demos with no data, and a note in
+// the title area makes that fallback obvious (never silently shown as real).
+function _openTevalModal(itemId) {
+  const subs = _submissions[itemId] || [];
+  const rows = subs.map((s) => ({ id: s.id, text: _field(s.answer_type || 'text').toCsvValue(s.answer_json) }));
+  const usingSeed = rows.length === 0;
+  const item = _items.find((i) => Number(i.id) === Number(itemId)) || {};
+  // Real answers: anonymize through buildEvalInput (index/text only reach the model,
+  // idByIndex stays here for the click-back). No real answers: SEED_RESPONSES as-is
+  // (it is already {index,text}), idByIndex empty, no onOpenResponse, so the "Ver na
+  // lista" affordance simply does not render (there is no real list to jump to).
+  const built = usingSeed
+    ? { statement: SEED_RESPONSES.statement, responses: SEED_RESPONSES.responses, idByIndex: {} }
+    : { statement: item.body_md || '', ...buildEvalInput(rows) };
   const html =
     '<div class="cdx-modal cdx-teval-modal">' +
       '<div class="cdx-modal-title">' + t('tarefas.eval_panel_title') + '</div>' +
+      (usingSeed ? '<div class="cdx-teval-seed-note">' + _esc(t('tarefas.eval_seed_note')) + '</div>' : '') +
       '<div class="cdx-teval-host" id="cdx-teval-host"></div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="close">' + t('content.cancel') + '</button>' +
@@ -406,14 +420,33 @@ function _openTevalModal() {
   const host = bd.querySelector('#cdx-teval-host');
   tarefaEvalView.mount(host, {
     evalFn: makeWorkerEval(ai.chat),
-    statement: SEED_RESPONSES.statement,
-    responses: SEED_RESPONSES.responses,
+    statement: built.statement,
+    responses: built.responses,
+    idByIndex: built.idByIndex,
+    onOpenResponse: usingSeed ? null : (index) => _openResponseInList(itemId, built.idByIndex[index]),
   });
 }
 function _closeTevalModal() {
   tarefaEvalView.unmount();
   if (_tevalBd) closeModal(_tevalBd);
   _tevalBd = null;
+}
+// Clicking a synthesis item's "Ver na lista" button: close the modal, scroll the real
+// answer's card into view in the (already-open) answers pane, and briefly highlight it
+// so the instructor can tell which card it landed on. Never throws: an id that can't be
+// found (stale state, card not rendered) logs + toasts instead.
+function _openResponseInList(itemId, sid) {
+  _closeTevalModal();
+  const pane = _respPaneFor(itemId);
+  const card = pane && sid != null ? pane.querySelector('.cdx-resp-card[data-sid="' + sid + '"]') : null;
+  if (!card) {
+    if (window.bsLog) window.bsLog('tarefas _openResponseInList: card not found for sid=' + sid, 'error');
+    toast.err(t('tarefas.eval_open_failed'));
+    return;
+  }
+  card.scrollIntoView({ block: 'center' });
+  card.classList.add('is-teval-focus');
+  setTimeout(() => card.classList.remove('is-teval-focus'), 2000);
 }
 
 // ── CSV export ────────────────────────────────────────────────────────────────

@@ -16,6 +16,8 @@ let _viewEl = null;
 let _evalFn = null;
 let _statement = '';
 let _responses = [];
+let _idByIndex = {};        // index -> real submission id, so a click can find it in the answers pane
+let _onOpenResponse = null; // (index) => void, opens the real answer in the list; null in the seed/demo case
 let _status = 'idle';   // 'idle' | 'loading' | 'done' | 'error'
 let _result = null;     // { groups, notes? }
 let _errorCode = null;
@@ -34,12 +36,23 @@ function _errorMessage() {
   return _errorCode === 'rate_limited' ? t('tarefas.eval_rate_limited') : t('tarefas.eval_error');
 }
 
+// Each item is a clickable comment, never a name: the header line identifies WHICH
+// response this is (by index only), the excerpt starts clamped (CSS) and expands in
+// place on click, and, when the caller wired a real answer list behind it
+// (onOpenResponse), a small button jumps straight to that answer's card.
 function _groupColHtml(key, label, indices, notes) {
   const items = (indices || []).map((idx) => {
     const note = notes ? (notes[idx] != null ? notes[idx] : notes[String(idx)]) : null;
-    return '<li class="cdx-teval-item">' +
+    const openBtn = typeof _onOpenResponse === 'function'
+      ? '<button class="cdx-btn cdx-btn-sm cdx-btn-vazado cdx-teval-item-open" data-act="open" data-idx="' + idx + '" type="button">' +
+          _esc(t('tarefas.eval_open_in_list')) +
+        '</button>'
+      : '';
+    return '<li class="cdx-teval-item" data-act="toggle" data-idx="' + idx + '">' +
+      '<div class="cdx-teval-item-head">' + _esc(t('tarefas.eval_item_label')) + ' ' + idx + '</div>' +
       '<div class="cdx-teval-item-text">' + _esc(_responseText(idx)) + '</div>' +
       (note ? '<div class="cdx-teval-item-note">' + _esc(note) + '</div>' : '') +
+      (openBtn ? '<div class="cdx-teval-item-actions">' + openBtn + '</div>' : '') +
     '</li>';
   }).join('');
   return '<div class="cdx-teval-col cdx-teval-col--' + key + '">' +
@@ -113,12 +126,25 @@ export function mount(viewEl, ctx) {
   _evalFn = ctx.evalFn;
   _statement = ctx.statement || '';
   _responses = ctx.responses || [];
+  _idByIndex = ctx.idByIndex || {};
+  _onOpenResponse = typeof ctx.onOpenResponse === 'function' ? ctx.onOpenResponse : null;
   _status = 'idle';
   _result = null;
   _errorCode = null;
   _render();
   _onClick = (e) => {
-    if (e.target.closest('[data-act="run"]')) { e.preventDefault(); _run(); }
+    if (e.target.closest('[data-act="run"]')) { e.preventDefault(); _run(); return; }
+    // Check "open" BEFORE "toggle": both live on the same li (a single delegated
+    // listener sees both selectors match on the same click), and opening the real
+    // answer must never also flip the excerpt's expand state.
+    const openBtn = e.target.closest('[data-act="open"]');
+    if (openBtn) {
+      e.preventDefault();
+      if (_onOpenResponse) _onOpenResponse(Number(openBtn.dataset.idx));
+      return;
+    }
+    const li = e.target.closest('[data-act="toggle"]');
+    if (li) { li.classList.toggle('is-expanded'); }
   };
   viewEl.addEventListener('click', _onClick);
 }
@@ -130,6 +156,8 @@ export function unmount() {
   _evalFn = null;
   _statement = '';
   _responses = [];
+  _idByIndex = {};
+  _onOpenResponse = null;
   _status = 'idle';
   _result = null;
   _errorCode = null;

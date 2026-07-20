@@ -485,18 +485,55 @@
   padding: 0.05rem 0.5rem;
 }
 .cdx-teval-col-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+/* track-45 Fatia 2: each item is a clickable comment (collapsed excerpt -> click to
+   expand the full response inline, never a fetch: the text is already in the DOM). */
 .cdx-teval-item {
   background: var(--background);
   border-radius: 8px;
   padding: 0.5rem 0.6rem;
   font-size: 0.85rem;
   color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
+.cdx-teval-item:hover { background: var(--surface); }
+.cdx-teval-item-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.cdx-teval-item-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.cdx-teval-item.is-expanded .cdx-teval-item-text { -webkit-line-clamp: unset; overflow: visible; }
 .cdx-teval-item-note {
   margin-top: 0.3rem;
   font-size: 0.78rem;
   font-style: italic;
   color: var(--text-secondary);
 }
+.cdx-teval-item-actions { margin-top: 0.4rem; }
+.cdx-teval-item-open { cursor: pointer; }
 .cdx-teval-col-empty { color: var(--text-secondary); font-size: 0.82rem; font-style: italic; }
+.cdx-teval-seed-note {
+  font-size: 0.8rem;
+  font-style: italic;
+  color: var(--text-secondary);
+  margin: -0.4rem 0 0.9rem;
+}
+/* Temporary highlight on the real answer card the "Ver na lista" click lands on
+   (tarefas.js _openResponseInList), removed again after ~2s via setTimeout. Built from
+   the already-themed --accent + --success tokens, both redefined under
+   [data-theme="dark"] in css/theme.css, so no new color/override is needed here. */
+.cdx-resp-card.is-teval-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--success-bg);
+}
 .cdx-radio-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }

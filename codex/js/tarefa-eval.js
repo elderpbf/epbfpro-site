@@ -11,6 +11,7 @@
 // see the anonymity-backstop test in tests/tarefa-eval.test.mjs.
 //
 // Exports:
+//   buildEvalInput(rows)                       -> { responses, idByIndex } (real submissions -> anonymous payload)
 //   buildEvalPrompt({ statement, responses })  -> { system, messages }
 //   parseEvalResponse(replyText)               -> { groups, notes? } | { error }
 //   makeWorkerEval(aiChat)                     -> async ({statement,responses}) => groups | {error}
@@ -21,6 +22,26 @@ function _logError(msg) {
   if (typeof window !== 'undefined' && typeof window.bsLog === 'function') {
     window.bsLog(msg, 'error');
   }
+}
+
+// buildEvalInput, pure, no I/O. Maps real submission rows ({id, text}, in whatever
+// order the caller has them, e.g. real answers on screen) to the anonymous
+// {index,text} payload the model gets, plus the index -> submission-id map the UI
+// needs to click back to the real answer. Index is 1-based, in array order.
+// Each response is built as a fresh {index,text} literal (never a spread of the
+// row), so `id` and any other field the row happens to carry (student_name,
+// grade, instructor_reply...) never reach `responses`: anonymity by construction,
+// same guarantee buildEvalPrompt already gives one step later. Tolerates
+// null/undefined/empty input and rows with a missing/empty text.
+export function buildEvalInput(rows) {
+  const responses = [];
+  const idByIndex = {};
+  (rows || []).forEach((row, i) => {
+    const index = i + 1;
+    responses.push({ index, text: (row && row.text) || '' });
+    idByIndex[index] = row && row.id;
+  });
+  return { responses, idByIndex };
 }
 
 // buildEvalPrompt, pure, no I/O. Only `index`/`text` are read off each response,

@@ -1178,6 +1178,12 @@ export default {
   'tarefas.eval_group_adherent':'Most adherent',
   'tarefas.eval_group_point':  'Raise a relevant point',
   'tarefas.eval_group_diverged':'Diverged',
+  // track-45 Fatia 2: each synthesis item is a clickable comment, identifying the response
+  // by index (never by name) and letting the instructor open the full response in the list.
+  'tarefas.eval_item_label':   'Response',
+  'tarefas.eval_open_in_list': 'View in list',
+  'tarefas.eval_seed_note':    'This assignment has no real responses yet: the data below is a sample, for demo purposes only.',
+  'tarefas.eval_open_failed':  'Could not locate the response in the list.',
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',

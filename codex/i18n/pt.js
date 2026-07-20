@@ -1184,6 +1184,12 @@ export default {
   'tarefas.eval_group_adherent':'Mais aderentes',
   'tarefas.eval_group_point':  'Levantam um ponto relevante',
   'tarefas.eval_group_diverged':'Divergiram',
+  // track-45 Fatia 2: cada item da síntese vira um comentário clicável, que identifica a
+  // resposta pelo índice (nunca por nome) e permite abrir a resposta completa na lista.
+  'tarefas.eval_item_label':   'Resposta',
+  'tarefas.eval_open_in_list': 'Ver na lista',
+  'tarefas.eval_seed_note':    'Esta tarefa ainda não tem respostas reais: os dados abaixo são um exemplo, só para demonstração.',
+  'tarefas.eval_open_failed':  'Não foi possível localizar a resposta na lista.',
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',

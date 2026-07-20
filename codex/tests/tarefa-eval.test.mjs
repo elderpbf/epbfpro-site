@@ -9,6 +9,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
   buildEvalPrompt,
+  buildEvalInput,
   parseEvalResponse,
   makeStubEval,
   makeWorkerEval,
@@ -43,6 +44,64 @@ test('buildEvalPrompt: anonymity backstop, a student_name riding on a response n
   assert.ok(!serialized.includes('SECRETA'), 'no student name leaks into the prompt');
   assert.ok(!serialized.includes('Fulano'), 'no student name leaks into the prompt');
   assert.ok(!serialized.includes('Beltrana'), 'no student name leaks into the prompt');
+});
+
+// ── buildEvalInput ───────────────────────────────────────────────────────────
+// Real submissions -> the anonymous {index,text} payload the model gets, plus
+// the index -> submission-id map the UI needs to click back to the real answer.
+test('buildEvalInput: 1-based indexes in array order + idByIndex maps back to the row id', () => {
+  const rows = [
+    { id: 101, text: 'Primeira resposta.' },
+    { id: 202, text: 'Segunda resposta.' },
+    { id: 303, text: 'Terceira resposta.' },
+  ];
+  const out = buildEvalInput(rows);
+  assert.deepEqual(out.responses, [
+    { index: 1, text: 'Primeira resposta.' },
+    { index: 2, text: 'Segunda resposta.' },
+    { index: 3, text: 'Terceira resposta.' },
+  ]);
+  assert.deepEqual(out.idByIndex, { 1: 101, 2: 202, 3: 303 });
+});
+
+test('buildEvalInput: tolerates [] and null/undefined, never throws', () => {
+  assert.doesNotThrow(() => buildEvalInput([]));
+  assert.deepEqual(buildEvalInput([]), { responses: [], idByIndex: {} });
+  assert.doesNotThrow(() => buildEvalInput(null));
+  assert.deepEqual(buildEvalInput(null), { responses: [], idByIndex: {} });
+  assert.doesNotThrow(() => buildEvalInput(undefined));
+  assert.deepEqual(buildEvalInput(undefined), { responses: [], idByIndex: {} });
+});
+
+test('buildEvalInput: tolerates rows with empty/missing text', () => {
+  const out = buildEvalInput([{ id: 1, text: '' }, { id: 2 }, { id: 3, text: null }]);
+  assert.deepEqual(out.responses, [
+    { index: 1, text: '' },
+    { index: 2, text: '' },
+    { index: 3, text: '' },
+  ]);
+  assert.deepEqual(out.idByIndex, { 1: 1, 2: 2, 3: 3 });
+});
+
+// Anonymity backstop: rows carrying extra instructor/student fields must never leak
+// past buildEvalInput into the model payload. Object.keys pins the shape to exactly
+// {index,text}, and re-running the anonymized responses through buildEvalPrompt
+// confirms no name text reaches the actual prompt sent to the model.
+test('buildEvalInput: anonymity backstop, only index/text keys survive into responses[]', () => {
+  const rows = [
+    { id: 11, text: 'Resposta um.', student_name: 'Fulano SECRETO', grade: 10, instructor_reply: 'ótimo' },
+    { id: 22, text: 'Resposta dois.', student_name: 'Beltrana SECRETA', grade: 7, instructor_reply: 'revisar' },
+  ];
+  const out = buildEvalInput(rows);
+  out.responses.forEach((r) => {
+    assert.deepEqual(Object.keys(r), ['index', 'text']);
+  });
+  const prompt = buildEvalPrompt({ statement: 'Enunciado.', responses: out.responses });
+  const serialized = JSON.stringify(prompt);
+  assert.ok(!serialized.includes('SECRETO'), 'no student name leaks into the prompt');
+  assert.ok(!serialized.includes('SECRETA'), 'no student name leaks into the prompt');
+  assert.ok(!serialized.includes('ótimo'), 'no instructor reply leaks into the prompt');
+  assert.ok(!serialized.includes('revisar'), 'no instructor reply leaks into the prompt');
 });
 
 // ── parseEvalResponse ────────────────────────────────────────────────────────
