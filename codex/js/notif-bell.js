@@ -13,7 +13,7 @@
 // after open. A collapsed "Histórico" holds what was already cleared this session,
 // split into two named mini-tabs. Refresh policy: on creation + every window focus.
 import { relTime } from './rel-time.js';
-import { dismissalFor, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
+import { dismissalFor, DISPENSAVEIS_ENABLED, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
 import { esc } from './dom.js';
 import { glyphSvg } from './glyphs.js';
 import * as notifBus from './notif-bus.js';
@@ -51,7 +51,7 @@ function groupItems(items) {
 //                                          / notif.tier_dismiss)
 //   btnClass:           extra class for the button (defaults to the topbar icon button)
 //   role:               'student' | 'admin'
-export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, adaptFeed, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
+export function createBell({ fetchNotifications, fetchHistory, markSeen, markAll, dismissItem, adaptFeed, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-bell-wrap';
   wrap.innerHTML =
@@ -84,6 +84,7 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
   const hist = wrap.querySelector('.cdx-bell-hist');
   const histToggle = wrap.querySelector('.cdx-bell-histtoggle');
   const histBody = wrap.querySelector('.cdx-bell-histbody');
+  const histTabs = wrap.querySelector('.cdx-bell-histtabs');
   const histList = wrap.querySelector('.cdx-bell-histlist');
 
   // Session-local history of already-cleared items, split by tier (no backend history
@@ -94,12 +95,33 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
   let _items = [];
 
   function _isAct(it) { return dismissalFor(it, role) === DISMISS_ACT; }
+  function _histKey(it) { return it.notif_key || (it.type + ':' + it.created_at + ':' + (it.title || '')); }
   function _histPush(tier, it) {
-    const key = it.notif_key || (it.type + ':' + it.created_at + ':' + (it.title || ''));
+    const key = _histKey(it);
     const bucket = _hist[tier];
-    if (bucket.some((h) => (h.notif_key || (h.type + ':' + h.created_at + ':' + (h.title || ''))) === key)) return;
+    if (bucket.some((h) => _histKey(h) === key)) return;
     bucket.unshift({ ...it, _clearedAt: Math.floor(Date.now() / 1000) });
     if (bucket.length > HIST_CAP) bucket.length = HIST_CAP;
+  }
+
+  // Server-backed history (track-44): the tray's history SURVIVES A RELOAD, because the server
+  // knows what was dismissed (ct_notif_dismissed) and resolves those keys back to their rows.
+  // Loaded once per mount, on the first tray open — before that we cannot even know whether to
+  // show the section, so this must run eagerly rather than on expand (an empty session history
+  // would hide the toggle and there would be nothing left to click).
+  let _histLoaded = false;
+  async function loadHistory() {
+    if (_histLoaded || !fetchHistory) return;
+    _histLoaded = true;
+    let res;
+    try { res = await fetchHistory(); } catch (_) { _histLoaded = false; return; }
+    const rows = (res && res.items) || [];
+    if (!rows.length) return;
+    const known = new Set(_hist.act.concat(_hist.open).map(_histKey));
+    for (const it of rows) if (!known.has(_histKey(it))) _hist.act.push(it);
+    _hist.act.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    if (_hist.act.length > HIST_CAP) _hist.act.length = HIST_CAP;
+    renderHist();
   }
 
   function setBadge(n) {
@@ -155,7 +177,21 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
       a.addEventListener('click', () => {
         const it = items[parseInt(a.getAttribute('data-bell-i'), 10)];
         closePanel();
-        if (markSeen) Promise.resolve(markSeen()).then(refresh).catch(() => {});
+        // Clicking an ACIONÁVEL IS one of its two dismissals (Élder 2026-07-19: "o acionável
+        // só desaparece se você clicar no × ou clicar nele — aí ele some pro histórico").
+        // Same for EVERY acionável, no sub-rule. Same optimistic-then-server order as the ×
+        // handler, and deliberately NO refresh: a re-fetch here would race the dismissal
+        // write and bring the row straight back. A Dispensável keeps the old path — it has
+        // already cleared on tray-open, so the click only marks seen + navigates.
+        if (it && _isAct(it) && dismissItem) {
+          _histPush('act', it);
+          _items = _items.filter((i) => i !== it);
+          setBadge(_items.filter((i) => !i.seen).length);
+          renderHist();
+          Promise.resolve(dismissItem(it)).catch(() => {});
+        } else if (markSeen) {
+          Promise.resolve(markSeen()).then(refresh).catch(() => {});
+        }
         if (onNavigate && it) onNavigate(it);
       });
     });
@@ -165,23 +201,39 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     const has = _hist.act.length || _hist.open.length;
     hist.hidden = !has;
     if (!has) return;
-    wrap.querySelectorAll('.cdx-bell-histtab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-hist') === _histTab));
-    const bucket = _hist[_histTab] || [];
+    // Two mini-tabs ONLY when both tiers can actually produce rows. With Dispensáveis off
+    // (notif-policy DISPENSAVEIS_ENABLED) the history is ONE flat list: naming a split the
+    // user cannot see is pure chrome (Élder 2026-07-19).
+    const split = DISPENSAVEIS_ENABLED && _hist.act.length > 0 && _hist.open.length > 0;
+    if (histTabs) histTabs.hidden = !split;
+    if (split) wrap.querySelectorAll('.cdx-bell-histtab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-hist') === _histTab));
+    const bucket = split ? (_hist[_histTab] || []) : (_hist.act.length ? _hist.act : _hist.open);
     if (!bucket.length) { histList.innerHTML = '<div class="cdx-bell-empty">' + esc(t('notif.empty')) + '</div>'; return; }
     const now = Math.floor(Date.now() / 1000);
-    histList.innerHTML = bucket.map((it) => {
+    histList.innerHTML = bucket.map((it, i) => {
       const metaBits = [];
       if (it.group) metaBits.push(esc(it.group));
       if (it.meta) metaBits.push(esc(it.meta));
       metaBits.push(esc(relTime(it.created_at, now)));
-      return '<div class="cdx-bell-notif cdx-bell-notif--hist">' +
+      return '<a class="cdx-bell-notif cdx-bell-notif--hist" data-bell-h="' + i + '" role="menuitem">' +
           '<span class="cdx-bell-dot"></span>' +
           '<span class="cdx-bell-nbody">' +
             '<span class="cdx-bell-ntext">' + esc(it.title) + '</span>' +
             '<span class="cdx-bell-nmeta">' + metaBits.join(' · ') + '</span>' +
           '</span>' +
-        '</div>';
+        '</a>';
     }).join('');
+    // A dismissed notification is still READABLE (Élder 2026-07-19): clicking a history row
+    // re-opens the thing — the comunicado's message, the tarefa, the thread. It does NOT
+    // re-dismiss and does not move anything: the row is already in the history, it stays.
+    histList.querySelectorAll('[data-bell-h]').forEach((a) => {
+      a.addEventListener('click', () => {
+        const it = bucket[parseInt(a.getAttribute('data-bell-h'), 10)];
+        if (!it) return;
+        closePanel();
+        if (onNavigate) onNavigate(it);
+      });
+    });
   }
 
   // Adopt a feed, whatever brought it (our own fetch, or an envelope that rode back on some
@@ -219,6 +271,7 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     document.addEventListener('click', onOutside, true);
     document.addEventListener('keydown', onEsc);
     Promise.resolve(refresh()).catch(() => {}).then(() => { if (!panel.hidden) dismissOnOpen(); });
+    loadHistory();   // server-backed history, once per mount (see loadHistory)
   }
   // On a narrow viewport the panel is a viewport-pinned tray (css/notif-bell.css sets
   // position:fixed + 12px gutters); anchor its TOP just under the bell so it clears the

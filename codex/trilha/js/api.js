@@ -70,6 +70,9 @@ export const trail = {
   forumNotifications:(p) => call('ct_forum_notifications', p),// { session_token } -> { ok, count, items }
   forumMarkSeen:    (p) => call('ct_forum_mark_seen', p),     // { session_token, scope?: 'all' } -> { ok }
   forumDismiss:     (p) => call('ct_forum_dismiss', p),       // { session_token, notif_key, up_to_at } -> { ok }
+  // Durable bell history (track-44): what this student already dismissed, resolved back from
+  // ct_notif_dismissed — so the tray's "Histórico" survives a reload instead of living in the page.
+  notifHistory:     (p) => call('ct_notif_history', p),       // { session_token } -> { ok, count, items }
 
   // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
   // live session is open; the device stores it and offers it at login so being in

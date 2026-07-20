@@ -4,10 +4,11 @@
 // Self-contained, injects its CSS on first open (no external stylesheet). The
 // legacy backstage global stays live for the un-ported ClassVault.
 //
-// Public API: openModal({ key, title }), close().
-// Consumed by Content > Labs (content/labs.js fullscreen button). The iframe src
-// still points at /codex/labs/<key>/ (moving the lab pages is the legacy
-// quarantine step, not this port).
+// Public API: openModal({ key, title, url }), close().
+// Consumed by Content > Labs (content/labs.js fullscreen button) and by any other
+// shipped-HTML type that iframes a self-contained page fullscreen (e.g. Interativos).
+// A `key` maps to /codex/labs/<key>/ (labs); an explicit `url` overrides it, so one
+// viewer serves both without a per-type fork.
 
 let _overlay = null;
 let _onKey = null;
@@ -61,7 +62,10 @@ export function close() {
 export function openModal(opts) {
   opts = opts || {};
   const key = opts.key || '';
-  if (!key) return;
+  // Labs pass a key -> /codex/labs/<key>/. Other shipped-HTML types pass an explicit
+  // `url`, which wins. Either resolves to the iframe src; neither = no-op.
+  const src = opts.url || (key ? '/codex/labs/' + encodeURIComponent(key) + '/' : '');
+  if (!src) return;
   if (_overlay) close();
 
   _injectStylesOnce();
@@ -88,7 +92,7 @@ export function openModal(opts) {
     'allow',
     'autoplay; encrypted-media; clipboard-write; fullscreen'
   );
-  iframe.src = '/codex/labs/' + encodeURIComponent(key) + '/';
+  iframe.src = src;
 
   frame.appendChild(closeBtn);
   frame.appendChild(iframe);

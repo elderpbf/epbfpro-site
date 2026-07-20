@@ -291,6 +291,8 @@ function renderHeaderActions() {
       const bell = createBell({
         role: 'student',
         fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        // Durable history (track-44): served by the worker, so the tray's Histórico survives a reload.
+        fetchHistory: () => trail.notifHistory({ session_token: state.sessionToken, _silent: true }),
         // The student's prefs live HERE, not inside the fetch, so they apply identically to a
         // feed we fetched and to one that rode back on another call (notif-bus). Putting them
         // in the fetch would have let a piggybacked envelope bypass them.
@@ -317,6 +319,12 @@ function renderHeaderActions() {
               m.focusTarefa(item.item_id);
               if (_win && _win.location) _win.location.hash = '#tarefas';
             });
+            return;
+          }
+          // Comunicado: the message body rides in the item — open it in place (a modal), never
+          // navigate. The old fall-through to deeplink just reloaded the trilha showing nothing.
+          if (item && item.type === 'comunicado') {
+            import('./comunicado-modal.js').then((m) => m.openComunicado(item)).catch(() => {});
             return;
           }
           if (item && item.thread_id) { import('./forum.js').then((m) => m.focusThread(item.thread_id)); return; }
