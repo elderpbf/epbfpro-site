@@ -12,6 +12,11 @@
 //   mark(c) / fontWordmark(c) / glyphWordmark(c, o?) / glyphWordmarkTag(c, o?)
 // Consumed by certificates/cert-render.js (logo + watermark) and js/codex-topbar.js
 // (the topbar wordmark).
+//
+// Any variant that carries the "ensoIA" wordmark ships the brand font INSIDE the SVG
+// (js/brand-font.js). See buildSvg below for why.
+
+import { BRAND_FONT_CSS } from './brand-font.js';
 
 // Bigp glyph paths. Filled artwork variant, three layers composited per glyph:
 //   1. P silhouette (PATHS.outer)         viewBox 600x757,    internal scale 0.1
@@ -75,8 +80,14 @@ function pGlyph(outerColor, brainColor, dotColor, tx = 0, ty = 0, scale = 1) {
     `</g>`;
 }
 
+// The wordmark is a <text> in Comfortaa, not outlines, so the SVG only renders as the
+// brand where that font resolves. Embedding the subset (~1.5 KB for both weights) makes
+// the artwork self-sufficient: correct on a device without Comfortaa installed, inside an
+// <img>/data: URI (an isolated document that never sees the page's webfont), and offline.
+// Only variants that actually carry text pay for it — mark()/favicons stay lean.
 function buildSvg(viewBox, content) {
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet"><style>text{font-family:'Comfortaa',sans-serif}</style>${content}</svg>`;
+  const font = content.includes('<text') ? BRAND_FONT_CSS : '';
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet"><style>${font}text{font-family:'Comfortaa',sans-serif}</style>${content}</svg>`;
 }
 
 // mark: just the P glyph, standalone
