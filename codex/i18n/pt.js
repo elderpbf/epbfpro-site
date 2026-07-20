@@ -1267,6 +1267,35 @@ export default {
   'tarefas.section_delete_title':'Excluir seção',
   'tarefas.section_delete_warning':'A seção some; as tarefas dela ficam sem seção (não são apagadas).',
 
+  // track-45 Fatia 1: síntese de respostas por IA (preview dev-only, sem worker real)
+  'tarefas.eval_btn':          'Avaliar respostas (preview)',
+  'tarefas.eval_panel_title':  'Síntese das respostas (IA, preview)',
+  'tarefas.eval_redo':         'Refazer análise',
+  'tarefas.eval_redo_hint':    'Refaz a análise do zero, ignorando o resultado guardado.',
+  'tarefas.eval_meta_cached':  'sintetizado às {time}',
+  'tarefas.eval_meta_fresh':   'sintetizado agora, às {time}',
+  'tarefas.eval_meta_count':   '{n} respostas',
+  'tarefas.eval_missing':      '{n} resposta(s) não foram classificadas pela IA. Refaça a análise para tentar de novo.',
+  'tarefas.eval_credits_exhausted': 'Os créditos de IA acabaram. Avise o administrador para recarregar antes de tentar de novo.',
+  'tarefas.eval_too_large':    'A turma é grande demais para uma análise única ({chars} caracteres, limite {limit}). Nada foi cortado.',
+  'tarefas.eval_loading':      'Sintetizando respostas...',
+  'tarefas.eval_idle':         'Preparando a síntese das respostas da turma...',
+  'tarefas.eval_error':        'Não foi possível sintetizar as respostas agora. Tente novamente.',
+  'tarefas.eval_rate_limited': 'Limite de uso da IA atingido no momento. Tente novamente em instantes.',
+  'tarefas.eval_empty':        'Nenhuma resposta para sintetizar.',
+  'tarefas.eval_col_empty':    'Nenhuma resposta neste grupo.',
+  'tarefas.eval_group_adherent':'Mais aderentes',
+  'tarefas.eval_group_point':  'Levantam um ponto relevante',
+  'tarefas.eval_group_diverged':'Divergiram',
+  // track-45 Fatia 2: cada item da síntese vira um comentário clicável, que identifica a
+  // resposta pelo índice (nunca por nome) e permite abrir a resposta completa na lista.
+  'tarefas.eval_item_label':   'Resposta',
+  'tarefas.eval_open_in_list': 'Ver na lista',
+  // track-45 fix: zero respostas reais nunca cai num exemplo/seed; só diz que não há
+  // respostas e não chama a IA (regra do Élder: em produção essa opção não pode existir).
+  'tarefas.eval_no_answers':   'Esta tarefa ainda não tem respostas. A IA não será chamada.',
+  'tarefas.eval_open_failed':  'Não foi possível localizar a resposta na lista.',
+
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Painel de Labs indisponível.',
   'labs.title':               'Labs',
