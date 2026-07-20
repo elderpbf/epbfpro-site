@@ -125,3 +125,26 @@ test('the new i18n keys exist in BOTH dictionaries', async () => {
   assert.ok(!('cohorts.cursos_desc' in pt), 'pt cursos_desc removed');
   assert.ok(!('cohorts.cursos_desc' in en), 'en cursos_desc removed');
 });
+
+// ── Bugs found live 2026-07-20 (Élder trying to rename a course) ────────────
+test('BUG FIX: _saveCourseMeta repaints via the mounted rail, not a dangling _renderRail()', () => {
+  // `_renderRail` was never defined anywhere in this file (grep confirms it); every OTHER
+  // repaint call site already used `if (_rail) _rail.render()` -- this one call site was
+  // simply missed when the rail was adopted, and it only threw the day someone actually
+  // saved a course's title/hours (Élder: "codex: Error: _renderRail is not defined").
+  assert.ok(!/\b_renderRail\s*\(/.test(coursesSrc), 'no call to the undefined _renderRail() survives');
+  const fn = coursesSrc.slice(coursesSrc.indexOf('function _saveCourseMeta'), coursesSrc.indexOf('function _saveEmenta'));
+  assert.match(fn, /if\s*\(_rail\)\s*_rail\.render\(\)/, '_saveCourseMeta repaints through the real rail instance');
+});
+
+test('BUG FIX: selecting a course guards against a STALE api.get() response', () => {
+  // _selectCourse's own course/ementa fetch had no staleness guard, unlike its sibling
+  // _loadCourseRoteiros a few lines below (which already checks `_selectedId !== courseId`).
+  // Without it: click course A, click course B before A's response lands, and A's data
+  // silently overwrites B's selection -- so a save right after writes A's edited fields
+  // onto B's row. Reproduced live 2026-07-20: a course's updated_at moved with no edit
+  // aimed at it, while the course actually being edited never changed.
+  const fn = coursesSrc.slice(coursesSrc.indexOf('function _selectCourse'), coursesSrc.indexOf('function _loadCourseRoteiros'));
+  const getThen = fn.slice(fn.indexOf('api.get('), fn.indexOf('.catch('));
+  assert.match(getThen, /if\s*\(_selectedId\s*!==\s*id\)\s*return/, 'the course/ementa fetch bails when the selection moved on');
+});
