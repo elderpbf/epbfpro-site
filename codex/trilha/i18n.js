@@ -240,6 +240,13 @@ const pt = {
   'nchan.loading':          'Carregando suas preferências…',
   'nchan.error':            'Não foi possível carregar suas preferências. Tente novamente em instantes.',
   'nchan.save_failed':      'Não foi possível salvar essa preferência. Tente de novo.',
+  // track-44 Etapa B: push wiring. push_ios_hint replaces "em breve" no cabeçalho quando o
+  // motivo é especificamente "instale o app" (iOS Safari fora da tela de início) — dizer isso
+  // é mais honesto que um genérico "em breve". push_denied e push_subscribe_failed cobrem os
+  // dois jeitos de a inscrição falhar ao ligar a célula de celular.
+  'nchan.push_ios_hint':        'instale o app',
+  'nchan.push_denied':          'As notificações do celular estão bloqueadas no navegador. Para ativar, permita notificações para este site nas configurações do navegador e tente de novo.',
+  'nchan.push_subscribe_failed':'Não foi possível ativar notificações no celular agora. Tente novamente em instantes.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -470,6 +477,9 @@ const en = {
   'nchan.loading':          'Loading your preferences…',
   'nchan.error':            'Could not load your preferences. Please try again in a moment.',
   'nchan.save_failed':      'Could not save that preference. Please try again.',
+  'nchan.push_ios_hint':        'install the app',
+  'nchan.push_denied':          'Phone notifications are blocked in the browser. To turn them on, allow notifications for this site in your browser settings and try again.',
+  'nchan.push_subscribe_failed':'Could not turn on phone notifications right now. Please try again in a moment.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

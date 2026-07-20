@@ -79,12 +79,17 @@ export function mergePref(prefs, category, channel, enabled) {
 
 function _headHtml(opts) {
   const o = opts || {};
+  // The unavailable-push hint has two distinct reasons (track-44 Etapa B): a platform that
+  // truly cannot push yet ("em breve") vs. iOS Safari specifically, where the channel EXISTS
+  // but Apple only delivers it to an installed PWA — "em breve" would be a lie there, so
+  // opts.pushNeedsInstall (additive; defaults falsy, so callers that never pass it keep the
+  // exact prior text) swaps in the install hint instead.
   return '<div class="tr-nc-head">' +
       '<div class="tr-nc-hcat"></div>' +
       CHANNELS.map((ch) =>
         '<div class="tr-nc-hch">' + esc(t(ch.labelKey)) +
           (ch.key === 'push' && !o.pushAvailable
-            ? '<span class="tr-nc-soon">' + esc(t('nchan.soon')) + '</span>'
+            ? '<span class="tr-nc-soon">' + esc(t(o.pushNeedsInstall ? 'nchan.push_ios_hint' : 'nchan.soon')) + '</span>'
             : '') +
         '</div>').join('') +
     '</div>';
@@ -128,16 +133,21 @@ export function channelsHtml(prefs, opts) {
 // preference the worker does not hold.
 //   fetchPrefs()                        -> Promise<{ ok, prefs }>
 //   savePref(category, channel, bool)   -> Promise<{ ok }>
-//   pushAvailable                       -> Etapa B seam (see gridRows)
+//   pushAvailable, pushNeedsInstall     -> Etapa B seam (see gridRows / _headHtml)
+//   subscribePush()                     -> Promise<{ ok, reason?, detail? }>  (push-subscribe.js)
+//   unsubscribePush()                   -> Promise<{ ok }>                    (push-subscribe.js; not
+//                                           called by this UI today — exported by push-subscribe.js
+//                                           for reuse, see track-44 B report)
 export function openNotifChannels(o) {
   const opts = o || {};
   const doc = opts.doc || (typeof document !== 'undefined' ? document : null);
   if (!doc) return null;
+  const pushOpts = { pushAvailable: !!opts.pushAvailable, pushNeedsInstall: !!opts.pushNeedsInstall };
 
   let prefs = null;
   const bd = doc.createElement('div');
   bd.className = 'tr-modal-backdrop tr-nc-backdrop';
-  bd.innerHTML = channelsHtml(null, { loading: true, pushAvailable: !!opts.pushAvailable });
+  bd.innerHTML = channelsHtml(null, { loading: true, ...pushOpts });
 
   const close = () => {
     if (bd.parentNode) bd.parentNode.removeChild(bd);
@@ -151,8 +161,31 @@ export function openNotifChannels(o) {
   (opts.root || doc.body).appendChild(bd);
 
   function paint(state) {
-    bd.innerHTML = channelsHtml(prefs, { ...state, pushAvailable: !!opts.pushAvailable });
+    bd.innerHTML = channelsHtml(prefs, { ...state, ...pushOpts });
     bind();
+  }
+
+  // Persist ONE cell, reverting + explaining on failure. Shared by the plain path and the
+  // push-subscribe path below (once a push cell's subscribe step, if any, has succeeded).
+  function savePrefCell(category, channel, enabled) {
+    prefs = mergePref(prefs, category, channel, enabled);
+    return Promise.resolve(opts.savePref && opts.savePref(category, channel, enabled))
+      .then((res) => {
+        if (res && res.ok === false) throw new Error(res.error || 'save_failed');
+      })
+      .catch((err) => {
+        // Revert to what the worker actually holds and say it out loud (the debug pill gets
+        // the real detail per the project rule; the student gets a plain sentence).
+        prefs = mergePref(prefs, category, channel, !enabled);
+        const note = bd.querySelector('.tr-nc-note');
+        if (note) { note.textContent = t('nchan.save_failed'); note.classList.add('tr-nc-note--err'); }
+        try {
+          if (typeof window !== 'undefined' && window.bsLog) {
+            window.bsLog('notif prefs save failed: ' + (err && err.message), 'error');
+          }
+        } catch (_) { /* the pill is best-effort; never let logging break the UI */ }
+        throw err; // caller resets the checkbox itself (it knows the DOM node)
+      });
   }
 
   function bind() {
@@ -160,27 +193,38 @@ export function openNotifChannels(o) {
       cb.addEventListener('change', () => {
         const [category, channel] = String(cb.getAttribute('data-nc')).split(':');
         const enabled = cb.checked;
-        prefs = mergePref(prefs, category, channel, enabled);
         cb.disabled = true;
-        Promise.resolve(opts.savePref && opts.savePref(category, channel, enabled))
-          .then((res) => {
-            cb.disabled = false;
-            if (res && res.ok === false) throw new Error(res.error || 'save_failed');
-          })
-          .catch((err) => {
-            // Revert to what the worker actually holds and say it out loud (the debug pill gets
-            // the real detail per the project rule; the student gets a plain sentence).
-            prefs = mergePref(prefs, category, channel, !enabled);
+
+        // Turning a push cell ON, for the FIRST time or the hundredth: subscribing is
+        // idempotent (see push-subscribe.js), so it is simplest and safest to always run it
+        // before saving the pref, rather than tracking "is this device already subscribed"
+        // here. Only on success does the pref save happen at all — a failed subscribe must
+        // never claim a preference the device cannot actually receive.
+        const gate = (channel === 'push' && enabled && opts.subscribePush)
+          ? Promise.resolve(opts.subscribePush()).catch((e) => ({ ok: false, reason: 'error', detail: e }))
+          : Promise.resolve({ ok: true });
+
+        gate.then((subRes) => {
+          if (!subRes || subRes.ok === false) {
             cb.checked = !enabled;
             cb.disabled = false;
             const note = bd.querySelector('.tr-nc-note');
-            if (note) { note.textContent = t('nchan.save_failed'); note.classList.add('tr-nc-note--err'); }
+            const reason = subRes && subRes.reason;
+            if (note) {
+              note.textContent = t(reason === 'denied' ? 'nchan.push_denied' : 'nchan.push_subscribe_failed');
+              note.classList.add('tr-nc-note--err');
+            }
             try {
-              if (typeof window !== 'undefined' && window.bsLog) {
-                window.bsLog('notif prefs save failed: ' + (err && err.message), 'error');
+              if (typeof window !== 'undefined' && window.bsLog && subRes && subRes.detail) {
+                window.bsLog('push subscribe failed: ' + (subRes.detail.message || subRes.detail), 'error');
               }
-            } catch (_) { /* the pill is best-effort; never let logging break the UI */ }
-          });
+            } catch (_) { /* best effort */ }
+            return; // never save a preference the subscribe step did not actually earn
+          }
+          savePrefCell(category, channel, enabled)
+            .then(() => { cb.disabled = false; })
+            .catch(() => { cb.checked = !enabled; cb.disabled = false; });
+        });
       });
     });
   }

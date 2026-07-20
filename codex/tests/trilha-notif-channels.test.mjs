@@ -98,3 +98,14 @@ test('channelsHtml renders a stated error instead of an empty grid', () => {
   assert.match(html, /tr-nc-error/);
   assert.doesNotMatch(html, /data-nc="/);
 });
+
+// track-44 Etapa B: the unavailable-push hint has two distinct reasons. Additive opt
+// (pushNeedsInstall) — every call above that never passes it keeps the exact prior "soon"
+// text, which is what the 9 tests above just proved still holds unchanged.
+test('channelsHtml: pushNeedsInstall swaps the header hint from "soon" to the install hint', () => {
+  const soon = channelsHtml({}, { pushAvailable: false });
+  assert.match(soon, /em breve/);
+  const install = channelsHtml({}, { pushAvailable: false, pushNeedsInstall: true });
+  assert.doesNotMatch(install, /em breve/);
+  assert.match(install, /instale o app/);
+});
