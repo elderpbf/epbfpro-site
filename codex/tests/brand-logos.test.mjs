@@ -72,3 +72,33 @@ test('glyphWordmarkTag adds the canonical tagline, right-aligned', () => {
   assert.match(svg, /textLength="1790"/, 'wordmark span pinned (2400 - 610)');
   assert.match(svg, /fill-rule="evenodd"/, 'glyph present');
 });
+
+// A fonte da marca viaja DENTRO do SVG (js/brand-font.js). Sem isso o wordmark
+// "ensoIA", que e <text> em Comfortaa e nao contorno, cai numa sans generica em
+// qualquer contexto isolado: <img>/data: URI, aparelho sem a fonte, uso offline.
+test('todo SVG com wordmark embute a fonte da marca; mark() nao paga por ela', () => {
+  const c = brand.stdColors('navy');
+  for (const [nome, svg] of [
+    ['fontWordmark', brand.fontWordmark(c)],
+    ['glyphWordmark', brand.glyphWordmark(c)],
+    ['glyphWordmarkTag', brand.glyphWordmarkTag(c)],
+  ]) {
+    assert.equal((svg.match(/@font-face/g) || []).length, 2, `${nome}: as duas faces (400 e 700)`);
+    assert.match(svg, /url\(data:font\/woff2;base64,[A-Za-z0-9+/=]+\) format\('woff2'\)/, `${nome}: fonte embutida, sem rede`);
+    assert.match(svg, /text\{font-family:'Comfortaa',sans-serif\}/, `${nome}: a regra de familia continua`);
+    // Sem unicode-range esta face reivindica TODO caractere e desenha quadrado vazio
+    // nos que nao tem glifo -- inclusive por cima da Comfortaa completa que o theme.css
+    // carrega. E o que torna a injecao no topbar provadamente inofensiva.
+    assert.match(svg, /unicode-range:U\+0020,/, `${nome}: face limitada aos caracteres que sabe desenhar`);
+  }
+  const soGlifo = brand.mark(c);
+  assert.ok(!soGlifo.includes('@font-face'), 'mark() nao tem texto, entao nao carrega fonte');
+});
+
+// Carregado por <img src>, o SVG e lido como XML: '<' ou '&' soltos dentro do
+// <style> sao erro de parse e derrubam o arquivo inteiro. Ja aconteceu uma vez.
+test('o <style> gerado nao tem caractere que quebre o SVG lido como XML', () => {
+  const style = brand.glyphWordmark(brand.stdColors('navy')).match(/<style>([\s\S]*?)<\/style>/)[1];
+  assert.ok(!style.includes('<'), 'nada de menor-que dentro do <style>');
+  assert.ok(!style.includes('&'), 'nada de E-comercial dentro do <style>');
+});
