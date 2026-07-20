@@ -200,7 +200,7 @@
 
   @media (prefers-reduced-motion: reduce) { * { animation-duration: .01ms !important; transition-duration: .01ms !important; } }
   /* mobile-dock pieces — hidden on desktop (there the aside is the hover left-rail) */
-  .aside-peek, .aside-zoom, .aside-close, .aside-scrim { display: none; }
+  .aside-peek, .aside-zoom, .aside-scrim { display: none; }
 
   @media (min-width: 701px) and (max-width: 1080px) {
     .wrap { padding-left: 34px; }
@@ -217,22 +217,42 @@
     #rail { display: none; }               /* sem hover no touch */
 
     .modebar { padding: 12px 16px 0; }
-    .wrap { padding: 16px 14px 84px; }     /* espaço pro dock colapsado */
+    .wrap { padding: 16px 14px 124px; }    /* espaço pro dock recolhido (alça + versões) */
     main { padding: 26px 18px; }
 
-    /* aside vira uma folha inferior; colapsada mostra só a faixa (peek) */
+    /* A folha é SEMPRE renderizada inteira e fica deslocada pra baixo por
+       translateY, deixando só a faixa (peek) à vista. É isso que permite ANIMAR a
+       subida/descida: display:none não anima. --peek-h é medido pelo JS. */
     aside {
       top: auto; bottom: 0; left: 0; right: 0; width: auto; max-width: none;
-      max-height: 50vh; padding: 0; border: 0; border-top: 1px solid var(--line);
+      height: 50vh; max-height: 50vh; padding: 0; border: 0; border-top: 1px solid var(--line);
       border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(6,26,81,.18);
-      transform: none; transition: none; display: flex; flex-direction: column; z-index: 41;
+      display: flex; flex-direction: column; z-index: 41; overflow: hidden;
+      transform: translateY(calc(100% - var(--peek-h, 96px)));
+      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      will-change: transform;
     }
+    aside.show { transform: translateY(0); }
+    aside.dragging { transition: none; }   /* durante o arrasto a folha segue o dedo */
 
-    .aside-peek {
-      display: flex; align-items: center; gap: 8px; padding: 10px 14px;
-      border-radius: 14px 14px 0 0; background: var(--paper); flex-shrink: 0;
+    .aside-peek { display: block; padding: 0; background: var(--paper); flex-shrink: 0; border-radius: 14px 14px 0 0; }
+
+    /* a alça: barra fininha de largura inteira, com rótulo. touch-action:none
+       impede o navegador de rolar a PÁGINA ATRÁS quando o dedo arrasta aqui. */
+    .aside-handle {
+      display: flex; align-items: center; justify-content: center; gap: 7px;
+      width: 100%; padding: 10px 12px; border: 0; border-bottom: 1px solid var(--line);
+      background: var(--wash); color: var(--muted); cursor: pointer;
+      font: inherit; font-size: .78rem; font-weight: 600;
+      border-radius: 14px 14px 0 0; touch-action: none;
     }
-    .aside-peek .versions { display: flex; gap: 8px; flex: 1; }
+    .aside-chev { width: 15px; height: 15px; transition: transform .3s ease; }
+    aside.show .aside-chev { transform: rotate(180deg); }
+    .aside-handle .txt-close { display: none; }
+    aside.show .aside-handle .txt-open { display: none; }
+    aside.show .aside-handle .txt-close { display: inline; }
+
+    .aside-peek .versions { display: flex; gap: 8px; padding: 10px 14px; }
     .aside-peek .versions button {
       flex: 1; color: var(--ink); border: 1px solid var(--line); background: var(--paper);
       padding: 9px 10px; font-size: .82rem;
@@ -240,34 +260,15 @@
     .aside-peek .versions button[aria-pressed="true"] {
       background: var(--teal); border-color: var(--teal); color: #05221f;
     }
-    /* só o glifo: o rótulo "Mais opções" comia espaço precioso da faixa */
-    .aside-handle {
-      flex-shrink: 0; display: inline-flex; align-items: center; justify-content: center;
-      width: 42px; height: 42px; padding: 0; border-radius: 10px;
-      border: 1px solid var(--line); background: var(--wash); color: var(--ink); cursor: pointer;
-    }
-    .aside-handle svg { width: 20px; height: 20px; transition: transform .2s ease; }
-    aside.show .aside-handle svg { transform: rotate(180deg); }   /* aberta: aponta pra baixo */
 
-    .aside-body { flex: 1; min-height: 0; overflow-y: auto; padding: 4px 14px 16px; border-top: 1px solid var(--line); }
-    aside:not(.show) .aside-body { display: none; }   /* colapsada: só a faixa */
+    /* overscroll-behavior: contain = rolar aqui dentro não "vaza" pra página atrás */
+    .aside-body { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding: 8px 14px 20px; }
 
     .aside-zoom { display: flex; align-items: center; gap: 10px; margin: 12px 0 14px; }
     .aside-zoom-label { font-size: .8rem; color: var(--muted); }
     .aside-zoom .zoom { display: flex; gap: 4px; }
     .aside-zoom .zoom button { color: var(--ink); border: 1px solid var(--line); background: var(--paper); min-width: 40px; padding: 7px 10px; }
     .aside-zoom .zoom [data-zoom="reset"] { min-width: 56px; }
-
-    /* flutuante: gruda no rodapé da folha e continua visível enquanto o conteúdo rola */
-    .aside-close {
-      position: sticky; bottom: 0; z-index: 2;
-      display: flex; align-items: center; justify-content: center; gap: 7px;
-      width: 100%; margin-top: 14px; padding: 12px; border-radius: 10px;
-      border: 1px solid var(--line); background: var(--paper); color: var(--ink);
-      font: inherit; font-size: .85rem; cursor: pointer;
-      box-shadow: 0 -10px 16px -6px rgba(255,255,255,.95);
-    }
-    .aside-close svg { width: 16px; height: 16px; transform: rotate(180deg); }
 
     aside.show ~ .aside-scrim { display: block; position: fixed; inset: 0; background: rgba(6,26,81,.30); z-index: 40; }
   }
@@ -307,13 +308,15 @@
 <aside id="aside">
   <!-- faixa sempre visível do dock (mobile); oculta no desktop, onde o aside é o rail por hover -->
   <div class="aside-peek">
+    <button class="aside-handle" id="asideToggle" type="button" aria-expanded="false" aria-controls="asideBody">
+      <svg class="aside-chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
+      <span class="txt-open">mais opções</span>
+      <span class="txt-close">fechar</span>
+    </button>
     <div class="versions" role="group" aria-label="versões">
       <button data-mode="olho" aria-pressed="true">O olho vê</button>
       <button data-mode="ia" aria-pressed="false">A IA lê</button>
     </div>
-    <button class="aside-handle" id="asideToggle" type="button" aria-expanded="false" aria-controls="asideBody" aria-label="Mais opções">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
-    </button>
   </div>
 
   <div class="aside-body" id="asideBody">
@@ -352,10 +355,6 @@
       </ol>
     </div>
 
-    <button class="aside-close" id="asideClose" type="button">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polyline points="18 15 12 9 6 15"></polyline></svg>
-      Fechar
-    </button>
   </div>
 </aside>
 <div class="aside-scrim" id="asideScrim"></div>
@@ -432,27 +431,56 @@
   }
   function toggleSheet() { (aside.classList.contains('show') ? closeSheet : openSheet)(); }
 
-  if (toggle) toggle.addEventListener('click', toggleSheet);
-  var closeBtn = document.getElementById('asideClose');
-  if (closeBtn) closeBtn.addEventListener('click', closeSheet);
+  var didDrag = false;   /* um arrasto não pode virar clique e desfazer o que acabou de fazer */
+  if (toggle) toggle.addEventListener('click', function () {
+    if (didDrag) { didDrag = false; return; }
+    toggleSheet();
+  });
   if (scrim) scrim.addEventListener('click', closeSheet);
 
   /* a aba do rail (desktop) abre no CLIQUE também, não só no hover */
   var railTab = document.getElementById('railTab');
   if (railTab) railTab.addEventListener('click', function (e) { e.stopPropagation(); toggleSheet(); });
 
-  /* arrastar a faixa pra cima abre a folha; pra baixo fecha */
+  /* mede a alça pra o CSS saber quanto da folha deixar à mostra quando recolhida */
   var peekEl = aside.querySelector('.aside-peek');
-  if (peekEl) {
-    var startY = null;
-    peekEl.addEventListener('touchstart', function (e) { startY = e.touches[0].clientY; }, { passive: true });
-    peekEl.addEventListener('touchmove', function (e) {
-      if (startY === null) return;
-      var dy = e.touches[0].clientY - startY;
-      if (dy < -34) { openSheet(); startY = null; }
-      else if (dy > 34) { closeSheet(); startY = null; }
+  function syncPeek() { if (peekEl) aside.style.setProperty('--peek-h', peekEl.offsetHeight + 'px'); }
+  syncPeek();
+  window.addEventListener('resize', syncPeek);
+
+  /* Arrastar a alça: a folha SEGUE O DEDO e a página atrás NÃO se move
+     (touch-action:none no CSS + preventDefault aqui). Ao soltar, decide abrir ou
+     fechar e a transição do CSS faz a animação. */
+  if (toggle) {
+    var dragY = null, baseY = 0, maxY = 0, movedY = 0;
+    toggle.addEventListener('touchstart', function (e) {
+      if (!isMobile()) return;
+      maxY = aside.offsetHeight - (peekEl ? peekEl.offsetHeight : 96);
+      baseY = aside.classList.contains('show') ? 0 : maxY;
+      movedY = baseY;
+      dragY = e.touches[0].clientY;
+      didDrag = false;
+      aside.classList.add('dragging');
     }, { passive: true });
-    peekEl.addEventListener('touchend', function () { startY = null; }, { passive: true });
+
+    toggle.addEventListener('touchmove', function (e) {
+      if (dragY === null) return;
+      e.preventDefault();                    /* trava a rolagem da página atrás */
+      var dy = e.touches[0].clientY - dragY;
+      if (Math.abs(dy) > 6) didDrag = true;
+      movedY = Math.min(Math.max(baseY + dy, 0), maxY);
+      aside.style.transform = 'translateY(' + movedY + 'px)';
+    }, { passive: false });
+
+    var endDrag = function () {
+      if (dragY === null) return;
+      dragY = null;
+      aside.classList.remove('dragging');
+      aside.style.transform = '';            /* devolve o controle pro CSS (anima) */
+      if (didDrag) { if (movedY < maxY * 0.5) openSheet(); else closeSheet(); }
+    };
+    toggle.addEventListener('touchend', endDrag, { passive: true });
+    toggle.addEventListener('touchcancel', endDrag, { passive: true });
   }
 
   /* ---------- versão (olho / IA) ---------- */
