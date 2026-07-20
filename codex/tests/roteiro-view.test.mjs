@@ -28,11 +28,22 @@ test('roteiro-view.js consome a lógica do roteiro-model.js', () => {
   assert.match(src, /from\s+['"]\.\.\/js\/roteiro-model\.js['"]/);
 });
 
-test('a sub-aba roteiro é gated dev-only e plugada em cohorts.js', () => {
+// Fatia 2.5: o gate `bs_debug` CAIU nos dois lugares (Élder é o único admin e quer
+// usar a coisa; o gate só existia pra entrar dormente enquanto estava pela metade).
+// Isso inverte o teste da fatia 1: antes exigia o gate, agora exige a ausência dele.
+test('a sub-aba roteiro está plugada em cohorts.js e NÃO é mais gated', () => {
   const src = readSrc('../cohorts/cohorts.js');
   assert.match(src, /data-aulatab=["']roteiro["']/, 'botão da sub-aba roteiro');
-  assert.match(src, /cdx-dev-only/, 'o botão é dev-only');
   assert.match(src, /roteiro-view\.js/, 'monta a view no pane da aula');
+  const railBlock = src.slice(Math.max(0, src.indexOf('data-aulatab="roteiro"') - 800),
+    src.indexOf('data-aulatab="roteiro"') + 400);
+  assert.ok(!/cdx-dev-only/.test(railBlock), 'a sub-aba roteiro não carrega mais o marcador dev-only');
+});
+
+test('o editor de bases do Cursos também saiu do gate bs_debug', () => {
+  const src = readSrc('../cohorts/courses.js');
+  assert.match(src, /roteiro-view\.js/, 'o Cursos reusa a MESMA view');
+  assert.ok(!/bs_debug/.test(src), 'nenhum gate de debug sobrou no courses.js');
 });
 
 test('a chave i18n da sub-aba existe em pt.js E en.js', () => {

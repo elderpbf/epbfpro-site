@@ -578,7 +578,7 @@ export default {
   'cohorts.aula_hours_unit':        'h',
   'cohorts.aula_tab_roteiro':       'Roteiro',
 
-  // Roteiro sub-tab (Cohorts aula hub, track-46 fatia 1 — dev-only, gated cdx-dev-only)
+  // Roteiro sub-tab (Cohorts aula hub, track-46 — list-rail à esquerda + editor completo à direita)
   'roteiro.empty':                  'Nenhum bloco no roteiro ainda.',
   'roteiro.no_rotulo':              '(sem rótulo)',
   'roteiro.select_ponto_prompt':    'Selecione um ponto à esquerda.',
@@ -597,6 +597,20 @@ export default {
   'roteiro.tipo_pratica':           'Prática',
   'roteiro.tipo_fechamento':        'Fechamento',
   'roteiro.tipo_pausa':             'Pausa',
+
+  // Roteiro — CRUD estrutural (track-46 fatia 2.5: adoção do list-rail)
+  'roteiro.bloco_new':              'Novo bloco',
+  'roteiro.bloco_rename':           'Renomear bloco',
+  'roteiro.bloco_delete':           'Excluir bloco',
+  'roteiro.bloco_delete_msg':       'O bloco e todos os pontos dele serão removidos. Essa ação não pode ser desfeita.',
+  'roteiro.bloco_name_ph':          'Nome do bloco',
+  'roteiro.bloco_name_required':    'Dê um nome ao bloco.',
+  'roteiro.ponto_new':              'Novo ponto',
+  'roteiro.ponto_delete':           'Excluir ponto',
+  'roteiro.add_pausa':              '+ Pausa',
+  'roteiro.field_rotulo':           'Rótulo',
+  'roteiro.field_tipo':             'Tipo',
+  'roteiro.field_dur':              'Duração (min)',
 
   // Base selector + promover (Cohorts aula hub, track-46 fatia 2b/2c)
   'roteiro.base_no_course':         'Vincule um curso à turma pra usar bases de roteiro.',

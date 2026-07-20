@@ -70,9 +70,14 @@ test('_aulaEmbedMounted tracks the base-selector embed alongside the others', ()
   assert.match(cohorts, /_aulaEmbedMounted\s*=\s*\{\s*liberacoes:\s*false,\s*tarefas:\s*false,\s*apps:\s*false,\s*roteiro:\s*false,\s*roteiroBase:\s*false\s*\}/);
 });
 
-test('the Roteiro sub-tab stays dev-only (cdx-dev-only), production-dormant this fatia too', () => {
+// Superseded by fatia 2.5 (Élder: the gate only existed to ship dormant while
+// the feature was half-built; now that it has full CRUD it ships visible —
+// see tests/roteiro-view.test.mjs's "NÃO é mais gated" test, which pins this
+// same reversal). Kept here (not deleted) because the rest of this file's
+// wiring assertions (store/base-selector/facade/teardown) are still live.
+test('the Roteiro sub-tab is plugged in and NO LONGER dev-only-gated (track-46 fatia 2.5)', () => {
   assert.match(cohorts, /data-aulatab=["']roteiro["']/, 'roteiro sub-tab button');
-  assert.match(cohorts, /cdx-aula-stab cdx-dev-only/, 'still gated dev-only');
+  assert.ok(!/cdx-aula-stab cdx-dev-only/.test(cohorts), 'the dev-only gate was removed');
 });
 
 test('the roteiro pane reaches the backend ONLY through the facade (no direct callWorker)', () => {

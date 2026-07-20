@@ -33,12 +33,13 @@ import * as students from './students.js';
 import * as releasesAdmin from '../content/releases.js';
 import * as tarefasAdmin from '../content/tarefas.js';
 import * as appRelease from './app-release.js';
-// track-46 fatia 2: the aula's 4th sub-tab, still dev-only (gated cdx-dev-only,
-// production-dormant this fatia) but now on the real backend. roteiroView is the
-// plain two-panel component (store-injected, also reused unchanged by
-// cohorts/courses.js for the curso base editor); roteiro-store.js is the real
-// per-aula store (replaces the fatia-1 localStorage stub); roteiro-base.js is the
-// base selector + promote controls mounted alongside the two-panel view.
+// track-46: the aula's 4th sub-tab, visible to every admin (the dev-only gate
+// was fatia 2's dormant-shipping device; fatia 2.5 removed it — see the CRUD
+// carried by roteiro-view.js itself). roteiroView is the two-panel component
+// (store-injected, also reused unchanged by cohorts/courses.js for the curso
+// base editor, now adopting js/list-rail.js on its left panel); roteiro-store.js
+// is the real per-aula store; roteiro-base.js is the base selector + promote
+// controls mounted alongside the two-panel view.
 import * as roteiroView from '../roteiro/roteiro-view.js';
 import { createRoteiroStore } from '../roteiro/roteiro-store.js';
 import * as roteiroBase from '../roteiro/roteiro-base.js';
@@ -207,13 +208,6 @@ const IDS = {
 
 // ── DOM refs (set in mount after render) ────────────────────────────────────
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
-
-// Debug gate: the shared Backstage bs_debug flag (mirrors content/releases.js
-// _isDebug). Read at render time so toggling it just needs a reload. Gates the
-// Roteiro aula sub-tab (track-46 fatia 1) — dev-only until fatia 2 ships.
-function _isDebug() {
-  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
-}
 
 // ── Modal helpers ────────────────────────────────────────────────────────────
 // Delegated to the shared js/modal.js primitives. The Escape-key cleanup is now
@@ -1780,11 +1774,7 @@ function _renderAulaDetail(turma) {
     : '';
   // An unsaved new aula has no id yet, so Liberações/Tarefas/Roteiro (which bind TO
   // an aula) can't attach to it; show only Dados until it is saved.
-  // Roteiro (track-46 fatia 1) is dev-only: the button itself only renders with
-  // localStorage.bs_debug==='1' (read here — the VIEW never touches localStorage).
-  const roteiroTab = _isDebug()
-    ? '<button type="button" class="cdx-aula-stab cdx-dev-only' + (_aulaTab === 'roteiro' ? ' is-on' : '') + '" data-aulatab="roteiro" role="tab">' + _esc(t('cohorts.aula_tab_roteiro')) + '</button>'
-    : '';
+  const roteiroTab = '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'roteiro' ? ' is-on' : '') + '" data-aulatab="roteiro" role="tab">' + _esc(t('cohorts.aula_tab_roteiro')) + '</button>';
   const subtabs = aula._isNew
     ? '<button type="button" class="cdx-aula-stab is-on" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>'
     : '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'dados' ? ' is-on' : '') + '" data-aulatab="dados" role="tab">' + _esc(t('cohorts.aula_tab_dados')) + '</button>' +
@@ -1792,7 +1782,6 @@ function _renderAulaDetail(turma) {
       '<button type="button" class="cdx-aula-stab' + (_aulaTab === 'tarefas' ? ' is-on' : '') + '" data-aulatab="tarefas" role="tab">' + _esc(t('cohorts.doss_tarefas')) + ' <span class="cdx-aula-stab-b">' + counts.tarefa + '</span></button>' +
       roteiroTab;
   if (aula._isNew) _aulaTab = 'dados';
-  if (_aulaTab === 'roteiro' && !roteiroTab) _aulaTab = 'dados'; // debug turned off mid-session: fall back off the hidden tab
 
   detailEl.innerHTML =
     '<div class="cdx-aula-dh">' +

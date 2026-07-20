@@ -574,7 +574,7 @@ export default {
   'cohorts.aula_hours_unit':        'h',
   'cohorts.aula_tab_roteiro':       'Script',
 
-  // Roteiro sub-tab (Cohorts aula hub, track-46 fatia 1 — dev-only, gated cdx-dev-only)
+  // Roteiro sub-tab (Cohorts aula hub, track-46 — list-rail on the left + full editor on the right)
   'roteiro.empty':                  'No blocks in the script yet.',
   'roteiro.no_rotulo':              '(no label)',
   'roteiro.select_ponto_prompt':    'Select a point on the left.',
@@ -593,6 +593,20 @@ export default {
   'roteiro.tipo_pratica':           'Practice',
   'roteiro.tipo_fechamento':        'Wrap-up',
   'roteiro.tipo_pausa':             'Break',
+
+  // Roteiro — structural CRUD (track-46 fatia 2.5: list-rail adoption)
+  'roteiro.bloco_new':              'New block',
+  'roteiro.bloco_rename':           'Rename block',
+  'roteiro.bloco_delete':           'Delete block',
+  'roteiro.bloco_delete_msg':       'The block and every point in it will be removed. This cannot be undone.',
+  'roteiro.bloco_name_ph':          'Block name',
+  'roteiro.bloco_name_required':    'Give the block a name.',
+  'roteiro.ponto_new':              'New point',
+  'roteiro.ponto_delete':           'Delete point',
+  'roteiro.add_pausa':              '+ Break',
+  'roteiro.field_rotulo':           'Label',
+  'roteiro.field_tipo':             'Type',
+  'roteiro.field_dur':              'Duration (min)',
 
   // Base selector + promote (Cohorts lesson hub, track-46 fatia 2b/2c)
   'roteiro.base_no_course':         'Link a course to the cohort to use script bases.',

@@ -1,7 +1,7 @@
-/* roteiro/roteiro.css — layout only for the Roteiro sub-tab (track-46 fatia 1).
-   Injected at mount by roteiro-view.js (index.html is untouched this fatia, so
-   this file cannot ride the usual <link> boot). Colour comes only from CSS
-   custom properties; tipo hues reuse the existing theme-stable --acc-* accents
+/* roteiro/roteiro.css — layout only for the Roteiro sub-tab (track-46).
+   Injected at mount by roteiro-view.js (index.html is untouched, so this file
+   cannot ride the usual <link> boot). Colour comes only from CSS custom
+   properties; tipo hues reuse the existing theme-stable --acc-* accents
    (css/tokens.css), so no new tokens (and no new dark-theme overrides) are
    introduced here. */
 
@@ -16,33 +16,31 @@
 .cdx-roteiro-meter-item b { color: var(--text-primary); font-weight: 600; }
 .cdx-roteiro-meter-warn { color: var(--danger); font-weight: 600; }
 
-/* ── Two-panel body ─────────────────────────────────────────────────────── */
-.cdx-roteiro-body { flex: 1; min-height: 0; display: flex; gap: 14px; }
-.cdx-roteiro-left, .cdx-roteiro-right {
-  flex: 1; min-width: 0; min-height: 0; overflow-y: auto;
+/* ── Two-panel body: LEFT = the list-rail (js/list-rail.js), RIGHT = the ponto
+   editor. Grid shape copied from .cdx-aulas-hub (cohorts.css ~365): the 1st
+   column rides the shared resizer var (js/resizable.js installResizer), grip
+   painted by the already-loaded .cdx-rz-grip rules (cohorts.css), inherited
+   here, not duplicated. Collapses to one column on small widths, same
+   breakpoint as .cdx-aulas-hub/.cdx-tarefas-split. ─────────────────────────── */
+.cdx-roteiro-body {
+  flex: 1; min-height: 0; position: relative;
+  display: grid; grid-template-columns: var(--cdx-rz-w, 320px) 1fr; gap: 14px;
+}
+@media (max-width: 980px) { .cdx-roteiro-body { grid-template-columns: 1fr; } }
+
+.cdx-roteiro-left { min-width: 0; min-height: 0; display: flex; flex-direction: column; }
+.cdx-roteiro-right {
+  min-width: 0; min-height: 0; overflow-y: auto;
   background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px;
 }
 .cdx-roteiro-empty { color: var(--text-secondary); font-size: .9rem; padding: 12px 4px; }
 
-/* ── Left: blocos -> pontos ─────────────────────────────────────────────── */
-.cdx-roteiro-bloco { margin-bottom: 12px; }
-.cdx-roteiro-bloco:last-child { margin-bottom: 0; }
-.cdx-roteiro-bloco-head {
-  display: flex; justify-content: space-between; align-items: baseline;
-  font-size: .8rem; font-weight: 600; color: var(--text-secondary);
-  text-transform: uppercase; letter-spacing: .02em;
-  padding: 4px 6px; border-bottom: 1px solid var(--border); margin-bottom: 4px;
-}
-.cdx-roteiro-bloco.is-pausa .cdx-roteiro-bloco-head { color: var(--text-muted); font-style: italic; }
-.cdx-roteiro-pontos { display: flex; flex-direction: column; gap: 2px; }
-.cdx-roteiro-ponto {
-  display: flex; align-items: center; gap: 8px; padding: 6px 8px; border-radius: 6px;
-  cursor: pointer; border: 1px solid transparent;
-}
-.cdx-roteiro-ponto:hover { background: var(--cdx-card-hover-bg); border-color: var(--cdx-card-hover-border); }
-.cdx-roteiro-ponto.is-selected { background: var(--cdx-card-sel-bg); border-color: var(--cdx-card-sel-border); }
-.cdx-roteiro-ponto-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: .92rem; }
-.cdx-roteiro-ponto-dur { flex-shrink: 0; font-size: .8rem; color: var(--text-secondary); }
+/* ── Left: rail row content (renderRow) + section head content (renderHead) ── */
+.cdx-roteiro-row-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: .92rem; }
+.cdx-roteiro-row-dur { flex-shrink: 0; font-size: .8rem; color: var(--text-secondary); }
+.cdx-roteiro-sec-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-roteiro-sec-dur { flex-shrink: 0; font-size: .72rem; color: var(--text-secondary); font-weight: 600; margin-right: 4px; }
+.cdx-roteiro-add-pausa { width: 100%; }
 
 .cdx-roteiro-dot { width: 9px; height: 9px; border-radius: 50%; flex-shrink: 0; background: var(--rot-color, var(--text-muted)); }
 .cdx-roteiro-dot--resgate     { --rot-color: var(--acc-blue); }
@@ -52,22 +50,26 @@
 .cdx-roteiro-dot--pausa       { --rot-color: var(--text-muted); }
 
 /* ── Right: selected ponto detail ──────────────────────────────────────── */
-.cdx-roteiro-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.cdx-roteiro-detail-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+.cdx-roteiro-sp { flex: 1; }
+/* tokens.css: --acc-* are "theme-stable by contract (no dark override; NEVER
+   rendered as text)" — the dot/border/background tint carry the accent, the
+   label text itself always reads from --text-primary (fatia-1 sentinel WARN). */
 .cdx-roteiro-detail-badge {
   display: inline-flex; align-items: center; padding: 2px 8px; border-radius: 999px;
-  font-size: .75rem; font-weight: 600; color: var(--rot-color, var(--text-secondary));
+  font-size: .75rem; font-weight: 600; color: var(--text-primary);
   border: 1px solid var(--rot-color, var(--border));
   background: color-mix(in oklab, var(--rot-color, var(--text-muted)) 14%, transparent);
 }
-.cdx-roteiro-detail-dur { font-size: .85rem; color: var(--text-secondary); }
-.cdx-roteiro-detail-title { margin: 0 0 12px; font-size: 1.05rem; color: var(--text-primary); }
-
 .cdx-roteiro-field { margin-bottom: 14px; }
+.cdx-roteiro-field-row { display: flex; gap: 10px; }
+.cdx-roteiro-field-row .cdx-roteiro-field { flex: 1; min-width: 0; }
 .cdx-roteiro-field-label { display: block; font-size: .78rem; font-weight: 600; color: var(--text-secondary); margin-bottom: 4px; }
 .cdx-roteiro-field-input {
   width: 100%; box-sizing: border-box; padding: 6px 8px; border-radius: 6px;
   border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font-size: .9rem;
 }
+.cdx-roteiro-field-textarea { resize: vertical; min-height: 4.5em; font-family: inherit; }
 
 .cdx-roteiro-notas-list { display: flex; flex-direction: column; gap: 4px; margin-bottom: 8px; }
 .cdx-roteiro-notas-empty { color: var(--text-secondary); font-size: .85rem; }

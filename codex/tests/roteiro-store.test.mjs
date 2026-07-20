@@ -42,7 +42,7 @@ test('save() calls ct_set_aula_roteiro with the bound aulaId + JSON roteiro', as
   restoreWorker();
   assert.equal(seen.action, 'ct_set_aula_roteiro');
   assert.equal(seen.id, 99);
-  assert.deepEqual(JSON.parse(seen.roteiro_json), { blocos: [{ nome: 'X', pausa: false, pontos: [] }] });
+  assert.deepEqual(JSON.parse(seen.roteiro_json), { blocos: [{ id: 'b1', nome: 'X', pausa: false, pontos: [] }] });
 });
 
 test('save() carries the CURRENT roteiro_base_number on every save, seeded from the initial fetch', async () => {
@@ -63,7 +63,7 @@ test('trocar de base = store NOVO com o payload aplicado, e o save seguinte carr
   const store = createRoteiroStore(5, applied);
   assert.deepEqual(
     store.load(),
-    { blocos: [{ nome: 'Contexto', pausa: false, pontos: [] }] },
+    { blocos: [{ id: 'b1', nome: 'Contexto', pausa: false, pontos: [] }] },
     'a view ja enxerga o conteudo copiado, nunca o estado pre-copia',
   );
   let seen = null;
