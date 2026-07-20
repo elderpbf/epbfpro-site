@@ -68,6 +68,24 @@ test('parseEvalResponse: garbage input returns {error}, never throws', () => {
   assert.equal(typeof parseEvalResponse(null).error, 'string');
 });
 
+// Real failure seen on the staging preview 2026-07-19: gemini-2.5-flash spends
+// "thinking" tokens out of the SAME maxOutputTokens budget and the chat path does
+// not force responseMimeType json, so a small budget cuts the reply mid-JSON and
+// the closing fence never arrives. The body before the cut was perfectly valid.
+test('parseEvalResponse: an UNCLOSED ```json fence still parses when the JSON body is complete', () => {
+  const text = '```json\n{"adherent":[1,2,3,6],"point":[4,5],"diverged":[7,8]}';
+  const out = parseEvalResponse(text);
+  assert.deepEqual(out.groups, { adherent: [1, 2, 3, 6], point: [4, 5], diverged: [7, 8] });
+});
+
+test('parseEvalResponse: a genuinely truncated reply returns {error} carrying the length, never throws', () => {
+  const text = '```json\n{"adherent":[1,2,3,6],"point":[4,5],"notes":{"4":"comeca aqui e corta';
+  assert.doesNotThrow(() => parseEvalResponse(text));
+  const out = parseEvalResponse(text);
+  assert.equal(typeof out.error, 'string');
+  assert.match(out.error, /\d+\s*chars/, 'the error reports the reply length, so a truncation is diagnosable from the debug pill');
+});
+
 // ── makeStubEval ─────────────────────────────────────────────────────────────
 test('makeStubEval: resolves to a valid canned {groups:{adherent,point,diverged}} shape', async () => {
   const evalFn = makeStubEval();
@@ -84,6 +102,16 @@ test('makeWorkerEval: injected aiChat returning a fenced JSON reply resolves to 
   const evalFn = makeWorkerEval(fakeChat);
   const out = await evalFn({ statement: 'S', responses: [{ index: 1, text: 'a' }, { index: 2, text: 'b' }] });
   assert.deepEqual(out.groups, { adherent: [1], point: [2], diverged: [] });
+});
+
+// Regression guard for the 2026-07-19 truncation: max_tokens:900 was BELOW the
+// worker's own default (2000) and gemini-2.5-flash burns thinking tokens from the
+// same budget, so the JSON was cut off. Never ask for less than the worker default.
+test('makeWorkerEval: asks the worker for a generous output budget (thinking tokens come out of it)', async () => {
+  let seen = null;
+  const fakeChat = async (p) => { seen = p; return { text: '{"adherent":[1],"point":[],"diverged":[]}' }; };
+  await makeWorkerEval(fakeChat)({ statement: 'S', responses: [{ index: 1, text: 'a' }] });
+  assert.ok(seen && seen.max_tokens >= 2000, 'max_tokens must not sit below the worker default of 2000');
 });
 
 test('makeWorkerEval: injected aiChat resolving to null (rate-limit) resolves to {error}, never throws', async () => {

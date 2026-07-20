@@ -78,7 +78,11 @@ export function parseEvalResponse(text) {
   try {
     parsed = JSON.parse(raw);
   } catch (_) {
-    return { error: 'json parse failed: ' + raw.slice(0, 120) };
+    // Report the length, and say so when the body does not even close, because the
+    // real-world failure here is a TRUNCATED reply (the model ran out of output
+    // budget mid-JSON), which is invisible if the pill only shows the first 120 chars.
+    const hint = raw.trim().endsWith('}') ? '' : ', reply appears cut off';
+    return { error: 'json parse failed (' + raw.length + ' chars' + hint + '): ' + raw.slice(0, 120) };
   }
   if (!parsed || typeof parsed !== 'object' || Array.isArray(parsed)) {
     return { error: 'invalid shape (expected a JSON object)' };
@@ -109,7 +113,12 @@ export function makeWorkerEval(aiChat) {
         system: prompt.system,
         messages: prompt.messages,
         temperature: 0.3,
-        max_tokens: 900,
+        // Headroom, not a target: the worker's own default is 2000, and the chat path
+        // runs gemini-2.5-flash, which spends "thinking" tokens out of this SAME budget
+        // and (unlike the non-chat path) does not force responseMimeType json. At 900
+        // the reply was cut off mid-JSON on staging 2026-07-19. A cap only ever prevents
+        // truncation; it does not make the model produce more.
+        max_tokens: 4000,
       });
     } catch (e) {
       const msg = 'tarefa-eval: ai call failed: ' + ((e && e.message) || String(e));
