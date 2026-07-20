@@ -50,6 +50,7 @@ export function dispatchType(type) {
   if (type === 'model_info') return 'model_info';
   if (type === 'google_doc') return 'google_doc';
   if (type === 'lab') return 'lab';
+  if (type === 'interativo') return 'interativo';
   return 'markdown';
 }
 
@@ -160,6 +161,24 @@ export function labHtml(item, opts = {}) {
   // A lab card explains itself in three beats (Élder): a one-line "o que é"
   // (summary), a short description, and the objective. All three come from the
   // code registry via the Trail overlay (lab-overlay.js), so they never go stale.
+  const oneLine = item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '';
+  const desc = item.description ? '<p class="ctr-lab-desc">' + esc(item.description) + '</p>' : '';
+  const objective = item.objective
+    ? '<p class="ctr-lab-objective"><span class="ctr-lab-obj-label">Objetivo</span>' + esc(item.objective) + '</p>'
+    : '';
+  return '<div class="ctr-lab-shell">' + oneLine + desc + objective + openBtn + '</div>';
+}
+
+// ── interativo (self-contained HTML the student explores, iframed fullscreen) ─
+// An interativo item is shipped data like a lab: no body_md, meta_json carries
+// { url } (js/interativos-registry.js). It reuses the lab card shell (three beats
+// + open button) and the SAME fullscreen viewer, opened by url instead of lab key.
+export function interativoHtml(item, opts = {}) {
+  const meta = _meta(item);
+  const url = meta.url || '';
+  const openBtn = (!opts.preview && url)
+    ? '<button type="button" class="ctr-lab-open-btn" data-interativo-url="' + esc(url) + '">Abrir</button>'
+    : '';
   const oneLine = item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '';
   const desc = item.description ? '<p class="ctr-lab-desc">' + esc(item.description) + '</p>' : '';
   const objective = item.objective
@@ -281,6 +300,12 @@ function renderLab(item, container, opts) {
   if (btn) btn.addEventListener('click', () => _openLabViewer({ key: btn.getAttribute('data-lab-key'), title: item.title }));
 }
 
+function renderInterativo(item, container, opts) {
+  container.innerHTML = interativoHtml(item, opts);
+  const btn = container.querySelector('.ctr-lab-open-btn');
+  if (btn) btn.addEventListener('click', () => _openLabViewer({ url: btn.getAttribute('data-interativo-url'), title: item.title }));
+}
+
 function renderPaper(item, container, opts) {
   const md = item.body_md || '';
   if (md) {
@@ -312,6 +337,7 @@ export function renderItem(item, container, opts = {}) {
     case 'model_info': return renderModelInfo(item, container, opts);
     case 'google_doc': return renderGoogleDoc(item, container, opts);
     case 'lab':        return renderLab(item, container, opts);
+    case 'interativo': return renderInterativo(item, container, opts);
     default:           return renderMarkdown(item, container, opts);
   }
 }

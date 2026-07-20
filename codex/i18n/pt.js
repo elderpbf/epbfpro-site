@@ -1214,6 +1214,15 @@ export default {
   'labs.restore':             'Restaurar',
   'labs.archived':            'Arquivados',
   'labs.back_active':         'Labs ativos',
+  // ── Interativos (Content sub-tab + Lessons section) ──────────────────────────
+  // PROVISIONAL TYPE NAME lives in 'interativos.type'. To rename the type, edit this
+  // value AND its twin 'lessons.section_interativos' (the only other site, forced by
+  // the computed t('lessons.section_'+key) pattern); keep the two in sync.
+  'interativos.type':         'Interativo',
+  'interativos.title':        'Interativos',
+  'interativos.hint':         'Conteúdo HTML que o aluno explora (abre, alterna versões, acende trechos, dá zoom). Selecione um item para pré-visualizar ou abra em tela cheia.',
+  'interativos.select':       'Selecione um interativo para pré-visualizar.',
+  'interativos.fullscreen':   'Tela cheia',
   'drive.unavailable':        'Painel do Drive indisponível.',
   'drive.title':              'Drive',
   'drive.sync_now':           'Sincronizar agora',
@@ -1285,6 +1294,7 @@ export default {
   'lessons.reset_default':        'Restaurar padrão',
   'lessons.display_controls':     'Exibição: tamanho do texto e largura',
   'lessons.section_labs':         'Labs',
+  'lessons.section_interativos':  'Interativos',
   'lessons.section_preset':       'Preset',
   'lessons.edit':                 'Editar',
   'lessons.unfavorite':           'Desfavoritar',
