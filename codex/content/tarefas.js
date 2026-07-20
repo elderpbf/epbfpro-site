@@ -424,7 +424,6 @@ function _openTevalModal(itemId) {
       notes: restored.notes,
       missing: saved.missing || [],
       total: saved.total || rows.length,
-      fallback: !!saved.fallback,
     };
     initialAt = saved.at || null;
   }
@@ -459,7 +458,6 @@ function _openTevalModal(itemId) {
         notesById: ids.notesById,
         missing: res.missing || [],
         total: res.total || rows.length,
-        fallback: !!res.fallback,
       });
     },
     onOpenResponse: (index) => _openResponseInList(itemId, built.idByIndex[index]),
