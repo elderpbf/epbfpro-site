@@ -57,6 +57,14 @@ const IDS = {
 
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
+// Debug gate: the shared Backstage bs_debug flag (mirrors cohorts.js _isDebug and
+// content/releases.js). Gates the Roteiros-base editor (track-46 fatia 2) exactly
+// like the aula's Roteiro sub-tab is gated, so this fatia ships to production
+// DORMANT: without it the section would render for any admin opening any course.
+function _isDebug() {
+  return typeof localStorage !== 'undefined' && localStorage.getItem('bs_debug') === '1';
+}
+
 // ── Shell ─────────────────────────────────────────────────────────────────────
 
 function _renderShell() {
@@ -272,7 +280,7 @@ function _selectCourse(id) {
     _course = (d && d.course) || null;
     _ementa = normalizeEmenta(_course && _course.ementa_json);
     _renderMain();
-    _loadCourseRoteiros(id);
+    if (_isDebug()) _loadCourseRoteiros(id); // dev-only this fatia: no fetch when the section is hidden
   }).catch(() => {
     const el2 = _q(IDS.main);
     if (el2) el2.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.error_loading')) + '</div>';
@@ -358,10 +366,10 @@ function _renderMain() {
       '</div>' +
       _renderAssistant() +
     '</div>' +
-    _renderRoteirosSectionHtml();
+    (_isDebug() ? _renderRoteirosSectionHtml() : '');
 
   _wireMain();
-  _wireRoteirosSection();
+  if (_isDebug()) _wireRoteirosSection();
 }
 
 // ── AI assistant panel (conversational ementa builder) ──────────────────────────

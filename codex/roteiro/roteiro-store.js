@@ -15,12 +15,13 @@
 //
 // roteiro_base_number (which curso base this aula's copy points at) is NOT part
 // of the roteiro shape roteiro-view.js edits, so it does not travel through
-// load()/save(aulaId, roteiro). It is carried here as private store state,
-// seeded from the initial fetch and updated by the base-selector
-// (roteiro/roteiro-base.js) via setBaseNumber() right after a copy-down/blank
-// apply -- so every save, including a plain nota/chamada edit made a moment
-// later, still carries the aula's current base pointer instead of silently
-// wiping it back to null.
+// load()/save(aulaId, roteiro). It is carried here as private store state, seeded
+// at construction from the initial fetch, and it rides along on every save -- so a
+// plain nota/chamada edit never silently wipes the aula's base pointer back to
+// null. When the base-selector applies a different base, cohorts.js does NOT mutate
+// this store: it rebuilds a fresh one via createRoteiroStore(aulaId, applied) with
+// the new payload, which is also what makes the view show the copied-down content
+// immediately instead of the pre-copy state.
 import { roteiro as api } from '../js/codex-api.js';
 import { normalizeRoteiro, emptyRoteiro } from '../js/roteiro-model.js';
 
@@ -29,7 +30,7 @@ import { normalizeRoteiro, emptyRoteiro } from '../js/roteiro-model.js';
 // seed:   the ct_get_aula_roteiro response fetched just before mount, or null/
 //         undefined for a brand-new (unsaved) aula -> blank roteiro, no base.
 export function createRoteiroStore(aulaId, seed) {
-  let baseNumber = (seed && seed.roteiro_base_number != null) ? Number(seed.roteiro_base_number) : null;
+  const baseNumber = (seed && seed.roteiro_base_number != null) ? Number(seed.roteiro_base_number) : null;
   const initial = seed ? normalizeRoteiro(seed.roteiro_json) : emptyRoteiro();
 
   return {
@@ -49,10 +50,6 @@ export function createRoteiroStore(aulaId, seed) {
         _logErr(e);
       });
     },
-    // Base-selector seam (outside the view's load/save contract): read/update the
-    // curso base this aula's roteiro currently points at.
-    getBaseNumber() { return baseNumber; },
-    setBaseNumber(n) { baseNumber = (n == null || n === '') ? null : Number(n); },
   };
 }
 

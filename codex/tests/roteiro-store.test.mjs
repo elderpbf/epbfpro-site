@@ -54,22 +54,23 @@ test('save() carries the CURRENT roteiro_base_number on every save, seeded from 
   assert.equal(seen.roteiro_base_number, 3, 'a plain edit-save must not silently wipe the base pointer');
 });
 
-test('setBaseNumber updates the pointer so the VERY NEXT save (a routine nota/chamada edit) carries it', async () => {
-  const store = createRoteiroStore(5, { roteiro_json: '{"blocos":[]}', roteiro_base_number: null });
-  assert.equal(store.getBaseNumber(), null);
-  store.setBaseNumber(4);
-  assert.equal(store.getBaseNumber(), 4);
+// Trocar de base NAO muta o store: cohorts.js reconstroi um novo via
+// createRoteiroStore(aulaId, applied). Este e o unico caminho em producao (o par
+// get/setBaseNumber foi removido por nao ter nenhum chamador), entao e ele que o
+// teste trava: o store novo ja mostra o conteudo copiado E leva a base nova no save.
+test('trocar de base = store NOVO com o payload aplicado, e o save seguinte carrega a base nova', async () => {
+  const applied = { roteiro_json: '{"blocos":[{"nome":"Contexto","pontos":[]}]}', roteiro_base_number: 4 };
+  const store = createRoteiroStore(5, applied);
+  assert.deepEqual(
+    store.load(),
+    { blocos: [{ nome: 'Contexto', pausa: false, pontos: [] }] },
+    'a view ja enxerga o conteudo copiado, nunca o estado pre-copia',
+  );
   let seen = null;
   stubWorker((p) => { seen = p; return Promise.resolve({ ok: true }); });
-  await store.save(5, { blocos: [] });
+  await store.save(5, store.load());
   restoreWorker();
-  assert.equal(seen.roteiro_base_number, 4);
-});
-
-test('setBaseNumber(null) clears the pointer back to blank', () => {
-  const store = createRoteiroStore(5, { roteiro_json: '{"blocos":[]}', roteiro_base_number: 2 });
-  store.setBaseNumber(null);
-  assert.equal(store.getBaseNumber(), null);
+  assert.equal(seen.roteiro_base_number, 4, 'a base nova viaja no save seguinte');
 });
 
 test('a rejected save() reaches window.bsLog, never an unhandled/silent failure', async () => {
