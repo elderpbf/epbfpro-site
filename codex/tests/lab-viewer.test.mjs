@@ -75,6 +75,22 @@ test('openModal with no key is a no-op', () => {
   assert.equal(overlayInBody(), null, 'nothing rendered for missing opts');
 });
 
+test('an explicit url overrides the lab-key path (serves any shipped HTML, e.g. Interativos)', () => {
+  view.openModal({ url: '/codex/interativos/demo-peca/', title: 'Interativo' });
+  const iframe = findByClass(overlayInBody(), 'cv-lab-viewer-iframe');
+  assert.equal(iframe.src, '/codex/interativos/demo-peca/', 'url is used verbatim');
+  view.close();
+  // url wins even when a key is also passed
+  view.openModal({ key: 'k1', url: '/codex/interativos/x/' });
+  assert.equal(findByClass(overlayInBody(), 'cv-lab-viewer-iframe').src, '/codex/interativos/x/');
+  view.close();
+});
+
+test('openModal with neither key nor url is a no-op', () => {
+  view.openModal({ title: 'nope' });
+  assert.equal(overlayInBody(), null, 'nothing rendered without a source');
+});
+
 test('close removes the overlay, the open flag, and the keydown listener', () => {
   view.openModal({ key: 'k1' });
   assert.ok(overlayInBody(), 'open');
