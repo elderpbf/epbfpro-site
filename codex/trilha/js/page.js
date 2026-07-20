@@ -291,6 +291,8 @@ function renderHeaderActions() {
       const bell = createBell({
         role: 'student',
         fetchNotifications: () => trail.forumNotifications({ session_token: state.sessionToken, _silent: true }),
+        // Durable history (track-44): served by the worker, so the tray's Histórico survives a reload.
+        fetchHistory: () => trail.notifHistory({ session_token: state.sessionToken, _silent: true }),
         // The student's prefs live HERE, not inside the fetch, so they apply identically to a
         // feed we fetched and to one that rode back on another call (notif-bus). Putting them
         // in the fetch would have let a piggybacked envelope bypass them.

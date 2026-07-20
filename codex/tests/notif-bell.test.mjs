@@ -73,6 +73,16 @@ test('history rows are clickable and re-open the item', () => {
   assert.match(src, /\[data-bell-h\]/, 'and are wired to a handler');
 });
 
+// The history was session-local and a reload wiped it (Élder 2026-07-19). It is now served by
+// the worker from ct_notif_dismissed, so it outlives the page.
+test('the history is server-backed, so it survives a reload', () => {
+  const src = read('../js/notif-bell.js');
+  assert.match(src, /fetchHistory/, 'takes an injected history source');
+  assert.match(src, /loadHistory\(\)/, 'loads it when the tray opens');
+  assert.match(read('../trilha/js/page.js'), /fetchHistory:/, 'the student bell wires it');
+  assert.match(read('../trilha/js/api.js'), /ct_notif_history/, 'the trail facade exposes the action');
+});
+
 // With one tier live, a two-tab history names a split the user cannot see.
 test('the history drops its two mini-tabs while only one tier is live', () => {
   const src = read('../js/notif-bell.js');

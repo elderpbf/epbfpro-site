@@ -51,7 +51,7 @@ function groupItems(items) {
 //                                          / notif.tier_dismiss)
 //   btnClass:           extra class for the button (defaults to the topbar icon button)
 //   role:               'student' | 'admin'
-export function createBell({ fetchNotifications, markSeen, markAll, dismissItem, adaptFeed, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
+export function createBell({ fetchNotifications, fetchHistory, markSeen, markAll, dismissItem, adaptFeed, onNavigate, t, btnClass = 'bs-icon-btn', role = 'student' }) {
   const wrap = document.createElement('div');
   wrap.className = 'cdx-bell-wrap';
   wrap.innerHTML =
@@ -95,12 +95,33 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
   let _items = [];
 
   function _isAct(it) { return dismissalFor(it, role) === DISMISS_ACT; }
+  function _histKey(it) { return it.notif_key || (it.type + ':' + it.created_at + ':' + (it.title || '')); }
   function _histPush(tier, it) {
-    const key = it.notif_key || (it.type + ':' + it.created_at + ':' + (it.title || ''));
+    const key = _histKey(it);
     const bucket = _hist[tier];
-    if (bucket.some((h) => (h.notif_key || (h.type + ':' + h.created_at + ':' + (h.title || ''))) === key)) return;
+    if (bucket.some((h) => _histKey(h) === key)) return;
     bucket.unshift({ ...it, _clearedAt: Math.floor(Date.now() / 1000) });
     if (bucket.length > HIST_CAP) bucket.length = HIST_CAP;
+  }
+
+  // Server-backed history (track-44): the tray's history SURVIVES A RELOAD, because the server
+  // knows what was dismissed (ct_notif_dismissed) and resolves those keys back to their rows.
+  // Loaded once per mount, on the first tray open — before that we cannot even know whether to
+  // show the section, so this must run eagerly rather than on expand (an empty session history
+  // would hide the toggle and there would be nothing left to click).
+  let _histLoaded = false;
+  async function loadHistory() {
+    if (_histLoaded || !fetchHistory) return;
+    _histLoaded = true;
+    let res;
+    try { res = await fetchHistory(); } catch (_) { _histLoaded = false; return; }
+    const rows = (res && res.items) || [];
+    if (!rows.length) return;
+    const known = new Set(_hist.act.concat(_hist.open).map(_histKey));
+    for (const it of rows) if (!known.has(_histKey(it))) _hist.act.push(it);
+    _hist.act.sort((a, b) => (b.created_at || 0) - (a.created_at || 0));
+    if (_hist.act.length > HIST_CAP) _hist.act.length = HIST_CAP;
+    renderHist();
   }
 
   function setBadge(n) {
@@ -250,6 +271,7 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     document.addEventListener('click', onOutside, true);
     document.addEventListener('keydown', onEsc);
     Promise.resolve(refresh()).catch(() => {}).then(() => { if (!panel.hidden) dismissOnOpen(); });
+    loadHistory();   // server-backed history, once per mount (see loadHistory)
   }
   // On a narrow viewport the panel is a viewport-pinned tray (css/notif-bell.css sets
   // position:fixed + 12px gutters); anchor its TOP just under the bell so it clears the
