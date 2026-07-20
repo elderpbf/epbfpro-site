@@ -495,17 +495,17 @@
      (touch-action:none no CSS + preventDefault aqui). Ao soltar, decide abrir ou
      fechar e a transição do CSS faz a animação. */
   if (peekEl) {
-    var dragY = null, baseY = 0, maxY = 0, movedY = 0, fromHandle = false;
+    var dragY = null, baseY = 0, maxY = 0, movedY = 0;
 
+    /* qualquer ponto da faixa arrasta a folha, inclusive em cima dos botões;
+       o didDrag garante que esse arrasto não vire clique e troque a versão. */
     peekEl.addEventListener('touchstart', function (e) {
       if (!isMobile()) return;
-      fromHandle = !!(e.target.closest && e.target.closest('.aside-handle'));
-      dragY = e.touches[0].clientY;
-      didDrag = false;
-      if (!fromHandle) return;               /* nos botões não preparamos arrasto da folha */
       maxY = aside.offsetHeight - peekEl.offsetHeight;
       baseY = aside.classList.contains('show') ? 0 : maxY;
       movedY = baseY;
+      dragY = e.touches[0].clientY;
+      didDrag = false;
       aside.classList.add('dragging');
     }, { passive: true });
 
@@ -514,7 +514,6 @@
       e.preventDefault();                    /* trava a página atrás em TODA a faixa */
       var dy = e.touches[0].clientY - dragY;
       if (Math.abs(dy) > 6) didDrag = true;
-      if (!fromHandle) return;               /* em cima dos botões: só trava, não move a folha */
       movedY = Math.min(Math.max(baseY + dy, 0), maxY);
       aside.style.transform = 'translateY(' + movedY + 'px)';
     }, { passive: false });
@@ -524,8 +523,7 @@
       dragY = null;
       aside.classList.remove('dragging');
       aside.style.transform = '';            /* devolve o controle pro CSS (anima) */
-      if (fromHandle && didDrag) { if (movedY < maxY * 0.5) openSheet(); else closeSheet(); }
-      fromHandle = false;
+      if (didDrag) { if (movedY < maxY * 0.5) openSheet(); else closeSheet(); }
     };
     peekEl.addEventListener('touchend', endDrag, { passive: true });
     peekEl.addEventListener('touchcancel', endDrag, { passive: true });
