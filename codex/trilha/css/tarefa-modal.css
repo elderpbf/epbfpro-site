@@ -315,3 +315,10 @@ body.tr-modal-open { overflow: hidden; }
   font-size: 0.85rem; font-weight: 700; text-decoration: none;
 }
 .tr-md-cta:hover { background: var(--tint-primary-tx); }
+
+/* Comunicado read-only card (track-44): the student reading a broadcast's full message.
+   Same tr-modal shell as "Meus dados"; the body preserves the author's line breaks. */
+.tr-cm-modal { max-width: 480px; }
+.tr-cm-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; padding-right: 28px; color: var(--text-primary); }
+.tr-cm-when { font-size: 0.75rem; opacity: 0.6; margin-bottom: 14px; }
+.tr-cm-body { font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }

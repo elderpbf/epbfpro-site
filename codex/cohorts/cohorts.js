@@ -27,6 +27,8 @@ import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings 
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 import * as students from './students.js';
+// track-44 — Comunicações (broadcast autorado), superfície de nível Cohorts.
+import * as comunicados from './comunicados.js';
 // Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
 // (the same modules the Content tab used to host, now { turma }-driven so they skip
 // the picker). Reused as-is, no composer logic is duplicated.
@@ -41,6 +43,7 @@ export const SUBTABS = [
   { key: 'turmas', labelKey: 'cohorts.sub_turmas' },
   { key: 'cursos', labelKey: 'cohorts.sub_cursos' },
   { key: 'alunos', labelKey: 'cohorts.sub_alunos' },
+  { key: 'comunicados', labelKey: 'cohorts.sub_comunicados' },
 ];
 
 function _resolveSub(sub) {
@@ -2147,6 +2150,7 @@ export function mount(viewEl, ctx) {
   const sub = _resolveSub(ctx && ctx.sub);
   if (sub === 'cursos') { cursos.mount(viewEl); return; }
   if (sub === 'alunos') { students.mount(viewEl); return; }
+  if (sub === 'comunicados') { comunicados.mount(viewEl); return; }
 
   _renderShell();
   _loadAll();
