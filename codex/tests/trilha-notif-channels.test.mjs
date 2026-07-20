@@ -55,8 +55,12 @@ test('push cells are disabled until the push channel exists', () => {
   for (const r of rows) {
     assert.equal(r.cells.find((c) => c.channel === 'push').disabled, true);
   }
+  // With push available the column goes live — except on a category whose producer does not
+  // dispatch yet, which has its own reason to stay disabled (see the extrasPending test below).
+  const pending = new Set(CATEGORIES.filter((c) => c.extrasPending).map((c) => c.key));
   const rowsOn = gridRows({}, { pushAvailable: true });
   for (const r of rowsOn) {
+    if (pending.has(r.key)) continue;
     assert.equal(r.cells.find((c) => c.channel === 'push').disabled, false);
   }
 });
@@ -154,4 +158,26 @@ test('displayPrefs feeds into gridRows and actually turns the comunicado push ce
   const com = rows.find((r) => r.key === 'comunicado');
   assert.equal(com.cells.find((c) => c.channel === 'push').enabled, false);
   assert.equal(com.cells.find((c) => c.channel === 'push').disabled, false, 'still TOGGLEABLE, just not pre-checked');
+});
+
+// A categoria cujo produtor ainda não chama dispatch() não pode oferecer e-mail/push: o
+// interruptor entregaria nada. Fórum é o caso aberto (um post abre pra turma inteira, então
+// ligar o e-mail exige a fila antes). Mesma regra de honestidade da coluna de push.
+test('a categoria com extras pendentes desabilita e-mail e push, e nunca os mostra ligados', () => {
+  const rows = gridRows({ forum: { bell: true, email: true, push: true } }, { pushAvailable: true });
+  const forum = rows.find((r) => r.key === 'forum');
+  for (const ch of ['email', 'push']) {
+    const cell = forum.cells.find((c) => c.channel === ch);
+    assert.equal(cell.disabled, true, ch + ' deve estar desabilitado');
+    assert.equal(cell.enabled, false, ch + ' nunca aparece ligado enquanto não entrega');
+  }
+  // O sino da mesma linha segue valendo: ele é PULL e já mostra o fórum hoje.
+  assert.equal(forum.cells.find((c) => c.channel === 'bell').enabled, true);
+});
+
+test('as demais categorias não são afetadas pelo flag de pendência', () => {
+  const rows = gridRows({ comunicado: { bell: true, email: true, push: true } }, { pushAvailable: true });
+  const com = rows.find((r) => r.key === 'comunicado');
+  assert.equal(com.cells.find((c) => c.channel === 'email').disabled, false);
+  assert.equal(com.cells.find((c) => c.channel === 'email').enabled, true);
 });

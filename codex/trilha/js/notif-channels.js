@@ -20,10 +20,16 @@ import { esc } from './utils.js';
 // The axes. These MIRROR the worker's src/lib/notify.js (CATEGORIES/CHANNELS + DEFAULT_PREFS):
 // a key that exists on one side only is a cell that silently never applies. Pinned in
 // tests/trilha-notif-channels.test.mjs.
+// `extrasPending` = this category's producer does not call dispatch() yet, so e-mail/push for it
+// would deliver NOTHING. The row still shows (the student can see it is coming) but its extra
+// channels are disabled — the same honesty rule the push column follows. Fórum is the one open
+// case: a post fans out to a whole turma, so wiring its e-mail means the batching/queue work
+// first (architecture/notifications.md §5, "escala do broadcast"), not just a dispatch call.
+// Delete the flag the moment forum.js dispatches.
 export const CATEGORIES = [
   { key: 'comunicado',      labelKey: 'nchan.cat_comunicado' },
   { key: 'tarefa_feedback', labelKey: 'nchan.cat_tarefa' },
-  { key: 'forum',           labelKey: 'nchan.cat_forum' },
+  { key: 'forum',           labelKey: 'nchan.cat_forum', extrasPending: true },
   { key: 'noticia',         labelKey: 'nchan.cat_noticia' },
 ];
 
@@ -60,9 +66,14 @@ export function gridRows(prefs, opts) {
       label: t(cat.labelKey),
       cells: CHANNELS.map((ch) => ({
         channel: ch.key,
-        enabled: !!row[ch.key],
-        // The bell is always the floor; push waits for Etapa B.
-        disabled: !!ch.always || (ch.key === 'push' && !o.pushAvailable),
+        // A pending category's extras render UNCHECKED as well as disabled: a checked-but-dead
+        // switch is the exact lie this flag exists to avoid.
+        enabled: !!row[ch.key] && !(cat.extrasPending && !ch.always),
+        // The bell is always the floor; push needs a subscribable device; a pending category
+        // has no producer calling dispatch(), so its extras cannot deliver.
+        disabled: !!ch.always
+          || (ch.key === 'push' && !o.pushAvailable)
+          || (!!cat.extrasPending && !ch.always),
       })),
     };
   });
