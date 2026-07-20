@@ -11,7 +11,7 @@ import { fileURLToPath } from 'node:url';
 import {
   emptyRoteiro, normalizeRoteiro, roteiroStats,
   totalMin, blocoMin, compat, fmtDur,
-  patchPonto, nextBaseNumber,
+  patchPonto, nextBaseNumber, findPonto,
 } from '../js/roteiro-model.js';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
@@ -157,6 +157,39 @@ test('patchPonto com ref inválida (nenhum ponto na fonte) devolve o target norm
   const target = { blocos: [{ nome: 'B', pontos: [{ n: 0, rotulo: 'x', tipo: 'expositivo', dur: 5, notas: [] }] }] };
   const out = patchPonto(target, { blocos: [] }, { bi: 0, pi: 0 });
   assert.deepEqual(out, normalizeRoteiro(target));
+});
+
+// Regressão do BLOCK do sentinel (fatia 2.5): promover copia um ponto de OUTRO
+// documento (a base do curso) para dentro deste, id junto — e como todo roteiro
+// recomeça em p1, esse id colide de rotina com um ponto que já mora aqui. Duplicado
+// = corrupção silenciosa (findPonto/removePonto param no primeiro match). O conserto
+// mora no normalizeRoteiro, então o que este teste trava é o resultado do fluxo real.
+test('promover um ponto de outro documento NÃO deixa id duplicado no destino', () => {
+  const target = normalizeRoteiro({
+    blocos: [{ nome: 'Aula', pontos: [
+      { rotulo: 'a', tipo: 'expositivo', dur: 5 },
+      { rotulo: 'b', tipo: 'expositivo', dur: 5 },
+      { rotulo: 'c', tipo: 'expositivo', dur: 5 },
+    ] }],
+  });
+  // A base do curso, normalizada por conta própria, também tem p1/p2/p3.
+  const source = normalizeRoteiro({
+    blocos: [{ nome: 'Base', pontos: [
+      { rotulo: 'x', tipo: 'expositivo', dur: 5 },
+      { rotulo: 'y', tipo: 'expositivo', dur: 5 },
+      { rotulo: 'promovido', tipo: 'pratica', dur: 12 },
+    ] }],
+  });
+  assert.equal(source.blocos[0].pontos[2].id, 'p3', 'a fonte de fato reusa um id que o destino já tem');
+
+  const out = normalizeRoteiro(patchPonto(target, source, { bi: 0, pi: 2 }));
+  const ids = out.blocos.flatMap((b) => b.pontos.map((p) => p.id));
+  assert.equal(new Set(ids).size, ids.length, 'nenhum id repetido depois de promover');
+
+  // E o dano que o duplicado causava não acontece: cada id acha o seu ponto.
+  for (const p of out.blocos[0].pontos) {
+    assert.equal(findPonto(out, p.id).ponto.rotulo, p.rotulo);
+  }
 });
 
 test('nextBaseNumber devolve 1 quando não há bases e max+1 quando há', () => {

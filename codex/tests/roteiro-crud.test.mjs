@@ -79,6 +79,54 @@ test('nextBlocoId / nextPontoId são previsíveis, e num roteiro vazio começam 
   assert.equal(nextPontoId(r), 'p4');
 });
 
+// Ids são DOCUMENT-scoped: todo roteiro recomeça em b1/p1. Então um id que vem de
+// OUTRO documento colide de rotina — que é exatamente o que `promover` faz
+// (patchPonto tira um ponto da base do curso e enfia no roteiro da aula, id junto).
+// Id duplicado é corrupção silenciosa: findPonto/updatePonto/removePonto param no
+// PRIMEIRO match, então editar ou apagar "aquele ponto" acerta o errado.
+// normalizeRoteiro é o guardião único: o primeiro fica, o repetido é remintado.
+const allIds = (r) => r.blocos.flatMap((b) => [b.id, ...b.pontos.map((p) => p.id)]);
+const hasDupes = (xs) => new Set(xs).size !== xs.length;
+
+test('normalizeRoteiro REMINTA id repetido: o primeiro fica, o duplicado ganha um novo', () => {
+  const r = normalizeRoteiro({
+    blocos: [
+      { id: 'b1', nome: 'A', pontos: [{ id: 'p1', rotulo: 'primeiro', tipo: 'expositivo', dur: 5 }] },
+      { id: 'b1', nome: 'B', pontos: [{ id: 'p1', rotulo: 'colidido', tipo: 'expositivo', dur: 5 }] },
+    ],
+  });
+  assert.ok(!hasDupes(allIds(r)), 'nenhum id repetido sobrevive ao normalize');
+  assert.equal(r.blocos[0].id, 'b1', 'o primeiro mantém a identidade');
+  assert.equal(r.blocos[0].pontos[0].id, 'p1');
+  assert.notEqual(r.blocos[1].id, 'b1');
+  assert.notEqual(r.blocos[1].pontos[0].id, 'p1');
+  assert.equal(r.blocos[1].pontos[0].rotulo, 'colidido', 'o conteúdo do duplicado não se perde');
+});
+
+test('depois do remint, cada id resolve para o ponto CERTO (era o dano real do duplicado)', () => {
+  const r = normalizeRoteiro({
+    blocos: [{ nome: 'A', pontos: [
+      { id: 'p1', rotulo: 'primeiro', tipo: 'expositivo', dur: 5 },
+      { id: 'p1', rotulo: 'segundo', tipo: 'pratica', dur: 9 },
+    ] }],
+  });
+  const [a, b] = r.blocos[0].pontos;
+  assert.equal(findPonto(r, a.id).ponto.rotulo, 'primeiro');
+  assert.equal(findPonto(r, b.id).ponto.rotulo, 'segundo', 'o segundo é alcançável, não some atrás do primeiro');
+  const out = removePonto(r, b.id);
+  assert.deepEqual(rotulos(out), ['primeiro'], 'apagar o segundo apaga o segundo, não o primeiro');
+});
+
+test('normalizar de novo é estável mesmo tendo remintado (não fica renomeando a cada load)', () => {
+  const once = normalizeRoteiro({
+    blocos: [{ nome: 'A', pontos: [
+      { id: 'p1', rotulo: 'x', tipo: 'expositivo', dur: 5 },
+      { id: 'p1', rotulo: 'y', tipo: 'expositivo', dur: 5 },
+    ] }],
+  });
+  assert.deepEqual(normalizeRoteiro(snapshot(once)), once);
+});
+
 // ── Blocos ──────────────────────────────────────────────────────────────────
 test('addBloco acrescenta no fim, com o id previsto por nextBlocoId e pontos vazios', () => {
   const r = seed();

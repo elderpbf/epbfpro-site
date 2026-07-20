@@ -73,12 +73,29 @@ export function normalizeRoteiro(input) {
   }
   let nextB = _maxSuffix(rawBlocos.map((b) => b.id), 'b') + 1;
   let nextP = _maxSuffix(rawBlocos.flatMap((b) => b.pontos.map((p) => p.id)), 'p') + 1;
+  // Ids are scoped PER ROTEIRO: every one of them restarts at b1/p1. So an id
+  // copied in from another roteiro routinely collides with one already here —
+  // exactly what `promover` does (patchPonto lifts a ponto out of a curso base and
+  // into an aula's roteiro, ids and all). A duplicate id is silent corruption:
+  // _locate/findPonto/updatePonto/removePonto all stop at the FIRST match, so
+  // editing or deleting "that ponto" would hit the wrong one, permanently (the old
+  // code preserved any id present and never checked).
+  //
+  // normalizeRoteiro is therefore the SINGLE guardian of id uniqueness: first
+  // occurrence keeps its id, any later collision is reminted. Every load and every
+  // save round-trips through here, so patchPonto — and anything added later that
+  // copies ids between roteiros (fatia 3's ponto->slide links) — is safe by
+  // construction instead of by remembering.
+  const usedB = new Set();
+  const usedP = new Set();
+  const takeB = (id) => (id && !usedB.has(id)) ? id : ('b' + nextB++);
+  const takeP = (id) => (id && !usedP.has(id)) ? id : ('p' + nextP++);
   const blocos = rawBlocos.map((b) => ({
-    id: b.id || ('b' + nextB++),
+    id: _claim(takeB(b.id), usedB),
     nome: b.nome,
     pausa: b.pausa,
     pontos: b.pontos.map((p) => ({
-      id: p.id || ('p' + nextP++),
+      id: _claim(takeP(p.id), usedP),
       n: p.n,
       rotulo: p.rotulo,
       tipo: p.tipo,
@@ -90,6 +107,10 @@ export function normalizeRoteiro(input) {
   }));
   return { blocos };
 }
+
+// Record an id as taken and hand it back, so the claim and the use are one
+// expression (a claim that forgot to register would let the NEXT duplicate through).
+function _claim(id, used) { used.add(id); return id; }
 
 // The highest numeric suffix already used by an id of the form `<prefix><N>`
 // (0 if none) — the base nextBlocoId/nextPontoId/normalizeRoteiro count up from.
