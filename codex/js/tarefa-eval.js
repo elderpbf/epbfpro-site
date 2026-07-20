@@ -14,13 +14,20 @@
 //   buildEvalInput(rows)                       -> { responses, idByIndex } (real submissions -> anonymous payload)
 //   buildEvalPrompt({ statement, responses })  -> { system, messages }
 //   parseEvalResponse(replyText)               -> { groups, notes? } | { error }
+//   fitResponsesToBudget({ statement, responses, ... }) -> { statement, responses, truncatedCount }
 //   makeWorkerEval(aiChat)                     -> async ({statement,responses}) => groups | {error}
 //   makeStubEval()                             -> async (...) => canned groups
-//   SEED_RESPONSES                             -> deterministic PT-BR demo fixture
+//   SEED_RESPONSES                             -> TEST FIXTURE ONLY, see the comment on it below
 
 function _logError(msg) {
   if (typeof window !== 'undefined' && typeof window.bsLog === 'function') {
     window.bsLog(msg, 'error');
+  }
+}
+
+function _logInfo(msg) {
+  if (typeof window !== 'undefined' && typeof window.bsLog === 'function') {
+    window.bsLog(msg, 'info');
   }
 }
 
@@ -69,6 +76,52 @@ export function buildEvalPrompt({ statement, responses }) {
     { role: 'user', content: 'ENUNCIADO:\n' + (statement || '') + '\n\nRESPOSTAS:\n' + list },
   ];
   return { system, messages };
+}
+
+// fitResponsesToBudget, pure, no I/O. Verified worker contract (codex-api's
+// src/ai.js:363-373, read-only from here): `messages` max 50 entries, and
+// totalChars = the sum of every message.content.length must be <= 20000; `system`
+// is SEPARATE and capped at 10000, so it never counts toward that 20000. Our
+// single user message is 'ENUNCIADO:\n'+statement+'\n\nRESPOSTAS:\n'+list, and a
+// tarefa with many/long real answers can blow well past 20000 (the live error,
+// 2026-07-19: "ai_chat: messages exceed 20000 char total limit"). This trims
+// statement + each response's text so the built prompt fits inside `limit`,
+// BEFORE the model ever sees it; the view keeps the full text always (only
+// makeWorkerEval calls this, right before buildEvalPrompt).
+// Never mutates the caller's rows: every kept response is a fresh {index,text}
+// literal, same anonymity-by-construction guarantee as buildEvalInput.
+// minPerResponse is a readability floor, not a hard cap: the <= limit guarantee
+// holds as long as remaining/count >= minPerResponse (true for realistic class
+// sizes and the pathological case this ships with, ~40 long responses). Past
+// roughly a hundred long responses in one tarefa the floor can push the total
+// back over `limit`; that is a real class-size ceiling this fitting does not
+// solve, not a bug in the formula (which follows the dictated shape exactly).
+export function fitResponsesToBudget({ statement, responses, limit = 19000, statementMax = 3000, minPerResponse = 200 }) {
+  const stmt = statement || '';
+  const cappedStatement = stmt.length > statementMax ? stmt.slice(0, statementMax) : stmt;
+  const list = responses || [];
+  const count = list.length;
+  if (!count) {
+    return { statement: cappedStatement, responses: [], truncatedCount: 0 };
+  }
+  // Mirrors buildEvalPrompt's exact scaffolding so the budget math matches the
+  // real built string: 'ENUNCIADO:\n' + statement + '\n\nRESPOSTAS:\n' + list,
+  // where list is every 'Resposta '+index+': '+text joined by '\n'.
+  const headerLen = 'ENUNCIADO:\n'.length + cappedStatement.length + '\n\nRESPOSTAS:\n'.length;
+  let scaffoldOverhead = count - 1; // the (count-1) '\n' joins between response entries
+  list.forEach((r) => { scaffoldOverhead += ('Resposta ' + r.index + ': ').length; });
+  const remaining = Math.max(0, limit - headerLen - scaffoldOverhead);
+  const perResponseCap = Math.max(minPerResponse, Math.floor(remaining / count));
+  let truncatedCount = 0;
+  const fitted = list.map((r) => {
+    const text = (r && r.text) || '';
+    if (text.length > perResponseCap) {
+      truncatedCount++;
+      return { index: r.index, text: text.slice(0, Math.max(0, perResponseCap - 1)) + '…' };
+    }
+    return { index: r.index, text };
+  });
+  return { statement: cappedStatement, responses: fitted, truncatedCount };
 }
 
 // Strip optional ```json ... ``` fences, or extract the first {...} span from
@@ -125,9 +178,17 @@ export function parseEvalResponse(text) {
 // throws: a rate-limited call (aiChat resolves to null, per the codex-api.js
 // facade contract) becomes {error:'rate_limited'}, and a genuine exception is
 // caught, logged to the debug pill, and turned into {error}.
+// fitResponsesToBudget runs HERE, right before buildEvalPrompt, so only what the
+// MODEL sees is shortened; the view (content/tarefa-eval-view.js) is handed the
+// caller's original, full-length statement/responses and never sees the fitted
+// copy, so the instructor still reads every answer in full on screen.
 export function makeWorkerEval(aiChat) {
   return async function evalResponses({ statement, responses }) {
-    const prompt = buildEvalPrompt({ statement, responses });
+    const fitted = fitResponsesToBudget({ statement, responses });
+    if (fitted.truncatedCount > 0) {
+      _logInfo('tarefa-eval: ' + fitted.truncatedCount + ' resposta(s) encurtada(s) para caber no limite da IA (20000 chars)');
+    }
+    const prompt = buildEvalPrompt({ statement: fitted.statement, responses: fitted.responses });
     let res;
     try {
       res = await aiChat({
@@ -168,8 +229,16 @@ export function makeStubEval() {
   };
 }
 
-// SEED_RESPONSES, deterministic PT-BR demo fixture (offline, no AI call needed
-// to explore the view). A realistic classroom tarefa: an allegedly-abusive
+// SEED_RESPONSES: a TEST FIXTURE, for codex/tests/tarefa-eval.test.mjs ONLY.
+// It must NEVER be wired into a UI path (content/tarefas.js does not import it;
+// content/tarefa-eval-view.js renders no run button at all when there are zero
+// real answers). Élder's rule (verbatim intent, track-45 fix): "Essa opção de
+// teste só pode existir enquanto a gente estiver aqui. Em produção não pode
+// existir. Ele só vai dizer que não houve respostas e não vai fazer." If you are
+// tempted to re-add a seed/demo fallback to the real flow, don't: with zero
+// answers the product must say so and never call the AI. A realistic classroom
+// tarefa follows, kept only so the pure builder/parser tests have varied,
+// deterministic PT-BR input: an allegedly-abusive
 // contract clause to analyze under the CDC. Deliberately varied: several
 // strongly adherent answers, one that drifts from the prompt but raises a
 // point worth discussing in class, and two that diverge without adding much.

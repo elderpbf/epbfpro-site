@@ -13,8 +13,11 @@ import {
   parseEvalResponse,
   makeStubEval,
   makeWorkerEval,
+  fitResponsesToBudget,
   SEED_RESPONSES,
 } from '../js/tarefa-eval.js';
+import * as tarefaEvalView from '../content/tarefa-eval-view.js';
+import { t } from '../js/i18n.js';
 
 // ── buildEvalPrompt ──────────────────────────────────────────────────────────
 test('buildEvalPrompt: carries the statement + every indexed response + a strict-JSON instruction', () => {
@@ -173,6 +176,22 @@ test('makeWorkerEval: asks the worker for a generous output budget (thinking tok
   assert.ok(seen && seen.max_tokens >= 2000, 'max_tokens must not sit below the worker default of 2000');
 });
 
+// Regression guard for the live 2026-07-19 error: "ai_chat: messages exceed 20000
+// char total limit". makeWorkerEval must fit the prompt to the worker's REAL
+// ceiling (verified codex-api/src/ai.js:363-373: messages content total <= 20000,
+// system is separate and capped at 10000) before ever calling aiChat, even when
+// the caller hands it a huge, untruncated set of real answers.
+test('makeWorkerEval: a huge input still calls aiChat with a payload under the worker\'s 20000-char ceiling', async () => {
+  let seen = null;
+  const fakeChat = async (p) => { seen = p; return { text: '{"adherent":[1],"point":[],"diverged":[]}' }; };
+  const statement = 'E'.repeat(9000);
+  const responses = Array.from({ length: 40 }, (_, i) => ({ index: i + 1, text: 'R'.repeat(2000) }));
+  await makeWorkerEval(fakeChat)({ statement, responses });
+  assert.ok(seen, 'aiChat was called');
+  const totalChars = seen.messages.reduce((sum, m) => sum + (m.content || '').length, 0);
+  assert.ok(totalChars <= 20000, 'total message content stays under the worker ceiling: ' + totalChars);
+});
+
 test('makeWorkerEval: injected aiChat resolving to null (rate-limit) resolves to {error}, never throws', async () => {
   const fakeChat = async () => null;
   const evalFn = makeWorkerEval(fakeChat);
@@ -182,7 +201,13 @@ test('makeWorkerEval: injected aiChat resolving to null (rate-limit) resolves to
   });
 });
 
-// ── SEED_RESPONSES (the deterministic demo fixture) ──────────────────────────
+// ── SEED_RESPONSES (TEST FIXTURE ONLY, never wired into a UI path) ───────────
+// Élder's rule (verbatim intent, track-45 fix): "Essa opção de teste só pode
+// existir enquanto a gente estiver aqui. Em produção não pode existir. Ele só
+// vai dizer que não houve respostas e não vai fazer." So this fixture is
+// exercised HERE and nowhere else: content/tarefas.js no longer imports it, and
+// tarefa-eval-view.js renders no run button at all when there are zero real
+// answers (see the view test below).
 test('SEED_RESPONSES: a realistic PT-BR statement + a varied set of responses (6-8)', () => {
   assert.equal(typeof SEED_RESPONSES.statement, 'string');
   assert.ok(SEED_RESPONSES.statement.length > 20);
@@ -193,4 +218,91 @@ test('SEED_RESPONSES: a realistic PT-BR statement + a varied set of responses (6
     assert.equal(typeof r.text, 'string');
     assert.ok(r.text.length > 0);
   });
+});
+
+// ── fitResponsesToBudget ──────────────────────────────────────────────────────
+// The worker's ai_chat hard-caps total message content at 20000 chars (system is
+// separate and capped at 10000, verified codex-api/src/ai.js:363-373, so it never
+// counts here). Before the model ever sees the prompt, fitResponsesToBudget trims
+// statement + responses so the built message stays inside that ceiling, WITHOUT
+// touching what the view shows (the view always keeps the full text).
+test('fitResponsesToBudget: short input passes through untouched (truncatedCount === 0)', () => {
+  const statement = 'Enunciado curto.';
+  const responses = [
+    { index: 1, text: 'Resposta curta um.' },
+    { index: 2, text: 'Resposta curta dois.' },
+  ];
+  const out = fitResponsesToBudget({ statement, responses });
+  assert.equal(out.truncatedCount, 0);
+  assert.equal(out.statement, statement);
+  assert.deepEqual(out.responses, responses);
+});
+
+test('fitResponsesToBudget: a statement longer than statementMax is capped', () => {
+  const longStatement = 'x'.repeat(5000);
+  const out = fitResponsesToBudget({
+    statement: longStatement,
+    responses: [{ index: 1, text: 'a' }],
+    statementMax: 3000,
+  });
+  assert.ok(out.statement.length <= 3000, 'statement never exceeds statementMax');
+  assert.equal(out.statement.length, 3000);
+});
+
+test('fitResponsesToBudget: returned responses carry ONLY index/text keys (anonymity backstop through fitting)', () => {
+  const responses = [
+    { index: 1, text: 'a'.repeat(50), student_name: 'Fulano SECRETO' },
+    { index: 2, text: 'b'.repeat(50), student_name: 'Beltrana SECRETA' },
+  ];
+  const out = fitResponsesToBudget({ statement: 'Enunciado.', responses });
+  out.responses.forEach((r) => assert.deepEqual(Object.keys(r), ['index', 'text']));
+  const serialized = JSON.stringify(out.responses);
+  assert.ok(!serialized.includes('SECRETO') && !serialized.includes('SECRETA'), 'no student name survives fitting');
+});
+
+// Regression guard for the live 2026-07-19 error: "ai_chat: messages exceed 20000
+// char total limit". A real tarefa with many long real answers must never build a
+// prompt bigger than the worker's hard ceiling.
+test('fitResponsesToBudget: pathological input (40 responses x 2000 chars + 9000-char statement) fits the worker ceiling', () => {
+  const statement = 'E'.repeat(9000);
+  const responses = Array.from({ length: 40 }, (_, i) => ({ index: i + 1, text: 'R'.repeat(2000) }));
+  const out = fitResponsesToBudget({ statement, responses });
+  assert.ok(out.truncatedCount > 0, 'some responses were actually shortened');
+  const prompt = buildEvalPrompt({ statement: out.statement, responses: out.responses });
+  assert.ok(prompt.messages[0].content.length <= 19000, 'fitted prompt stays under the 19000 budget: got ' + prompt.messages[0].content.length);
+});
+
+// ── tarefa-eval-view: zero real answers ──────────────────────────────────────
+// Élder's rule (verbatim intent): "Essa opção de teste só pode existir enquanto a
+// gente estiver aqui. Em produção não pode existir. Ele só vai dizer que não
+// houve respostas e não vai fazer." With zero real answers the AI must be
+// STRUCTURALLY uncallable: no run button renders at all, not merely a disabled one.
+function _fakeViewEl() {
+  return {
+    _html: '',
+    set innerHTML(v) { this._html = String(v); },
+    get innerHTML() { return this._html; },
+    addEventListener() {},
+    removeEventListener() {},
+  };
+}
+
+test('tarefa-eval-view mount: zero responses renders the no-answers message and NO run button', () => {
+  const el = _fakeViewEl();
+  tarefaEvalView.mount(el, { statement: 'Enunciado.', responses: [], evalFn: async () => ({ groups: { adherent: [], point: [], diverged: [] } }) });
+  assert.ok(!/data-act="run"/.test(el.innerHTML), 'no run button rendered when there are zero real answers');
+  assert.notEqual(t('tarefas.eval_no_answers'), 'tarefas.eval_no_answers', 'eval_no_answers resolves to a real translation, not the raw key');
+  assert.ok(el.innerHTML.includes(t('tarefas.eval_no_answers')), 'the no-answers message renders');
+  tarefaEvalView.unmount();
+});
+
+test('tarefa-eval-view mount: at least one response still renders the run button (no regression)', () => {
+  const el = _fakeViewEl();
+  tarefaEvalView.mount(el, {
+    statement: 'Enunciado.',
+    responses: [{ index: 1, text: 'Resposta.' }],
+    evalFn: async () => ({ groups: { adherent: [1], point: [], diverged: [] } }),
+  });
+  assert.ok(/data-act="run"/.test(el.innerHTML), 'run button still renders when there is at least one real answer');
+  tarefaEvalView.unmount();
 });

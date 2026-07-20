@@ -1182,7 +1182,10 @@ export default {
   // by index (never by name) and letting the instructor open the full response in the list.
   'tarefas.eval_item_label':   'Response',
   'tarefas.eval_open_in_list': 'View in list',
-  'tarefas.eval_seed_note':    'This assignment has no real responses yet: the data below is a sample, for demo purposes only.',
+  // track-45 fix: zero real answers never falls back to a seed/demo sample; it only
+  // says there are no answers and never calls the AI (Élder's rule: no such fallback
+  // may exist in production).
+  'tarefas.eval_no_answers':   'This assignment has no responses yet. The AI will not be called.',
   'tarefas.eval_open_failed':  'Could not locate the response in the list.',
 
   // Content → Labs / Drive (deferred-global wrappers)

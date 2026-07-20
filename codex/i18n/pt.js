@@ -1188,7 +1188,9 @@ export default {
   // resposta pelo índice (nunca por nome) e permite abrir a resposta completa na lista.
   'tarefas.eval_item_label':   'Resposta',
   'tarefas.eval_open_in_list': 'Ver na lista',
-  'tarefas.eval_seed_note':    'Esta tarefa ainda não tem respostas reais: os dados abaixo são um exemplo, só para demonstração.',
+  // track-45 fix: zero respostas reais nunca cai num exemplo/seed; só diz que não há
+  // respostas e não chama a IA (regra do Élder: em produção essa opção não pode existir).
+  'tarefas.eval_no_answers':   'Esta tarefa ainda não tem respostas. A IA não será chamada.',
   'tarefas.eval_open_failed':  'Não foi possível localizar a resposta na lista.',
 
   // Content → Labs / Drive (deferred-global wrappers)

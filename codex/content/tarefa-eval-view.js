@@ -5,7 +5,9 @@
 // each showing ONLY the anonymous response excerpt (+ a short note when the
 // model gave one), never a name, never a submission id. Mounted inside a
 // modal opened from content/tarefas.js (._openTevalModal), gated behind the
-// bs_debug flag; never wired into the real answers flow.
+// bs_debug flag, and run on the REAL submissions for the item (never a
+// seed/demo fallback: with zero real answers, mount() renders the no-answers
+// message and no run button at all, see _noAnswers below).
 //
 // Module contract mirrors questions/questions.js: mount(viewEl, ctx) + unmount().
 import { t } from '../js/i18n.js';
@@ -17,11 +19,12 @@ let _evalFn = null;
 let _statement = '';
 let _responses = [];
 let _idByIndex = {};        // index -> real submission id, so a click can find it in the answers pane
-let _onOpenResponse = null; // (index) => void, opens the real answer in the list; null in the seed/demo case
+let _onOpenResponse = null; // (index) => void, opens the real answer in the list; null when the caller has none to jump to
 let _status = 'idle';   // 'idle' | 'loading' | 'done' | 'error'
 let _result = null;     // { groups, notes? }
 let _errorCode = null;
 let _onClick = null;
+let _noAnswers = false; // true when ctx.responses is empty: no run button renders, the AI is structurally uncallable
 
 function _log(msg) {
   if (typeof window !== 'undefined' && typeof window.bsLog === 'function') window.bsLog(msg, 'error');
@@ -80,8 +83,21 @@ function _bodyHtml() {
   return '<div class="cdx-teval-empty">' + _esc(t('tarefas.eval_idle')) + '</div>';
 }
 
+// Élder's rule (verbatim intent, track-45 fix): "Essa opção de teste só pode
+// existir enquanto a gente estiver aqui. Em produção não pode existir. Ele só vai
+// dizer que não houve respostas e não vai fazer." So with zero real answers the
+// AI must be STRUCTURALLY uncallable: no toolbar, no run button at all (not a
+// disabled one), just the no-answers message. No seed/demo fallback is used here
+// or anywhere in this module.
 function _render() {
   if (!_viewEl) return;
+  if (_noAnswers) {
+    _viewEl.innerHTML =
+      '<div class="cdx-teval">' +
+        '<div class="cdx-teval-empty">' + _esc(t('tarefas.eval_no_answers')) + '</div>' +
+      '</div>';
+    return;
+  }
   const busy = _status === 'loading';
   _viewEl.innerHTML =
     '<div class="cdx-teval">' +
@@ -95,7 +111,7 @@ function _render() {
 }
 
 function _run() {
-  if (_status === 'loading' || typeof _evalFn !== 'function') return;
+  if (_noAnswers || _status === 'loading' || typeof _evalFn !== 'function') return;
   _status = 'loading';
   _render();
   Promise.resolve(_evalFn({ statement: _statement, responses: _responses })).then((res) => {
@@ -131,6 +147,7 @@ export function mount(viewEl, ctx) {
   _status = 'idle';
   _result = null;
   _errorCode = null;
+  _noAnswers = _responses.length === 0;
   _render();
   _onClick = (e) => {
     if (e.target.closest('[data-act="run"]')) { e.preventDefault(); _run(); return; }
@@ -162,4 +179,5 @@ export function unmount() {
   _result = null;
   _errorCode = null;
   _onClick = null;
+  _noAnswers = false;
 }

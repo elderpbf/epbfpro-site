@@ -521,12 +521,6 @@
 .cdx-teval-item-actions { margin-top: 0.4rem; }
 .cdx-teval-item-open { cursor: pointer; }
 .cdx-teval-col-empty { color: var(--text-secondary); font-size: 0.82rem; font-style: italic; }
-.cdx-teval-seed-note {
-  font-size: 0.8rem;
-  font-style: italic;
-  color: var(--text-secondary);
-  margin: -0.4rem 0 0.9rem;
-}
 /* Temporary highlight on the real answer card the "Ver na lista" click lands on
    (tarefas.js _openResponseInList), removed again after ~2s via setTimeout. Built from
    the already-themed --accent + --success tokens, both redefined under

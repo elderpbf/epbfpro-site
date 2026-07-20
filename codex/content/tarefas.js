@@ -21,7 +21,7 @@ import * as toast from '../js/toast.js';
 // js/tarefa-eval.js (pure, injectable); the projectable 3-group screen is
 // content/tarefa-eval-view.js, mounted inside a modal opened from this file.
 import * as tarefaEvalView from './tarefa-eval-view.js';
-import { makeWorkerEval, buildEvalInput, SEED_RESPONSES } from '../js/tarefa-eval.js';
+import { makeWorkerEval, buildEvalInput } from '../js/tarefa-eval.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -388,27 +388,22 @@ function _openConfirmSimple(message, onConfirm) {
 // ── track-45 Fatia 2: AI synthesis preview modal (dev-only) ──────────────────
 // A modal (not an inline panel) so it survives whatever the answers pane does
 // underneath it (toggling a flag, saving a reply/grade all re-render
-// _renderSubmissions's innerHTML). Runs on the REAL submissions for this item
-// (anonymized through buildEvalInput before the model ever sees them); only
-// when the tarefa has zero real answers does it fall back to the deterministic
-// SEED_RESPONSES fixture, so the screen still demos with no data, and a note in
-// the title area makes that fallback obvious (never silently shown as real).
+// _renderSubmissions's innerHTML). Runs ONLY on the REAL submissions for this
+// item, anonymized through buildEvalInput before the model ever sees them.
+// Élder's rule (verbatim intent, track-45 fix): "Essa opção de teste só pode
+// existir enquanto a gente estiver aqui. Em produção não pode existir. Ele só
+// vai dizer que não houve respostas e não vai fazer." So there is no seed/demo
+// fallback here: with zero real answers, buildEvalInput([]) yields an empty
+// responses list, and tarefa-eval-view.mount renders the no-answers message with
+// no run button at all (see content/tarefa-eval-view.js), never calling the AI.
 function _openTevalModal(itemId) {
   const subs = _submissions[itemId] || [];
   const rows = subs.map((s) => ({ id: s.id, text: _field(s.answer_type || 'text').toCsvValue(s.answer_json) }));
-  const usingSeed = rows.length === 0;
   const item = _items.find((i) => Number(i.id) === Number(itemId)) || {};
-  // Real answers: anonymize through buildEvalInput (index/text only reach the model,
-  // idByIndex stays here for the click-back). No real answers: SEED_RESPONSES as-is
-  // (it is already {index,text}), idByIndex empty, no onOpenResponse, so the "Ver na
-  // lista" affordance simply does not render (there is no real list to jump to).
-  const built = usingSeed
-    ? { statement: SEED_RESPONSES.statement, responses: SEED_RESPONSES.responses, idByIndex: {} }
-    : { statement: item.body_md || '', ...buildEvalInput(rows) };
+  const built = { statement: item.body_md || '', ...buildEvalInput(rows) };
   const html =
     '<div class="cdx-modal cdx-teval-modal">' +
       '<div class="cdx-modal-title">' + t('tarefas.eval_panel_title') + '</div>' +
-      (usingSeed ? '<div class="cdx-teval-seed-note">' + _esc(t('tarefas.eval_seed_note')) + '</div>' : '') +
       '<div class="cdx-teval-host" id="cdx-teval-host"></div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="close">' + t('content.cancel') + '</button>' +
@@ -423,7 +418,7 @@ function _openTevalModal(itemId) {
     statement: built.statement,
     responses: built.responses,
     idByIndex: built.idByIndex,
-    onOpenResponse: usingSeed ? null : (index) => _openResponseInList(itemId, built.idByIndex[index]),
+    onOpenResponse: (index) => _openResponseInList(itemId, built.idByIndex[index]),
   });
 }
 function _closeTevalModal() {
