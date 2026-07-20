@@ -30,9 +30,10 @@ test('courses module satisfies the sub-module contract', () => {
 });
 
 test('courses talks to the backend only through the courses facade', () => {
-  // The course CRUD facade, plus the shared `ai` facade for the assistant — both
+  // The course CRUD facade, plus the shared `ai` facade for the assistant, plus
+  // (track-46 fatia 2b) the `roteiro` facade for the base-roteiro editor — all
   // from codex-api.js (never callWorker directly).
-  assert.match(courses, /import \{ courses as api, ai(?:, content as contentApi)? \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses + ai (+ content) facades');
+  assert.match(courses, /import \{ courses as api, ai(?:, content as contentApi)?(?:, roteiro as roteiroApi)? \} from '\.\.\/js\/codex-api\.js'/, 'imports the courses + ai (+ content) (+ roteiro) facades');
   for (const m of ['api.list', 'api.get', 'api.create', 'api.update', 'api.archive']) {
     assert.ok(courses.includes(m + '('), `uses ${m}()`);
   }

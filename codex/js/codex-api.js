@@ -265,6 +265,19 @@ export const courses = {
   setSection:    (p) => call('ct_set_course_section', p)      // { course_id, section_id|null, ordered_ids? } — move + reposition
 };
 
+// Roteiro (lesson runbook, track-46 fatia 2). Two scopes on the same ct_* family:
+// the aula's own editable copy (roteiro_json + which curso base it points at) and
+// the curso's numbered base library (Cursos -> base editor, cohorts/courses.js).
+// Consumed by roteiro/roteiro-store.js (aula side) and cohorts/courses.js (curso
+// side); never called with callWorker directly. Action names per the frozen
+// contract in manifest/tasks/track-46.md, built in parallel on the Worker.
+export const roteiro = {
+  getAula:         (p) => call('ct_get_aula_roteiro', p),     // { id } -> { roteiro_json, roteiro_base_number }
+  setAula:         (p) => call('ct_set_aula_roteiro', p),     // { id, roteiro_json, roteiro_base_number } -> { ok }
+  listCourseBases: (p) => call('ct_list_course_roteiros', p), // { course_id } -> { roteiros:[{id,aula_number,roteiro_json}] }
+  saveCourseBase:  (p) => call('ct_save_course_roteiro', p),  // { course_id, aula_number, roteiro_json } -> { ok, id } (UPSERT on course_id+aula_number)
+};
+
 // Content — the item library (Items sub-tab) plus the shared types/tags it
 // depends on. Action names read from ct-admin.js; param shapes noted inline.
 export const content = {
