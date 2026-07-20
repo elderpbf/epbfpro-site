@@ -85,9 +85,14 @@ function pGlyph(outerColor, brainColor, dotColor, tx = 0, ty = 0, scale = 1) {
 // the artwork self-sufficient: correct on a device without Comfortaa installed, inside an
 // <img>/data: URI (an isolated document that never sees the page's webfont), and offline.
 // Only variants that actually carry text pay for it — mark()/favicons stay lean.
-function buildSvg(viewBox, content) {
+function buildSvg(viewBox, content, o = {}) {
+  const open = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet">`;
+  // A plate is a coloured shape with an already-complete SVG nested inside it. It owns
+  // no text of its own, so a `text{}` rule on the outer element would be a dead rule
+  // shadowing the live one the nested artwork carries.
+  if (o.noStyle) return `${open}${content}</svg>`;
   const font = content.includes('<text') ? BRAND_FONT_CSS : '';
-  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="${viewBox}" preserveAspectRatio="xMidYMid meet"><style>${font}text{font-family:'Comfortaa',sans-serif}</style>${content}</svg>`;
+  return `${open}<style>${font}text{font-family:'Comfortaa',sans-serif}</style>${content}</svg>`;
 }
 
 // mark: just the P glyph, standalone
@@ -111,6 +116,80 @@ export function glyphWordmark(c, o = {}) {
   const wmX = showSymbol ? 610 : 0;
   content += `<text x="${wmX}" y="615" font-size="500" letter-spacing="-10" font-weight="${ensoWeight}" fill="${c.ensoColor}">enso<tspan font-weight="${iaWeight}" fill="${c.iaColor}">IA</tspan></text>`;
   return buildSvg(viewBox, content);
+}
+
+// Nest one built SVG inside another as a positioned child. Ported verbatim from the
+// backstage twin, which had it and this module did not: it is what the plate variants
+// below need, and its absence is why they lived outside the generator until track-47.
+// The nested copy drops the embedded font: the HOST carries it once, and a second
+// ~5 KB copy of the same two faces inside the child is exactly the duplication this
+// module exists to prevent. The `text{}` rule stays, since that is what binds the
+// child's own <text> to the family the host declared.
+export function embedSvg(svgStr, x, y, w, h) {
+  return svgStr
+    .replace(BRAND_FONT_CSS, '')
+    .replace(/^<svg([^>]*)>/, `<svg$1 x="${x}" y="${y}" width="${w}" height="${h}">`);
+}
+
+// The surface a plate variant sits on. Distinct from stdColors, which returns the INK:
+// on bg.navy the plate is navy and the ink goes white, and nothing paints a plate teal.
+export function plateFill(bg) {
+  return bg === 'navy' ? C.navy : C.white;
+}
+
+// iconPlate: the shared chassis of every square/circle brand icon. A 1000x1000 plate
+// with the P mark centred on it. Only three things vary between the five variants, so
+// they are three arguments rather than five near-copies: the plate silhouette, its
+// corner radius, and how much of the plate the mark fills.
+//
+// The mark's box is fully derived from markHeight - it is centred both ways and keeps
+// the 600:757 aspect of mark(). Deriving it is the point: an icon whose glyph is off
+// centre is the classic hand-exported defect, and here it cannot happen.
+// MARK_RATIO is computed once and multiplied, never `h * 600 / 757` inline. The two
+// forms differ in the last float digit for h=560, which is invisible on screen and a
+// byte difference in the file - and a byte difference is exactly what the sync test
+// calls drift. The canonical exports were written with this form; matching it is what
+// makes the port a COPY rather than a reconstruction.
+const MARK_RATIO = 600 / 757;
+
+function iconPlate(bg, shape, rx, markHeight) {
+  const w = markHeight * MARK_RATIO;
+  const plate = shape === 'circle'
+    ? `<circle cx="500" cy="500" r="500" fill="${plateFill(bg)}"/>`
+    : `<rect width="1000" height="1000" rx="${rx}" fill="${plateFill(bg)}"/>`;
+  const glyph = embedSvg(mark(stdColors(bg)), (1000 - w) / 2, (1000 - markHeight) / 2, w, markHeight);
+  return buildSvg('0 0 1000 1000', plate + glyph, { noStyle: true });
+}
+
+// The five plate variants. The numbers are the canonical set's, carried over value for
+// value from PensoIA/Brand/Logo/with bg/ rather than re-derived by taste: adaptive icons
+// need the extra breathing room because the launcher crops them to its own silhouette.
+export function faviconSquare(bg) { return iconPlate(bg, 'rect', 220, 640); }
+export function faviconCircle(bg) { return iconPlate(bg, 'circle', 0, 640); }
+export function appicon(bg) { return iconPlate(bg, 'rect', 220, 600); }
+export function appiconAdaptiveSquircle(bg) { return iconPlate(bg, 'rect', 380, 560); }
+export function appiconAdaptiveCircle(bg) { return iconPlate(bg, 'circle', 0, 500); }
+
+// bizCard: the one variant whose text VARIES (a person's name and e-mail), which is why
+// it is the variant that must keep a real embedded font rather than outlined letters.
+// The e-mail is deliberately NOT Comfortaa: a monospace address is easier to transcribe
+// by eye, and it is outside the 29-character subset on purpose.
+export function bizCard(bg, o = {}) {
+  const {
+    nome = 'Élder Prudente Barbosa Filho',
+    papel = 'Fundador · PensoIA',
+    email = 'contato@pensoia.com'
+  } = o;
+  const c = stdColors(bg);
+  const tinta = bg === 'navy' ? C.white : C.navy;
+  const suave = bg === 'navy' ? 'rgba(255,255,255,0.7)' : 'rgba(6,26,81,0.7)';
+  let content = `<rect width="320" height="188" fill="${plateFill(bg)}"/>`;
+  content += embedSvg(glyphWordmark(c), 22, 22, 170, 170 * 870 / 2400);
+  content += `<line x1="22" y1="110" x2="60" y2="110" stroke="${C.teal}" stroke-width="1.5"/>`;
+  content += `<text x="22" y="128" font-size="11" font-weight="700" fill="${tinta}">${nome}</text>`;
+  content += `<text x="22" y="143" font-size="9" font-weight="400" fill="${suave}">${papel}</text>`;
+  content += `<text x="22" y="165" font-size="9" font-weight="400" fill="${C.teal}" font-family="ui-monospace,Menlo,monospace">${email}</text>`;
+  return buildSvg('0 0 320 188', content);
 }
 
 // glyphWordmarkTag: glyphWordmark + tagline right-aligned to IA-end via textLength.

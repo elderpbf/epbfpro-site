@@ -15,23 +15,28 @@
 
 import * as logos from '../js/brand-logos.js';
 
-// One builder per variant family. Key = the `<base>` half of the naming convention
-// in PensoIA/Brand/manifest/naming.md (`<base>_<mods>_<render>.<ext>`).
+// One builder per variant family, each a function of the background key. Key = the
+// `<base>` half of the naming convention in PensoIA/Brand/manifest/naming.md
+// (`<base>_<mods>_<render>.<ext>`).
 const BUILDERS = {
-  'mark': logos.mark,
-  'font-wordmark': logos.fontWordmark,
-  'glyph-wordmark': logos.glyphWordmark,
-  'glyph-wordmark_tag': logos.glyphWordmarkTag
+  'mark': bg => logos.mark(logos.stdColors(bg)),
+  'font-wordmark': bg => logos.fontWordmark(logos.stdColors(bg)),
+  'glyph-wordmark': bg => logos.glyphWordmark(logos.stdColors(bg)),
+  'glyph-wordmark_tag': bg => logos.glyphWordmarkTag(logos.stdColors(bg)),
+  'favicon-square': logos.faviconSquare,
+  'favicon-circle': logos.faviconCircle,
+  'appicon': logos.appicon,
+  'appicon-adaptive-circle': logos.appiconAdaptiveCircle,
+  'appicon-adaptive-squircle': logos.appiconAdaptiveSquircle,
+  'biz-card': logos.bizCard
 };
 
-// Variants the canonical set ships but the generator does NOT build. Their
-// composition currently lives in the inline <script> of the backstage mock
-// `mocks/brand/brand-book.html`, which is an 8th origin the Problem table missed.
-// Listed so the coverage test can name the gap instead of silently omitting it.
-export const UNBUILT_VARIANTS = [
-  'favicon-square', 'favicon-circle', 'appicon',
-  'appicon-adaptive-circle', 'appicon-adaptive-squircle', 'biz-card'
-];
+// Variants the canonical set ships that the generator cannot build. Empty since the
+// track-47 step 4.b: the five plate icons and the business card were composed by hand
+// (an 8th origin the Problem table missed) and now come out of js/brand-logos.js like
+// everything else. Kept as an exported empty list, not deleted, because the coverage
+// report is only honest if this number is printed even when it is zero.
+export const UNBUILT_VARIANTS = [];
 
 // Why a standalone brand file carries this and a runtime string does not: the file
 // is the thing someone opens, edits by hand, or copies into a deck. No '<' and no
@@ -48,12 +53,14 @@ const FILE_HEADER =
   'quadrado vazio. NUNCA escreva sinal de menor-que nem E-comercial neste comentario: como ' +
   'imagem o SVG e lido como XML e isso quebra o arquivo. */';
 
-// The canonical bytes of one standalone brand file.
+// The canonical bytes of one standalone brand file. The header only goes on files that
+// actually carry the font: a plate icon is pure geometry with no <text> in it, and
+// explaining an embedded font that is not there would be a comment that lies.
 export function emit(entry) {
   const build = BUILDERS[entry.variant];
   if (!build) throw new Error(`brand-manifest: no builder for variant "${entry.variant}"`);
-  const svg = build(logos.stdColors(entry.bg));
-  return svg.replace('<style>', '<style>' + FILE_HEADER);
+  const svg = build(entry.bg);
+  return svg.includes('@font-face') ? svg.replace('<style>', '<style>' + FILE_HEADER) : svg;
 }
 
 // repo keys. Only `site` is reachable from this tree; the others are declared so the
@@ -114,7 +121,34 @@ export const ARTIFACTS = [
   { variant: 'glyph-wordmark_tag', bg: 'white', format: 'svg', targets: [
     { repo: 'brand', path: 'Logo/without bg/glyph-wordmark_tag_bg.white.svg' } ] },
   { variant: 'glyph-wordmark_tag', bg: 'teal', format: 'svg', targets: [
-    { repo: 'brand', path: 'Logo/without bg/glyph-wordmark_tag_bg.teal.svg' } ] }
+    { repo: 'brand', path: 'Logo/without bg/glyph-wordmark_tag_bg.teal.svg' } ] },
+
+  // As placas. Só existem sobre navy ou branco: uma placa é uma SUPERFÍCIE, e a marca
+  // precisa de contraste contra ela, então transp e teal não fazem sentido aqui.
+  { variant: 'favicon-square', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/favicon-square_bg.white.svg' } ] },
+  { variant: 'favicon-square', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/favicon-square_bg.navy.svg' } ] },
+  { variant: 'favicon-circle', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/favicon-circle_bg.white.svg' } ] },
+  { variant: 'favicon-circle', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/favicon-circle_bg.navy.svg' } ] },
+  { variant: 'appicon', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon_bg.white.svg' } ] },
+  { variant: 'appicon', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon_bg.navy.svg' } ] },
+  { variant: 'appicon-adaptive-circle', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon-adaptive-circle_bg.white.svg' } ] },
+  { variant: 'appicon-adaptive-circle', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon-adaptive-circle_bg.navy.svg' } ] },
+  { variant: 'appicon-adaptive-squircle', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon-adaptive-squircle_bg.white.svg' } ] },
+  { variant: 'appicon-adaptive-squircle', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/appicon-adaptive-squircle_bg.navy.svg' } ] },
+  { variant: 'biz-card', bg: 'white', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/biz-card_bg.white.svg' } ] },
+  { variant: 'biz-card', bg: 'navy', format: 'svg', targets: [
+    { repo: 'brand', path: 'Logo/with bg/biz-card_bg.navy.svg' } ] }
 ];
 
 // Raster artifacts. Same manifest, no emitter yet: a PNG comes out of the same SVG

@@ -110,8 +110,13 @@ test('a divergência é SÓ o que já está nomeado, nada novo entrou', () => {
 
 test('cobertura: o que o manifesto ainda NÃO alcança está contado, não escondido', () => {
   // Rule 7, fail loud: um teste que só olha o que já cobre mede a própria sombra.
+  // UNBUILT_VARIANTS pode legitimamente ser zero (foi pra zero no 4.b), então aqui não
+  // se exige que haja buraco, se exige que o buraco seja CONTADO. O que não pode é a
+  // lista sumir do manifesto e o relatório continuar parecendo completo.
   const foraDaArvore = ARTIFACTS.flatMap(a => a.targets).filter(t => !inTree(t));
-  assert.ok(foraDaArvore.length > 0 && UNBUILT_VARIANTS.length > 0 && RASTER_ARTIFACTS.length > 0);
+  assert.ok(Array.isArray(UNBUILT_VARIANTS), 'UNBUILT_VARIANTS sumiu do manifesto');
+  assert.ok(foraDaArvore.length > 0, 'alvos em backstage/Brand sumiram do manifesto');
+  assert.ok(RASTER_ARTIFACTS.length > 0, 'os PNGs sumiram do manifesto');
 
   const porDelta = {};
   for (const t of alvos()) {
@@ -124,6 +129,7 @@ test('cobertura: o que o manifesto ainda NÃO alcança está contado, não escon
     Object.entries(porDelta).map(([k, v]) => `    ${String(v.length).padStart(2)}x ${k}`).join('\n') +
     `\n\n  [track-47 | o que este teste NÃO alcança]\n` +
     `    ${String(foraDaArvore.length).padStart(2)}x alvo em backstage/Brand (outro repo, só declarado)\n` +
-    `    ${String(UNBUILT_VARIANTS.length).padStart(2)}x variante sem builder: ${UNBUILT_VARIANTS.join(', ')}\n` +
+    `    ${String(UNBUILT_VARIANTS.length).padStart(2)}x variante sem builder no gerador` +
+      (UNBUILT_VARIANTS.length ? `: ${UNBUILT_VARIANTS.join(', ')}\n` : '  (todas cobertas desde o 4.b)\n') +
     `    ${String(RASTER_ARTIFACTS.length).padStart(2)}x PNG declarado, ainda sem emissor\n`);
 });
