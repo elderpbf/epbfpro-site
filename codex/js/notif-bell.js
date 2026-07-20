@@ -13,7 +13,7 @@
 // after open. A collapsed "Histórico" holds what was already cleared this session,
 // split into two named mini-tabs. Refresh policy: on creation + every window focus.
 import { relTime } from './rel-time.js';
-import { dismissalFor, clearsOnRead, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
+import { dismissalFor, DISPENSAVEIS_ENABLED, DISMISS_OPEN, DISMISS_ACT } from './notif-policy.js';
 import { esc } from './dom.js';
 import { glyphSvg } from './glyphs.js';
 import * as notifBus from './notif-bus.js';
@@ -84,6 +84,7 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
   const hist = wrap.querySelector('.cdx-bell-hist');
   const histToggle = wrap.querySelector('.cdx-bell-histtoggle');
   const histBody = wrap.querySelector('.cdx-bell-histbody');
+  const histTabs = wrap.querySelector('.cdx-bell-histtabs');
   const histList = wrap.querySelector('.cdx-bell-histlist');
 
   // Session-local history of already-cleared items, split by tier (no backend history
@@ -155,13 +156,13 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
       a.addEventListener('click', () => {
         const it = items[parseInt(a.getAttribute('data-bell-i'), 10)];
         closePanel();
-        // Opening a read-completes ACIONÁVEL (notif-policy clearsOnRead) IS the dismissal: it
-        // stops counting and drops into the Acionáveis history, exactly as its × does. Same
-        // optimistic-then-server order as the × handler, and deliberately NO refresh — a
-        // re-fetch here would race the dismissal write and bring the row straight back.
-        // Everything else keeps the old path (Dispensáveis clear on tray-open; an ACIONÁVEL
-        // that needs WORK done must survive the click that goes to do it).
-        if (it && _isAct(it) && dismissItem && clearsOnRead(it, role)) {
+        // Clicking an ACIONÁVEL IS one of its two dismissals (Élder 2026-07-19: "o acionável
+        // só desaparece se você clicar no × ou clicar nele — aí ele some pro histórico").
+        // Same for EVERY acionável, no sub-rule. Same optimistic-then-server order as the ×
+        // handler, and deliberately NO refresh: a re-fetch here would race the dismissal
+        // write and bring the row straight back. A Dispensável keeps the old path — it has
+        // already cleared on tray-open, so the click only marks seen + navigates.
+        if (it && _isAct(it) && dismissItem) {
           _histPush('act', it);
           _items = _items.filter((i) => i !== it);
           setBadge(_items.filter((i) => !i.seen).length);
@@ -179,8 +180,13 @@ export function createBell({ fetchNotifications, markSeen, markAll, dismissItem,
     const has = _hist.act.length || _hist.open.length;
     hist.hidden = !has;
     if (!has) return;
-    wrap.querySelectorAll('.cdx-bell-histtab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-hist') === _histTab));
-    const bucket = _hist[_histTab] || [];
+    // Two mini-tabs ONLY when both tiers can actually produce rows. With Dispensáveis off
+    // (notif-policy DISPENSAVEIS_ENABLED) the history is ONE flat list: naming a split the
+    // user cannot see is pure chrome (Élder 2026-07-19).
+    const split = DISPENSAVEIS_ENABLED && _hist.act.length > 0 && _hist.open.length > 0;
+    if (histTabs) histTabs.hidden = !split;
+    if (split) wrap.querySelectorAll('.cdx-bell-histtab').forEach((b) => b.classList.toggle('active', b.getAttribute('data-hist') === _histTab));
+    const bucket = split ? (_hist[_histTab] || []) : (_hist.act.length ? _hist.act : _hist.open);
     if (!bucket.length) { histList.innerHTML = '<div class="cdx-bell-empty">' + esc(t('notif.empty')) + '</div>'; return; }
     const now = Math.floor(Date.now() / 1000);
     histList.innerHTML = bucket.map((it) => {
