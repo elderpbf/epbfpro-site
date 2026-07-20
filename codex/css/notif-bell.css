@@ -92,8 +92,10 @@ pensoia-header .ph-action-btn.cdx-bell-btn { width: 36px; height: 36px; padding:
 }
 .cdx-bell-histtab.active { color: var(--primary-dark); border-bottom-color: var(--primary); }
 .cdx-bell-histlist { max-height: 220px; overflow-y: auto; }
-.cdx-bell-notif--hist { cursor: default; opacity: .78; }
-.cdx-bell-notif--hist:hover { background: none; }
+/* A history row is muted but NOT inert: a dismissed notification is still readable, and
+   clicking it re-opens the thing (Élder 2026-07-19). Keeps the pointer + hover it inherits. */
+.cdx-bell-notif--hist { opacity: .78; }
+.cdx-bell-notif--hist:hover { background: rgba(20,184,166,.06); opacity: 1; }
 .cdx-bell-notif--hist .cdx-bell-dot { background: var(--border); }
 
 /* Mobile: the tray is anchored (right:0) to the bell button, which on the Trilha

@@ -406,6 +406,12 @@ export const certificates = {
   attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };
 
+// track-44 — comunicados (broadcast autorado). send returns { ok, comunicado_id, reach:{bell,email,push} }.
+export const comunicados = {
+  send: (p) => call('ct_comunicado_send', p), // { scope:'global'|'turmas', turma_ids?, category, title, body, image_key?, link?, channels:{bell,email,push} }
+  list: (p) => call('ct_comunicado_list', p), // { limit? } -> { ok, comunicados:[...] }
+};
+
 // Generic e-mail (shared transport). Any tab composes its own subject/body and
 // calls email.send; the Worker forwards to Resend via lib/email.js. Auth-required.
 // Prefer the js/codex-email.js helper (validation + error routing) over calling
