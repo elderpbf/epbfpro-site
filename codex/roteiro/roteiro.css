@@ -35,9 +35,22 @@
 }
 .cdx-roteiro-empty { color: var(--text-secondary); font-size: .9rem; padding: 12px 4px; }
 
-/* ── Left: rail row content (renderRow) + section head content (renderHead) ── */
-.cdx-roteiro-row-rotulo { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); font-size: .92rem; }
-.cdx-roteiro-row-dur { flex-shrink: 0; font-size: .8rem; color: var(--text-secondary); }
+/* ── Left: rail row content (renderRow) + section head content (renderHead) ──
+   Own flex row nested INSIDE .cdx-rail-main (list-rail.css), so wrapping never
+   touches the shared rail's own layout. rotulo WRAPS instead of truncating, even
+   at the resizer's minimum width (Élder 2026-07-20: "nenhum conteúdo deve ser
+   cortado") — the row grows taller instead of clipping text. dur is a fixed-width
+   column, vertically centred against the wrapped rotulo's full height (align-items:
+   center on the shared row), and never shrinks below its own content. */
+.cdx-roteiro-row { display: flex; align-items: center; gap: 8px; width: 100%; min-width: 0; }
+.cdx-roteiro-row-rotulo {
+  flex: 1; min-width: 0; white-space: normal; overflow-wrap: break-word; word-break: break-word;
+  color: var(--text-primary); font-size: .92rem; line-height: 1.3;
+}
+.cdx-roteiro-row-dur {
+  flex-shrink: 0; min-width: 2.8em; font-size: .8rem; color: var(--text-secondary);
+  text-align: right; align-self: center;
+}
 .cdx-roteiro-sec-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .cdx-roteiro-sec-dur { flex-shrink: 0; font-size: .72rem; color: var(--text-secondary); font-weight: 600; margin-right: 4px; }
 .cdx-roteiro-add-pausa { width: 100%; }

@@ -66,11 +66,17 @@ export function buildRailConfig(roteiro, state, handlers, gridEl) {
     title: t('cohorts.aula_tab_roteiro'),
     items,
     getId: (it) => it.id,
+    // Own flex row INSIDE .cdx-rail-main (never make .cdx-rail-main itself flex — it is
+    // shared by 10+ other rails). rotulo wraps instead of truncating (Élder 2026-07-20:
+    // "nenhum conteúdo deve ser cortado"); dur is a fixed-width column, vertically centred
+    // against the wrapped rotulo's full height, pinned right even across multiple lines.
     renderRow: (it) => ({
       main:
-        '<span class="cdx-roteiro-dot cdx-roteiro-dot--' + _esc(it.tipo) + '"></span>' +
-        '<span class="cdx-roteiro-row-rotulo">' + _esc(it.rotulo || t('roteiro.no_rotulo')) + '</span>' +
-        '<span class="cdx-roteiro-row-dur">' + _esc(fmtDur(it.dur)) + '</span>',
+        '<span class="cdx-roteiro-row">' +
+          '<span class="cdx-roteiro-dot cdx-roteiro-dot--' + _esc(it.tipo) + '"></span>' +
+          '<span class="cdx-roteiro-row-rotulo">' + _esc(it.rotulo || t('roteiro.no_rotulo')) + '</span>' +
+          '<span class="cdx-roteiro-row-dur">' + _esc(fmtDur(it.dur)) + '</span>' +
+        '</span>',
     }),
     selectedId: () => selectedPontoId,
     onSelect: (id) => call('onSelectPonto', id),
