@@ -9,7 +9,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  CATEGORIES, CHANNELS, gridRows, channelsHtml, mergePref,
+  CATEGORIES, CHANNELS, gridRows, channelsHtml, mergePref, displayPrefs,
 } from '../trilha/js/notif-channels.js';
 
 // The grid axes must match the worker's src/lib/notify.js exactly — a category or channel that
@@ -108,4 +108,50 @@ test('channelsHtml: pushNeedsInstall swaps the header hint from "soon" to the in
   const install = channelsHtml({}, { pushAvailable: false, pushNeedsInstall: true });
   assert.doesNotMatch(install, /em breve/);
   assert.match(install, /instale o app/);
+});
+
+// The bug this guards: comunicado defaults to push:true (DEFAULT_PREFS). If the cell rendered
+// straight from that pref, a capable-but-not-yet-subscribed device would show it already
+// CHECKED, so the student would never touch it, so subscribePush() would never run, so the
+// switch would say ON while delivering nothing forever. displayPrefs is openNotifChannels's
+// fix: force every push cell off for DISPLAY until this device is confirmed subscribed.
+const DISPLAY_PREFS_FIXTURE = {
+  comunicado:      { bell: true, email: true,  push: true  }, // the flagship default-ON case
+  tarefa_feedback: { bell: true, email: false, push: false },
+};
+
+test('displayPrefs: not subscribed forces every push cell off, even one whose stored pref is true', () => {
+  const out = displayPrefs(DISPLAY_PREFS_FIXTURE, false);
+  assert.equal(out.comunicado.push, false);
+  assert.equal(out.tarefa_feedback.push, false);
+  // Only push is touched — bell/email keep rendering exactly what the server holds.
+  assert.equal(out.comunicado.bell, true);
+  assert.equal(out.comunicado.email, true);
+});
+
+test('displayPrefs: subscribed renders the real prefs untouched', () => {
+  assert.deepEqual(displayPrefs(DISPLAY_PREFS_FIXTURE, true), DISPLAY_PREFS_FIXTURE);
+});
+
+test('displayPrefs: unknown subscription state (undefined) reads as NOT subscribed — the safe default', () => {
+  assert.equal(displayPrefs(DISPLAY_PREFS_FIXTURE, undefined).comunicado.push, false);
+});
+
+test('displayPrefs never mutates the input prefs object', () => {
+  const before = JSON.parse(JSON.stringify(DISPLAY_PREFS_FIXTURE));
+  displayPrefs(DISPLAY_PREFS_FIXTURE, false);
+  assert.deepEqual(DISPLAY_PREFS_FIXTURE, before);
+});
+
+test('displayPrefs: a null prefs (still loading) passes through unchanged', () => {
+  assert.equal(displayPrefs(null, false), null);
+});
+
+// The bug this whole guard exists to prevent, proven end to end through gridRows: the
+// comunicado push cell must be OFF-but-toggleable, never pre-checked, before subscribed.
+test('displayPrefs feeds into gridRows and actually turns the comunicado push cell off (still toggleable)', () => {
+  const rows = gridRows(displayPrefs(DISPLAY_PREFS_FIXTURE, false), { pushAvailable: true });
+  const com = rows.find((r) => r.key === 'comunicado');
+  assert.equal(com.cells.find((c) => c.channel === 'push').enabled, false);
+  assert.equal(com.cells.find((c) => c.channel === 'push').disabled, false, 'still TOGGLEABLE, just not pre-checked');
 });

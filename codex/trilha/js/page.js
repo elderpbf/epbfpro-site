@@ -397,6 +397,10 @@ function renderHeaderActions() {
                 getVapidKey: () => trail.pushVapidKey(),
                 saveSubscription: (sub) => trail.pushSubscribe({ session_token: state.sessionToken, ...sub }),
               }),
+              // Drives displayPrefs (notif-channels.js): a comunicado push cell (default ON)
+              // must render UNCHECKED until this device is confirmed subscribed, or the
+              // student would never see a reason to toggle it and would never subscribe.
+              isSubscribed: () => ps.isSubscribed({ win: _win }),
               unsubscribePush: () => ps.unsubscribePush({
                 win: _win,
                 removeSubscription: (sub) => trail.pushUnsubscribe({ session_token: state.sessionToken, endpoint: sub.endpoint }),

@@ -77,6 +77,25 @@ export function mergePref(prefs, category, channel, enabled) {
   return { ...p, [category]: row };
 }
 
+// PURE. What the grid should DISPLAY, vs. what the server actually holds (`prefs`).
+//
+// The bug this exists to prevent: comunicado defaults to push:true (it is the flagship
+// broadcast — see DEFAULT_PREFS). If the push cell rendered straight from that pref, a
+// capable-but-not-yet-subscribed device would show it already CHECKED, so the student would
+// never touch it, so subscribePush() would never run, so the "ON" switch would deliver
+// nothing forever — precisely the lying toggle this module's own header comment forbids.
+// So: every category's push cell is forced OFF for display until THIS device is confirmed
+// subscribed (`subscribed` — see push-subscribe.js's isSubscribed). The stored pref itself is
+// untouched (mergePref/savePref still operate on the real `prefs`); this only reshapes what
+// gridRows/channelsHtml render. `subscribed` unknown (undefined) is treated as NOT subscribed
+// — the safe default, since showing ON is the one failure mode that must never happen.
+export function displayPrefs(prefs, subscribed) {
+  if (subscribed || !prefs) return prefs;
+  const out = {};
+  for (const cat of Object.keys(prefs)) out[cat] = { ...prefs[cat], push: false };
+  return out;
+}
+
 function _headHtml(opts) {
   const o = opts || {};
   // The unavailable-push hint has two distinct reasons (track-44 Etapa B): a platform that
@@ -135,6 +154,8 @@ export function channelsHtml(prefs, opts) {
 //   savePref(category, channel, bool)   -> Promise<{ ok }>
 //   pushAvailable, pushNeedsInstall     -> Etapa B seam (see gridRows / _headHtml)
 //   subscribePush()                     -> Promise<{ ok, reason?, detail? }>  (push-subscribe.js)
+//   isSubscribed()                      -> Promise<boolean>                   (push-subscribe.js;
+//                                           drives displayPrefs — see its doc comment)
 //   unsubscribePush()                   -> Promise<{ ok }>                    (push-subscribe.js; not
 //                                           called by this UI today — exported by push-subscribe.js
 //                                           for reuse, see track-44 B report)
@@ -145,6 +166,7 @@ export function openNotifChannels(o) {
   const pushOpts = { pushAvailable: !!opts.pushAvailable, pushNeedsInstall: !!opts.pushNeedsInstall };
 
   let prefs = null;
+  let subscribed = false; // this DEVICE's subscription state; unknown reads as false (see displayPrefs)
   const bd = doc.createElement('div');
   bd.className = 'tr-modal-backdrop tr-nc-backdrop';
   bd.innerHTML = channelsHtml(null, { loading: true, ...pushOpts });
@@ -161,7 +183,7 @@ export function openNotifChannels(o) {
   (opts.root || doc.body).appendChild(bd);
 
   function paint(state) {
-    bd.innerHTML = channelsHtml(prefs, { ...state, ...pushOpts });
+    bd.innerHTML = channelsHtml(displayPrefs(prefs, subscribed), { ...state, ...pushOpts });
     bind();
   }
 
@@ -221,6 +243,7 @@ export function openNotifChannels(o) {
             } catch (_) { /* best effort */ }
             return; // never save a preference the subscribe step did not actually earn
           }
+          if (channel === 'push' && enabled) subscribed = true; // this device now has a live subscription
           savePrefCell(category, channel, enabled)
             .then(() => { cb.disabled = false; })
             .catch(() => { cb.checked = !enabled; cb.disabled = false; });
@@ -229,10 +252,18 @@ export function openNotifChannels(o) {
     });
   }
 
-  Promise.resolve(opts.fetchPrefs && opts.fetchPrefs())
-    .then((res) => {
+  // Load the prefs AND this device's subscription state together — displayPrefs needs both
+  // before the first real paint (see its doc comment: a comunicado push cell defaulting to
+  // ON must never render checked before `subscribed` is known true). isSubscribed() itself
+  // never rejects (push-subscribe.js), but the .catch here is a belt-and-braces guard so a
+  // caller-supplied stub misbehaving can't take down prefs loading with it.
+  const prefsPromise = Promise.resolve(opts.fetchPrefs && opts.fetchPrefs());
+  const subscribedPromise = Promise.resolve(opts.isSubscribed ? opts.isSubscribed() : false).catch(() => false);
+  Promise.all([prefsPromise, subscribedPromise])
+    .then(([res, subRes]) => {
       if (!res || res.ok === false || !res.prefs) throw new Error((res && res.error) || 'load_failed');
       prefs = res.prefs;
+      subscribed = !!subRes;
       paint({});
     })
     .catch((err) => {

@@ -110,6 +110,23 @@ export async function subscribePush(opts = {}) {
   }
 }
 
+// Does THIS device already hold a live PushSubscription? Read-only, no permission prompt.
+// notif-channels.js uses this to decide what the push cells should DISPLAY (see its
+// displayPrefs): a stored pref of push:true (comunicado's default) must never render as a
+// checked, enabled cell before this device has actually subscribed — that would be a switch
+// that shows ON while delivering nothing, exactly what this module exists to prevent.
+export async function isSubscribed(opts = {}) {
+  const win = opts.win || (typeof window !== 'undefined' ? window : undefined);
+  try {
+    if (!win || !win.navigator || !win.navigator.serviceWorker) return false;
+    const reg = await win.navigator.serviceWorker.ready;
+    const sub = await reg.pushManager.getSubscription();
+    return !!sub;
+  } catch (_) {
+    return false; // undecidable reads as "not subscribed" -- the safe (never-lie) default
+  }
+}
+
 // The reverse: unsubscribe THIS device (browser-level PushSubscription.unsubscribe()) and
 // tell the worker to drop the row (opts.removeSubscription, the facade's ct_push_unsubscribe
 // call). A device that was never subscribed is a clean no-op ({ ok:true }), matching the
