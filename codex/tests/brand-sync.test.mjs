@@ -1,6 +1,6 @@
 // Peça 3 do track-47: o teste que quebra quando um artefato de marca sai de sincronia.
 //
-// Regenera cada linha do js/brand-manifest.js em memória e compara BYTE A BYTE com o
+// Regenera cada linha do tools/brand-manifest.js em memória e compara BYTE A BYTE com o
 // arquivo em disco. Sem ele, "não edite .svg à mão" é combinado, e foi o combinado sem
 // verificação que produziu a divergência do pontinho: alguém consertou o traçado no
 // gerador e nunca reexportou os arquivos, e ninguém viu por meses porque o defeito é
@@ -15,7 +15,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import crypto from 'node:crypto';
 import { fileURLToPath } from 'node:url';
-import { ARTIFACTS, RASTER_ARTIFACTS, UNBUILT_VARIANTS, SITE_SVG_ROOTS, emit } from '../js/brand-manifest.js';
+import { ARTIFACTS, RASTER_ARTIFACTS, UNBUILT_VARIANTS, SITE_SVG_ROOTS, emit } from '../tools/brand-manifest.js';
 import { BRAND_FONT_CSS } from '../js/brand-font.js';
 
 const SITE_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..');

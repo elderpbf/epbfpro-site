@@ -1,4 +1,4 @@
-// codex/js/brand-manifest.js
+// codex/tools/brand-manifest.js
 // The declarative list of every PensoIA brand artifact that ships as a FILE,
 // plus the emitter that turns one manifest line into the exact bytes that file
 // must hold. Adding a surface = adding a line here, never copying an .svg.
@@ -6,14 +6,14 @@
 // Division of labour, so nothing has two owners:
 //   js/brand-logos.js   the ARTWORK (paths, palettes, composition). Emits the lean
 //                       runtime SVG string the topbar and certificates use.
-//   js/brand-manifest.js  WHERE that artwork lands on disk, and what a standalone
+//   tools/brand-manifest.js  WHERE that artwork lands on disk, and what a standalone
 //                       brand FILE looks like (the doc header the runtime string
 //                       does not carry, because a topbar SVG has no reader).
 //
 // The header lives here rather than in brand-logos.js on purpose: every runtime
 // SVG the topbar renders would otherwise pay ~750 bytes for a comment nobody opens.
 
-import * as logos from './brand-logos.js';
+import * as logos from '../js/brand-logos.js';
 
 // One builder per variant family. Key = the `<base>` half of the naming convention
 // in PensoIA/Brand/manifest/naming.md (`<base>_<mods>_<render>.<ext>`).
