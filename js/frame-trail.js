@@ -4,7 +4,9 @@
 // the window.callWorker seam. INERT (body overflow locked; a transform "camera" pans
 // instead of native scroll, so it never hijacks the landing). step() beacons (the
 // landing draws the caption tab on top of the phone) + slow pacing + faded reveals
-// make it read as steps: nova aula -> material -> tarefa.
+// make it read as steps: nova aula -> material. The tarefa is shown in the list but
+// not opened: tapping it now routes to a separate Tarefas tab (actions.js 2026-07-15),
+// which has no data in this canned demo, so driving into it dead-ends the walkthrough.
 import { sleep, $, waitFor, tap, step, baseStyle, followParentTheme, lockPageScroll } from '/js/frame-demo-shared.js?v=17';
 
 // 1) Canned Worker transport (set before the real modules call it).
@@ -39,15 +41,8 @@ window.callWorker = function (p) {
   return Promise.resolve({ ok: true });
 };
 
-// Fresh start each loop so the tarefa shows "Enviar resposta" again.
-try { for (const k of Object.keys(localStorage)) if (/^ct_tarefa_submitted_|^ct_student_name/.test(k)) localStorage.removeItem(k); } catch (_) { /* noop */ }
-// Seed a student session (key cdx_student_<c>_<t>, here demo/demo) so tapping the
-// tarefa "Enviar" opens the submit modal directly. The real app gates submission
-// behind login; in the demo the student is already logged in, so we skip that modal.
-try { localStorage.setItem('cdx_student_demo_demo', 'demo-session'); } catch (_) { /* noop */ }
-
-// 2) Demo-only skin: lock scrolling (camera pans via transform), box body prose +
-//    the tarefa answer, fade expanded content in.
+// 2) Demo-only skin: lock scrolling (camera pans via transform), box the material
+//    body prose, fade expanded content in.
 baseStyle();
 lockPageScroll();   // the trilha modules / modal focus inputs; keep that off the landing
 const style = document.createElement('style');
@@ -62,9 +57,7 @@ style.textContent =
   '.ctr-prompt-body::after,.ctr-prompt-verbatim::after{content:"";position:absolute;left:0;right:0;top:2px;bottom:2px;border-radius:4px;opacity:.16;' +
   'background:repeating-linear-gradient(var(--text-secondary,#115e59) 0 9px, transparent 9px 17px)}' +
   '.ctr-copy-btn{display:none}' +
-  '.cdx-tr-login-pill{display:none!important}' +   // no auth chrome in the demo (student is pre-logged-in)
-  '.tr-tarefa-field textarea,.ct-tarefa-answer-text{color:transparent!important;caret-color:transparent!important;' +
-  'background-image:repeating-linear-gradient(rgba(120,140,150,.30) 0 11px, transparent 11px 24px)!important;background-clip:padding-box!important}';
+  '.cdx-tr-login-pill{display:none!important}';   // no auth chrome in the demo (student is pre-logged-in)
 document.head.appendChild(style);
 
 followParentTheme();
@@ -83,36 +76,29 @@ Promise.all([
   if (matchMedia('(prefers-reduced-motion:reduce)').matches) showEndState(); else autoplay();
 });
 
-// Reduced-motion fallback: the mount above only renders the closed aula list, and every
-// other "page" (open aula, material, tarefa answered) only exists inside autoplay()'s
-// simulated taps. Without this, a reduce-motion visitor never sees past the closed list.
-// Drive the same real taps straight through with no panning, captions, or pacing.
+// Reduced-motion fallback: the mount above only renders the closed aula list, and the
+// open-aula + material "pages" only exist inside autoplay()'s simulated taps. Without
+// this, a reduce-motion visitor never sees past the closed list. Reach the same end
+// state autoplay lands on (aula 3 open, material expanded) with real clicks, then a
+// SINGLE static jump (no transition) to bring it into the phone — a reposition, not a
+// pan, so it stays honest to prefers-reduced-motion.
 async function showEndState() {
   await waitFor('.cdx-tr-tl-row[data-aula="3"]');
 
   const header = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header');
   if (header) header.click();
-  await sleep(120);
 
-  const material = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)');
+  const material = await waitFor('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)', 2000);
   if (material) material.click();
-  await sleep(120);
+  await waitFor('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub-expanded', 2000);
 
-  const taskSel = '.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa';
-  const taskRow = $(taskSel);
-  if (taskRow) taskRow.click();
-  const taskBtn = await waitFor(taskSel + ' .cdx-tr-item-action', 2500);
-  if (taskBtn) taskBtn.click();
-
-  const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
-  const nameI = $('.tr-tarefa-name');
-  if (nameI) nameI.value = 'Você';
-  if (ta) { ta.value = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; ta.dispatchEvent(new Event('input', { bubbles: true })); }
-  await sleep(120);
-
-  const submitBtn = $('button.tr-tarefa-submit');
-  if (submitBtn) submitBtn.click();
-  await sleep(200);
+  const main = $('.cdx-trilha-main');
+  const row = $('.cdx-tr-tl-row[data-aula="3"]');
+  if (main && row) {
+    main.style.transition = 'none';
+    const top = row.getBoundingClientRect().top;
+    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 90)) + 'px)';
+  }
 }
 
 // The demo's OWN scroll: pan `.cdx-trilha-main` so `el` sits `margin` px from the top.
@@ -166,38 +152,19 @@ async function autoplay() {
   await sleep(1100);
 
   // BEAT 1 — a new aula is published; open it.
-  step(1, 4, 'Nova aula publicada');
+  step(1, 2, 'Nova aula publicada');
   await sleep(1900);
   await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header'), 150);
   await sleep(2600);
 
-  // BEAT 2 — open the material content.
-  step(2, 4, 'Abrindo o material');
+  // BEAT 2 — open the material content, then hold on it before looping. The walkthrough
+  // stops here: the tarefa is visible in the list above, but tapping it now leaves the
+  // Aulas surface for the Tarefas tab (actions.js 2026-07-15), which the canned demo does
+  // not feed, so driving into it would dead-end on an empty "nenhuma tarefa" page.
+  step(2, 2, 'Abrindo o material');
   await sleep(1500);
   await tapInView($('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)'), 140);
-  await sleep(3400);
-
-  // BEAT 3 — open the tarefa, type, send.
-  step(3, 4, 'Enviando a tarefa');
-  await sleep(1500);
-  const taskSel = '.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa';
-  await tapInView($(taskSel), 140);
-  const taskBtn = await waitFor(taskSel + ' .cdx-tr-item-action', 2500);
-  await sleep(800);
-  await tapInView(taskBtn, 140);                 // open the real tarefa modal (fixed overlay)
-  const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
-  const nameI = $('.tr-tarefa-name');
-  if (nameI) nameI.value = 'Você';
-  if (ta) {
-    const filler = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa';
-    for (let i = 6; i <= filler.length; i += 6) { ta.value = filler.slice(0, i); ta.dispatchEvent(new Event('input', { bubbles: true })); await sleep(70); }
-  }
-  await sleep(900);
-  await tapInView($('button.tr-tarefa-submit'), 140);   // the real "Enviar resposta" button (modal-aware)
-
-  // BEAT 4 — submitted.
-  step(4, 4, 'Tarefa enviada');
-  await sleep(4200);
+  await sleep(5200);
 
   setTimeout(() => location.reload(), 900);
 }
