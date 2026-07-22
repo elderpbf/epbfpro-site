@@ -189,3 +189,41 @@ test('track-34: a disabled lab that was never released drops out of the pool (st
   assert.match(relSrc, /_isOutros\)\.filter\(_isVisibleLab\)/, 'aula composer applies the filter');
   assert.match(relSrc, /_isDrive\(i\)\)\.filter\(_isVisibleLab\)/, 'outros composer applies the filter');
 });
+
+test('releaseItemBucket: a released lab gets its own bucket, not outros', () => {
+  // Before this fix, type='lab' fell through to the catch-all 'outros' branch,
+  // so a released lab showed the generic "outros" glyph in the left-rail count
+  // chips instead of its own (Élder, spotted in Content > Releases).
+  assert.equal(rel.releaseItemBucket({ type: 'lab' }), 'lab');
+  assert.notEqual(rel.releaseItemBucket({ type: 'lab' }), 'outros');
+  // Siblings unaffected.
+  assert.equal(rel.releaseItemBucket({ type: 'tarefa' }), 'tarefa');
+  assert.equal(rel.releaseItemBucket({ type: 'drive_file' }), 'drive');
+  assert.equal(rel.releaseItemBucket({ set_id: 7, type: 'lab' }), 'apostila', 'a set-bound item is apostila regardless of type');
+  assert.equal(rel.releaseItemBucket({ type: 'something_else' }), 'outros', 'unknown types still fall back to outros');
+});
+
+test('aulaReleaseCounts: labs tally under counts.lab, not counts.outros', () => {
+  const items = [
+    { id: 1, type: 'lab', aula_number: 3 },
+    { id: 2, type: 'lab', aula_numbers: [3] },
+    { id: 3, type: 'tarefa', aula_number: 3 },
+  ];
+  const counts = rel.aulaReleaseCounts(items, 3);
+  assert.equal(counts.lab, 2);
+  assert.equal(counts.outros, 0, 'labs must not also inflate outros');
+  assert.equal(counts.tarefa, 1);
+  assert.equal(counts.total, 3);
+});
+
+test('the standalone Releases left-rail mirrors the same lab bucket (composer vs. rail can never disagree)', () => {
+  // _isOutros/_aulaCountsHtml/_outrosCountsHtml are the rail's own (non-exported)
+  // re-implementation of the same categorization releaseItemBucket does for the
+  // Cohorts aula hub; both must agree per the "mirror EXACTLY" contract at the
+  // top of the file, or the rail and the hub would show different counts for
+  // the exact same aula.
+  assert.match(relSrc, /function _isLab\(i\) \{ return i\.type === 'lab'; \}/, 'has a dedicated lab predicate');
+  assert.match(relSrc, /_isOutros\(i\) \{ return !i\.set_id && i\.type !== 'conteudo' && i\.type !== 'tarefa' && i\.type !== 'drive_file' && i\.type !== 'lab'; \}/, 'outros excludes lab');
+  assert.match(relSrc, /_countGlyph\('lab'\) \+ ' ' \+ lab/, 'aula rail row renders a lab chip');
+  assert.match(relSrc, /_countGlyph\('lab'\) \+ ' ' \+ labSolo/, 'Outros rail row renders a lab chip too (labs pinned to Outros)');
+});

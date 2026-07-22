@@ -53,6 +53,7 @@ export function releaseItemBucket(it) {
   if (it.set_id) return 'apostila';
   if (it.type === 'tarefa') return 'tarefa';
   if (it.type === 'drive_file') return 'drive';
+  if (it.type === 'lab') return 'lab';
   if (it.type === 'conteudo') return null; // a set-less conteudo is not a pool item
   return 'outros';
 }
@@ -62,7 +63,7 @@ export function releaseItemBucket(it) {
 // back to the single aula_number for legacy rows. Pure + exported so the Cohorts
 // aula hub reuses it instead of re-deriving the same tallies.
 export function aulaReleaseCounts(viewItems, aulaNum) {
-  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, total: 0 };
+  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, lab: 0, total: 0 };
   const n = String(aulaNum);
   (viewItems || []).forEach((it) => {
     const nums = Array.isArray(it.aula_numbers)
@@ -228,7 +229,7 @@ function _sortLabsByOrder(items) {
   return items.slice().sort((a, b) => labOrderIndex(_labKeyOf(a)) - labOrderIndex(_labKeyOf(b)));
 }
 // Count-chip / row glyph. Apostila + outros are section pseudo-types (fixed
-// glyph); real slugs (tarefa, drive_file) draw their ct_types.icon.
+// glyph); real slugs (tarefa, drive_file, lab) draw their ct_types.icon.
 function _countGlyph(kind, size) {
   size = size || 13;
   if (kind === 'apostila') return glyphSvg('book', { size });
@@ -239,7 +240,8 @@ function _countGlyph(kind, size) {
 // Item-pool predicates (mirror the legacy composer's filters).
 function _isTarefa(i) { return !i.set_id && i.type === 'tarefa'; }
 function _isDrive(i) { return i.type === 'drive_file'; }
-function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file'; }
+function _isLab(i) { return i.type === 'lab'; }
+function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' && i.type !== 'lab'; }
 // #23: every aula an item is bound to. Falls back to the single aula_number for
 // legacy items that only carry the old single binding.
 function _aulaNumbersOf(id) {
@@ -327,9 +329,11 @@ function _aulaCountsHtml(aulaNum) {
   const tarefa = _countFor(_isTarefa, aulaNum);
   const outros = _countFor(_isOutros, aulaNum);
   const drive = _countFor(_isDrive, aulaNum);
+  const lab = _countFor(_isLab, aulaNum);
   let counts = '';
   if (apostila) counts += '<span class="cdx-rel-count">' + _countGlyph('apostila') + ' ' + apostila + '</span>';
   if (tarefa) counts += '<span class="cdx-rel-count">' + _countGlyph('tarefa') + ' ' + tarefa + '</span>';
+  if (lab) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + lab + '</span>';
   if (outros) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outros + '</span>';
   if (drive) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + drive + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
@@ -339,7 +343,9 @@ function _aulaCountsHtml(aulaNum) {
 function _outrosCountsHtml() {
   const outrosSolo = _allItems.filter((i) => _isOutros(i) && _inOutros(i.id)).length;
   const driveSolo = _allItems.filter((i) => _isDrive(i) && _inOutros(i.id)).length;
+  const labSolo = _allItems.filter((i) => _isLab(i) && _inOutros(i.id)).length;
   let counts = '';
+  if (labSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + labSolo + '</span>';
   if (outrosSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outrosSolo + '</span>';
   if (driveSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + driveSolo + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';

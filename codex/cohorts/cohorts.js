@@ -1627,6 +1627,7 @@ function _aulaCountChipsHtml(aulaNumber) {
   if (apps.length) html += _appChip(apps);
   if (c.apostila) html += _countChip('book', c.apostila);
   if (c.tarefa) html += _countChip('clipboard', c.tarefa);
+  if (c.lab) html += _countChip('flask', c.lab);
   if (c.outros) html += _countChip('layers', c.outros);
   if (c.drive) html += _countChip('folder', c.drive);
   return html || '<span class="cdx-aula-cc is-empty">' + _esc(t('cohorts.aula_no_content')) + '</span>';
