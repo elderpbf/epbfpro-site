@@ -110,3 +110,14 @@ body {
 ::-webkit-scrollbar-track  { background: transparent; }
 ::-webkit-scrollbar-thumb  { background: var(--border); border-radius: 4px; }
 ::-webkit-scrollbar-thumb:hover { background: var(--primary-light); }
+
+/* Native <input type="date">/<input type="time"> calendar/clock glyph (and the date
+   input's popup calendar) are browser-drawn, not reachable via `color`, and default
+   to black -> invisible on a dark surface. `color-scheme` tells the browser which
+   native palette to paint them in. Lives here, not per-module CSS, for the same
+   reason as the scrollbar block above: every date/time input across the Codex admin
+   loads theme.css. */
+[data-theme="dark"] input[type="date"],
+[data-theme="dark"] input[type="time"] {
+  color-scheme: dark;
+}
