@@ -1064,6 +1064,7 @@ export default {
   'releases.copy_btn':            'Copy releases from...',
   'releases.copy_from_label':     'Source cohort',
   'releases.copy_scope_all':      'Every lesson',
+  'releases.copy_scope_empty':    'No item released in this lesson.',
   'releases.copy_done':           '{n} item(s) copied.',
   'releases.copy_done_none':      'Nothing to copy: every item was already released in this cohort.',
 

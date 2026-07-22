@@ -502,13 +502,21 @@ function _onListClick(e) {
 //               (diffAulaMultiSelection/diffOutrosSelection) the regular save uses,
 //               with the whole source pool as "selected" so nothing is ever
 //               unreleased, only added).
+// An item (from the SOURCE turma's ct_get_turma_view) belongs to the chosen scope:
+// a specific aula_number, or 'outros' (the 0 sentinel / no-lesson legacy rows).
+function _itemInScope(it, scope) {
+  const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
+  return scope === 'outros' ? isOutrosBinding(nums) : nums.map(String).indexOf(scope) !== -1;
+}
+
 function _openCopyReleasesModal(targetAulaNum) {
-  const html = '<div class="cdx-modal cdx-modal--md">' +
+  const html = '<div class="cdx-modal cdx-modal--lg">' +
     '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
       '<select class="cdx-input cdx-rel-copy-client" disabled></select>' +
     '</div>' +
     '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-turma" disabled></select></div>' +
     '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-aula" disabled></select></div>' +
+    '<div class="cdx-rel-copy-preview" style="max-height:280px;overflow-y:auto"></div>' +
     '<div class="cdx-modal-actions">' +
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_btn') + '</button>' +
@@ -517,13 +525,46 @@ function _openCopyReleasesModal(targetAulaNum) {
   const clientSel = bd.querySelector('.cdx-rel-copy-client');
   const turmaSel = bd.querySelector('.cdx-rel-copy-turma');
   const aulaSel = bd.querySelector('.cdx-rel-copy-aula');
+  const previewEl = bd.querySelector('.cdx-rel-copy-preview');
   const okBtn = bd.querySelector('[data-act="ok"]');
-  let turmasByClient = []; // cached, so submit can read the chosen turma's token
+  let turmasByClient = []; // cached, so submit/preview can read the chosen turma's token
+  let previewPoolIds = null; // the exact ids the current preview shows; submit reuses this, never re-filters
+  let previewReqId = 0; // guards against a slower earlier fetch overwriting a later selection
 
   function onErr(err) { notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); }
+  // Reuses the SAME row/group renderers the composer itself uses (_rowHtml, _groupByType,
+  // _typeLabel), just grouped generically by type (no apostila/drive split) and never
+  // collapsed: this is a look-before-you-copy list, not another editable composer.
+  previewEl.addEventListener('click', (e) => {
+    const pv = e.target.closest('.cdx-comp-preview');
+    if (pv) { e.preventDefault(); _openItemPreview(pv.getAttribute('data-preview-id')); }
+  });
+
+  function loadPreview() {
+    const fromClient = clientSel.value, fromTurma = turmaSel.value, scope = aulaSel.value;
+    previewPoolIds = null;
+    if (!fromClient || !fromTurma || scope === 'all' || !scope) { previewEl.innerHTML = ''; return; }
+    const srcTurma = turmasByClient.find((tu) => tu.slug === fromTurma);
+    if (!srcTurma) { previewEl.innerHTML = ''; return; }
+    const myReq = ++previewReqId;
+    okBtn.disabled = true;
+    previewEl.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
+    api.turmaView({ client_slug: fromClient, turma_slug: fromTurma, token: srcTurma.token }).then((vd) => {
+      if (myReq !== previewReqId) return; // a newer aula/turma pick already superseded this
+      okBtn.disabled = false;
+      const matches = ((vd && vd.items) || []).filter((it) => _itemInScope(it, scope));
+      previewPoolIds = matches.map((it) => Number(it.id));
+      if (!matches.length) { previewEl.innerHTML = '<div class="cdx-empty">' + t('releases.copy_scope_empty') + '</div>'; return; }
+      const sections = _groupByType(matches).map((g) => ({
+        key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
+        rowsHtml: g.items.map((i) => _rowHtml(i, 'copy-preview', true, typeIconHtml(_typeIcon(g.type), { size: 15 }), null)).join(''),
+      }));
+      previewEl.innerHTML = '<div class="cdx-picker-list">' + _accordionGroupsHtml(sections, { forceOpen: true }) + '</div>';
+    }).catch((err) => { if (myReq === previewReqId) { okBtn.disabled = false; onErr(err); } });
+  }
 
   function fillAulas(clientSlug, turmaSlug) {
-    aulaSel.disabled = true; okBtn.disabled = true;
+    aulaSel.disabled = true; okBtn.disabled = true; previewEl.innerHTML = '';
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }).then((d) => {
       const aulas = ((d && d.aulas) || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
       const opts = ['<option value="all">' + _esc(t('releases.copy_scope_all')) + '</option>'];
@@ -535,11 +576,12 @@ function _openCopyReleasesModal(targetAulaNum) {
       aulaSel.innerHTML = opts.join('');
       aulaSel.disabled = false;
       okBtn.disabled = false;
+      loadPreview();
     }).catch(onErr);
   }
 
   function fillTurmas(clientSlug) {
-    turmaSel.disabled = true; aulaSel.disabled = true; okBtn.disabled = true;
+    turmaSel.disabled = true; aulaSel.disabled = true; okBtn.disabled = true; previewEl.innerHTML = '';
     cohortsApi.listTurmas({ client_slug: clientSlug }).then((d) => {
       turmasByClient = ((d && d.turmas) || []).filter((tu) => tu.status !== 'archived')
         .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
@@ -563,6 +605,7 @@ function _openCopyReleasesModal(targetAulaNum) {
 
   clientSel.addEventListener('change', () => fillTurmas(clientSel.value));
   turmaSel.addEventListener('change', () => fillAulas(clientSel.value, turmaSel.value));
+  aulaSel.addEventListener('change', loadPreview);
   bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
 
   function done(copied) {
@@ -585,34 +628,28 @@ function _openCopyReleasesModal(targetAulaNum) {
       return;
     }
 
-    const srcTurma = turmasByClient.find((tu) => tu.slug === fromTurma);
-    if (!srcTurma) { fail(new Error('turma not found')); return; }
-    api.turmaView({ client_slug: fromClient, turma_slug: fromTurma, token: srcTurma.token }).then((vd) => {
-      const items = (vd && vd.items) || [];
-      const poolIds = items.filter((it) => {
-        const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
-        return scope === 'outros' ? isOutrosBinding(nums) : nums.map(String).indexOf(scope) !== -1;
-      }).map((it) => Number(it.id));
-      if (!poolIds.length) { done(0); return; }
+    // The preview (loadPreview) already fetched and filtered this exact selection;
+    // reuse its ids instead of hitting turmaView again.
+    const poolIds = previewPoolIds || [];
+    if (!poolIds.length) { done(0); return; }
 
-      const diff = (targetAulaNum === 'outros')
-        ? diffOutrosSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds: poolIds })
-        : diffAulaMultiSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum: targetAulaNum, poolIds, selectedIds: poolIds });
-      const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
-      Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
-        .then(() => Promise.all(diff.updates.map((u) =>
-          api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
-        .then(() => {
-          diff.toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
-          diff.updates.forEach((u) => {
-            const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
-            m.aula_numbers = u.aulaNumbers;
-            const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0);
-            m.aula_number = realLeft.length ? realLeft[0] : null;
-          });
-          done(diff.updates.length);
-        }).catch(fail);
-    }).catch(fail);
+    const diff = (targetAulaNum === 'outros')
+      ? diffOutrosSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds: poolIds })
+      : diffAulaMultiSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum: targetAulaNum, poolIds, selectedIds: poolIds });
+    const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
+    Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+      .then(() => Promise.all(diff.updates.map((u) =>
+        api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
+      .then(() => {
+        diff.toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+        diff.updates.forEach((u) => {
+          const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+          m.aula_numbers = u.aulaNumbers;
+          const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0);
+          m.aula_number = realLeft.length ? realLeft[0] : null;
+        });
+        done(diff.updates.length);
+      }).catch(fail);
   });
 }
 
@@ -771,20 +808,30 @@ function _elsewhereLabel(aulas) {
 // reusing the Presets picker classes (.cdx-picker*) so the layout is identical.
 // Rows stay in the DOM when a section collapses (the checked state lives in the
 // checkboxes, read at save time), so collapsing never drops an unsaved pick.
-function _renderComposerAccordion(container, sections, targetAulaNum) {
-  const groupsHtml = sections.map((s, idx) => {
-    const open = idx === 0;
+// Shared group markup (the composer's own accordion AND the copy modal's read-only
+// preview both render sections through this). opts.forceOpen renders every group
+// already expanded, with a non-interactive header (the copy preview: nothing to
+// collapse, there is no save here); omitted, only the first section starts open
+// and the header is the normal collapse/expand toggle (the real composer).
+function _accordionGroupsHtml(sections, opts) {
+  opts = opts || {};
+  return sections.map((s, idx) => {
+    const open = opts.forceOpen || idx === 0;
     // Section count: "liberados/total" for an aula composer (s.releasedCount set),
     // plain total otherwise (e.g. the no-lesson Outros placeholder).
     const cnt = (s.releasedCount != null) ? (s.releasedCount + '/' + s.count) : s.count;
     return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
-        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '"' + (opts.forceOpen ? ' disabled' : '') + '>' +
           '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
           '<span class="cdx-picker-group-name">' + s.label + ' (' + cnt + ')</span>' +
         '</button>' +
         '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
       '</div>';
   }).join('');
+}
+
+function _renderComposerAccordion(container, sections, targetAulaNum) {
+  const groupsHtml = _accordionGroupsHtml(sections);
   container.innerHTML =
     '<div class="cdx-picker cdx-rel-acc">' +
       '<div class="cdx-picker-toolbar">' +
