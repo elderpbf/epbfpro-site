@@ -363,7 +363,9 @@ function _outrosCountsHtml() {
 function _renderList() {
   const el = _q('cdx-releases-list');
   if (!el) return;
-  let html = '';
+  let html = '<div class="cdx-rel-toolbar">' +
+    '<button type="button" class="cdx-btn cdx-btn-sm" id="cdx-rel-copy-btn">' + t('releases.copy_btn') + '</button>' +
+  '</div>';
   if (!_aulas.length) {
     html += '<div class="cdx-empty" style="margin-bottom:0.5rem">' + t('releases.no_aulas') + '</div>';
   }
@@ -480,6 +482,8 @@ function _renderPreview() {
 }
 
 function _onListClick(e) {
+  const copyBtn = e.target.closest('#cdx-rel-copy-btn');
+  if (copyBtn) { _openCopyReleasesModal(); return; }
   const markBtn = e.target.closest('.cdx-rel-mark-happened');
   if (markBtn) { _markAulaHappened(markBtn.dataset.markHappened); return; }
   const toggleBtn = e.target.closest('.cdx-rel-clear-fresh');
@@ -489,6 +493,47 @@ function _onListClick(e) {
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Copy every released item from another turma of the same client into this one
+// (ct_copy_releases: additive, never overwrites/removes an existing release). The
+// source picker excludes the current turma and archived turmas.
+function _openCopyReleasesModal() {
+  cohortsApi.listTurmas({ client_slug: _clientSlug }).then((d) => {
+    const others = ((d && d.turmas) || [])
+      .filter((tu) => tu.slug !== _turmaSlug && tu.status !== 'archived')
+      .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
+    if (!others.length) { notice.internal(t('releases.copy_no_other_turmas')); return; }
+    const options = others.map((tu) =>
+      '<option value="' + _esc(tu.slug) + '">' + _esc(tu.display_name || tu.name) + '</option>'
+    ).join('');
+    const html = '<div class="cdx-modal cdx-modal--sm">' +
+      '<div class="cdx-modal-title">' + t('releases.copy_title') + '</div>' +
+      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('releases.copy_hint') + '</p>' +
+      '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
+        '<select class="cdx-input cdx-rel-copy-select">' + options + '</select>' +
+      '</div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('releases.copy_btn') + '</button>' +
+      '</div></div>';
+    const bd = openModal(html);
+    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+    bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
+      const fromTurma = bd.querySelector('.cdx-rel-copy-select').value;
+      const okBtn = bd.querySelector('[data-act="ok"]');
+      okBtn.disabled = true;
+      api.copyReleases({ client_slug: _clientSlug, from_turma_slug: fromTurma, to_turma_slug: _turmaSlug })
+        .then((r) => {
+          if (r && r.error) throw new Error(r.error);
+          closeModal(bd);
+          const copied = (r && r.copied) || 0;
+          toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
+          _loadReleases(_clientSlug, _turmaSlug);
+        })
+        .catch((err) => { okBtn.disabled = false; notice.internal(_err(err)); });
+    });
+  }).catch((err) => notice.internal(_err(err)));
 }
 
 // Mark an aula as occurred on its scheduled day, straight from Releases. ct_update_aula
