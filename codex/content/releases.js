@@ -491,46 +491,128 @@ function _onListClick(e) {
   _renderPreview();
 }
 
-// Copy every released item from another turma into this one, any client, not just
-// the current one (ct_copy_releases: additive, never overwrites/removes an existing
-// release). Turma-scoped: it copies the WHOLE turma's released set, not just the
-// aula/Outros bucket this composer happens to be open on (copy_hint spells that out).
-// The source picker is the same cross-client turma-picker as everywhere else, minus
-// this turma, and with its own (unpersisted) selection so it never clobbers the
-// remembered client/turma the standalone picker restores on reload.
-function _openCopyReleasesModal() {
+// Copy released items from another turma (any client) into this one. Cliente / Turma
+// / Aula cascade: picking a client loads its turmas, picking a turma loads its aulas.
+// The aula choice decides the scope:
+//   'all'    -> whole-turma mirror via ct_copy_releases (each item keeps its own
+//               source aula binding; additive, never touches this turma's existing
+//               releases).
+//   a number or 'outros' -> funnel just that one source aula/Outros bucket's items
+//               into THIS composer's aula/Outros (reusing the same additive diff
+//               (diffAulaMultiSelection/diffOutrosSelection) the regular save uses,
+//               with the whole source pool as "selected" so nothing is ever
+//               unreleased, only added).
+function _openCopyReleasesModal(targetAulaNum) {
   const html = '<div class="cdx-modal cdx-modal--md">' +
-    '<div class="cdx-modal-title">' + t('releases.copy_title') + '</div>' +
-    '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('releases.copy_hint') + '</p>' +
     '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
-      '<div class="cdx-turma-picker" id="cdx-rel-copy-picker" style="max-height:280px;overflow-y:auto"></div>' +
+      '<select class="cdx-input cdx-rel-copy-client" disabled></select>' +
     '</div>' +
+    '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-turma" disabled></select></div>' +
+    '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-aula" disabled></select></div>' +
     '<div class="cdx-modal-actions">' +
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
       '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_btn') + '</button>' +
     '</div></div>';
   const bd = openModal(html);
+  const clientSel = bd.querySelector('.cdx-rel-copy-client');
+  const turmaSel = bd.querySelector('.cdx-rel-copy-turma');
+  const aulaSel = bd.querySelector('.cdx-rel-copy-aula');
   const okBtn = bd.querySelector('[data-act="ok"]');
-  let picked = null;
-  const picker = turmaPicker.mount(bd.querySelector('#cdx-rel-copy-picker'), {
-    onSelect: (c, tu) => { picked = { clientSlug: c, turmaSlug: tu }; okBtn.disabled = false; },
-    exclude: { clientSlug: _clientSlug, turmaSlug: _turmaSlug },
-  });
-  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => { picker.destroy(); closeModal(bd); });
+  let turmasByClient = []; // cached, so submit can read the chosen turma's token
+
+  function onErr(err) { notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); }
+
+  function fillAulas(clientSlug, turmaSlug) {
+    aulaSel.disabled = true; okBtn.disabled = true;
+    cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }).then((d) => {
+      const aulas = ((d && d.aulas) || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
+      const opts = ['<option value="all">' + _esc(t('releases.copy_scope_all')) + '</option>'];
+      aulas.forEach((a) => {
+        const label = a.title ? (a.aula_number + '. ' + a.title) : (t('cohorts.aula_label') + ' ' + a.aula_number);
+        opts.push('<option value="' + _esc(a.aula_number) + '">' + _esc(label) + '</option>');
+      });
+      opts.push('<option value="outros">' + _esc(t('cohorts.aula_outros')) + '</option>');
+      aulaSel.innerHTML = opts.join('');
+      aulaSel.disabled = false;
+      okBtn.disabled = false;
+    }).catch(onErr);
+  }
+
+  function fillTurmas(clientSlug) {
+    turmaSel.disabled = true; aulaSel.disabled = true; okBtn.disabled = true;
+    cohortsApi.listTurmas({ client_slug: clientSlug }).then((d) => {
+      turmasByClient = ((d && d.turmas) || []).filter((tu) => tu.status !== 'archived')
+        .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
+      if (!turmasByClient.length) { turmaSel.innerHTML = '<option value="">' + _esc(t('picker.no_turmas')) + '</option>'; return; }
+      turmaSel.innerHTML = turmasByClient.map((tu) =>
+        '<option value="' + _esc(tu.slug) + '">' + _esc(tu.display_name || tu.name) + '</option>').join('');
+      turmaSel.disabled = false;
+      fillAulas(clientSlug, turmaSel.value);
+    }).catch(onErr);
+  }
+
+  cohortsApi.listClients().then((d) => {
+    const clients = ((d && d.clients) || []).filter((c) => c.status !== 'archived')
+      .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
+    if (!clients.length) { clientSel.innerHTML = '<option value="">' + _esc(t('picker.no_clients')) + '</option>'; return; }
+    clientSel.innerHTML = clients.map((c) =>
+      '<option value="' + _esc(c.slug) + '">' + _esc(c.display_name || c.name) + '</option>').join('');
+    clientSel.disabled = false;
+    fillTurmas(clientSel.value);
+  }).catch(onErr);
+
+  clientSel.addEventListener('change', () => fillTurmas(clientSel.value));
+  turmaSel.addEventListener('change', () => fillAulas(clientSel.value, turmaSel.value));
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+
+  function done(copied) {
+    closeModal(bd);
+    toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
+    _loadReleases(_clientSlug, _turmaSlug);
+  }
+  function fail(err) { okBtn.disabled = false; onErr(err); }
+
   okBtn.addEventListener('click', () => {
-    if (!picked) return;
+    const fromClient = clientSel.value, fromTurma = turmaSel.value, scope = aulaSel.value;
+    if (!fromClient || !fromTurma || !scope) return;
     okBtn.disabled = true;
-    api.copyReleases({
-      client_slug: _clientSlug, from_client_slug: picked.clientSlug,
-      from_turma_slug: picked.turmaSlug, to_turma_slug: _turmaSlug,
-    }).then((r) => {
-      if (r && r.error) throw new Error(r.error);
-      picker.destroy();
-      closeModal(bd);
-      const copied = (r && r.copied) || 0;
-      toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
-      _loadReleases(_clientSlug, _turmaSlug);
-    }).catch((err) => { okBtn.disabled = false; notice.internal(_err(err)); });
+
+    if (scope === 'all') {
+      api.copyReleases({
+        client_slug: _clientSlug, from_client_slug: fromClient,
+        from_turma_slug: fromTurma, to_turma_slug: _turmaSlug,
+      }).then((r) => { if (r && r.error) throw new Error(r.error); done((r && r.copied) || 0); }).catch(fail);
+      return;
+    }
+
+    const srcTurma = turmasByClient.find((tu) => tu.slug === fromTurma);
+    if (!srcTurma) { fail(new Error('turma not found')); return; }
+    api.turmaView({ client_slug: fromClient, turma_slug: fromTurma, token: srcTurma.token }).then((vd) => {
+      const items = (vd && vd.items) || [];
+      const poolIds = items.filter((it) => {
+        const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
+        return scope === 'outros' ? isOutrosBinding(nums) : nums.map(String).indexOf(scope) !== -1;
+      }).map((it) => Number(it.id));
+      if (!poolIds.length) { done(0); return; }
+
+      const diff = (targetAulaNum === 'outros')
+        ? diffOutrosSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds: poolIds })
+        : diffAulaMultiSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum: targetAulaNum, poolIds, selectedIds: poolIds });
+      const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
+      Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+        .then(() => Promise.all(diff.updates.map((u) =>
+          api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
+        .then(() => {
+          diff.toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+          diff.updates.forEach((u) => {
+            const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+            m.aula_numbers = u.aulaNumbers;
+            const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0);
+            m.aula_number = realLeft.length ? realLeft[0] : null;
+          });
+          done(diff.updates.length);
+        }).catch(fail);
+    }).catch(fail);
   });
 }
 
@@ -689,7 +771,7 @@ function _elsewhereLabel(aulas) {
 // reusing the Presets picker classes (.cdx-picker*) so the layout is identical.
 // Rows stay in the DOM when a section collapses (the checked state lives in the
 // checkboxes, read at save time), so collapsing never drops an unsaved pick.
-function _renderComposerAccordion(container, sections) {
+function _renderComposerAccordion(container, sections, targetAulaNum) {
   const groupsHtml = sections.map((s, idx) => {
     const open = idx === 0;
     // Section count: "liberados/total" for an aula composer (s.releasedCount set),
@@ -714,7 +796,7 @@ function _renderComposerAccordion(container, sections) {
     '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
   _wireComposerAccordion(container);
   const copyBtn = container.querySelector('.cdx-rel-copy-btn');
-  if (copyBtn) copyBtn.addEventListener('click', _openCopyReleasesModal);
+  if (copyBtn) copyBtn.addEventListener('click', () => _openCopyReleasesModal(targetAulaNum));
 }
 
 function _wireComposerAccordion(container) {
@@ -797,7 +879,7 @@ function _renderAulaComposer(container, aula) {
       releasedCount: driveItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: driveRows });
   }
 
-  _renderComposerAccordion(container, sections);
+  _renderComposerAccordion(container, sections, aulaNum);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveAula(container, aulaNum, { outrosItems, driveItems }));
 }
@@ -831,7 +913,7 @@ function _renderOutrosComposer(container) {
       releasedCount: driveItems.filter((i) => _inOutros(i.id)).length, rowsHtml: driveRows });
   }
 
-  _renderComposerAccordion(container, sections);
+  _renderComposerAccordion(container, sections, 'outros');
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveOutros(container, { standalone, driveItems }));
 }
