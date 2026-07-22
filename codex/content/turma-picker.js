@@ -10,6 +10,7 @@
 //     onSelect(clientSlug, turmaSlug),
 //     storageKey: { client, turma },   // localStorage keys (optional)
 //     autoRestore,                      // fire onSelect for the restored pill
+//     exclude: { clientSlug, turmaSlug }, // omit this one turma from the pills (optional)
 //   }) -> { destroy() }
 import { cohorts as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
@@ -42,9 +43,11 @@ export function mount(container, opts) {
     ));
   }).then((groups) => {
     if (destroyed || !groups) return;
+    const excl = opts.exclude;
     const entries = [];
     groups.forEach((g) => {
       g.turmas.forEach((tu) => {
+        if (excl && excl.clientSlug === g.client.slug && excl.turmaSlug === tu.slug) return;
         entries.push({
           clientSlug: g.client.slug,
           clientName: g.client.display_name || g.client.name,

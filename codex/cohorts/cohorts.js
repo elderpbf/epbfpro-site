@@ -1291,15 +1291,8 @@ function _renderDossier(turma) {
       '</div>' +
       // Aulas panel = the aula HUB (Layout A): a resizable list | detail split. The
       // per-aula Liberações + Tarefas now live INSIDE each aula's detail (aula-locked
-      // embeds), so the old turma-level Liberações/Tarefas sub-tabs were retired. The
-      // copy-releases action stays turma-scoped (it copies the WHOLE turma's released
-      // set, not one aula's), so it sits in this panel's own bar, not inside an aula.
+      // embeds), so the old turma-level Liberações/Tarefas sub-tabs were retired.
       '<div class="cdx-doss-panel" data-dpanel="aulas"' + _panHide('aulas') + '>' +
-        '<div class="cdx-doss-panel-bar">' +
-          '<span class="cdx-doss-sec-acts">' +
-            '<button class="cdx-btn cdx-btn-sm" data-doss="copyrel">' + _esc(t('releases.copy_btn')) + '</button>' +
-          '</span>' +
-        '</div>' +
         '<div id="' + IDS.aulasList + '"><div class="cdx-empty">' + _esc(t('cohorts.loading_aulas')) + '</div></div>' +
       '</div>' +
       // Certificados panel.
@@ -1315,12 +1308,11 @@ function _renderDossier(turma) {
 
   el.querySelectorAll('[data-doss]').forEach((b) => b.addEventListener('click', (e) => {
     const a = b.dataset.doss;
-    // padd/pimport/phelp/copyrel live inside a panel bar; stop the click so it doesn't toggle.
-    if (a === 'padd' || a === 'pimport' || a === 'phelp' || a === 'copyrel') e.stopPropagation();
+    // padd/pimport/phelp live inside the panel bar; stop the click so it doesn't toggle.
+    if (a === 'padd' || a === 'pimport' || a === 'phelp') e.stopPropagation();
     if (a === 'padd') _openAddParticipant(turma);
     else if (a === 'pimport') _openImportParticipants(turma);
     else if (a === 'phelp') openPersonLegend({ scope: 'turma' });
-    else if (a === 'copyrel') _openCopyReleasesModal(turma);
     else if (a === 'archive') _archiveTurma(turma.client_slug, turma.slug);
     else if (a === 'unarchive') _unarchiveTurma(turma.client_slug, turma.slug);
     else if (a === 'delete') _deleteTurma(turma);
@@ -1554,49 +1546,6 @@ function _loadDossierCerts(turma) {
 // the left, the selected aula's detail on the right with its own Dados / Liberações
 // / Tarefas sub-tabs. Liberações + Tarefas are the SAME content modules, mounted in
 // aula-locked mode, so there is one composer/editor codebase, not a per-aula copy.
-
-// Copy every released item from another turma of the same client into this one
-// (ct_copy_releases: additive, never overwrites/removes an existing release). Turma-
-// scoped (copies the WHOLE turma's released set), so it lives in the Aulas panel bar,
-// not inside one aula's composer. The source picker excludes this turma and archived
-// turmas.
-function _openCopyReleasesModal(turma) {
-  api.listTurmas({ client_slug: turma.client_slug }).then((d) => {
-    const others = ((d && d.turmas) || [])
-      .filter((tu) => tu.slug !== turma.slug && tu.status !== 'archived')
-      .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
-    if (!others.length) { notice.internal(t('releases.copy_no_other_turmas')); return; }
-    const options = others.map((tu) =>
-      '<option value="' + _esc(tu.slug) + '">' + _esc(tu.display_name || tu.name) + '</option>'
-    ).join('');
-    const html = '<div class="cdx-modal cdx-modal--sm">' +
-      '<div class="cdx-modal-title">' + t('releases.copy_title') + '</div>' +
-      '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('releases.copy_hint') + '</p>' +
-      '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
-        '<select class="cdx-input cdx-rel-copy-select">' + options + '</select>' +
-      '</div>' +
-      '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-        '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('releases.copy_btn') + '</button>' +
-      '</div></div>';
-    const bd = openModal(html);
-    bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
-    bd.querySelector('[data-act="ok"]').addEventListener('click', () => {
-      const fromTurma = bd.querySelector('.cdx-rel-copy-select').value;
-      const okBtn = bd.querySelector('[data-act="ok"]');
-      okBtn.disabled = true;
-      relApi.copyReleases({ client_slug: turma.client_slug, from_turma_slug: fromTurma, to_turma_slug: turma.slug })
-        .then((r) => {
-          if (r && r.error) throw new Error(r.error);
-          closeModal(bd);
-          const copied = (r && r.copied) || 0;
-          toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
-          _loadTurmaAulas(turma);
-        })
-        .catch((err) => { okBtn.disabled = false; notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); });
-    });
-  }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)));
-}
 
 // Load this turma's aulas AND its released-items view (ct_get_turma_view, the source
 // for the per-aula content counts), then paint the hub. No token (turma without a

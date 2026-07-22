@@ -1069,9 +1069,8 @@ export default {
   'releases.mark_happened_done':  'Aula marcada como ocorrida.',
   'releases.copy_btn':            'Copiar liberações de...',
   'releases.copy_title':          'Copiar liberações de outra turma',
-  'releases.copy_hint':           'Aditivo: itens já liberados nesta turma não são alterados nem removidos.',
-  'releases.copy_from_label':     'Copiar liberações da turma',
-  'releases.copy_no_other_turmas': 'Nenhuma outra turma deste cliente para copiar.',
+  'releases.copy_hint':           'Copia TODAS as liberações da turma escolhida para esta turma inteira (todas as aulas, não só esta). Aditivo: o que já está liberado aqui não é alterado nem removido.',
+  'releases.copy_from_label':     'Turma de origem (qualquer cliente)',
   'releases.copy_done':           '{n} item(ns) copiado(s).',
   'releases.copy_done_none':      'Nada para copiar: todos os itens já estavam liberados nesta turma.',
 

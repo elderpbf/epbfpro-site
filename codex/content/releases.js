@@ -491,6 +491,49 @@ function _onListClick(e) {
   _renderPreview();
 }
 
+// Copy every released item from another turma into this one, any client, not just
+// the current one (ct_copy_releases: additive, never overwrites/removes an existing
+// release). Turma-scoped: it copies the WHOLE turma's released set, not just the
+// aula/Outros bucket this composer happens to be open on (copy_hint spells that out).
+// The source picker is the same cross-client turma-picker as everywhere else, minus
+// this turma, and with its own (unpersisted) selection so it never clobbers the
+// remembered client/turma the standalone picker restores on reload.
+function _openCopyReleasesModal() {
+  const html = '<div class="cdx-modal cdx-modal--md">' +
+    '<div class="cdx-modal-title">' + t('releases.copy_title') + '</div>' +
+    '<p style="font-size:0.88rem;color:var(--text-secondary)">' + t('releases.copy_hint') + '</p>' +
+    '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
+      '<div class="cdx-turma-picker" id="cdx-rel-copy-picker" style="max-height:280px;overflow-y:auto"></div>' +
+    '</div>' +
+    '<div class="cdx-modal-actions">' +
+      '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+      '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_btn') + '</button>' +
+    '</div></div>';
+  const bd = openModal(html);
+  const okBtn = bd.querySelector('[data-act="ok"]');
+  let picked = null;
+  const picker = turmaPicker.mount(bd.querySelector('#cdx-rel-copy-picker'), {
+    onSelect: (c, tu) => { picked = { clientSlug: c, turmaSlug: tu }; okBtn.disabled = false; },
+    exclude: { clientSlug: _clientSlug, turmaSlug: _turmaSlug },
+  });
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => { picker.destroy(); closeModal(bd); });
+  okBtn.addEventListener('click', () => {
+    if (!picked) return;
+    okBtn.disabled = true;
+    api.copyReleases({
+      client_slug: _clientSlug, from_client_slug: picked.clientSlug,
+      from_turma_slug: picked.turmaSlug, to_turma_slug: _turmaSlug,
+    }).then((r) => {
+      if (r && r.error) throw new Error(r.error);
+      picker.destroy();
+      closeModal(bd);
+      const copied = (r && r.copied) || 0;
+      toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
+      _loadReleases(_clientSlug, _turmaSlug);
+    }).catch((err) => { okBtn.disabled = false; notice.internal(_err(err)); });
+  });
+}
+
 // Mark an aula as occurred on its scheduled day, straight from Releases. ct_update_aula
 // REPLACES every field, so rebuild the full aula payload (preserving title + dates) and
 // only set happened_on = scheduled_for. aula-status.js then reads it as 'happened'.
@@ -664,11 +707,14 @@ function _renderComposerAccordion(container, sections) {
     '<div class="cdx-picker cdx-rel-acc">' +
       '<div class="cdx-picker-toolbar">' +
         '<input type="search" class="cdx-picker-search cdx-comp-search-all" placeholder="' + _esc(t('releases.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-rel-copy-btn">' + t('releases.copy_btn') + '</button>' +
       '</div>' +
       '<div class="cdx-picker-list">' + groupsHtml + '</div>' +
     '</div>' +
     '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
   _wireComposerAccordion(container);
+  const copyBtn = container.querySelector('.cdx-rel-copy-btn');
+  if (copyBtn) copyBtn.addEventListener('click', _openCopyReleasesModal);
 }
 
 function _wireComposerAccordion(container) {

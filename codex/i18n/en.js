@@ -1063,9 +1063,8 @@ export default {
   'releases.mark_happened_done':  'Lesson marked as occurred.',
   'releases.copy_btn':            'Copy releases from...',
   'releases.copy_title':          'Copy releases from another cohort',
-  'releases.copy_hint':           'Additive: items already released in this cohort are left untouched.',
-  'releases.copy_from_label':     'Copy releases from cohort',
-  'releases.copy_no_other_turmas': 'No other cohort in this client to copy from.',
+  'releases.copy_hint':           'Copies EVERY release from the chosen cohort into this whole cohort (all lessons, not just this one). Additive: items already released here are left untouched.',
+  'releases.copy_from_label':     'Source cohort (any client)',
   'releases.copy_done':           '{n} item(s) copied.',
   'releases.copy_done_none':      'Nothing to copy: every item was already released in this cohort.',
 
