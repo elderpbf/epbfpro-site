@@ -1061,6 +1061,12 @@ export default {
   'releases.mark_happened':       'Occurred',
   'releases.mark_happened_title': 'Mark as occurred on its scheduled day',
   'releases.mark_happened_done':  'Lesson marked as occurred.',
+  'releases.copy_btn':            'Copy releases from...',
+  'releases.copy_from_label':     'Source cohort',
+  'releases.copy_scope_all':      'Every lesson',
+  'releases.copy_scope_empty':    'No item released in this lesson.',
+  'releases.copy_done':           '{n} item(s) copied.',
+  'releases.copy_done_none':      'Nothing to copy: every item was already released in this cohort.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Course content',

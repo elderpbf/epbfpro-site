@@ -1067,6 +1067,12 @@ export default {
   'releases.mark_happened':       'Ocorreu',
   'releases.mark_happened_title': 'Marcar como ocorrida no dia marcado',
   'releases.mark_happened_done':  'Aula marcada como ocorrida.',
+  'releases.copy_btn':            'Copiar liberações de...',
+  'releases.copy_from_label':     'Turma de origem',
+  'releases.copy_scope_all':      'Todas as aulas',
+  'releases.copy_scope_empty':    'Nenhum item liberado nesta aula.',
+  'releases.copy_done':           '{n} item(ns) copiado(s).',
+  'releases.copy_done_none':      'Nada para copiar: todos os itens já estavam liberados nesta turma.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Conteúdo do curso',
