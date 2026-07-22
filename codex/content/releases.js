@@ -519,7 +519,7 @@ function _openCopyReleasesModal(targetAulaNum) {
     '<div class="cdx-rel-copy-preview" style="max-height:280px;overflow-y:auto"></div>' +
     '<div class="cdx-modal-actions">' +
       '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
-      '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_btn') + '</button>' +
+      '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_confirm_btn') + '</button>' +
     '</div></div>';
   const bd = openModal(html);
   const clientSel = bd.querySelector('.cdx-rel-copy-client');
