@@ -78,6 +78,16 @@ export function aulaReleaseCounts(viewItems, aulaNum) {
   return counts;
 }
 
+// #23 opção B: an item sits in Outros when its aula bindings carry the 0 sentinel, or
+// (legacy) it has no positive aula binding at all, the old "no-lesson = Outros" rows,
+// still honored without a migration. Exported so every "is this in Outros" check (this
+// composer's own list AND the Cohorts aula-hub rail badge) reads the one rule instead
+// of two definitions drifting apart.
+export function isOutrosBinding(nums) {
+  const n = (nums || []).map(Number);
+  return n.indexOf(0) !== -1 || n.filter((x) => x > 0).length === 0;
+}
+
 // Lesson date status for the composer. Returns { key, date }; key is i18n-free so
 // the renderer maps it through t() in the cohorts.date_* namespace. The RULE lives
 // in the shared js/aula-status.js (same one the admin Cohorts view + the Trail use);
@@ -255,10 +265,7 @@ function _isBoundTo(id, aulaNum) {
 }
 function _inOutros(id) {
   if (_released.indexOf(Number(id)) === -1) return false;
-  const nums = _aulaNumbersOf(id).map(Number);
-  // In Outros = pinned with the 0 sentinel (opção B) OR a legacy release with no aula
-  // binding at all (the old "no-lesson = Outros" rows, still honored without a migration).
-  return nums.indexOf(0) !== -1 || nums.filter((n) => n > 0).length === 0;
+  return isOutrosBinding(_aulaNumbersOf(id));
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
