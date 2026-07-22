@@ -80,8 +80,40 @@ Promise.all([
 ]).then(([, glyphs, , , , page]) => {
   window.CdxGlyphs = glyphs;
   page.mount(document.getElementById('cdx-trilha-root'), { location: { search: '?c=demo&t=demo&k=demo', pathname: '/' } });
-  if (!matchMedia('(prefers-reduced-motion:reduce)').matches) autoplay();
+  if (matchMedia('(prefers-reduced-motion:reduce)').matches) showEndState(); else autoplay();
 });
+
+// Reduced-motion fallback: the mount above only renders the closed aula list, and every
+// other "page" (open aula, material, tarefa answered) only exists inside autoplay()'s
+// simulated taps. Without this, a reduce-motion visitor never sees past the closed list.
+// Drive the same real taps straight through with no panning, captions, or pacing.
+async function showEndState() {
+  await waitFor('.cdx-tr-tl-row[data-aula="3"]');
+
+  const header = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-card-header');
+  if (header) header.click();
+  await sleep(120);
+
+  const material = $('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub:not(.cdx-tr-sub--tarefa)');
+  if (material) material.click();
+  await sleep(120);
+
+  const taskSel = '.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub--tarefa';
+  const taskRow = $(taskSel);
+  if (taskRow) taskRow.click();
+  const taskBtn = await waitFor(taskSel + ' .cdx-tr-item-action', 2500);
+  if (taskBtn) taskBtn.click();
+
+  const ta = await waitFor('.tr-tarefa-field textarea, .tr-tarefa-field input', 2500);
+  const nameI = $('.tr-tarefa-name');
+  if (nameI) nameI.value = 'Você';
+  if (ta) { ta.value = 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa'; ta.dispatchEvent(new Event('input', { bubbles: true })); }
+  await sleep(120);
+
+  const submitBtn = $('button.tr-tarefa-submit');
+  if (submitBtn) submitBtn.click();
+  await sleep(200);
+}
 
 // The demo's OWN scroll: pan `.cdx-trilha-main` so `el` sits `margin` px from the top.
 // Computed ABSOLUTELY each call (clear the transform, measure the target's natural

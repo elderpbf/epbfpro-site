@@ -54,7 +54,7 @@ const TRAIL_SRCDOC =
       '<footer class="cdx-trilha-footer"><span>Feito com PensoIA</span></footer>' +
     '</main>' +
   '</div>' +
-  '<script type="module" src="/js/frame-trail.js?v=17"></scr' + 'ipt></body></html>';
+  '<script type="module" src="/js/frame-trail.js?v=18"></scr' + 'ipt></body></html>';
 
 export function initDemos() {
   const p = document.getElementById('pulseFrame');
