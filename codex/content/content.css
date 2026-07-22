@@ -708,9 +708,6 @@
 .cdx-releases-split .cdx-item-info { flex: 1; min-width: 0; }
 .cdx-releases-split .cdx-item-sub { display: flex; align-items: center; gap: 0.4rem; flex-wrap: wrap; }
 
-/* Per-turma actions above the aula list (currently just "copy releases from"). */
-.cdx-rel-toolbar { display: flex; justify-content: flex-end; margin-bottom: 0.5rem; }
-
 /* Aula number badge in the row icon slot (Outros uses a glyph instead). */
 .cdx-rel-aula-num {
   display: inline-flex; align-items: center; justify-content: center;
