@@ -1590,12 +1590,14 @@ function _aulaCounts(aulaNumber) {
   return releasesAdmin.aulaReleaseCounts(_turmaViewItems, aulaNumber);
 }
 
-// Items released with NO aula binding -> the "Outros (sem aula)" bucket count.
+// Items placed in Outros -> the rail footer bucket count. Reuses the composer's own
+// isOutrosBinding (0 sentinel, or legacy no-aula rows) so this badge can never disagree
+// with the Outros composer or the trilha's own count.
 function _outrosCount() {
   let n = 0;
   (_turmaViewItems || []).forEach((it) => {
     const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
-    if (nums.length === 0 && releasesAdmin.releaseItemBucket(it)) n++;
+    if (releasesAdmin.isOutrosBinding(nums) && releasesAdmin.releaseItemBucket(it)) n++;
   });
   return n;
 }
@@ -1627,6 +1629,7 @@ function _aulaCountChipsHtml(aulaNumber) {
   if (apps.length) html += _appChip(apps);
   if (c.apostila) html += _countChip('book', c.apostila);
   if (c.tarefa) html += _countChip('clipboard', c.tarefa);
+  if (c.lab) html += _countChip('flask', c.lab);
   if (c.outros) html += _countChip('layers', c.outros);
   if (c.drive) html += _countChip('folder', c.drive);
   return html || '<span class="cdx-aula-cc is-empty">' + _esc(t('cohorts.aula_no_content')) + '</span>';

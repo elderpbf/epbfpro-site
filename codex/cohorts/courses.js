@@ -269,6 +269,13 @@ function _selectCourse(id) {
   const el = _q(IDS.main);
   if (el) el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.loading')) + '</div>';
   api.get({ id }).then((d) => {
+    // Stale-response guard (same pattern as _loadCourseRoteiros below): if the admin
+    // clicked a DIFFERENT course while this fetch was in flight, _selectedId has already
+    // moved on. Applying this response anyway would silently attach course A's data to
+    // course B's selection -- and a save right after would write course A's fields onto
+    // course B's row. Discovered 2026-07-20: a course's updated_at moved with no edit
+    // intended for it, while the course actually being edited never changed.
+    if (_selectedId !== id) return;
     _course = (d && d.course) || null;
     _ementa = normalizeEmenta(_course && _course.ementa_json);
     _renderMain();
@@ -665,7 +672,7 @@ function _saveCourseMeta() {
     if (d && d.course) _course = d.course;
     const c = _courses.find((x) => x.id === _selectedId);
     if (c) { c.title = title || c.title; c.hours = hours || null; }
-    _renderRail();
+    if (_rail) _rail.render();
     toast.ok(t('cohorts.course_saved'));
   }).catch((err) => {
     notice.internal(t('cohorts.error') + ': ' + (err && err.message || err));

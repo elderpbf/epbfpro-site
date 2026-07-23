@@ -87,6 +87,39 @@ test('renderRow mostra o rótulo e a duração do ponto', () => {
   assert.match(html, new RegExp(fmtDur(15)));
 });
 
+// Élder 2026-07-20: rótulo e tempo grudados demais no painel esquerdo, e o rótulo
+// truncava com reticências no lugar de quebrar linha ("nenhum conteúdo deve ser
+// cortado", mesmo com o painel no tamanho mínimo do resizer).
+test('renderRow: rótulo e duração vivem no PRÓPRIO flex, não direto em .cdx-rail-main', () => {
+  const cfg = build(seed());
+  const html = cfg.renderRow(cfg.items()[1]).main;
+  assert.match(html, /<span class="cdx-roteiro-row">/, 'a linha tem seu próprio wrapper flex');
+  const rotuloIdx = html.indexOf('cdx-roteiro-row-rotulo');
+  const durIdx = html.indexOf('cdx-roteiro-row-dur');
+  assert.ok(rotuloIdx > -1 && durIdx > rotuloIdx, 'rótulo antes da duração, ambos dentro do wrapper');
+});
+
+test('CSS: o rótulo QUEBRA linha (nunca trunca) e a duração é coluna fixa centralizada', () => {
+  const css = readSrc('../roteiro/roteiro.css');
+  const rotuloRule = css.match(/\.cdx-roteiro-row-rotulo\s*\{([^}]*)\}/);
+  assert.ok(rotuloRule, 'a regra existe');
+  assert.ok(!/white-space:\s*nowrap/.test(rotuloRule[1]), 'sem nowrap: nada de corte de texto');
+  assert.ok(!/text-overflow:\s*ellipsis/.test(rotuloRule[1]), 'sem reticências');
+  assert.match(rotuloRule[1], /overflow-wrap:\s*break-word|word-break:\s*break-word/, 'quebra a palavra que não couber');
+  const durRule = css.match(/\.cdx-roteiro-row-dur\s*\{([^}]*)\}/);
+  assert.ok(durRule, 'a regra existe');
+  assert.match(durRule[1], /flex-shrink:\s*0/, 'a duração nunca encolhe/desaparece');
+  assert.match(durRule[1], /align-self:\s*center/, 'centralizada verticalmente mesmo com o rótulo em várias linhas');
+  assert.match(durRule[1], /text-align:\s*right/, 'fixa à direita');
+});
+
+test('CSS: o wrapper da linha é flex, mas .cdx-rail-main (compartilhado) não foi tocado', () => {
+  const css = readSrc('../roteiro/roteiro.css');
+  assert.match(css, /\.cdx-roteiro-row\s*\{[^}]*display:\s*flex/, 'o wrapper próprio é flex');
+  const railCss = readSrc('../css/list-rail.css');
+  assert.match(railCss, /\.cdx-rail-main\s*\{\s*flex:1;\s*min-width:0;\s*\}/, 'list-rail.css intocado por este ajuste');
+});
+
 test('renderHead do bloco traz o tempo SOMADO daquele bloco (melhoria aprovada no item 7)', () => {
   const r = seed();
   const cfg = build(r);

@@ -53,6 +53,7 @@ export function releaseItemBucket(it) {
   if (it.set_id) return 'apostila';
   if (it.type === 'tarefa') return 'tarefa';
   if (it.type === 'drive_file') return 'drive';
+  if (it.type === 'lab') return 'lab';
   if (it.type === 'conteudo') return null; // a set-less conteudo is not a pool item
   return 'outros';
 }
@@ -62,7 +63,7 @@ export function releaseItemBucket(it) {
 // back to the single aula_number for legacy rows. Pure + exported so the Cohorts
 // aula hub reuses it instead of re-deriving the same tallies.
 export function aulaReleaseCounts(viewItems, aulaNum) {
-  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, total: 0 };
+  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, lab: 0, total: 0 };
   const n = String(aulaNum);
   (viewItems || []).forEach((it) => {
     const nums = Array.isArray(it.aula_numbers)
@@ -75,6 +76,16 @@ export function aulaReleaseCounts(viewItems, aulaNum) {
     counts.total++;
   });
   return counts;
+}
+
+// #23 opção B: an item sits in Outros when its aula bindings carry the 0 sentinel, or
+// (legacy) it has no positive aula binding at all, the old "no-lesson = Outros" rows,
+// still honored without a migration. Exported so every "is this in Outros" check (this
+// composer's own list AND the Cohorts aula-hub rail badge) reads the one rule instead
+// of two definitions drifting apart.
+export function isOutrosBinding(nums) {
+  const n = (nums || []).map(Number);
+  return n.indexOf(0) !== -1 || n.filter((x) => x > 0).length === 0;
 }
 
 // Lesson date status for the composer. Returns { key, date }; key is i18n-free so
@@ -228,7 +239,7 @@ function _sortLabsByOrder(items) {
   return items.slice().sort((a, b) => labOrderIndex(_labKeyOf(a)) - labOrderIndex(_labKeyOf(b)));
 }
 // Count-chip / row glyph. Apostila + outros are section pseudo-types (fixed
-// glyph); real slugs (tarefa, drive_file) draw their ct_types.icon.
+// glyph); real slugs (tarefa, drive_file, lab) draw their ct_types.icon.
 function _countGlyph(kind, size) {
   size = size || 13;
   if (kind === 'apostila') return glyphSvg('book', { size });
@@ -239,7 +250,8 @@ function _countGlyph(kind, size) {
 // Item-pool predicates (mirror the legacy composer's filters).
 function _isTarefa(i) { return !i.set_id && i.type === 'tarefa'; }
 function _isDrive(i) { return i.type === 'drive_file'; }
-function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file'; }
+function _isLab(i) { return i.type === 'lab'; }
+function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' && i.type !== 'lab'; }
 // #23: every aula an item is bound to. Falls back to the single aula_number for
 // legacy items that only carry the old single binding.
 function _aulaNumbersOf(id) {
@@ -253,10 +265,7 @@ function _isBoundTo(id, aulaNum) {
 }
 function _inOutros(id) {
   if (_released.indexOf(Number(id)) === -1) return false;
-  const nums = _aulaNumbersOf(id).map(Number);
-  // In Outros = pinned with the 0 sentinel (opção B) OR a legacy release with no aula
-  // binding at all (the old "no-lesson = Outros" rows, still honored without a migration).
-  return nums.indexOf(0) !== -1 || nums.filter((n) => n > 0).length === 0;
+  return isOutrosBinding(_aulaNumbersOf(id));
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -327,9 +336,11 @@ function _aulaCountsHtml(aulaNum) {
   const tarefa = _countFor(_isTarefa, aulaNum);
   const outros = _countFor(_isOutros, aulaNum);
   const drive = _countFor(_isDrive, aulaNum);
+  const lab = _countFor(_isLab, aulaNum);
   let counts = '';
   if (apostila) counts += '<span class="cdx-rel-count">' + _countGlyph('apostila') + ' ' + apostila + '</span>';
   if (tarefa) counts += '<span class="cdx-rel-count">' + _countGlyph('tarefa') + ' ' + tarefa + '</span>';
+  if (lab) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + lab + '</span>';
   if (outros) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outros + '</span>';
   if (drive) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + drive + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
@@ -339,7 +350,9 @@ function _aulaCountsHtml(aulaNum) {
 function _outrosCountsHtml() {
   const outrosSolo = _allItems.filter((i) => _isOutros(i) && _inOutros(i.id)).length;
   const driveSolo = _allItems.filter((i) => _isDrive(i) && _inOutros(i.id)).length;
+  const labSolo = _allItems.filter((i) => _isLab(i) && _inOutros(i.id)).length;
   let counts = '';
+  if (labSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + labSolo + '</span>';
   if (outrosSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outrosSolo + '</span>';
   if (driveSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + driveSolo + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
@@ -476,6 +489,168 @@ function _onListClick(e) {
   _selectedAula = row.dataset.aulaId;   // 'outros' or an aula id (string)
   _renderList();
   _renderPreview();
+}
+
+// Copy released items from another turma (any client) into this one. Cliente / Turma
+// / Aula cascade: picking a client loads its turmas, picking a turma loads its aulas.
+// The aula choice decides the scope:
+//   'all'    -> whole-turma mirror via ct_copy_releases (each item keeps its own
+//               source aula binding; additive, never touches this turma's existing
+//               releases).
+//   a number or 'outros' -> funnel just that one source aula/Outros bucket's items
+//               into THIS composer's aula/Outros (reusing the same additive diff
+//               (diffAulaMultiSelection/diffOutrosSelection) the regular save uses,
+//               with the whole source pool as "selected" so nothing is ever
+//               unreleased, only added).
+// An item (from the SOURCE turma's ct_get_turma_view) belongs to the chosen scope:
+// a specific aula_number, or 'outros' (the 0 sentinel / no-lesson legacy rows).
+function _itemInScope(it, scope) {
+  const nums = Array.isArray(it.aula_numbers) ? it.aula_numbers : (it.aula_number != null ? [it.aula_number] : []);
+  return scope === 'outros' ? isOutrosBinding(nums) : nums.map(String).indexOf(scope) !== -1;
+}
+
+function _openCopyReleasesModal(targetAulaNum) {
+  const html = '<div class="cdx-modal cdx-modal--lg">' +
+    '<div class="cdx-field"><label>' + t('releases.copy_from_label') + '</label>' +
+      '<select class="cdx-input cdx-rel-copy-client" disabled></select>' +
+    '</div>' +
+    '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-turma" disabled></select></div>' +
+    '<div class="cdx-field"><select class="cdx-input cdx-rel-copy-aula" disabled></select></div>' +
+    '<div class="cdx-rel-copy-preview" style="max-height:280px;overflow-y:auto"></div>' +
+    '<div class="cdx-modal-actions">' +
+      '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+      '<button class="cdx-btn cdx-btn-primary" data-act="ok" disabled>' + t('releases.copy_confirm_btn') + '</button>' +
+    '</div></div>';
+  const bd = openModal(html);
+  const clientSel = bd.querySelector('.cdx-rel-copy-client');
+  const turmaSel = bd.querySelector('.cdx-rel-copy-turma');
+  const aulaSel = bd.querySelector('.cdx-rel-copy-aula');
+  const previewEl = bd.querySelector('.cdx-rel-copy-preview');
+  const okBtn = bd.querySelector('[data-act="ok"]');
+  let turmasByClient = []; // cached, so submit/preview can read the chosen turma's token
+  let previewPoolIds = null; // the exact ids the current preview shows; submit reuses this, never re-filters
+  let previewReqId = 0; // guards against a slower earlier fetch overwriting a later selection
+
+  function onErr(err) { notice.internal(t('cohorts.error') + ': ' + (err && err.message || err)); }
+  // Reuses the SAME row/group renderers the composer itself uses (_rowHtml, _groupByType,
+  // _typeLabel), just grouped generically by type (no apostila/drive split) and never
+  // collapsed: this is a look-before-you-copy list, not another editable composer.
+  previewEl.addEventListener('click', (e) => {
+    const pv = e.target.closest('.cdx-comp-preview');
+    if (pv) { e.preventDefault(); _openItemPreview(pv.getAttribute('data-preview-id')); }
+  });
+
+  function loadPreview() {
+    const fromClient = clientSel.value, fromTurma = turmaSel.value, scope = aulaSel.value;
+    previewPoolIds = null;
+    if (!fromClient || !fromTurma || scope === 'all' || !scope) { previewEl.innerHTML = ''; return; }
+    const srcTurma = turmasByClient.find((tu) => tu.slug === fromTurma);
+    if (!srcTurma) { previewEl.innerHTML = ''; return; }
+    const myReq = ++previewReqId;
+    okBtn.disabled = true;
+    previewEl.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
+    api.turmaView({ client_slug: fromClient, turma_slug: fromTurma, token: srcTurma.token }).then((vd) => {
+      if (myReq !== previewReqId) return; // a newer aula/turma pick already superseded this
+      okBtn.disabled = false;
+      const matches = ((vd && vd.items) || []).filter((it) => _itemInScope(it, scope));
+      previewPoolIds = matches.map((it) => Number(it.id));
+      if (!matches.length) { previewEl.innerHTML = '<div class="cdx-empty">' + t('releases.copy_scope_empty') + '</div>'; return; }
+      const sections = _groupByType(matches).map((g) => ({
+        key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
+        rowsHtml: g.items.map((i) => _rowHtml(i, 'copy-preview', true, typeIconHtml(_typeIcon(g.type), { size: 15 }), null)).join(''),
+      }));
+      previewEl.innerHTML = '<div class="cdx-picker-list">' + _accordionGroupsHtml(sections, { forceOpen: true }) + '</div>';
+    }).catch((err) => { if (myReq === previewReqId) { okBtn.disabled = false; onErr(err); } });
+  }
+
+  function fillAulas(clientSlug, turmaSlug) {
+    aulaSel.disabled = true; okBtn.disabled = true; previewEl.innerHTML = '';
+    cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }).then((d) => {
+      const aulas = ((d && d.aulas) || []).slice().sort((a, b) => (a.aula_number || 0) - (b.aula_number || 0));
+      const opts = ['<option value="all">' + _esc(t('releases.copy_scope_all')) + '</option>'];
+      aulas.forEach((a) => {
+        const label = a.title ? (a.aula_number + '. ' + a.title) : (t('cohorts.aula_label') + ' ' + a.aula_number);
+        opts.push('<option value="' + _esc(a.aula_number) + '">' + _esc(label) + '</option>');
+      });
+      opts.push('<option value="outros">' + _esc(t('cohorts.aula_outros')) + '</option>');
+      aulaSel.innerHTML = opts.join('');
+      aulaSel.disabled = false;
+      okBtn.disabled = false;
+      loadPreview();
+    }).catch(onErr);
+  }
+
+  function fillTurmas(clientSlug) {
+    turmaSel.disabled = true; aulaSel.disabled = true; okBtn.disabled = true; previewEl.innerHTML = '';
+    cohortsApi.listTurmas({ client_slug: clientSlug }).then((d) => {
+      turmasByClient = ((d && d.turmas) || []).filter((tu) => tu.status !== 'archived')
+        .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
+      if (!turmasByClient.length) { turmaSel.innerHTML = '<option value="">' + _esc(t('picker.no_turmas')) + '</option>'; return; }
+      turmaSel.innerHTML = turmasByClient.map((tu) =>
+        '<option value="' + _esc(tu.slug) + '">' + _esc(tu.display_name || tu.name) + '</option>').join('');
+      turmaSel.disabled = false;
+      fillAulas(clientSlug, turmaSel.value);
+    }).catch(onErr);
+  }
+
+  cohortsApi.listClients().then((d) => {
+    const clients = ((d && d.clients) || []).filter((c) => c.status !== 'archived')
+      .sort((a, b) => (a.display_name || a.name).localeCompare(b.display_name || b.name, 'pt-BR', { sensitivity: 'base' }));
+    if (!clients.length) { clientSel.innerHTML = '<option value="">' + _esc(t('picker.no_clients')) + '</option>'; return; }
+    clientSel.innerHTML = clients.map((c) =>
+      '<option value="' + _esc(c.slug) + '">' + _esc(c.display_name || c.name) + '</option>').join('');
+    clientSel.disabled = false;
+    fillTurmas(clientSel.value);
+  }).catch(onErr);
+
+  clientSel.addEventListener('change', () => fillTurmas(clientSel.value));
+  turmaSel.addEventListener('change', () => fillAulas(clientSel.value, turmaSel.value));
+  aulaSel.addEventListener('change', loadPreview);
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+
+  function done(copied) {
+    closeModal(bd);
+    toast.ok(copied ? t('releases.copy_done').replace('{n}', copied) : t('releases.copy_done_none'));
+    _loadReleases(_clientSlug, _turmaSlug);
+  }
+  function fail(err) { okBtn.disabled = false; onErr(err); }
+
+  okBtn.addEventListener('click', () => {
+    const fromClient = clientSel.value, fromTurma = turmaSel.value, scope = aulaSel.value;
+    if (!fromClient || !fromTurma || !scope) return;
+    okBtn.disabled = true;
+
+    if (scope === 'all') {
+      api.copyReleases({
+        client_slug: _clientSlug, from_client_slug: fromClient,
+        from_turma_slug: fromTurma, to_turma_slug: _turmaSlug,
+      }).then((r) => { if (r && r.error) throw new Error(r.error); done((r && r.copied) || 0); }).catch(fail);
+      return;
+    }
+
+    // The preview (loadPreview) already fetched and filtered this exact selection;
+    // reuse its ids instead of hitting turmaView again.
+    const poolIds = previewPoolIds || [];
+    if (!poolIds.length) { done(0); return; }
+
+    const diff = (targetAulaNum === 'outros')
+      ? diffOutrosSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds: poolIds })
+      : diffAulaMultiSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum: targetAulaNum, poolIds, selectedIds: poolIds });
+    const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
+    Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+      .then(() => Promise.all(diff.updates.map((u) =>
+        api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
+      .then(() => {
+        diff.toRelease.forEach((id) => { if (_released.indexOf(id) === -1) _released.push(id); });
+        diff.updates.forEach((u) => {
+          const m = _releasedMeta[u.id] || (_releasedMeta[u.id] = {});
+          m.aula_numbers = u.aulaNumbers;
+          const realLeft = u.aulaNumbers.filter((x) => Number(x) > 0);
+          m.aula_number = realLeft.length ? realLeft[0] : null;
+        });
+        done(diff.updates.length);
+      }).catch(fail);
+  });
 }
 
 // Mark an aula as occurred on its scheduled day, straight from Releases. ct_update_aula
@@ -633,29 +808,42 @@ function _elsewhereLabel(aulas) {
 // reusing the Presets picker classes (.cdx-picker*) so the layout is identical.
 // Rows stay in the DOM when a section collapses (the checked state lives in the
 // checkboxes, read at save time), so collapsing never drops an unsaved pick.
-function _renderComposerAccordion(container, sections) {
-  const groupsHtml = sections.map((s, idx) => {
-    const open = idx === 0;
+// Shared group markup (the composer's own accordion AND the copy modal's read-only
+// preview both render sections through this). opts.forceOpen renders every group
+// already expanded, with a non-interactive header (the copy preview: nothing to
+// collapse, there is no save here); omitted, only the first section starts open
+// and the header is the normal collapse/expand toggle (the real composer).
+function _accordionGroupsHtml(sections, opts) {
+  opts = opts || {};
+  return sections.map((s, idx) => {
+    const open = opts.forceOpen || idx === 0;
     // Section count: "liberados/total" for an aula composer (s.releasedCount set),
     // plain total otherwise (e.g. the no-lesson Outros placeholder).
     const cnt = (s.releasedCount != null) ? (s.releasedCount + '/' + s.count) : s.count;
     return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
-        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
+        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '"' + (opts.forceOpen ? ' disabled' : '') + '>' +
           '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
           '<span class="cdx-picker-group-name">' + s.label + ' (' + cnt + ')</span>' +
         '</button>' +
         '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
       '</div>';
   }).join('');
+}
+
+function _renderComposerAccordion(container, sections, targetAulaNum) {
+  const groupsHtml = _accordionGroupsHtml(sections);
   container.innerHTML =
     '<div class="cdx-picker cdx-rel-acc">' +
       '<div class="cdx-picker-toolbar">' +
         '<input type="search" class="cdx-picker-search cdx-comp-search-all" placeholder="' + _esc(t('releases.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-rel-copy-btn">' + t('releases.copy_btn') + '</button>' +
       '</div>' +
       '<div class="cdx-picker-list">' + groupsHtml + '</div>' +
     '</div>' +
     '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
   _wireComposerAccordion(container);
+  const copyBtn = container.querySelector('.cdx-rel-copy-btn');
+  if (copyBtn) copyBtn.addEventListener('click', () => _openCopyReleasesModal(targetAulaNum));
 }
 
 function _wireComposerAccordion(container) {
@@ -738,7 +926,7 @@ function _renderAulaComposer(container, aula) {
       releasedCount: driveItems.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: driveRows });
   }
 
-  _renderComposerAccordion(container, sections);
+  _renderComposerAccordion(container, sections, aulaNum);
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveAula(container, aulaNum, { outrosItems, driveItems }));
 }
@@ -772,7 +960,7 @@ function _renderOutrosComposer(container) {
       releasedCount: driveItems.filter((i) => _inOutros(i.id)).length, rowsHtml: driveRows });
   }
 
-  _renderComposerAccordion(container, sections);
+  _renderComposerAccordion(container, sections, 'outros');
   container.querySelector('.cdx-comp-save').addEventListener('click', () =>
     _saveOutros(container, { standalone, driveItems }));
 }

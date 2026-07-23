@@ -422,6 +422,126 @@
 .cdx-file-picked { margin-top: 0.5rem; display: flex; flex-direction: column; gap: 0.35rem; }
 .cdx-file-picked-name { font-weight: 600; font-size: 0.9rem; }
 .cdx-file-mode { display: flex; flex-wrap: wrap; gap: 0.25rem 1rem; }
+
+/* ── track-45 Fatia 1: AI tarefa-response synthesis (dev-only preview) ───────
+ * content/tarefa-eval-view.js, mounted inside a modal opened from the Respostas
+ * pane (content/tarefas.js). Only anonymous excerpts render here, grouped by
+ * adherence to the enunciado. Every color below is an EXISTING token
+ * (success/amber/error/surface/text/border/background), already themed for
+ * [data-theme="dark"] in css/theme.css, so no new custom property or dark
+ * override is introduced here. */
+/* Own the width against .cdx-modal{width:100%;max-width:460px} (cohorts.css, loaded
+   later): a two-class selector (0,2,0) beats the single-class base regardless of load
+   order, so the projected synthesis gets its full width instead of the 460/520px cap.
+   No cdx-modal--<tier> is stacked on this modal (they'd re-introduce the cap). */
+.cdx-modal.cdx-teval-modal { width: min(94vw, 980px); max-width: min(94vw, 980px); max-height: 90vh; overflow-y: auto; }
+/* Toolbar: provenance on the left, the redo escape hatch on the right. There is no
+   "synthesize" button any more, opening the modal is the trigger. */
+.cdx-teval-toolbar {
+  display: flex; align-items: flex-start; justify-content: space-between;
+  gap: 0.8rem; margin-bottom: 0.9rem; flex-wrap: wrap;
+}
+.cdx-teval-toolbar > .cdx-teval-redo { margin-left: auto; flex: none; }
+.cdx-teval-meta { font-size: 0.78rem; opacity: 0.7; align-self: center; }
+.cdx-teval-warn {
+  flex-basis: 100%; order: 3;
+  font-size: 0.78rem; padding: 0.45rem 0.6rem; border-radius: 6px;
+  background: rgba(220, 150, 40, 0.14); border: 1px solid rgba(220, 150, 40, 0.35);
+}
+.cdx-teval-empty,
+.cdx-teval-loading,
+.cdx-teval-error {
+  padding: 1.2rem;
+  text-align: center;
+  font-size: 0.88rem;
+  color: var(--text-secondary);
+  border: 1px dashed var(--border);
+  border-radius: 8px;
+}
+.cdx-teval-error { color: var(--error, #ef4444); border-color: var(--error, #ef4444); }
+.cdx-teval-groups {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.9rem;
+}
+@media (max-width: 720px) {
+  .cdx-teval-groups { grid-template-columns: 1fr; }
+}
+.cdx-teval-col {
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+  min-width: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.7rem;
+}
+.cdx-teval-col--adherent { border-top: 3px solid var(--success, #10b981); }
+.cdx-teval-col--point    { border-top: 3px solid var(--amber, #b45309); }
+.cdx-teval-col--diverged { border-top: 3px solid var(--error, #ef4444); }
+.cdx-teval-col-head {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-weight: 600;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+}
+.cdx-teval-col-count {
+  font-size: 0.75rem;
+  font-weight: 500;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 999px;
+  padding: 0.05rem 0.5rem;
+}
+.cdx-teval-col-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 0.5rem; }
+/* track-45 Fatia 2: each item is a clickable comment (collapsed excerpt -> click to
+   expand the full response inline, never a fetch: the text is already in the DOM). */
+.cdx-teval-item {
+  background: var(--background);
+  border-radius: 8px;
+  padding: 0.5rem 0.6rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: background-color 0.15s ease;
+}
+.cdx-teval-item:hover { background: var(--surface); }
+.cdx-teval-item-head {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--text-secondary);
+  margin-bottom: 0.25rem;
+}
+.cdx-teval-item-text {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  overflow: hidden;
+}
+.cdx-teval-item.is-expanded .cdx-teval-item-text { -webkit-line-clamp: unset; overflow: visible; }
+.cdx-teval-item-note {
+  margin-top: 0.3rem;
+  font-size: 0.78rem;
+  font-style: italic;
+  color: var(--text-secondary);
+}
+.cdx-teval-item-actions { margin-top: 0.4rem; }
+.cdx-teval-item-open { cursor: pointer; }
+.cdx-teval-col-empty { color: var(--text-secondary); font-size: 0.82rem; font-style: italic; }
+/* Temporary highlight on the real answer card the "Ver na lista" click lands on
+   (tarefas.js _openResponseInList), removed again after ~2s via setTimeout. Built from
+   the already-themed --accent + --success tokens, both redefined under
+   [data-theme="dark"] in css/theme.css, so no new color/override is needed here. */
+.cdx-resp-card.is-teval-focus {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  box-shadow: 0 0 0 4px var(--success-bg);
+}
 .cdx-radio-label { display: inline-flex; align-items: center; gap: 0.35rem; font-size: 0.9rem; cursor: pointer; }
 
 /* ── Comunicações (broadcast composer, track-44) ─────────────────────────────────

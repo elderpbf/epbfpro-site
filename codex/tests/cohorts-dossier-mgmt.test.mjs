@@ -59,6 +59,14 @@ test('cohorts reuses the existing modules, mounted aula-locked (no duplicated co
   assert.match(cohortsJs, /releasesAdmin\.aulaReleaseCounts\(/, 'reuses the exported counts helper');
 });
 
+test('the aula-hub badge row renders a chip for released labs, not just apostila/tarefa/outros/drive', () => {
+  // aulaReleaseCounts() now returns a `lab` bucket (releases.js) separate from
+  // `outros`; _aulaCountChipsHtml destructures counts by fixed key, so a lab
+  // chip must be read explicitly or labs silently drop out of these badges.
+  const chipsFn = cohortsJs.slice(cohortsJs.indexOf('function _aulaCountChipsHtml'), cohortsJs.indexOf('function _isAulaSelected'));
+  assert.match(chipsFn, /if \(c\.lab\) html \+= _countChip\('flask', c\.lab\);/, 'renders a flask chip for c.lab');
+});
+
 test('the per-aula Liberações pane also mounts the Aplicativos release section (app = content per aula)', () => {
   assert.match(cohortsJs, /import \* as appRelease from '\.\/app-release\.js'/, 'imports the app-release module');
   assert.match(cohortsJs, /appRelease\.mount\(/, 'mounts the app-release section');

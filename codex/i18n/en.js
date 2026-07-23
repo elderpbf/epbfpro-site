@@ -1061,6 +1061,13 @@ export default {
   'releases.mark_happened':       'Occurred',
   'releases.mark_happened_title': 'Mark as occurred on its scheduled day',
   'releases.mark_happened_done':  'Lesson marked as occurred.',
+  'releases.copy_btn':            'Copy releases',
+  'releases.copy_confirm_btn':    'Confirm',
+  'releases.copy_from_label':     'Source cohort',
+  'releases.copy_scope_all':      'Every lesson',
+  'releases.copy_scope_empty':    'No item released in this lesson.',
+  'releases.copy_done':           '{n} item(s) copied.',
+  'releases.copy_done_none':      'Nothing to copy: every item was already released in this cohort.',
 
   // Content → Apostila (imported course content)
   'apostila.title_default':   'Course content',
@@ -1260,6 +1267,36 @@ export default {
   'tarefas.section_delete':   'Delete section',
   'tarefas.section_delete_title':'Delete section',
   'tarefas.section_delete_warning':'The section is removed; its assignments become section-less (they are not deleted).',
+
+  // track-45 Slice 1: AI response synthesis (dev-only preview, no real worker call)
+  'tarefas.eval_btn':          'Evaluate responses (preview)',
+  'tarefas.eval_panel_title':  'Response synthesis (AI, preview)',
+  'tarefas.eval_redo':         'Redo analysis',
+  'tarefas.eval_redo_hint':    'Redoes the analysis from scratch, ignoring the saved result.',
+  'tarefas.eval_meta_cached':  'synthesized at {time}',
+  'tarefas.eval_meta_fresh':   'synthesized just now, at {time}',
+  'tarefas.eval_meta_count':   '{n} responses',
+  'tarefas.eval_missing':      '{n} response(s) were not classified by the AI. Redo the analysis to try again.',
+  'tarefas.eval_credits_exhausted': 'AI credits ran out. Ask the administrator to top up before trying again.',
+  'tarefas.eval_too_large':    'This cohort is too large for a single analysis ({chars} characters, limit {limit}). Nothing was truncated.',
+  'tarefas.eval_loading':      'Synthesizing responses...',
+  'tarefas.eval_idle':         'Preparing the synthesis of the class responses...',
+  'tarefas.eval_error':        'Could not synthesize the responses right now. Try again.',
+  'tarefas.eval_rate_limited': 'AI usage limit reached right now. Try again shortly.',
+  'tarefas.eval_empty':        'No responses to synthesize.',
+  'tarefas.eval_col_empty':    'No responses in this group.',
+  'tarefas.eval_group_adherent':'Most adherent',
+  'tarefas.eval_group_point':  'Raise a relevant point',
+  'tarefas.eval_group_diverged':'Diverged',
+  // track-45 Fatia 2: each synthesis item is a clickable comment, identifying the response
+  // by index (never by name) and letting the instructor open the full response in the list.
+  'tarefas.eval_item_label':   'Response',
+  'tarefas.eval_open_in_list': 'View in list',
+  // track-45 fix: zero real answers never falls back to a seed/demo sample; it only
+  // says there are no answers and never calls the AI (Élder's rule: no such fallback
+  // may exist in production).
+  'tarefas.eval_no_answers':   'This assignment has no responses yet. The AI will not be called.',
+  'tarefas.eval_open_failed':  'Could not locate the response in the list.',
 
   // Content → Labs / Drive (deferred-global wrappers)
   'labs.unavailable':         'Labs panel unavailable.',
