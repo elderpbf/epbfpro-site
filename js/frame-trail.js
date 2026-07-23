@@ -92,12 +92,16 @@ async function showEndState() {
   if (material) material.click();
   await waitFor('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub-expanded', 2000);
 
+  // pensoia-header sits OUTSIDE .cdx-trilha-main (fixed, does not pan with it), and
+  // #cdx-tr-back-pill sits ~41px above the row inside main — a margin under ~104
+  // parks the back-pill under the header instead of below it. 125 clears that and
+  // still fits the expanded material inside the phone slot.
   const main = $('.cdx-trilha-main');
   const row = $('.cdx-tr-tl-row[data-aula="3"]');
   if (main && row) {
     main.style.transition = 'none';
     const top = row.getBoundingClientRect().top;
-    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 90)) + 'px)';
+    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 125)) + 'px)';
   }
 }
 
