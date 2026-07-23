@@ -103,7 +103,7 @@ async function showEndState() {
   if (main && row) {
     main.style.transition = 'none';
     const top = row.getBoundingClientRect().top;
-    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 56)) + 'px)';
+    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 40)) + 'px)';
   }
 }
 
