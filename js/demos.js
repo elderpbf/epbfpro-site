@@ -18,6 +18,8 @@ const TRAIL_SRCDOC =
   '<!DOCTYPE html><html lang="pt-BR" data-theme="light"><head><meta charset="UTF-8">' +
   '<meta name="viewport" content="width=device-width, initial-scale=1">' +
   '<link rel="stylesheet" href="/codex/css/theme.css?v=1.0">' +
+  '<link rel="stylesheet" href="/codex/css/tokens.css?v=1.0">' +
+  '<link rel="stylesheet" href="/codex/css/components.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/trilha/css/public-header.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/css/item-render.css?v=1.0">' +
   '<link rel="stylesheet" href="/codex/questions/questions.css?v=1.0">' +
