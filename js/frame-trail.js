@@ -92,16 +92,18 @@ async function showEndState() {
   if (material) material.click();
   await waitFor('.cdx-tr-tl-row[data-aula="3"] .cdx-tr-sub-expanded', 2000);
 
-  // pensoia-header sits OUTSIDE .cdx-trilha-main (fixed, does not pan with it), and
-  // #cdx-tr-back-pill sits ~41px above the row inside main — a margin under ~104
-  // parks the back-pill under the header instead of below it. 125 clears that and
-  // still fits the expanded material inside the phone slot.
+  // .cdx-trilha-hero (client avatar + name) sits well above the row inside main and
+  // pensoia-header is OUTSIDE main entirely (fixed, does not pan with it) — a margin
+  // that doesn't clear the hero's full height leaves a cropped sliver of it peeking
+  // in above #cdx-tr-back-pill. 56 clears the hero and still opens right under the
+  // header, at the cost of the expanded material's body running past the phone slot
+  // (its own heading + collapsed row still fit; only the redacted preview lines don't).
   const main = $('.cdx-trilha-main');
   const row = $('.cdx-tr-tl-row[data-aula="3"]');
   if (main && row) {
     main.style.transition = 'none';
     const top = row.getBoundingClientRect().top;
-    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 125)) + 'px)';
+    main.style.transform = 'translateY(-' + Math.max(0, Math.round(top - 56)) + 'px)';
   }
 }
 
