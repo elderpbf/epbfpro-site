@@ -1,0 +1,44 @@
+{
+  "codex/content/slides/assets/logo-dark.png": {
+    "sha256": "0f1f74b575daeda7755aa59546bf668ddfe817a4629524a6e80baff625f13a33",
+    "variant": "glyph-wordmark",
+    "bg": "navy",
+    "w": 1024,
+    "h": 371
+  },
+  "codex/content/slides/assets/logo-light.png": {
+    "sha256": "0f0b3f028a3e6cd70a6013449564c93ced3a32028c66ebf9ced1229b5fd8c0ad",
+    "variant": "glyph-wordmark",
+    "bg": "white",
+    "w": 1024,
+    "h": 371
+  },
+  "codex/content/slides/codex-logo.png": {
+    "sha256": "0f0b3f028a3e6cd70a6013449564c93ced3a32028c66ebf9ced1229b5fd8c0ad",
+    "variant": "glyph-wordmark",
+    "bg": "white",
+    "w": 1024,
+    "h": 371
+  },
+  "codex/content/slides/assets/logo-teal.png": {
+    "sha256": "d635d3f0a8121f9dfac216c8bcc7a0600df766635d1dabb471ac754fe5cb89fe",
+    "variant": "glyph-wordmark",
+    "bg": "teal",
+    "w": 1024,
+    "h": 371
+  },
+  "codex/content/slides/assets/logo-mark.png": {
+    "sha256": "fed017737ee62ee97b1a3bf3239a5a1d1bb9e572c7e873b7dbb04f3ac945d024",
+    "variant": "favicon-circle",
+    "bg": "white",
+    "w": 1024,
+    "h": 1024
+  },
+  "images/brand/email-logo.png": {
+    "sha256": "67b2123d6176291454a9fb059cd2868837eedea311b1577c31c9d2d0053708d9",
+    "variant": "glyph-wordmark",
+    "bg": "navy",
+    "w": 2400,
+    "h": 870
+  }
+}

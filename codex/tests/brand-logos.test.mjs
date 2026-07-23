@@ -102,3 +102,64 @@ test('o <style> gerado nao tem caractere que quebre o SVG lido como XML', () => 
   assert.ok(!style.includes('<'), 'nada de menor-que dentro do <style>');
   assert.ok(!style.includes('&'), 'nada de E-comercial dentro do <style>');
 });
+
+// ── As variantes de placa e o cartao (track-47 4.b) ──────────────────────────
+// Ate o 4.b elas nao existiam no gerador: os 12 arquivos canonicos eram compostos
+// fora dele, e por isso eram os unicos que nenhum teste alcancava.
+
+test('iconPlate centra a marca por DERIVACAO, nunca por numero digitado', () => {
+  // Um icone com o glifo fora do centro e o defeito classico de export manual. Aqui
+  // x e y saem de markHeight, entao nao ha onde errar. Os valores conferidos sao os
+  // do conjunto canonico em PensoIA/Brand/Logo/with bg/.
+  const casos = [
+    [brand.faviconSquare('navy'), 640, 'rect', 220],
+    [brand.faviconCircle('navy'), 640, 'circle', null],
+    [brand.appicon('navy'), 600, 'rect', 220],
+    [brand.appiconAdaptiveSquircle('navy'), 560, 'rect', 380],
+    [brand.appiconAdaptiveCircle('navy'), 500, 'circle', null],
+  ];
+  for (const [svg, h, forma, rx] of casos) {
+    const w = h * (600 / 757);
+    assert.match(svg, /viewBox="0 0 1000 1000"/, 'placa de 1000x1000');
+    assert.ok(svg.includes(`x="${(1000 - w) / 2}" y="${(1000 - h) / 2}" width="${w}" height="${h}"`),
+      `marca centrada e no aspecto 600:757 (h=${h})`);
+    if (forma === 'circle') assert.match(svg, /<circle cx="500" cy="500" r="500"/);
+    else assert.ok(svg.includes(`<rect width="1000" height="1000" rx="${rx}"`), `raio ${rx}`);
+  }
+});
+
+test('a placa nao repete <style> nem fonte: quem hospeda declara uma vez', () => {
+  const svg = brand.faviconSquare('navy');
+  // A placa nao tem <text> proprio; uma regra text{} nela seria regra morta por cima
+  // da viva que o artwork aninhado carrega.
+  assert.equal(svg.indexOf('<style>'), svg.lastIndexOf('<style>'), 'um unico <style>, o do aninhado');
+  assert.ok(!svg.includes('@font-face'), 'placa e geometria pura, nao paga fonte');
+});
+
+test('bizCard embute a fonte UMA vez e mantem o e-mail em monoespacada', () => {
+  const svg = brand.bizCard('navy');
+  assert.match(svg, /viewBox="0 0 320 188"/);
+  assert.equal((svg.match(/@font-face/g) || []).length, 2, 'as duas faces, uma vez so');
+  assert.ok(!svg.slice(svg.indexOf('<svg', 1)).includes('@font-face'),
+    'o wordmark aninhado NAO repete a fonte do hospedeiro');
+  assert.match(svg, /font-family="ui-monospace,Menlo,monospace">contato@pensoia\.com/,
+    'endereco em monoespacada, mais facil de transcrever a olho');
+  assert.match(svg, /Élder Prudente Barbosa Filho/, 'o nome com acento, que o subset cobre');
+});
+
+test('bizCard e a variante de texto VARIAVEL, entao aceita outra pessoa', () => {
+  // E por isso que ela e a que precisa manter fonte de verdade em vez de contorno.
+  const svg = brand.bizCard('white', { nome: 'Fulana de Tal', papel: 'Instrutora', email: 'f@pensoia.com' });
+  assert.match(svg, /Fulana de Tal/);
+  assert.match(svg, /Instrutora/);
+  assert.ok(!svg.includes('Élder'), 'o padrao nao vaza quando se passa outro nome');
+});
+
+test('toda variante nova sobrevive ao <style> lido como XML', () => {
+  for (const svg of [brand.faviconSquare('navy'), brand.appiconAdaptiveCircle('white'), brand.bizCard('navy')]) {
+    for (const style of svg.match(/<style>([\s\S]*?)<\/style>/g) || []) {
+      const corpo = style.slice(7, -8);
+      assert.ok(!corpo.includes('<') && !corpo.includes('&'), 'nada que quebre o parse XML');
+    }
+  }
+});
