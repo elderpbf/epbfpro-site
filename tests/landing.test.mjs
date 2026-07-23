@@ -3,7 +3,7 @@
 // no inline logic in HTML, i18n key parity across pt/en/es, copied values present.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { readFileSync } from 'node:fs';
+import { readFileSync, existsSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
 
@@ -19,61 +19,40 @@ test('index.html: ported to plp- classes, mock classes gone', () => {
     assert.ok(!h.includes(bad), 'should not contain ' + bad);
 });
 
-test('demos: both phones embed the real Codex app in place (srcdoc iframes, no rebuild)', () => {
+test('demos: offer-section phones are static stills, theme-swapped like the logo', () => {
   const h = read('index.html');
-  for (const c of ['plp-app-scale', 'id="pulseFrame"', 'id="trailFrame"', 'class="plp-app-frame"'])
+  for (const c of ['id="pulseStill"', 'id="trailStill"', 'class="plp-app-frame plp-app-still"'])
     assert.ok(h.includes(c), 'index missing ' + c);
-  for (const bad of ['id="pulseApp"', 'id="trailApp"', '/codex/demo/', 'plp-demo-pulse', 'plp-demo-trail', 'plp-pulso', 'id="trPhone"', 'id="thBar"', 'id="trCap"'])
-    assert.ok(!h.includes(bad), 'index still has stale demo ' + bad);
+  for (const bad of ['id="pulseFrame"', 'id="trailFrame"', 'plp-app-scale', 'plp-captab', 'id="pulseTab"', 'id="trailTab"'])
+    assert.ok(!h.includes(bad), 'index still has stale live-demo piece ' + bad);
 
-  // demos.js builds srcdoc iframes that link the REAL Codex CSS + the landing frame drivers.
+  // ui.js swaps the still <img> src per theme, same pattern as the logo.
+  const ui = read('js/ui.js');
+  assert.ok(ui.includes('applyDemoStills') && ui.includes('DEMO_STILLS'), 'ui.js must theme-swap the demo stills');
+  assert.ok(!ui.includes('plpStep') && !ui.includes('initCaptionTabs'), 'the retired step-caption wiring must be gone');
+
+  // main.js no longer boots the live iframe demo.
+  const m = read('js/main.js');
+  assert.ok(!m.includes('./demos.js') && !m.includes('initDemos'), 'main.js must not wire the live demo anymore');
+
+  for (const img of ['images/demo-pulso-light.png', 'images/demo-pulso-dark.png', 'images/demo-trilha-light.png', 'images/demo-trilha-dark.png'])
+    assert.ok(existsSync(join(root, img)), 'missing still ' + img);
+});
+
+// demos.js / frame-pulso.js / frame-trail.js / frame-demo-shared.js are UNWIRED from
+// index.html but stay in the repo (used to capture the stills above, and as the base for
+// reviving a live demo later). Assert the piece that keeps THAT reuse honest: the real
+// Codex modules, driven via the callWorker seam, never rebuilt app markup.
+test('demos (dormant): frame drivers still mount the REAL app, never rebuild markup', () => {
   const d = read('js/demos.js');
   assert.ok(d.includes('srcdoc') && d.includes('pulseFrame') && d.includes('trailFrame'), 'demos.js must set srcdoc on both frames');
-  for (const link of ['/codex/questions/questions.css', '/codex/trilha/css/nexo.css', '/codex/trilha/css/cards.css', '/codex/trilha/css/tarefa-modal.css'])
-    assert.ok(d.includes(link), 'demos.js srcdoc missing real CSS ' + link);
-
-  // The frame drivers mount the REAL modules via the callWorker seam, never rebuild markup.
   const fp = read('js/frame-pulso.js');
   assert.ok(fp.includes('/codex/trilha/js/nexo-answer.js') && fp.includes('window.callWorker'), 'frame-pulso must drive the real nexo-answer via callWorker');
   const ft = read('js/frame-trail.js');
   assert.ok(ft.includes('/codex/trilha/js/page.js') && ft.includes('window.callWorker'), 'frame-trail must boot the real trilha page via callWorker');
   for (const re of [/buildAulaRow/, /renderBarChart/, /cdx-qr-bar-fill/, /cdx-qr-option-letter/])
     assert.ok(!re.test(fp + ft + d), 'frame drivers / demos must not rebuild app markup');
-});
-
-test('demos: caption tab on top of each phone, driven by the step() postMessage seam', () => {
-  const h = read('index.html');
-  for (const c of ['id="pulseTab"', 'id="trailTab"', 'plp-captab', 'plp-captab-segs', 'plp-captab-txt'])
-    assert.ok(h.includes(c), 'index missing caption tab piece ' + c);
-
-  // The shared module posts the beat to the landing; the in-iframe pill is gone.
-  const sh = read('js/frame-demo-shared.js');
-  assert.ok(/export function step/.test(sh) && sh.includes('plpStep') && sh.includes('parent.postMessage'),
-    'frame-demo-shared must post {plpStep} to the parent');
-  assert.ok(!/export function caption/.test(sh), 'the in-iframe caption pill must be gone');
-
-  // Both drivers emit beats via step(i, total, label).
-  for (const f of ['js/frame-pulso.js', 'js/frame-trail.js'])
-    assert.ok(/step\(\d+,\s*\d+,/.test(read(f)), f + ' must call step(i, total, label)');
-
-  // The landing routes plpStep to the right phone and draws the segmented bar.
-  const ui = read('js/ui.js');
-  assert.ok(ui.includes('plpStep') && ui.includes('contentWindow') && ui.includes('plp-captab-segs'),
-    'ui.js must route plpStep to the matching tab');
-
-  // The Trilha camera never CALLS scrollIntoView/scrollTo (those hijack the landing);
-  // it pans via transform. Match calls (with a paren) so the cautionary comment is fine.
-  const ft = read('js/frame-trail.js');
   assert.ok(!/\.scrollIntoView\(|\.scrollTo\(/.test(ft), 'frame-trail must not scroll the page');
-
-  // Inert demos lock page scroll (the real modules focus inputs / scrollIntoView, which
-  // would creep the landing); both drivers call the shared lockPageScroll().
-  assert.ok(/export function lockPageScroll/.test(sh), 'frame-demo-shared must export lockPageScroll');
-  for (const f of ['js/frame-pulso.js', 'js/frame-trail.js'])
-    assert.ok(read(f).includes('lockPageScroll()'), f + ' must call lockPageScroll()');
-
-  // Trilha seeds a student session so the tarefa "Enviar" opens the submit modal, not login.
-  assert.ok(ft.includes("cdx_student_demo_demo"), 'frame-trail must seed the demo student session');
 });
 
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
@@ -131,6 +110,6 @@ test('orb engine + settings + boot wired', () => {
   assert.ok(s.includes('export function getSettings'), 'getSettings missing');
   assert.ok(s.includes('DEFAULTS'), 'DEFAULTS missing');
   const m = read('js/main.js');
-  for (const mod of ['./orb.js', './demos.js', './ui.js', './i18n.js', './theme.js', './orb-settings.js'])
+  for (const mod of ['./orb.js', './ui.js', './i18n.js', './theme.js', './orb-settings.js'])
     assert.ok(m.includes(mod), 'main missing import ' + mod);
 });
