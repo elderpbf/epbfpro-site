@@ -18,37 +18,18 @@ function syncLangButtons() {
   if (cur) cur.textContent = LANG_SHORT[getLang()] || getLang().toUpperCase();
 }
 
-// The demo phones (real Codex app in srcdoc iframes) post {plpStep:{i,total,label}}
-// on each beat. We draw the caption tab on top of the matching phone: the action
-// label (swapped with a soft fade) over a segmented progress bar, one segment per beat.
-function refreshTab(tab, s) {
-  if (tab.hidden) tab.hidden = false;
-  const segs = tab.querySelector('.plp-captab-segs');
-  if (segs.childElementCount !== s.total) {
-    segs.textContent = '';
-    for (let i = 0; i < s.total; i++) segs.appendChild(document.createElement('span'));
-  }
-  [...segs.children].forEach((seg, i) => {
-    seg.className = i === s.i - 1 ? 'is-active' : (i < s.i - 1 ? 'is-done' : '');
-  });
-  const txt = tab.querySelector('.plp-captab-txt');
-  if (txt.textContent !== s.label) {
-    txt.style.opacity = '0';
-    setTimeout(() => { txt.textContent = s.label; txt.style.opacity = '1'; }, 170);
-  }
-}
-
-function initCaptionTabs() {
-  const pairs = [
-    [document.getElementById('pulseFrame'), document.getElementById('pulseTab')],
-    [document.getElementById('trailFrame'), document.getElementById('trailTab')]
-  ].filter(([f, tab]) => f && tab);
-  if (!pairs.length) return;
-  addEventListener('message', (e) => {
-    const s = e.data && e.data.plpStep;
-    if (!s) return;
-    const pair = pairs.find(([f]) => f.contentWindow === e.source);
-    if (pair) refreshTab(pair[1], s);
+// The offer-section phones (Pulso, Trilha) are static stills, not the live srcdoc-iframe
+// demo: one screenshot per theme, swapped on toggle like the logo. Real-app JS demo +
+// its step-caption UI are on hold (drifted from a product change, see track-50).
+const DEMO_STILLS = {
+  pulseStill: { light: 'images/demo-pulso-light.png', dark: 'images/demo-pulso-dark.png' },
+  trailStill: { light: 'images/demo-trilha-light.png', dark: 'images/demo-trilha-dark.png' }
+};
+function applyDemoStills() {
+  const t = getTheme() === 'dark' ? 'dark' : 'light';
+  Object.keys(DEMO_STILLS).forEach((id) => {
+    const el = document.getElementById(id);
+    if (el) el.src = DEMO_STILLS[id][t];
   });
 }
 
@@ -56,15 +37,9 @@ export function initUI() {
   // theme
   const tb = document.getElementById('theme');
   const setIcon = () => { if (tb) tb.textContent = getTheme() === 'dark' ? '☀' : '☾'; };
-  setIcon(); applyLogo();
+  setIcon(); applyLogo(); applyDemoStills();
   if (tb) tb.addEventListener('click', toggleTheme);
-  // keep the embedded Codex demo iframes (the real app) on the page theme
-  const syncFrames = () => document.querySelectorAll('.plp-app-frame').forEach(f => {
-    try { f.contentWindow.postMessage({ plpTheme: getTheme() }, '*'); } catch (_) { /* cross-doc not ready yet */ }
-  });
-  document.querySelectorAll('.plp-app-frame').forEach(f => f.addEventListener('load', syncFrames));
-  onTheme(() => { setIcon(); applyLogo(); syncFrames(); });
-  initCaptionTabs();
+  onTheme(() => { setIcon(); applyLogo(); applyDemoStills(); });
 
   // language (collapsed pill: shows the current lang, opens the options on click)
   syncLangButtons();
