@@ -219,8 +219,11 @@
 
   /* This list must stay in sync with DRAWER_SEL in js/codex-topbar.js — the same class list,
    * by hand, in two shared files. That IS the coupling track-41 wants to replace with one
-   * class the rail stamps itself; until then, adding a drawer means editing both. */
-  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
+   * class the rail stamps itself; until then, adding a drawer means editing both.
+   * `.cdx-items-list` and `.cdx-bank-sets` do NOT belong here (removed 2026-07-24): both are
+   * master-detail filter/pick columns whose selection only updates a sibling pane in the
+   * SAME view, not a nav drawer — see the matching note on DRAWER_SEL. */
+  .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
     position: fixed; top: 0; left: 0; bottom: 0;
     width: 84vw; max-width: 340px;
     z-index: 120;
@@ -231,7 +234,7 @@
     box-sizing: border-box;
     background: var(--surface);   /* opaque panel (the bare cohorts wrapper has no bg of its own) */
   }
-  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open, .cdx-sessions-sidebar.is-open {
+  .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open, .cdx-sessions-sidebar.is-open {
     transform: none;
     box-shadow: 4px 0 24px var(--shadow);
   }

@@ -564,7 +564,19 @@ export function init(opts) {
   // `.cdx-sessions-sidebar` joined this list in track-41: Sessões had NO hamburger at all —
   // not a CSS bug, it was simply never registered here, which is the coupling this list IS
   // (the chrome knowing each tab's interior by class name). Élder: "all should have them".
-  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar';
+  // `.cdx-items-list` does NOT belong here (removed 2026-07-24, Élder on-device): it is the
+  // "Items split shell" master-detail filter-result column, reused verbatim by Conteúdo's
+  // Itens/Presets/Liberações/Tarefas/Labs/Apostila/Drive/Apps AND Certificados' Modelos —
+  // not a navigational drawer in any of them. content.css already stacks it above its
+  // preview pane below 980px on its own. Treating it as a drawer hid it off-canvas behind
+  // a hamburger that reads as a general menu, not "show the list".
+  // `.cdx-bank-sets` (Questões/Banco) is the SAME shape, just not sharing the class name:
+  // picking a set only re-highlights the sidebar and reloads the question list beside it
+  // (bank.js `_selectSet`), it never navigates to a different screen — so it comes out too.
+  // `.cdx-lessons-sidebar` and `.cdx-sessions-sidebar` stay: picking an aula/session there
+  // opens a genuinely different working context (the reader/editor, the live host), the
+  // same "pick once, then hide the picker" shape as `.cdx-cohorts-nav`'s Clientes/Turmas.
+  const DRAWER_SEL = '.cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar';
   // What counts as "picking a primary item" (closes the drawer to reveal the content).
   // `.cdx-rail-row` is the shared rail's row, so every migrated rail is covered by BEING a
   // rail — the same direction DRAWER_SEL itself has to go (see architecture/list-rail.md and
@@ -583,12 +595,19 @@ export function init(opts) {
   drawerBackdrop.addEventListener('click', _closeDrawer);
   // Some sub-tabs have no sidebar at all (a single dashboard, not a list+detail split —
   // Élder found Certificados/Emitidos and Questões/Stats this way): showing a hamburger
-  // there is a dead affordance, not a fixable click. `topbar()` runs before the tab's own
-  // `mount()` (index.html), so the sidebar markup (if any) doesn't exist in the DOM yet
-  // right here; one frame later it does, even if the tab's DATA still loads async after
-  // that. Inline style, not a class or `hidden`, so it wins over `.cdx-hamburger{display:
-  // inline-flex}` at the phone breakpoint regardless of source order.
-  requestAnimationFrame(() => { burger.style.display = _drawer() ? '' : 'none'; });
+  // there is a dead affordance, not a fixable click. Inline style, not a class or `hidden`,
+  // so it wins over `.cdx-hamburger{display:inline-flex}` at the phone breakpoint regardless
+  // of source order.
+  // A single post-mount check is NOT enough: `topbar()` runs before the tab's own `mount()`
+  // (index.html), and some tabs (Aulas/lessons.js `_renderShellLoading`) render only a plain
+  // loading placeholder first, building the real sidebar markup inside an async API `.then()`
+  // well after any fixed number of frames — a one-shot check caught that placeholder, found
+  // no drawer, and hid the hamburger for good (Élder found this on Aulas 2026-07-24). Re-check
+  // on every DOM change instead of guessing a delay, so it's correct whether the tab's shell
+  // is sync or async.
+  const _updateBurgerVisibility = () => { burger.style.display = _drawer() ? '' : 'none'; };
+  _updateBurgerVisibility();
+  new MutationObserver(_updateBurgerVisibility).observe(container, { childList: true, subtree: true });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _closeDrawer(); });
   // Picking a primary item inside the open drawer closes it to reveal the content.
   // Capture phase: the tab's own click handler re-renders the sidebar (detaching
