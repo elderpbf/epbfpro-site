@@ -8,7 +8,10 @@
   /* Tema, decidido ANTES de pintar (evita piscar claro/escuro):
      1) o tema do app, se houver (localStorage bs_theme) — é o que os Labs usam,
         então embutido no Codex/Trilha ele acompanha o resto da interface;
-     2) na falta dele (uso avulso/offline, em aula), a preferência do DISPOSITIVO. */
+     2) na falta dele (uso avulso/offline, em aula), a preferência do DISPOSITIVO.
+     O botão claro/escuro abaixo NÃO grava em lugar nenhum: a escolha manual vale só
+     para esta sessão (esta aba, este carregamento). Fechar e abrir de novo volta a
+     resolver por aqui, sempre no automático — nunca lembra do último clique. */
   (function () {
     var t = 'light';
     try {
@@ -64,6 +67,14 @@
 
   * { box-sizing: border-box; }
 
+  /* Scroll fino, a mesma primitiva do theme.css do Codex (embutida aqui porque o
+     arquivo é self-contained e não pode importar theme.css). */
+  * { scrollbar-width: thin; scrollbar-color: var(--line) transparent; }
+  ::-webkit-scrollbar        { width: 8px; height: 8px; }
+  ::-webkit-scrollbar-track  { background: transparent; }
+  ::-webkit-scrollbar-thumb  { background: var(--line); border-radius: 4px; }
+  ::-webkit-scrollbar-thumb:hover { background: var(--teal); }
+
   body {
     margin: 0;
     font-family: -apple-system, "Segoe UI", Roboto, sans-serif;
@@ -106,6 +117,15 @@
   .zoom button:hover { background: rgba(255,255,255,.14); }
   .zoom [data-zoom="reset"] { min-width: 56px; font-variant-numeric: tabular-nums; }
 
+  .theme-toggle {
+    font: inherit; font-size: .8rem; min-width: 34px; height: 34px; box-sizing: border-box;
+    padding: 6px 9px; border-radius: 6px; border: 1px solid rgba(255,255,255,.3);
+    background: transparent; color: #fff; cursor: pointer;
+    display: inline-flex; align-items: center; justify-content: center;
+  }
+  .theme-toggle svg { width: 15px; height: 15px; display: block; }
+  .theme-toggle:hover { background: rgba(255,255,255,.14); }
+
   .versions { display: flex; gap: 8px; }
   .versions button {
     font: inherit; font-size: .85rem; padding: 7px 16px;
@@ -142,9 +162,9 @@
   .wrap { display: block; padding: 26px 26px 26px 40px; max-width: 1180px; margin: 0 auto; overflow-x: auto; }
 
   aside {
-    position: fixed; left: 0; top: 70px; width: 320px;
+    position: fixed; left: 0; top: 70px; bottom: 0; width: 320px;
     background: var(--paper); border: 1px solid var(--line); border-radius: 0 10px 10px 0;
-    padding: 18px; max-height: calc(100vh - 88px); overflow-y: auto; z-index: 26;
+    padding: 18px; overflow-y: auto; z-index: 26;
     transform: translateX(-102%); transition: transform .22s ease;
     box-shadow: 0 10px 34px rgba(6, 26, 81, .20);
   }
@@ -170,7 +190,8 @@
   .controls { display: flex; gap: 8px; margin-top: 16px; }
   .controls button {
     font: inherit; font-size: .8rem; padding: 7px 12px; border-radius: 7px;
-    border: 1px solid var(--line); background: var(--paper); cursor: pointer; flex: 1;
+    border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    cursor: pointer; flex: 1;
   }
   .controls button:hover { background: var(--wash); }
 
@@ -178,7 +199,14 @@
   .asknote h3 { font-size: .82rem; margin: 0 0 6px; }
   .asknote ol { margin: 0; padding-left: 18px; font-size: .8rem; color: var(--ink); }
   .asknote li { margin-bottom: 4px; }
-  .asknote .last { color: var(--teal); font-weight: 600; }
+
+  .copybtn {
+    margin-top: 10px; width: auto; font: inherit; font-size: .75rem; padding: 5px 12px;
+    border-radius: 7px; border: 1px solid var(--line); background: var(--paper); color: var(--ink);
+    cursor: pointer;
+  }
+  .copybtn:hover { background: var(--wash); }
+  .copybtn.copied { border-color: var(--teal); color: var(--teal); font-weight: 600; }
 
   /* ---------- documento ---------- */
 
@@ -271,7 +299,7 @@
       border-radius: 14px 14px 0 0; box-shadow: 0 -10px 30px rgba(6,26,81,.18);
       display: flex; flex-direction: column; z-index: 41; overflow: hidden;
       transform: translateY(calc(100% - var(--peek-h, 96px)));
-      transition: transform .3s cubic-bezier(.32,.72,0,1);
+      transition: transform .5s cubic-bezier(.32,.72,0,1);
       will-change: transform;
     }
     aside.show { transform: translateY(0); }
@@ -310,8 +338,9 @@
     .aside-zoom { display: flex; align-items: center; gap: 10px; margin: 12px 0 14px; }
     .aside-zoom-label { font-size: .8rem; color: var(--muted); }
     .aside-zoom .zoom { display: flex; gap: 4px; }
-    .aside-zoom .zoom button { color: var(--ink); border: 1px solid var(--line); background: var(--paper); min-width: 40px; padding: 7px 10px; }
+    .aside-zoom .zoom button, .aside-zoom .theme-toggle { color: var(--ink); border: 1px solid var(--line); background: var(--paper); min-width: 40px; padding: 7px 10px; }
     .aside-zoom .zoom [data-zoom="reset"] { min-width: 56px; }
+    .aside-zoom .theme-toggle { height: 36px; box-sizing: border-box; }
 
     aside.show ~ .aside-scrim { display: block; position: fixed; inset: 0; background: rgba(6,26,81,.30); z-index: 40; }
   }
@@ -334,6 +363,8 @@
       <button data-zoom="reset" id="zreset" aria-label="tamanho original">100%</button>
       <button data-zoom="in" id="zin" aria-label="aumentar">A+</button>
     </div>
+
+    <button class="theme-toggle" data-theme-toggle type="button" aria-label="alternar tema"></button>
 
     <div class="versions" role="group" aria-label="versões">
       <button data-mode="olho" aria-pressed="true">O que o olho vê</button>
@@ -370,6 +401,7 @@
         <button data-zoom="reset" aria-label="tamanho original">100%</button>
         <button data-zoom="in" aria-label="aumentar">A+</button>
       </div>
+      <button class="theme-toggle" data-theme-toggle type="button" aria-label="alternar tema"></button>
     </div>
 
     <h2>As 4 táticas</h2>
@@ -390,12 +422,14 @@
     <div class="asknote">
       <h3>Perguntas pra fazer à IA</h3>
       <ol>
+        <li>Essa estória é adequada para crianças pequenas?</li>
         <li>Liste os desejos da Joaninha.</li>
         <li>Como você descreveria o caráter da Joaninha?</li>
         <li>Copie o parágrafo final, o que começa com "Ao amanhecer".</li>
         <li>O que acontece com a aldeia no final?</li>
-        <li class="last">Resuma esta história em um parágrafo. (por último)</li>
+        <li>Resuma esta história em um parágrafo.</li>
       </ol>
+      <button class="copybtn" id="copyPoison" type="button">Copiar</button>
     </div>
 
   </div>
@@ -587,6 +621,79 @@
     b.addEventListener('click', function () { clearHits(); });
   });
 
+  /* ---------- copiar: perguntas + o texto exatamente como a IA leria o PDF ---------- */
+  /* Extrai por DOM, não pela tela atual: o resultado é sempre o mesmo, não importa se
+     o visitante está no modo "olho" ou "IA" no momento do clique. */
+  /* A instrução abaixo só existe no texto copiado (é o prompt que vai pro modelo); a
+     barra lateral mostra só as perguntas, sem instrução nenhuma. */
+  var PROMPT_INSTRUCAO = 'Responda as perguntas com base no texto, repetindo a pergunta e respondendo em seguida. Seja direto e sucinto:';
+
+  function extractQuestions() {
+    var lines = [];
+    document.querySelectorAll('.asknote ol li').forEach(function (li, i) {
+      lines.push((i + 1) + '. ' + li.textContent.trim());
+    });
+    return lines.join('\n');
+  }
+
+  function extractPoisonedStory() {
+    var clone = document.getElementById('main').cloneNode(true);
+    /* os rótulos [1 · branco no branco] etc. e as setas "← isto é uma imagem" só existem
+       para quem está explorando a demo; num PDF de verdade não estariam ali */
+    clone.querySelectorAll('.tag, .only-ia').forEach(function (el) { el.remove(); });
+    /* o final "que o olho vê" é uma IMAGEM: a IA não lê aquele texto, lê o .inj que o substitui */
+    clone.querySelectorAll('.vis-t4').forEach(function (el) { el.remove(); });
+
+    var lines = [];
+    clone.childNodes.forEach(function (node) {
+      if (node.nodeType !== 1) return;
+      if (node.tagName === 'TABLE') {
+        node.querySelectorAll('tr').forEach(function (tr) {
+          var num = tr.querySelector('td.n');
+          var resto = Array.prototype.filter.call(tr.querySelectorAll('td'), function (td) {
+            return !td.classList.contains('n');
+          }).map(function (td) { return td.textContent.replace(/\s+/g, ' ').trim(); }).join(' ');
+          if (resto) lines.push((num ? num.textContent.trim() + '. ' : '') + resto);
+        });
+        return;
+      }
+      var t = node.textContent.replace(/\s+/g, ' ').trim();
+      if (t) lines.push(t);
+    });
+    return lines.join('\n\n');
+  }
+
+  function copyToClipboard(text) {
+    if (navigator.clipboard && window.isSecureContext) return navigator.clipboard.writeText(text);
+    return new Promise(function (resolve, reject) {
+      try {
+        var ta = document.createElement('textarea');
+        ta.value = text; ta.setAttribute('readonly', '');
+        ta.style.position = 'fixed'; ta.style.top = '-1000px';
+        document.body.appendChild(ta); ta.select();
+        document.execCommand('copy');
+        document.body.removeChild(ta);
+        resolve();
+      } catch (e) { reject(e); }
+    });
+  }
+
+  var copyBtn = document.getElementById('copyPoison');
+  if (copyBtn) {
+    var copyLabel = copyBtn.textContent;
+    copyBtn.addEventListener('click', function () {
+      var texto = PROMPT_INSTRUCAO + '\n' + extractQuestions() + '\n\n' + extractPoisonedStory();
+      copyToClipboard(texto).then(function () {
+        copyBtn.textContent = 'Copiado ✓';
+        copyBtn.classList.add('copied');
+        setTimeout(function () { copyBtn.textContent = copyLabel; copyBtn.classList.remove('copied'); }, 1600);
+      }).catch(function () {
+        copyBtn.textContent = 'Não deu pra copiar — selecione o texto na mão';
+        setTimeout(function () { copyBtn.textContent = copyLabel; }, 2200);
+      });
+    });
+  }
+
   /* ---------- desktop: rail por hover (só onde há hover de verdade) ---------- */
   if (canHover) {
     var hideTimer = null;
@@ -621,23 +728,63 @@
   });
 
   /* ---------- tema ao vivo ---------- */
-  /* segue o DISPOSITIVO enquanto não houver tema do app, e acompanha o toggle do
-     app quando ele grava bs_theme (mesmo comportamento dos Labs). */
+  /* segue o DISPOSITIVO enquanto não houver tema do app nem escolha manual desta
+     sessão, e acompanha o app quando ele grava bs_theme (mesmo comportamento dos
+     Labs) — sempre que a sessão não tiver uma escolha manual por cima (botão abaixo). */
   function storedTheme() { try { return localStorage.getItem('bs_theme'); } catch (e) { return null; } }
+  var sessionOverride = null;   /* 'light' | 'dark' | null — nunca grava em disco, só dura esta aba */
   try {
     var mq = window.matchMedia('(prefers-color-scheme: dark)');
     var onScheme = function (e) {
+      if (sessionOverride) return;
       var s = storedTheme();
-      if (s !== 'dark' && s !== 'light') document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light');
+      if (s !== 'dark' && s !== 'light') { document.documentElement.setAttribute('data-theme', e.matches ? 'dark' : 'light'); paintThemeToggle(); }
     };
     if (mq.addEventListener) mq.addEventListener('change', onScheme);
     else if (mq.addListener) mq.addListener(onScheme);
   } catch (e) {}
   window.addEventListener('storage', function (e) {
     if (e.key === 'bs_theme' && (e.newValue === 'dark' || e.newValue === 'light')) {
+      if (sessionOverride) return;   // escolha manual desta sessão já manda
       document.documentElement.setAttribute('data-theme', e.newValue);
+      paintThemeToggle();
     }
   });
+
+  /* ---------- tema: botão único claro/escuro (vale só para esta sessão) ---------- */
+  /* Um TOGGLE, não um par: mesmo padrão do ThemeManager do app (js/theme-manager.js) --
+     um botão só, cujo ícone mostra o PRÓXIMO estado (sol quando está escuro, lua quando
+     está claro), e o clique inverte. Ícones idênticos aos do app, copiados aqui porque o
+     Interativo não pode importar js/theme-manager.js (self-contained).
+     NÃO grava em lugar nenhum (nem interativo_theme, nem bs_theme): a escolha só vale
+     enquanto esta aba estiver aberta. Fechar e abrir de novo volta a resolver pelo
+     automático — é o pedido do Élder, não um detalhe: o Interativo é sempre visto
+     "do zero" a cada abertura. Enquanto a aba segue aberta, a escolha manual VENCE o
+     automático (device mudar de tema, ou bs_theme mudar em outra aba, não desfazem
+     o clique). As duas instâncias (cabeçalho + dock) são ligadas por data-attribute e
+     pintadas juntas, nunca por id (dessincronizam senão). */
+  var THEME_SVG_SUN = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>';
+  var THEME_SVG_MOON = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>';
+  function setTheme(mode) {
+    sessionOverride = mode;
+    document.documentElement.setAttribute('data-theme', mode);
+    paintThemeToggle();
+  }
+  function paintThemeToggle() {
+    var current = document.documentElement.getAttribute('data-theme') || 'light';
+    var icon = current === 'dark' ? THEME_SVG_SUN : THEME_SVG_MOON;
+    document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+      b.innerHTML = icon;
+      b.setAttribute('aria-pressed', current === 'dark');
+    });
+  }
+  document.querySelectorAll('[data-theme-toggle]').forEach(function (b) {
+    b.addEventListener('click', function () {
+      var cur = document.documentElement.getAttribute('data-theme') || 'light';
+      setTheme(cur === 'dark' ? 'light' : 'dark');
+    });
+  });
+  paintThemeToggle();
 
   applyZoom();
 })();
