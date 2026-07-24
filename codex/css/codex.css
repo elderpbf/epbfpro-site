@@ -161,12 +161,25 @@
 @media (max-width: 700px) {
   .cdx-tabs { display: none; }                            /* top strip unusable on phones */
   .cdx-subpill { display: none !important; }              /* hover pill is touch-useless */
-  .cdx-subrow:not(.cdx-subrow--mobile) { display: none; } /* desktop persistent bar off */
+  /* Desktop persistent bar off — UNLESS it opts into staying visible in place via
+   * .cdx-subrow--local (Élder 2026-07-24: a bespoke local sub-tab bar, e.g. a turma
+   * dossier's Dados/Participantes/Aulas/..., is neither the module-level strip above
+   * NOR meant to relocate; it just needs to keep working on a phone, in place). */
+  .cdx-subrow:not(.cdx-subrow--mobile):not(.cdx-subrow--local) { display: none; }
+  .cdx-subrow--local { overflow-x: auto; }                /* the one thing it was missing */
 
+  /* Pinned ABOVE .cdx-botnav, not under the topbar (Élder 2026-07-24): a sub-tab is
+   * conceptually part of the same nav as the app tabs, which already live at the bottom
+   * on phones, so it rides right on top of that bar instead of floating separately at
+   * the top. Height published as --cdx-subrow-mobile-h (codex-topbar.js) so .cdx-view's
+   * bottom clearance below stays correct whether or not a page has sub-tabs. */
   .cdx-subrow--mobile {
     display: block;
+    position: fixed; left: 0; right: 0; bottom: 60px; /* clears .cdx-botnav's own height */
+    z-index: 99;   /* below botnav (100) so botnav's shadow still reads on top; above content */
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 10px var(--shadow);
     overflow-x: auto;
   }
   .cdx-subrow--mobile .cdx-substrip { padding: 0.3rem 0.6rem; }
@@ -179,7 +192,16 @@
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 16px var(--shadow);
   }
-  .cdx-view { padding-bottom: 76px; }                     /* clear the fixed bar */
+  /* 76px clears .cdx-botnav alone; the mobile sub-row (if the page has one) stacks on
+   * top of it and publishes its own real height, so this never drifts into a 2nd magic
+   * number hand-synced against .cdx-subrow--mobile's actual CSS (padding/font changes
+   * would silently desync a hardcoded sum). Defaults to +0 on pages with no sub-tabs. */
+  .cdx-view { padding-bottom: calc(76px + var(--cdx-subrow-mobile-h, 0px)); }
+
+  /* Panels lose the lateral inset on phones (Élder 2026-07-24): the desktop side gutter
+   * is dead space on a screen this narrow. Content goes edge-to-edge; each panel/card's
+   * OWN small inner padding (.cdx-pane-body's 0.5rem, etc.) still keeps text off the glass. */
+  .cdx-view { padding-left: 0; padding-right: 0; }
 
   /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
    * the left over a backdrop; the main pane fills the row behind it. The drawer

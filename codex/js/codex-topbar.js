@@ -488,8 +488,10 @@ export function init(opts) {
   }
 
   // Mobile sub-strip: a full-width scrollable copy of the active tab's sub-tabs,
-  // pinned under the topbar. CSS-gated to phones, where the desktop pill/bar is
-  // hidden (hover is touch-useless); always present so touch never loses sub-tabs.
+  // pinned ABOVE the bottom nav (Élder 2026-07-24: a sub-tab is part of the same nav
+  // as the app tabs, which already live at the bottom on phones). CSS (codex.css) does
+  // the actual positioning; this stays in `header` only so it measures/scrolls with the
+  // rest of the chrome markup. Always present so touch never loses sub-tabs.
   if (subTabs.length) {
     const mrow = document.createElement('div');
     mrow.className = 'cdx-subrow cdx-subrow--mobile';
@@ -500,6 +502,16 @@ export function init(opts) {
     _subtabLinks(subTabs).forEach((a) => mstrip.appendChild(a));
     mrow.appendChild(mstrip);
     header.appendChild(mrow);
+    // Real height, not a hardcoded guess: .cdx-view's bottom padding (codex.css) reads
+    // this so it clears BOTH fixed bars (botnav + this one) whenever this one exists.
+    const publishSubrowHeight = () => {
+      const h = Math.round(mrow.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--cdx-subrow-mobile-h', h ? h + 'px' : '0px');
+    };
+    publishSubrowHeight();
+    window.addEventListener('resize', publishSubrowHeight);
+  } else {
+    document.documentElement.style.setProperty('--cdx-subrow-mobile-h', '0px');
   }
 
   // Publish the chrome's REAL height as --cdx-chrome-h, for the position:fixed rails that
@@ -569,6 +581,14 @@ export function init(opts) {
   const _toggleDrawer = () => { const d = _drawer(); if (!d) return; const open = !d.classList.contains('is-open'); d.classList.toggle('is-open', open); drawerBackdrop.classList.toggle('is-open', open); };
   burger.addEventListener('click', _toggleDrawer);
   drawerBackdrop.addEventListener('click', _closeDrawer);
+  // Some sub-tabs have no sidebar at all (a single dashboard, not a list+detail split —
+  // Élder found Certificados/Emitidos and Questões/Stats this way): showing a hamburger
+  // there is a dead affordance, not a fixable click. `topbar()` runs before the tab's own
+  // `mount()` (index.html), so the sidebar markup (if any) doesn't exist in the DOM yet
+  // right here; one frame later it does, even if the tab's DATA still loads async after
+  // that. Inline style, not a class or `hidden`, so it wins over `.cdx-hamburger{display:
+  // inline-flex}` at the phone breakpoint regardless of source order.
+  requestAnimationFrame(() => { burger.style.display = _drawer() ? '' : 'none'; });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _closeDrawer(); });
   // Picking a primary item inside the open drawer closes it to reveal the content.
   // Capture phase: the tab's own click handler re-renders the sidebar (detaching

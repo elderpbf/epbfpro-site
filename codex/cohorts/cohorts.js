@@ -1249,7 +1249,9 @@ function _renderDossier(turma) {
       // ── Per-turma sub-tabs (Phase 8): the stacked sections become tab panels.
       // Container-only change: each panel keeps its exact inner content + ids, and
       // the loaders below still fire eagerly on mount (not lazy-on-tab-show). ──
-      '<div class="cdx-subrow cdx-doss-tabs"><div class="cdx-substrip" role="tablist">' +
+      // cdx-subrow--local: stays visible + scrolls horizontally on phones, in place
+      // (not the module-level strip, which floats above the bottom nav instead).
+      '<div class="cdx-subrow cdx-doss-tabs cdx-subrow--local"><div class="cdx-substrip" role="tablist">' +
         '<button type="button" class="' + _tabCls('dados') + '" data-dtab="dados" role="tab">' + _esc(t('cohorts.sec_turma_data')) + '</button>' +
         '<button type="button" class="' + _tabCls('participantes') + '" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
         '<button type="button" class="' + _tabCls('aulas') + '" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +

@@ -499,11 +499,21 @@ export function mountRail(container, cfg) {
   }
   function ahMaybeHide() { if (!ahOver) ahClose(); }
 
+  // The mobile hamburger drawer (codex-topbar.js, same ≤700px breakpoint as css/codex.css)
+  // is a SEPARATE reveal mechanism from this hover-based autohide. Forcing the rail open at
+  // mount on a phone fights it: hover/leave never fire on touch, so a pinned-open rail can
+  // never be closed there, and the drawer's own hamburger toggles a different class, so it
+  // looks dead. Mobile always starts unpinned; the hamburger owns visibility there instead.
+  function isMobileDrawerWidth() {
+    return typeof window !== 'undefined' && typeof window.matchMedia === 'function' &&
+      window.matchMedia('(max-width: 700px)').matches;
+  }
+
   function ensureAutohide() {
     const w = cfg.width;
     if (!w || w.mode !== 'autohide' || ahWired) return;
     ahWired = true;
-    ahPinned = (w.pinned !== false);    // both consumers start pinned open
+    ahPinned = (w.pinned !== false) && !isMobileDrawerWidth();    // both consumers start pinned open (desktop only)
     const zone = w.revealZone || AH_REVEAL_ZONE;
     const delay = w.hideDelay || AH_HIDE_DELAY;
     const onMove = (e) => { if (e.clientX <= zone) ahOpen(); };
