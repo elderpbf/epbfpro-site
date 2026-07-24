@@ -292,6 +292,9 @@ export const content = {
   // registry (labs-registry.js) so Labs can be released via the normal
   // Liberações flow (track-34 §B). Safe to call again after adding new labs.
   ensureLabItems:  () => call('ct_ensure_lab_items', {}),
+  // Same as ensureLabItems, for the Interativos registry (interativos-registry.js):
+  // upserts a real ct_items row per interativo so they can be released like any type.
+  ensureInterativoItems: () => call('ct_ensure_interativo_items', {}),
   uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
   ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),

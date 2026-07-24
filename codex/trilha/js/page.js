@@ -24,6 +24,7 @@ import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
 import { mountEntry, contextFromState } from './support-contact.js';
 import { openMyData } from './my-data.js';
 import { overlayLabItems } from './lab-overlay.js';
+import { overlayInterativoItems } from './interativo-overlay.js';
 // forum.js is imported DYNAMICALLY where needed (in the bell's onNavigate) to avoid a
 // static import cycle: forum.js imports page.js (registerRenderer), so a static import
 // here would hit page.js's RENDERERS const in its temporal dead zone at load.
@@ -103,6 +104,8 @@ export async function mount(root, ctx = {}) {
     // objective from the code registry (single source), not the seeded DB copy,
     // and drop labs retired from the registry. See lab-overlay.js.
     overlayLabItems(state.data);
+    // Same for interativos: registry is the source of truth, drop retired ones.
+    overlayInterativoItems(state.data);
     const loading = root.querySelector('.cdx-trilha-loading');
     const main = root.querySelector('.cdx-trilha-main');
     if (loading) loading.hidden = true;
@@ -252,7 +255,14 @@ function renderHeaderActions() {
       else phRight.appendChild(el);
     };
 
-    if (turma.whatsapp_url) {
+    // The WhatsApp group is a members-only benefit: show it only when the student has
+    // access. Second layer over the backend (which already withholds whatsapp_url from a
+    // gated wall view); `!gated || approved` also keeps it visible on OPEN turmas, where
+    // status is 'anonymous' but there is no wall. Together: hidden only for the gated
+    // anonymous/pending wall, exactly where the group link must not leak.
+    const access = data.access || {};
+    const hasAccess = !access.gated || access.status === 'approved';
+    if (turma.whatsapp_url && hasAccess) {
       const wa = document.createElement('a');
       wa.className = 'ph-action-btn';
       wa.href = turma.whatsapp_url;

@@ -186,8 +186,21 @@ test('track-34: a disabled lab that was never released drops out of the pool (st
   assert.match(relSrc, /isLabEnabled\(key\)/, 'checks isLabEnabled by the cross-referenced key');
   assert.match(relSrc, /isLabArchived\(key\)/, 'an archived lab is also hidden from the pool');
   assert.match(relSrc, /_released\.indexOf\(Number\(item\.id\)\) !== -1/, 'a disabled lab already released stays visible');
-  assert.match(relSrc, /_isOutros\)\.filter\(_isVisibleLab\)/, 'aula composer applies the filter');
+  assert.match(relSrc, /_isInterativo\(i\)\)\.filter\(_isVisibleLab\)/, 'aula composer applies the filter over the broadened pool');
   assert.match(relSrc, /_isDrive\(i\)\)\.filter\(_isVisibleLab\)/, 'outros composer applies the filter');
+});
+
+test('the aula composer offers labs AND interativos as releasable rows (guards the ad52d03 regression)', () => {
+  // ad52d03 excluded lab from _isOutros to fix the count chip, but that ALSO dropped
+  // labs from the aula composer pool (which filtered by _isOutros alone), so no lab
+  // could be released to an aula anymore. The pool now explicitly re-includes both
+  // shipped-artifact types; _groupByType then re-creates one section per type. If this
+  // assertion fails, released labs/interativos have silently vanished from the composer.
+  assert.match(
+    relSrc,
+    /_allItems\.filter\(\(i\) => _isOutros\(i\) \|\| _isLab\(i\) \|\| _isInterativo\(i\)\)\.filter\(_isVisibleLab\)/,
+    'aula composer pool includes _isOutros + _isLab + _isInterativo',
+  );
 });
 
 test('releaseItemBucket: a released lab gets its own bucket, not outros', () => {
@@ -203,6 +216,12 @@ test('releaseItemBucket: a released lab gets its own bucket, not outros', () => 
   assert.equal(rel.releaseItemBucket({ type: 'something_else' }), 'outros', 'unknown types still fall back to outros');
 });
 
+test('releaseItemBucket: an interativo gets its own bucket, not outros (mirrors labs)', () => {
+  assert.equal(rel.releaseItemBucket({ type: 'interativo' }), 'interativo');
+  assert.notEqual(rel.releaseItemBucket({ type: 'interativo' }), 'outros');
+  assert.equal(rel.releaseItemBucket({ set_id: 9, type: 'interativo' }), 'apostila', 'a set-bound item is apostila regardless of type');
+});
+
 test('aulaReleaseCounts: labs tally under counts.lab, not counts.outros', () => {
   const items = [
     { id: 1, type: 'lab', aula_number: 3 },
@@ -216,6 +235,19 @@ test('aulaReleaseCounts: labs tally under counts.lab, not counts.outros', () => 
   assert.equal(counts.total, 3);
 });
 
+test('aulaReleaseCounts: interativos tally under counts.interativo, not counts.outros', () => {
+  const items = [
+    { id: 1, type: 'interativo', aula_number: 5 },
+    { id: 2, type: 'interativo', aula_numbers: [5] },
+    { id: 3, type: 'lab', aula_number: 5 },
+  ];
+  const counts = rel.aulaReleaseCounts(items, 5);
+  assert.equal(counts.interativo, 2);
+  assert.equal(counts.outros, 0, 'interativos must not also inflate outros');
+  assert.equal(counts.lab, 1);
+  assert.equal(counts.total, 3);
+});
+
 test('the standalone Releases left-rail mirrors the same lab bucket (composer vs. rail can never disagree)', () => {
   // _isOutros/_aulaCountsHtml/_outrosCountsHtml are the rail's own (non-exported)
   // re-implementation of the same categorization releaseItemBucket does for the
@@ -223,7 +255,19 @@ test('the standalone Releases left-rail mirrors the same lab bucket (composer vs
   // top of the file, or the rail and the hub would show different counts for
   // the exact same aula.
   assert.match(relSrc, /function _isLab\(i\) \{ return i\.type === 'lab'; \}/, 'has a dedicated lab predicate');
-  assert.match(relSrc, /_isOutros\(i\) \{ return !i\.set_id && i\.type !== 'conteudo' && i\.type !== 'tarefa' && i\.type !== 'drive_file' && i\.type !== 'lab'; \}/, 'outros excludes lab');
+  assert.match(relSrc, /function _isInterativo\(i\) \{ return i\.type === 'interativo'; \}/, 'has a dedicated interativo predicate');
+  assert.match(relSrc, /_isOutros\(i\) \{ return !i\.set_id && i\.type !== 'conteudo' && i\.type !== 'tarefa' && i\.type !== 'drive_file' && i\.type !== 'lab' && i\.type !== 'interativo'; \}/, 'outros excludes lab and interativo');
   assert.match(relSrc, /_countGlyph\('lab'\) \+ ' ' \+ lab/, 'aula rail row renders a lab chip');
+  assert.match(relSrc, /_countGlyph\('interativo'\) \+ ' ' \+ interativo/, 'aula rail row renders an interativo chip');
   assert.match(relSrc, /_countGlyph\('lab'\) \+ ' ' \+ labSolo/, 'Outros rail row renders a lab chip too (labs pinned to Outros)');
+  assert.match(relSrc, /_countGlyph\('interativo'\) \+ ' ' \+ interativoSolo/, 'Outros rail row renders an interativo chip too');
+});
+
+test('lab + interativo section labels come from i18n, not the Worker-seeded ct_types.label', () => {
+  // Both are shipped types: their user-facing name must live in ONE i18n key so a
+  // rename is an i18n edit, never a Worker string change (interativos-registry.js
+  // principle). _typeLabel resolves them from the Lessons section keys before ever
+  // reading ct_types.label.
+  assert.match(relSrc, /if \(slug === 'lab'\) return t\('lessons\.section_labs'\);/, 'lab label from i18n');
+  assert.match(relSrc, /if \(slug === 'interativo'\) return t\('lessons\.section_interativos'\);/, 'interativo label from i18n');
 });

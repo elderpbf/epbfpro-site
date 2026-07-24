@@ -92,11 +92,17 @@ function benefitsHtml() {
         '<div class="cdx-en-bene-d">' + esc(t(descKey)) + '</div>' +
       '</div>' +
     '</div>';
+  // The certificate benefit only makes sense when THIS turma actually issues
+  // certificates (dossiê toggle `certificates_enabled`, delivered in the turma view).
+  // When it is off, the benefit is dropped entirely instead of promising a certificate
+  // the student will never get; the old "se habilitado" tag was a hedge for exactly this
+  // case and is now redundant, so it is gone.
+  const certOn = !!(((state.data || {}).turma || {}).certificates_enabled);
   return '<div class="cdx-en-benes">' +
     bene('conteudo', ICONS.conteudo, 'wall.bene_conteudo_t', 'wall.bene_conteudo_d') +
     bene('tarefa', ICONS.tarefa, 'wall.bene_tarefa_t', 'wall.bene_tarefa_d') +
     bene('forum', ICONS.forum, 'wall.bene_forum_t', 'wall.bene_forum_d') +
-    bene('cert', ICONS.cert, 'wall.bene_cert_t', 'wall.bene_cert_d', 'wall.bene_cert_tag') +
+    (certOn ? bene('cert', ICONS.cert, 'wall.bene_cert_t', 'wall.bene_cert_d') : '') +
   '</div>';
 }
 

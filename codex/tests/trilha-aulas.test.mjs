@@ -47,6 +47,15 @@ test('getItemAction: body_md -> copy', () => {
   assert.deepEqual(getItemAction({ type: 'x', body_md: 'hi' }), { kind: 'copy', label: 'Copiar', text: 'hi', icon: 'copy' });
 });
 test('getItemAction: nothing actionable -> null', () => assert.equal(getItemAction({ type: 'x' }), null));
+// A released interativo has no body_md/pdf/attachment; without a dedicated branch it
+// would return null and expand with no way to open it (its in-body "Abrir" is suppressed
+// under opts.preview on the Trail). It must open the shared viewer by url.
+test('getItemAction: interativo -> interativo-open (opens the viewer by url)', () => {
+  const a = getItemAction({ type: 'interativo', title: 'Demo', meta_json: { url: '/codex/interativos/demo-peca/' } });
+  assert.equal(a.kind, 'interativo-open');
+  assert.equal(a.label, 'Abrir');
+  assert.equal(a.url, '/codex/interativos/demo-peca/');
+});
 // A aba Aulas nao entrega nada: ela LEVA pra aba Tarefas, dona do fluxo (Élder 2026-07-15).
 test('getItemAction: tarefa precedence over meta -> go-tarefas', () => {
   const a = getItemAction({ type: 'tarefa', id: 7, meta_json: { pdf_url: 'x' } });

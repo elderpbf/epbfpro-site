@@ -59,6 +59,26 @@ test('os ICONS dos beneficios tambem vivem num lugar so', () => {
   assert.ok(!/const ICONS = \{/.test(emerg()), 'o modo emergencia nao carrega copia dos icones');
 });
 
+// O beneficio de certificado so aparece se a turma REALMENTE emite certificado
+// (toggle certificates_enabled do dossie, entregue no turma view). Antes ele saia
+// sempre com a tag "se habilitado", prometendo algo que a turma podia nunca dar.
+test('o beneficio de certificado e travado no certificates_enabled da turma', () => {
+  const src = wall();
+  assert.ok(/certificates_enabled/.test(src), 'o muro le o flag certificates_enabled');
+  assert.ok(/certOn \? bene\('cert'/.test(src), 'o cartao cert so entra quando certOn');
+  assert.ok(!/bene_cert_tag/.test(src), 'a tag "se habilitado" saiu (agora e condicional real, nao um hedge)');
+});
+
+// O botao do grupo do WhatsApp e beneficio de quem TEM acesso. Segunda camada sobre o
+// backend (que ja omite whatsapp_url no muro gated). A trava e `!gated || approved`, que
+// mantem o botao nas turmas ABERTAS (status 'anonymous', sem muro) e o esconde so no muro
+// gated anonimo/pendente. Um gate ingenuo por 'approved' puro quebraria as turmas abertas.
+test('o botao do grupo de WhatsApp so aparece com acesso (nao vaza no muro gated)', () => {
+  const src = page();
+  assert.ok(/!access\.gated \|\| access\.status === 'approved'/.test(src), 'trava por acesso, preservando turmas abertas');
+  assert.ok(/turma\.whatsapp_url && hasAccess/.test(src), 'o botao exige url E acesso');
+});
+
 // ── O modo e um plugin, e so dono do cartao ──────────────────────────────────
 
 test('ACCESS_MODES e a tabela: adicionar porta e uma entrada, nao um muro', () => {

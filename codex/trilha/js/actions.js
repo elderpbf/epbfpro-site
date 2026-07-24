@@ -43,6 +43,14 @@ export function getItemAction(item) {
     const key = meta.lab_key || String((meta.url || '').replace(/^\/codex\/labs\//, '').replace(/\/$/, ''));
     if (key) return { kind: 'lab-open', label: 'Abrir', shortLabel: 'Abrir', key, icon: 'external' };
   }
+  // An interativo is a self-contained HTML the student explores: like a lab it opens the
+  // shared fullscreen viewer, but keyed by url (meta.url) instead of a lab key. Without
+  // this branch a released interativo expands with no way to open it (item-render's own
+  // "Abrir" button is suppressed under opts.preview on the Trail).
+  if (item.type === 'interativo') {
+    const url = meta.url || '';
+    if (url) return { kind: 'interativo-open', label: 'Abrir', shortLabel: 'Abrir', url, icon: 'external' };
+  }
   if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
   if (meta.attachment_url) {
     const isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
@@ -91,6 +99,7 @@ export function injectActionButton(sub, item, opts = {}) {
     else if (action.kind === 'submit') { if (e && e.preventDefault) e.preventDefault(); openTarefaSubmit(action.item, sub, opts); }
     else if (action.kind === 'go-tarefas') { if (e && e.preventDefault) e.preventDefault(); goToTarefa(item.id); }
     else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
+    else if (action.kind === 'interativo-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ url: action.url, title: item.title }); }
   });
   actionsEl.appendChild(btn);
 }
@@ -140,6 +149,7 @@ export function appendFlatActionRow(body, item) {
     if (e && e.stopPropagation) e.stopPropagation();
     if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
     else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
+    else if (action.kind === 'interativo-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ url: action.url, title: item.title }); }
   });
   row.appendChild(btn);
   body.appendChild(row);

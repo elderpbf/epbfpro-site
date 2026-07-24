@@ -65,6 +65,7 @@ test('the aula-hub badge row renders a chip for released labs, not just apostila
   // chip must be read explicitly or labs silently drop out of these badges.
   const chipsFn = cohortsJs.slice(cohortsJs.indexOf('function _aulaCountChipsHtml'), cohortsJs.indexOf('function _isAulaSelected'));
   assert.match(chipsFn, /if \(c\.lab\) html \+= _countChip\('flask', c\.lab\);/, 'renders a flask chip for c.lab');
+  assert.match(chipsFn, /if \(c\.interativo\) html \+= _countChip\('compass', c\.interativo\);/, 'renders a compass chip for c.interativo');
 });
 
 test('the per-aula Liberações pane also mounts the Aplicativos release section (app = content per aula)', () => {

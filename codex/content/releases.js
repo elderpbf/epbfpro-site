@@ -14,6 +14,7 @@ import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
 import { isLabEnabled, isLabArchived, labIcon, labOrderIndex } from '../js/labs-registry.js';
+import { interativoIcon } from '../js/interativos-registry.js';
 import { renderItem } from '../js/item-render.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
@@ -54,6 +55,7 @@ export function releaseItemBucket(it) {
   if (it.type === 'tarefa') return 'tarefa';
   if (it.type === 'drive_file') return 'drive';
   if (it.type === 'lab') return 'lab';
+  if (it.type === 'interativo') return 'interativo';
   if (it.type === 'conteudo') return null; // a set-less conteudo is not a pool item
   return 'outros';
 }
@@ -63,7 +65,7 @@ export function releaseItemBucket(it) {
 // back to the single aula_number for legacy rows. Pure + exported so the Cohorts
 // aula hub reuses it instead of re-deriving the same tallies.
 export function aulaReleaseCounts(viewItems, aulaNum) {
-  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, lab: 0, total: 0 };
+  const counts = { apostila: 0, tarefa: 0, outros: 0, drive: 0, lab: 0, interativo: 0, total: 0 };
   const n = String(aulaNum);
   (viewItems || []).forEach((it) => {
     const nums = Array.isArray(it.aula_numbers)
@@ -225,12 +227,29 @@ function _isVisibleLab(item) {
   if (isLabArchived(key) || !isLabEnabled(key)) return _released.indexOf(Number(item.id)) !== -1;
   return true;
 }
-// The per-row glyph for a lab item is its own emoji (labs-registry.labIcon),
-// not the generic "Lab" type glyph every other lab would otherwise share.
+// The interativo_key of an interativo ct_items row (written by the backend's
+// ct_ensure_interativo_items, meta_json.interativo_key), so the per-row glyph can be
+// the item's own icon from the registry rather than the shared family glyph.
+function _interativoKeyOf(item) {
+  if (!item || item.type !== 'interativo') return null;
+  try {
+    const meta = typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json;
+    return (meta && meta.interativo_key) || null;
+  } catch (e) { return null; }
+}
+// The per-row glyph for a lab item is its own emoji (labs-registry.labIcon), and for
+// an interativo its own registry icon (interativos-registry.interativoIcon), not the
+// generic type glyph the whole family would otherwise share.
 function _rowGlyph(item, groupGlyph) {
-  if (item.type !== 'lab') return groupGlyph;
-  const key = _labKeyOf(item);
-  return key ? typeIconHtml(labIcon(key), { size: 15 }) : groupGlyph;
+  if (item.type === 'lab') {
+    const key = _labKeyOf(item);
+    return key ? typeIconHtml(labIcon(key), { size: 15 }) : groupGlyph;
+  }
+  if (item.type === 'interativo') {
+    const key = _interativoKeyOf(item);
+    return key ? typeIconHtml(interativoIcon(key), { size: 15 }) : groupGlyph;
+  }
+  return groupGlyph;
 }
 // Lab rows within a Labs group follow the Content > Labs drag order
 // (labs-registry.labOrderIndex) so the composer matches the admin's own
@@ -251,7 +270,8 @@ function _countGlyph(kind, size) {
 function _isTarefa(i) { return !i.set_id && i.type === 'tarefa'; }
 function _isDrive(i) { return i.type === 'drive_file'; }
 function _isLab(i) { return i.type === 'lab'; }
-function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' && i.type !== 'lab'; }
+function _isInterativo(i) { return i.type === 'interativo'; }
+function _isOutros(i) { return !i.set_id && i.type !== 'conteudo' && i.type !== 'tarefa' && i.type !== 'drive_file' && i.type !== 'lab' && i.type !== 'interativo'; }
 // #23: every aula an item is bound to. Falls back to the single aula_number for
 // legacy items that only carry the old single binding.
 function _aulaNumbersOf(id) {
@@ -283,10 +303,14 @@ function _loadReleases(clientSlug, turmaSlug) {
   const lk = _q('cdx-releases-locked');
   if (lk) lk.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
 
-  // track-34 §B: keep the Labs ct_items rows in sync BEFORE listing items, so a
-  // lab just enabled in Content > Labs shows up here without any manual step
-  // (silent, best-effort -- a failure here must not block the composer load).
-  contentApi.ensureLabItems().catch((e) => { notice.internal(_err(e)); }).then(() => Promise.all([
+  // track-34 §B: keep the Labs (and Interativos) ct_items rows in sync BEFORE listing
+  // items, so a shipped-artifact type shows up here without any manual step. Both are
+  // silent + best-effort: a failure here (e.g. the Worker not yet carrying the interativo
+  // ensure action) must NOT block the composer load, it just leaves that type absent.
+  Promise.all([
+    contentApi.ensureLabItems().catch((e) => { notice.internal(_err(e)); }),
+    contentApi.ensureInterativoItems().catch((e) => { notice.internal(_err(e)); }),
+  ]).then(() => Promise.all([
     contentApi.listItems(),
     cohortsApi.listTurmas({ client_slug: clientSlug }),
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }),
@@ -337,10 +361,12 @@ function _aulaCountsHtml(aulaNum) {
   const outros = _countFor(_isOutros, aulaNum);
   const drive = _countFor(_isDrive, aulaNum);
   const lab = _countFor(_isLab, aulaNum);
+  const interativo = _countFor(_isInterativo, aulaNum);
   let counts = '';
   if (apostila) counts += '<span class="cdx-rel-count">' + _countGlyph('apostila') + ' ' + apostila + '</span>';
   if (tarefa) counts += '<span class="cdx-rel-count">' + _countGlyph('tarefa') + ' ' + tarefa + '</span>';
   if (lab) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + lab + '</span>';
+  if (interativo) counts += '<span class="cdx-rel-count">' + _countGlyph('interativo') + ' ' + interativo + '</span>';
   if (outros) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outros + '</span>';
   if (drive) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + drive + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
@@ -351,8 +377,10 @@ function _outrosCountsHtml() {
   const outrosSolo = _allItems.filter((i) => _isOutros(i) && _inOutros(i.id)).length;
   const driveSolo = _allItems.filter((i) => _isDrive(i) && _inOutros(i.id)).length;
   const labSolo = _allItems.filter((i) => _isLab(i) && _inOutros(i.id)).length;
+  const interativoSolo = _allItems.filter((i) => _isInterativo(i) && _inOutros(i.id)).length;
   let counts = '';
   if (labSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('lab') + ' ' + labSolo + '</span>';
+  if (interativoSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('interativo') + ' ' + interativoSolo + '</span>';
   if (outrosSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('outros') + ' ' + outrosSolo + '</span>';
   if (driveSolo) counts += '<span class="cdx-rel-count">' + _countGlyph('drive_file') + ' ' + driveSolo + '</span>';
   return counts || '<span class="cdx-rel-count cdx-rel-count-empty">' + t('releases.empty_chip') + '</span>';
@@ -761,8 +789,13 @@ function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
   '</label>';
 }
 
-// Display label for an item type slug (from the ct_types registry; fallback = slug).
+// Display label for an item type slug. Lab and interativo are SHIPPED types whose
+// name is owned by i18n (the single source, reused from the Lessons section keys), NOT
+// by the ct_types.label the Worker seeds -- so renaming either type is one i18n edit,
+// never a Worker string change. Every other type falls back to its ct_types.label.
 function _typeLabel(slug) {
+  if (slug === 'lab') return t('lessons.section_labs');
+  if (slug === 'interativo') return t('lessons.section_interativos');
   const ty = _types.find((x) => x.slug === slug);
   return (ty && ty.label) || slug;
 }
@@ -885,7 +918,12 @@ function _renderAulaComposer(container, aula) {
   const aulaNum = aula.aula_number;
 
   const driveItems = _allItems.filter(_isDrive);
-  const outrosItems = _allItems.filter(_isOutros).filter(_isVisibleLab);
+  // The "por tipo" pool feeding _groupByType below. It must include labs and interativos,
+  // NOT just _isOutros types: _isOutros excludes lab+interativo so their COUNT chips get
+  // their own glyph/bucket, but the composer still has to OFFER them as releasable rows.
+  // Filtering this pool by _isOutros alone silently dropped labs from every aula composer
+  // (the regression this restores); _groupByType then re-creates one section per type.
+  const outrosItems = _allItems.filter((i) => _isOutros(i) || _isLab(i) || _isInterativo(i)).filter(_isVisibleLab);
 
   // Apostila rows render inline (the set-position prefix isn't in _rowHtml), but
   // still carry the "já na aula N" grey marker when released to another aula (R1a/#22).
