@@ -338,6 +338,14 @@
 
 /* ── Bank sub-tab (faithful cp-banks-layout) ────────────────── */
 .cdx-bank { display: grid; grid-template-columns: 16rem 1fr; gap: 1.25rem; align-items: start; }
+/* This file loads AFTER codex.css (index.html), so its phone-breakpoint collapse of
+ * .cdx-bank (same selector, equal specificity) loses the cascade to the rule above unless
+ * restated here — the rule that must win is whichever file loads last. Needed once
+ * .cdx-bank-sets stopped being position:fixed (2026-07-24), which had hidden this outside
+ * the grid entirely and masked the bug. */
+@media (max-width: 700px) {
+  .cdx-bank { grid-template-columns: 1fr; }
+}
 
 /* Sets sidebar (a bordered card: header + list) */
 .cdx-bank-sets {
