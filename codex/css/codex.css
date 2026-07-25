@@ -192,17 +192,6 @@
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 16px var(--shadow);
   }
-  /* 76px clears .cdx-botnav alone; the mobile sub-row (if the page has one) stacks on
-   * top of it and publishes its own real height, so this never drifts into a 2nd magic
-   * number hand-synced against .cdx-subrow--mobile's actual CSS (padding/font changes
-   * would silently desync a hardcoded sum). Defaults to +0 on pages with no sub-tabs. */
-  .cdx-view { padding-bottom: calc(76px + var(--cdx-subrow-mobile-h, 0px)); }
-
-  /* Panels lose the lateral inset on phones (Élder 2026-07-24): the desktop side gutter
-   * is dead space on a screen this narrow. Content goes edge-to-edge; each panel/card's
-   * OWN small inner padding (.cdx-pane-body's 0.5rem, etc.) still keeps text off the glass. */
-  .cdx-view { padding-left: 0; padding-right: 0; }
-
   /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
    * the left over a backdrop; the main pane fills the row behind it. The drawer
    * sits above the topbar/bottom-nav when open (a takeover), so backdrop tap,
@@ -262,6 +251,24 @@
  * `.bs-app--classvault .bs-main` override still wins for its flush look. */
 .bs-main { max-width: none; padding-top: 1.25rem; }   /* halve the 2.5rem shell top gap above each tab page (Élder) */
 .cdx-view { padding: 0.25rem 1.5rem 1.5rem; }          /* + halve the host top pad: 3rem total -> 1.5rem */
+
+/* This phone-breakpoint override MUST come after the unconditional .cdx-view/.bs-main
+ * rules directly above: equal specificity, so whichever is LAST in the file wins the
+ * cascade regardless of the media query, and a copy placed earlier (inside the big phone
+ * block above) silently lost to these two — found live via Playwright QA 2026-07-25, both
+ * the edge-to-edge fix AND the bottom-nav clearance had never actually been in effect.
+ * `.bs-main`'s own 1rem side padding (backstage.css, shared shell) needs clearing too. */
+@media (max-width: 700px) {
+  .bs-main { padding-left: 0; padding-right: 0; }
+  .cdx-view {
+    padding-left: 0;
+    padding-right: 0;
+    /* 76px clears .cdx-botnav alone; the mobile sub-row (if the page has one) stacks on
+     * top of it and publishes its own real height, so this never drifts into a 2nd magic
+     * number hand-synced against .cdx-subrow--mobile's actual CSS. +0 on pages with none. */
+    padding-bottom: calc(76px + var(--cdx-subrow-mobile-h, 0px));
+  }
+}
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
  * one dictionary is loaded; it shows the language you'd switch TO. */
