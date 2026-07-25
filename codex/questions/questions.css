@@ -213,6 +213,15 @@
   transform: translateX(-100%);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
 }
+/* On phones this same element is ALSO the hamburger drawer (codex.css's shared DRAWER_SEL
+ * rule wants z-index:120, above the backdrop's 119) — but this file loads after codex.css,
+ * so this unconditional z-index:80 (needed for the desktop auto-hide rail, below the topbar)
+ * wins the cascade at every width, including mobile. Backdrop then sat ABOVE the row content,
+ * so a tap meant to pick a session just closed the drawer instead (found live via Playwright
+ * QA 2026-07-25 — the open/close toggle worked, picking a row from it did not). */
+@media (max-width: 700px) {
+  .cdx-sessions-sidebar { z-index: 120; }
+}
 /* The picker inside is the shared rail (js/list-rail.js) since track-41. The rail brings its
  * own card shell, so strip it back to a bare column here: this aside is the fixed positioning
  * + the drawer hook, the rail is the surface. The 1rem inset the aside used to hold is now
