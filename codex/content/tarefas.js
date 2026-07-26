@@ -16,6 +16,7 @@ import { renderEditor, readEditor, wireEditor } from '../js/tarefa-editor.js';
 import { glyphSvg } from '../js/glyphs.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
+import { renderPreservingScroll } from '../js/list-sync.js';
 // track-45 Fatia 1: AI synthesis of tarefa responses, a dev-only preview (no
 // worker/backend change here). The model + prompt/parse logic lives in
 // js/tarefa-eval.js (pure, injectable); the projectable 3-group screen is
@@ -99,6 +100,10 @@ export function sortTarefas(items) {
 import { esc as _esc } from '../js/dom.js';
 import { errMsg as _err } from '../js/content-err.js';
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
+// This module's own containers never scroll (see content.css); the aula card list sits
+// inside the turma dossier's one scrolling ancestor, .cdx-doss-body (#cdx-turma-dossier
+// in cohorts.js). That is what a post-mutation reload must preserve, not anything local here.
+function _scrollHost() { return _viewEl ? _viewEl.closest('.cdx-doss-body') : null; }
 // Where the answers list renders: inside the open instance card of the t1b aula pane.
 function _respPaneFor(itemId) {
   if (!_viewEl) return null;
@@ -136,7 +141,7 @@ function _loadTarefas(clientSlug, turmaSlug) {
   _submissions = {};
   _flags = {};   // estado da turma que esta saindo: sem isto, os toggles dela pintariam os cartoes da proxima ate o load chegar
 
-  cohortsApi.listTurmas({ client_slug: clientSlug }).then((td) => {
+  return cohortsApi.listTurmas({ client_slug: clientSlug }).then((td) => {
     const turma = ((td && td.turmas) || []).find((tu) => tu.slug === turmaSlug);
     if (!turma) throw new Error(t('releases.turma_not_found'));
     return Promise.all([
@@ -718,7 +723,7 @@ function _removeFromTurma(id) {
       relApi.unrelease({ item_id: id, client_slug: _client, turma_slug: _turma }).then(() => {
         closeModal(bd); toast.ok(t('tarefas.removed'));
         _selectedId = null; _editCard = null;
-        _loadTarefas(_client, _turma);
+        renderPreservingScroll(_scrollHost(), () => _loadTarefas(_client, _turma));
         if (_onChange) _onChange();
       }).catch((err) => notice.internal(_err(err)));
     });
@@ -1024,7 +1029,7 @@ function _wireAddEditor() {
 // Bank ≠ aula. Saves land in the bank only; "Incluir na aula" is the sole release action.
 function _afterAdd() {
   _adding = false; _addSel = null;
-  _loadTarefas(_client, _turma);
+  renderPreservingScroll(_scrollHost(), () => _loadTarefas(_client, _turma));
   if (_onChange) _onChange();
 }
 function _refreshBank() { return _loadBank().then(() => { if (_adding) _renderAddBlock(); }); }
@@ -1099,7 +1104,7 @@ function _deleteFromBank(itemId) {
         toast.ok(t('tarefas.deleted_from_bank'));
         _addSel = null;
         _refreshBank();
-        if (_items.some((i) => Number(i.id) === Number(itemId))) _loadTarefas(_client, _turma);
+        if (_items.some((i) => Number(i.id) === Number(itemId))) renderPreservingScroll(_scrollHost(), () => _loadTarefas(_client, _turma));
       }).catch((err) => {
         if (/item_released/i.test((err && err.message) || '')) { notice.warn(t('tarefas.delete_bank_blocked_generic')); _refreshBank(); return; }
         notice.internal(_err(err));

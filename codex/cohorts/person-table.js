@@ -17,6 +17,7 @@
 import { t } from '../js/i18n.js';
 import { esc } from '../js/dom.js';
 import * as notice from '../js/notice.js';
+import { renderPreservingScroll } from '../js/list-sync.js';
 import { emptyFilterState, filtersBarHtml, applyFilterChange, applyFilters, applySortClick } from './person-filters.js';
 import { toolbarHtml, wireSelection, applyRosterAction } from './roster-actions.js';
 import { personListHtml } from './person-list.js';
@@ -50,12 +51,18 @@ export function actionTargets(person, act) {
 //   onRemove           (people) => void     scope-specific remove (the ONE thing that differs)
 //   onGo               (dataset) => void     (global) navigate to a turma; omit in turma scope
 //   onToolsClick       (event) => void       (optional) extra clicks in the bar (global: Limpeza)
+//   scrollHost         () => Element|null    (optional, track-26 2.b) the element whose scroll
+//     position must survive an edit/apply/reload repaint. The table itself never scrolls (see
+//     content.css / codex.css) — turma scope's ancestor is the dossier's .cdx-doss-body, global
+//     scope's is the page (document.scrollingElement), so only the caller knows which; omit to
+//     skip preservation.
 // Returns { setPeople(people), refresh }.
 export function createPersonTable(host, cfg) {
   const c = cfg || {};
   let _people = [];
   const _filters = emptyFilterState();
   const _expanded = {};
+  const _scrollHost = () => (typeof c.scrollHost === 'function' ? c.scrollHost() : null);
 
   host.innerHTML = '<div class="cdx-pt-tools"></div><div class="cdx-pt-list"></div>';
   const toolsEl = () => host.querySelector('.cdx-pt-tools');
@@ -193,8 +200,15 @@ export function createPersonTable(host, cfg) {
     }
   }
 
-  function setPeople(people) { _people = people || []; _paintTools(); _paintList(); }
-  function refresh() { _paintTools(); _paintList(); }
+  function setPeople(people) {
+    _people = people || [];
+    _paintTools();
+    renderPreservingScroll(_scrollHost(), () => _paintList());
+  }
+  function refresh() {
+    _paintTools();
+    renderPreservingScroll(_scrollHost(), () => _paintList());
+  }
 
   return { setPeople, refresh };
 }

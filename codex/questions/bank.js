@@ -19,6 +19,7 @@ import * as toast from '../js/toast.js';
 import { mountComposer, setAudienceConfig } from './question-composer.js';
 import { questionType, lintConfig, parseAudienceDraft, slug } from '../js/audiences.js';
 import { makeReorderable } from '../js/reorder.js';
+import { renderPreservingScroll, replaceById, removeById } from '../js/list-sync.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -558,8 +559,8 @@ async function _moveSelected() {
     try { await api.updateQuestion(payload); } catch (e) { notice.internal(e); }
   }
   _selected.clear(); _editBank = false;
-  await _loadSets();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  await renderPreservingScroll(bodyEl, async () => { await _loadSets(); await _loadQuestions(); });
 }
 
 // Copy (not move): insert a duplicate of each selected question into the chosen
@@ -586,8 +587,8 @@ async function _copySelected() {
     } catch (e) { notice.internal(e); }
   }
   _selected.clear(); _editBank = false;
-  await _loadSets();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  await renderPreservingScroll(bodyEl, async () => { await _loadSets(); await _loadQuestions(); });
   toast.ok(t('questions.bank_copy_done'));
 }
 
@@ -628,24 +629,24 @@ async function _saveQuestion() {
   const origQ = _editingOriginal;
   _closeModal();
   const bodyEl = _q('#cdx-bank-body');
-  const keepScroll = bodyEl ? bodyEl.scrollTop : 0;
-  if (wasEdit) {
-    // Edit already persisted server-side: patch the local list in place and re-render
-    // (no refetch, no loading flash), so the user continues where they were.
-    const idx = _questions.findIndex((q) => q.question === origQ);
-    if (idx >= 0) _questions[idx] = Object.assign({}, _questions[idx], {
-      question: payload.question, type: payload.type, options: payload.options,
-      correct_answer: (payload.correct_answer != null ? payload.correct_answer : ''),
-      max_select: (payload.max_select != null ? payload.max_select : 1),
-      audience: (payload.audience !== undefined ? payload.audience : _questions[idx].audience),
-    });
-    _renderConjunto();
-  } else {
-    // New question: refetch so the real id lands.
-    await _loadQuestions();
-  }
-  const bodyEl2 = _q('#cdx-bank-body');
-  if (bodyEl2) bodyEl2.scrollTop = keepScroll;
+  await renderPreservingScroll(bodyEl, async () => {
+    if (wasEdit) {
+      // Edit already persisted server-side: patch the local list in place and re-render
+      // (no refetch, no loading flash), so the user continues where they were. Matched by
+      // question TEXT (original_question is what the update API keys on), not id.
+      const original = _questions.find((q) => q.question === origQ);
+      if (original) _questions = replaceById(_questions, original.id, {
+        question: payload.question, type: payload.type, options: payload.options,
+        correct_answer: (payload.correct_answer != null ? payload.correct_answer : ''),
+        max_select: (payload.max_select != null ? payload.max_select : 1),
+        audience: (payload.audience !== undefined ? payload.audience : original.audience),
+      });
+      _renderConjunto();
+    } else {
+      // New question: refetch so the real id lands.
+      await _loadQuestions();
+    }
+  });
   _loadSets();
 }
 
@@ -717,7 +718,8 @@ async function _bulkSave() {
   if (!_viewEl) return;
   btn.disabled = false; btn.textContent = orig;
   _closeBulk();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  await renderPreservingScroll(bodyEl, async () => { await _loadQuestions(); });
   _loadSets();
 }
 
@@ -818,7 +820,8 @@ async function _applyOrder() {
   btn.disabled = false; btn.textContent = orig;
   toast.ok(t('questions.bank_order_applied'));
   _closeOrder();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  await renderPreservingScroll(bodyEl, async () => { await _loadQuestions(); });
 }
 
 // ---- Import / Export hub (collection-level; scope: current / all / choose) ----
@@ -1070,8 +1073,8 @@ async function _importSave() {
   if (!_viewEl) return;
   btn.disabled = false; btn.textContent = orig;
   _closeHub();
-  await _loadSets();
-  await _loadQuestions();
+  const bodyEl = _q('#cdx-bank-body');
+  await renderPreservingScroll(bodyEl, async () => { await _loadSets(); await _loadQuestions(); });
 }
 
 // ---- Audience matrix manager (variables x audiences) ----
@@ -1573,8 +1576,6 @@ export function mount(viewEl, ctx) {
       const qid = btn.getAttribute('data-qid');
       const qq = _questions.find((x) => String(x.id) === String(qid));
       _confirmDelQ = null;
-      const bodyEl = _q('#cdx-bank-body');
-      const keepScroll = bodyEl ? bodyEl.scrollTop : 0;
       let ok = false;
       if (qq) {
         let res; try { res = await api.deleteQuestion({ list_name: _currentSet, question: qq.question }); } catch (err) { notice.internal(err); res = null; }
@@ -1583,10 +1584,11 @@ export function mount(viewEl, ctx) {
       // Deletion persisted server-side: drop the row from the local list and re-render in
       // place (no refetch, no loading flash), mirroring the edit path. On failure keep the
       // row (the error already surfaced) and just re-render to clear the confirm state.
-      if (ok) _questions = _questions.filter((x) => String(x.id) !== String(qid));
-      _renderConjunto();
-      const bodyEl2 = _q('#cdx-bank-body');
-      if (bodyEl2) bodyEl2.scrollTop = keepScroll;
+      const bodyEl = _q('#cdx-bank-body');
+      await renderPreservingScroll(bodyEl, () => {
+        if (ok) _questions = removeById(_questions, qid);
+        _renderConjunto();
+      });
       _loadSets();
     }
     else if (act === 'rename') { _renaming = true; _confirmDelSet = false; _renderConjunto(); }
@@ -1600,8 +1602,11 @@ export function mount(viewEl, ctx) {
         if (res && res.error) notice.warn(t('questions.bank_rename_error'));
         else _currentSet = newName;
       }
-      await _loadSets();
-      if (_currentSet) _loadQuestions();
+      const bodyEl = _q('#cdx-bank-body');
+      await renderPreservingScroll(bodyEl, async () => {
+        await _loadSets();
+        if (_currentSet) await _loadQuestions();
+      });
     }
     else if (act === 'delset') { _confirmDelSet = true; _renaming = false; _renderConjunto(); }
     else if (act === 'delset-no') { _confirmDelSet = false; _renderConjunto(); }
