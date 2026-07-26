@@ -26,10 +26,15 @@ import { esc } from './utils.js';
 // case: a post fans out to a whole turma, so wiring its e-mail means the batching/queue work
 // first (architecture/notifications.md §5, "escala do broadcast"), not just a dispatch call.
 // Delete the flag the moment forum.js dispatches.
+// `aula_chegando` (Etapa A.2) is the CLOCK producer, and it is the one row whose bell cell
+// renders OFF and locked instead of on and locked. That is not an oversight: the scan writes no
+// row for the pull feed to merge, so a checked bell there would be the same lie `extrasPending`
+// exists to prevent — pointing the opposite way.
 export const CATEGORIES = [
   { key: 'comunicado',      labelKey: 'nchan.cat_comunicado' },
   { key: 'tarefa_feedback', labelKey: 'nchan.cat_tarefa' },
   { key: 'forum',           labelKey: 'nchan.cat_forum', extrasPending: true },
+  { key: 'aula_chegando',   labelKey: 'nchan.cat_aula' },
   { key: 'noticia',         labelKey: 'nchan.cat_noticia' },
 ];
 
@@ -43,10 +48,11 @@ export const CHANNELS = [
 // the router WILL apply, instead of a blank row. Comunicado reaches by every channel (that is its
 // point); system categories start e-mail off (never suddenly spam); notícia is opt-in (LGPD).
 export const DEFAULT_PREFS = {
-  comunicado:      { bell: true, email: true,  push: true  },
-  noticia:         { bell: true, email: false, push: false },
-  tarefa_feedback: { bell: true, email: false, push: false },
-  forum:           { bell: true, email: false, push: false },
+  comunicado:      { bell: true,  email: true,  push: true  },
+  noticia:         { bell: true,  email: false, push: false },
+  tarefa_feedback: { bell: true,  email: false, push: false },
+  forum:           { bell: true,  email: false, push: false },
+  aula_chegando:   { bell: false, email: true,  push: true  },
 };
 
 function _defaults(category) {

@@ -15,7 +15,7 @@ import {
 // The grid axes must match the worker's src/lib/notify.js exactly — a category or channel that
 // exists on one side only is a cell that silently never applies.
 test('axes match the worker contract', () => {
-  assert.deepEqual(CATEGORIES.map((c) => c.key), ['comunicado', 'tarefa_feedback', 'forum', 'noticia']);
+  assert.deepEqual(CATEGORIES.map((c) => c.key), ['comunicado', 'tarefa_feedback', 'forum', 'aula_chegando', 'noticia']);
   assert.deepEqual(CHANNELS.map((c) => c.key), ['bell', 'email', 'push']);
 });
 
@@ -27,7 +27,7 @@ test('gridRows reflects the server prefs, cell by cell', () => {
     noticia:         { bell: true,  email: true,  push: true  },
   };
   const rows = gridRows(prefs, { pushAvailable: true });
-  assert.equal(rows.length, 4);
+  assert.equal(rows.length, CATEGORIES.length);
   const com = rows.find((r) => r.key === 'comunicado');
   assert.equal(com.cells.find((c) => c.channel === 'email').enabled, true);
   assert.equal(com.cells.find((c) => c.channel === 'push').enabled, false);
@@ -46,6 +46,24 @@ test('gridRows falls back to the documented defaults for a missing category', ()
   assert.equal(forum.cells.find((c) => c.channel === 'email').enabled, false, 'system categories start e-mail OFF');
   const noticia = rows.find((r) => r.key === 'noticia');
   assert.equal(noticia.cells.find((c) => c.channel === 'email').enabled, false, 'newsletter is opt-in (LGPD)');
+});
+
+// track-44 A.2: the clock reminder is the ONE row whose bell is off. Every other category is
+// bell-on-and-locked because the pull feed carries it; this producer writes nothing for the feed
+// to merge, so a checked bell here would promise a notification that never appears. And its
+// e-mail/push start ON on purpose — a reminder that only lives inside the app reminds nobody.
+test('aula_chegando: bell off (nothing to pull) but e-mail and push on by default', () => {
+  const rows = gridRows({}, { pushAvailable: true });
+  const aula = rows.find((r) => r.key === 'aula_chegando');
+  assert.ok(aula, 'the clock reminder must have a row the student can turn off');
+  const bell = aula.cells.find((c) => c.channel === 'bell');
+  assert.equal(bell.enabled, false, 'no bell source exists for this producer');
+  assert.equal(bell.disabled, true, 'and it is not a switch the student can flip on');
+  assert.equal(aula.cells.find((c) => c.channel === 'email').enabled, true);
+  assert.equal(aula.cells.find((c) => c.channel === 'push').enabled, true);
+  // Reachable channels stay TOGGLEABLE: the whole reason the row exists is so it can be refused.
+  assert.equal(aula.cells.find((c) => c.channel === 'email').disabled, false);
+  assert.equal(aula.cells.find((c) => c.channel === 'push').disabled, false);
 });
 
 // Etapa B is not wired yet on this branch. The push column must be visibly UNAVAILABLE rather
