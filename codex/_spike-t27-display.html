@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>ESPIA track-27 · vista de plateia em página estrangeira</title>
+
+<!-- ESPIA DESCARTÁVEL (track-27, 2026-07-26). NÃO É ENTREGA, NÃO VAI PRA PRODUÇÃO.
+     Pergunta que ela responde: uma página que NÃO é a do editor consegue renderizar a
+     vista de plateia de um deck, recebendo o estado pelo BroadcastChannel que o editor
+     já emite hoje? Esta página é o análogo da futura página irmã: monta o app dos slides
+     em ?display=1 (sem auth, sem store, sem roteamento de aba) e um "motorista" embutido
+     faz o papel do editor, respondendo ao hello com um {type:"state"}. -->
+
+<link rel="stylesheet" href="css/theme.css">
+<link rel="stylesheet" href="css/tokens.css">
+<link rel="stylesheet" href="content/slides.css">
+<link rel="stylesheet" href="content/slides/css/tokens.css">
+<link rel="stylesheet" href="content/slides/css/slide.css">
+<link rel="stylesheet" href="content/slides/css/ui.css">
+<style>
+  html, body { margin: 0; height: 100%; background: #000; }
+  #spike-badge {
+    position: fixed; left: 8px; bottom: 8px; z-index: 99999;
+    font: 12px/1.4 monospace; color: #0f0; background: rgba(0,0,0,.7);
+    padding: 4px 8px; border: 1px solid #0f0; border-radius: 4px;
+  }
+</style>
+</head>
+<body>
+<div id="spike-badge">espia: aguardando estado no canal…</div>
+
+<script type="module">
+  import { mount } from './content/slides/js/app.js';
+  import { newDeck } from './content/slides/js/core/deck.js';
+
+  const badge = document.getElementById('spike-badge');
+
+  // 1) A "página irmã": monta o app em modo plateia, exatamente como o index.html monta
+  //    o apresentador (sem auth, sem store, sem tab).
+  const host = document.createElement('div');
+  host.className = 'cdx-deck-editor';
+  document.body.appendChild(host);
+  mount(host, {});
+
+  // 2) O "motorista": faz o papel do editor. Responde ao hello com o MESMO payload que
+  //    present/presenter.js:createSync().broadcast() emite hoje. Um segundo objeto de
+  //    BroadcastChannel na mesma página recebe/publica normalmente (o canal só não
+  //    entrega para o próprio objeto que publicou).
+  const drv = new BroadcastChannel('slides-v8');
+  const deck = newDeck();
+  // Marca que SÓ pode ter vindo pelo canal: o deck local do modo plateia é um newDeck()
+  // intocado, então se este texto aparecer na tela, o estado veio da mensagem.
+  deck.slides[0].slots.title = 'ESPIA track-27: isto veio pelo canal';
+  deck.slides[0].slots.eyebrow = 'janela estrangeira';
+
+  const qs = new URLSearchParams(location.search);
+  const IDX = parseInt(qs.get('i') || '0', 10) || 0;
+  const STEP = parseInt(qs.get('step') || '0', 10) || 0;
+  const BLANK = qs.get('blank') || null;
+
+  const state = (index, step) => ({
+    type: 'state',
+    index, step,
+    theme: deck.theme,
+    assets: deck.assets,
+    logo: deck.logo,
+    deck: JSON.stringify(deck.slides),
+    blank: BLANK,
+    atEnd: qs.get('end') === '1',
+  });
+
+  let sent = 0;
+  drv.onmessage = (e) => {
+    if (!e.data || e.data.type !== 'hello') return;
+    drv.postMessage(state(IDX, STEP));
+    sent++;
+    badge.textContent = 'espia: hello recebido, estado enviado (' + sent + ')';
+  };
+
+  // Rede de segurança: se o hello chegou antes do motorista existir, empurra assim mesmo.
+  setTimeout(() => {
+    if (!sent) {
+      drv.postMessage(state(IDX, STEP));
+      badge.textContent = 'espia: estado enviado sem hello (fallback)';
+    }
+  }, 400);
+
+  // Navegação: prova que uma troca de slide pelo canal repinta a plateia.
+  const goto = (i) => { drv.postMessage(state(i, 0)); badge.textContent = 'espia: slide ' + (i + 1); };
+  window.__spikeGoto = goto;
+</script>
+</body>
+</html>
