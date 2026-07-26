@@ -499,6 +499,13 @@
 
 /* Slim preview header: a thin bar, not the tall default. */
 .cdx-cert-preview-head { padding: 0.5rem 0.8rem; align-items: center; }
+@media (max-width: 700px) {
+  /* The theme-picker (label + 3 chips) + fullscreen button don't fit next to
+   * the title in a single row at phone widths (.cdx-preview-actions is
+   * flex-shrink:0, shared with Items/Labs/etc where it isn't a problem) —
+   * stack title above actions instead of squeezing them side by side. */
+  .cdx-cert-preview-head { flex-direction: column; align-items: stretch; gap: 0.5rem; }
+}
 
 /* Right pane conforms to the sheet: JS scales the single sheet to the pane WIDTH,
    the pane grows to its height. No fixed height, no clipping, no scrollbar. */
@@ -581,6 +588,14 @@
   justify-content: center;
   gap: 1.2rem;
   overflow: hidden;
+}
+@media (max-width: 700px) {
+  /* Free up width for the sheet scale (JS _fitSheets), and let the sheet(s) be
+   * panned when the mobile legibility floor makes them taller/wider than the
+   * screen — overflow:hidden would just clip past the fold, and centered
+   * flex content can't be scrolled back to on iOS Safari, hence flex-start. */
+  .cdx-cert-fs-overlay { padding: 0.6rem; }
+  .cdx-cert-fs-body { overflow: auto; align-items: flex-start; justify-content: flex-start; }
 }
 
 .cdx-cert-fs-actions {
