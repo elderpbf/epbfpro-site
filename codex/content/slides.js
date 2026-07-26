@@ -466,7 +466,7 @@ async function _openDeck(slug, fresh, initialDeck) {
   // still pending would flush that timer through THIS deck's save.
   _flushSave = () => { if (!_saveTimer) return null; clearTimeout(_saveTimer); _saveTimer = null; return _save(); };
   // Persist the initial deck (fresh OR imported) so it survives a reload.
-  if (fresh || seeded) { try { await store.save(); } catch (_) { /* surfaced on next edit */ } }
+  if (fresh || seeded) { try { await store.save(); } catch (e) { notice.internal(e); } }
 
   _teardownEditor();
   const region = _q('#cdx-slides-region');
