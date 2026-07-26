@@ -196,6 +196,18 @@
   position: relative; min-height: 60vh;
   margin: -1.5rem -3rem 0;
 }
+/* The -3rem side margin above cancels the shell's OLD desktop padding (.bs-main +
+ * .cdx-view = 3rem/side) so this reaches the edges without width:100vw. On phones that
+ * padding is already zero (codex.css, 2026-07-24/25), so the same -3rem now overshoots
+ * by 48px on EACH side with nothing left to cancel — the page becomes ~486px wide inside
+ * a 390px screen. Found live 2026-07-25 (Élder: the action bar wasn't scrollable and the
+ * bottom nav scrolled away): the browser responds to that overflow by widening its own
+ * layout viewport to fit it, which is what actually broke both — .cdx-botnav is
+ * `position:fixed` correctly, but "the viewport" it was fixed to had grown past the
+ * visible screen. Zeroing the side margin here removes the overflow at the source. */
+@media (max-width: 700px) {
+  .cdx-sessions-layout { margin-left: 0; margin-right: 0; }
+}
 
 /* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
  * viewport so it runs full height under the chrome (top padding clears the
@@ -888,6 +900,14 @@
 .cdx-host-bar .cdx-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+/* On phones this row can hold up to 7 buttons (Stats/Visão/Trilha/Janela/QR/Display/
+ * Start-or-Stop) — wrapping them buries the last ones behind whatever sits below the bar
+ * instead of just being a scroll away (Élder, 2026-07-25, XPath //*[@id="cdx-host"]/div[1]
+ * /div[2]). Same "scrollable strip, not wrap" treatment already used for the module and
+ * dossiê sub-tab rows. */
+@media (max-width: 700px) {
+  .cdx-host-bar-actions { flex-wrap: nowrap; overflow-x: auto; }
+}
 .cdx-host-connected { display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0.55rem; border-radius: 999px; background: var(--surface-hover, rgba(13, 148, 136, 0.18)); font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
 .cdx-host-live { display: inline-flex; align-items: center; gap: 5px; }
