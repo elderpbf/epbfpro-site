@@ -186,6 +186,18 @@
     ]);
     slides.mount(host, { notify: (msg) => toast.ok(msg) });
   }
+  // ESPIA track-27: audience window. Same shape as the presenter branch above (no auth, no
+  // store, no tab routing) but app.js mounts it in ?display=1 mode, so the STAGE renders
+  // full-bleed and every bit of state arrives on the deck channel. This is the window that
+  // goes to the TV; it is what lets the deck be a plug in a page the editor does not own.
+  else if (params.get('display') === '1') {
+    applyI18n();
+    const host = document.createElement('div');
+    host.className = 'cdx-deck-editor';
+    document.body.appendChild(host);
+    const slides = await import('./content/slides/js/app.js');
+    slides.mount(host, {});
+  }
   // Codex own-login gate (item 11.2): if not authed, show the e-mail+OTP login and STOP.
   // No tabs mount until an admin session is in place. This replaces the legacy
   // BS_AUTH.guard() redirect to /backstage/; on successful login the page reloads and

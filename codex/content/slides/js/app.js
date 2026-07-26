@@ -25,6 +25,7 @@ import { snapshotTheme, applyThemeFields } from "./theme/presets.js";
 import { createNavigator } from "./edit/navigator.js";
 import { initShareFlow, askHowMode } from "./edit/shareflow.js";
 import { createSync, initPresenter } from "./present/presenter.js";
+import { initAudience } from "./present/audience.js";
 import { t } from "../../../js/i18n.js";
 import { glyphSvg } from "../../../js/glyphs.js";
 import { makeStubAi } from "./ai/aiService.js";
@@ -134,6 +135,10 @@ ${addSlidePanelHTML()}
 
 export function mount(root, ctx = {}) {
   const isPresenter = new URLSearchParams(location.search).get("presenter") === "1";
+  // ?display=1 — the AUDIENCE window (track-27): same shell, but the stage renders full-bleed
+  // and every bit of state arrives on the channel. Like the presenter, it needs no auth, no
+  // store and no tab routing.
+  const isDisplay = new URLSearchParams(location.search).get("display") === "1";
   root.innerHTML = shellHTML();
   const $ = (sel) => root.querySelector(sel);
   const store = ctx.store || createMemoryStore(newDeck());
@@ -1152,6 +1157,11 @@ export function mount(root, ctx = {}) {
 
   if (isPresenter) {
     initPresenter(app);
+    return { app, unmount: () => unmount(app, root) };
+  }
+
+  if (isDisplay) {
+    initAudience(app);
     return { app, unmount: () => unmount(app, root) };
   }
 
