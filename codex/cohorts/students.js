@@ -60,6 +60,8 @@ function _renderShell() {
     emptyKey: 'alunos.empty',
     noMatchKey: 'alunos.no_match',
     extraToolsHtml: () => cleanupButtonHtml(_dupes.length, _tests.length),
+    // track-26 2.b: this sub-tab has no scrolling wrapper of its own, the page does.
+    scrollHost: () => document.scrollingElement,
     onReload: () => _load(),
     // Remove is the person, gone — the completa/anonimizar modal, never a bare "tem certeza?". It
     // fans out across every turma and would purge the childless identity; the two modes let Élder

@@ -1495,6 +1495,8 @@ function _dossierTable(el) {
     scope: 'turma',
     gated: () => isApprovalGated(_dossierTurma),
     emptyKey: 'cohorts.participants_empty',
+    // track-26 2.b: the table never scrolls itself, the dossier's .cdx-doss-body does.
+    scrollHost: () => el.closest('.cdx-doss-body'),
     onReload: () => { if (_dossierTurma) _loadDossierParticipants(_dossierTurma); },
     // Remove here is scope-aware (Élder 2026-07-16, option B): out of THIS turma if the person is in
     // others, but their OWN turma's decision is total — the completa/anonimizar modal — so nobody is
