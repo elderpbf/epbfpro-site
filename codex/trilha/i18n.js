@@ -223,6 +223,30 @@ const pt = {
   'notif.opt_all':          'Tudo no fórum',
   'notif.switch_turma':     'Trocar de turma',
   'notif.forget_turma':     'Esquecer esta turma',
+  // Delivery preferences (track-44): categoria × canal, gravadas no servidor. O sino é o piso
+  // (sempre ligado); o aluno escolhe os canais EXTRAS.
+  'nchan.pill':             'Notificações',
+  'nchan.title':            'Como quero ser avisado',
+  'nchan.subtitle':         'Escolha por onde cada tipo de aviso chega até você.',
+  'nchan.cat_comunicado':   'Comunicados da turma',
+  'nchan.cat_tarefa':       'Resposta nas minhas tarefas',
+  'nchan.cat_forum':        'Fórum',
+  'nchan.cat_noticia':      'Notícias da PensoIA',
+  'nchan.ch_bell':          'Sino',
+  'nchan.ch_email':         'E-mail',
+  'nchan.ch_push':          'Celular',
+  'nchan.soon':             'em breve',
+  'nchan.note':             'O sino fica sempre ligado: é como você vê o que aconteceu aqui dentro. O e-mail e o celular são os avisos extras.',
+  'nchan.loading':          'Carregando suas preferências…',
+  'nchan.error':            'Não foi possível carregar suas preferências. Tente novamente em instantes.',
+  'nchan.save_failed':      'Não foi possível salvar essa preferência. Tente de novo.',
+  // track-44 Etapa B: push wiring. push_ios_hint replaces "em breve" no cabeçalho quando o
+  // motivo é especificamente "instale o app" (iOS Safari fora da tela de início) — dizer isso
+  // é mais honesto que um genérico "em breve". push_denied e push_subscribe_failed cobrem os
+  // dois jeitos de a inscrição falhar ao ligar a célula de celular.
+  'nchan.push_ios_hint':        'instale o app',
+  'nchan.push_denied':          'As notificações do celular estão bloqueadas no navegador. Para ativar, permita notificações para este site nas configurações do navegador e tente de novo.',
+  'nchan.push_subscribe_failed':'Não foi possível ativar notificações no celular agora. Tente novamente em instantes.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -438,6 +462,24 @@ const en = {
   'notif.opt_all':          'Everything in the forum',
   'notif.switch_turma':     'Switch class',
   'notif.forget_turma':     'Forget this class',
+  'nchan.pill':             'Notifications',
+  'nchan.title':            'How I want to be notified',
+  'nchan.subtitle':         'Choose where each kind of notice reaches you.',
+  'nchan.cat_comunicado':   'Class announcements',
+  'nchan.cat_tarefa':       'Replies on my assignments',
+  'nchan.cat_forum':        'Forum',
+  'nchan.cat_noticia':      'PensoIA news',
+  'nchan.ch_bell':          'Bell',
+  'nchan.ch_email':         'Email',
+  'nchan.ch_push':          'Phone',
+  'nchan.soon':             'soon',
+  'nchan.note':             'The bell stays on: it is how you see what happened in here. Email and phone are the extra notices.',
+  'nchan.loading':          'Loading your preferences…',
+  'nchan.error':            'Could not load your preferences. Please try again in a moment.',
+  'nchan.save_failed':      'Could not save that preference. Please try again.',
+  'nchan.push_ios_hint':        'install the app',
+  'nchan.push_denied':          'Phone notifications are blocked in the browser. To turn them on, allow notifications for this site in your browser settings and try again.',
+  'nchan.push_subscribe_failed':'Could not turn on phone notifications right now. Please try again in a moment.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

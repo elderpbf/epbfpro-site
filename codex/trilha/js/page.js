@@ -375,6 +375,38 @@ function renderHeaderActions() {
         onMyData: (data.participant)
           ? (() => openMyData(data.participant, contextFromState(state), { root: _root }))
           : undefined,
+        // Delivery preferences (track-44): the category × channel grid, server-side per identity.
+        // Loaded lazily — the grid is only fetched if the student actually opens it, so the header
+        // costs no extra round-trip. Etapa B: pushAvailable now reflects DEVICE capability (not
+        // "already subscribed" — a disabled cell could never be toggled to start a subscription
+        // in the first place, see push-subscribe.js's pushAvailability doc comment); the first
+        // toggle-on runs the permission/subscribe flow, gated inside notif-channels.js itself.
+        onNotifChannels: () => Promise.all([import('./notif-channels.js'), import('./push-subscribe.js')])
+          .then(([m, ps]) => {
+            const avail = ps.pushAvailability(_win);
+            return m.openNotifChannels({
+              root: _root,
+              pushAvailable: avail.capable,
+              pushNeedsInstall: avail.needsInstall,
+              fetchPrefs: () => trail.notifPrefsGet({ session_token: state.sessionToken, _silent: true }),
+              savePref: (category, channel, enabled) => trail.notifPrefsSet({
+                session_token: state.sessionToken, category, channel, enabled,
+              }),
+              subscribePush: () => ps.subscribePush({
+                win: _win,
+                getVapidKey: () => trail.pushVapidKey(),
+                saveSubscription: (sub) => trail.pushSubscribe({ session_token: state.sessionToken, ...sub }),
+              }),
+              // Drives displayPrefs (notif-channels.js): a comunicado push cell (default ON)
+              // must render UNCHECKED until this device is confirmed subscribed, or the
+              // student would never see a reason to toggle it and would never subscribe.
+              isSubscribed: () => ps.isSubscribed({ win: _win }),
+              unsubscribePush: () => ps.unsubscribePush({
+                win: _win,
+                removeSubscription: (sub) => trail.pushUnsubscribe({ session_token: state.sessionToken, endpoint: sub.endpoint }),
+              }),
+            });
+          }),
         onLogout: async () => {
           // Server round-trip first (track-36 d): clear the HttpOnly cookie + revoke, then reload.
           await logoutStudent(state.clientSlug, state.turmaSlug);

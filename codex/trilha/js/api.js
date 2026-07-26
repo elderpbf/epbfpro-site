@@ -73,6 +73,17 @@ export const trail = {
   // Durable bell history (track-44): what this student already dismissed, resolved back from
   // ct_notif_dismissed — so the tray's "Histórico" survives a reload instead of living in the page.
   notifHistory:     (p) => call('ct_notif_history', p),       // { session_token } -> { ok, count, items }
+  // Delivery preferences (track-44): the category × channel grid the worker's router reads before
+  // fanning a notification out. Keyed by IDENTITY (ct_students.id), unlike the bell's read-state,
+  // which is per-participant — see architecture/notifications.md §3.
+  notifPrefsGet:    (p) => call('ct_notif_prefs_get', p),     // { session_token } -> { ok, prefs }
+  notifPrefsSet:    (p) => call('ct_notif_prefs_set', p),     // { session_token, category, channel, enabled } -> { ok }
+  // Push subscription lifecycle (track-44 Etapa B), wired through push-subscribe.js. The
+  // VAPID key call needs no session (it is a public key, see actions/push.js); subscribe/
+  // unsubscribe are session-gated the same way notif prefs are.
+  pushVapidKey:     ()  => call('ct_push_vapid_key'),                  // {} -> { ok, key: <VAPID public key>|null }
+  pushSubscribe:    (p) => call('ct_push_subscribe', p),                // { session_token, endpoint, p256dh, auth, device? } -> { ok } | { error }
+  pushUnsubscribe:  (p) => call('ct_push_unsubscribe', p),              // { session_token, endpoint } -> { ok }
 
   // Device-presence (Phase 7, signal b): claim a presence grant while the turma's
   // live session is open; the device stores it and offers it at login so being in

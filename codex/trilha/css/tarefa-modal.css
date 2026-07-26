@@ -322,3 +322,36 @@ body.tr-modal-open { overflow: hidden; }
 .tr-cm-title { font-size: 1.1rem; font-weight: 700; margin-bottom: 4px; padding-right: 28px; color: var(--text-primary); }
 .tr-cm-when { font-size: 0.75rem; opacity: 0.6; margin-bottom: 14px; }
 .tr-cm-body { font-size: 0.95rem; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* ── Preferências de entrega (track-44, trilha/js/notif-channels.js) ──────────────
+   The category × channel grid, on the same tr-modal shell as "Meus dados" and the
+   comunicado card. Tokens only (var(--…)), so it follows the theme in both directions
+   without a per-file dark override. */
+.tr-nc-modal { max-width: 520px; }
+.tr-nc-title { font-size: 1.05rem; font-weight: 700; margin-bottom: 3px; padding-right: 28px; color: var(--text-primary); }
+.tr-nc-sub { font-size: 0.8rem; opacity: 0.7; margin-bottom: 16px; }
+.tr-nc-grid { display: flex; flex-direction: column; }
+.tr-nc-head, .tr-nc-row { display: grid; grid-template-columns: minmax(0, 1fr) 62px 62px 62px; align-items: center; }
+.tr-nc-head { padding-bottom: 6px; border-bottom: 1px solid var(--border); }
+.tr-nc-hch {
+  text-align: center; font-size: 0.68rem; text-transform: uppercase; letter-spacing: 0.03em;
+  font-weight: 700; opacity: 0.6; line-height: 1.25;
+}
+/* "em breve" under the Celular column while Etapa B is not wired: the column is visible so the
+   student knows it is coming, and disabled so it never claims a delivery we cannot make. */
+.tr-nc-soon { display: block; font-size: 0.6rem; text-transform: none; letter-spacing: 0; font-weight: 600; opacity: 0.75; }
+.tr-nc-row { padding: 9px 0; border-bottom: 1px solid var(--border); }
+.tr-nc-row:last-child { border-bottom: none; }
+.tr-nc-cat { font-size: 0.88rem; color: var(--text-primary); padding-right: 8px; }
+.tr-nc-cell { display: flex; justify-content: center; }
+.tr-nc-cell input { width: 17px; height: 17px; accent-color: var(--primary); cursor: pointer; }
+.tr-nc-cell input:disabled { cursor: default; opacity: 0.4; }
+.tr-nc-note { margin: 14px 0 0; font-size: 0.76rem; line-height: 1.5; opacity: 0.7; }
+.tr-nc-note--err { opacity: 1; color: var(--error); }
+.tr-nc-loading, .tr-nc-error { font-size: 0.88rem; opacity: 0.75; padding: 18px 0; }
+.tr-nc-error { color: var(--error); opacity: 1; }
+
+@media (max-width: 480px) {
+  .tr-nc-head, .tr-nc-row { grid-template-columns: minmax(0, 1fr) 48px 48px 48px; }
+  .tr-nc-cat { font-size: 0.82rem; }
+}
