@@ -236,6 +236,38 @@
     position: fixed; inset: 0; z-index: 119;
     background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,0.5) */
   }
+
+  /* Preview modal (Élder 2026-07-25): picking a row in the shared "Items split shell"
+   * (js/codex-topbar.js wires the click, see PREVIEW_SPLIT_SEL there) takes over the full
+   * screen instead of just being the stacked-below panel. `.cdx-preview-modal-close` is
+   * injected as a SIBLING of `.cdx-item-preview`, not a child, so each module's own
+   * `pane.innerHTML = …` re-render never wipes it out. z-index above the botnav (100) and
+   * the mobile sub-row (99) so the modal genuinely covers the whole screen; below the
+   * hamburger drawer (120)/backdrop (119), which should never be open at the same time.
+   * `position:relative` on the split gives the close button (`position:absolute`) a box
+   * to anchor to without moving the split's own normal document flow. */
+  .cdx-preview-modal--open { position: relative; }
+  .cdx-preview-modal--open .cdx-item-preview {
+    position: fixed; inset: 0; z-index: 110;
+    margin: 0; overflow-y: auto;
+    background: var(--background);
+    /* Every consumer's own CSS caps this pane's height for the stacked/side-by-side layout
+     * (content.css: max-height:calc(100vh - 240px); certificates.css has its own cap too) —
+     * inset:0 alone doesn't beat an explicit max-height, so the modal fell short of the full
+     * screen and the list showed through underneath (found live 2026-07-25). Reset both. */
+    max-height: none; height: 100%;
+    border-radius: 0; border: 0;
+  }
+  .cdx-preview-modal-close {
+    display: none;
+    position: fixed; top: calc(var(--cdx-chrome-h, 64px) + 8px); right: 12px; z-index: 111;
+    width: 36px; height: 36px; border-radius: 50%;
+    align-items: center; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-primary);
+    font-size: 1.3rem; line-height: 1; cursor: pointer;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .cdx-preview-modal--open .cdx-preview-modal-close { display: flex; }
 }
 
 /* ── Tab content host ───────────────────────────────────────── */

@@ -619,6 +619,50 @@ export function init(opts) {
     if (d && d.contains(e.target) && e.target.closest(DRAWER_PICK_SEL)) _closeDrawer();
   }, true);
 
+  // Mobile preview modal: the "Items split shell" (list + a sibling preview pane,
+  // .cdx-items-split/.cdx-releases-split/.cdx-tarefas-split/.cdx-certs-modelos-split, reused by
+  // Conteúdo's Itens/Apostila/Drive/Labs/Interativos/Presets/Aplicativos and Certificados'
+  // Modelos) stacks list-above-preview on phones (2026-07-24). Élder 2026-07-25: picking an
+  // item there should open the preview as a full-screen modal instead, matching how a
+  // detail view reads on a phone. One shared, page-agnostic listener rather than 8 separate
+  // per-module implementations: it opens on ANY click on a row inside a known split
+  // container (works for both the shared rail's `.cdx-rail-row` and the bespoke
+  // `.cdx-item-row` rows Certificates/Releases use without the rail), and injects a close
+  // button as a SIBLING of `.cdx-item-preview` (inside the split, not inside the preview
+  // itself) so each module's own `pane.innerHTML = …` re-renders never wipe it out.
+  const PREVIEW_SPLIT_SEL = '.cdx-items-split, .cdx-releases-split, .cdx-tarefas-split, .cdx-certs-modelos-split';
+  const PREVIEW_ROW_SEL = '.cdx-rail-row, .cdx-item-row';
+  const isMobileWidth = () => window.matchMedia('(max-width: 700px)').matches;
+  const _ensurePreviewCloseBtn = (split) => {
+    if (split.querySelector(':scope > .cdx-preview-modal-close')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cdx-preview-modal-close';
+    btn.setAttribute('aria-label', 'Fechar');
+    btn.innerHTML = '&times;';
+    split.appendChild(btn);
+  };
+  // Capture phase, same reason as the drawer-pick listener above: the row's own click
+  // handler (mountRail's onSelect, or Certificates'/Releases' bespoke handler) re-renders
+  // the list synchronously and can detach the clicked node before a bubble-phase listener
+  // would run, so closest() would traverse a orphaned tree instead of the live one.
+  document.addEventListener('click', (e) => {
+    if (!isMobileWidth()) return;
+    if (e.target.closest('.cdx-preview-modal-close')) {
+      const split = e.target.closest(PREVIEW_SPLIT_SEL);
+      if (split) split.classList.remove('cdx-preview-modal--open');
+      return;
+    }
+    const row = e.target.closest(PREVIEW_ROW_SEL);
+    if (!row) return;
+    const split = row.closest(PREVIEW_SPLIT_SEL);
+    // is-bulk (Itens' multi-select mode) hides the preview entirely by design; a row tap
+    // there toggles a checkbox, it never previews — the modal must stay closed.
+    if (!split || split.classList.contains('is-bulk') || !split.querySelector('.cdx-item-preview')) return;
+    _ensurePreviewCloseBtn(split);
+    split.classList.add('cdx-preview-modal--open');
+  }, true);
+
   // Shared shell services; the sub-tab mode toggle leads the drawer sections.
   ThemeManager.init({ storageKey: 'bs_theme' });
   ThemeManager.applyTheme(localStorage.getItem('bs_theme') || 'dark');
