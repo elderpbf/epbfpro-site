@@ -355,6 +355,12 @@
 }
 .cdx-platform-tabs { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 0.75rem; }
 .cdx-platform-tabs .cdx-field { margin-bottom: 0; }
+@media (max-width: 700px) {
+  /* Stack the 3 platform textareas (Windows/Mac/Linux) instead of squeezing
+   * them into ~110px-wide columns. Shared by both Lessons and Content's item
+   * "Guia" editor. */
+  .cdx-platform-tabs { grid-template-columns: 1fr; }
+}
 
 .cdx-upload-row { display: flex; align-items: center; gap: 0.65rem; flex-wrap: wrap; margin-top: 6px; }
 .cdx-upload-filename {

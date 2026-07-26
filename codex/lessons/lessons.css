@@ -438,6 +438,13 @@
   border: none;
   border-radius: 0;
 }
+@media (max-width: 700px) {
+  /* .cdx-lessons-main fills 100% down to the screen edge in classvault mode, but
+   * .cdx-botnav floats fixed over the last ~76px of that space — reserve it so
+   * .cdx-lessons-bar (the Editar/breadcrumb footer, last flex child) isn't hidden
+   * under the fixed nav. */
+  .bs-app--classvault .cdx-lessons-main { padding-bottom: 76px; }
+}
 
 /* ── Sidebar head row: search + the "Aa" display button ─────────────────────── */
 .cdx-lessons-head-row { display: flex; align-items: center; gap: 8px; }

@@ -339,7 +339,13 @@ function _fitSheets(container) {
   const availH = Math.max(0, container.clientHeight - padY);
   const scaleW = availW > 0 ? availW / SHEET_PX_W : 1;
   const scaleH = availH > 0 ? (availH - (n - 1) * gap) / (n * SHEET_PX_H) : scaleW;
-  const scale  = Math.max(0, Math.min(scaleW, scaleH));
+  // Mobile-only legibility floor: at phone widths the pure contain-fit scale
+  // (~0.28-0.31) shrinks the certificate's fine print to ~3-4px. Below this
+  // floor the sheet is let to exceed the viewport instead (.cdx-cert-fs-body
+  // scrolls on mobile) rather than shrinking text further. Desktop untouched
+  // (floor stays 0 there, same as before).
+  const isMobile = typeof window.matchMedia === 'function' && window.matchMedia('(max-width: 700px)').matches;
+  const scale  = Math.max(isMobile ? 0.5 : 0, Math.min(scaleW, scaleH));
   wraps.forEach((wrap) => {
     const page = wrap.querySelector('.cdx-cert-page');
     if (!page) return;

@@ -158,6 +158,10 @@
   border-radius: 12px;
   overflow: hidden;
 }
+@media (max-width: 700px) {
+  /* Scroll the table inside its own wrap instead of overflowing the page. */
+  .cdx-stats-table-wrap { overflow-x: auto; }
+}
 .cdx-stats-table { width: 100%; border-collapse: collapse; font-size: 0.9rem; }
 .cdx-stats-table th {
   text-align: left;
