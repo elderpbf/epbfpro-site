@@ -231,7 +231,6 @@ export default {
   'comunicados.ch_bell':       'Sino',
   'comunicados.ch_email':      'E-mail',
   'comunicados.ch_push':       'Celular',
-  'comunicados.soon':          '(em breve)',
   'comunicados.send':          'Enviar comunicado',
   'comunicados.sending':       'Enviando…',
   'comunicados.sent':          'Comunicado enviado',
