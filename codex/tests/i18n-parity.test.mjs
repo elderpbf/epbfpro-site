@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = (rel) => fileURLToPath(new URL(rel, import.meta.url));
 
+import { collectSources, deadKeys, CODEX_DYNAMIC_PREFIXES } from './_i18n-usage.mjs';
+
 const pt = (await import('../i18n/pt.js')).default;
 const en = (await import('../i18n/en.js')).default;
 
@@ -47,4 +49,32 @@ test('Content dictionaries cover the content.* namespace in both langs', () => {
   for (const k of ptContent) {
     assert.ok(k in en, `en mirrors ${k}`);
   }
+});
+
+// The REVERSE direction (track-30 [i18n-05]): the checks above prove every key a
+// module asks for exists; this one proves the dictionary is not accumulating keys
+// nothing asks for. That rot is what let the 2026-06-27 audit ledger claim 43 open
+// findings when 35 were already fixed.
+//
+// The 179-key baseline is pre-existing debt, NOT an approval: it freezes today's
+// dead keys so the guard can catch anything NEW from 2026-07-26 onward. Deleting a
+// batch from the dictionary means deleting it from the baseline in the same commit.
+// The list is intentionally a visible fixture rather than an inline allowlist.
+test('the Codex dictionary grows no NEW dead keys (baseline frozen 2026-07-26)', () => {
+  const repo = fileURLToPath(new URL('../../', import.meta.url));
+  const blob = collectSources(
+    [repo + 'codex', repo + 'trilha', repo + 'js'],
+    ['codex/i18n/', 'codex/trilha/i18n.js'],
+  );
+  const baseline = new Set(JSON.parse(
+    fs.readFileSync(here('./fixtures/i18n-dead-baseline.json'), 'utf8')));
+  const dead = deadKeys(Object.keys(pt), blob, CODEX_DYNAMIC_PREFIXES);
+
+  const fresh = dead.filter((k) => !baseline.has(k));
+  assert.deepEqual(fresh, [],
+    'new dead key(s): either wire them up, or delete them from pt.js + en.js');
+
+  const revived = [...baseline].filter((k) => !dead.includes(k) && (k in pt));
+  assert.deepEqual(revived, [],
+    'baseline key(s) now in use or removed — drop them from fixtures/i18n-dead-baseline.json');
 });
