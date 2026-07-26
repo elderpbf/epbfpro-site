@@ -42,6 +42,11 @@ self.addEventListener('fetch', (event) => {
 // A malformed/missing payload still shows SOMETHING generic rather than silently dropping
 // the push (the OS already woke the app for this event; showing nothing looks like a bug).
 const APP_ICON = '/codex/trilha/icons/app-icon-192.png';
+// `badge` is NOT `icon`: Android renders the status-bar badge from the ALPHA CHANNEL ALONE,
+// tinting whatever is opaque. Passing the full-colour app icon there makes the whole square
+// opaque, so the status bar showed a blank white square (Élder, Android, 2026-07-26). This
+// one is the monochrome silhouette rasterised from icons/glyph.svg. iOS ignores badge.
+const NOTIF_BADGE = '/codex/trilha/icons/notif-badge-96.png';
 
 self.addEventListener('push', (event) => {
   let payload = {};
@@ -50,7 +55,7 @@ self.addEventListener('push', (event) => {
   const options = {
     body: payload.body || '',
     icon: APP_ICON,
-    badge: APP_ICON,
+    badge: NOTIF_BADGE,
     data: payload.data || {},
   };
   event.waitUntil(self.registration.showNotification(title, options));

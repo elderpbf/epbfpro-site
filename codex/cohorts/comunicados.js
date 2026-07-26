@@ -73,7 +73,7 @@ function _render() {
           '<div class="cdx-cm-label">' + _esc(t('comunicados.channels')) + '</div>' +
           '<label class="cdx-cm-check"><input type="checkbox" class="cdx-cm-ch" value="bell" checked> ' + _esc(t('comunicados.ch_bell')) + '</label>' +
           '<label class="cdx-cm-check"><input type="checkbox" class="cdx-cm-ch" value="email" checked> ' + _esc(t('comunicados.ch_email')) + '</label>' +
-          '<label class="cdx-cm-check cdx-cm-check--soon"><input type="checkbox" class="cdx-cm-ch" value="push" disabled> ' + _esc(t('comunicados.ch_push')) + ' <span class="cdx-cm-soon">' + _esc(t('comunicados.soon')) + '</span></label>' +
+          '<label class="cdx-cm-check"><input type="checkbox" class="cdx-cm-ch" value="push" checked> ' + _esc(t('comunicados.ch_push')) + '</label>' +
         '</div>' +
         // Reach + send
         '<div class="cdx-cm-actions">' +
@@ -142,6 +142,7 @@ async function _send() {
     const bits = [];
     bits.push(t('comunicados.ch_bell') + ': ' + (reach.bell || 0));
     if (channels.email) bits.push(t('comunicados.ch_email') + ': ' + (reach.email || 0));
+    if (channels.push) bits.push(t('comunicados.ch_push') + ': ' + (reach.push || 0));
     if (result) result.textContent = t('comunicados.sent') + ' — ' + bits.join(' · ');
     toast.ok(t('comunicados.sent'));
     // clear the message fields, keep scope/channels for a quick next send

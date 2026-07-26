@@ -230,7 +230,6 @@ export default {
   'comunicados.ch_bell':       'Bell',
   'comunicados.ch_email':      'E-mail',
   'comunicados.ch_push':       'Phone',
-  'comunicados.soon':          '(soon)',
   'comunicados.send':          'Send announcement',
   'comunicados.sending':       'Sending…',
   'comunicados.sent':          'Announcement sent',
