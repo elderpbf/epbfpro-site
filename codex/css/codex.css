@@ -161,12 +161,25 @@
 @media (max-width: 700px) {
   .cdx-tabs { display: none; }                            /* top strip unusable on phones */
   .cdx-subpill { display: none !important; }              /* hover pill is touch-useless */
-  .cdx-subrow:not(.cdx-subrow--mobile) { display: none; } /* desktop persistent bar off */
+  /* Desktop persistent bar off — UNLESS it opts into staying visible in place via
+   * .cdx-subrow--local (Élder 2026-07-24: a bespoke local sub-tab bar, e.g. a turma
+   * dossier's Dados/Participantes/Aulas/..., is neither the module-level strip above
+   * NOR meant to relocate; it just needs to keep working on a phone, in place). */
+  .cdx-subrow:not(.cdx-subrow--mobile):not(.cdx-subrow--local) { display: none; }
+  .cdx-subrow--local { overflow-x: auto; }                /* the one thing it was missing */
 
+  /* Pinned ABOVE .cdx-botnav, not under the topbar (Élder 2026-07-24): a sub-tab is
+   * conceptually part of the same nav as the app tabs, which already live at the bottom
+   * on phones, so it rides right on top of that bar instead of floating separately at
+   * the top. Height published as --cdx-subrow-mobile-h (codex-topbar.js) so .cdx-view's
+   * bottom clearance below stays correct whether or not a page has sub-tabs. */
   .cdx-subrow--mobile {
     display: block;
+    position: fixed; left: 0; right: 0; bottom: 60px; /* clears .cdx-botnav's own height */
+    z-index: 99;   /* below botnav (100) so botnav's shadow still reads on top; above content */
     background: var(--surface);
-    border-bottom: 1px solid var(--border);
+    border-top: 1px solid var(--border);
+    box-shadow: 0 -2px 10px var(--shadow);
     overflow-x: auto;
   }
   .cdx-subrow--mobile .cdx-substrip { padding: 0.3rem 0.6rem; }
@@ -179,13 +192,14 @@
     border-top: 1px solid var(--border);
     box-shadow: 0 -4px 16px var(--shadow);
   }
-  .cdx-view { padding-bottom: 76px; }                     /* clear the fixed bar */
-
   /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
-   * the left over a backdrop; the main pane fills the row behind it. The drawer
-   * sits above the topbar/bottom-nav when open (a takeover), so backdrop tap,
-   * Escape, or picking an item closes it. */
-  .cdx-hamburger { display: inline-flex; }
+   * the left over a backdrop, starting below the topbar (which stays visible/reachable
+   * while the drawer is open, Élder 2026-07-25); the main pane fills the row behind it.
+   * Backdrop tap, Escape, or picking an item closes it. */
+  .cdx-hamburger {
+    display: inline-flex;
+    margin-right: 0.5rem; /* the shared 4px inner-bar gap read as glued to the logo (Élder) */
+  }
 
   /* Collapse the multi-column tab layouts so the main pane fills once its sidebar
    * leaves the flow (at THIS breakpoint, ahead of any tab's own 600px rule). */
@@ -197,9 +211,16 @@
 
   /* This list must stay in sync with DRAWER_SEL in js/codex-topbar.js — the same class list,
    * by hand, in two shared files. That IS the coupling track-41 wants to replace with one
-   * class the rail stamps itself; until then, adding a drawer means editing both. */
-  .cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0;
+   * class the rail stamps itself; until then, adding a drawer means editing both.
+   * `.cdx-items-list` and `.cdx-bank-sets` do NOT belong here (removed 2026-07-24): both are
+   * master-detail filter/pick columns whose selection only updates a sibling pane in the
+   * SAME view, not a nav drawer — see the matching note on DRAWER_SEL. */
+  /* top/inset use --cdx-chrome-h (the topbar's real published height, codex-topbar.js) instead
+   * of 0: the drawer and its backdrop used to start at the very top and cover the topbar
+   * entirely (z-index 120/119 vs the topbar's 90) — Élder 2026-07-25: the top bar should stay
+   * visible/reachable while the drawer is open, not hidden behind it. */
+  .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
+    position: fixed; top: var(--cdx-chrome-h, 64px); left: 0; bottom: 0;
     width: 84vw; max-width: 340px;
     z-index: 120;
     transform: translateX(-100%);
@@ -209,19 +230,53 @@
     box-sizing: border-box;
     background: var(--surface);   /* opaque panel (the bare cohorts wrapper has no bg of its own) */
   }
-  .cdx-bank-sets.is-open, .cdx-items-list.is-open, .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open, .cdx-sessions-sidebar.is-open {
+  .cdx-lessons-sidebar.is-open, .cdx-cohorts-nav.is-open, .cdx-sessions-sidebar.is-open {
     transform: none;
     box-shadow: 4px 0 24px var(--shadow);
   }
   /* Sessões' aside is position:fixed + translateX(-100%) at ALL widths (its own auto-hide
    * rules, questions.css). On a phone the drawer owns it instead, so its desktop height /
-   * top-padding / 80vw width must not fight the rules above. */
-  .cdx-sessions-sidebar { height: auto; width: 84vw; padding-top: 64px; }
+   * top-padding / 80vw width must not fight the rules above. The drawer itself now starts
+   * BELOW the topbar (see above), so this no longer needs its own top-padding to clear it —
+   * that would just double the gap on top of the drawer's own lower starting position. */
+  .cdx-sessions-sidebar { height: auto; width: 84vw; padding-top: 0; }
   .cdx-drawer-backdrop.is-open {
     display: block;
-    position: fixed; inset: 0; z-index: 119;
+    position: fixed; top: var(--cdx-chrome-h, 64px); right: 0; bottom: 0; left: 0; z-index: 119;
     background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,0.5) */
   }
+
+  /* Preview modal (Élder 2026-07-25): picking a row in the shared "Items split shell"
+   * (js/codex-topbar.js wires the click, see PREVIEW_SPLIT_SEL there) takes over the full
+   * screen instead of just being the stacked-below panel. `.cdx-preview-modal-close` is
+   * injected as a SIBLING of `.cdx-item-preview`, not a child, so each module's own
+   * `pane.innerHTML = …` re-render never wipes it out. z-index above the botnav (100) and
+   * the mobile sub-row (99) so the modal genuinely covers the whole screen; below the
+   * hamburger drawer (120)/backdrop (119), which should never be open at the same time.
+   * `position:relative` on the split gives the close button (`position:absolute`) a box
+   * to anchor to without moving the split's own normal document flow. */
+  .cdx-preview-modal--open { position: relative; }
+  .cdx-preview-modal--open .cdx-item-preview {
+    position: fixed; inset: 0; z-index: 110;
+    margin: 0; overflow-y: auto;
+    background: var(--background);
+    /* Every consumer's own CSS caps this pane's height for the stacked/side-by-side layout
+     * (content.css: max-height:calc(100vh - 240px); certificates.css has its own cap too) —
+     * inset:0 alone doesn't beat an explicit max-height, so the modal fell short of the full
+     * screen and the list showed through underneath (found live 2026-07-25). Reset both. */
+    max-height: none; height: 100%;
+    border-radius: 0; border: 0;
+  }
+  .cdx-preview-modal-close {
+    display: none;
+    position: fixed; top: calc(var(--cdx-chrome-h, 64px) + 8px); right: 12px; z-index: 111;
+    width: 36px; height: 36px; border-radius: 50%;
+    align-items: center; justify-content: center;
+    background: var(--surface); border: 1px solid var(--border); color: var(--text-primary);
+    font-size: 1.3rem; line-height: 1; cursor: pointer;
+    box-shadow: 0 2px 10px var(--shadow);
+  }
+  .cdx-preview-modal--open .cdx-preview-modal-close { display: flex; }
 }
 
 /* ── Tab content host ───────────────────────────────────────── */
@@ -237,6 +292,28 @@
  * `.bs-app--classvault .bs-main` override still wins for its flush look. */
 .bs-main { max-width: none; padding-top: 1.25rem; }   /* halve the 2.5rem shell top gap above each tab page (Élder) */
 .cdx-view { padding: 0.25rem 1.5rem 1.5rem; }          /* + halve the host top pad: 3rem total -> 1.5rem */
+
+/* This phone-breakpoint override MUST come after the unconditional .cdx-view/.bs-main
+ * rules directly above: equal specificity, so whichever is LAST in the file wins the
+ * cascade regardless of the media query, and a copy placed earlier (inside the big phone
+ * block above) silently lost to these two — found live via Playwright QA 2026-07-25, both
+ * the edge-to-edge fix AND the bottom-nav clearance had never actually been in effect.
+ * `.bs-main`'s own 1rem side padding (backstage.css, shared shell) needs clearing too.
+ * Side padding is 0.5rem, not 0 (Élder 2026-07-25): literal 0 read as broken on Turmas
+ * (nothing of its own to keep content off the glass), while Comunicações — the ONE face
+ * with its own reading-width wrapper (.cdx-cm-wrap, below) — already looked right at this
+ * exact inset. Made it the one shared value instead of each face inventing its own. */
+@media (max-width: 700px) {
+  .bs-main { padding-left: 0; padding-right: 0; }
+  .cdx-view {
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
+    /* 76px clears .cdx-botnav alone; the mobile sub-row (if the page has one) stacks on
+     * top of it and publishes its own real height, so this never drifts into a 2nd magic
+     * number hand-synced against .cdx-subrow--mobile's actual CSS. +0 on pages with none. */
+    padding-bottom: calc(76px + var(--cdx-subrow-mobile-h, 0px));
+  }
+}
 
 /* Language toggle button (PT/EN). The topbar renders it only when more than
  * one dictionary is loaded; it shows the language you'd switch TO. */
@@ -548,6 +625,14 @@
    Uses only tokens with a [data-theme=dark] override (--surface/--border/--text-*),
    so dark mode adapts without a separate block. */
 .cdx-cm-wrap { max-width: 720px; margin: 0 auto; padding: 1rem 0.5rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+/* .cdx-view now carries this same 0.5rem side inset for every face on phones (Élder
+ * 2026-07-25, see the shared note near .cdx-view's mobile block) — this rule loads AFTER
+ * that one, so its own unconditional 0.5rem must be restated here, in THIS file, to not
+ * double up to 1rem (the general fix cannot win a same-specificity tie against a rule
+ * appearing later in a DIFFERENT, later-loading concern). */
+@media (max-width: 700px) {
+  .cdx-cm-wrap { padding-left: 0; padding-right: 0; }
+}
 .cdx-cm-head { display: flex; flex-direction: column; gap: 0.25rem; }
 .cdx-cm-title { margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
 .cdx-cm-sub { margin: 0; font-size: 0.9rem; color: var(--text-muted); }

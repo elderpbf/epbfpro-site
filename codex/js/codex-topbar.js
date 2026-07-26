@@ -488,8 +488,10 @@ export function init(opts) {
   }
 
   // Mobile sub-strip: a full-width scrollable copy of the active tab's sub-tabs,
-  // pinned under the topbar. CSS-gated to phones, where the desktop pill/bar is
-  // hidden (hover is touch-useless); always present so touch never loses sub-tabs.
+  // pinned ABOVE the bottom nav (Élder 2026-07-24: a sub-tab is part of the same nav
+  // as the app tabs, which already live at the bottom on phones). CSS (codex.css) does
+  // the actual positioning; this stays in `header` only so it measures/scrolls with the
+  // rest of the chrome markup. Always present so touch never loses sub-tabs.
   if (subTabs.length) {
     const mrow = document.createElement('div');
     mrow.className = 'cdx-subrow cdx-subrow--mobile';
@@ -500,6 +502,16 @@ export function init(opts) {
     _subtabLinks(subTabs).forEach((a) => mstrip.appendChild(a));
     mrow.appendChild(mstrip);
     header.appendChild(mrow);
+    // Real height, not a hardcoded guess: .cdx-view's bottom padding (codex.css) reads
+    // this so it clears BOTH fixed bars (botnav + this one) whenever this one exists.
+    const publishSubrowHeight = () => {
+      const h = Math.round(mrow.getBoundingClientRect().height);
+      document.documentElement.style.setProperty('--cdx-subrow-mobile-h', h ? h + 'px' : '0px');
+    };
+    publishSubrowHeight();
+    window.addEventListener('resize', publishSubrowHeight);
+  } else {
+    document.documentElement.style.setProperty('--cdx-subrow-mobile-h', '0px');
   }
 
   // Publish the chrome's REAL height as --cdx-chrome-h, for the position:fixed rails that
@@ -552,7 +564,19 @@ export function init(opts) {
   // `.cdx-sessions-sidebar` joined this list in track-41: Sessões had NO hamburger at all —
   // not a CSS bug, it was simply never registered here, which is the coupling this list IS
   // (the chrome knowing each tab's interior by class name). Élder: "all should have them".
-  const DRAWER_SEL = '.cdx-bank-sets, .cdx-items-list, .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar';
+  // `.cdx-items-list` does NOT belong here (removed 2026-07-24, Élder on-device): it is the
+  // "Items split shell" master-detail filter-result column, reused verbatim by Conteúdo's
+  // Itens/Presets/Liberações/Tarefas/Labs/Apostila/Drive/Apps AND Certificados' Modelos —
+  // not a navigational drawer in any of them. content.css already stacks it above its
+  // preview pane below 980px on its own. Treating it as a drawer hid it off-canvas behind
+  // a hamburger that reads as a general menu, not "show the list".
+  // `.cdx-bank-sets` (Questões/Banco) is the SAME shape, just not sharing the class name:
+  // picking a set only re-highlights the sidebar and reloads the question list beside it
+  // (bank.js `_selectSet`), it never navigates to a different screen — so it comes out too.
+  // `.cdx-lessons-sidebar` and `.cdx-sessions-sidebar` stay: picking an aula/session there
+  // opens a genuinely different working context (the reader/editor, the live host), the
+  // same "pick once, then hide the picker" shape as `.cdx-cohorts-nav`'s Clientes/Turmas.
+  const DRAWER_SEL = '.cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar';
   // What counts as "picking a primary item" (closes the drawer to reveal the content).
   // `.cdx-rail-row` is the shared rail's row, so every migrated rail is covered by BEING a
   // rail — the same direction DRAWER_SEL itself has to go (see architecture/list-rail.md and
@@ -569,6 +593,21 @@ export function init(opts) {
   const _toggleDrawer = () => { const d = _drawer(); if (!d) return; const open = !d.classList.contains('is-open'); d.classList.toggle('is-open', open); drawerBackdrop.classList.toggle('is-open', open); };
   burger.addEventListener('click', _toggleDrawer);
   drawerBackdrop.addEventListener('click', _closeDrawer);
+  // Some sub-tabs have no sidebar at all (a single dashboard, not a list+detail split —
+  // Élder found Certificados/Emitidos and Questões/Stats this way): showing a hamburger
+  // there is a dead affordance, not a fixable click. Inline style, not a class or `hidden`,
+  // so it wins over `.cdx-hamburger{display:inline-flex}` at the phone breakpoint regardless
+  // of source order.
+  // A single post-mount check is NOT enough: `topbar()` runs before the tab's own `mount()`
+  // (index.html), and some tabs (Aulas/lessons.js `_renderShellLoading`) render only a plain
+  // loading placeholder first, building the real sidebar markup inside an async API `.then()`
+  // well after any fixed number of frames — a one-shot check caught that placeholder, found
+  // no drawer, and hid the hamburger for good (Élder found this on Aulas 2026-07-24). Re-check
+  // on every DOM change instead of guessing a delay, so it's correct whether the tab's shell
+  // is sync or async.
+  const _updateBurgerVisibility = () => { burger.style.display = _drawer() ? '' : 'none'; };
+  _updateBurgerVisibility();
+  new MutationObserver(_updateBurgerVisibility).observe(container, { childList: true, subtree: true });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape') _closeDrawer(); });
   // Picking a primary item inside the open drawer closes it to reveal the content.
   // Capture phase: the tab's own click handler re-renders the sidebar (detaching
@@ -578,6 +617,50 @@ export function init(opts) {
     if (!drawerBackdrop.classList.contains('is-open')) return;
     const d = _drawer();
     if (d && d.contains(e.target) && e.target.closest(DRAWER_PICK_SEL)) _closeDrawer();
+  }, true);
+
+  // Mobile preview modal: the "Items split shell" (list + a sibling preview pane,
+  // .cdx-items-split/.cdx-releases-split/.cdx-tarefas-split/.cdx-certs-modelos-split, reused by
+  // Conteúdo's Itens/Apostila/Drive/Labs/Interativos/Presets/Aplicativos and Certificados'
+  // Modelos) stacks list-above-preview on phones (2026-07-24). Élder 2026-07-25: picking an
+  // item there should open the preview as a full-screen modal instead, matching how a
+  // detail view reads on a phone. One shared, page-agnostic listener rather than 8 separate
+  // per-module implementations: it opens on ANY click on a row inside a known split
+  // container (works for both the shared rail's `.cdx-rail-row` and the bespoke
+  // `.cdx-item-row` rows Certificates/Releases use without the rail), and injects a close
+  // button as a SIBLING of `.cdx-item-preview` (inside the split, not inside the preview
+  // itself) so each module's own `pane.innerHTML = …` re-renders never wipe it out.
+  const PREVIEW_SPLIT_SEL = '.cdx-items-split, .cdx-releases-split, .cdx-tarefas-split, .cdx-certs-modelos-split';
+  const PREVIEW_ROW_SEL = '.cdx-rail-row, .cdx-item-row';
+  const isMobileWidth = () => window.matchMedia('(max-width: 700px)').matches;
+  const _ensurePreviewCloseBtn = (split) => {
+    if (split.querySelector(':scope > .cdx-preview-modal-close')) return;
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'cdx-preview-modal-close';
+    btn.setAttribute('aria-label', 'Fechar');
+    btn.innerHTML = '&times;';
+    split.appendChild(btn);
+  };
+  // Capture phase, same reason as the drawer-pick listener above: the row's own click
+  // handler (mountRail's onSelect, or Certificates'/Releases' bespoke handler) re-renders
+  // the list synchronously and can detach the clicked node before a bubble-phase listener
+  // would run, so closest() would traverse a orphaned tree instead of the live one.
+  document.addEventListener('click', (e) => {
+    if (!isMobileWidth()) return;
+    if (e.target.closest('.cdx-preview-modal-close')) {
+      const split = e.target.closest(PREVIEW_SPLIT_SEL);
+      if (split) split.classList.remove('cdx-preview-modal--open');
+      return;
+    }
+    const row = e.target.closest(PREVIEW_ROW_SEL);
+    if (!row) return;
+    const split = row.closest(PREVIEW_SPLIT_SEL);
+    // is-bulk (Itens' multi-select mode) hides the preview entirely by design; a row tap
+    // there toggles a checkbox, it never previews — the modal must stay closed.
+    if (!split || split.classList.contains('is-bulk') || !split.querySelector('.cdx-item-preview')) return;
+    _ensurePreviewCloseBtn(split);
+    split.classList.add('cdx-preview-modal--open');
   }, true);
 
   // Shared shell services; the sub-tab mode toggle leads the drawer sections.

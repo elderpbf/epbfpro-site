@@ -439,8 +439,13 @@
 .cdx-aula-dh-title { margin: 0; font-size: 1.05rem; color: var(--text-primary); }
 .cdx-aula-dh-sub { font-size: 0.78rem; color: var(--text-secondary); margin-top: 0.15rem; }
 
-.cdx-aula-subtabs { display: flex; gap: 0.25rem; padding: 0.5rem 1rem 0; border-bottom: 1px solid var(--border); }
+/* overflow-x:auto (not wrap): on a phone the 4 tabs (Dados/Liberações/Tarefas/Roteiro) can
+ * exceed the width; scrolling in place beats clipping with no way to reach the rest
+ * (Élder found this live, 2026-07-24 — same "stay in place, scroll" convention as the
+ * dossier's .cdx-subrow--local, kept separate here since this row isn't .cdx-subrow-based). */
+.cdx-aula-subtabs { display: flex; gap: 0.25rem; padding: 0.5rem 1rem 0; border-bottom: 1px solid var(--border); overflow-x: auto; }
 .cdx-aula-stab {
+  flex: 0 0 auto;
   border: none; background: none; cursor: pointer; font-family: inherit;
   display: flex; align-items: center; gap: 0.35rem;
   padding: 0.45rem 0.8rem; font-size: 0.82rem; font-weight: 600; color: var(--text-secondary);

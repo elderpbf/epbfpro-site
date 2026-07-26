@@ -196,6 +196,18 @@
   position: relative; min-height: 60vh;
   margin: -1.5rem -3rem 0;
 }
+/* The -3rem side margin above cancels the shell's OLD desktop padding (.bs-main +
+ * .cdx-view = 3rem/side) so this reaches the edges without width:100vw. On phones that
+ * padding is already zero (codex.css, 2026-07-24/25), so the same -3rem now overshoots
+ * by 48px on EACH side with nothing left to cancel — the page becomes ~486px wide inside
+ * a 390px screen. Found live 2026-07-25 (Élder: the action bar wasn't scrollable and the
+ * bottom nav scrolled away): the browser responds to that overflow by widening its own
+ * layout viewport to fit it, which is what actually broke both — .cdx-botnav is
+ * `position:fixed` correctly, but "the viewport" it was fixed to had grown past the
+ * visible screen. Zeroing the side margin here removes the overflow at the source. */
+@media (max-width: 700px) {
+  .cdx-sessions-layout { margin-left: 0; margin-right: 0; }
+}
 
 /* Floating rail: hidden offscreen, .cdx-sm--open slides it in. Fixed to the
  * viewport so it runs full height under the chrome (top padding clears the
@@ -212,6 +224,15 @@
   z-index: 80;
   transform: translateX(-100%);
   transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+/* On phones this same element is ALSO the hamburger drawer (codex.css's shared DRAWER_SEL
+ * rule wants z-index:120, above the backdrop's 119) — but this file loads after codex.css,
+ * so this unconditional z-index:80 (needed for the desktop auto-hide rail, below the topbar)
+ * wins the cascade at every width, including mobile. Backdrop then sat ABOVE the row content,
+ * so a tap meant to pick a session just closed the drawer instead (found live via Playwright
+ * QA 2026-07-25 — the open/close toggle worked, picking a row from it did not). */
+@media (max-width: 700px) {
+  .cdx-sessions-sidebar { z-index: 120; }
 }
 /* The picker inside is the shared rail (js/list-rail.js) since track-41. The rail brings its
  * own card shell, so strip it back to a bare column here: this aside is the fixed positioning
@@ -338,6 +359,14 @@
 
 /* ── Bank sub-tab (faithful cp-banks-layout) ────────────────── */
 .cdx-bank { display: grid; grid-template-columns: 16rem 1fr; gap: 1.25rem; align-items: start; }
+/* This file loads AFTER codex.css (index.html), so its phone-breakpoint collapse of
+ * .cdx-bank (same selector, equal specificity) loses the cascade to the rule above unless
+ * restated here — the rule that must win is whichever file loads last. Needed once
+ * .cdx-bank-sets stopped being position:fixed (2026-07-24), which had hidden this outside
+ * the grid entirely and masked the bug. */
+@media (max-width: 700px) {
+  .cdx-bank { grid-template-columns: 1fr; }
+}
 
 /* Sets sidebar (a bordered card: header + list) */
 .cdx-bank-sets {
@@ -871,6 +900,14 @@
 .cdx-host-bar .cdx-btn { padding: 0.35rem 0.75rem; font-size: 0.78rem; }
 .cdx-host-bar-left { display: flex; align-items: center; gap: 0.6rem; }
 .cdx-host-bar-actions { display: flex; gap: 0.45rem; align-items: center; flex-wrap: wrap; }
+/* On phones this row can hold up to 7 buttons (Stats/Visão/Trilha/Janela/QR/Display/
+ * Start-or-Stop) — wrapping them buries the last ones behind whatever sits below the bar
+ * instead of just being a scroll away (Élder, 2026-07-25, XPath //*[@id="cdx-host"]/div[1]
+ * /div[2]). Same "scrollable strip, not wrap" treatment already used for the module and
+ * dossiê sub-tab rows. */
+@media (max-width: 700px) {
+  .cdx-host-bar-actions { flex-wrap: nowrap; overflow-x: auto; }
+}
 .cdx-host-connected { display: inline-flex; align-items: center; gap: 4px; padding: 0.25rem 0.55rem; border-radius: 999px; background: var(--surface-hover, rgba(13, 148, 136, 0.18)); font-size: 0.78rem; font-weight: 700; color: var(--text-secondary); white-space: nowrap; }
 .cdx-host-code { font-size: 1.05rem; font-weight: 700; letter-spacing: 0.16em; color: var(--primary); }
 .cdx-host-live { display: inline-flex; align-items: center; gap: 5px; }
