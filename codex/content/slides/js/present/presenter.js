@@ -23,6 +23,12 @@ export function createSync(app) {
       theme: app.deck().theme,
       assets: app.deck().assets,
       logo: app.deck().logo, // deck-level logo (per-slide slide.logo rides inside deck) (D4)
+      // canvas + transition: the two deck-level fields the payload was missing. Without canvas a
+      // 4:3 deck renders in the receiving window at the default 16:9 (the minis here scale by
+      // deck.canvas.w, and the audience window sizes its whole stage by it); without transition the
+      // slide-to-slide effect never plays outside the editor. Found by the track-27 espia.
+      canvas: app.deck().canvas,
+      transition: app.deck().transition,
       deck: JSON.stringify(app.deck().slides),
       blank: app.blank, // 4A: audience blank state, so the presenter window reflects it
       atEnd: app.atEnd, // 4C: end-of-deck state
@@ -128,6 +134,9 @@ export function initPresenter(app) {
     if (m.deck) deck.slides = JSON.parse(m.deck);
     if (m.assets) deck.assets = m.assets;
     if (m.logo) deck.logo = m.logo; // keep the deck logo in sync (D4)
+    // Before the theme: applyDeckTheme writes --canvas-w/h from deck.canvas, and every mini below
+    // scales by deck.canvas.w. A 4:3 deck used to scale against the default 1280 and render wrong.
+    if (m.canvas) deck.canvas = m.canvas;
     if (m.theme) { deck.theme = m.theme; applyDeckTheme(deck, app.stage); }
     app.index = m.index;
     app.step = m.step;

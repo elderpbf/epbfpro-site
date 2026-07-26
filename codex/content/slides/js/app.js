@@ -1066,6 +1066,11 @@ export function mount(root, ctx = {}) {
           : (document.fullscreenElement && document.exitFullscreen());
         if (p && p.catch) p.catch(() => {});
       } catch (e) { /* ignore */ }
+      // Entering (or leaving) a presentation is a state change like any other, and it was the ONE
+      // that never went on the wire. A second window already sitting open (the audience screen on
+      // the TV) had no way to learn a presentation had started, so it stayed on whatever it had
+      // until the first navigation. Found by the track-27 espia.
+      this.broadcast();
     },
 
     // ── Presenter controls (Phase 4) ──────────────────────────────────────────
@@ -1392,6 +1397,7 @@ export function unmount(app, root) {
   closeThemeBox(); // tear down the Tema panel + its document listener if open
   closeAnimPanel(); // and the animation panel + its listeners
   closeGalleryBox(app); // and the gallery box + its outside-click listener
+  if (app._helloTimer) { clearInterval(app._helloTimer); app._helloTimer = null; } // audience hello retry
   if (app._onResize) window.removeEventListener("resize", app._onResize);
   if (app._onKey) document.removeEventListener("keydown", app._onKey);
   if (app._onDocClick) document.removeEventListener("click", app._onDocClick);
