@@ -193,10 +193,13 @@
     box-shadow: 0 -4px 16px var(--shadow);
   }
   /* Hamburger + off-canvas sidebar drawers. Each tab's sidebar slides in from
-   * the left over a backdrop; the main pane fills the row behind it. The drawer
-   * sits above the topbar/bottom-nav when open (a takeover), so backdrop tap,
-   * Escape, or picking an item closes it. */
-  .cdx-hamburger { display: inline-flex; }
+   * the left over a backdrop, starting below the topbar (which stays visible/reachable
+   * while the drawer is open, Élder 2026-07-25); the main pane fills the row behind it.
+   * Backdrop tap, Escape, or picking an item closes it. */
+  .cdx-hamburger {
+    display: inline-flex;
+    margin-right: 0.5rem; /* the shared 4px inner-bar gap read as glued to the logo (Élder) */
+  }
 
   /* Collapse the multi-column tab layouts so the main pane fills once its sidebar
    * leaves the flow (at THIS breakpoint, ahead of any tab's own 600px rule). */
@@ -212,8 +215,12 @@
    * `.cdx-items-list` and `.cdx-bank-sets` do NOT belong here (removed 2026-07-24): both are
    * master-detail filter/pick columns whose selection only updates a sibling pane in the
    * SAME view, not a nav drawer — see the matching note on DRAWER_SEL. */
+  /* top/inset use --cdx-chrome-h (the topbar's real published height, codex-topbar.js) instead
+   * of 0: the drawer and its backdrop used to start at the very top and cover the topbar
+   * entirely (z-index 120/119 vs the topbar's 90) — Élder 2026-07-25: the top bar should stay
+   * visible/reachable while the drawer is open, not hidden behind it. */
   .cdx-lessons-sidebar, .cdx-cohorts-nav, .cdx-sessions-sidebar {
-    position: fixed; top: 0; left: 0; bottom: 0;
+    position: fixed; top: var(--cdx-chrome-h, 64px); left: 0; bottom: 0;
     width: 84vw; max-width: 340px;
     z-index: 120;
     transform: translateX(-100%);
@@ -229,11 +236,13 @@
   }
   /* Sessões' aside is position:fixed + translateX(-100%) at ALL widths (its own auto-hide
    * rules, questions.css). On a phone the drawer owns it instead, so its desktop height /
-   * top-padding / 80vw width must not fight the rules above. */
-  .cdx-sessions-sidebar { height: auto; width: 84vw; padding-top: 64px; }
+   * top-padding / 80vw width must not fight the rules above. The drawer itself now starts
+   * BELOW the topbar (see above), so this no longer needs its own top-padding to clear it —
+   * that would just double the gap on top of the drawer's own lower starting position. */
+  .cdx-sessions-sidebar { height: auto; width: 84vw; padding-top: 0; }
   .cdx-drawer-backdrop.is-open {
     display: block;
-    position: fixed; inset: 0; z-index: 119;
+    position: fixed; top: var(--cdx-chrome-h, 64px); right: 0; bottom: 0; left: 0; z-index: 119;
     background: var(--cdx-backdrop); /* B7: was rgba(0,0,0,0.5) */
   }
 
@@ -289,12 +298,16 @@
  * cascade regardless of the media query, and a copy placed earlier (inside the big phone
  * block above) silently lost to these two — found live via Playwright QA 2026-07-25, both
  * the edge-to-edge fix AND the bottom-nav clearance had never actually been in effect.
- * `.bs-main`'s own 1rem side padding (backstage.css, shared shell) needs clearing too. */
+ * `.bs-main`'s own 1rem side padding (backstage.css, shared shell) needs clearing too.
+ * Side padding is 0.5rem, not 0 (Élder 2026-07-25): literal 0 read as broken on Turmas
+ * (nothing of its own to keep content off the glass), while Comunicações — the ONE face
+ * with its own reading-width wrapper (.cdx-cm-wrap, below) — already looked right at this
+ * exact inset. Made it the one shared value instead of each face inventing its own. */
 @media (max-width: 700px) {
   .bs-main { padding-left: 0; padding-right: 0; }
   .cdx-view {
-    padding-left: 0;
-    padding-right: 0;
+    padding-left: 0.5rem;
+    padding-right: 0.5rem;
     /* 76px clears .cdx-botnav alone; the mobile sub-row (if the page has one) stacks on
      * top of it and publishes its own real height, so this never drifts into a 2nd magic
      * number hand-synced against .cdx-subrow--mobile's actual CSS. +0 on pages with none. */
@@ -612,6 +625,14 @@
    Uses only tokens with a [data-theme=dark] override (--surface/--border/--text-*),
    so dark mode adapts without a separate block. */
 .cdx-cm-wrap { max-width: 720px; margin: 0 auto; padding: 1rem 0.5rem 3rem; display: flex; flex-direction: column; gap: 1.25rem; }
+/* .cdx-view now carries this same 0.5rem side inset for every face on phones (Élder
+ * 2026-07-25, see the shared note near .cdx-view's mobile block) — this rule loads AFTER
+ * that one, so its own unconditional 0.5rem must be restated here, in THIS file, to not
+ * double up to 1rem (the general fix cannot win a same-specificity tie against a rule
+ * appearing later in a DIFFERENT, later-loading concern). */
+@media (max-width: 700px) {
+  .cdx-cm-wrap { padding-left: 0; padding-right: 0; }
+}
 .cdx-cm-head { display: flex; flex-direction: column; gap: 0.25rem; }
 .cdx-cm-title { margin: 0; font-size: 1.35rem; font-weight: 700; color: var(--text-primary); }
 .cdx-cm-sub { margin: 0; font-size: 0.9rem; color: var(--text-muted); }
