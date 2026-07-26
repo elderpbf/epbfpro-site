@@ -48,16 +48,6 @@ test('stats module satisfies the tab contract', async () => {
   assert.equal(typeof stats.unmount, 'function', 'exports unmount');
 });
 
-test('stats pct() turns server accuracy (0..1) into a rounded percent or null', async () => {
-  const stats = await import('../questions/stats.js');
-  assert.equal(stats.pct(0.75), 75);
-  assert.equal(stats.pct(1), 100);
-  assert.equal(stats.pct(0), 0);
-  assert.equal(stats.pct(0.666), 67);
-  assert.equal(stats.pct(null), null);
-  assert.equal(stats.pct(undefined), null);
-});
-
 // ---- Source rules (ARCHITECTURE.md) for the two new files ----
 test('questions shell + stats obey the module source rules', () => {
   for (const rel of ['../questions/questions.js', '../questions/stats.js']) {

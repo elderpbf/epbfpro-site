@@ -12,13 +12,6 @@ import { t } from '../js/i18n.js';
 let _viewEl = null;
 let _cleanup = [];
 
-// Server accuracy is a 0..1 ratio (or null when unscored). Render as a rounded
-// integer percent, or null so callers can show a non-numeric state.
-export function pct(accuracy) {
-  if (accuracy === null || accuracy === undefined) return null;
-  return Math.round(accuracy * 100);
-}
-
 function _esc(s) {
   return String(s == null ? '' : s).replace(/[&<>"]/g, (c) => (
     { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c]

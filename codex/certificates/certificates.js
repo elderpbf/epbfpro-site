@@ -1398,7 +1398,7 @@ function _openIssueFlow() {
       '</div>' +
     '</div>';
 
-  const bd = openModal(html, { disableBackdropClose: false });
+  const bd = openModal(html, { disableBackdropClose: true });
   _issueSelectedIds = new Set();
 
   bd.querySelector('#cdx-issue-cancel').addEventListener('click', () => closeModal(bd));

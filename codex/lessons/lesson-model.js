@@ -24,6 +24,13 @@ export function classifyVault(items) {
 
 // Ordered, conditional section list for a classified vault. Empty buckets are
 // dropped, except "items" which always shows.
+//
+// SUPERSEDED, kept only by tests (track-30 [lesscert-03], re-verified 2026-07-26).
+// The live sidebar runs on LESSON_SECTION_ORDER (below) and builds its own list in
+// lessons.js, which is why this pair has no production caller. Deleting it now would
+// drop the coverage that pins the ordering rule, so Élder's call was to leave it and
+// converge the NEXT time that sidebar is opened: make lessons.js consume this helper,
+// then delete whichever ordering loses. Do not "fix" it by deleting the tests.
 export const SECTION_ORDER = ['llm', 'external', 'drive', 'items', 'apostila', 'tarefas'];
 export function sidebarSections(buckets) {
   return SECTION_ORDER

@@ -7,6 +7,8 @@ import { fileURLToPath } from 'node:url';
 
 const here = (rel) => fileURLToPath(new URL(rel, import.meta.url));
 
+import { collectSources, deadKeys, CODEX_DYNAMIC_PREFIXES } from './_i18n-usage.mjs';
+
 const pt = (await import('../i18n/pt.js')).default;
 const en = (await import('../i18n/en.js')).default;
 
@@ -47,4 +49,24 @@ test('Content dictionaries cover the content.* namespace in both langs', () => {
   for (const k of ptContent) {
     assert.ok(k in en, `en mirrors ${k}`);
   }
+});
+
+// The REVERSE direction (track-30 [i18n-05]): the checks above prove every key a
+// module asks for exists; this one proves the dictionary is not accumulating keys
+// nothing asks for. That rot is what let the 2026-06-27 audit ledger claim 43 open
+// findings when 35 were already fixed.
+//
+// The sweep that introduced this guard found 179 dead keys (~9% of the dictionary),
+// residue of retired features: the cert-template namespace, the apostila importer,
+// a batch of tarefas.*. Élder had them deleted 2026-07-26, so this starts at zero
+// and carries NO baseline: a dead key is now a red suite, not a backlog entry.
+test('the Codex dictionary carries no dead keys', () => {
+  const repo = fileURLToPath(new URL('../../', import.meta.url));
+  const blob = collectSources(
+    [repo + 'codex', repo + 'trilha', repo + 'js'],
+    ['codex/i18n/', 'codex/trilha/i18n.js'],
+  );
+  const dead = deadKeys(Object.keys(pt), blob, CODEX_DYNAMIC_PREFIXES);
+  assert.deepEqual(dead, [],
+    'dead key(s): wire them up, or delete from BOTH pt.js and en.js');
 });
