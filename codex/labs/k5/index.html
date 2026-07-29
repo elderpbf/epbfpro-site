@@ -159,17 +159,12 @@
       color: var(--bad);
       font-weight: 700;
     }
-    .k5-chip--struct {
+    .k5-chip--special {
       background: rgba(var(--warm-rgb), 0.22);
       color: var(--warm);
       font-weight: 700;
       border-radius: 999px;
       padding: 0.28rem 0.75rem;
-    }
-    .k5-chip-divider {
-      flex-basis: 100%;
-      height: 0;
-      margin: 0.15rem 0;
     }
 
     /* ── Side panel ───────────────────────────────────────── */
@@ -422,8 +417,9 @@
       }
 
       // Tokenize free text into {text, kind, spaceBefore, wordIndex} pieces.
-      // kind: 'word' | 'punct' | 'num' | 'md' | 'break'
+      // kind: 'word' | 'punct' | 'num' | 'md' | 'break' | 'special'
       var WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ]+/y;
+      var SPECIAL_RE = /<\|[a-z_]+\|>/y;
       function tokenize(text) {
         var tokens = [];
         var wordIndex = 0;
@@ -433,6 +429,18 @@
           var ch = text[i];
           if (ch === '\n') { tokens.push({ text: '↵', kind: 'break' }); pendingSpace = false; i++; continue; }
           if (/\s/.test(ch)) { pendingSpace = true; i++; continue; }
+          // Real chat-format control tokens (a reserved, atomic vocabulary entry
+          // in every major tokenizer, ChatML-style shown here since it is the
+          // one Élder pointed at). The exact reserved strings differ per vendor;
+          // the point stands for all of them, before your words start.
+          SPECIAL_RE.lastIndex = i;
+          var sm = SPECIAL_RE.exec(text);
+          if (sm && sm.index === i) {
+            tokens.push({ text: sm[0], kind: 'special', spaceBefore: pendingSpace });
+            pendingSpace = false;
+            i += sm[0].length;
+            continue;
+          }
           if (ch === '*' && text[i + 1] === '*') { tokens.push({ text: '**', kind: 'md', spaceBefore: pendingSpace }); pendingSpace = false; i += 2; continue; }
           if (ch === '*' || ch === '#' || ch === '-') { tokens.push({ text: ch, kind: 'md', spaceBefore: pendingSpace }); pendingSpace = false; i++; continue; }
           if (/[.,;:!?"'()«»]/.test(ch)) { tokens.push({ text: ch, kind: 'punct', spaceBefore: pendingSpace }); pendingSpace = false; i++; continue; }
@@ -474,8 +482,9 @@
         },
         estrutura: {
           title: 'Estrutura da mensagem',
-          note: 'Antes da sua primeira palavra, o formato da conversa (quem é o sistema, quem é você, onde a mensagem termina) já ocupa tokens.',
-          text: 'Resuma este despacho em até três linhas.'
+          note: 'Isso é o que o modelo realmente recebe. Marcadores como <|im_start|> e <|im_end|> delimitam cada mensagem, dizem quem fala (sistema, você, o modelo) e onde cada turno acaba. Você não digita nada disso, mas cada marcador é um token.',
+          text: 'Resuma este despacho em até três linhas.',
+          system: 'Você é um assistente do TJSE.'
         },
         formatacao: {
           title: 'O custo do Markdown',
@@ -503,20 +512,23 @@
       var deltaEl   = document.getElementById('k5-delta');
       var exampleBtns = document.querySelectorAll('[data-example]');
 
+      // Real chat-format wrapping: what the model actually receives around the
+      // visible message. ChatML-style shown here (the exact reserved strings
+      // differ per vendor, the lesson is the same for all of them).
+      function wrapAsChat(userText) {
+        return '<|im_start|>system<|im_sep|>' + EXAMPLES.estrutura.system + '<|im_end|>' +
+               '<|im_start|>user<|im_sep|>' + userText + '<|im_end|>' +
+               '<|im_start|>assistant<|im_sep|>';
+      }
+
+      function textToTokenize() {
+        var raw = inputEl.value;
+        return current === 'estrutura' ? wrapAsChat(raw) : raw;
+      }
+
       function renderChips(text) {
         var result = tokenize(text);
         chipsEl.innerHTML = '';
-
-        if (current === 'estrutura') {
-          var struct1 = document.createElement('span');
-          struct1.className = 'k5-chip k5-chip--struct';
-          struct1.textContent = 'instruções do sistema (~180, ilustrativo)';
-          chipsEl.appendChild(struct1);
-          var struct2 = document.createElement('span');
-          struct2.className = 'k5-chip k5-chip--struct';
-          struct2.textContent = 'usuário:';
-          chipsEl.appendChild(struct2);
-        }
 
         result.tokens.forEach(function (tok) {
           var el = document.createElement('span');
@@ -529,18 +541,11 @@
           chipsEl.appendChild(el);
         });
 
-        if (current === 'estrutura') {
-          var struct3 = document.createElement('span');
-          struct3.className = 'k5-chip k5-chip--struct';
-          struct3.textContent = 'fim';
-          chipsEl.appendChild(struct3);
-        }
-
         return result;
       }
 
       function render() {
-        var text = inputEl.value;
+        var text = textToTokenize();
         var result = renderChips(text);
         var n = result.tokens.length;
 
