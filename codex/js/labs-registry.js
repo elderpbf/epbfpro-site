@@ -63,6 +63,14 @@ export const LABS = [
     emoji: '🔤'
   },
   {
+    key: 'k6',
+    title: 'Embeddings',
+    summary: 'Sentido tem geometria',
+    description: 'Palavras de assuntos variados entram uma a uma e se posicionam sozinhas num espaço, sem que ninguém diga a categoria. O demo mostra o agrupamento por semelhança de sentido acontecendo ao vivo, a mesma geometria por trás da busca semântica.',
+    objective: 'Ver que palavras parecidas em sentido terminam perto umas das outras, sem rótulo.',
+    emoji: '🧭'
+  },
+  {
     key: 'k9',
     title: 'Petição envenenada',
     summary: 'Texto invisível vira instrução ao modelo',
@@ -234,7 +242,7 @@ function _enabledLabs() {
 // small flask badge as the "family" marker. Unknown key -> the generic flask.
 const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
-  k5: 'glyph:hash',
+  k5: 'glyph:hash', k6: 'glyph:compass',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
   k18: 'glyph:window', k19: 'glyph:layers',
