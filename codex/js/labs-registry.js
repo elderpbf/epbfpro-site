@@ -149,6 +149,14 @@ export const LABS = [
     description: 'O mesmo pedido, com os 4 elementos do CORE ligados um de cada vez. Sem nenhum, a resposta sai com o tom errado, sem saber o que entregar, inventando dado que faltou e sem formato. Cada elemento liga e corrige um problema específico.',
     objective: 'Ver o que cada elemento do CORE corrige, um de cada vez, no mesmo pedido.',
     emoji: '🧱'
+  },
+  {
+    key: 'k20',
+    title: 'Aposta na Citação',
+    summary: 'Soa correto não é prova de que é real',
+    description: 'Cinco citações jurídicas, algumas reais e outras inventadas, todas escritas no mesmo tom seguro. Você aposta se cada uma é real ou inventada antes de revelar. As inventadas erram no conteúdo, não no número, o mesmo jeito que uma alucinação real engana.',
+    objective: 'Ver que confiança no texto não é prova de veracidade, só verificar na fonte prova.',
+    emoji: '⚖️'
   }
 ];
 
@@ -245,7 +253,7 @@ const LAB_GLYPH = {
   k5: 'glyph:hash', k6: 'glyph:compass',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:window', k19: 'glyph:layers',
+  k18: 'glyph:window', k19: 'glyph:layers', k20: 'glyph:checklist',
 };
 
 export function labIcon(key) {

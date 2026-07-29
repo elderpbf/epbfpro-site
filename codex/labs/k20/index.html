@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Aposta na Citação · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k20-panel">
+  <style>
+    .k20-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.6rem;
+      padding: 1rem 2rem 0.7rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    .k20-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.1rem;
+    }
+    .k20-meter-label {
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k20-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-audience);
+      font-weight: 700;
+      color: var(--focal);
+      line-height: 1;
+    }
+
+    .k20-cards {
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 0.7rem;
+    }
+    .k20-card {
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.85rem 1.1rem;
+      transition: border-color 220ms, background 220ms;
+    }
+    .k20-card-text {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-doc);
+      line-height: 1.4;
+      color: var(--text);
+      margin: 0 0 0.6rem;
+    }
+    .k20-card-row {
+      display: flex;
+      align-items: center;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .k20-guess-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 0.9rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      transition: border-color 180ms, color 180ms;
+    }
+    .k20-guess-btn:hover:not(:disabled) { border-color: var(--focal); color: var(--focal); }
+    .k20-guess-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+    .k20-guess-btn--picked {
+      border-color: var(--focal);
+      background: color-mix(in srgb, var(--focal) 16%, transparent);
+      color: var(--focal);
+      opacity: 1;
+    }
+    .k20-verdict {
+      display: none;
+      align-items: baseline;
+      gap: 0.5rem;
+      font-size: var(--lab-fs-body);
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .k20-verdict-mark {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: var(--lab-fs-answer);
+      flex-shrink: 0;
+    }
+    .k20-card--revealed .k20-verdict { display: flex; }
+    .k20-card--revealed .k20-card-row { display: none; }
+    .k20-card--correct { border-color: var(--good); }
+    .k20-card--correct .k20-verdict-mark { color: var(--good); }
+    .k20-card--wrong { border-color: var(--bad); background: color-mix(in srgb, var(--bad) 6%, var(--surface)); }
+    .k20-card--wrong .k20-verdict-mark { color: var(--bad); }
+
+    .k20-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k20-fs-slot { margin-right: auto; }
+    .k20-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      transition: border-color 180ms, color 180ms, transform 150ms;
+    }
+    .k20-btn:hover:not(:disabled) { border-color: var(--focal); color: var(--focal); transform: translateY(-1px); }
+    .k20-btn-action {
+      border-color: var(--focal);
+      background: color-mix(in srgb, var(--focal) 16%, transparent);
+      color: var(--focal);
+    }
+    .k20-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    @media (max-width: 700px) {
+      .k20-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.5rem; }
+      .k20-card { padding: 0.7rem 0.85rem; }
+      .k20-button-bar { gap: 0.4rem; padding: 0; }
+      .k20-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(50% - 0.2rem); min-height: 44px; text-align: center; }
+      .k20-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
+      .k20-button-bar > [data-lab-info-ctl] { order: -1; display: flex; flex: 1 1 100%; }
+      .k20-button-bar > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
+      .k20-guess-btn { min-height: 44px; flex: 1 1 auto; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k20-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.35rem; }
+      .k20-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header" data-lab-title="Aposta na Citação" data-lab-subtitle="Soa correto não é prova de que é real">
+    <div class="k20-meter">
+      <span class="k20-meter-label">Acertos</span>
+      <span class="k20-meter-value" id="k20-score">—</span>
+    </div>
+  </div>
+
+  <div class="k20-cards" id="k20-cards"></div>
+
+  <div class="k20-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k20-fs-slot" data-lab-fs-ctl></span>
+    <button class="k20-btn k20-btn-action" id="k20-reveal" disabled>Revelar tudo</button>
+    <button class="k20-btn" id="k20-reset">Reiniciar</button>
+  </div>
+
+  <template data-lab-info data-lab-info-title="Por que isso engana até quem conhece a área?">
+    <p>Um modelo de linguagem não distingue "sei essa informação de verdade" de "essa forma de frase é comum, vou completar assim". As duas coisas produzem o mesmo tom seguro, com número de artigo, súmula e linguagem jurídica corretos.</p>
+    <p>A única forma de saber se uma citação é real é <strong>verificar na fonte oficial</strong>, nunca pela fluência do texto. É exatamente essa a regra do CORE (Regras: "baseie-se exclusivamente na base de conhecimento, não presuma, não infira, não invente") e o motivo de todo protocolo de citação exigir conferência palavra por palavra antes de qualquer peça sair.</p>
+    <p>As citações "inventadas" aqui foram escritas para soar plausíveis, mas contêm um erro de fundo (uma regra que contraria o que a lei ou a jurisprudência realmente dizem), não um número aleatório. É assim que uma alucinação real costuma aparecer: coerente na forma, errada no conteúdo.</p>
+  </template>
+
+  <script>
+    (function () {
+      var ITEMS = [
+        {
+          text: 'Art. 5º da Constituição Federal: "Todos são iguais perante a lei, sem distinção de qualquer natureza."',
+          real: true,
+          note: 'Real. Caput do art. 5º da CF/1988, a cláusula de igualdade.'
+        },
+        {
+          text: 'Súmula 7 do STJ: "A pretensão de simples reexame de prova não enseja recurso especial."',
+          real: true,
+          note: 'Real. Uma das súmulas mais citadas do STJ, barra reexame de fatos e provas em recurso especial.'
+        },
+        {
+          text: 'Art. 927 do Código Civil: "Aquele que, por ato ilícito, causar dano a outrem, fica obrigado a repará-lo."',
+          real: true,
+          note: 'Real. Base da responsabilidade civil por ato ilícito no Código Civil.'
+        },
+        {
+          text: 'Art. 1.482 do Código Civil: "Toda dívida de natureza trabalhista prescreve no prazo de 30 dias."',
+          real: false,
+          note: 'Inventada. Prescrição trabalhista é matéria da CLT, não do Código Civil, o artigo citado nem trata do tema. O erro não é o número, é a categoria: nenhum artigo do CC regula prazo de dívida trabalhista.'
+        },
+        {
+          text: 'Súmula 999 do STJ: "Autoriza a penhora do bem de família em execução de dívida de cartão de crédito."',
+          real: false,
+          note: 'Inventada. Contraria a proteção do bem de família (Lei 8.009/90), uma das jurisprudências mais consolidadas do STJ. Uma súmula "autorizando" o oposto é a bandeira vermelha: parece técnica, mas inverte a regra conhecida.'
+        }
+      ];
+
+      var cardsEl = document.getElementById('k20-cards');
+      var scoreEl = document.getElementById('k20-score');
+      var revealBtn = document.getElementById('k20-reveal');
+      var resetBtn = document.getElementById('k20-reset');
+      var guesses = new Array(ITEMS.length).fill(null);
+      var revealed = false;
+
+      function allGuessed() {
+        return guesses.every(function (g) { return g !== null; });
+      }
+
+      function renderCard(item, i) {
+        var card = document.createElement('div');
+        card.className = 'k20-card';
+        card.innerHTML =
+          '<p class="k20-card-text">' + item.text + '</p>' +
+          '<div class="k20-card-row">' +
+            '<button type="button" class="k20-guess-btn" data-guess="true">Parece real</button>' +
+            '<button type="button" class="k20-guess-btn" data-guess="false">Parece inventada</button>' +
+          '</div>' +
+          '<div class="k20-verdict">' +
+            '<span class="k20-verdict-mark"></span>' +
+            '<span class="k20-verdict-note"></span>' +
+          '</div>';
+
+        var btns = card.querySelectorAll('.k20-guess-btn');
+        btns.forEach(function (btn) {
+          btn.addEventListener('click', function () {
+            guesses[i] = btn.dataset.guess === 'true';
+            btns.forEach(function (b) {
+              b.classList.toggle('k20-guess-btn--picked', b === btn);
+              b.disabled = true;
+            });
+            revealBtn.disabled = !allGuessed();
+          });
+        });
+
+        cardsEl.appendChild(card);
+        return card;
+      }
+
+      var cardEls = ITEMS.map(renderCard);
+
+      function reveal() {
+        if (revealed) return;
+        revealed = true;
+        var correct = 0;
+        ITEMS.forEach(function (item, i) {
+          var card = cardEls[i];
+          var wasCorrect = guesses[i] === item.real;
+          if (wasCorrect) correct++;
+          card.classList.add('k20-card--revealed', wasCorrect ? 'k20-card--correct' : 'k20-card--wrong');
+          card.querySelector('.k20-verdict-mark').textContent = item.real ? '✓ REAL' : '✗ INVENTADA';
+          card.querySelector('.k20-verdict-note').textContent = item.note;
+        });
+        scoreEl.textContent = correct + '/' + ITEMS.length;
+        revealBtn.disabled = true;
+      }
+
+      revealBtn.addEventListener('click', reveal);
+
+      resetBtn.addEventListener('click', function () {
+        guesses = new Array(ITEMS.length).fill(null);
+        revealed = false;
+        scoreEl.textContent = '—';
+        cardsEl.innerHTML = '';
+        cardEls = ITEMS.map(renderCard);
+        revealBtn.disabled = true;
+      });
+
+      window.addEventListener('storage', function (e) {
+        if (e.key !== 'bs_theme') return;
+        var t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+    })();
+  </script>
+</section>
+</body>
+</html>
