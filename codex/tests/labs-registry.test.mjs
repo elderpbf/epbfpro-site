@@ -28,11 +28,11 @@ function setArchived(arr) {
 
 const reg = await import('../js/labs-registry.js');
 
-const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18'];
+const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k5', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k19'];
 
-test('LABS is the shipped registry (13 labs, exact keys + non-empty title/summary)', () => {
+test('LABS is the shipped registry (15 labs, exact keys + non-empty title/summary)', () => {
   assert.ok(Array.isArray(reg.LABS), 'LABS is an array');
-  assert.equal(reg.LABS.length, 13, 'thirteen labs');
+  assert.equal(reg.LABS.length, 15, 'fifteen labs');
   assert.deepEqual(reg.LABS.map((l) => l.key), EXPECTED_KEYS, 'keys byte-identical and in order');
   for (const lab of reg.LABS) {
     assert.ok(lab.title && lab.title.length, `lab ${lab.key} has a title`);
@@ -44,6 +44,8 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   const byKey = Object.fromEntries(reg.LABS.map((l) => [l.key, l]));
   assert.equal(byKey.k1.title, 'Atenção!');
   assert.equal(byKey.k1.summary, 'Contexto reescreve significado');
+  assert.equal(byKey.k5.title, 'Tokens');
+  assert.equal(byKey.k5.summary, 'Palavra não é a mesma coisa que token');
   assert.equal(byKey.k10.title, 'Cápsula do GPT');
   assert.equal(byKey.k13.summary, 'Tradicional, raciocínio e agêntico são formatos diferentes');
   assert.equal(byKey.k15.title, 'Sobreajuste');
@@ -52,6 +54,8 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   assert.equal(byKey.k16.summary, 'Duas camadas de um PDF, e o que o OCR faz entre elas');
   assert.equal(byKey.k17.title, 'Treinamento');
   assert.equal(byKey.k17.summary, 'Humano prefere uma resposta a outra; a preferida reforça o peso');
+  assert.equal(byKey.k19.title, 'Framework CORE');
+  assert.equal(byKey.k19.summary, 'Contexto, Objetivo, Regras e Estrutura mudam a resposta');
 });
 
 test('findItem builds the synthetic item shape for a real lab id', () => {
@@ -98,7 +102,7 @@ test('isLabEnabled tolerates malformed JSON (fails open)', () => {
 test('getAllItems returns every enabled lab as a picker item', () => {
   setEnabledMap(null);
   const items = reg.getAllItems();
-  assert.equal(items.length, 13, 'all labs when none disabled');
+  assert.equal(items.length, 15, 'all labs when none disabled');
   assert.deepEqual(items.map((i) => i.id), EXPECTED_KEYS.map((k) => 'lab:' + k));
   assert.ok(items.every((i) => i.type === 'lab' && i.type_label === 'Lab'));
 });
@@ -106,7 +110,7 @@ test('getAllItems returns every enabled lab as a picker item', () => {
 test('getAllItems filters out disabled labs', () => {
   setEnabledMap({ k1: false, k13: false });
   const items = reg.getAllItems();
-  assert.equal(items.length, 11, 'two disabled removed');
+  assert.equal(items.length, 13, 'two disabled removed');
   const ids = items.map((i) => i.id);
   assert.ok(!ids.includes('lab:k1'), 'k1 hidden');
   assert.ok(!ids.includes('lab:k13'), 'k13 hidden');

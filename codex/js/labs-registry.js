@@ -55,6 +55,14 @@ export const LABS = [
     emoji: '🧩'
   },
   {
+    key: 'k5',
+    title: 'Tokens',
+    summary: 'Palavra não é a mesma coisa que token',
+    description: 'O modelo não lê palavra por palavra: ele lê tokens, pedaços que às vezes são uma palavra inteira e às vezes um fragmento dela. O demo mostra uma frase quebrando em tokens coloridos, e como a estrutura da conversa e a formatação também custam token.',
+    objective: 'Ver que token não é palavra, e que estrutura e formatação também têm custo.',
+    emoji: '🔤'
+  },
+  {
     key: 'k9',
     title: 'Petição envenenada',
     summary: 'Texto invisível vira instrução ao modelo',
@@ -125,6 +133,14 @@ export const LABS = [
     description: 'Versão granular da janela de contexto: os insumos entram separados (sistema, memórias, ferramentas, arquivos, histórico) e o próprio processo do modelo também ocupa a janela. O raciocínio custa milhares de tokens, a chamada de ferramenta custa quase nada, e o resultado e a resposta somam mais. Numa janela de 1.000.000, a barra dá zoom no que é usado.',
     objective: 'Ver que o raciocínio e as ferramentas gastam a mesma janela, e quanto cada parte custa.',
     emoji: '🪟'
+  },
+  {
+    key: 'k19',
+    title: 'Framework CORE',
+    summary: 'Contexto, Objetivo, Regras e Estrutura mudam a resposta',
+    description: 'O mesmo pedido, com os 4 elementos do CORE ligados um de cada vez. Sem nenhum, a resposta sai com o tom errado, sem saber o que entregar, inventando dado que faltou e sem formato. Cada elemento liga e corrige um problema específico.',
+    objective: 'Ver o que cada elemento do CORE corrige, um de cada vez, no mesmo pedido.',
+    emoji: '🧱'
   }
 ];
 
@@ -218,9 +234,10 @@ function _enabledLabs() {
 // small flask badge as the "family" marker. Unknown key -> the generic flask.
 const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
+  k5: 'glyph:hash',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:window',
+  k18: 'glyph:window', k19: 'glyph:layers',
 };
 
 export function labIcon(key) {
