@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Tokens · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-tabs.js?v=1.0" defer></script>
@@ -140,6 +140,7 @@
       --chip-h: 210;
       display: inline-flex;
       align-items: baseline;
+      flex-shrink: 0;
       font-family: var(--font-mono);
       font-size: var(--lab-fs-body);
       font-weight: 600;
@@ -148,16 +149,17 @@
       background: hsl(var(--chip-h) 62% 88%);
       color: hsl(var(--chip-h) 55% 24%);
       white-space: nowrap;
-      transition: opacity 150ms, filter 150ms;
-      animation: k5-chip-in 220ms ease-out both;
+      transition: background 150ms, color 150ms;
     }
     [data-theme="dark"] .k5-chip {
       background: hsl(var(--chip-h) 40% 24%);
       color: hsl(var(--chip-h) 70% 84%);
     }
-    /* Hover isolates: dim every chip except the one under the pointer. */
-    .k5-chips:hover .k5-chip { opacity: 0.4; filter: saturate(0.35); }
-    .k5-chips:hover .k5-chip:hover { opacity: 1; filter: none; }
+    .k5-chip--animate { animation: k5-chip-in 220ms ease-out both; }
+    /* Hover isolates: every OTHER chip loses its color entirely (no square
+       left at all, just plain text), the one under the pointer stays 100%
+       full color. Not a dim/fade, a full on/off. */
+    .k5-chips:hover .k5-chip:not(:hover) { background: transparent; color: var(--text-dim); }
     @keyframes k5-chip-in {
       from { opacity: 0; transform: scale(0.75); }
       to { opacity: 1; transform: scale(1); }
@@ -206,6 +208,7 @@
       font-size: var(--lab-fs-ui);
       color: var(--text-dim);
       line-height: 1.45;
+      text-align: justify;
     }
     .k5-stats {
       display: grid;
@@ -588,7 +591,7 @@
         return current === 'estrutura' ? wrapAsChat(raw) : raw;
       }
 
-      function renderChips(text) {
+      function renderChips(text, animate) {
         var result = tokenize(text);
         chipsEl.innerHTML = '';
 
@@ -596,12 +599,18 @@
           var el = document.createElement('span');
           var cls = 'k5-chip';
           if (tok.kind !== 'word') cls += ' k5-chip--' + tok.kind;
+          // The stagger-in animation only plays on example/toggle switches.
+          // Typing calls this on every keystroke, and replaying the fade-in
+          // (which starts every chip at opacity:0 during its delay) on the
+          // WHOLE token list on every character is what made Élder see it
+          // "piscar" (blink) as he typed. No class, no delay, no blink.
+          if (animate) cls += ' k5-chip--animate';
           el.className = cls;
           // Hue rotates per TOKEN, not per word: a word split into pieces
           // must still show a color change at each boundary now that chips
           // are glued together with no gap.
           if (tok.kind === 'word') el.style.setProperty('--chip-h', String(hue(i)));
-          el.style.animationDelay = (Math.min(i, 40) * 18) + 'ms';
+          if (animate) el.style.animationDelay = (Math.min(i, 40) * 18) + 'ms';
           var label = (tok.spaceBefore ? '·' : '') + tok.text;
           el.textContent = label;
           chipsEl.appendChild(el);
@@ -615,9 +624,9 @@
         inputEl.style.height = inputEl.scrollHeight + 'px';
       }
 
-      function render() {
+      function render(animate) {
         var text = textToTokenize();
-        var result = renderChips(text);
+        var result = renderChips(text, animate);
         var n = result.tokens.length;
 
         totalEl.textContent = String(n);
@@ -669,7 +678,7 @@
         if (window.LabTabs && mainEl && phoneMQ.matches) {
           window.LabTabs.show(mainEl, key === 'formatacao' ? 'Painel' : 'Texto');
         }
-        render();
+        render(true);
       }
 
       exampleBtns.forEach(function (b) {
@@ -681,10 +690,10 @@
         switchBtn.classList.toggle('k5-switch--on', mdOn);
         switchBtn.setAttribute('aria-pressed', String(mdOn));
         inputEl.value = mdOn ? EXAMPLES.formatacao.md : EXAMPLES.formatacao.plain;
-        render();
+        render(true);
       });
 
-      inputEl.addEventListener('input', render);
+      inputEl.addEventListener('input', function () { render(false); });
 
       // ── Theme sync ───────────────────────────────────────
       window.addEventListener('storage', function (e) {

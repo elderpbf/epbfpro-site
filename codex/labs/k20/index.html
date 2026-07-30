@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Aposta na Citação · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-info.js?v=1.0" defer></script>
@@ -78,13 +78,22 @@
       overflow-y: auto;
       display: flex;
       flex-direction: column;
-      gap: 0.7rem;
+      justify-content: center;
+      gap: 0.9rem;
+    }
+    .k20-progress {
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      text-align: center;
     }
     .k20-card {
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 14px;
-      padding: 0.85rem 1.1rem;
+      padding: 1.1rem 1.3rem;
       transition: border-color 220ms, background 220ms;
     }
     .k20-card-text {
@@ -92,7 +101,15 @@
       font-size: var(--lab-fs-doc);
       line-height: 1.4;
       color: var(--text);
-      margin: 0 0 0.6rem;
+      margin: 0 0 0.9rem;
+      text-align: justify;
+    }
+    .k20-final-note {
+      text-align: center;
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      color: var(--text);
+      margin-top: 0.6rem;
     }
     .k20-card-row {
       display: flex;
@@ -134,6 +151,7 @@
       font-size: var(--lab-fs-answer);
       flex-shrink: 0;
     }
+    .k20-verdict-note { text-align: justify; }
     .k20-card--revealed .k20-verdict { display: flex; }
     .k20-card--revealed .k20-card-row { display: none; }
     .k20-card--correct { border-color: var(--good); }
@@ -193,12 +211,15 @@
     </div>
   </div>
 
-  <div class="k20-cards" id="k20-cards"></div>
+  <div class="k20-cards">
+    <p class="k20-progress" id="k20-progress"></p>
+    <div class="k20-card" id="k20-card"></div>
+  </div>
 
   <div class="k20-button-bar">
     <span data-lab-info-ctl></span>
     <span class="k20-fs-slot" data-lab-fs-ctl></span>
-    <button class="k20-btn k20-btn-action" id="k20-reveal" disabled>Revelar tudo</button>
+    <button class="k20-btn k20-btn-action" id="k20-next" disabled>Próxima</button>
     <button class="k20-btn" id="k20-reset">Reiniciar</button>
   </div>
 
@@ -210,6 +231,12 @@
 
   <script>
     (function () {
+      // Real citations verified verbatim (WebFetch/WebSearch against
+      // planalto.gov.br and secondary sources quoting the official text)
+      // before this file shipped, 2026-07-30. Fabricated ones reuse a REAL
+      // citation number attached to invented text, wrong at the content
+      // level (category mismatch, or an inverted holding), never an
+      // implausible number — same convention as k9/k12.
       var ITEMS = [
         {
           text: 'Art. 5º da Constituição Federal: "Todos são iguais perante a lei, sem distinção de qualquer natureza."',
@@ -227,32 +254,31 @@
           note: 'Real. Base da responsabilidade civil por ato ilícito no Código Civil.'
         },
         {
-          text: 'Art. 1.482 do Código Civil: "Toda dívida de natureza trabalhista prescreve no prazo de 30 dias."',
+          text: 'Art. 1.228 do Código Civil: "O proprietário conserva a faculdade de reaver o imóvel alugado a qualquer tempo, independentemente de prévia notificação ao locatário, em razão do direito de dispor da coisa."',
           real: false,
-          note: 'Inventada. Prescrição trabalhista é matéria da CLT, não do Código Civil, o artigo citado nem trata do tema. O erro não é o número, é a categoria: nenhum artigo do CC regula prazo de dívida trabalhista.'
+          note: 'Inventada. O art. 1.228 do CC de verdade só define a propriedade ("usar, gozar e dispor da coisa, e o direito de reavê-la"), não fala em locação. Retomada de imóvel alugado segue a Lei do Inquilinato (Lei 8.245/91), com prazo e notificação ao locatário, nunca por vontade do dono a qualquer momento.'
         },
         {
-          text: 'Súmula 999 do STJ: "Autoriza a penhora do bem de família em execução de dívida de cartão de crédito."',
+          text: 'Súmula 385 do STJ: "A existência de inscrição irregular em cadastro de proteção ao crédito gera direito à indenização por dano moral, ainda que exista inscrição legítima anterior, bastando comprovar o abalo ao crédito."',
           real: false,
-          note: 'Inventada. Contraria a proteção do bem de família (Lei 8.009/90), uma das jurisprudências mais consolidadas do STJ. Uma súmula "autorizando" o oposto é a bandeira vermelha: parece técnica, mas inverte a regra conhecida.'
+          note: 'Inventada, inverte a súmula real. A Súmula 385 de verdade diz o oposto: quando já existe inscrição LEGÍTIMA anterior, não cabe indenização por dano moral pela nova inscrição irregular, só o direito ao cancelamento.'
         }
       ];
 
-      var cardsEl = document.getElementById('k20-cards');
+      var progressEl = document.getElementById('k20-progress');
+      var cardEl = document.getElementById('k20-card');
       var scoreEl = document.getElementById('k20-score');
-      var revealBtn = document.getElementById('k20-reveal');
+      var nextBtn = document.getElementById('k20-next');
       var resetBtn = document.getElementById('k20-reset');
+      var idx = 0;
       var guesses = new Array(ITEMS.length).fill(null);
-      var revealed = false;
+      var correct = 0;
 
-      function allGuessed() {
-        return guesses.every(function (g) { return g !== null; });
-      }
-
-      function renderCard(item, i) {
-        var card = document.createElement('div');
-        card.className = 'k20-card';
-        card.innerHTML =
+      function renderCard() {
+        var item = ITEMS[idx];
+        progressEl.textContent = 'Citação ' + (idx + 1) + ' de ' + ITEMS.length;
+        cardEl.className = 'k20-card';
+        cardEl.innerHTML =
           '<p class="k20-card-text">' + item.text + '</p>' +
           '<div class="k20-card-row">' +
             '<button type="button" class="k20-guess-btn" data-guess="true">Parece real</button>' +
@@ -263,50 +289,52 @@
             '<span class="k20-verdict-note"></span>' +
           '</div>';
 
-        var btns = card.querySelectorAll('.k20-guess-btn');
+        var btns = cardEl.querySelectorAll('.k20-guess-btn');
         btns.forEach(function (btn) {
-          btn.addEventListener('click', function () {
-            guesses[i] = btn.dataset.guess === 'true';
-            btns.forEach(function (b) {
-              b.classList.toggle('k20-guess-btn--picked', b === btn);
-              b.disabled = true;
-            });
-            revealBtn.disabled = !allGuessed();
-          });
+          btn.addEventListener('click', function () { guess(btn, btns); });
         });
-
-        cardsEl.appendChild(card);
-        return card;
+        nextBtn.disabled = true;
+        nextBtn.textContent = idx === ITEMS.length - 1 ? 'Ver placar final' : 'Próxima';
       }
 
-      var cardEls = ITEMS.map(renderCard);
+      function guess(btn, btns) {
+        var item = ITEMS[idx];
+        guesses[idx] = btn.dataset.guess === 'true';
+        var wasCorrect = guesses[idx] === item.real;
+        if (wasCorrect) correct++;
 
-      function reveal() {
-        if (revealed) return;
-        revealed = true;
-        var correct = 0;
-        ITEMS.forEach(function (item, i) {
-          var card = cardEls[i];
-          var wasCorrect = guesses[i] === item.real;
-          if (wasCorrect) correct++;
-          card.classList.add('k20-card--revealed', wasCorrect ? 'k20-card--correct' : 'k20-card--wrong');
-          card.querySelector('.k20-verdict-mark').textContent = item.real ? '✓ REAL' : '✗ INVENTADA';
-          card.querySelector('.k20-verdict-note').textContent = item.note;
+        btns.forEach(function (b) {
+          b.classList.toggle('k20-guess-btn--picked', b === btn);
+          b.disabled = true;
         });
-        scoreEl.textContent = correct + '/' + ITEMS.length;
-        revealBtn.disabled = true;
+        cardEl.classList.add('k20-card--revealed', wasCorrect ? 'k20-card--correct' : 'k20-card--wrong');
+        cardEl.querySelector('.k20-verdict-mark').textContent = item.real ? '✓ REAL' : '✗ INVENTADA';
+        cardEl.querySelector('.k20-verdict-note').textContent = item.note;
+        scoreEl.textContent = correct + '/' + (idx + 1);
+        nextBtn.disabled = false;
       }
 
-      revealBtn.addEventListener('click', reveal);
+      nextBtn.addEventListener('click', function () {
+        if (idx >= ITEMS.length - 1) {
+          progressEl.textContent = 'Fim';
+          cardEl.insertAdjacentHTML('beforeend',
+            '<p class="k20-final-note">Placar final: ' + correct + '/' + ITEMS.length + '</p>');
+          nextBtn.disabled = true;
+          return;
+        }
+        idx++;
+        renderCard();
+      });
 
       resetBtn.addEventListener('click', function () {
+        idx = 0;
+        correct = 0;
         guesses = new Array(ITEMS.length).fill(null);
-        revealed = false;
         scoreEl.textContent = '—';
-        cardsEl.innerHTML = '';
-        cardEls = ITEMS.map(renderCard);
-        revealBtn.disabled = true;
+        renderCard();
       });
+
+      renderCard();
 
       window.addEventListener('storage', function (e) {
         if (e.key !== 'bs_theme') return;

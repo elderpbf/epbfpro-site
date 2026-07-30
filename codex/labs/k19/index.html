@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Framework CORE · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-tabs.js?v=1.0" defer></script>
@@ -67,8 +67,87 @@
       font-size: var(--lab-fs-body);
       font-style: italic;
       color: var(--text);
+      cursor: pointer;
+      transition: border-color 180ms;
     }
+    .k19-request:hover, .k19-request:focus-visible { border-color: var(--focal); outline: none; }
     .k19-request b { font-style: normal; color: var(--text-dim); font-weight: 600; }
+    .k19-request-hint {
+      font-style: normal;
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      margin-left: 0.4em;
+    }
+
+    /* ── Prompt preview modal (read-only: shows the prompt as it is right
+       now, does NOT advance the ratchet, that only happens via the pills) */
+    .k19-preview-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.2rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 180ms;
+      z-index: 60;
+    }
+    .k19-preview-backdrop.k19-preview-open { opacity: 1; pointer-events: auto; }
+    .k19-preview {
+      background: var(--bg);
+      border: 1.5px solid var(--border);
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 82dvh;
+      overflow-y: auto;
+      padding: 1.3rem 1.5rem;
+    }
+    .k19-preview-title {
+      margin: 0 0 0.9rem;
+      font-size: var(--lab-fs-body);
+      font-weight: 800;
+      color: var(--text);
+    }
+    .k19-preview-block {
+      padding: 0.5rem 0 0.5rem 0.8rem;
+      border-left: 3px solid var(--border);
+      margin-bottom: 0.7rem;
+    }
+    .k19-preview-block-label {
+      display: block;
+      font-size: var(--lab-fs-ui);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+    .k19-preview-block-text {
+      font-size: var(--lab-fs-doc);
+      line-height: 1.45;
+      color: var(--text);
+      text-align: justify;
+    }
+    .k19-preview-block--c { border-left-color: var(--focal); }
+    .k19-preview-block--c .k19-preview-block-label { color: var(--focal); }
+    .k19-preview-block--o { border-left-color: var(--cool); }
+    .k19-preview-block--o .k19-preview-block-label { color: var(--cool); }
+    .k19-preview-block--r { border-left-color: var(--warm); }
+    .k19-preview-block--r .k19-preview-block-label { color: var(--warm); }
+    .k19-preview-block--e { border-left-color: var(--good); }
+    .k19-preview-block--e .k19-preview-block-label { color: var(--good); }
+    .k19-preview-block--pedido .k19-preview-block-label { color: var(--text-dim); }
+    .k19-preview-close {
+      margin-top: 0.3rem;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k19-preview-close:hover { border-color: var(--focal); color: var(--focal); }
 
     /* ── CORE toggle pills ────────────────────────────────── */
     .k19-toggles {
@@ -141,6 +220,7 @@
       line-height: 1.5;
       color: var(--text);
       white-space: pre-wrap;
+      text-align: justify;
     }
     .k19-answer-body mark {
       background: rgba(var(--bad-rgb), 0.22);
@@ -190,6 +270,7 @@
       color: var(--text-dim);
       margin-top: 0.15rem;
       line-height: 1.35;
+      text-align: justify;
     }
 
     /* ── Operator bar ─────────────────────────────────────── */
@@ -238,8 +319,8 @@
 
   <div class="lab-header" data-lab-title="Framework CORE" data-lab-subtitle="Contexto · Objetivo · Regras · Estrutura"></div>
 
-  <div class="k19-request">
-    <b>Pedido:</b> "Escreve um ofício pedindo prorrogação de prazo."
+  <div class="k19-request" id="k19-request" tabindex="0" role="button" aria-haspopup="dialog">
+    <b>Pedido:</b> "Escreve um ofício pedindo prorrogação de prazo."<span class="k19-request-hint">(toque para ver o prompt montado)</span>
   </div>
 
   <div class="k19-toggles">
@@ -331,10 +412,22 @@
         { title: 'Formato oficial do ofício', onNote: 'A Estrutura encaixou o conteúdo no modelo padrão do ofício.', offNote: 'Sem Estrutura, falta número, data, destinatário e fecho no lugar certo.' }
       ];
 
+      // Content injected into the prompt-preview modal per block, in the
+      // order a real structured prompt reads (context/objective/rules before
+      // the ask, structure after). Colors match the pills' own C/O/R/E colors.
+      var PREVIEW_BLOCKS = [
+        { cls: 'c', label: 'Contexto', text: 'Você é servidor da Secretaria Administrativa do TJSE, redigindo ofícios formais.' },
+        { cls: 'o', label: 'Objetivo', text: 'Entregue um ofício completo, pronto para protocolo.' },
+        { cls: 'r', label: 'Regras', text: 'Não presuma nem invente número de processo ou data. Se faltar informação, pergunte antes de redigir.' }
+      ];
+      var PREVIEW_PEDIDO = 'Escreve um ofício pedindo prorrogação de prazo.';
+      var PREVIEW_ESTRUTURA = 'Formato de ofício: número, data, destinatário, corpo e fecho, nessa ordem.';
+
       var active = 0; // 0..4 blocks ON, always a prefix (ratchet)
       var pills = Array.prototype.slice.call(document.querySelectorAll('.k19-pill'));
       var answerEl = document.getElementById('k19-answer');
       var checklistEl = document.getElementById('k19-checklist');
+      var requestEl = document.getElementById('k19-request');
 
       function render() {
         var state = STATES[active];
@@ -370,6 +463,63 @@
           active = (idx < active) ? idx : idx + 1;
           render();
         });
+      });
+
+      // ── Prompt preview modal ──────────────────────────────
+      // Read-only: shows how the prompt is assembled RIGHT NOW. Tapping the
+      // request card never advances state, only the pills do that.
+      var previewBackdrop = null;
+
+      function buildPreview() {
+        if (previewBackdrop) return;
+        previewBackdrop = document.createElement('div');
+        previewBackdrop.className = 'k19-preview-backdrop';
+        previewBackdrop.innerHTML =
+          '<div class="k19-preview" role="dialog" aria-modal="true" tabindex="-1">' +
+            '<h2 class="k19-preview-title">Como o prompt está agora</h2>' +
+            '<div id="k19-preview-body"></div>' +
+            '<button type="button" class="k19-preview-close">Fechar</button>' +
+          '</div>';
+        document.body.appendChild(previewBackdrop);
+        previewBackdrop.addEventListener('click', function (e) {
+          if (e.target === previewBackdrop) closePreview();
+        });
+        previewBackdrop.querySelector('.k19-preview-close').addEventListener('click', closePreview);
+      }
+
+      function blockHtml(cls, label, text) {
+        return '<div class="k19-preview-block k19-preview-block--' + cls + '">' +
+          '<span class="k19-preview-block-label">' + label + '</span>' +
+          '<span class="k19-preview-block-text">' + text + '</span>' +
+        '</div>';
+      }
+
+      function onPreviewKey(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') closePreview();
+      }
+
+      function openPreview() {
+        buildPreview();
+        var html = '';
+        PREVIEW_BLOCKS.forEach(function (b, i) {
+          if (i < active) html += blockHtml(b.cls, b.label, b.text);
+        });
+        html += blockHtml('pedido', 'Pedido', PREVIEW_PEDIDO);
+        if (active >= 4) html += blockHtml('e', 'Estrutura', PREVIEW_ESTRUTURA);
+        document.getElementById('k19-preview-body').innerHTML = html;
+        previewBackdrop.classList.add('k19-preview-open');
+        document.addEventListener('keydown', onPreviewKey);
+      }
+
+      function closePreview() {
+        if (!previewBackdrop) return;
+        previewBackdrop.classList.remove('k19-preview-open');
+        document.removeEventListener('keydown', onPreviewKey);
+      }
+
+      requestEl.addEventListener('click', openPreview);
+      requestEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPreview(); }
       });
 
       document.getElementById('k19-reset').addEventListener('click', function () {

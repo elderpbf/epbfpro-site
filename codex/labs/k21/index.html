@@ -6,7 +6,7 @@
 <meta name="robots" content="noindex, nofollow">
 <title>Modelo e Esforço · PensoLabs</title>
 <link rel="stylesheet" href="../../css/theme.css?v=1.3">
-<link rel="stylesheet" href="../css/labs.css?v=1.5">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
 <script src="../js/lab-header.js?v=1.0" defer></script>
 <script src="../js/lab-controls.js?v=1.0" defer></script>
 <script src="../js/lab-info.js?v=1.0" defer></script>
@@ -79,47 +79,48 @@
       color: var(--focal);
     }
 
-    .k21-selectors {
+    /* ── Modelo x esforço grid: all 9 combos at once, colored by verdict,
+       so a whole-row / whole-column / neither pattern is visible without
+       clicking through combinations one at a time. Click a cell to select
+       it (same modeloIdx/esforcoIdx state as before, just chosen by cell
+       now instead of two separate pill rows). ────────────────────────── */
+    .k21-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 1rem;
+      grid-template-columns: minmax(64px, auto) repeat(3, 1fr);
+      grid-auto-rows: minmax(40px, auto);
+      gap: 0.35rem;
     }
-    .k21-axis-label {
+    .k21-grid-corner { }
+    .k21-grid-colhead, .k21-grid-rowhead {
+      display: flex;
+      align-items: center;
+      justify-content: center;
       font-size: var(--lab-fs-ui);
       font-weight: 700;
-      letter-spacing: 0.06em;
-      text-transform: uppercase;
       color: var(--text-dim);
-      margin: 0 0 0.3rem;
-    }
-    .k21-pills {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 0.4rem;
-    }
-    .k21-pill {
-      font-family: var(--font-display);
-      font-size: var(--lab-fs-body);
-      font-weight: 700;
-      padding: 0.55rem 0.4rem;
-      border-radius: 12px;
-      border: 1.5px solid var(--border);
-      background: var(--surface);
-      color: var(--text-dim);
-      cursor: pointer;
       text-align: center;
-      transition: border-color 180ms, color 180ms, background 180ms;
+      padding: 0.2rem;
     }
-    .k21-pill--on.k21-pill--modelo {
-      border-color: var(--focal);
-      background: color-mix(in srgb, var(--focal) 16%, var(--surface));
-      color: var(--focal);
+    .k21-grid-rowhead { justify-content: flex-end; padding-right: 0.5rem; }
+    .k21-grid-cell {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 0.1rem;
+      border-radius: 10px;
+      border: 1.5px solid var(--border);
+      cursor: pointer;
+      font-family: var(--font-mono);
+      font-weight: 800;
+      transition: border-color 150ms, transform 150ms;
     }
-    .k21-pill--on.k21-pill--esforco {
-      border-color: var(--warm);
-      background: color-mix(in srgb, var(--warm) 16%, var(--surface));
-      color: var(--warm);
-    }
+    .k21-grid-cell:hover { transform: translateY(-1px); }
+    .k21-grid-cell--active { border-color: var(--text); border-width: 2.5px; }
+    .k21-grid-cell--ok { background: color-mix(in srgb, var(--good) 22%, var(--surface)); color: var(--good); }
+    .k21-grid-cell--warn { background: color-mix(in srgb, var(--warm) 20%, var(--surface)); color: var(--warm); }
+    .k21-grid-cell--bad { background: color-mix(in srgb, var(--bad) 18%, var(--surface)); color: var(--bad); }
+    .k21-grid-cell-mark { font-size: var(--lab-fs-answer); line-height: 1; }
 
     .k21-verdict {
       min-height: 0;
@@ -151,6 +152,7 @@
       line-height: 1.45;
       color: var(--text);
       margin: 0;
+      text-align: justify;
     }
     .k21-readout {
       display: flex;
@@ -202,7 +204,9 @@
     @media (max-width: 700px) {
       .k21-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.45rem; }
       .k21-scenario-btn { font-size: 12px; padding: 0.45rem 0.4rem; }
-      .k21-selectors { grid-template-columns: 1fr; gap: 0.5rem; }
+      .k21-grid { gap: 0.25rem; }
+      .k21-grid-colhead, .k21-grid-rowhead { font-size: 11px; }
+      .k21-grid-cell-mark { font-size: var(--lab-fs-body); }
       .k21-verdict { padding: 0.8rem 0.9rem; }
       .k21-readout { gap: 1rem; }
       .k21-button-bar { gap: 0.4rem; padding: 0; }
@@ -221,16 +225,7 @@
 
   <div class="k21-scenarios" id="k21-scenarios"></div>
 
-  <div class="k21-selectors">
-    <div>
-      <p class="k21-axis-label">Modelo</p>
-      <div class="k21-pills" id="k21-modelo"></div>
-    </div>
-    <div>
-      <p class="k21-axis-label">Esforço</p>
-      <div class="k21-pills" id="k21-esforco"></div>
-    </div>
-  </div>
+  <div class="k21-grid" id="k21-grid"></div>
 
   <div class="k21-verdict" id="k21-verdict">
     <span class="k21-verdict-mark" id="k21-verdict-mark"></span>
@@ -290,8 +285,7 @@
       ];
 
       var scenariosEl = document.getElementById('k21-scenarios');
-      var modeloEl = document.getElementById('k21-modelo');
-      var esforcoEl = document.getElementById('k21-esforco');
+      var gridEl = document.getElementById('k21-grid');
       var verdictEl = document.getElementById('k21-verdict');
       var markEl = document.getElementById('k21-verdict-mark');
       var textEl = document.getElementById('k21-verdict-text');
@@ -300,21 +294,38 @@
       var resetBtn = document.getElementById('k21-reset');
 
       var scenarioIdx = 0, modeloIdx = 1, esforcoIdx = 1;
+      var STATE_MARK = { ok: '✓', warn: '€', bad: '✗' };
 
-      function buildPills(container, labels, cls, onPick) {
-        container.innerHTML = '';
-        labels.forEach(function (label, i) {
-          var btn = document.createElement('button');
-          btn.type = 'button';
-          btn.className = 'k21-pill ' + cls;
-          btn.textContent = label;
-          btn.addEventListener('click', function () { onPick(i); render(); });
-          container.appendChild(btn);
+      // Grid: 1 blank corner + 3 esforço column headers, then 3 rows of
+      // (modelo row header + 3 verdict cells). Built once; render() only
+      // updates classes/text on the existing cells, doesn't rebuild them.
+      var gridCells = []; // [modeloIdx][esforcoIdx] -> cell element
+      (function buildGrid() {
+        gridEl.appendChild(document.createElement('div')).className = 'k21-grid-corner';
+        ESFORCOS.forEach(function (label) {
+          var h = document.createElement('div');
+          h.className = 'k21-grid-colhead';
+          h.textContent = label;
+          gridEl.appendChild(h);
         });
-      }
-
-      buildPills(modeloEl, MODELOS, 'k21-pill--modelo', function (i) { modeloIdx = i; });
-      buildPills(esforcoEl, ESFORCOS, 'k21-pill--esforco', function (i) { esforcoIdx = i; });
+        MODELOS.forEach(function (mLabel, m) {
+          var rowHead = document.createElement('div');
+          rowHead.className = 'k21-grid-rowhead';
+          rowHead.textContent = mLabel;
+          gridEl.appendChild(rowHead);
+          gridCells[m] = [];
+          ESFORCOS.forEach(function (eLabel, e) {
+            var cell = document.createElement('div');
+            cell.className = 'k21-grid-cell';
+            cell.innerHTML = '<span class="k21-grid-cell-mark"></span>';
+            cell.addEventListener('click', function () {
+              modeloIdx = m; esforcoIdx = e; render();
+            });
+            gridEl.appendChild(cell);
+            gridCells[m][e] = cell;
+          });
+        });
+      })();
 
       SCENARIOS.forEach(function (s, i) {
         var btn = document.createElement('button');
@@ -331,14 +342,22 @@
         Array.prototype.forEach.call(scenariosEl.children, function (btn, i) {
           btn.classList.toggle('k21-scenario-btn--on', i === scenarioIdx);
         });
-        Array.prototype.forEach.call(modeloEl.children, function (btn, i) {
-          btn.classList.toggle('k21-pill--on', i === modeloIdx);
-        });
-        Array.prototype.forEach.call(esforcoEl.children, function (btn, i) {
-          btn.classList.toggle('k21-pill--on', i === esforcoIdx);
+
+        // Paint all 9 combos for the current scenario, so a whole row/column
+        // being one color (or not) is visible at a glance, not just the cell
+        // the operator happens to have picked.
+        var scenario = SCENARIOS[scenarioIdx];
+        MODELOS.forEach(function (_, m) {
+          ESFORCOS.forEach(function (__, e) {
+            var v = scenario.verdict(m, e);
+            var cell = gridCells[m][e];
+            cell.className = 'k21-grid-cell k21-grid-cell--' + v.state +
+              (m === modeloIdx && e === esforcoIdx ? ' k21-grid-cell--active' : '');
+            cell.querySelector('.k21-grid-cell-mark').textContent = STATE_MARK[v.state];
+          });
         });
 
-        var v = SCENARIOS[scenarioIdx].verdict(modeloIdx, esforcoIdx);
+        var v = scenario.verdict(modeloIdx, esforcoIdx);
         verdictEl.classList.remove('k21-verdict--ok', 'k21-verdict--warn', 'k21-verdict--bad');
         verdictEl.classList.add('k21-verdict--' + v.state);
         markEl.textContent = v.state === 'bad' ? '✗ ERRADO' : (v.state === 'warn' ? '✓ CERTO, MAS CARO' : '✓ CERTO');
