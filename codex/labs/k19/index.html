@@ -59,10 +59,11 @@
 
     /* ── Request card (fixed, always visible) ────────────── */
     .k19-request {
+      position: relative;
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 14px;
-      padding: 0.65rem 1rem;
+      padding: 0.65rem 2.2rem 0.65rem 1rem;
       font-family: var(--font-display);
       font-size: var(--lab-fs-body);
       font-style: italic;
@@ -72,12 +73,23 @@
     }
     .k19-request:hover, .k19-request:focus-visible { border-color: var(--focal); outline: none; }
     .k19-request b { font-style: normal; color: var(--text-dim); font-weight: 600; }
-    .k19-request-hint {
-      font-style: normal;
-      font-size: var(--lab-fs-ui);
+    /* Visual-only affordance that the card opens something, no caption text. */
+    .k19-request-glyph {
+      position: absolute;
+      top: 50%; right: 0.9rem;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
       color: var(--text-dim);
-      margin-left: 0.4em;
     }
+    .k19-request-glyph svg { width: 100%; height: 100%; }
+    .k19-request-part {
+      font-style: normal;
+      font-weight: 700;
+    }
+    .k19-request-part--c { color: var(--focal); }
+    .k19-request-part--o { color: var(--cool); }
+    .k19-request-part--r { color: var(--warm); }
+    .k19-request-part--e { color: var(--good); }
 
     /* ── Prompt preview modal (read-only: shows the prompt as it is right
        now, does NOT advance the ratchet, that only happens via the pills) */
@@ -91,9 +103,19 @@
       z-index: 60;
     }
     .k19-preview-backdrop.k19-preview-open { opacity: 1; pointer-events: auto; }
+    /* This modal is appended straight to <body> (see buildPreview()), OUTSIDE
+       .k19-panel's DOM subtree. The short aliases (--bg, --text, --focal...)
+       are custom properties scoped to .k19-panel and do NOT inherit sideways
+       to a body-level sibling, so every rule below uses the document-wide
+       --lab-* tokens instead (same ones the shared .lab-modal* rules use in
+       labs.css, which is exactly why THAT modal never had this bug). Using
+       the local aliases here silently resolved to nothing: transparent
+       background, no text color, only the border showed (--lab-border only
+       resolved by coincidence, since theme.css also defines a global
+       --border with the same short name). */
     .k19-preview {
-      background: var(--bg);
-      border: 1.5px solid var(--border);
+      background: var(--lab-bg);
+      border: 1.5px solid var(--lab-border);
       border-radius: 16px;
       max-width: 640px;
       width: 100%;
@@ -105,11 +127,11 @@
       margin: 0 0 0.9rem;
       font-size: var(--lab-fs-body);
       font-weight: 800;
-      color: var(--text);
+      color: var(--lab-text);
     }
     .k19-preview-block {
       padding: 0.5rem 0 0.5rem 0.8rem;
-      border-left: 3px solid var(--border);
+      border-left: 3px solid var(--lab-border);
       margin-bottom: 0.7rem;
     }
     .k19-preview-block-label {
@@ -123,31 +145,31 @@
     .k19-preview-block-text {
       font-size: var(--lab-fs-doc);
       line-height: 1.45;
-      color: var(--text);
+      color: var(--lab-text);
       text-align: justify;
     }
-    .k19-preview-block--c { border-left-color: var(--focal); }
-    .k19-preview-block--c .k19-preview-block-label { color: var(--focal); }
-    .k19-preview-block--o { border-left-color: var(--cool); }
-    .k19-preview-block--o .k19-preview-block-label { color: var(--cool); }
-    .k19-preview-block--r { border-left-color: var(--warm); }
-    .k19-preview-block--r .k19-preview-block-label { color: var(--warm); }
-    .k19-preview-block--e { border-left-color: var(--good); }
-    .k19-preview-block--e .k19-preview-block-label { color: var(--good); }
-    .k19-preview-block--pedido .k19-preview-block-label { color: var(--text-dim); }
+    .k19-preview-block--c { border-left-color: var(--lab-focal); }
+    .k19-preview-block--c .k19-preview-block-label { color: var(--lab-focal); }
+    .k19-preview-block--o { border-left-color: var(--lab-context-b); }
+    .k19-preview-block--o .k19-preview-block-label { color: var(--lab-context-b); }
+    .k19-preview-block--r { border-left-color: var(--lab-context-a); }
+    .k19-preview-block--r .k19-preview-block-label { color: var(--lab-context-a); }
+    .k19-preview-block--e { border-left-color: var(--lab-good); }
+    .k19-preview-block--e .k19-preview-block-label { color: var(--lab-good); }
+    .k19-preview-block--pedido .k19-preview-block-label { color: var(--lab-text-dim); }
     .k19-preview-close {
       margin-top: 0.3rem;
-      font-family: var(--font-display);
+      font-family: var(--lab-font-display);
       font-size: var(--lab-fs-btn);
       font-weight: 600;
       padding: 0.4rem 1rem;
       border-radius: 999px;
       cursor: pointer;
-      border: 1.5px solid var(--border);
+      border: 1.5px solid var(--lab-border);
       background: transparent;
-      color: var(--text-dim);
+      color: var(--lab-text-dim);
     }
-    .k19-preview-close:hover { border-color: var(--focal); color: var(--focal); }
+    .k19-preview-close:hover { border-color: var(--lab-focal); color: var(--lab-focal); }
 
     /* ── CORE toggle pills ────────────────────────────────── */
     .k19-toggles {
@@ -320,7 +342,10 @@
   <div class="lab-header" data-lab-title="Framework CORE" data-lab-subtitle="Contexto · Objetivo · Regras · Estrutura"></div>
 
   <div class="k19-request" id="k19-request" tabindex="0" role="button" aria-haspopup="dialog">
-    <b>Pedido:</b> "Escreve um ofício pedindo prorrogação de prazo."<span class="k19-request-hint">(toque para ver o prompt montado)</span>
+    <span id="k19-request-body"></span>
+    <span class="k19-request-glyph" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </span>
   </div>
 
   <div class="k19-toggles">
@@ -422,18 +447,43 @@
       ];
       var PREVIEW_PEDIDO = 'Escreve um ofício pedindo prorrogação de prazo.';
       var PREVIEW_ESTRUTURA = 'Formato de ofício: número, data, destinatário, corpo e fecho, nessa ordem.';
+      var CORE_LABELS = [
+        { cls: 'c', label: 'Contexto' },
+        { cls: 'o', label: 'Objetivo' },
+        { cls: 'r', label: 'Regras' },
+        { cls: 'e', label: 'Estrutura' }
+      ];
 
       var active = 0; // 0..4 blocks ON, always a prefix (ratchet)
       var pills = Array.prototype.slice.call(document.querySelectorAll('.k19-pill'));
       var answerEl = document.getElementById('k19-answer');
       var checklistEl = document.getElementById('k19-checklist');
       var requestEl = document.getElementById('k19-request');
+      var requestBodyEl = document.getElementById('k19-request-body');
+
+      // The request card itself shows what's been added so far, instead of
+      // staying frozen on the original unstructured ask while only the
+      // answer below changes.
+      function renderRequestBody() {
+        if (active === 0) {
+          requestBodyEl.innerHTML = '<b>Pedido:</b> "' + PREVIEW_PEDIDO + '"';
+          return;
+        }
+        var parts = CORE_LABELS.slice(0, active).map(function (b) {
+          return '<span class="k19-request-part k19-request-part--' + b.cls + '">' + b.label + '</span>';
+        });
+        var joined = parts.length > 1
+          ? parts.slice(0, -1).join(', ') + ' e ' + parts[parts.length - 1]
+          : parts[0];
+        requestBodyEl.innerHTML = 'Prompt com ' + joined;
+      }
 
       function render() {
         var state = STATES[active];
         // Authored content only (no user input reaches this string), so the
         // literal <mark> tags in STATES render as intended.
         answerEl.innerHTML = state.answer;
+        renderRequestBody();
 
         pills.forEach(function (p, i) {
           p.classList.toggle('k19-pill--on', i < active);

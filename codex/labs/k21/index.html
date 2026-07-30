@@ -90,7 +90,20 @@
       grid-auto-rows: minmax(40px, auto);
       gap: 0.35rem;
     }
-    .k21-grid-corner { }
+    .k21-grid-corner {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      justify-content: center;
+      gap: 0.1rem;
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.03em;
+      line-height: 1.2;
+      color: var(--text-dim);
+      text-transform: uppercase;
+      padding-right: 0.3rem;
+    }
     .k21-grid-colhead, .k21-grid-rowhead {
       display: flex;
       align-items: center;
@@ -253,24 +266,31 @@
       var MODELOS = ['Pequeno', 'Médio', 'Grande'];
       var ESFORCOS = ['Baixo', 'Médio', 'Alto'];
 
+      // Scenarios 1 and 2 reuse the exact questions/citations already
+      // shipped and vetted in k13 ("Três velocidades"): the factual/simple
+      // one and the multi-step prescription-with-suspension one. k13's 3rd
+      // scenario (reading attached PDFs) tests TOOL ACCESS, which is the
+      // agentic-strategy axis, not modelo/esforço, so it doesn't fit here;
+      // scenario 3 stays original (a pure capability-vs-effort case with no
+      // legal citation to get wrong).
       // verdict(modeloIdx, esforcoIdx) -> { state: 'ok'|'warn'|'bad', text }
       var SCENARIOS = [
         {
-          label: 'Resumir 200 despachos parecidos',
+          label: 'Prazo do agravo de instrumento',
           verdict: function (m, e) {
             if (m === 2 || e === 2) {
-              return { state: 'warn', text: 'Certo, mas caro e lento à toa. É uma tarefa simples e repetitiva, não precisa de modelo grande nem de esforço alto.' };
+              return { state: 'warn', text: 'Certo (15 dias úteis, art. 1.003 c/c art. 1.070 do CPC), mas caro e lento à toa. É uma pergunta factual seca, não precisa de modelo grande nem de esforço alto.' };
             }
-            return { state: 'ok', text: 'Certo, rápido e barato. Ideal pra um volume grande de tarefa simples.' };
+            return { state: 'ok', text: 'Certo: 15 dias úteis (art. 1.003 c/c art. 1.070 do CPC). Rápido e barato, do jeito que uma pergunta factual seca pede.' };
           }
         },
         {
-          label: 'Prazo com feriado e suspensão',
+          label: 'Prescrição com 60 dias de suspensão',
           verdict: function (m, e) {
             if (e === 0) {
-              return { state: 'bad', text: 'Errado. Pulou a conferência de feriado e suspensão, saiu confiante do mesmo jeito, o modelo maior não teria evitado isso sozinho.' };
+              return { state: 'bad', text: 'Errado. Pulou o cálculo da suspensão e respondeu só com o prazo bienal (chegaria a 28/06/2026), o modelo maior sozinho não evitaria isso.' };
             }
-            return { state: 'ok', text: 'Certo. Parou pra checar feriado e suspensão antes de fechar a conta, mesmo num modelo menor. Aqui o problema era esforço, não capacidade.' };
+            return { state: 'ok', text: 'Certo: 27/08/2026 (prazo bienal do art. 7º, XXIX da CF, 28/06/2024 a 28/06/2026, mais os 60 dias de suspensão). Parou pra fazer a conta, mesmo num modelo menor. Aqui o problema era esforço, não capacidade.' };
           }
         },
         {
@@ -301,7 +321,10 @@
       // updates classes/text on the existing cells, doesn't rebuild them.
       var gridCells = []; // [modeloIdx][esforcoIdx] -> cell element
       (function buildGrid() {
-        gridEl.appendChild(document.createElement('div')).className = 'k21-grid-corner';
+        var corner = document.createElement('div');
+        corner.className = 'k21-grid-corner';
+        corner.innerHTML = '<span>Modelo ↓</span><span>Esforço →</span>';
+        gridEl.appendChild(corner);
         ESFORCOS.forEach(function (label) {
           var h = document.createElement('div');
           h.className = 'k21-grid-colhead';
