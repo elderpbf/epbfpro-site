@@ -108,7 +108,12 @@
       font-family: var(--font-mono);
       font-size: var(--lab-fs-doc);
       line-height: 1.4;
-      height: clamp(64px, 16dvh, 130px);
+      /* Auto-grows to fit content (see autosize() in the script), capped so
+         the chips box below always keeps room. No more "toggle markdown,
+         then scroll to see the rest of the message". */
+      height: auto;
+      min-height: 64px;
+      max-height: 46dvh;
       overflow-y: auto;
       outline: none;
       transition: border-color 180ms;
@@ -121,12 +126,16 @@
       display: flex;
       flex-wrap: wrap;
       align-content: flex-start;
-      gap: 0.4rem;
+      gap: 0;
       border: 1.5px solid var(--border);
       border-radius: 14px;
       padding: 0.9rem;
       background: var(--surface);
     }
+    /* Square, glued, tiktokenizer-style: no radius, no gap between chips.
+       Hue rotates per TOKEN (not per word) so a word that splits into several
+       pieces still shows a color change at every piece boundary, since there
+       is no more gap/radius to hint at the split visually. */
     .k5-chip {
       --chip-h: 210;
       display: inline-flex;
@@ -134,16 +143,24 @@
       font-family: var(--font-mono);
       font-size: var(--lab-fs-body);
       font-weight: 600;
-      padding: 0.28rem 0.55rem;
-      border-radius: 8px;
+      padding: 0.32rem 0.4rem;
       line-height: 1.2;
       background: hsl(var(--chip-h) 62% 88%);
       color: hsl(var(--chip-h) 55% 24%);
-      white-space: pre;
+      white-space: nowrap;
+      transition: opacity 150ms, filter 150ms;
+      animation: k5-chip-in 220ms ease-out both;
     }
     [data-theme="dark"] .k5-chip {
       background: hsl(var(--chip-h) 40% 24%);
       color: hsl(var(--chip-h) 70% 84%);
+    }
+    /* Hover isolates: dim every chip except the one under the pointer. */
+    .k5-chips:hover .k5-chip { opacity: 0.4; filter: saturate(0.35); }
+    .k5-chips:hover .k5-chip:hover { opacity: 1; filter: none; }
+    @keyframes k5-chip-in {
+      from { opacity: 0; transform: scale(0.75); }
+      to { opacity: 1; transform: scale(1); }
     }
     .k5-chip-space {
       opacity: 0.5;
@@ -163,8 +180,6 @@
       background: rgba(var(--warm-rgb), 0.22);
       color: var(--warm);
       font-weight: 700;
-      border-radius: 999px;
-      padding: 0.28rem 0.75rem;
     }
 
     /* ── Side panel ───────────────────────────────────────── */
@@ -300,7 +315,7 @@
       .k5-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
       .k5-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 0.55rem; }
       .k5-side { padding: 0.6rem 0.75rem; gap: 0.55rem; }
-      .k5-input { height: clamp(84px, 21dvh, 130px); }
+      .k5-input { min-height: 72px; max-height: 36dvh; }
       .k5-button-bar { gap: 0.4rem; padding: 0; }
       .k5-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(50% - 0.2rem); min-height: 44px; text-align: center; }
       .k5-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
@@ -309,7 +324,7 @@
     }
     @media (max-height: 500px) and (orientation: landscape) {
       .k5-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
-      .k5-input { height: 48px; }
+      .k5-input { min-height: 40px; max-height: 48px; }
       .k5-btn { min-height: 32px; }
     }
   </style>
@@ -323,7 +338,7 @@
 
   <div class="k5-main" data-lab-tabs data-lab-tab-default="Texto">
     <div class="k5-stage" data-lab-tab="Texto">
-      <textarea class="k5-input" id="k5-input" spellcheck="false"></textarea>
+      <textarea class="k5-input" id="k5-input" spellcheck="false" placeholder="Digite aqui para tokenizar..."></textarea>
       <div class="k5-chips" id="k5-chips" aria-live="polite"></div>
     </div>
 
@@ -354,6 +369,7 @@
     <button class="k5-btn" id="k5-ex-palavra" data-example="palavra">Palavra ≠ token</button>
     <button class="k5-btn" id="k5-ex-estrutura" data-example="estrutura">Estrutura da mensagem</button>
     <button class="k5-btn" id="k5-ex-formatacao" data-example="formatacao">Custo do Markdown</button>
+    <button class="k5-btn" id="k5-ex-livre" data-example="livre">Livre</button>
   </div>
 
   <template data-lab-info data-lab-info-title="O que é um token?">
@@ -377,8 +393,8 @@
        'desde','e','ou','mas','que','se','não','sim','é','foi','ser','são','está','estão','tem','têm',
        'há','já','também','mais','menos','muito','pouco','como','quando','onde','porque','isso','esse',
        'essa','este','esta','isto','aquele','aquela','seu','sua','seus','suas','meu','minha','nosso',
-       'nossa','à','às','ao','aos','réu','autor','juiz','prazo','caso','pena','multa','valor','lei',
-       'artigo','processo','ação','parte','partes','três','dias','linhas','este','despacho','resuma'
+       'nossa','à','às','ao','aos','autor','juiz','caso','pena','multa','valor','lei',
+       'artigo','processo','ação','parte','partes','três','dias','linhas','este','despacho'
       ].forEach(function (w) { COMMON[w] = true; });
 
       var SUFFIXES = [
@@ -388,6 +404,23 @@
         'íveis','ível','agens','agem','ando','endo','indo','ções','ção'
       ];
       var MAX_WHOLE = 7;
+
+      // Exact overrides, ground-truthed against the real tokenizer Élder
+      // checked these words against (not the heuristic's guess). Keyed by
+      // lowercase word, value is the piece-length split; sliced off the
+      // ORIGINAL word so capitalization survives (e.g. "Resuma" -> "Res"+"uma").
+      // These take priority over COMMON / suffix-peel / fallback chunking.
+      var OVERRIDES = {
+        'réu': [2, 1],
+        'compareceu': [7, 3],
+        'configurando': [8, 4],
+        'revelia': [5, 2],
+        'extemporaneidade': [2, 6, 3, 5],
+        'contestação': [7, 4],
+        'resuma': [3, 3],
+        'indevida': [4, 4],
+        'prazo': [3, 2]
+      };
 
       function splitStem(stem) {
         if (stem.length <= MAX_WHOLE) return [stem];
@@ -403,6 +436,15 @@
 
       function splitWord(word) {
         var lower = word.toLowerCase();
+        if (OVERRIDES[lower]) {
+          var pieces = [];
+          var pos = 0;
+          OVERRIDES[lower].forEach(function (len) {
+            pieces.push(word.slice(pos, pos + len));
+            pos += len;
+          });
+          return pieces;
+        }
         if (COMMON[lower] || word.length <= MAX_WHOLE) return [word];
         for (var i = 0; i < SUFFIXES.length; i++) {
           var suf = SUFFIXES[i];
@@ -445,9 +487,24 @@
           if (ch === '*' || ch === '#' || ch === '-') { tokens.push({ text: ch, kind: 'md', spaceBefore: pendingSpace }); pendingSpace = false; i++; continue; }
           if (/[.,;:!?"'()«»]/.test(ch)) { tokens.push({ text: ch, kind: 'punct', spaceBefore: pendingSpace }); pendingSpace = false; i++; continue; }
           if (/[0-9]/.test(ch)) {
-            var num = ch; i++;
-            while (i < text.length && /[0-9.,]/.test(text[i])) { num += text[i]; i++; }
-            tokens.push({ text: num, kind: 'num', spaceBefore: pendingSpace });
+            // Real tokenizers don't merge "8.000,00" into one piece: each run
+            // of pure digits is its own token (chunked in groups of up to 3
+            // from the right, as GPT-family vocabularies do for long numbers),
+            // and "." / "," fall through to the punct branch below as their
+            // own tokens. This is what produced "8|.|000|,|00" for Élder.
+            var start = i;
+            while (i < text.length && /[0-9]/.test(text[i])) { i++; }
+            var digits = text.slice(start, i);
+            var chunks = [];
+            var pos = digits.length;
+            while (pos > 0) {
+              var take = pos % 3 === 0 ? 3 : pos % 3;
+              chunks.unshift(digits.slice(pos - take, pos));
+              pos -= take;
+            }
+            chunks.forEach(function (c, idx) {
+              tokens.push({ text: c, kind: 'num', spaceBefore: idx === 0 ? pendingSpace : false });
+            });
             pendingSpace = false;
             continue;
           }
@@ -491,6 +548,11 @@
           note: 'A mesma mensagem, com e sem formatação. Cada asterisco, cada traço de lista também é um token.',
           plain: 'Resumo do caso: dano moral por inscrição indevida. Valor pedido: R$ 8.000,00. Prazo: 15 dias.',
           md: '**Resumo do caso**\n\n- Dano moral por inscrição indevida\n- Valor pedido: R$ 8.000,00\n- Prazo: 15 dias'
+        },
+        livre: {
+          title: 'Escreva o seu',
+          note: 'Digite qualquer texto e veja como ele quebra em tokens, em tempo real.',
+          text: ''
         }
       };
 
@@ -530,18 +592,27 @@
         var result = tokenize(text);
         chipsEl.innerHTML = '';
 
-        result.tokens.forEach(function (tok) {
+        result.tokens.forEach(function (tok, i) {
           var el = document.createElement('span');
           var cls = 'k5-chip';
           if (tok.kind !== 'word') cls += ' k5-chip--' + tok.kind;
           el.className = cls;
-          if (tok.kind === 'word') el.style.setProperty('--chip-h', String(hue(tok.wordIndex)));
+          // Hue rotates per TOKEN, not per word: a word split into pieces
+          // must still show a color change at each boundary now that chips
+          // are glued together with no gap.
+          if (tok.kind === 'word') el.style.setProperty('--chip-h', String(hue(i)));
+          el.style.animationDelay = (Math.min(i, 40) * 18) + 'ms';
           var label = (tok.spaceBefore ? '·' : '') + tok.text;
           el.textContent = label;
           chipsEl.appendChild(el);
         });
 
         return result;
+      }
+
+      function autosize() {
+        inputEl.style.height = 'auto';
+        inputEl.style.height = inputEl.scrollHeight + 'px';
       }
 
       function render() {
@@ -568,6 +639,8 @@
         } else {
           deltaEl.hidden = true;
         }
+
+        autosize();
       }
 
       var mainEl = document.querySelector('[data-lab-tabs]');

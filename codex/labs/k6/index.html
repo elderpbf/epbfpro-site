@@ -242,7 +242,7 @@
     <aside class="k6-legend" data-lab-tab="Domínios">
       <p class="k6-legend-title">Domínios</p>
       <ul class="k6-legend-list" id="k6-legend-list"></ul>
-      <p class="k6-caption">Ninguém disse ao modelo qual palavra é de qual assunto. Elas terminam perto por serem parecidas em sentido, não por rótulo.</p>
+      <p class="k6-caption">Ninguém disse ao modelo qual palavra é de qual assunto. Elas terminam perto porque aparecem perto, no mesmo tipo de conteúdo, durante o treinamento, não porque alguém rotulou o assunto.</p>
     </aside>
   </div>
 
@@ -255,7 +255,7 @@
   </div>
 
   <template data-lab-info data-lab-info-title="O que é um embedding?">
-    <p>Um embedding é a posição de uma palavra (ou frase) num espaço onde a <strong>distância representa semelhança de sentido</strong>. Palavras usadas em contextos parecidos ficam perto; palavras de assuntos diferentes ficam longe.</p>
+    <p>Um embedding é a posição de uma palavra (ou frase) num espaço onde a <strong>distância vem de como as palavras aparecem juntas no material de treinamento</strong>, não de o modelo "entender" que elas significam a mesma coisa. Palavras que aparecem nos mesmos tipos de texto ficam perto; palavras de assuntos que raramente aparecem juntos ficam longe.</p>
     <p>Essa demo usa posições escolhidas à mão, não um cálculo real, pra ficar previsível e clara no palco. Mas o fenômeno é real: é assim que um modelo treinado organiza o vocabulário, sem que ninguém tenha etiquetado "isto é direito, isto é culinária". O agrupamento emerge do uso, não de uma lista de categorias.</p>
     <p>É a mesma geometria que faz a busca semântica funcionar: procurar "carro quebrado" pode encontrar um documento que fala em "veículo com defeito", porque os dois ficam perto no espaço, mesmo sem nenhuma palavra em comum.</p>
   </template>
