@@ -156,7 +156,7 @@
     .k19-preview-block--r .k19-preview-block-label { color: var(--lab-context-a); }
     .k19-preview-block--e { border-left-color: var(--lab-good); }
     .k19-preview-block--e .k19-preview-block-label { color: var(--lab-good); }
-    .k19-preview-block--pedido .k19-preview-block-label { color: var(--lab-text-dim); }
+    .k19-preview-block--prompt .k19-preview-block-label { color: var(--lab-text-dim); }
     .k19-preview-close {
       margin-top: 0.3rem;
       font-family: var(--lab-font-display);
@@ -445,7 +445,10 @@
         { cls: 'o', label: 'Objetivo', text: 'Entregue um ofício completo, pronto para protocolo.' },
         { cls: 'r', label: 'Regras', text: 'Não presuma nem invente número de processo ou data. Se faltar informação, pergunte antes de redigir.' }
       ];
-      var PREVIEW_PEDIDO = 'Escreve um ofício pedindo prorrogação de prazo.';
+      // The raw, unstructured ask. Once Objetivo is on, it already SAYS what
+      // must be delivered, so it subsumes this: the "Prompt" block below
+      // drops out of the preview list instead of sitting there redundant.
+      var PREVIEW_PROMPT = 'Escreve um ofício pedindo prorrogação de prazo.';
       var PREVIEW_ESTRUTURA = 'Formato de ofício: número, data, destinatário, corpo e fecho, nessa ordem.';
       var CORE_LABELS = [
         { cls: 'c', label: 'Contexto' },
@@ -466,7 +469,7 @@
       // answer below changes.
       function renderRequestBody() {
         if (active === 0) {
-          requestBodyEl.innerHTML = '<b>Pedido:</b> "' + PREVIEW_PEDIDO + '"';
+          requestBodyEl.innerHTML = '<b>Prompt:</b> "' + PREVIEW_PROMPT + '"';
           return;
         }
         var parts = CORE_LABELS.slice(0, active).map(function (b) {
@@ -554,7 +557,10 @@
         PREVIEW_BLOCKS.forEach(function (b, i) {
           if (i < active) html += blockHtml(b.cls, b.label, b.text);
         });
-        html += blockHtml('pedido', 'Pedido', PREVIEW_PEDIDO);
+        // Objetivo (index 1) already states what must be delivered, so once
+        // it's on (active >= 2) the raw "Prompt" block is redundant and
+        // drops out of the list instead of repeating the same ask twice.
+        if (active < 2) html += blockHtml('prompt', 'Prompt', PREVIEW_PROMPT);
         if (active >= 4) html += blockHtml('e', 'Estrutura', PREVIEW_ESTRUTURA);
         document.getElementById('k19-preview-body').innerHTML = html;
         previewBackdrop.classList.add('k19-preview-open');
