@@ -163,3 +163,21 @@ test('a copia fala do codigo da turma, nao da aula ao vivo', () => {
     assert.ok(count >= 2, `${k} continua nos dois idiomas`);
   }
 });
+
+test('rede caida nao e reportada ao aluno como codigo errado', () => {
+  // As duas falhas caiam no MESMO ramo, entao qualquer erro de transporte dizia ao aluno que o
+  // codigo dele estava errado. Foi o que disfarcou o diagnostico de 2026-07-31 por uma rodada, e
+  // e o que faria um aluno com o codigo certo ligar para o professor(a) reclamar dele.
+  const bloco = js.slice(js.indexOf('async function resolveAndGo'), js.indexOf('async function autoEnter'));
+  assert.match(bloco, /catch\s*\(_\)\s*\{\s*semResposta\s*=\s*true/, 'o throw e marcado, nao confundido com found:false');
+  assert.match(bloco, /entrar\.offline/, 'falha de transporte tem mensagem propria');
+  assert.match(bloco, /entrar\.not_found/, 'codigo inexistente mantem a sua');
+  // E o campo NAO e apagado quando a rede caiu: o codigo pode estar perfeito.
+  const semResposta = bloco.slice(bloco.indexOf('if (semResposta)'));
+  assert.ok(semResposta.indexOf('return;') < semResposta.indexOf('CodeInput.clear('),
+    'o ramo de rede caida retorna ANTES de limpar o campo');
+  for (const k of ['entrar.offline']) {
+    const count = (i18n.match(new RegExp("'" + k.replace('.', '\.') + "'", 'g')) || []).length;
+    assert.ok(count >= 2, `${k} nos dois idiomas`);
+  }
+});

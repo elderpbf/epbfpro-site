@@ -63,8 +63,13 @@ async function resolveAndGo(code, els) {
   els.error.textContent = '';
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
-  let res;
-  try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
+  // "Não consegui perguntar" e "perguntei e não existe" NÃO são a mesma coisa, e tratá-las como
+  // uma só faz a tela dizer ao aluno que o código está errado quando o errado é a rede. Isso não é
+  // hipotético: foi exatamente o que disfarçou o diagnóstico de 2026-07-31 por uma rodada inteira,
+  // e o aluno que cair nisso vai ligar para o professor(a) reclamar de um código que está certo.
+  let res = null;
+  let semResposta = false;
+  try { res = await trail.resolveCode({ code }); } catch (_) { semResposta = true; }
   if (res && res.found) {
     // The code is the turma's permanent URL in its own right: land ON it (/trilha/<code>) and
     // let the student page resolve it in place. We resolve here only to validate + show an
@@ -74,6 +79,12 @@ async function resolveAndGo(code, els) {
   }
   els.state.textContent = '';
   els.btn.disabled = false;
+  if (semResposta) {
+    // O código pode estar perfeito. Apagar aqui seria punir o aluno por uma falha nossa,
+    // então a mensagem manda tentar de novo e o que ele digitou continua no campo.
+    els.error.textContent = t('entrar.offline');
+    return;
+  }
   els.error.textContent = t('entrar.not_found');
   // Mesma regra das outras telas de código: errou, o campo esvazia e recebe o foco.
   // Guardado atrás do if porque esta função também roda para código vindo da URL,
