@@ -208,3 +208,33 @@ function fakeInput() {
     get selectionStart() { return this.value.length; }
   };
 }
+
+test('o campo de OTP aceita SÓ letras, que é o alfabeto que o servidor emite', () => {
+  // Conferido em codex-api/src/lib/student-auth.js: OTP_ALPHABET = 'ABCDEFGHJKLMNPQRSTUVWXYZ'
+  // (26 menos I e O, as parecidas com 1 e 0) e normalizeOtpCode descarta tudo que nao e A-Z.
+  // Enquanto o padrao do campo era alnum, o aluno podia digitar 0 no lugar do O -- a confusao que
+  // fez o alfabeto excluir as duas letras -- e o servidor respondia "codigo invalido" sem dizer
+  // por que. O unico lugar onde isso da para pegar e o campo.
+  assert.equal(CodeInput.normalize('rp0h', { length: 4 }), 'RPH');
+  assert.equal(CodeInput.normalize('a1b2c3d4', { length: 4 }), 'ABCD');
+  assert.equal(CodeInput.normalize('tvkv', { length: 4 }), 'TVKV');
+  // Q existe no alfabeto real: o comentario antigo dizia que nao.
+  assert.equal(CodeInput.normalize('pqrs', { length: 4 }), 'PQRS');
+  // Os outros dois alfabetos continuam disponiveis, mas so por pedido explicito.
+  assert.equal(CodeInput.normalize('ab12', { length: 4, mode: 'digits' }), '12');
+  assert.equal(CodeInput.normalize('ab12', { length: 4, mode: 'alnum' }), 'AB12');
+});
+
+test('as quatro telas de OTP herdam o alfabeto de letras sem pedir', () => {
+  // Elas nao passam `mode`, entao dependem do PADRAO. Se alguem trocar o padrao de volta para
+  // alnum, as quatro voltam a aceitar digito de uma vez so, e nada mais falharia.
+  const fonte = read('codex/js/code-input.js');
+  assert.match(fonte, /ALFABETO_PADRAO\s*=\s*'letters'/, 'o padrao do componente e letters');
+  for (const tela of ['codex/js/codex-login.js', 'codex/trilha/js/student-login-modal.js', 'codex/trilha/js/wall-access-otp.js']) {
+    const src = read(tela);
+    assert.match(src, /CodeInput\.attach\([^)]*\{\s*length:\s*4\s*\}/, tela + ' usa o padrao (sem mode)');
+  }
+  // O campo do codigo da TURMA e a excecao, e pede digitos na cara.
+  assert.match(read('codex/trilha/js/entrar.js'), /cdx-entrar-input'\)[\s\S]{0,200}mode:\s*'digits'/,
+    'o codigo da turma continua numerico');
+});
