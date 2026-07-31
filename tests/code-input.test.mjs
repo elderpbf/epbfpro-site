@@ -177,6 +177,21 @@ test('o tema público segue o SISTEMA quando ninguém escolheu nada', () => {
     'a escolha guardada tem que vir ANTES do sistema: quem já escolheu, escolheu');
 });
 
+test('a tela de LOGIN do Codex tambem nasce com tema, nao so depois de entrar', () => {
+  // O `data-theme` do admin so era escrito quando a topbar montava (`codex-topbar.js`), ou seja
+  // DEPOIS de entrar. A tela de login abria no claro para todo mundo, inclusive para quem ja tinha
+  // escolhido escuro, e sem botao nenhum para mudar, porque o botao mora na topbar que ainda nao
+  // existe ali. Elder: *"adicione para mudar no codex tb"*.
+  const idx = read('codex/index.html');
+  assert.match(idx, /ThemeManager\.initPublic\(\{[^}]*storageKey:\s*'bs_theme'/, 'o login do Codex aplica o tema antes de pintar');
+  assert.match(idx, /initPublic\(\{[^}]*defaultTheme:\s*'dark'/, 'o padrao do admin continua escuro');
+  // Antes do boot dos modulos, senao ha um piscar de tela clara.
+  assert.ok(idx.indexOf('initPublic') < idx.indexOf('<script type="module">'), 'o tema e aplicado antes do boot dos modulos');
+  // E a MESMA peca da Trilha, nao uma copia com outro nome.
+  const tm = read('codex/js/theme-manager.js');
+  assert.equal((tm.match(/function initPublic/g) || []).length, 1, 'existe um initPublic so');
+});
+
 // ── um <input> de mentira, suficiente para o que o componente faz ────────────
 function fakeInput() {
   const attrs = {};

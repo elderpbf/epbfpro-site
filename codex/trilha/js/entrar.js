@@ -63,8 +63,13 @@ async function resolveAndGo(code, els) {
   els.error.textContent = '';
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
-  let res;
-  try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
+  // "Não consegui perguntar" e "perguntei e não existe" NÃO são a mesma coisa, e tratá-las como
+  // uma só faz a tela dizer ao aluno que o código está errado quando o errado é a rede. Isso não é
+  // hipotético: foi exatamente o que disfarçou o diagnóstico de 2026-07-31 por uma rodada inteira,
+  // e o aluno que cair nisso vai ligar para o professor(a) reclamar de um código que está certo.
+  let res = null;
+  let semResposta = false;
+  try { res = await trail.resolveCode({ code }); } catch (_) { semResposta = true; }
   if (res && res.found) {
     // The code is the turma's permanent URL in its own right: land ON it (/trilha/<code>) and
     // let the student page resolve it in place. We resolve here only to validate + show an
@@ -74,7 +79,17 @@ async function resolveAndGo(code, els) {
   }
   els.state.textContent = '';
   els.btn.disabled = false;
+  if (semResposta) {
+    // O código pode estar perfeito. Apagar aqui seria punir o aluno por uma falha nossa,
+    // então a mensagem manda tentar de novo e o que ele digitou continua no campo.
+    els.error.textContent = t('entrar.offline');
+    return;
+  }
   els.error.textContent = t('entrar.not_found');
+  // Mesma regra das outras telas de código: errou, o campo esvazia e recebe o foco.
+  // Guardado atrás do if porque esta função também roda para código vindo da URL,
+  // quando não houve digitação nenhuma para desfazer.
+  if (window.CodeInput) window.CodeInput.clear(els.input);
 }
 
 // Auto-enter (Élder, 2026-06-20): NO "Continuar" banner and NO turma list. Having more
@@ -277,7 +292,12 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    // O código da aula ao vivo é NUMÉRICO, e é a mesma peça com outro alfabeto.
+    // NUMÉRICO, e é o alfabeto certo apesar de `ct_resolve_code` aceitar letra. O que o
+    // aluno digita é o `access_code` da turma, e ele é numérico: conferido no D1 de
+    // produção em 2026-07-31, 9 turmas, 9 códigos de 4 dígitos. A letra só aparece no
+    // `classpulse_session_id`, a coluna LEGADA que o resolvedor ainda casa para não
+    // quebrar link antigo — é compatibilidade, não é o que se pede a um aluno hoje.
+    // Élder, 2026-07-31: *"os códigos de turma são numéricos, não alfanuméricos"*.
     input: (window.CodeInput
       ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })
       : document.getElementById('cdx-entrar-input')),
