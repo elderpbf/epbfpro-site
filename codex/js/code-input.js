@@ -86,7 +86,22 @@ var CodeInput = (function () {
     return el;
   }
 
-  return { normalize: normalize, attach: attach };
+  // Código errado sai do campo (Élder 2026-07-31). Quem errou vai digitar de novo, e apagar por
+  // cima de quatro caracteres que já estão lá é trabalho que o campo devia fazer sozinho. O foco
+  // volta junto, senão a pessoa toma o erro e o cursor fica em lugar nenhum.
+  //
+  // Isto mora AQUI e não em cada tela porque a regra é a mesma nas cinco, e regra repetida cinco
+  // vezes fica errada uma tela por vez.
+  function clear(el, opts) {
+    if (!el) return el;
+    el.value = '';
+    if (!opts || opts.focus !== false) {
+      try { el.focus(); } catch (e) { /* campo fora da tela */ }
+    }
+    return el;
+  }
+
+  return { normalize: normalize, attach: attach, clear: clear };
 })();
 
 if (typeof window !== 'undefined') window.CodeInput = CodeInput;

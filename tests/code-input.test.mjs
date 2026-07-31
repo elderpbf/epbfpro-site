@@ -86,6 +86,48 @@ test('attach: apagar e completar de novo avisa de novo', () => {
   assert.equal(vezes, 2);
 });
 
+test('clear: código errado sai do campo e o foco volta', () => {
+  const el = fakeInput();
+  let focado = 0;
+  el.focus = () => { focado++; };
+  CodeInput.attach(el, { length: 4 });
+  el.value = 'RPBH'; el.fire('input');
+  CodeInput.clear(el);
+  assert.equal(el.value, '');
+  assert.equal(focado, 1);
+});
+
+test('clear: depois de apagar, completar de novo volta a avisar', () => {
+  // Sem isto, quem erra o código uma vez perde o envio automático para sempre naquela tela.
+  const el = fakeInput();
+  let vezes = 0;
+  CodeInput.attach(el, { length: 4, onComplete: () => vezes++ });
+  el.value = 'rpbh'; el.fire('input');
+  CodeInput.clear(el); el.fire('input');
+  el.value = 'sgys'; el.fire('input');
+  assert.equal(vezes, 2);
+});
+
+test('as telas que NÃO re-renderizam apagam o código errado', () => {
+  // As cinco telas se dividem em duas famílias: as que re-renderizam o cartão inteiro no erro
+  // (muro e modal do aluno, onde o campo nasce vazio de novo) e as que só trocam o texto do erro.
+  // Estas últimas ficavam com o código errado no campo, e são as que precisam chamar clear().
+  for (const f of ['codex/js/codex-login.js', 'codex/trilha/js/entrar.js']) {
+    assert.ok(/CodeInput\.clear/.test(read(f)), f + ' não apaga o código errado');
+  }
+});
+
+test('as telas que re-renderizam nascem com o campo vazio', () => {
+  // A outra família: o teste é que o gabarito não carrega `value=`, senão o "apagar" seria só
+  // aparente e voltaria no próximo render.
+  for (const f of ['codex/trilha/js/wall-access-otp.js', 'codex/trilha/js/student-login-modal.js']) {
+    const src = read(f);
+    const linha = src.split(String.fromCharCode(10)).find((l) => /id="(cdx-en-code|tr-login-code)"/.test(l));
+    assert.ok(linha, f + ': não achei o campo de código');
+    assert.ok(!/value=/.test(linha), f + ': o campo renasce com valor preenchido');
+  }
+});
+
 test('a classe compartilhada existe no CSS compartilhado, e centraliza', () => {
   const css = read('codex/css/components.css');
   assert.ok(css.includes('.pia-code'), 'components.css não tem .pia-code');

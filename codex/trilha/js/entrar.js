@@ -231,7 +231,12 @@ function startEmail(emailEl, root) {
       err.textContent = '';
       verify.disabled = true; verify.textContent = t('login.sending');
       await flow.verifyCode(input.value);
-      if (flow.state === 'code' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); verify.disabled = false; verify.textContent = t('login.enroll_cta'); return; }
+      if (flow.state === 'code' && flow.error) {
+        err.textContent = entryErrorText(flow.error, flow.retryAfter);
+        // Código errado sai do campo, com o foco de volta: quem errou vai digitar outro.
+        if (window.CodeInput) window.CodeInput.clear(input);
+        verify.disabled = false; verify.textContent = t('login.enroll_cta'); return;
+      }
       settle();
     };
     verify.addEventListener('click', doVerify);
