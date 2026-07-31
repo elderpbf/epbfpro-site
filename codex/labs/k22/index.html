@@ -227,12 +227,11 @@
        stagger-in keyframe — copied as values, not shared selectors: each
        lab stays self-contained per the architecture contract). Word-level
        chips (no sub-word split): k5 already owns that lesson.
-       Embeddings is not its own dwell stage: a static panel of fake numbers
-       reads as meaningless because it is (a hash of the word's characters).
-       Instead, after the words settle, each chip flips in place into a
-       small sparkline standing in for "this word became a vector" — one
-       animated beat inside the Tokens stage, not a screen a viewer can
-       stare at and try to decode. */
+       Embeddings reuses the same chip shape and color per token (so the eye
+       tracks a token across both stages) but swaps the label for a small
+       sparkline standing in for "this word became a vector" — deliberately
+       not a table of decoded-looking numbers, which read as meaningless
+       (they were a hash of the word's characters) rather than as a vector. */
     .k22-tok-wrap {
       display: flex;
       flex-wrap: wrap;
@@ -469,11 +468,13 @@
   <div class="k22-rail" id="k22-rail">
     <span class="k22-rail-chip" data-stage="0"><span class="k22-rail-num">1</span><span class="k22-rail-label">Tokens</span></span>
     <span class="k22-rail-arrow">›</span>
-    <span class="k22-rail-chip" data-stage="1"><span class="k22-rail-num">2</span><span class="k22-rail-label">Transformador</span></span>
+    <span class="k22-rail-chip" data-stage="1"><span class="k22-rail-num">2</span><span class="k22-rail-label">Embeddings</span></span>
     <span class="k22-rail-arrow">›</span>
-    <span class="k22-rail-chip" data-stage="2"><span class="k22-rail-num">3</span><span class="k22-rail-label">Probabilidades</span></span>
+    <span class="k22-rail-chip" data-stage="2"><span class="k22-rail-num">3</span><span class="k22-rail-label">Transformador</span></span>
     <span class="k22-rail-arrow">›</span>
-    <span class="k22-rail-chip" data-stage="3"><span class="k22-rail-num">4</span><span class="k22-rail-label">Token novo</span></span>
+    <span class="k22-rail-chip" data-stage="3"><span class="k22-rail-num">4</span><span class="k22-rail-label">Probabilidades</span></span>
+    <span class="k22-rail-arrow">›</span>
+    <span class="k22-rail-chip" data-stage="4"><span class="k22-rail-num">5</span><span class="k22-rail-label">Token novo</span></span>
   </div>
 
   <div class="k22-stage-area">
@@ -576,16 +577,15 @@
 
       // ── State ──────────────────────────────────────────────
       // genIdx: index into STEPS of the word currently being generated (0..STEPS.length-1).
-      // stage: null=not started, 0=Tokens (also plays the token-to-vector beat),
-      // 1=Transformador, 2=Probabilidades, 3=Token novo. The word at STEPS[genIdx]
-      // is committed to the sentence the moment stage becomes 3 (not on a later
-      // click) — the "Token novo" caption says the word already entered the
-      // frase, so the sentence must show it right then, not one click later.
-      var LAST_STAGE = 3;
+      // stage: null=not started, 0=Tokens, 1=Embeddings, 2=Transformador,
+      // 3=Probabilidades, 4=Token novo. The word at STEPS[genIdx] is committed
+      // to the sentence the moment stage becomes 4 (not on a later click) —
+      // the "Token novo" caption says the word already entered the frase, so
+      // the sentence must show it right then, not one click later.
+      var LAST_STAGE = 4;
       var genIdx = 0;
       var stage = null;
       var autoTimer = null;
-      var tokenFlipTimer = null;
 
       function isDone() { return stage === LAST_STAGE && genIdx === STEPS.length - 1; }
       function committedCount() { return genIdx + (stage === LAST_STAGE ? 1 : 0); }
@@ -670,13 +670,11 @@
 
       function renderTokenStage() {
         clearStage();
-        if (tokenFlipTimer) { clearTimeout(tokenFlipTimer); tokenFlipTimer = null; }
 
         var wrap = document.createElement('div');
         wrap.className = 'k22-tok-wrap';
         stageVisualEl.appendChild(wrap);
 
-        var chips = [];
         currentWords().forEach(function (w, i) {
           var isPunct = w === '.';
           var chip = document.createElement('span');
@@ -685,26 +683,33 @@
           chip.style.animationDelay = (Math.min(i, 12) * 60) + 'ms';
           chip.textContent = w;
           wrap.appendChild(chip);
-          chips.push({ el: chip, word: w, isPunct: isPunct });
         });
 
         setCaption('A frase inteira vira tokens de novo a cada palavra prevista.');
+      }
 
-        var stageAtRender = stage;
-        var genAtRender = genIdx;
-        tokenFlipTimer = setTimeout(function () {
-          if (stage !== stageAtRender || genIdx !== genAtRender) return;
-          chips.forEach(function (c) {
-            c.el.style.transform = 'scaleX(0)';
-            setTimeout(function () {
-              if (stage !== stageAtRender || genIdx !== genAtRender) return;
-              c.el.textContent = c.isPunct ? '·' : sparkline(c.word);
-              c.el.classList.add('k22-tok-chip--vec');
-              c.el.style.transform = 'scaleX(1)';
-            }, 150);
-          });
-          setCaption('Cada token virou um vetor de números.');
-        }, 650);
+      // Same chip shape and color as the Tokens stage (tokenHue(i)), so the
+      // eye tracks each token across both stages, but the label switches to
+      // a small sparkline standing in for "this word became a vector" —
+      // deterministic per word, not a claim about real embedding geometry.
+      function renderEmbeddingStage() {
+        clearStage();
+
+        var wrap = document.createElement('div');
+        wrap.className = 'k22-tok-wrap';
+        stageVisualEl.appendChild(wrap);
+
+        currentWords().forEach(function (w, i) {
+          var isPunct = w === '.';
+          var chip = document.createElement('span');
+          chip.className = 'k22-tok-chip k22-tok-chip--vec' + (isPunct ? ' k22-tok-chip--punct' : '');
+          if (!isPunct) chip.style.setProperty('--tok-h', String(tokenHue(i)));
+          chip.style.animationDelay = (Math.min(i, 12) * 60) + 'ms';
+          chip.textContent = isPunct ? '·' : sparkline(w);
+          wrap.appendChild(chip);
+        });
+
+        setCaption('Cada token virou um vetor de números.');
       }
 
       function renderTransformerStage(step) {
@@ -837,8 +842,9 @@
         }
         var step = STEPS[genIdx];
         if (stage === 0) renderTokenStage();
-        else if (stage === 1) renderTransformerStage(step);
-        else if (stage === 2) renderProbabilityStage(step);
+        else if (stage === 1) renderEmbeddingStage();
+        else if (stage === 2) renderTransformerStage(step);
+        else if (stage === 3) renderProbabilityStage(step);
         else renderWinnerStage(step, isDone());
       }
 
@@ -890,7 +896,6 @@
 
       resetBtn.addEventListener('click', function () {
         stopAuto();
-        if (tokenFlipTimer) { clearTimeout(tokenFlipTimer); tokenFlipTimer = null; }
         genIdx = 0;
         stage = null;
         render(false);
