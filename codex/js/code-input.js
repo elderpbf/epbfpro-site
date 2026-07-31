@@ -22,12 +22,25 @@
 // atende as duas sem obrigar ninguém a virar módulo. O `module.exports` no fim é só para o teste
 // (node --test), e é guardado para não existir no navegador.
 var CodeInput = (function () {
+  // O ALFABETO DO CAMPO TEM QUE SER O QUE O SERVIDOR EMITE, e o comentário que estava aqui
+  // descrevia um alfabeto que este código não implementava (dizia seguir o `OTP_ALPHABET` do
+  // `codex-api` "sem I, O e Q", mas o padrão aceitava DÍGITOS e o Q existe no alfabeto real).
+  //
+  // Conferido em `codex-api/src/lib/student-auth.js` em 2026-07-31: o OTP é
+  // `ABCDEFGHJKLMNPQRSTUVWXYZ`, ou seja **26 letras menos I e O** (parecidas com 1 e 0), e o
+  // `normalizeOtpCode` do servidor descarta tudo que não é `A-Z`. Um campo que aceitava dígito
+  // deixava o aluno digitar `0` no lugar do `O` — exatamente a confusão que fez o alfabeto excluir
+  // essas duas letras — e o servidor respondia "código inválido" sem dizer por quê.
   var ALFABETOS = {
-    // Sem letra ambígua: é o mesmo alfabeto que o `codex-api` usa para MINTAR o código
-    // (OTP_ALPHABET, sem I, O e Q), então o campo não aceita um caractere que jamais será gerado.
-    alnum: /[^A-Z0-9]/g,
-    digits: /[^0-9]/g
+    letters: /[^A-Z]/g,
+    digits: /[^0-9]/g,
+    alnum: /[^A-Z0-9]/g
   };
+  // PADRÃO = `letters`, e é escolha: todo código que este sistema EMITE hoje é ou 4 letras (OTP) ou
+  // 4 dígitos (código de turma, que pede `digits` explicitamente). `alnum` não casa com nada que
+  // exista, então deixá-lo como padrão só servia para uma tela nova nascer aceitando caractere que
+  // o servidor vai recusar. Continua disponível para um código misto que venha a existir.
+  var ALFABETO_PADRAO = 'letters';
 
   // PURA. O valor que o campo deve ter, dado o que a pessoa digitou ou colou.
   //
@@ -37,7 +50,7 @@ var CodeInput = (function () {
   function normalize(value, opts) {
     opts = opts || {};
     var length = opts.length || 4;
-    var limpa = ALFABETOS[opts.mode === 'digits' ? 'digits' : 'alnum'];
+    var limpa = ALFABETOS[opts.mode] || ALFABETOS[ALFABETO_PADRAO];
     return String(value == null ? '' : value).toUpperCase().replace(limpa, '').slice(0, length);
   }
 
