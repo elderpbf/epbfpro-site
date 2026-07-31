@@ -281,12 +281,14 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    // ALFANUMÉRICO, e não é preferência: é o alfabeto que `readCode` (logo acima) já usa
-    // para o mesmo código vindo pela URL, e o que `ct_resolve_code` aceita no Worker.
-    // Enquanto isto era mode:'digits', uma turma com letra no código entrava pelo link e
-    // era recusada pelo campo — a letra sumia enquanto o aluno digitava, sem mensagem.
+    // NUMÉRICO, e é o alfabeto certo apesar de `ct_resolve_code` aceitar letra. O que o
+    // aluno digita é o `access_code` da turma, e ele é numérico: conferido no D1 de
+    // produção em 2026-07-31, 9 turmas, 9 códigos de 4 dígitos. A letra só aparece no
+    // `classpulse_session_id`, a coluna LEGADA que o resolvedor ainda casa para não
+    // quebrar link antigo — é compatibilidade, não é o que se pede a um aluno hoje.
+    // Élder, 2026-07-31: *"os códigos de turma são numéricos, não alfanuméricos"*.
     input: (window.CodeInput
-      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4 })
+      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })
       : document.getElementById('cdx-entrar-input')),
     btn: document.getElementById('cdx-entrar-btn'),
     error: document.getElementById('cdx-entrar-error'),
@@ -297,8 +299,8 @@ export function start() {
   if (!els.form) return;
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const code = String(els.input.value || '').trim().toUpperCase();
-    if (!/^[A-Za-z0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
+    const code = String(els.input.value || '').trim();
+    if (!/^[0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
     resolveAndGo(code, els);
   });
   // e-mail path (magic link by default, or a 4-letter OTP code when the turma's method is 'code').
