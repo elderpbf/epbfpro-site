@@ -164,6 +164,13 @@
       white-space: pre-line;
       font-family: var(--lab-font-mono);
     }
+    .k19-preview-list {
+      margin: 0;
+      padding-left: 1.1rem;
+      text-align: left;
+    }
+    .k19-preview-list li { margin-bottom: 0.2rem; }
+    .k19-preview-list li:last-child { margin-bottom: 0; }
     .k19-preview-block--prompt .k19-preview-block-label { color: var(--lab-text-dim); }
     .k19-preview-close {
       margin-top: 0.3rem;
@@ -451,7 +458,7 @@
       var PREVIEW_BLOCKS = [
         { cls: 'c', label: 'Contexto', text: 'Você é servidor da Secretaria Administrativa do TJSE, redigindo ofícios formais.' },
         { cls: 'o', label: 'Objetivo', text: 'Entregue um ofício completo, pronto para protocolo.' },
-        { cls: 'r', label: 'Regras', text: 'Não presuma informações. Se atenha aos dados passados.' }
+        { cls: 'r', label: 'Regras', text: '<ul class="k19-preview-list"><li>Responda em português culto do Brasil.</li><li>Não presuma informações. Se atenha aos dados passados.</li></ul>' }
       ];
       // The raw, unstructured ask. Once Objetivo is on, it already SAYS what
       // must be delivered, so it subsumes this: the "Prompt" block below
@@ -561,9 +568,12 @@
       }
 
       function blockHtml(cls, label, text) {
+        // A div, not a span: Regras now carries a real <ul> (multiple
+        // separate directives), which is block-level content and invalid
+        // inside an inline element.
         return '<div class="k19-preview-block k19-preview-block--' + cls + '">' +
           '<span class="k19-preview-block-label">' + label + '</span>' +
-          '<span class="k19-preview-block-text">' + text + '</span>' +
+          '<div class="k19-preview-block-text">' + text + '</div>' +
         '</div>';
       }
 
