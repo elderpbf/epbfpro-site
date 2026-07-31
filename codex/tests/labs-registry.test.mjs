@@ -28,11 +28,11 @@ function setArchived(arr) {
 
 const reg = await import('../js/labs-registry.js');
 
-const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18'];
+const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k22'];
 
-test('LABS is the shipped registry (13 labs, exact keys + non-empty title/summary)', () => {
+test('LABS is the shipped registry (14 labs, exact keys + non-empty title/summary)', () => {
   assert.ok(Array.isArray(reg.LABS), 'LABS is an array');
-  assert.equal(reg.LABS.length, 13, 'thirteen labs');
+  assert.equal(reg.LABS.length, 14, 'fourteen labs');
   assert.deepEqual(reg.LABS.map((l) => l.key), EXPECTED_KEYS, 'keys byte-identical and in order');
   for (const lab of reg.LABS) {
     assert.ok(lab.title && lab.title.length, `lab ${lab.key} has a title`);
@@ -52,6 +52,8 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   assert.equal(byKey.k16.summary, 'Duas camadas de um PDF, e o que o OCR faz entre elas');
   assert.equal(byKey.k17.title, 'Treinamento');
   assert.equal(byKey.k17.summary, 'Humano prefere uma resposta a outra; a preferida reforça o peso');
+  assert.equal(byKey.k22.title, 'Próximo Token');
+  assert.equal(byKey.k22.summary, 'Não é pensamento, é probabilidade');
 });
 
 test('findItem builds the synthetic item shape for a real lab id', () => {
@@ -98,7 +100,7 @@ test('isLabEnabled tolerates malformed JSON (fails open)', () => {
 test('getAllItems returns every enabled lab as a picker item', () => {
   setEnabledMap(null);
   const items = reg.getAllItems();
-  assert.equal(items.length, 13, 'all labs when none disabled');
+  assert.equal(items.length, 14, 'all labs when none disabled');
   assert.deepEqual(items.map((i) => i.id), EXPECTED_KEYS.map((k) => 'lab:' + k));
   assert.ok(items.every((i) => i.type === 'lab' && i.type_label === 'Lab'));
 });
@@ -106,7 +108,7 @@ test('getAllItems returns every enabled lab as a picker item', () => {
 test('getAllItems filters out disabled labs', () => {
   setEnabledMap({ k1: false, k13: false });
   const items = reg.getAllItems();
-  assert.equal(items.length, 11, 'two disabled removed');
+  assert.equal(items.length, 12, 'two disabled removed');
   const ids = items.map((i) => i.id);
   assert.ok(!ids.includes('lab:k1'), 'k1 hidden');
   assert.ok(!ids.includes('lab:k13'), 'k13 hidden');
@@ -125,6 +127,7 @@ test('findItem ignores the enabled map (resolution is independent of visibility)
 test('labIcon returns the per-lab glyph (echoing the emoji), falling back to the flask glyph', () => {
   assert.equal(reg.labIcon('k15'), 'glyph:brain');
   assert.equal(reg.labIcon('k16'), 'glyph:file-text');
+  assert.equal(reg.labIcon('k22'), 'glyph:bar-chart');
   assert.equal(reg.labIcon('nope'), 'glyph:flask', 'unknown key falls back to the flask glyph');
 });
 

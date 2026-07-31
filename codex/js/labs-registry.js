@@ -125,6 +125,14 @@ export const LABS = [
     description: 'Versão granular da janela de contexto: os insumos entram separados (sistema, memórias, ferramentas, arquivos, histórico) e o próprio processo do modelo também ocupa a janela. O raciocínio custa milhares de tokens, a chamada de ferramenta custa quase nada, e o resultado e a resposta somam mais. Numa janela de 1.000.000, a barra dá zoom no que é usado.',
     objective: 'Ver que o raciocínio e as ferramentas gastam a mesma janela, e quanto cada parte custa.',
     emoji: '🪟'
+  },
+  {
+    key: 'k22',
+    title: 'Próximo Token',
+    summary: 'Não é pensamento, é probabilidade',
+    description: 'O demo gera uma frase palavra por palavra, mostrando os três passos que se repetem a cada token: atenção (o que da frase pesa mais), probabilidades (a lista de candidatos ao próximo token) e o token escolhido, que volta pro início do ciclo.',
+    objective: 'Ver a geração de texto como um ciclo de atenção e probabilidade repetido, não como um raciocínio contínuo.',
+    emoji: '📊'
   }
 ];
 
@@ -220,7 +228,7 @@ const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:window',
+  k18: 'glyph:window', k22: 'glyph:bar-chart',
 };
 
 export function labIcon(key) {

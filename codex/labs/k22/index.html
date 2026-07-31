@@ -1,0 +1,799 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Próximo Token · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k22-panel">
+  <style>
+    .k22-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --text-muted: var(--lab-text-muted);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --warm: var(--lab-context-a);
+      --good: var(--lab-good);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 0.6rem;
+      padding: 1rem 2rem 0.7rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+    .k22-panel, .k22-panel * { box-sizing: border-box; }
+
+    .k22-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.1rem;
+    }
+    .k22-meter-label {
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k22-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-audience);
+      font-weight: 700;
+      color: var(--focal);
+      line-height: 1;
+    }
+
+    /* ── Sentence-so-far (persistent) ─────────────────────── */
+    .k22-sentence {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 0.4rem;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 12px;
+      padding: 0.55rem 0.9rem;
+      min-height: 56px;
+    }
+    .k22-word {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-doc);
+      font-weight: 600;
+      color: var(--text);
+      padding: 0.2rem 0.1rem;
+      white-space: nowrap;
+    }
+    .k22-word--punct { margin-left: -0.35rem; }
+    .k22-word--new {
+      color: var(--focal);
+      animation: k22-pop-in 320ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+    }
+    @keyframes k22-pop-in {
+      from { transform: scale(0.6); opacity: 0; }
+      to   { transform: scale(1); opacity: 1; }
+    }
+    .k22-sentence-done {
+      margin-left: auto;
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      letter-spacing: 0.04em;
+      text-transform: uppercase;
+      color: var(--good);
+      opacity: 0;
+      transition: opacity 300ms;
+    }
+    .k22-sentence-done.k22-show { opacity: 1; }
+
+    /* ── Stage rail (persistent) ──────────────────────────── */
+    .k22-rail {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 0.5rem;
+    }
+    .k22-rail-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      letter-spacing: 0.02em;
+      padding: 0.32rem 0.8rem;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      color: var(--text-dim);
+      background: transparent;
+      transition: border-color 200ms, color 200ms, background 200ms;
+    }
+    .k22-rail-chip .k22-rail-num {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 1.4em;
+      height: 1.4em;
+      border-radius: 50%;
+      background: color-mix(in srgb, var(--text-dim) 18%, transparent);
+      font-size: 0.85em;
+    }
+    .k22-rail-chip--active {
+      border-color: var(--focal);
+      color: var(--focal);
+      background: rgba(var(--lab-focal-rgb), 0.14);
+    }
+    .k22-rail-chip--active .k22-rail-num {
+      background: var(--focal);
+      color: var(--lab-surface);
+    }
+    .k22-rail-chip--done {
+      color: var(--good);
+      border-color: var(--good);
+      opacity: 0.65;
+    }
+    .k22-rail-arrow {
+      color: var(--text-dim);
+      opacity: 0.5;
+      font-size: 1.1em;
+    }
+
+    /* ── Focus panel ───────────────────────────────────────── */
+    .k22-focus {
+      position: relative;
+      min-height: 0;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.3rem;
+      display: flex;
+      flex-direction: column;
+      gap: 0.6rem;
+      overflow: hidden;
+    }
+    .k22-focus-title {
+      flex: 0 0 auto;
+      margin: 0;
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+    .k22-focus-body {
+      flex: 1 1 auto;
+      min-height: 0;
+      display: flex;
+      flex-direction: column;
+      justify-content: flex-start;
+      gap: 0.5rem;
+      overflow-y: auto;
+    }
+    /* Only for stages whose content is short and fixed (never taller than the
+       panel): centering content that CAN overflow spills equally above and
+       below the flex box, and the upward spill bled into the title above it
+       on short viewports (confirmed via getBoundingClientRect measurement on
+       the Probabilidades stage, which can run 5 rows deep). Opt-in only. */
+    .k22-focus-body--center {
+      justify-content: center;
+    }
+    .k22-focus-caption {
+      font-size: var(--lab-fs-body);
+      color: var(--text-dim);
+      line-height: 1.4;
+    }
+    .k22-focus-empty {
+      margin: auto;
+      font-size: var(--lab-fs-body);
+      color: var(--text-dim);
+      font-style: italic;
+      text-align: center;
+    }
+
+    /* ── Attention stage ──────────────────────────────────── */
+    .k22-atn-wrap {
+      position: relative;
+      display: flex;
+      align-items: flex-end;
+      flex-wrap: wrap;
+      gap: 0.3rem 0.55rem;
+      padding-top: 2.6rem;
+      min-height: 90px;
+    }
+    .k22-atn-svg {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      pointer-events: none;
+    }
+    .k22-atn-chip {
+      position: relative;
+      z-index: 1;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      font-weight: 600;
+      padding: 0.3rem 0.6rem;
+      border-radius: 8px;
+      border: 1.5px solid var(--border);
+      background: var(--bg);
+      color: var(--text);
+    }
+    .k22-atn-chip--query {
+      border-color: var(--warm);
+      color: var(--warm);
+      font-weight: 800;
+      background: rgba(var(--lab-context-a-rgb), 0.12);
+    }
+    .k22-atn-badge {
+      position: absolute;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      color: var(--focal);
+      background: var(--surface);
+      padding: 0 0.3rem;
+      transform: translate(-50%, -50%);
+      z-index: 2;
+    }
+
+    /* ── Probability stage ────────────────────────────────── */
+    .k22-prob-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.45rem;
+    }
+    .k22-prob-row {
+      display: grid;
+      grid-template-columns: minmax(90px, auto) minmax(0, 1fr) 3.6em;
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .k22-prob-tok {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      color: var(--text);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    .k22-prob-track {
+      position: relative;
+      height: 18px;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--text-dim) 14%, transparent);
+      overflow: hidden;
+    }
+    .k22-prob-bar {
+      position: absolute;
+      inset: 0 auto 0 0;
+      width: 0%;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--text-dim) 45%, transparent);
+      transition: width 550ms cubic-bezier(0.22, 0.61, 0.36, 1);
+    }
+    .k22-prob-row--winner .k22-prob-bar {
+      background: var(--focal);
+      box-shadow: 0 0 10px rgba(var(--lab-focal-rgb), 0.35);
+    }
+    .k22-prob-row--winner .k22-prob-tok { color: var(--focal); }
+    .k22-prob-pct {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      text-align: right;
+    }
+    .k22-prob-row--winner .k22-prob-pct { color: var(--focal); font-weight: 700; }
+    .k22-prob-note {
+      margin-top: 0.2rem;
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    /* ── Token-novo stage ──────────────────────────────────── */
+    .k22-win-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.5rem;
+      text-align: center;
+    }
+    .k22-win-chip {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-audience);
+      font-weight: 800;
+      color: var(--focal);
+      border: 2px solid var(--focal);
+      background: rgba(var(--lab-focal-rgb), 0.14);
+      border-radius: 12px;
+      padding: 0.3rem 1.1rem;
+      box-shadow: 0 0 16px rgba(var(--lab-focal-rgb), 0.3);
+    }
+    .k22-win-loop {
+      display: flex;
+      align-items: center;
+      gap: 0.4rem;
+      font-size: var(--lab-fs-body);
+      color: var(--text-dim);
+    }
+    .k22-win-loop-icon { font-size: 1.2em; }
+
+    /* ── Button bar ────────────────────────────────────────── */
+    .k22-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k22-fs-slot { margin-right: auto; }
+    .k22-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      transition: border-color 180ms, color 180ms, transform 150ms;
+    }
+    .k22-btn:hover { border-color: var(--warm); color: var(--warm); transform: translateY(-1px); }
+    .k22-btn-action {
+      border-color: var(--focal);
+      background: color-mix(in srgb, var(--focal) 16%, transparent);
+      color: var(--focal);
+    }
+    .k22-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    @media (max-width: 700px) {
+      .k22-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.45rem; }
+      .k22-sentence { padding: 0.45rem 0.65rem; min-height: 48px; }
+      .k22-word { font-size: 15px; }
+      .k22-rail-chip { padding: 0.28rem 0.55rem; font-size: 12px; }
+      .k22-rail { gap: 0.3rem; }
+      .k22-focus { padding: 0.75rem 0.85rem; }
+      .k22-atn-chip { font-size: 13px; padding: 0.24rem 0.45rem; }
+      .k22-prob-row { grid-template-columns: minmax(64px, auto) minmax(0, 1fr) 3.2em; gap: 0.4rem; }
+      .k22-win-chip { font-size: clamp(22px, 6vw, 32px); }
+      .k22-button-bar { gap: 0.4rem; padding: 0; }
+      .k22-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(50% - 0.2rem); min-height: 44px; text-align: center; }
+      .k22-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
+      .k22-button-bar > [data-lab-info-ctl] { order: -1; display: flex; flex: 1 1 100%; }
+      .k22-button-bar > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k22-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.35rem; }
+      .k22-sentence { min-height: 38px; padding: 0.3rem 0.6rem; }
+      .k22-focus { padding: 0.5rem 0.8rem; }
+      .k22-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header" data-lab-title="Próximo Token" data-lab-subtitle="Não é pensamento, é probabilidade">
+    <div class="k22-meter">
+      <span class="k22-meter-label">Gerando</span>
+      <span class="k22-meter-value"><span id="k22-count">0</span>/<span id="k22-total">4</span></span>
+    </div>
+  </div>
+
+  <div class="k22-sentence" id="k22-sentence">
+    <span class="k22-sentence-done" id="k22-sentence-done">Frase completa</span>
+  </div>
+
+  <div class="k22-rail" id="k22-rail">
+    <span class="k22-rail-chip" data-stage="0"><span class="k22-rail-num">1</span>Atenção</span>
+    <span class="k22-rail-arrow">›</span>
+    <span class="k22-rail-chip" data-stage="1"><span class="k22-rail-num">2</span>Probabilidades</span>
+    <span class="k22-rail-arrow">›</span>
+    <span class="k22-rail-chip" data-stage="2"><span class="k22-rail-num">3</span>Token novo</span>
+  </div>
+
+  <div class="k22-focus" id="k22-focus">
+    <div class="k22-focus-empty" id="k22-focus-empty">Clique em "Próximo passo" para começar a gerar a frase.</div>
+  </div>
+
+  <div class="k22-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k22-fs-slot" data-lab-fs-ctl></span>
+    <button class="k22-btn k22-btn-action" id="k22-next">Próximo passo</button>
+    <button class="k22-btn k22-btn-action" id="k22-all">Gerar tudo</button>
+    <button class="k22-btn" id="k22-reset">Reiniciar</button>
+  </div>
+
+  <template data-lab-info data-lab-info-title="Como o modelo escreve a próxima palavra">
+    <p>A cada passo o modelo faz a mesma coisa quatro vezes seguidas: transforma a frase em números (<strong>tokens e embeddings</strong>, veja os labs Tokens e Embeddings), calcula o quanto cada palavra anterior importa para decidir a próxima (<strong>atenção</strong>), transforma isso numa <strong>lista de probabilidades</strong> sobre todo o vocabulário, e escolhe uma palavra. A palavra escolhida entra na frase, e o processo recomeça do zero para a próxima, agora com uma palavra a mais de contexto.</p>
+    <p>Repare no passo "de vício de" → "de": a atenção mais forte não é na palavra imediatamente anterior, é em "vício", lá atrás. O modelo não olha só a última palavra, ele pesa o que é relevante em toda a frase.</p>
+    <p>Esta demo usa uma frase e pesos escolhidos à mão, não um cálculo real, para ficar previsível e clara no palco. Mas o mecanismo é real: em cada passo, o modelo pega a probabilidade mais alta entre <strong>dezenas de milhares de candidatos</strong> e a acrescenta à frase. Com temperatura maior que zero, a escolha deixa de ser sempre a mais provável, é por isso que a mesma pergunta pode gerar respostas diferentes em duas conversas.</p>
+    <p>Não há compreensão nem intenção nesse passo a passo: é estatística aplicada em sequência, uma palavra de cada vez.</p>
+  </template>
+
+  <script>
+    (function () {
+      var BASE_WORDS = ['A', 'sentença', 'foi', 'anulada', 'por'];
+
+      // Hand-authored, not a live model (see Entenda) — same convention as k1/k6.
+      // Attention weights: one dominant edge per step, tuned so step 3 skips the
+      // immediately-previous word ("de") and attends back to "vício" instead —
+      // the "not just the last word" point called out in the Entenda modal.
+      var STEPS = [
+        {
+          winner: 'vício',
+          attention: [
+            { word: 'A', w: 0.03 }, { word: 'sentença', w: 0.22 }, { word: 'foi', w: 0.05 },
+            { word: 'anulada', w: 0.62 }, { word: 'por', w: 0.08 }
+          ],
+          probs: [
+            { tok: 'vício', pct: 54 }, { tok: 'falta', pct: 16 }, { tok: 'ausência', pct: 12 },
+            { tok: 'erro', pct: 8 }, { tok: 'ilegalidade', pct: 6 }
+          ]
+        },
+        {
+          winner: 'de',
+          attention: [
+            { word: 'A', w: 0.02 }, { word: 'sentença', w: 0.10 }, { word: 'foi', w: 0.03 },
+            { word: 'anulada', w: 0.15 }, { word: 'por', w: 0.08 }, { word: 'vício', w: 0.62 }
+          ],
+          probs: [
+            { tok: 'de', pct: 58 }, { tok: 'processual', pct: 13 }, { tok: 'grave', pct: 10 },
+            { tok: 'formal', pct: 9 }, { tok: '.', pct: 6 }
+          ]
+        },
+        {
+          winner: 'forma',
+          attention: [
+            { word: 'A', w: 0.01 }, { word: 'sentença', w: 0.05 }, { word: 'foi', w: 0.02 },
+            { word: 'anulada', w: 0.10 }, { word: 'por', w: 0.03 }, { word: 'vício', w: 0.58 },
+            { word: 'de', w: 0.21 }
+          ],
+          probs: [
+            { tok: 'forma', pct: 47 }, { tok: 'procedimento', pct: 17 }, { tok: 'competência', pct: 13 },
+            { tok: 'citação', pct: 12 }, { tok: 'consentimento', pct: 7 }
+          ]
+        },
+        {
+          winner: '.',
+          attention: [
+            { word: 'A', w: 0.01 }, { word: 'sentença', w: 0.04 }, { word: 'foi', w: 0.02 },
+            { word: 'anulada', w: 0.08 }, { word: 'por', w: 0.02 }, { word: 'vício', w: 0.22 },
+            { word: 'de', w: 0.08 }, { word: 'forma', w: 0.53 }
+          ],
+          probs: [
+            { tok: '.', pct: 45 }, { tok: ', o que', pct: 15 }, { tok: 'insanável', pct: 14 },
+            { tok: 'grave', pct: 12 }, { tok: 'processual', pct: 10 }
+          ]
+        }
+      ];
+      var VOCAB_NOTE = '5 de ~50.000 candidatos possíveis no vocabulário do modelo.';
+
+      var sentenceEl = root('#k22-sentence');
+      var sentenceDoneEl = root('#k22-sentence-done');
+      var railEl = root('#k22-rail');
+      var railChips = Array.prototype.slice.call(railEl.querySelectorAll('.k22-rail-chip'));
+      var focusEl = root('#k22-focus');
+      var countEl = root('#k22-count');
+      var totalEl = root('#k22-total');
+      var nextBtn = root('#k22-next');
+      var allBtn = root('#k22-all');
+      var resetBtn = root('#k22-reset');
+
+      function root(sel) { return document.querySelector('.k22-panel ' + sel); }
+
+      totalEl.textContent = String(STEPS.length);
+
+      // ── State ──────────────────────────────────────────────
+      // genIdx: index into STEPS of the word currently being generated (0..STEPS.length-1).
+      // stage: null=not started, 0=Atenção, 1=Probabilidades, 2=Token novo.
+      // The word at STEPS[genIdx] is committed to the sentence the moment stage becomes 2
+      // (not on a later click) — the "Token novo" caption says the word already entered the
+      // frase, so the sentence must show it right then, not one click later.
+      var genIdx = 0;
+      var stage = null;
+      var autoTimer = null;
+
+      function isDone() { return stage === 2 && genIdx === STEPS.length - 1; }
+      function committedCount() { return genIdx + (stage === 2 ? 1 : 0); }
+
+      function currentWords() {
+        var w = BASE_WORDS.slice();
+        var n = committedCount();
+        for (var i = 0; i < n; i++) w.push(STEPS[i].winner);
+        return w;
+      }
+
+      function renderSentence(justAdded) {
+        var words = currentWords();
+        sentenceEl.innerHTML = '';
+        words.forEach(function (w, i) {
+          var span = document.createElement('span');
+          span.className = 'k22-word' + (w === '.' ? ' k22-word--punct' : '');
+          if (justAdded && i === words.length - 1) span.className += ' k22-word--new';
+          span.textContent = w;
+          sentenceEl.appendChild(span);
+        });
+        sentenceEl.appendChild(sentenceDoneEl);
+        sentenceDoneEl.classList.toggle('k22-show', isDone());
+      }
+
+      function renderRail() {
+        railChips.forEach(function (chip) {
+          var s = Number(chip.dataset.stage);
+          chip.classList.toggle('k22-rail-chip--active', stage === s);
+          chip.classList.toggle('k22-rail-chip--done', stage !== null && s < stage);
+        });
+      }
+
+      function updateCount() {
+        countEl.textContent = String(committedCount());
+      }
+
+      function clearFocus() {
+        focusEl.innerHTML = '';
+      }
+
+      function renderEmptyFocus(msg) {
+        clearFocus();
+        var d = document.createElement('div');
+        d.className = 'k22-focus-empty';
+        d.textContent = msg;
+        focusEl.appendChild(d);
+      }
+
+      function renderAttentionStage(step) {
+        clearFocus();
+        var title = document.createElement('p');
+        title.className = 'k22-focus-title';
+        title.textContent = 'Atenção — o que pesa para prever a próxima palavra';
+        focusEl.appendChild(title);
+
+        var body = document.createElement('div');
+        body.className = 'k22-focus-body';
+        focusEl.appendChild(body);
+
+        var wrap = document.createElement('div');
+        wrap.className = 'k22-atn-wrap';
+        body.appendChild(wrap);
+
+        var svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        svg.setAttribute('class', 'k22-atn-svg');
+        wrap.appendChild(svg);
+
+        var chips = [];
+        step.attention.forEach(function (a) {
+          var c = document.createElement('span');
+          c.className = 'k22-atn-chip';
+          c.textContent = a.word;
+          wrap.appendChild(c);
+          chips.push({ el: c, w: a.w });
+        });
+        var qChip = document.createElement('span');
+        qChip.className = 'k22-atn-chip k22-atn-chip--query';
+        qChip.textContent = '?';
+        wrap.appendChild(qChip);
+
+        var caption = document.createElement('p');
+        caption.className = 'k22-focus-caption';
+        var maxW = step.attention.reduce(function (m, a) { return Math.max(m, a.w); }, 0);
+        var top = step.attention.filter(function (a) { return a.w === maxW; })[0];
+        caption.textContent = 'A palavra "' + top.word + '" concentra ' + Math.round(maxW * 100) + '% da atenção nesta previsão.';
+        body.appendChild(caption);
+
+        function drawArcs() {
+          var wrapRect = wrap.getBoundingClientRect();
+          if (wrapRect.width <= 0 || wrapRect.height <= 0) return;
+          svg.setAttribute('viewBox', '0 0 ' + wrapRect.width + ' ' + wrapRect.height);
+          svg.innerHTML = '';
+          var qRect = qChip.getBoundingClientRect();
+          var qx = qRect.left + qRect.width / 2 - wrapRect.left;
+          var qy = qRect.top - wrapRect.top;
+          chips.forEach(function (c) {
+            var r = c.el.getBoundingClientRect();
+            var x = r.left + r.width / 2 - wrapRect.left;
+            var y = r.top - wrapRect.top;
+            var midX = (x + qx) / 2;
+            var midY = Math.min(y, qy) - 18 - (c.w * 26);
+            var path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M ' + x + ' ' + y + ' Q ' + midX + ' ' + midY + ' ' + qx + ' ' + qy);
+            path.setAttribute('fill', 'none');
+            var isMax = c.w === maxW;
+            path.setAttribute('stroke', isMax ? 'var(--focal)' : 'var(--warm)');
+            path.setAttribute('stroke-width', String(1.5 + c.w * 11));
+            path.setAttribute('stroke-opacity', String(0.12 + c.w * 0.8));
+            path.setAttribute('stroke-linecap', 'round');
+            svg.appendChild(path);
+          });
+          if (top) {
+            var badgeEl = document.createElement('div');
+            badgeEl.className = 'k22-atn-badge';
+            var idx = step.attention.indexOf(top);
+            var r2 = chips[idx].el.getBoundingClientRect();
+            badgeEl.style.left = (r2.left + r2.width / 2 - wrapRect.left) + 'px';
+            badgeEl.style.top = (r2.top - wrapRect.top - 14) + 'px';
+            badgeEl.textContent = Math.round(maxW * 100) + '%';
+            wrap.appendChild(badgeEl);
+          }
+        }
+
+        requestAnimationFrame(drawArcs);
+        if (wrap._ro) wrap._ro.disconnect();
+        wrap._ro = new ResizeObserver(function () { drawArcs(); });
+        wrap._ro.observe(wrap);
+      }
+
+      function renderProbabilityStage(step) {
+        clearFocus();
+        var title = document.createElement('p');
+        title.className = 'k22-focus-title';
+        title.textContent = 'Probabilidades — a lista de próximas palavras possíveis';
+        focusEl.appendChild(title);
+
+        var body = document.createElement('div');
+        body.className = 'k22-focus-body';
+        focusEl.appendChild(body);
+
+        var list = document.createElement('div');
+        list.className = 'k22-prob-list';
+        body.appendChild(list);
+
+        step.probs.forEach(function (p) {
+          var row = document.createElement('div');
+          row.className = 'k22-prob-row' + (p.tok === step.winner ? ' k22-prob-row--winner' : '');
+          row.innerHTML =
+            '<span class="k22-prob-tok">' + escapeHtml(p.tok) + '</span>' +
+            '<span class="k22-prob-track"><span class="k22-prob-bar"></span></span>' +
+            '<span class="k22-prob-pct">' + p.pct + '%</span>';
+          list.appendChild(row);
+          var bar = row.querySelector('.k22-prob-bar');
+          requestAnimationFrame(function () { bar.style.width = p.pct + '%'; });
+        });
+
+        var note = document.createElement('p');
+        note.className = 'k22-prob-note';
+        note.textContent = VOCAB_NOTE;
+        body.appendChild(note);
+      }
+
+      function renderWinnerStage(step, isLast) {
+        clearFocus();
+        var title = document.createElement('p');
+        title.className = 'k22-focus-title';
+        title.textContent = 'Token novo — a palavra escolhida entra na frase';
+        focusEl.appendChild(title);
+
+        var body = document.createElement('div');
+        body.className = 'k22-focus-body k22-focus-body--center';
+        focusEl.appendChild(body);
+
+        var wrap = document.createElement('div');
+        wrap.className = 'k22-win-wrap';
+        body.appendChild(wrap);
+
+        var chip = document.createElement('span');
+        chip.className = 'k22-win-chip';
+        chip.textContent = step.winner;
+        wrap.appendChild(chip);
+
+        var loop = document.createElement('div');
+        loop.className = 'k22-win-loop';
+        loop.innerHTML = isLast
+          ? '<span>Frase completa. É assim, token por token, que o modelo escreve.</span>'
+          : '<span class="k22-win-loop-icon">↺</span><span>Esse token novo volta para o começo: agora ele também ajuda a prever o próximo.</span>';
+        wrap.appendChild(loop);
+      }
+
+      function escapeHtml(s) {
+        return String(s).replace(/[&<>"']/g, function (c) {
+          return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c];
+        });
+      }
+
+      function renderFocus() {
+        if (stage === null) {
+          renderEmptyFocus('Clique em "Próximo passo" para começar a gerar a frase.');
+          return;
+        }
+        var step = STEPS[genIdx];
+        if (stage === 0) renderAttentionStage(step);
+        else if (stage === 1) renderProbabilityStage(step);
+        else renderWinnerStage(step, isDone());
+      }
+
+      function render(justAddedWord) {
+        renderSentence(justAddedWord);
+        renderRail();
+        renderFocus();
+        updateCount();
+        var atEnd = isDone();
+        nextBtn.disabled = atEnd;
+        allBtn.disabled = atEnd;
+      }
+
+      // ── Stepping ───────────────────────────────────────────
+      function advance() {
+        if (isDone()) return false;
+        var justAdded = false;
+        if (stage === null) {
+          stage = 0;
+        } else if (stage === 0) {
+          stage = 1;
+        } else if (stage === 1) {
+          stage = 2;
+          justAdded = true; // STEPS[genIdx].winner just entered the sentence
+        } else {
+          // stage === 2, not done (isDone() already ruled that out): move to the next word
+          genIdx++;
+          stage = 0;
+        }
+        render(justAdded);
+        return true;
+      }
+
+      function stopAuto() {
+        if (autoTimer) { clearInterval(autoTimer); autoTimer = null; }
+        allBtn.textContent = 'Gerar tudo';
+      }
+
+      nextBtn.addEventListener('click', function () { stopAuto(); advance(); });
+
+      allBtn.addEventListener('click', function () {
+        if (autoTimer) { stopAuto(); return; }
+        allBtn.textContent = 'Pausar';
+        autoTimer = setInterval(function () {
+          var moved = advance();
+          if (!moved) stopAuto();
+        }, 900);
+      });
+
+      resetBtn.addEventListener('click', function () {
+        stopAuto();
+        genIdx = 0;
+        stage = null;
+        render(false);
+      });
+
+      render(false);
+
+      window.addEventListener('storage', function (e) {
+        if (e.key !== 'bs_theme') return;
+        var t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+    })();
+  </script>
+</section>
+</body>
+</html>
