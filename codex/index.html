@@ -135,6 +135,15 @@
 <!-- Codex-owned theme manager (classic script: the Trail pre-paints the theme
      synchronously, so it stays a non-deferred global, window.ThemeManager). -->
 <script src="js/theme-manager.js?v=1.1"></script>
+<!-- O tema tem que valer JÁ NO LOGIN, não só depois. Até 2026-07-31 o `data-theme` só era
+     escrito quando a topbar montava (`codex-topbar.js`), ou seja, DEPOIS de entrar: a tela de
+     login abria no claro para todo mundo, inclusive para quem já tinha escolhido escuro, e sem
+     nenhum botão para mudar (a topbar, que tem o botão, ainda não existe ali). Élder: *"abriu no
+     light do nada, quase fico cego"*. Mesma peça da Trilha (`initPublic`), com a chave e o padrão
+     do admin: URL > escolha guardada > SISTEMA > escuro. -->
+<script>
+  ThemeManager.initPublic({ storageKey: 'bs_theme', defaultTheme: 'dark' });
+</script>
 <script src="js/code-input.js?v=1.1"></script>
 <script src="js/bs-google.js?v=1.4"></script>
 <script src="js/auth.js?v=1.4"></script>
