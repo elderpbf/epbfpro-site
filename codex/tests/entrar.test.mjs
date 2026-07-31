@@ -119,3 +119,53 @@ test('entrar i18n carries the new entry copy in both langs', () => {
     assert.ok(count >= 2, `${k} present in pt + en`);
   }
 });
+
+// ---------------------------------------------------------------------------------
+// track-57: o campo pedia um código que o produto parou de emitir.
+//
+// Élder, 2026-07-31: *"na tela de trilha/entrar, pede um código numérico que não
+// existe mais. o código numérico é da turma agora. não existe mais código criado na
+// hora. aquele espaço deve ser para colocar o código da turma para acessar"*, e
+// decidiu onde validar: *"valida lá em entrar mesmo, não tem como ir para área do
+// aluno sem ter o código de uma turma existente"*.
+//
+// O defeito não era só a cópia. O MESMO ARQUIVO já tratava o código como
+// alfanumérico quando ele vinha pela URL (`readCode`, `[A-Za-z0-9]{4}`) e como
+// numérico quando vinha do formulário, e o resolvedor no Worker aceita
+// `[A-Za-z0-9]{4}`. Ou seja: uma turma com letra no código entrava pelo link e era
+// recusada pelo formulário, antes de qualquer chamada. Isto fixa os dois lados.
+
+test('o formulário aceita o mesmo alfabeto que o link e que o resolvedor', () => {
+  // Um só alfabeto para as duas portas de entrada. Se este teste falhar porque
+  // alguém restringiu o formulário de novo, o sintoma no produto é uma turma que
+  // entra pelo link e não entra pelo campo.
+  assert.ok(!/\/\^\[0-9\]\{4\}\$\//.test(js), 'o portão numérico saiu do submit');
+  const gates = js.match(/\[A-Za-z0-9\]\{4\}/g) || [];
+  assert.ok(gates.length >= 2, 'link e formulário usam o mesmo alfabeto alfanumérico');
+});
+
+test('o campo não descarta letras enquanto o aluno digita', () => {
+  // mode:'digits' apagava a letra na hora da digitação, então o aluno de uma turma
+  // com código TVKV via o campo ficar vazio sem nenhuma mensagem.
+  assert.ok(!/cdx-entrar-input'\)[\s\S]{0,120}mode:\s*'digits'/.test(js), "o campo do código da turma não é mode:'digits'");
+  assert.match(js, /getElementById\('cdx-entrar-input'\)[\s\S]{0,120}length:\s*4/, 'o campo continua limitado a 4 caracteres');
+});
+
+test('código que não existe é apagado do campo, como nas outras telas', () => {
+  // Mesma regra que já vale nas cinco telas de código: errou, o campo esvazia e
+  // recebe o foco, em vez de o aluno ter que apagar à mão o que acabou de digitar.
+  const bloco = js.slice(js.indexOf('async function resolveAndGo'), js.indexOf('async function autoEnter'));
+  assert.match(bloco, /entrar\.not_found/, 'o erro inline continua sendo o de código não encontrado');
+  assert.match(bloco, /CodeInput\.clear\(/, 'o campo é limpo quando o código não resolve');
+});
+
+test('a cópia fala do código da turma, não da aula ao vivo', () => {
+  // A frase antiga descrevia um código gerado na hora, que o produto não emite mais.
+  assert.ok(!/aula ao vivo/.test(html), 'a promessa da aula ao vivo saiu do HTML');
+  assert.ok(!/aula ao vivo/.test(i18n), 'a promessa da aula ao vivo saiu do pt');
+  assert.ok(!/live class/i.test(i18n), 'a promessa da aula ao vivo saiu do en');
+  for (const k of ['entrar.code_sub', 'entrar.code_label', 'entrar.code_ph']) {
+    const count = (i18n.match(new RegExp("'" + k.replace('.', '\.') + "'", 'g')) || []).length;
+    assert.ok(count >= 2, `${k} continua nos dois idiomas`);
+  }
+});

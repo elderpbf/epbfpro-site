@@ -75,6 +75,10 @@ async function resolveAndGo(code, els) {
   els.state.textContent = '';
   els.btn.disabled = false;
   els.error.textContent = t('entrar.not_found');
+  // Mesma regra das outras telas de código: errou, o campo esvazia e recebe o foco.
+  // Guardado atrás do if porque esta função também roda para código vindo da URL,
+  // quando não houve digitação nenhuma para desfazer.
+  if (window.CodeInput) window.CodeInput.clear(els.input);
 }
 
 // Auto-enter (Élder, 2026-06-20): NO "Continuar" banner and NO turma list. Having more
@@ -277,9 +281,12 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    // O código da aula ao vivo é NUMÉRICO, e é a mesma peça com outro alfabeto.
+    // ALFANUMÉRICO, e não é preferência: é o alfabeto que `readCode` (logo acima) já usa
+    // para o mesmo código vindo pela URL, e o que `ct_resolve_code` aceita no Worker.
+    // Enquanto isto era mode:'digits', uma turma com letra no código entrava pelo link e
+    // era recusada pelo campo — a letra sumia enquanto o aluno digitava, sem mensagem.
     input: (window.CodeInput
-      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })
+      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4 })
       : document.getElementById('cdx-entrar-input')),
     btn: document.getElementById('cdx-entrar-btn'),
     error: document.getElementById('cdx-entrar-error'),
@@ -290,8 +297,8 @@ export function start() {
   if (!els.form) return;
   els.form.addEventListener('submit', (e) => {
     e.preventDefault();
-    const code = String(els.input.value || '').trim();
-    if (!/^[0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
+    const code = String(els.input.value || '').trim().toUpperCase();
+    if (!/^[A-Za-z0-9]{4}$/.test(code)) { els.error.textContent = t('entrar.invalid'); return; }
     resolveAndGo(code, els);
   });
   // e-mail path (magic link by default, or a 4-letter OTP code when the turma's method is 'code').
