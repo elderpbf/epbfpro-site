@@ -218,7 +218,88 @@
       text-align: center;
     }
 
-    /* ── Attention stage ──────────────────────────────────── */
+    /* ── Tokenização stage (chip look/animation ported from k5's values:
+       hue(i) = i*47 % 360, same light/dark HSL formula, same stagger-in
+       keyframe — copied as values, not shared selectors: each lab stays
+       self-contained per the architecture contract). Word-level chips (no
+       sub-word split): k5 already owns that lesson, this just needs the
+       same "colorful, one after another" read the token stage is about. */
+    .k22-tok-wrap {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.4rem;
+    }
+    .k22-tok-chip {
+      --tok-h: 210;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      padding: 0.32rem 0.7rem;
+      border-radius: 8px;
+      background: hsl(var(--tok-h) 62% 88%);
+      color: hsl(var(--tok-h) 55% 24%);
+      white-space: nowrap;
+      animation: k22-tok-in 220ms ease-out both;
+    }
+    [data-theme="dark"] .k22-tok-chip {
+      background: hsl(var(--tok-h) 40% 24%);
+      color: hsl(var(--tok-h) 70% 84%);
+    }
+    .k22-tok-chip--punct {
+      background: color-mix(in srgb, var(--text) 10%, transparent);
+      color: var(--text-dim);
+    }
+    @keyframes k22-tok-in {
+      from { opacity: 0; transform: scale(0.75); }
+      to   { opacity: 1; transform: scale(1); }
+    }
+
+    /* ── Embeddings stage: a "vector strip" per token (small heat-strip of
+       cells), NOT dots placed in a 2D space. Arbitrary/decorative dot
+       positions would contradict k6's actual lesson (position = meaning
+       from training data), so this deliberately shows only "token became a
+       list of numbers" and points at k6 for what the geometry means. Hue
+       carries over from the Tokenização stage (same tokenHue(i)) so the eye
+       tracks the same token across both stages; per-cell value is a fixed
+       hash of the word text, not random per render. */
+    .k22-vec-list {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+    }
+    .k22-vec-row {
+      display: grid;
+      grid-template-columns: minmax(70px, auto) minmax(0, 1fr);
+      align-items: center;
+      gap: 0.6rem;
+    }
+    .k22-vec-label {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      color: hsl(var(--vec-h, 200) var(--vec-s, 55%) 38%);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    [data-theme="dark"] .k22-vec-label {
+      color: hsl(var(--vec-h, 200) var(--vec-s, 55%) 74%);
+    }
+    .k22-vec-strip {
+      display: flex;
+      gap: 3px;
+    }
+    .k22-vec-cell {
+      flex: 1 1 0;
+      height: 20px;
+      border-radius: 4px;
+      background: hsl(var(--vec-h, 200) var(--vec-s, 55%) calc(30% + var(--vec-v, 0.5) * 45%));
+    }
+    [data-theme="dark"] .k22-vec-cell {
+      background: hsl(var(--vec-h, 200) var(--vec-s, 55%) calc(18% + var(--vec-v, 0.5) * 40%));
+    }
+
+    /* ── Transformador stage (attention) ──────────────────── */
     .k22-atn-wrap {
       position: relative;
       display: flex;
@@ -382,8 +463,13 @@
       .k22-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.45rem; }
       .k22-sentence { padding: 0.45rem 0.65rem; min-height: 48px; }
       .k22-word { font-size: 15px; }
-      .k22-rail-chip { padding: 0.28rem 0.55rem; font-size: 12px; }
-      .k22-rail { gap: 0.3rem; }
+      /* 5 stages no longer fit as labelled pills on a phone: keep only the
+         numbered circle (the stage title in the focus panel already names
+         the current stage, so the label text is redundant here). Verified
+         via scrollWidth <= clientWidth, not by eyeballing a screenshot. */
+      .k22-rail-chip { padding: 0.3rem; font-size: 12px; gap: 0; }
+      .k22-rail-label { display: none; }
+      .k22-rail { gap: 0.25rem; }
       .k22-focus { padding: 0.75rem 0.85rem; }
       .k22-atn-chip { font-size: 13px; padding: 0.24rem 0.45rem; }
       .k22-prob-row { grid-template-columns: minmax(64px, auto) minmax(0, 1fr) 3.2em; gap: 0.4rem; }
@@ -414,11 +500,15 @@
   </div>
 
   <div class="k22-rail" id="k22-rail">
-    <span class="k22-rail-chip" data-stage="0"><span class="k22-rail-num">1</span>Atenção</span>
+    <span class="k22-rail-chip" data-stage="0"><span class="k22-rail-num">1</span><span class="k22-rail-label">Tokens</span></span>
     <span class="k22-rail-arrow">›</span>
-    <span class="k22-rail-chip" data-stage="1"><span class="k22-rail-num">2</span>Probabilidades</span>
+    <span class="k22-rail-chip" data-stage="1"><span class="k22-rail-num">2</span><span class="k22-rail-label">Embeddings</span></span>
     <span class="k22-rail-arrow">›</span>
-    <span class="k22-rail-chip" data-stage="2"><span class="k22-rail-num">3</span>Token novo</span>
+    <span class="k22-rail-chip" data-stage="2"><span class="k22-rail-num">3</span><span class="k22-rail-label">Transformador</span></span>
+    <span class="k22-rail-arrow">›</span>
+    <span class="k22-rail-chip" data-stage="3"><span class="k22-rail-num">4</span><span class="k22-rail-label">Probabilidades</span></span>
+    <span class="k22-rail-arrow">›</span>
+    <span class="k22-rail-chip" data-stage="4"><span class="k22-rail-num">5</span><span class="k22-rail-label">Token novo</span></span>
   </div>
 
   <div class="k22-focus" id="k22-focus">
@@ -434,8 +524,8 @@
   </div>
 
   <template data-lab-info data-lab-info-title="Como o modelo escreve a próxima palavra">
-    <p>A cada passo o modelo faz a mesma coisa quatro vezes seguidas: transforma a frase em números (<strong>tokens e embeddings</strong>, veja os labs Tokens e Embeddings), calcula o quanto cada palavra anterior importa para decidir a próxima (<strong>atenção</strong>), transforma isso numa <strong>lista de probabilidades</strong> sobre todo o vocabulário, e escolhe uma palavra. A palavra escolhida entra na frase, e o processo recomeça do zero para a próxima, agora com uma palavra a mais de contexto.</p>
-    <p>Repare no passo "de vício de" → "de": a atenção mais forte não é na palavra imediatamente anterior, é em "vício", lá atrás. O modelo não olha só a última palavra, ele pesa o que é relevante em toda a frase.</p>
+    <p>A cada passo o modelo repete a mesma sequência de cinco fases: quebra a frase inteira em <strong>tokens</strong> (veja o lab Tokens), transforma cada token num <strong>vetor de números</strong>, um embedding (veja o lab Embeddings), passa isso pelo <strong>transformador</strong>, que calcula o quanto cada palavra anterior pesa para decidir a próxima (a atenção), transforma esse resultado numa <strong>lista de probabilidades</strong> sobre todo o vocabulário, e escolhe uma palavra. A palavra escolhida entra na frase, e as cinco fases recomeçam do zero para a próxima, agora com uma palavra a mais de contexto: é o "volta pro começo" que você vê o token novo animar de volta pra fileira de cima.</p>
+    <p>Repare no passo "de vício de" → "de": dentro do transformador, a atenção mais forte não é na palavra imediatamente anterior, é em "vício", lá atrás. O modelo não olha só a última palavra, ele pesa o que é relevante em toda a frase.</p>
     <p>Esta demo usa uma frase e pesos escolhidos à mão, não um cálculo real, para ficar previsível e clara no palco. Mas o mecanismo é real: em cada passo, o modelo pega a probabilidade mais alta entre <strong>dezenas de milhares de candidatos</strong> e a acrescenta à frase. Com temperatura maior que zero, a escolha deixa de ser sempre a mais provável, é por isso que a mesma pergunta pode gerar respostas diferentes em duas conversas.</p>
     <p>Não há compreensão nem intenção nesse passo a passo: é estatística aplicada em sequência, uma palavra de cada vez.</p>
   </template>
@@ -515,16 +605,17 @@
 
       // ── State ──────────────────────────────────────────────
       // genIdx: index into STEPS of the word currently being generated (0..STEPS.length-1).
-      // stage: null=not started, 0=Atenção, 1=Probabilidades, 2=Token novo.
-      // The word at STEPS[genIdx] is committed to the sentence the moment stage becomes 2
-      // (not on a later click) — the "Token novo" caption says the word already entered the
-      // frase, so the sentence must show it right then, not one click later.
+      // stage: null=not started, 0=Tokens, 1=Embeddings, 2=Transformador, 3=Probabilidades,
+      // 4=Token novo. The word at STEPS[genIdx] is committed to the sentence the moment stage
+      // becomes 4 (not on a later click) — the "Token novo" caption says the word already
+      // entered the frase, so the sentence must show it right then, not one click later.
+      var LAST_STAGE = 4;
       var genIdx = 0;
       var stage = null;
       var autoTimer = null;
 
-      function isDone() { return stage === 2 && genIdx === STEPS.length - 1; }
-      function committedCount() { return genIdx + (stage === 2 ? 1 : 0); }
+      function isDone() { return stage === LAST_STAGE && genIdx === STEPS.length - 1; }
+      function committedCount() { return genIdx + (stage === LAST_STAGE ? 1 : 0); }
 
       function currentWords() {
         var w = BASE_WORDS.slice();
@@ -571,11 +662,107 @@
         focusEl.appendChild(d);
       }
 
-      function renderAttentionStage(step) {
+      // Reused across Tokenização and Embeddings so the same word gets the
+      // same color in both stages. Values ported from k5 (hue(i)=i*47%360),
+      // copied as a formula, not a shared selector/module across labs.
+      function tokenHue(i) { return (i * 47) % 360; }
+
+      // Deterministic per-word "fake vector": a small hash walk seeded by the
+      // word's own characters, so a given word always renders the same strip
+      // (not random per render) without any real embedding math.
+      function hashPattern(text, n) {
+        var vals = [];
+        var h = 0;
+        for (var c = 0; c < text.length; c++) h = (h * 31 + text.charCodeAt(c)) >>> 0;
+        for (var k = 0; k < n; k++) {
+          h = (h * 1103515245 + 12345) >>> 0;
+          vals.push(0.15 + (h % 1000) / 1000 * 0.75);
+        }
+        return vals;
+      }
+
+      function renderTokenStage() {
         clearFocus();
         var title = document.createElement('p');
         title.className = 'k22-focus-title';
-        title.textContent = 'Atenção — o que pesa para prever a próxima palavra';
+        title.textContent = 'Tokenização — a frase inteira vira tokens';
+        focusEl.appendChild(title);
+
+        var body = document.createElement('div');
+        body.className = 'k22-focus-body';
+        focusEl.appendChild(body);
+
+        var wrap = document.createElement('div');
+        wrap.className = 'k22-tok-wrap';
+        body.appendChild(wrap);
+
+        currentWords().forEach(function (w, i) {
+          var isPunct = w === '.';
+          var chip = document.createElement('span');
+          chip.className = 'k22-tok-chip' + (isPunct ? ' k22-tok-chip--punct' : '');
+          if (!isPunct) chip.style.setProperty('--tok-h', String(tokenHue(i)));
+          chip.style.animationDelay = (Math.min(i, 12) * 60) + 'ms';
+          chip.textContent = w;
+          wrap.appendChild(chip);
+        });
+
+        var caption = document.createElement('p');
+        caption.className = 'k22-focus-caption';
+        caption.textContent = 'A frase inteira é quebrada em tokens antes de cada previsão, sempre do zero, inclusive a palavra que acabou de entrar. Aqui cada palavra é um token; no lab Tokens você viu palavras que quebram em vários.';
+        body.appendChild(caption);
+      }
+
+      function renderEmbeddingStage() {
+        clearFocus();
+        var title = document.createElement('p');
+        title.className = 'k22-focus-title';
+        title.textContent = 'Embeddings — cada token vira um vetor de números';
+        focusEl.appendChild(title);
+
+        var body = document.createElement('div');
+        body.className = 'k22-focus-body';
+        focusEl.appendChild(body);
+
+        var list = document.createElement('div');
+        list.className = 'k22-vec-list';
+        body.appendChild(list);
+
+        currentWords().forEach(function (w, i) {
+          var isPunct = w === '.';
+          var row = document.createElement('div');
+          row.className = 'k22-vec-row';
+          row.style.setProperty('--vec-h', String(isPunct ? 0 : tokenHue(i)));
+          if (isPunct) row.style.setProperty('--vec-s', '0%');
+
+          var label = document.createElement('span');
+          label.className = 'k22-vec-label';
+          label.textContent = w;
+          row.appendChild(label);
+
+          var strip = document.createElement('span');
+          strip.className = 'k22-vec-strip';
+          hashPattern(w, 6).forEach(function (v) {
+            var cell = document.createElement('span');
+            cell.className = 'k22-vec-cell';
+            cell.style.setProperty('--vec-v', v.toFixed(2));
+            strip.appendChild(cell);
+          });
+          row.appendChild(strip);
+
+          list.appendChild(row);
+        });
+
+        var caption = document.createElement('p');
+        caption.className = 'k22-focus-caption';
+        caption.textContent = 'Cada token virou uma lista de números, um vetor. O que essa geometria representa, por que palavras parecidas ficam perto, é o tema do lab Embeddings.';
+        body.appendChild(caption);
+      }
+
+      function renderTransformerStage(step) {
+        clearFocus();
+        var title = document.createElement('p');
+        title.className = 'k22-focus-title';
+        title.textContent = 'Transformador — a atenção decide o que pesa';
         focusEl.appendChild(title);
 
         var body = document.createElement('div');
@@ -725,8 +912,10 @@
           return;
         }
         var step = STEPS[genIdx];
-        if (stage === 0) renderAttentionStage(step);
-        else if (stage === 1) renderProbabilityStage(step);
+        if (stage === 0) renderTokenStage();
+        else if (stage === 1) renderEmbeddingStage();
+        else if (stage === 2) renderTransformerStage(step);
+        else if (stage === 3) renderProbabilityStage(step);
         else renderWinnerStage(step, isDone());
       }
 
@@ -746,13 +935,13 @@
         var justAdded = false;
         if (stage === null) {
           stage = 0;
-        } else if (stage === 0) {
-          stage = 1;
-        } else if (stage === 1) {
-          stage = 2;
+        } else if (stage < LAST_STAGE - 1) {
+          stage++;
+        } else if (stage === LAST_STAGE - 1) {
+          stage = LAST_STAGE;
           justAdded = true; // STEPS[genIdx].winner just entered the sentence
         } else {
-          // stage === 2, not done (isDone() already ruled that out): move to the next word
+          // stage === LAST_STAGE, not done (isDone() already ruled that out): next word
           genIdx++;
           stage = 0;
         }
@@ -772,7 +961,7 @@
         allBtn.textContent = 'Pausar';
         autoTimer = setInterval(function () {
           var moved = advance();
-          if (!moved) stopAuto();
+          if (!moved || isDone()) stopAuto();
         }, 900);
       });
 

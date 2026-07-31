@@ -130,7 +130,7 @@ export const LABS = [
     key: 'k22',
     title: 'Próximo Token',
     summary: 'Não é pensamento, é probabilidade',
-    description: 'O demo gera uma frase palavra por palavra, mostrando os três passos que se repetem a cada token: atenção (o que da frase pesa mais), probabilidades (a lista de candidatos ao próximo token) e o token escolhido, que volta pro início do ciclo.',
+    description: 'O demo gera uma frase palavra por palavra, mostrando as cinco fases que se repetem a cada token: tokenização, embeddings, transformador (atenção), probabilidades e o token escolhido, que volta pro início do ciclo.',
     objective: 'Ver a geração de texto como um ciclo de atenção e probabilidade repetido, não como um raciocínio contínuo.',
     emoji: '📊'
   }
