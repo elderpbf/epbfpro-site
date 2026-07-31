@@ -216,12 +216,14 @@ function startEmail(emailEl, root) {
       '<div class="cdx-entrar-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
       '<h2 class="cdx-entrar-card-h">' + esc(t('login.code_title')) + '</h2>' +
       '<p class="cdx-entrar-card-p">' + esc(t('login.code_desc')) + '</p>' +
-      '<input class="cdx-entrar-field cdx-entrar-code-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
+      '<input class="cdx-entrar-field cdx-entrar-code-input" type="text" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
       dev +
       '<div class="cdx-entrar-error cdx-entrar-code-error" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : entryErrorText(flow.error, flow.retryAfter)) + '</div>' +
       '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-verify" type="button">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-code-input');
+    // Um só campo de código no site inteiro: maiúsculo no VALOR, tamanho certo, centralizado.
+    if (window.CodeInput) window.CodeInput.attach(input, { length: 4 });
     const verify = emailEl.querySelector('.cdx-entrar-verify');
     const err = emailEl.querySelector('.cdx-entrar-code-error');
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
@@ -229,7 +231,12 @@ function startEmail(emailEl, root) {
       err.textContent = '';
       verify.disabled = true; verify.textContent = t('login.sending');
       await flow.verifyCode(input.value);
-      if (flow.state === 'code' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); verify.disabled = false; verify.textContent = t('login.enroll_cta'); return; }
+      if (flow.state === 'code' && flow.error) {
+        err.textContent = entryErrorText(flow.error, flow.retryAfter);
+        // Código errado sai do campo, com o foco de volta: quem errou vai digitar outro.
+        if (window.CodeInput) window.CodeInput.clear(input);
+        verify.disabled = false; verify.textContent = t('login.enroll_cta'); return;
+      }
       settle();
     };
     verify.addEventListener('click', doVerify);
@@ -270,7 +277,10 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    input: document.getElementById('cdx-entrar-input'),
+    // O código da aula ao vivo é NUMÉRICO, e é a mesma peça com outro alfabeto.
+    input: (window.CodeInput
+      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })
+      : document.getElementById('cdx-entrar-input')),
     btn: document.getElementById('cdx-entrar-btn'),
     error: document.getElementById('cdx-entrar-error'),
     state: document.getElementById('cdx-entrar-state'),
