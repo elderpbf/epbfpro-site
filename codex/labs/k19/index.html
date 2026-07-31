@@ -156,6 +156,14 @@
     .k19-preview-block--r .k19-preview-block-label { color: var(--lab-context-a); }
     .k19-preview-block--e { border-left-color: var(--lab-good); }
     .k19-preview-block--e .k19-preview-block-label { color: var(--lab-good); }
+    /* Estrutura shows an actual markdown template (blank lines matter),
+       not prose: no justify (would stretch one-word lines), preserve the
+       authored line breaks instead of collapsing them like normal text. */
+    .k19-preview-block--e .k19-preview-block-text {
+      text-align: left;
+      white-space: pre-line;
+      font-family: var(--lab-font-mono);
+    }
     .k19-preview-block--prompt .k19-preview-block-label { color: var(--lab-text-dim); }
     .k19-preview-close {
       margin-top: 0.3rem;
@@ -433,7 +441,7 @@
       var CHECK_DEFS = [
         { title: 'Tom e papel certos', onNote: 'O Contexto fixou quem fala e para quem.', offNote: 'Sem Contexto, a IA responde num tom qualquer, informal demais para um ofício.' },
         { title: 'Sabe o que entregar', onNote: 'O Objetivo definiu que a entrega é um ofício formal, não um parágrafo solto.', offNote: 'Sem Objetivo, o formato da entrega fica por conta da IA adivinhar.' },
-        { title: 'Não inventa, pergunta o que falta', onNote: 'A Regra "não presuma, pergunte" barrou a invenção do número de processo.', offNote: 'Sem essa regra, a IA inventa número de processo e data para preencher o vazio.' },
+        { title: 'Não inventa, pergunta o que falta', onNote: 'A Regra "não presuma informações" barrou a invenção do número de processo.', offNote: 'Sem essa regra, a IA inventa número de processo e data para preencher o vazio.' },
         { title: 'Formato oficial do ofício', onNote: 'A Estrutura encaixou o conteúdo no modelo padrão do ofício.', offNote: 'Sem Estrutura, falta número, data, destinatário e fecho no lugar certo.' }
       ];
 
@@ -443,13 +451,25 @@
       var PREVIEW_BLOCKS = [
         { cls: 'c', label: 'Contexto', text: 'Você é servidor da Secretaria Administrativa do TJSE, redigindo ofícios formais.' },
         { cls: 'o', label: 'Objetivo', text: 'Entregue um ofício completo, pronto para protocolo.' },
-        { cls: 'r', label: 'Regras', text: 'Não presuma nem invente número de processo ou data. Se faltar informação, pergunte antes de redigir.' }
+        { cls: 'r', label: 'Regras', text: 'Não presuma informações. Se atenha aos dados passados.' }
       ];
       // The raw, unstructured ask. Once Objetivo is on, it already SAYS what
       // must be delivered, so it subsumes this: the "Prompt" block below
       // drops out of the preview list instead of sitting there redundant.
       var PREVIEW_PROMPT = 'Escreve um ofício pedindo prorrogação de prazo.';
-      var PREVIEW_ESTRUTURA = 'Formato de ofício: número, data, destinatário, corpo e fecho, nessa ordem.';
+      // A real markdown template, not a description of one, matching how
+      // Estrutura is taught elsewhere in the course: give the model the
+      // shape to fill in, not a prose instruction to reconstruct it from.
+      var PREVIEW_ESTRUTURA =
+        'OFÍCIO Nº [número] [Emitente]\n\n' +
+        'Aracaju/SE, [data no formato d, mês por extenso, aaaa].\n\n' +
+        '[Ao/À nome destinatário]\n' +
+        'Assunto: [assunto]\n\n' +
+        '[Senhor/ora cargo],\n\n' +
+        '[Conteúdo do ofício]\n\n' +
+        'Respeitosamente,\n\n' +
+        '[Nome do servidor]\n' +
+        '[Cargo]';
       var CORE_LABELS = [
         { cls: 'c', label: 'Contexto' },
         { cls: 'o', label: 'Objetivo' },

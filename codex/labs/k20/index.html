@@ -104,13 +104,6 @@
       margin: 0 0 0.9rem;
       text-align: justify;
     }
-    .k20-final-note {
-      text-align: center;
-      font-size: var(--lab-fs-body);
-      font-weight: 700;
-      color: var(--text);
-      margin-top: 0.6rem;
-    }
     .k20-card-row {
       display: flex;
       align-items: center;
@@ -304,7 +297,6 @@
           btn.addEventListener('click', function () { guess(btn, btns); });
         });
         nextBtn.disabled = true;
-        nextBtn.textContent = idx === deck.length - 1 ? 'Ver placar final' : 'Próxima';
       }
 
       function guess(btn, btns) {
@@ -321,17 +313,14 @@
         cardEl.querySelector('.k20-verdict-mark').textContent = item.real ? '✓ REAL' : '✗ INVENTADA';
         cardEl.querySelector('.k20-verdict-note').textContent = item.note;
         scoreEl.textContent = correct + '/' + (idx + 1);
-        nextBtn.disabled = false;
+        // The last card has nowhere left to advance to, and the score is
+        // already live up top (ACERTOS) the whole time: no separate "ver
+        // placar final" step or reveal needed, just leave Próxima disabled.
+        nextBtn.disabled = idx >= deck.length - 1;
       }
 
       nextBtn.addEventListener('click', function () {
-        if (idx >= deck.length - 1) {
-          progressEl.textContent = 'Fim';
-          cardEl.insertAdjacentHTML('beforeend',
-            '<p class="k20-final-note">Placar final: ' + correct + '/' + deck.length + '</p>');
-          nextBtn.disabled = true;
-          return;
-        }
+        if (idx >= deck.length - 1) return;
         idx++;
         renderCard();
       });
