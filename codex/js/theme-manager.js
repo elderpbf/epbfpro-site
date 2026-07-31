@@ -85,6 +85,18 @@ var ThemeManager = (function() {
     if (config.toggleEl) config.toggleEl.setAttribute('aria-pressed', current === 'dark');
   }
 
+  // O tema das telas públicas, em ordem de autoridade: URL > escolha guardada > SISTEMA > padrão.
+  //
+  // O SISTEMA entrou em 2026-07-31, e o motivo foi um relato do Élder abrindo a Trilha:
+  // *"percebi que ele não tem darkmode. abriu no light do nada, quase fico cego"*. Estava certo: a
+  // função nunca perguntou ao navegador, então quem chegava pela primeira vez com o aparelho no
+  // escuro tomava uma tela branca na cara. Não era ausência de tema escuro (ele existe inteiro), era
+  // a primeira visita ignorando a única informação disponível sobre a pessoa.
+  //
+  // A ordem importa e é ela que evita o erro oposto: quem JÁ escolheu claro num aparelho escuro
+  // escolheu, e `prefers-color-scheme` não pode desfazer isso na próxima visita. Por isso o sistema
+  // vem DEPOIS do que está guardado, e o padrão declarado só sobra para o navegador que não sabe
+  // responder.
   function initPublic(opts) {
     opts = opts || {};
     var key      = opts.storageKey   || 'bs_theme_public';
@@ -94,6 +106,7 @@ var ThemeManager = (function() {
     var theme    = def;
     if (urlTheme === 'dark' || urlTheme === 'light') theme = urlTheme;
     else if (stored === 'dark' || stored === 'light') theme = stored;
+    else if (typeof window.matchMedia === 'function' && window.matchMedia('(prefers-color-scheme: dark)').matches) theme = 'dark';
     applyTheme(theme);
   }
 

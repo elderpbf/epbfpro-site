@@ -112,6 +112,9 @@ export function mountLogin() {
   const codeStep = $('cdx-login-code-step');
   const emailEl = $('cdx-login-email');
   const codeEl = $('cdx-login-code');
+  // Um só campo de código no site inteiro (js/code-input.js): maiúsculo no VALOR (não só no
+  // que se vê), tamanho certo e centralizado. Antes disto o comportamento estava no HTML.
+  if (window.CodeInput) window.CodeInput.attach(codeEl, { length: 4 });
   const errEl = $('cdx-login-error');
   const emailBtn = $('cdx-login-email-btn');
   const codeBtn = $('cdx-login-code-btn');
