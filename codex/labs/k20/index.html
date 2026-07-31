@@ -265,18 +265,28 @@
         }
       ];
 
+      function shuffle(arr) {
+        var out = arr.slice();
+        for (var i = out.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+        }
+        return out;
+      }
+
       var progressEl = document.getElementById('k20-progress');
       var cardEl = document.getElementById('k20-card');
       var scoreEl = document.getElementById('k20-score');
       var nextBtn = document.getElementById('k20-next');
       var resetBtn = document.getElementById('k20-reset');
       var idx = 0;
-      var guesses = new Array(ITEMS.length).fill(null);
+      var deck = shuffle(ITEMS);
+      var guesses = new Array(deck.length).fill(null);
       var correct = 0;
 
       function renderCard() {
-        var item = ITEMS[idx];
-        progressEl.textContent = 'Citação ' + (idx + 1) + ' de ' + ITEMS.length;
+        var item = deck[idx];
+        progressEl.textContent = 'Citação ' + (idx + 1) + ' de ' + deck.length;
         cardEl.className = 'k20-card';
         cardEl.innerHTML =
           '<p class="k20-card-text">' + item.text + '</p>' +
@@ -294,11 +304,11 @@
           btn.addEventListener('click', function () { guess(btn, btns); });
         });
         nextBtn.disabled = true;
-        nextBtn.textContent = idx === ITEMS.length - 1 ? 'Ver placar final' : 'Próxima';
+        nextBtn.textContent = idx === deck.length - 1 ? 'Ver placar final' : 'Próxima';
       }
 
       function guess(btn, btns) {
-        var item = ITEMS[idx];
+        var item = deck[idx];
         guesses[idx] = btn.dataset.guess === 'true';
         var wasCorrect = guesses[idx] === item.real;
         if (wasCorrect) correct++;
@@ -315,10 +325,10 @@
       }
 
       nextBtn.addEventListener('click', function () {
-        if (idx >= ITEMS.length - 1) {
+        if (idx >= deck.length - 1) {
           progressEl.textContent = 'Fim';
           cardEl.insertAdjacentHTML('beforeend',
-            '<p class="k20-final-note">Placar final: ' + correct + '/' + ITEMS.length + '</p>');
+            '<p class="k20-final-note">Placar final: ' + correct + '/' + deck.length + '</p>');
           nextBtn.disabled = true;
           return;
         }
@@ -329,7 +339,11 @@
       resetBtn.addEventListener('click', function () {
         idx = 0;
         correct = 0;
-        guesses = new Array(ITEMS.length).fill(null);
+        // Reshuffled on every reset, not just on page load, so replaying
+        // the demo doesn't land on the same "always the real ones first"
+        // order the audience could start to memorize.
+        deck = shuffle(ITEMS);
+        guesses = new Array(deck.length).fill(null);
         scoreEl.textContent = '—';
         renderCard();
       });

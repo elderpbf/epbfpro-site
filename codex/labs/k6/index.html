@@ -289,19 +289,48 @@
       // it is the CENTROIDS that differ, not a need for per-word randomness.
       var OFFSETS = [[-8, -7], [8, -7], [-10, 3], [10, 3], [-4, 10], [5, -11]];
 
-      // Reveal order: round-robin across domains, so the audience sees one
-      // dot land in each of the 6 areas per lap, not one whole domain at a
-      // time (which would make the clustering look scripted, not emergent).
+      // Reveal order: random, not round-robin (a fixed lap order read as
+      // scripted/predictable), but never two words from the SAME domain back
+      // to back, so it still doesn't look like one whole cluster fills in at
+      // a time. Position (x/y) stays tied to the word's own index within its
+      // domain, only the REVEAL order is shuffled.
+      function shuffle(arr) {
+        var out = arr.slice();
+        for (var i = out.length - 1; i > 0; i--) {
+          var j = Math.floor(Math.random() * (i + 1));
+          var tmp = out[i]; out[i] = out[j]; out[j] = tmp;
+        }
+        return out;
+      }
+
+      var pools = DOMAINS.map(function (d) {
+        return shuffle(d.words.map(function (w, i) {
+          return { word: w, color: d.color, x: d.cx + OFFSETS[i][0], y: d.cy + OFFSETS[i][1] };
+        }));
+      });
+      // Picking uniformly among ANY eligible pool (not weighted by how much
+      // is left in each) can starve one pool while the others empty out, and
+      // near the end force a same-domain repeat with nothing else left to
+      // pick. Always drawing from whichever eligible pool has the MOST left
+      // (ties broken randomly) is the standard safe way to avoid that.
       var QUEUE = [];
-      for (var i = 0; i < 6; i++) {
-        DOMAINS.forEach(function (d) {
-          QUEUE.push({
-            word: d.words[i],
-            color: d.color,
-            x: d.cx + OFFSETS[i][0],
-            y: d.cy + OFFSETS[i][1]
-          });
-        });
+      var lastPool = -1;
+      var leftCount = pools.reduce(function (n, p) { return n + p.length; }, 0);
+      while (leftCount > 0) {
+        var maxLen = -1;
+        var candidates = [];
+        for (var p = 0; p < pools.length; p++) {
+          if (pools[p].length === 0 || p === lastPool) continue;
+          if (pools[p].length > maxLen) { maxLen = pools[p].length; candidates = [p]; }
+          else if (pools[p].length === maxLen) { candidates.push(p); }
+        }
+        if (!candidates.length) {
+          for (var p2 = 0; p2 < pools.length; p2++) if (pools[p2].length > 0) candidates.push(p2);
+        }
+        var pick = candidates[Math.floor(Math.random() * candidates.length)];
+        QUEUE.push(pools[pick].shift());
+        lastPool = pick;
+        leftCount--;
       }
 
       var stageEl = document.getElementById('k6-stage');
