@@ -555,6 +555,14 @@ describe('Assinador app (source contract)', () => {
     assert.ok(/status:\s*'signed'/.test(page), 'forces status=signed for the render');
     assert.ok(page.includes('renderCertHtml(signedCert'), 'renders the as-signed cert, not the raw issued one');
   });
+  test('track-58: the signing page never asks a human for a credential', () => {
+    // REGRESSION GUARD: this page used to gate itself behind a typed "Senha do
+    // Codex" checked against the dead pre-OTP backstage password. It must never
+    // come back; the app authenticates itself with its own static app key.
+    assert.ok(!/loginPanel|hashPw|auth\.validate/.test(page), 'no password login flow left in the source');
+    assert.ok(page.includes('window.pywebview.api.get_app_key'), 'fetches the static app key from the local bridge');
+    assert.ok(/localStorage\.setItem\(\s*'bs_pw_hash'\s*,\s*key\s*\)/.test(page), 'feeds the app key into the existing auth_token slot');
+  });
 });
 
 // ── Emissão fixes (2026-06-15): per-row PDF, revoked delete, bulk delete, modal
