@@ -12,7 +12,7 @@
 //   window.callWorker (Worker transport, set by the import below); window.pywebview.api
 //   (desktop bridge); window.WORKER_URL (set on boot); window.bsLog (debug pill)
 import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
-import { certificates as api } from '../js/codex-api.js';
+import { certSigner as api } from '../js/codex-api.js';
 import { renderCertsPdfBase64 } from './cert-pdf.js';
 import { renderCertHtml, buildValidarUrl, formatIssuedOn } from './certificates.js';
 import { glyphWordmark, stdColors } from '../js/brand-logos.js';
@@ -38,26 +38,17 @@ const _pfx = { chosen: false };
 function log(m) { $('#log').textContent = m; }
 
 // ── boot (track-58) ─────────────────────────────────────────────────────────
-// No human credential, ever: the app has no browser session of its own (its own
-// isolated pywebview profile) and Élder does not want to type anything to open it.
-// window.pywebview.api.get_app_key() returns a static per-app secret that lives
-// ONLY in the local desktop build (never in this public repo); it rides in the
-// SAME bs_pw_hash slot every other codex-api call already reads, so nothing else
-// in this file (or the shared facade) needs to change.
+// No login, ever: Élder does not want to type or fetch anything to open this
+// page. It calls the public cert_signer_* actions (codex-api, no auth) instead
+// of the old "Senha do Codex" gate, which checked a password the product has
+// not issued since the OTP migration.
 let _booted = false;
-async function bootInApp() {
+function bootInApp() {
   if (_booted || !inApp()) return;
   _booted = true;
   $('#certPanel').classList.remove('hide');
   $('#listPanel').classList.remove('hide');
-  let key;
-  try { key = await window.pywebview.api.get_app_key(); } catch (_) { key = null; }
-  if (!key) {
-    $('#listWrap').innerHTML = '<div class="st err">Não consegui obter a chave do app. Reinstale o Assinador.</div>';
-    return;
-  }
-  localStorage.setItem('bs_pw_hash', key);
-  await loadCerts();
+  loadCerts();
 }
 if (inApp()) bootInApp();
 
