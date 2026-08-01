@@ -423,6 +423,16 @@ export const certificates = {
   attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
 };
 
+// Certificates — public signer surface (track-58, no auth). Deliberately narrower
+// than `certificates` above: the Assinador desktop app has no login of its own by
+// design, so these wrap the admin actions with the constraints that make that safe
+// (no e-mail field, status locked to 'issued', writes refuse anything not 'issued').
+export const certSigner = {
+  list:       (p) => call('cert_signer_list', p),        // { } -> always status='issued', no email
+  markSigned: (p) => call('cert_signer_mark_signed', p),  // { code }
+  attachPdf:  (p) => call('cert_signer_attach_pdf', p)    // { code, pdf_b64 }
+};
+
 // track-44 — comunicados (broadcast autorado). send returns { ok, comunicado_id, reach:{bell,email,push} }.
 export const comunicados = {
   send: (p) => call('ct_comunicado_send', p), // { scope:'global'|'turmas', turma_ids?, category, title, body, image_key?, link?, channels:{bell,email,push} }
