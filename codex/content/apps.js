@@ -10,14 +10,17 @@
 // cdx-item-row / cdx-item-preview), so there is one layout, not a per-tab copy. The left
 // list is the catalog; the right pane is the inline edit form for the selected app.
 //
-// Scope note: only EDIT of existing apps here (ct_update_app). Creating a new app mints an
-// app_key + APP_API_KEY (Doppler) and is a rarer, heavier flow kept manual for now; delete
-// would cascade /ext/ entitlements. Both are deferred until a real second app appears.
+// Scope note: create + edit here. "Novo aplicativo" (track-59) calls ct_create_app, which mints
+// the app's API key and returns it RAW exactly once — this module is the only place that key is
+// ever visible, so it is shown in a modal the admin must copy before closing, and never fetched
+// again. DELETE is still absent on purpose: it would cascade /ext/ entitlements, and disabling
+// (enabled=0) already takes an app off every trilha without losing its grants.
 import { apps as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { assetUrl } from '../js/codex-api.js';
 import { mountRail } from '../js/list-rail.js';
+import { openModal, closeModal } from '../js/modal.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { esc as _esc } from '../js/dom.js';
@@ -33,10 +36,12 @@ let _rail = null;     // the left app list is the shared list-rail (js/list-rail
 function _q(id) { return _viewEl ? _viewEl.querySelector('#' + id) : null; }
 
 // The card copy lives in ct_apps.description as JSON. Parse defensively (a bad/empty
-// value yields a blank form, never a throw). Shape: { tagline, access_note, benefits:[
-// { glyph, title, desc } ] }.
+// value yields a blank form, never a throw). Shape: { delivery, tagline, access_note,
+// benefits:[ { glyph, title, desc } ], screenshots }. `delivery` decides how the trilha card
+// hands the app over (Store download vs. open the site) and is read by trilha/js/app-card.js;
+// it lives in this JSON rather than a column so no migration was needed.
 export function parseDescription(raw) {
-  const blank = { tagline: '', access_note: '', benefits: [], screenshots: { light: '', dark: '' } };
+  const blank = { tagline: '', access_note: '', benefits: [], screenshots: { light: '', dark: '' }, delivery: 'store' };
   if (!raw) return blank;
   try {
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
@@ -46,6 +51,7 @@ export function parseDescription(raw) {
       access_note: d.access_note || '',
       benefits: Array.isArray(d.benefits) ? d.benefits.map((b) => ({ glyph: b.glyph || '', title: b.title || '', desc: b.desc || '' })) : [],
       screenshots: { light: s.light || '', dark: s.dark || '' },
+      delivery: d.delivery === 'web' ? 'web' : 'store',
     };
   } catch (_) {
     return blank;
@@ -102,6 +108,14 @@ function _fieldRow(label, inputHtml, hint) {
   '</div>';
 }
 
+// How the app reaches the student. Read by trilha/js/app-card.js; 'store' keeps the original
+// Windows/Microsoft-Store behaviour, 'web' opens the site on any platform.
+function _deliverySelect(attrs, value) {
+  const opt = (v, label) => '<option value="' + v + '"' + (value === v ? ' selected' : '') + '>' + _esc(label) + '</option>';
+  return '<select ' + attrs + ' class="cdx-app-delivery">' +
+    opt('store', t('apps.delivery_store')) + opt('web', t('apps.delivery_web')) + '</select>';
+}
+
 function _benefitRowHtml(b, i) {
   return '<div class="cdx-app-benefit" data-bi="' + i + '">' +
     '<span class="cdx-app-benefit-glyph" data-glyph-preview>' + (b.glyph ? glyphSvg(b.glyph, { size: 18 }) : '') + '</span>' +
@@ -135,6 +149,7 @@ function _renderDetail() {
         '<label class="cdx-app-enabled"><input type="checkbox" id="cdx-app-enabled"' + (app.enabled ? ' checked' : '') + '> <span>' + _esc(t('apps.enabled')) + '</span></label>' +
       '</div>' +
       _fieldRow(t('apps.f_name'), '<input type="text" id="cdx-app-name" value="' + _esc(app.name || '') + '">') +
+      _fieldRow(t('apps.f_delivery'), _deliverySelect('id="cdx-app-delivery"', d.delivery), t('apps.f_delivery_hint')) +
       _fieldRow(t('apps.f_store_url'), '<input type="text" id="cdx-app-store" value="' + _esc(app.store_url || '') + '" spellcheck="false" placeholder="https://apps.microsoft.com/detail/...">', t('apps.f_store_hint')) +
       _fieldRow(t('apps.f_icon'), '<input type="text" id="cdx-app-icon" value="' + _esc(app.icon || '') + '" spellcheck="false">', t('apps.f_icon_hint')) +
       '<div class="cdx-app-sep" role="separator"></div>' +
@@ -200,6 +215,7 @@ function _save() {
   const store_url = (_q('cdx-app-store') || {}).value || '';
   const icon = (_q('cdx-app-icon') || {}).value || '';
   const enabled = !!(_q('cdx-app-enabled') || {}).checked;
+  const delivery = (_q('cdx-app-delivery') || {}).value === 'web' ? 'web' : 'store';
   const tagline = (_q('cdx-app-tagline') || {}).value || '';
   const access_note = (_q('cdx-app-access') || {}).value || '';
   const shotLight = (_q('cdx-app-shot-light') || {}).value || '';
@@ -208,7 +224,7 @@ function _save() {
     .filter((b) => b.glyph || b.title || b.desc)
     .map((b) => ({ glyph: b.glyph.trim(), title: b.title.trim(), desc: b.desc.trim() }));
   const description = JSON.stringify({
-    tagline: tagline.trim(), access_note: access_note.trim(), benefits,
+    delivery, tagline: tagline.trim(), access_note: access_note.trim(), benefits,
     screenshots: { light: shotLight.trim(), dark: shotDark.trim() },
   });
   if (btn) btn.disabled = true;
@@ -228,6 +244,84 @@ function _save() {
       if (msg) msg.textContent = t('apps.save_error');
       notice.internal(_err(err));
     });
+}
+
+// ── Create (track-59) ─────────────────────────────────────────────────────────
+// Only IDENTITY is asked here (key, name, how it is delivered, where it lives). The card copy
+// stays in the editor on the right: creation must not grow into a second full form that then
+// drifts from the one that maintains it.
+function _openCreate() {
+  const field = (label, inputHtml, hint) =>
+    '<div class="cdx-field cdx-app-field"><label class="cdx-field-label">' + _esc(label) + '</label>' +
+    inputHtml + (hint ? '<div class="cdx-field-hint">' + _esc(hint) + '</div>' : '') + '</div>';
+  const html =
+    '<div class="cdx-modal cdx-modal--sm">' +
+      '<div class="cdx-modal-title">' + _esc(t('apps.new_title')) + '</div>' +
+      field(t('apps.f_app_key'), '<input type="text" data-fld="app_key" spellcheck="false" placeholder="prazos">', t('apps.f_app_key_hint')) +
+      field(t('apps.f_name'), '<input type="text" data-fld="name" placeholder="' + _esc(t('apps.f_name_ph')) + '">') +
+      field(t('apps.f_delivery'), _deliverySelect('data-fld="delivery"', 'store'), t('apps.f_delivery_hint')) +
+      field(t('apps.f_store_url'), '<input type="text" data-fld="store_url" spellcheck="false" placeholder="https://">', t('apps.f_store_hint')) +
+      '<div class="cdx-modal-actions">' +
+        '<button type="button" class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" data-act="ok">' + t('apps.create') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html, { disableBackdropClose: true });
+  const val = (f) => (bd.querySelector('[data-fld="' + f + '"]') || {}).value || '';
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  const ok = bd.querySelector('[data-act="ok"]');
+  ok.addEventListener('click', () => {
+    const app_key = val('app_key').trim().toLowerCase();
+    const name = val('name').trim();
+    if (!app_key || !name) { toast.err(t('apps.create_required')); return; }
+    const delivery = val('delivery') === 'web' ? 'web' : 'store';
+    ok.disabled = true;
+    api.create({ app_key, name, store_url: val('store_url').trim(), description: JSON.stringify({ delivery }) })
+      .then((res) => {
+        if (res && res.error) throw new Error(res.error);
+        closeModal(bd);
+        _selectedKey = res.app_key;
+        // The key first, the list after: the reveal is the only chance to keep it.
+        _showKeyOnce(res.app_key, res.api_key);
+        return _reload();
+      })
+      .catch((err) => {
+        ok.disabled = false;
+        const msg = String((err && err.message) || err);
+        // The two the admin can act on get their own sentence; anything else is technical.
+        if (msg.indexOf('app_exists') >= 0) { toast.err(t('apps.err_app_exists')); return; }
+        if (msg.indexOf('bad_app_key') >= 0) { toast.err(t('apps.err_bad_app_key')); return; }
+        notice.internal(_err(err));
+      });
+  });
+}
+
+// The raw API key exists in exactly one place in the world: this modal. The server stored only
+// its SHA-256 and no action returns it again, so backdrop-click AND Escape are both disabled —
+// losing it here means creating another app, not recovering this one.
+function _showKeyOnce(appKey, apiKey) {
+  const html =
+    '<div class="cdx-modal cdx-modal--md">' +
+      '<div class="cdx-modal-title">' + _esc(t('apps.key_title')) + '</div>' +
+      '<div class="cdx-app-key-warn">' + _esc(t('apps.key_warn')) + '</div>' +
+      '<div class="cdx-app-key-box"><code>' + _esc(apiKey || '') + '</code></div>' +
+      '<div class="cdx-field-hint">' + _esc(t('apps.key_where')) + '</div>' +
+      '<div class="cdx-modal-actions">' +
+        '<button type="button" class="cdx-btn" data-act="copy">' + t('apps.key_copy') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary" data-act="done">' + t('apps.key_done') + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html, { disableBackdropClose: true, disableEscClose: true });
+  bd.querySelector('[data-act="copy"]').addEventListener('click', () => {
+    const nav = (typeof navigator !== 'undefined') ? navigator : null;
+    if (!nav || !nav.clipboard) { toast.err(t('apps.key_copy_failed')); return; }
+    nav.clipboard.writeText(apiKey).then(() => toast.ok(t('apps.key_copied')))
+      .catch(() => toast.err(t('apps.key_copy_failed')));
+  });
+  bd.querySelector('[data-act="done"]').addEventListener('click', () => {
+    closeModal(bd);
+    toast.ok(t('apps.created'));
+  });
 }
 
 // ── Load ──────────────────────────────────────────────────────────────────────
@@ -250,6 +344,7 @@ function _renderShell() {
     '<div class="cdx-apps-admin">' +
       '<div class="cdx-presets-toolbar">' +
         '<h2 class="cdx-presets-title">' + t('apps.title') + '</h2>' +
+        '<button type="button" class="cdx-btn cdx-btn-primary cdx-apps-new" id="cdx-apps-new">+ ' + t('apps.new') + '</button>' +
       '</div>' +
       '<div class="cdx-items-split" id="cdx-apps-split">' +
         '<div class="cdx-items-list" id="cdx-apps-list"></div>' +
@@ -260,6 +355,8 @@ function _renderShell() {
     '</div>';
   if (_rail) { _rail.destroy(); _rail = null; }
   _buildRail();
+  const newBtn = _q('cdx-apps-new');
+  if (newBtn) newBtn.addEventListener('click', _openCreate);
   const detail = _q('cdx-apps-detail');
   detail.addEventListener('click', _onDetailClick);
   detail.addEventListener('input', _onDetailInput);

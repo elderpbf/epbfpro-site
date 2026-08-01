@@ -401,6 +401,7 @@ export const releases = {
 // the trilha reads the granted apps from ct_get_turma_view's apps[] (see releases.turmaView).
 export const apps = {
   list:         (p) => call('ct_list_apps', p),           // -> { apps } (catalog: name/store_url/icon/description/enabled)
+  create:       (p) => call('ct_create_app', p),          // { app_key, name, store_url?, icon?, description?, enabled? } -> { app_key, api_key } — api_key is RAW and returned ONCE, never readable again
   updateApp:    (p) => call('ct_update_app', p),          // { app_key, name?, store_url?, icon?, description?, enabled? } (only passed fields change)
   getTurmaApps: (p) => call('ct_get_turma_apps', p),      // { turma_id } -> { apps } (grants + bound aula_number, for the toggle state)
   setTurmaApp:  (p) => call('ct_set_turma_app', p)        // { turma_id, app_key, enabled, aula_number? } (release/unrelease to an aula)

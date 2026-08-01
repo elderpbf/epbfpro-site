@@ -1194,6 +1194,19 @@
 .cdx-app-form-actions { display: flex; align-items: center; justify-content: flex-end; gap: 0.6rem;
   padding: 0.7rem 1.25rem; border-top: 1px solid var(--border); background: var(--surface); }
 .cdx-app-msg { font-size: 0.8rem; color: var(--text-secondary); margin-right: auto; }
+.cdx-apps-new { margin-left: auto; }
+/* Delivery picker: same shell as the text inputs beside it, so the form reads as one column. */
+.cdx-app-field select.cdx-app-delivery { width: 100%; box-sizing: border-box; padding: 0.5rem 0.65rem;
+  border: 1px solid var(--border); border-radius: 8px; background: var(--surface);
+  color: var(--text-primary); font-size: 0.88rem; font-family: inherit; }
+.cdx-app-field select.cdx-app-delivery:focus { outline: none; border-color: var(--primary); }
+/* The one-time key. Monospace and selectable: copying it by hand must always work, because
+   there is no second chance to read it. */
+.cdx-app-key-warn { font-size: 0.85rem; color: var(--danger); font-weight: 600; }
+.cdx-app-key-box { margin: 0.6rem 0 0.35rem; padding: 0.7rem 0.8rem; border: 1px dashed var(--border);
+  border-radius: 8px; background: var(--surface-2, var(--surface)); overflow-wrap: anywhere; user-select: all; }
+.cdx-app-key-box code { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+  font-size: 0.82rem; color: var(--text-primary); }
 @media (max-width: 640px) {
   .cdx-app-benefit { grid-template-columns: 1fr; }
   .cdx-app-benefit-glyph { justify-content: flex-start; }
