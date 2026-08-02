@@ -21,6 +21,15 @@
 .cdx-rail--autohide .cdx-rail-title { font-size:1.25rem; }
 .cdx-rail-add    { flex:0 0 auto; }
 
+/* search: own line between the title and the chips (Élder 2026-08-02). Both narrow the same
+   list so they sit together, and search leads because it is the more frequent gesture. The
+   input inherits .cdx-input (css/components.css) for the field look; only the row is styled
+   here, so a rail search box can never drift from every other field in Codex. */
+.cdx-rail-search { flex-shrink:0; padding:.5rem .8rem; border-bottom:1px solid var(--border); }
+.cdx-rail-search-input { width:100%; font-size:.85rem; padding:.35rem .55rem; }
+/* Chrome/Safari draw their own ✗ inside type="search"; keep it, it is the affordance Firefox
+   lacks and there is no custom clear button. */
+
 /* filter chips: own line under the title, wraps on mobile */
 .cdx-rail-filters{ flex-shrink:0; display:flex; flex-wrap:wrap; gap:.3rem; padding:.4rem .8rem;
                    border-bottom:1px solid var(--border); }

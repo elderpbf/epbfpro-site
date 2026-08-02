@@ -26,12 +26,14 @@
 //              renderHead,emptyText,editable,onMoveItem}, ...],  // N levels, outermost first.
 //         sections/bands are SUGAR over this; reach for levels only when you need 3+ levels or
 //         mixed depth (see the grouping block below).
-//     filter:{chips:[{key,label,count}], active:()=>key, onFilter:(key)=>{}},
+//     search:{fields:(it)=>[...values], placeholder, ariaLabel, onChange:(q)=>{}},
+//     filter:{chips:[{key,label,count}] | (q)=>[...], active:()=>key, onFilter:(key)=>{}},
 //     width:{mode:'resize', gridEl, storeKey, defaultPx, min, max}
 //         | {mode:'autohide', layoutEl, openClass, revealZone, hideDelay, pinned},
 //     footer:()=>html,
 //   });
 //   rail.render();   // idempotent, after loads/mutations
+//   rail.query();    // search only: the live query text (the rail owns it, not the consumer)
 //   rail.pin(bool);  // width:autohide only — pin(true)=pinned+open, pin(false)=unpinned+close
 //   rail.destroy();  // on unmount
 //
@@ -51,6 +53,7 @@
 import { esc } from './dom.js';
 import { installResizer } from './resizable.js';
 import { buildTree } from './list-tree.js';
+import { makeMatcher } from './text-search.js';
 
 const GRIP = '⠿'; // ⠿ drag-handle glyph
 const DRAG_THRESHOLD = 4; // px before a press becomes a drag (lets a tap still select)
@@ -64,6 +67,8 @@ export function mountRail(container, cfg) {
   const reorder = cfg.reorder || null;
   const filter = cfg.filter || null;
   const add = cfg.add || null;
+  const search = cfg.search || null;
+  let searchQuery = '';   // owned HERE, not by the consumer, see renderAfterQuery()
 
   // `sections`/`bands` are SUGAR over the general `levels` (see the grouping block below). They
   // stay the public API: 10 live consumers use them and rewriting those to `levels` would be
@@ -265,16 +270,20 @@ export function mountRail(container, cfg) {
   }
 
   function bodyHtml() {
-    const its = readItems();
+    const its = searchFilter(readItems());
     // "No items" is only "empty" when there are no groups either: with groups, the heads ARE
     // content (Clientes with clients but no turmas yet must still list the clients, each showing
     // its own empty text — not one "no clients" line over a screen that HAS clients).
+    // DURING A SEARCH that flips: a query with no hits must say so, not paint a column of empty
+    // group heads whose own emptyText ("nenhuma turma") answers a question nobody asked.
     const anyGroups = levels.length && levels.some((_, i) => levelList(i).length);
-    if (!its.length && !anyGroups) {
+    if (!its.length && (searching() || !anyGroups)) {
       // emptyHtml: a RICH empty state owned by the consumer (Sessões has an icon over a line),
       // same seam as renderRow/renderHead/footer. emptyText stays the escaped-text default.
-      if (cfg.emptyHtml) return cfg.emptyHtml();
-      const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText() : (cfg.emptyText || '');
+      // Both receive the live query so a consumer can say "nada encontrado para X" instead of
+      // its stock "nenhum item" (the pre-search callbacks take no argument and ignore it).
+      if (cfg.emptyHtml) return cfg.emptyHtml(searchQuery);
+      const et = (typeof cfg.emptyText === 'function') ? cfg.emptyText(searchQuery) : (cfg.emptyText || '');
       return '<div class="cdx-rail-empty">' + esc(et) + '</div>';
     }
     if (!levels.length) {
@@ -283,7 +292,11 @@ export function mountRail(container, cfg) {
     // The engine buckets every item into its DEEPEST named group and drops the empties; anything
     // unplaced comes back as `loose` and gets a bucket at the top of the body (a consumer's null
     // section, e.g. a course with no section).
-    const { nodes, loose } = buildTree(its, levels);
+    // A group that keeps no row under a live query is noise, whatever it declared: the question
+    // on screen stopped being "what exists" and became "what matches". hideWhenEmpty is forced
+    // on for the duration of the search only, so the normal view still shows an empty client.
+    const lv = searching() ? levels.map((l) => Object.assign({}, l, { hideWhenEmpty: true })) : levels;
+    const { nodes, loose } = buildTree(its, lv);
     let html = '';
     if (loose.length) html += '<div class="cdx-rail-seclist" data-seclist="__none">' + loose.map(rowHtml).join('') + '</div>';
     html += nodes.map(nodeHtml).join('');
@@ -300,15 +313,7 @@ export function mountRail(container, cfg) {
     const addBtn = add
       ? '<button type="button" class="cdx-rail-add cdx-btn cdx-btn-sm" data-rail-add title="' + esc(add.title || add.label || '') + '" aria-label="' + esc(add.title || add.label || '') + '">' + esc(add.label || '+') + '</button>'
       : '';
-    let filters = '';
-    if (filter && filter.chips && filter.chips.length) {
-      const active = filter.active ? filter.active() : null;
-      filters = '<div class="cdx-rail-filters">' + filter.chips.map((c) =>
-        '<button type="button" class="cdx-rail-chip' + (String(active) === String(c.key) ? ' is-on' : '') + '" data-rail-filter="' + esc(String(c.key)) + '">' +
-          esc(c.label) + (c.count != null ? ' <span class="cdx-rail-chip-n">' + c.count + '</span>' : '') +
-        '</button>'
-      ).join('') + '</div>';
-    }
+    const filters = filtersHtml();
     // Skip the head bar entirely when there is nothing to put in it (no title, no add) —
     // an empty bordered bar (e.g. labs, which has its own page head) would just be noise.
     const head = (cfg.title || add)
@@ -320,7 +325,62 @@ export function mountRail(container, cfg) {
     // that opens a modal would add a click and a surface to a flow he runs live at the start of
     // every class. Expanding in place keeps type-and-submit and still frees the top.
     const panel = cfg.headPanel ? (cfg.headPanel() || '') : '';
-    return head + filters + (panel ? '<div class="cdx-rail-headpanel">' + panel + '</div>' : '');
+    // Anatomy (architecture/list-rail.md §3, Élder 2026-08-02): the search box is its OWN row
+    // between the title and the chips. Both narrow the same list, so they sit together, and
+    // search comes first because it is the more frequent gesture. Crammed into the title row it
+    // would fight the title + add button, which on Clientes is already tight on a phone.
+    return head + searchHtml() + filters + (panel ? '<div class="cdx-rail-headpanel">' + panel + '</div>' : '');
+  }
+
+  // ── search ──────────────────────────────────────────────────────────────────
+  // The rail owns the QUERY and the input element; the consumer only declares which values a
+  // row is searchable BY (`fields`). That split is what lets the module guarantee the one
+  // invariant a search box has: it survives a repaint (see renderAfterQuery).
+  //
+  // No debounce, deliberately. The bank's search debounces because it hits the WORKER; this one
+  // filters an array already in memory, so a delay would only add lag between the keystroke and
+  // the list. If a consumer ever mounts a list big enough to stutter, that is the moment to add
+  // it, behind a config flag, measured, not on spec.
+  function searchHtml() {
+    if (!search) return '';
+    const ph = search.placeholder || '';
+    return '<div class="cdx-rail-search">' +
+      '<input type="search" class="cdx-input cdx-rail-search-input" data-rail-search' +
+        ' value="' + esc(searchQuery) + '"' +
+        ' placeholder="' + esc(ph) + '"' +
+        ' aria-label="' + esc(search.ariaLabel || ph) + '"' +
+        ' autocomplete="off" spellcheck="false">' +
+    '</div>';
+  }
+
+  // Rows that survive the query. The CHIPS are not applied here: a chip drives the CONSUMER's
+  // own state and comes back through items(), which is the contract the 10 live rails already
+  // have. Search cannot work that way: the consumer would have to own the input, which is
+  // exactly the arrangement that loses focus on every keystroke today.
+  function searchFilter(items) {
+    if (!search || !searchQuery.trim()) return items;
+    const hit = makeMatcher(searchQuery);
+    return items.filter((it) => hit(search.fields ? search.fields(it) : []));
+  }
+  function searching() { return !!(search && searchQuery.trim()); }
+
+  // `chips` may be a static array (the original contract) OR a function of the live query, so a
+  // consumer can badge counts that reflect the search: with "Ativos (17)" frozen while the body
+  // shows 3 rows, the number is simply wrong.
+  function chipList() {
+    if (!filter || !filter.chips) return [];
+    return (typeof filter.chips === 'function' ? filter.chips(searchQuery) : filter.chips) || [];
+  }
+  function chipsInnerHtml() {
+    const active = filter && filter.active ? filter.active() : null;
+    return chipList().map((c) =>
+      '<button type="button" class="cdx-rail-chip' + (String(active) === String(c.key) ? ' is-on' : '') + '" data-rail-filter="' + esc(String(c.key)) + '">' +
+        esc(c.label) + (c.count != null ? ' <span class="cdx-rail-chip-n">' + c.count + '</span>' : '') +
+      '</button>'
+    ).join('');
+  }
+  function filtersHtml() {
+    return chipList().length ? '<div class="cdx-rail-filters">' + chipsInnerHtml() + '</div>' : '';
   }
 
   function render() {
@@ -345,6 +405,32 @@ export function mountRail(container, cfg) {
     ensureAutohide();
     const newBody = container.querySelector('.cdx-rail-body');
     if (newBody) newBody.scrollTop = prevScroll;
+  }
+
+  // THE INVARIANT BEHIND THE SEARCH BOX: the input element survives a repaint; everything else
+  // may repaint. render() above replaces the whole container, which is fine on a data mutation
+  // but fatal on a keystroke: the element being typed into would be destroyed mid-word and the
+  // caret would land back in the page. That is the exact bug content/items.js works around by
+  // keeping its search box OUTSIDE the rail ("kept out of the re-rendered grid so typing never
+  // loses focus"); this is the same problem solved in the module instead of around it.
+  //
+  // So a keystroke repaints the three regions the query actually changes, the chips (their
+  // counts), the body (the rows) and the foot, and never touches .cdx-rail-search. Repainting
+  // ONLY the body would be simpler and wrong: on Labs the chips read "Ativos (17)" while the
+  // body shows 3 rows, and a number that contradicts the list under it is worse than no number.
+  //
+  // Scroll goes back to the top rather than being carried over like render() does: the result
+  // set changed, so the old offset points at rows that are no longer there.
+  function renderAfterQuery() {
+    if (destroyed) return;
+    const body = container.querySelector('.cdx-rail-body');
+    if (!body) { render(); return; }        // nothing painted yet; nothing to preserve
+    const filtersEl = container.querySelector('.cdx-rail-filters');
+    if (filtersEl) filtersEl.innerHTML = chipsInnerHtml();
+    body.innerHTML = bodyHtml();
+    body.scrollTop = 0;
+    const footEl = container.querySelector('.cdx-rail-foot');
+    if (footEl && cfg.footer) footEl.innerHTML = cfg.footer();
   }
 
   // ── events (delegated on the container; survive innerHTML re-renders) ─────────
@@ -447,8 +533,20 @@ export function mountRail(container, cfg) {
     }
   }
 
+  // Delegated like every other handler here, so it survives the repaints above. `input` fires on
+  // paste and on the native ✗ of type="search" too, not just on typing.
+  function onInput(e) {
+    if (!search) return;
+    const el = (e.target && e.target.closest) ? e.target.closest('[data-rail-search]') : null;
+    if (!el) return;
+    searchQuery = el.value || '';
+    renderAfterQuery();
+    if (search.onChange) search.onChange(searchQuery);
+  }
+
   function wire() {
     container.addEventListener('click', onClick);
+    container.addEventListener('input', onInput);
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointermove', onPointerMove);
     container.addEventListener('pointerup', onPointerUp);
@@ -456,6 +554,7 @@ export function mountRail(container, cfg) {
   }
   function unwire() {
     container.removeEventListener('click', onClick);
+    container.removeEventListener('input', onInput);
     container.removeEventListener('pointerdown', onPointerDown);
     container.removeEventListener('pointermove', onPointerMove);
     container.removeEventListener('pointerup', onPointerUp);
@@ -552,5 +651,8 @@ export function mountRail(container, cfg) {
     if (container) container.innerHTML = '';
   }
 
-  return { render, destroy, pin, el: container };
+  // query(): the live search text, for a consumer that has to answer the same question the rail
+  // is answering: chip counts computed from its own data, or an emptyText that names the term.
+  // (emptyText/emptyHtml/chips already receive it as an argument; this is for everything else.)
+  return { render, destroy, pin, el: container, query: () => searchQuery };
 }

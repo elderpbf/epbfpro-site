@@ -161,4 +161,24 @@ export const SHAPES = [
       renderRow: (s) => ({ main: s.n }),
     },
   },
+  {
+    // content/labs.js — the first consumer of BOTH search and the (long-declared, never used)
+    // filter chips. Freezing it pins the anatomy Élder chose: the search row sits between the
+    // title and the chips (architecture/list-rail.md §3).
+    name: 'labs: search + filter chips (chips as a function of the query)',
+    cfg: {
+      items: () => [{ key: 'k5', title: 'Tokens' }, { key: 'k22', title: 'Próximo Token' }],
+      getId: (l) => l.key,
+      renderRow: (l) => ({ main: l.title }),
+      selectedId: () => 'k5',
+      onSelect: () => {},
+      search: { fields: (l) => [l.title, l.key], placeholder: 'Buscar lab' },
+      filter: {
+        chips: () => [{ key: 'all', label: 'Todos', count: 2 }, { key: 'on', label: 'Ativos', count: 2 }],
+        active: () => 'all',
+        onFilter: () => {},
+      },
+      footer: () => '<button>Arquivados (0)</button>',
+    },
+  },
 ];
