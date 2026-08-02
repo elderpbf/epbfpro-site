@@ -20,12 +20,14 @@
 // reflected in the Lessons sidebar and the Presets picker. Filtering stays
 // read-time in every consumer, so disabling is instant and reversible.
 import { t } from '../js/i18n.js';
-import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder } from '../js/labs-registry.js';
+import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder, isLabRenamed, setLabTitle, labDefaultTitle } from '../js/labs-registry.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
+import { openModal, closeModal } from '../js/modal.js';
 import { mountRail } from '../js/list-rail.js';
 import { content as api } from '../js/codex-api.js';
 import * as notice from '../js/notice.js';
+import * as toast from '../js/toast.js';
 
 const LS_KEY = 'cv_labs_enabled';
 
@@ -82,6 +84,46 @@ function _switchHtml(on) {
     '</label>';
 }
 
+// Single-field prompt modal (mirrors content/items.js's _openPrompt for type/tag
+// rename). Clearing the field and saving reverts to the registry's default title
+// (labs-registry.setLabTitle treats blank/default as "remove the override").
+function _openPrompt(opts) {
+  const html =
+    '<div class="cdx-modal cdx-modal--sm">' +
+      '<div class="cdx-modal-title">' + _esc(opts.title) + '</div>' +
+      '<div class="cdx-field"><label>' + _esc(opts.label || '') + '</label>' +
+        '<input type="text" data-fld="value" value="' + _esc(opts.value || '') + '">' +
+      '</div>' +
+      (opts.hint ? '<p class="cdx-field-hint">' + _esc(opts.hint) + '</p>' : '') +
+      '<div class="cdx-modal-actions">' +
+        '<button class="cdx-btn" data-act="cancel">' + _esc(t('content.cancel')) + '</button>' +
+        '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + _esc(t('content.save')) + '</button>' +
+      '</div>' +
+    '</div>';
+  const bd = openModal(html);
+  const input = bd.querySelector('[data-fld="value"]');
+  const submit = () => { closeModal(bd); opts.onSubmit(input.value.trim()); };
+  bd.querySelector('[data-act="cancel"]').addEventListener('click', () => closeModal(bd));
+  bd.querySelector('[data-act="ok"]').addEventListener('click', submit);
+  input.addEventListener('keydown', (e) => { if (e.key === 'Enter') { e.preventDefault(); submit(); } });
+}
+
+function _openRenamePrompt(lab) {
+  if (!lab) return;
+  _openPrompt({
+    title: t('labs.rename_title'),
+    label: t('labs.rename_label'),
+    value: lab.title,
+    hint: isLabRenamed(lab.key) ? t('labs.rename_hint').replace('{title}', labDefaultTitle(lab.key)) : '',
+    onSubmit(n) {
+      setLabTitle(lab.key, n);
+      if (_rail) _rail.render();
+      _renderPreview();
+      toast.ok(t('labs.rename_saved'));
+    },
+  });
+}
+
 // The left labs list adopts the shared list-rail (track-21): the rail owns the row shell,
 // selection AND drag-to-reorder (the grip). renderRow returns the inner content, wrapped in
 // .cdx-lab-rowwrap which carries the is-off dim (the rail row itself can't take is-off).
@@ -133,7 +175,9 @@ function _previewHtml(lab) {
   const on = _isEnabled(lab.key);
   return '<div class="cdx-lab-preview-head">' +
       '<div class="cdx-lab-preview-meta">' +
-        '<div class="cdx-lab-ptitle">' + _esc(lab.title) + '</div>' +
+        '<div class="cdx-lab-ptitle">' + _esc(lab.title) +
+          (isLabRenamed(lab.key) ? ' <span class="cdx-lab-renamed-tag">' + _esc(t('labs.renamed_tag')) + '</span>' : '') +
+        '</div>' +
         '<div class="cdx-lab-psub">' + _esc(t('labs.lab_prefix')) + ' &middot; ' + _esc(String(lab.key).toUpperCase()) + '</div>' +
       '</div>' +
       '<div class="cdx-lab-preview-actions">' +
@@ -141,6 +185,7 @@ function _previewHtml(lab) {
           ? '<button type="button" class="cdx-btn cdx-btn-sm" data-action="restore" data-key="' + _esc(lab.key) + '">' + _esc(t('labs.restore')) + '</button>'
           : _switchHtml(on) +
             '<button type="button" class="cdx-btn cdx-btn-sm" data-action="archive" data-key="' + _esc(lab.key) + '">' + _esc(t('labs.archive')) + '</button>') +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-action="rename" data-key="' + _esc(lab.key) + '">' + _esc(t('content.rename')) + '</button>' +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-action="fullscreen">' + _esc(t('labs.preview')) + '</button>' +
       '</div>' +
     '</div>' +
@@ -290,6 +335,8 @@ export function mount(viewEl) {
     if (arch) { e.preventDefault(); _archive(arch.getAttribute('data-key') || _selectedKey, true); return; }
     const rest = e.target.closest('[data-action="restore"]');
     if (rest) { e.preventDefault(); _archive(rest.getAttribute('data-key') || _selectedKey, false); return; }
+    const ren = e.target.closest('[data-action="rename"]');
+    if (ren) { e.preventDefault(); _openRenamePrompt(_labByKey(ren.getAttribute('data-key') || _selectedKey)); return; }
     if (e.target.closest('[data-action="show-archived"]')) { e.preventDefault(); _switchMode('archived'); return; }
     if (e.target.closest('[data-action="show-active"]')) { e.preventDefault(); _switchMode('active'); return; }
   };

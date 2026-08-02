@@ -1230,6 +1230,11 @@ export default {
   'labs.restore':             'Restore',
   'labs.archived':            'Archived',
   'labs.back_active':         'Active labs',
+  'labs.rename_title':        'Rename lab',
+  'labs.rename_label':        'Lab name',
+  'labs.rename_hint':         'Leave blank to revert to the default name: "{title}".',
+  'labs.rename_saved':        'Lab renamed.',
+  'labs.renamed_tag':         'renamed',
   // Interativos — see pt.js for the provisional-type-name note; keep both in sync.
   'interativos.type':         'Interactive',
   'interativos.title':        'Interactive',
