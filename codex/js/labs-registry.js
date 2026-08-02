@@ -8,7 +8,8 @@
 //
 // Public API: LABS, findItem(idStr), getAllItems(), isLabEnabled(key),
 // orderedLabs(), archivedLabs(), isLabArchived(key), setLabArchived(key,on),
-// labOrderIndex(key), setLabOrder(keys), labIcon(key).
+// labOrderIndex(key), setLabOrder(keys), labIcon(key), isLabRenamed(key),
+// setLabTitle(key,title).
 // The legacy renderSection()/LABS_GLYPH (the ClassVault "Aula" index DOM) is NOT
 // ported: Codex renders Labs natively (content/labs.js, lessons.js), so that
 // markup would be dead code emitting cv- classes the native modules forbid.
@@ -20,7 +21,9 @@
 // and an `objective` -- the Trail lab card shows all three (item-render.js). This
 // registry is the SINGLE SOURCE for lab display text: the Trail overlays these
 // onto the released lab item by lab_key (trilha/js/lab-overlay.js) so a rename
-// here reaches students on the next load, without re-seeding the DB.
+// of the `title:` field HERE (in source) reaches students on the next load,
+// without re-seeding the DB. The admin-UI rename (setLabTitle, Content > Labs)
+// is a separate, client-only override on TOP of this -- see its own comment.
 export const LABS = [
   {
     key: 'k1',
@@ -53,6 +56,22 @@ export const LABS = [
     description: 'Modelos lembram melhor do começo e do fim de um texto longo do que do meio. O demo mostra a acurácia caindo quando a informação está no miolo do contexto.',
     objective: 'Ver por que enterrar o que importa no meio de um texto longo é arriscado.',
     emoji: '🧩'
+  },
+  {
+    key: 'k5',
+    title: 'Tokens',
+    summary: 'Palavra não é a mesma coisa que token',
+    description: 'O modelo não lê palavra por palavra: ele lê tokens, pedaços que às vezes são uma palavra inteira e às vezes um fragmento dela. O demo mostra uma frase quebrando em tokens coloridos, e como a estrutura da conversa e a formatação também custam token.',
+    objective: 'Ver que token não é palavra, e que estrutura e formatação também têm custo.',
+    emoji: '🔤'
+  },
+  {
+    key: 'k6',
+    title: 'Embeddings',
+    summary: 'Sentido tem geometria',
+    description: 'Palavras de assuntos variados entram uma a uma e se posicionam sozinhas num espaço, sem que ninguém diga a categoria. O demo mostra o agrupamento por semelhança de sentido acontecendo ao vivo, a mesma geometria por trás da busca semântica.',
+    objective: 'Ver que palavras parecidas em sentido terminam perto umas das outras, sem rótulo.',
+    emoji: '🧭'
   },
   {
     key: 'k9',
@@ -127,6 +146,30 @@ export const LABS = [
     emoji: '🪟'
   },
   {
+    key: 'k19',
+    title: 'Framework CORE',
+    summary: 'Contexto, Objetivo, Regras e Estrutura mudam a resposta',
+    description: 'O mesmo pedido, com os 4 elementos do CORE ligados um de cada vez. Sem nenhum, a resposta sai com o tom errado, sem saber o que entregar, inventando dado que faltou e sem formato. Cada elemento liga e corrige um problema específico.',
+    objective: 'Ver o que cada elemento do CORE corrige, um de cada vez, no mesmo pedido.',
+    emoji: '🧱'
+  },
+  {
+    key: 'k20',
+    title: 'Aposta na Citação',
+    summary: 'Soa correto não é prova de que é real',
+    description: 'Cinco citações jurídicas, algumas reais e outras inventadas, todas escritas no mesmo tom seguro. Você aposta se cada uma é real ou inventada antes de revelar. As inventadas erram no conteúdo, não no número, o mesmo jeito que uma alucinação real engana.',
+    objective: 'Ver que confiança no texto não é prova de veracidade, só verificar na fonte prova.',
+    emoji: '⚖️'
+  },
+  {
+    key: 'k21',
+    title: 'Modelo e Esforço',
+    summary: 'Não soube ou não se esforçou?',
+    description: 'A mesma tarefa, variando modelo (pequeno a grande) e esforço (baixo a alto). Em cada cenário, um dos dois eixos é o que realmente decide entre acertar e errar, o outro não ajuda sozinho. O demo mostra qual pergunta fazer quando a IA erra.',
+    objective: 'Diagnosticar um erro de IA: falta de capacidade (modelo) ou falta de cuidado (esforço).',
+    emoji: '🎚️'
+  },
+  {
     key: 'k22',
     title: 'Próximo Token',
     summary: 'Não é pensamento, é probabilidade',
@@ -171,6 +214,48 @@ export function setLabArchived(key, on) {
   try { localStorage.setItem(LS_ARCHIVED, JSON.stringify(next)); } catch (e) { /* ignore */ }
 }
 
+// Admin rename (Content > Labs, "Renomear"): a display-title override on top of
+// the registry, same shape and same seam as the archive/order overlays above --
+// client-only for now, does not reach other admins' browsers or the public
+// Trilha (unlike editing `title:` in source, see the header comment). Storing
+// only the DIFFERENCE (default title = no entry) means a lab added later or a
+// copy edit to its registry title is never shadowed by a stale override.
+const LS_RENAMED = 'cv_labs_renamed';
+function _readRenamed() {
+  try {
+    const raw = localStorage.getItem(LS_RENAMED);
+    const obj = raw ? JSON.parse(raw) : {};
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+export function isLabRenamed(key) {
+  const custom = _readRenamed()[key];
+  return typeof custom === 'string' && custom.trim() !== '';
+}
+// The registry's own title for a key, ignoring any rename override -- lets a
+// caller show "revert to '<default>'" without importing LABS directly.
+export function labDefaultTitle(key) {
+  const lab = LABS.find((l) => l.key === key);
+  return lab ? lab.title : '';
+}
+// Empty string or the lab's own registry title clears the override (reverts to
+// default) instead of storing a redundant/blank entry.
+export function setLabTitle(key, title) {
+  const trimmed = (title || '').trim();
+  const lab = LABS.find((l) => l.key === key);
+  const overrides = _readRenamed();
+  if (!trimmed || (lab && trimmed === lab.title)) {
+    delete overrides[key];
+  } else {
+    overrides[key] = trimmed;
+  }
+  try { localStorage.setItem(LS_RENAMED, JSON.stringify(overrides)); } catch (e) { /* ignore */ }
+}
+function _displayTitle(lab) {
+  const custom = _readRenamed()[lab.key];
+  return (typeof custom === 'string' && custom.trim()) ? custom.trim() : lab.title;
+}
+
 // Drag-to-reorder (Content > Labs) persists here as an ordered array of keys.
 // Every consumer (the rail itself, getAllItems(), releases.js's Labs rows)
 // derives its order from orderedLabs(), so reordering in one place propagates
@@ -185,15 +270,17 @@ function _readOrder() {
   } catch (e) { return []; }
 }
 
-// LABS in the admin's chosen order. Keys no longer in the registry are
-// dropped; labs not yet in the stored order keep their registry position,
-// appended after the ordered ones (covers new labs added after the last drag).
+// LABS in the admin's chosen order, with any rename override applied to
+// `title`. Keys no longer in the registry are dropped; labs not yet in the
+// stored order keep their registry position, appended after the ordered ones
+// (covers new labs added after the last drag).
 function _allOrdered() {
   const order = _readOrder();
   const byKey = new Map(LABS.map((l) => [l.key, l]));
   const ordered = order.map((k) => byKey.get(k)).filter(Boolean);
   const seen = new Set(ordered.map((l) => l.key));
-  return ordered.concat(LABS.filter((l) => !seen.has(l.key)));
+  return ordered.concat(LABS.filter((l) => !seen.has(l.key)))
+    .map((l) => Object.assign({}, l, { title: _displayTitle(l) }));
 }
 
 // The ACTIVE labs (archived ones dropped), in the admin's chosen order. Every
@@ -226,9 +313,10 @@ function _enabledLabs() {
 // small flask badge as the "family" marker. Unknown key -> the generic flask.
 const LAB_GLYPH = {
   k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
+  k5: 'glyph:hash', k6: 'glyph:compass',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:window', k22: 'glyph:bar-chart',
+  k18: 'glyph:window', k19: 'glyph:layers', k20: 'glyph:checklist', k21: 'glyph:cpu', k22: 'glyph:bar-chart',
 };
 
 export function labIcon(key) {
@@ -242,7 +330,7 @@ function labToItem(lab) {
     type: 'lab',
     type_label: 'Lab',
     type_icon: labIcon(lab.key),
-    title: lab.title,
+    title: _displayTitle(lab),
     summary: lab.summary,
     description: lab.description || '',
     objective: lab.objective || '',

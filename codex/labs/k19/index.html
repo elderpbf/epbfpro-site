@@ -1,0 +1,629 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Framework CORE · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-tabs.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k19-panel">
+  <style>
+    .k19-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --warm: var(--lab-context-a);
+      --warm-rgb: var(--lab-context-a-rgb);
+      --cool: var(--lab-context-b);
+      --cool-rgb: var(--lab-context-b-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      gap: 0.6rem;
+      padding: 1rem 2rem 0.7rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Request card (fixed, always visible) ────────────── */
+    .k19-request {
+      position: relative;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.65rem 2.2rem 0.65rem 1rem;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-body);
+      font-style: italic;
+      color: var(--text);
+      cursor: pointer;
+      transition: border-color 180ms;
+    }
+    .k19-request:hover, .k19-request:focus-visible { border-color: var(--focal); outline: none; }
+    .k19-request b { font-style: normal; color: var(--text-dim); font-weight: 600; }
+    /* Visual-only affordance that the card opens something, no caption text. */
+    .k19-request-glyph {
+      position: absolute;
+      top: 50%; right: 0.9rem;
+      transform: translateY(-50%);
+      width: 18px; height: 18px;
+      color: var(--text-dim);
+    }
+    .k19-request-glyph svg { width: 100%; height: 100%; }
+    .k19-request-part {
+      font-style: normal;
+      font-weight: 700;
+    }
+    .k19-request-part--c { color: var(--focal); }
+    .k19-request-part--o { color: var(--cool); }
+    .k19-request-part--r { color: var(--warm); }
+    .k19-request-part--e { color: var(--good); }
+
+    /* ── Prompt preview modal (read-only: shows the prompt as it is right
+       now, does NOT advance the ratchet, that only happens via the pills) */
+    .k19-preview-backdrop {
+      position: fixed; inset: 0;
+      background: rgba(0, 0, 0, 0.45);
+      display: flex; align-items: center; justify-content: center;
+      padding: 1.2rem;
+      opacity: 0; pointer-events: none;
+      transition: opacity 180ms;
+      z-index: 60;
+    }
+    .k19-preview-backdrop.k19-preview-open { opacity: 1; pointer-events: auto; }
+    /* This modal is appended straight to <body> (see buildPreview()), OUTSIDE
+       .k19-panel's DOM subtree. The short aliases (--bg, --text, --focal...)
+       are custom properties scoped to .k19-panel and do NOT inherit sideways
+       to a body-level sibling, so every rule below uses the document-wide
+       --lab-* tokens instead (same ones the shared .lab-modal* rules use in
+       labs.css, which is exactly why THAT modal never had this bug). Using
+       the local aliases here silently resolved to nothing: transparent
+       background, no text color, only the border showed (--lab-border only
+       resolved by coincidence, since theme.css also defines a global
+       --border with the same short name). */
+    .k19-preview {
+      background: var(--lab-surface);
+      border: 1.5px solid var(--lab-border);
+      border-radius: 16px;
+      max-width: 640px;
+      width: 100%;
+      max-height: 82dvh;
+      overflow-y: auto;
+      padding: 1.3rem 1.5rem;
+    }
+    .k19-preview-title {
+      margin: 0 0 0.9rem;
+      font-size: var(--lab-fs-body);
+      font-weight: 800;
+      color: var(--lab-text);
+    }
+    .k19-preview-block {
+      padding: 0.5rem 0 0.5rem 0.8rem;
+      border-left: 3px solid var(--lab-border);
+      margin-bottom: 0.7rem;
+    }
+    .k19-preview-block-label {
+      display: block;
+      font-size: var(--lab-fs-ui);
+      font-weight: 800;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      margin-bottom: 0.15rem;
+    }
+    .k19-preview-block-text {
+      font-size: var(--lab-fs-doc);
+      line-height: 1.45;
+      color: var(--lab-text);
+      text-align: justify;
+    }
+    .k19-preview-block--c { border-left-color: var(--lab-focal); }
+    .k19-preview-block--c .k19-preview-block-label { color: var(--lab-focal); }
+    .k19-preview-block--o { border-left-color: var(--lab-context-b); }
+    .k19-preview-block--o .k19-preview-block-label { color: var(--lab-context-b); }
+    .k19-preview-block--r { border-left-color: var(--lab-context-a); }
+    .k19-preview-block--r .k19-preview-block-label { color: var(--lab-context-a); }
+    .k19-preview-block--e { border-left-color: var(--lab-good); }
+    .k19-preview-block--e .k19-preview-block-label { color: var(--lab-good); }
+    /* Estrutura shows an actual markdown template (blank lines matter),
+       not prose: no justify (would stretch one-word lines), preserve the
+       authored line breaks instead of collapsing them like normal text. */
+    .k19-preview-block--e .k19-preview-block-text {
+      text-align: left;
+      white-space: pre-line;
+      font-family: var(--lab-font-mono);
+    }
+    .k19-preview-list {
+      margin: 0;
+      padding-left: 1.1rem;
+      text-align: left;
+    }
+    .k19-preview-list li { margin-bottom: 0.2rem; }
+    .k19-preview-list li:last-child { margin-bottom: 0; }
+    .k19-preview-block--prompt .k19-preview-block-label { color: var(--lab-text-dim); }
+    .k19-preview-close {
+      margin-top: 0.3rem;
+      font-family: var(--lab-font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--lab-border);
+      background: transparent;
+      color: var(--lab-text-dim);
+    }
+    .k19-preview-close:hover { border-color: var(--lab-focal); color: var(--lab-focal); }
+
+    /* ── CORE toggle pills ────────────────────────────────── */
+    .k19-toggles {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 0.5rem;
+    }
+    .k19-pill {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 0.1rem;
+      padding: 0.5rem 0.4rem;
+      border-radius: 12px;
+      border: 1.5px solid var(--border);
+      background: var(--surface);
+      cursor: pointer;
+      transition: border-color 180ms, background 180ms, transform 150ms;
+      -webkit-tap-highlight-color: transparent;
+    }
+    .k19-pill:hover { transform: translateY(-1px); }
+    .k19-pill-letter {
+      font-family: var(--font-mono);
+      font-weight: 800;
+      font-size: var(--lab-fs-audience);
+      line-height: 1;
+      color: var(--text-dim);
+    }
+    .k19-pill-label {
+      font-size: var(--lab-fs-ui);
+      font-weight: 600;
+      color: var(--text-dim);
+      text-align: center;
+    }
+    .k19-pill--c.k19-pill--on { border-color: var(--focal); background: rgba(var(--focal-rgb), 0.14); }
+    .k19-pill--c.k19-pill--on .k19-pill-letter, .k19-pill--c.k19-pill--on .k19-pill-label { color: var(--focal); }
+    .k19-pill--o.k19-pill--on { border-color: var(--cool); background: rgba(var(--cool-rgb), 0.14); }
+    .k19-pill--o.k19-pill--on .k19-pill-letter, .k19-pill--o.k19-pill--on .k19-pill-label { color: var(--cool); }
+    .k19-pill--r.k19-pill--on { border-color: var(--warm); background: rgba(var(--warm-rgb), 0.14); }
+    .k19-pill--r.k19-pill--on .k19-pill-letter, .k19-pill--r.k19-pill--on .k19-pill-label { color: var(--warm); }
+    .k19-pill--e.k19-pill--on { border-color: var(--good); background: color-mix(in srgb, var(--good) 14%, transparent); }
+    .k19-pill--e.k19-pill--on .k19-pill-letter, .k19-pill--e.k19-pill--on .k19-pill-label { color: var(--good); }
+
+    /* ── Main 2-col area: answer left, checklist right ───── */
+    .k19-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 32%);
+      gap: 1.4rem;
+      min-height: 0;
+    }
+    .k19-answer {
+      min-height: 0;
+      overflow-y: auto;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+    }
+    .k19-answer-label {
+      font-size: var(--lab-fs-ui);
+      font-weight: 700;
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+      margin: 0 0 0.5rem;
+    }
+    .k19-answer-body {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      line-height: 1.5;
+      color: var(--text);
+      white-space: pre-wrap;
+      text-align: justify;
+    }
+    .k19-answer-body mark {
+      background: rgba(var(--bad-rgb), 0.22);
+      color: var(--bad);
+      border-radius: 4px;
+      padding: 0 0.15em;
+      font-weight: 700;
+    }
+
+    .k19-checklist {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      min-width: 0;
+      min-height: 0;
+      overflow-y: auto;
+      gap: 0.7rem;
+    }
+    .k19-check-row {
+      display: grid;
+      grid-template-columns: auto minmax(0, 1fr);
+      align-items: start;
+      gap: 0.6rem;
+      padding-bottom: 0.65rem;
+      border-bottom: 1px dashed var(--border);
+    }
+    .k19-check-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .k19-check-mark {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 800;
+      width: 1.4em;
+      text-align: center;
+      color: var(--bad);
+    }
+    .k19-check-row--ok .k19-check-mark { color: var(--good); }
+    .k19-check-title {
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .k19-check-note {
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      margin-top: 0.15rem;
+      line-height: 1.35;
+      text-align: justify;
+    }
+
+    /* ── Operator bar ─────────────────────────────────────── */
+    .k19-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k19-fs-slot { margin-right: auto; }
+    .k19-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+      transition: border-color 180ms, color 180ms, transform 150ms;
+    }
+    .k19-btn:hover { border-color: var(--cool); color: var(--cool); transform: translateY(-1px); }
+
+    /* ── Responsive: phone ────────────────────────────────── */
+    @media (max-width: 700px) {
+      .k19-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.5rem; }
+      .k19-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr) auto; gap: 0.5rem; }
+      .k19-checklist { padding: 0.6rem 0.75rem; gap: 0.5rem; }
+      .k19-pill { padding: 0.4rem 0.2rem; }
+      .k19-pill-letter { font-size: 22px; }
+      .k19-pill-label { font-size: 11px; }
+      .k19-button-bar { gap: 0.4rem; padding: 0; }
+      .k19-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(50% - 0.2rem); min-height: 44px; text-align: center; }
+      .k19-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
+      .k19-button-bar > [data-lab-info-ctl] { order: -1; display: flex; flex: 1 1 100%; }
+      .k19-button-bar > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k19-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.35rem; }
+      .k19-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header" data-lab-title="Framework CORE" data-lab-subtitle="Contexto · Objetivo · Regras · Estrutura"></div>
+
+  <div class="k19-request" id="k19-request" tabindex="0" role="button" aria-haspopup="dialog">
+    <span id="k19-request-body"></span>
+    <span class="k19-request-glyph" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 9l6 6 6-6"/></svg>
+    </span>
+  </div>
+
+  <div class="k19-toggles">
+    <button type="button" class="k19-pill k19-pill--c" data-block="0">
+      <span class="k19-pill-letter">C</span><span class="k19-pill-label">Contexto</span>
+    </button>
+    <button type="button" class="k19-pill k19-pill--o" data-block="1">
+      <span class="k19-pill-letter">O</span><span class="k19-pill-label">Objetivo</span>
+    </button>
+    <button type="button" class="k19-pill k19-pill--r" data-block="2">
+      <span class="k19-pill-letter">R</span><span class="k19-pill-label">Regras</span>
+    </button>
+    <button type="button" class="k19-pill k19-pill--e" data-block="3">
+      <span class="k19-pill-letter">E</span><span class="k19-pill-label">Estrutura</span>
+    </button>
+  </div>
+
+  <div class="k19-main" data-lab-tabs data-lab-tab-default="Resposta">
+    <div class="k19-answer" data-lab-tab="Resposta">
+      <p class="k19-answer-label">Resposta da IA</p>
+      <div class="k19-answer-body" id="k19-answer"></div>
+    </div>
+    <aside class="k19-checklist" data-lab-tab="Checklist" id="k19-checklist"></aside>
+  </div>
+
+  <div class="k19-button-bar">
+    <span data-lab-info-ctl></span>
+    <span class="k19-fs-slot" data-lab-fs-ctl></span>
+    <button class="k19-btn" id="k19-reset">Reiniciar</button>
+  </div>
+
+  <template data-lab-info data-lab-info-title="O que é o CORE?">
+    <p>CORE é um jeito de estruturar um pedido pra IA em 4 partes: <strong>Contexto</strong> (quem é o modelo e a situação), <strong>Objetivo</strong> (o que deve ser entregue), <strong>Regras</strong> (o que fazer e não fazer) e <strong>Estrutura</strong> (o formato da saída).</p>
+    <p>O mesmo pedido, sem nenhum desses elementos, tende a sair com o tom errado, sem saber o que entregar, inventando dado que não foi dado, e num formato qualquer. Cada elemento corrige um problema específico, não é enfeite.</p>
+    <p>Nem todo pedido precisa dos 4 num nível alto, tarefa simples pode ir só de Contexto e Objetivo. Mas quando o resultado sai errado, geralmente dá pra apontar QUAL elemento faltou.</p>
+  </template>
+
+  <script>
+    (function () {
+      var STATES = [
+        {
+          answer: 'Claro! Aqui está um ofício pedindo mais tempo:\n\n' +
+            'Oi, pessoal! Preciso de mais um tempinho pra terminar aquilo que vocês me pediram, ' +
+            'tá bom? Prometo que não demoro. Beleza?\n\n' +
+            'Abraços!',
+          checks: [false, false, false, false]
+        },
+        {
+          answer: 'Ao Senhor Diretor da Secretaria Administrativa,\n\n' +
+            'Venho respeitosamente solicitar a prorrogação do prazo em referência, tendo em ' +
+            'vista as razões que serão oportunamente apresentadas.\n\n' +
+            'Atenciosamente,',
+          checks: [true, false, false, false]
+        },
+        {
+          answer: 'OFÍCIO Nº ___/2026\n\n' +
+            'Ao Senhor Diretor da Secretaria Administrativa,\n\n' +
+            'Assunto: Prorrogação de prazo, Processo nº <mark>202612345 (inventado)</mark>\n\n' +
+            'Venho solicitar a prorrogação do prazo estabelecido, por mais 15 dias, tendo em ' +
+            'vista o acúmulo de demandas no setor.\n\n' +
+            'Atenciosamente,',
+          checks: [true, true, false, false]
+        },
+        {
+          answer: 'Antes de redigir o ofício, preciso de duas informações que você não me deu:\n\n' +
+            '1. O número do processo ou expediente ao qual o pedido se refere.\n' +
+            '2. O motivo específico da prorrogação e o novo prazo pretendido.\n\n' +
+            'Assim que tiver esses dados, redijo o ofício completo.',
+          checks: [true, true, true, false]
+        },
+        {
+          answer: 'OFÍCIO Nº 142/2026, EJUSE\n\n' +
+            'Aracaju/SE, 29 de julho de 2026.\n\n' +
+            'Ao Senhor Diretor da Secretaria Administrativa\n' +
+            'Assunto: Prorrogação de prazo, Processo SEI nº 202612345\n\n' +
+            'Senhor Diretor,\n\n' +
+            'Venho requerer a prorrogação, por 15 (quinze) dias, do prazo fixado no processo em ' +
+            'epígrafe, tendo em vista o acúmulo de demandas no setor no período.\n\n' +
+            'Respeitosamente,\n\n' +
+            '[Nome do servidor]\n[Cargo]',
+          checks: [true, true, true, true]
+        }
+      ];
+
+      var CHECK_DEFS = [
+        { title: 'Tom e papel certos', onNote: 'O Contexto fixou quem fala e para quem.', offNote: 'Sem Contexto, a IA responde num tom qualquer, informal demais para um ofício.' },
+        { title: 'Sabe o que entregar', onNote: 'O Objetivo definiu que a entrega é um ofício formal, não um parágrafo solto.', offNote: 'Sem Objetivo, o formato da entrega fica por conta da IA adivinhar.' },
+        { title: 'Não inventa, pergunta o que falta', onNote: 'A Regra "não presuma informações" barrou a invenção do número de processo.', offNote: 'Sem essa regra, a IA inventa número de processo e data para preencher o vazio.' },
+        { title: 'Formato oficial do ofício', onNote: 'A Estrutura encaixou o conteúdo no modelo padrão do ofício.', offNote: 'Sem Estrutura, falta número, data, destinatário e fecho no lugar certo.' }
+      ];
+
+      // Content injected into the prompt-preview modal per block, in the
+      // order a real structured prompt reads (context/objective/rules before
+      // the ask, structure after). Colors match the pills' own C/O/R/E colors.
+      var PREVIEW_BLOCKS = [
+        { cls: 'c', label: 'Contexto', text: 'Você é servidor da Secretaria Administrativa do TJSE, redigindo ofícios formais.' },
+        { cls: 'o', label: 'Objetivo', text: 'Entregue um ofício completo, pronto para protocolo.' },
+        { cls: 'r', label: 'Regras', text: '<ul class="k19-preview-list"><li>Responda em português culto do Brasil.</li><li>Não presuma informações. Se atenha aos dados passados.</li></ul>' }
+      ];
+      // The raw, unstructured ask. Once Objetivo is on, it already SAYS what
+      // must be delivered, so it subsumes this: the "Prompt" block below
+      // drops out of the preview list instead of sitting there redundant.
+      var PREVIEW_PROMPT = 'Escreve um ofício pedindo prorrogação de prazo.';
+      // A real markdown template, not a description of one, matching how
+      // Estrutura is taught elsewhere in the course: give the model the
+      // shape to fill in, not a prose instruction to reconstruct it from.
+      var PREVIEW_ESTRUTURA =
+        'OFÍCIO Nº [número] [Emitente]\n\n' +
+        'Aracaju/SE, [data no formato d, mês por extenso, aaaa].\n\n' +
+        '[Ao/À nome destinatário]\n' +
+        'Assunto: [assunto]\n\n' +
+        '[Senhor/ora cargo],\n\n' +
+        '[Conteúdo do ofício]\n\n' +
+        'Respeitosamente,\n\n' +
+        '[Nome do servidor]\n' +
+        '[Cargo]';
+      var CORE_LABELS = [
+        { cls: 'c', label: 'Contexto' },
+        { cls: 'o', label: 'Objetivo' },
+        { cls: 'r', label: 'Regras' },
+        { cls: 'e', label: 'Estrutura' }
+      ];
+
+      var active = 0; // 0..4 blocks ON, always a prefix (ratchet)
+      var pills = Array.prototype.slice.call(document.querySelectorAll('.k19-pill'));
+      var answerEl = document.getElementById('k19-answer');
+      var checklistEl = document.getElementById('k19-checklist');
+      var requestEl = document.getElementById('k19-request');
+      var requestBodyEl = document.getElementById('k19-request-body');
+
+      // The request card itself shows what's been added so far, instead of
+      // staying frozen on the original unstructured ask while only the
+      // answer below changes.
+      function renderRequestBody() {
+        if (active === 0) {
+          requestBodyEl.innerHTML = '<b>Prompt:</b> "' + PREVIEW_PROMPT + '"';
+          return;
+        }
+        var parts = CORE_LABELS.slice(0, active).map(function (b) {
+          return '<span class="k19-request-part k19-request-part--' + b.cls + '">' + b.label + '</span>';
+        });
+        var joined = parts.length > 1
+          ? parts.slice(0, -1).join(', ') + ' e ' + parts[parts.length - 1]
+          : parts[0];
+        requestBodyEl.innerHTML = 'Prompt com ' + joined;
+      }
+
+      function render() {
+        var state = STATES[active];
+        // Authored content only (no user input reaches this string), so the
+        // literal <mark> tags in STATES render as intended.
+        answerEl.innerHTML = state.answer;
+        renderRequestBody();
+
+        pills.forEach(function (p, i) {
+          p.classList.toggle('k19-pill--on', i < active);
+        });
+
+        checklistEl.innerHTML = '';
+        CHECK_DEFS.forEach(function (def, i) {
+          var on = state.checks[i];
+          var row = document.createElement('div');
+          row.className = 'k19-check-row' + (on ? ' k19-check-row--ok' : '');
+          row.innerHTML =
+            '<span class="k19-check-mark">' + (on ? '✓' : '✗') + '</span>' +
+            '<span>' +
+              '<span class="k19-check-title">' + def.title + '</span>' +
+              '<div class="k19-check-note">' + (on ? def.onNote : def.offNote) + '</div>' +
+            '</span>';
+          checklistEl.appendChild(row);
+        });
+      }
+
+      pills.forEach(function (pill) {
+        pill.addEventListener('click', function () {
+          var idx = parseInt(pill.dataset.block, 10);
+          // Ratchet: clicking an ON block turns it and everything after it OFF;
+          // clicking an OFF block turns it and everything before it ON. This
+          // keeps the state space at 5 authored positions, not 16 combinations.
+          active = (idx < active) ? idx : idx + 1;
+          render();
+        });
+      });
+
+      // ── Prompt preview modal ──────────────────────────────
+      // Read-only: shows how the prompt is assembled RIGHT NOW. Tapping the
+      // request card never advances state, only the pills do that.
+      var previewBackdrop = null;
+
+      function buildPreview() {
+        if (previewBackdrop) return;
+        previewBackdrop = document.createElement('div');
+        previewBackdrop.className = 'k19-preview-backdrop';
+        previewBackdrop.innerHTML =
+          '<div class="k19-preview" role="dialog" aria-modal="true" tabindex="-1">' +
+            '<h2 class="k19-preview-title">Como o prompt está agora</h2>' +
+            '<div id="k19-preview-body"></div>' +
+            '<button type="button" class="k19-preview-close">Fechar</button>' +
+          '</div>';
+        document.body.appendChild(previewBackdrop);
+        previewBackdrop.addEventListener('click', function (e) {
+          if (e.target === previewBackdrop) closePreview();
+        });
+        previewBackdrop.querySelector('.k19-preview-close').addEventListener('click', closePreview);
+      }
+
+      function blockHtml(cls, label, text) {
+        // A div, not a span: Regras now carries a real <ul> (multiple
+        // separate directives), which is block-level content and invalid
+        // inside an inline element.
+        return '<div class="k19-preview-block k19-preview-block--' + cls + '">' +
+          '<span class="k19-preview-block-label">' + label + '</span>' +
+          '<div class="k19-preview-block-text">' + text + '</div>' +
+        '</div>';
+      }
+
+      function onPreviewKey(e) {
+        if (e.key === 'Escape' || e.key === 'Esc') closePreview();
+      }
+
+      function openPreview() {
+        buildPreview();
+        var html = '';
+        PREVIEW_BLOCKS.forEach(function (b, i) {
+          if (i < active) html += blockHtml(b.cls, b.label, b.text);
+        });
+        // Objetivo (index 1) already states what must be delivered, so once
+        // it's on (active >= 2) the raw "Prompt" block is redundant and
+        // drops out of the list instead of repeating the same ask twice.
+        if (active < 2) html += blockHtml('prompt', 'Prompt', PREVIEW_PROMPT);
+        if (active >= 4) html += blockHtml('e', 'Estrutura', PREVIEW_ESTRUTURA);
+        document.getElementById('k19-preview-body').innerHTML = html;
+        previewBackdrop.classList.add('k19-preview-open');
+        document.addEventListener('keydown', onPreviewKey);
+      }
+
+      function closePreview() {
+        if (!previewBackdrop) return;
+        previewBackdrop.classList.remove('k19-preview-open');
+        document.removeEventListener('keydown', onPreviewKey);
+      }
+
+      requestEl.addEventListener('click', openPreview);
+      requestEl.addEventListener('keydown', function (e) {
+        if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openPreview(); }
+      });
+
+      document.getElementById('k19-reset').addEventListener('click', function () {
+        active = 0;
+        render();
+      });
+
+      window.addEventListener('storage', function (e) {
+        if (e.key !== 'bs_theme') return;
+        var t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      render();
+    })();
+  </script>
+</section>
+</body>
+</html>

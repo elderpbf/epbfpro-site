@@ -44,12 +44,12 @@
      link. A dead-rule trim + cdx- rename is a later pass. -->
 <link rel="stylesheet" href="css/classvault.css?v=1.2">
 <link rel="stylesheet" href="css/tokens.css?v=1.8">
-<link rel="stylesheet" href="css/components.css?v=1.3">
+<link rel="stylesheet" href="css/components.css?v=1.4">
 <link rel="stylesheet" href="css/codex.css?v=4.0">
 <!-- Standard left-panel rail (js/list-rail.js). Contract: architecture/list-rail.md. -->
 <link rel="stylesheet" href="css/list-rail.css?v=1.6">
 <link rel="stylesheet" href="cohorts/cohorts.css?v=7.1">
-<link rel="stylesheet" href="content/content.css?v=4.9">
+<link rel="stylesheet" href="content/content.css?v=5.0">
 <link rel="stylesheet" href="content/slides.css?v=2.0">
 <!-- Deck editor styles, scoped under .cdx-deck-editor (no global leak). -->
 <link rel="stylesheet" href="content/slides/css/tokens.css?v=1.3">
@@ -103,7 +103,8 @@
       <h2>Confira seu e-mail</h2>
       <p class="bs-auth-hint">Enviamos um código de 4 letras para <strong id="cdx-login-email-echo"></strong>.</p>
       <div class="bs-field">
-        <input id="cdx-login-code" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="Código" style="text-transform:uppercase;letter-spacing:.25em">
+        <!-- Atributos e comportamento vêm de js/code-input.js (CodeInput.attach), nunca daqui. -->
+        <input id="cdx-login-code" type="text" placeholder="Código">
       </div>
       <button class="bs-auth-btn" id="cdx-login-code-btn">Entrar</button>
       <div class="cdx-login-actions">
@@ -133,7 +134,17 @@
      BEFORE the module boot so Codex modules can read them. -->
 <!-- Codex-owned theme manager (classic script: the Trail pre-paints the theme
      synchronously, so it stays a non-deferred global, window.ThemeManager). -->
-<script src="js/theme-manager.js?v=1.0"></script>
+<script src="js/theme-manager.js?v=1.1"></script>
+<!-- O tema tem que valer JÁ NO LOGIN, não só depois. Até 2026-07-31 o `data-theme` só era
+     escrito quando a topbar montava (`codex-topbar.js`), ou seja, DEPOIS de entrar: a tela de
+     login abria no claro para todo mundo, inclusive para quem já tinha escolhido escuro, e sem
+     nenhum botão para mudar (a topbar, que tem o botão, ainda não existe ali). Élder: *"abriu no
+     light do nada, quase fico cego"*. Mesma peça da Trilha (`initPublic`), com a chave e o padrão
+     do admin: URL > escolha guardada > SISTEMA > escuro. -->
+<script>
+  ThemeManager.initPublic({ storageKey: 'bs_theme', defaultTheme: 'dark' });
+</script>
+<script src="js/code-input.js?v=1.1"></script>
 <script src="js/bs-google.js?v=1.4"></script>
 <script src="js/auth.js?v=1.4"></script>
 

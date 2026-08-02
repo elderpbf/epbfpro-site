@@ -185,7 +185,7 @@ export function openLoginModal(opts = {}) {
       '<h2 class="tr-modal-title">' + esc(t('login.code_title')) + '</h2>' +
       '<p class="tr-login-subtitle">' + esc(t('login.code_desc')) + '</p>' +
       '<label class="tr-tarefa-field-label" for="tr-login-code">' + esc(t('login.code_label')) + '</label>' +
-      '<input id="tr-login-code" type="text" class="tr-tarefa-name tr-login-code" placeholder="' + esc(t('login.code_ph')) + '" autocomplete="one-time-code" inputmode="text" maxlength="4" autocapitalize="characters">' +
+      '<input id="tr-login-code" type="text" class="tr-tarefa-name tr-login-code" placeholder="' + esc(t('login.code_ph')) + '">' +
       dev +
       '<div class="tr-tarefa-error tr-login-error" aria-live="polite">' + esc(errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<p class="tr-tarefa-hint tr-login-hint">' + esc(t('login.not_received')) + '</p>' +
@@ -194,6 +194,8 @@ export function openLoginModal(opts = {}) {
         '<button type="button" class="cdx-btn cdx-btn-vazado tr-login-resend">' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-code');
+    // Um só campo de código no site inteiro (js/code-input.js).
+    if (window.CodeInput) window.CodeInput.attach(input, { length: 4 });
     if (flow.devCode) input.value = flow.devCode;
     const verify = bodyEl.querySelector('.tr-login-verify');
     const resend = bodyEl.querySelector('.tr-login-resend');

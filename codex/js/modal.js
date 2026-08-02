@@ -4,6 +4,10 @@
 //   openModal(html, opts): append a .cdx-modal-backdrop with the given inner html.
 //                            opts.disableBackdropClose (bool) disables click-outside.
 //                            opts.disableEnterSubmit (bool) disables Enter->primary.
+//                            opts.disableEscClose (bool) disables Escape. Reserve it for a
+//                              modal whose content cannot be recovered once dismissed (the
+//                              one-time app key), never for ordinary forms — trapping Escape
+//                              costs keyboard users their way out.
 //                            Registers and self-removes its own key listener.
 //                            Returns the backdrop element.
 //   closeModal(bd): removes the backdrop (and its key listener).
@@ -37,7 +41,7 @@ export function openModal(html, opts) {
     // also close (or submit) the modal beneath it.
     const all = document.querySelectorAll('.cdx-modal-backdrop');
     if (all.length && all[all.length - 1] !== bd) return;
-    if (e.key === 'Escape') { closeModal(bd); return; }
+    if (e.key === 'Escape') { if (!opts.disableEscClose) closeModal(bd); return; }
     // Enter -> the modal's primary action (submit-on-Enter). Skip if a more specific
     // handler already handled it, if the caller opted out, if focus is in a textarea
     // (intentional newline), or if the target is outside this modal.

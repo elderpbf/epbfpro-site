@@ -25,14 +25,18 @@ function setArchived(arr) {
   if (arr == null) _store.delete('cv_labs_archived');
   else _store.set('cv_labs_archived', JSON.stringify(arr));
 }
+function setRenamed(obj) {
+  if (obj == null) _store.delete('cv_labs_renamed');
+  else _store.set('cv_labs_renamed', typeof obj === 'string' ? obj : JSON.stringify(obj));
+}
 
 const reg = await import('../js/labs-registry.js');
 
-const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k22'];
+const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k19', 'k20', 'k21', 'k22'];
 
-test('LABS is the shipped registry (14 labs, exact keys + non-empty title/summary)', () => {
+test('LABS is the shipped registry (19 labs, exact keys + non-empty title/summary)', () => {
   assert.ok(Array.isArray(reg.LABS), 'LABS is an array');
-  assert.equal(reg.LABS.length, 14, 'fourteen labs');
+  assert.equal(reg.LABS.length, 19, 'nineteen labs');
   assert.deepEqual(reg.LABS.map((l) => l.key), EXPECTED_KEYS, 'keys byte-identical and in order');
   for (const lab of reg.LABS) {
     assert.ok(lab.title && lab.title.length, `lab ${lab.key} has a title`);
@@ -44,6 +48,14 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   const byKey = Object.fromEntries(reg.LABS.map((l) => [l.key, l]));
   assert.equal(byKey.k1.title, 'Atenção!');
   assert.equal(byKey.k1.summary, 'Contexto reescreve significado');
+  assert.equal(byKey.k5.title, 'Tokens');
+  assert.equal(byKey.k5.summary, 'Palavra não é a mesma coisa que token');
+  assert.equal(byKey.k6.title, 'Embeddings');
+  assert.equal(byKey.k6.summary, 'Sentido tem geometria');
+  assert.equal(byKey.k20.title, 'Aposta na Citação');
+  assert.equal(byKey.k20.summary, 'Soa correto não é prova de que é real');
+  assert.equal(byKey.k21.title, 'Modelo e Esforço');
+  assert.equal(byKey.k21.summary, 'Não soube ou não se esforçou?');
   assert.equal(byKey.k10.title, 'Cápsula do GPT');
   assert.equal(byKey.k13.summary, 'Tradicional, raciocínio e agêntico são formatos diferentes');
   assert.equal(byKey.k15.title, 'Sobreajuste');
@@ -52,6 +64,8 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
   assert.equal(byKey.k16.summary, 'Duas camadas de um PDF, e o que o OCR faz entre elas');
   assert.equal(byKey.k17.title, 'Treinamento');
   assert.equal(byKey.k17.summary, 'Humano prefere uma resposta a outra; a preferida reforça o peso');
+  assert.equal(byKey.k19.title, 'Framework CORE');
+  assert.equal(byKey.k19.summary, 'Contexto, Objetivo, Regras e Estrutura mudam a resposta');
   assert.equal(byKey.k22.title, 'Próximo Token');
   assert.equal(byKey.k22.summary, 'Não é pensamento, é probabilidade');
 });
@@ -100,7 +114,7 @@ test('isLabEnabled tolerates malformed JSON (fails open)', () => {
 test('getAllItems returns every enabled lab as a picker item', () => {
   setEnabledMap(null);
   const items = reg.getAllItems();
-  assert.equal(items.length, 14, 'all labs when none disabled');
+  assert.equal(items.length, 19, 'all labs when none disabled');
   assert.deepEqual(items.map((i) => i.id), EXPECTED_KEYS.map((k) => 'lab:' + k));
   assert.ok(items.every((i) => i.type === 'lab' && i.type_label === 'Lab'));
 });
@@ -108,7 +122,7 @@ test('getAllItems returns every enabled lab as a picker item', () => {
 test('getAllItems filters out disabled labs', () => {
   setEnabledMap({ k1: false, k13: false });
   const items = reg.getAllItems();
-  assert.equal(items.length, 12, 'two disabled removed');
+  assert.equal(items.length, 17, 'two disabled removed');
   const ids = items.map((i) => i.id);
   assert.ok(!ids.includes('lab:k1'), 'k1 hidden');
   assert.ok(!ids.includes('lab:k13'), 'k13 hidden');
@@ -232,4 +246,60 @@ test('archivedLabs honours the stored order basis', () => {
   assert.deepEqual(reg.archivedLabs().map((l) => l.key), ['k9', 'k3'], 'archived list follows the same order');
   setOrder(null);
   setArchived(null);
+});
+
+test('labDefaultTitle returns the registry title regardless of any override', () => {
+  setRenamed(null);
+  assert.equal(reg.labDefaultTitle('k1'), 'Atenção!');
+  setRenamed({ k1: 'Atenção customizado' });
+  assert.equal(reg.labDefaultTitle('k1'), 'Atenção!', 'unaffected by an active override');
+  setRenamed(null);
+});
+
+test('isLabRenamed defaults false; setLabTitle sets an override and orderedLabs/findItem/getAllItems all reflect it', () => {
+  setRenamed(null);
+  assert.equal(reg.isLabRenamed('k1'), false, 'no override = not renamed');
+  reg.setLabTitle('k1', 'Foco Contextual');
+  assert.equal(reg.isLabRenamed('k1'), true);
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), { k1: 'Foco Contextual' });
+  assert.equal(reg.orderedLabs().find((l) => l.key === 'k1').title, 'Foco Contextual', 'orderedLabs carries the override');
+  assert.equal(reg.findItem('lab:k1').title, 'Foco Contextual', 'findItem carries the override');
+  assert.equal(reg.getAllItems().find((i) => i.id === 'lab:k1').title, 'Foco Contextual', 'getAllItems carries the override');
+  setRenamed(null);
+});
+
+test('setLabTitle trims whitespace before storing', () => {
+  setRenamed(null);
+  reg.setLabTitle('k1', '  Foco Contextual  ');
+  assert.equal(JSON.parse(_store.get('cv_labs_renamed')).k1, 'Foco Contextual');
+  setRenamed(null);
+});
+
+test('setLabTitle with blank or the default title clears the override instead of storing it', () => {
+  setRenamed({ k1: 'Foco Contextual' });
+  reg.setLabTitle('k1', '');
+  assert.equal(reg.isLabRenamed('k1'), false, 'blank clears the override');
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), {});
+  reg.setLabTitle('k1', 'Atenção!');
+  assert.equal(reg.isLabRenamed('k1'), false, 'same-as-default clears the override too');
+  setRenamed(null);
+});
+
+test('archived and disabled labs can still be renamed (rename is independent of visibility state)', () => {
+  setArchived(['k3']);
+  setEnabledMap({ k9: false });
+  reg.setLabTitle('k3', 'Janela Nova');
+  reg.setLabTitle('k9', 'Petição Nova');
+  assert.equal(reg.archivedLabs().find((l) => l.key === 'k3').title, 'Janela Nova');
+  assert.equal(reg.findItem('lab:k9').title, 'Petição Nova');
+  setRenamed(null);
+  setArchived(null);
+  setEnabledMap(null);
+});
+
+test('a rename override for a key no longer in the registry is simply unused (no crash)', () => {
+  setRenamed({ ghost: 'Fantasma' });
+  assert.doesNotThrow(() => reg.orderedLabs());
+  assert.equal(reg.orderedLabs().some((l) => l.title === 'Fantasma'), false);
+  setRenamed(null);
 });

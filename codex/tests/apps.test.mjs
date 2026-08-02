@@ -5,7 +5,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { parseDescription } from '../content/apps.js';
-import { isWindows, parseDesc } from '../trilha/js/app-card.js';
+import { isWindows, parseDesc, appAction } from '../trilha/js/app-card.js';
 
 test('parseDescription reads the tagline/access_note/benefits shape', () => {
   const d = parseDescription('{"tagline":"T","access_note":"A","benefits":[{"glyph":"spark","title":"x","desc":"y"}]}');
@@ -68,4 +68,51 @@ test('isWindows prefers userAgentData.platform when present', () => {
 
 test('isWindows defaults to true only when the platform is undetectable', () => {
   assert.equal(isWindows({ navigator: { userAgent: 'SomeUnknownBot/1.0' } }), true);
+});
+
+// ── Delivery (track-59) ───────────────────────────────────────────────────────
+// The card used to know exactly ONE way to hand an app over: download it from the Microsoft
+// Store on Windows. A web app (prazos) landed as a card with no action at all, and on a Mac it
+// announced "Windows only", which is false. `delivery` is what the card now reads.
+
+test('parseDesc defaults delivery to store, so the existing app is untouched', () => {
+  assert.equal(parseDesc('{"tagline":"x"}').delivery, 'store');
+  assert.equal(parseDesc(null).delivery, 'store');
+  assert.equal(parseDesc('bad json').delivery, 'store');
+  assert.equal(parseDesc('{"delivery":"nonsense"}').delivery, 'store');
+});
+
+test('parseDesc reads delivery:web', () => {
+  assert.equal(parseDesc('{"delivery":"web"}').delivery, 'web');
+  assert.equal(parseDesc({ delivery: 'web' }).delivery, 'web');
+});
+
+test('parseDescription (admin) carries delivery with the same default', () => {
+  assert.equal(parseDescription('{"delivery":"web"}').delivery, 'web');
+  assert.equal(parseDescription('{"tagline":"x"}').delivery, 'store');
+  assert.equal(parseDescription(null).delivery, 'store');
+});
+
+test('appAction: a store app keeps exactly the old behaviour', () => {
+  const app = { store_url: 'https://apps.microsoft.com/detail/9P08Z6RD6SG6' };
+  assert.deepEqual(appAction(app, 'store', true), { kind: 'store', href: app.store_url });
+  assert.deepEqual(appAction(app, 'store', false), { kind: 'windows_only' });
+  assert.deepEqual(appAction({ store_url: '' }, 'store', true), { kind: 'none' });
+});
+
+test('appAction: a web app opens everywhere and never claims to be Windows-only', () => {
+  const app = { store_url: 'https://prazos.pensoia.com' };
+  assert.deepEqual(appAction(app, 'web', true), { kind: 'web', href: app.store_url });
+  assert.deepEqual(appAction(app, 'web', false), { kind: 'web', href: app.store_url });
+});
+
+test('appAction: a web app with no URL yet is silent, not a false Windows notice', () => {
+  assert.deepEqual(appAction({ store_url: '' }, 'web', false), { kind: 'none' });
+  assert.deepEqual(appAction({}, 'web', true), { kind: 'none' });
+});
+
+test('appAction: a missing/garbage delivery falls back to store, never to nothing', () => {
+  const app = { store_url: 'https://apps.microsoft.com/detail/x' };
+  assert.equal(appAction(app, undefined, true).kind, 'store');
+  assert.equal(appAction(app, 'weird', true).kind, 'store');
 });
