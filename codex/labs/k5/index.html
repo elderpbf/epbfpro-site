@@ -1,0 +1,840 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Tokens · PensoLabs</title>
+<link rel="stylesheet" href="../../css/theme.css?v=1.3">
+<link rel="stylesheet" href="../css/labs.css?v=1.6">
+<script src="../js/lab-header.js?v=1.0" defer></script>
+<script src="../js/lab-controls.js?v=1.0" defer></script>
+<script src="../js/lab-info.js?v=1.0" defer></script>
+<script>
+  (function() {
+    try {
+      var t = localStorage.getItem('bs_theme');
+      if (t === 'dark' || t === 'light') {
+        document.documentElement.setAttribute('data-theme', t);
+      }
+    } catch (e) {}
+  })();
+</script>
+</head>
+<body class="lab-page">
+<section class="k5-panel">
+  <style>
+    .k5-panel {
+      --bg: var(--lab-bg);
+      --text: var(--lab-text);
+      --text-dim: var(--lab-text-dim);
+      --surface: var(--lab-surface);
+      --border: var(--lab-border);
+      --focal: var(--lab-focal);
+      --focal-rgb: var(--lab-focal-rgb);
+      --warm: var(--lab-context-a);
+      --warm-rgb: var(--lab-context-a-rgb);
+      --cool: var(--lab-context-b);
+      --cool-rgb: var(--lab-context-b-rgb);
+      --good: var(--lab-good);
+      --bad: var(--lab-bad);
+      --bad-rgb: var(--lab-bad-rgb);
+      --font-display: var(--lab-font-display);
+      --font-mono: var(--lab-font-mono);
+
+      position: relative;
+      width: 100%;
+      height: 100dvh;
+      overflow: hidden;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr) auto;
+      gap: 0.7rem;
+      padding: 1rem 2rem 0.7rem;
+      box-sizing: border-box;
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-display);
+    }
+
+    /* ── Header meter: total tokens, big ─────────────────── */
+    .k5-meter {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-end;
+      gap: 0.1rem;
+      min-width: 0;
+    }
+    .k5-meter-label {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      letter-spacing: 0.06em;
+      text-transform: uppercase;
+      font-weight: 600;
+    }
+    .k5-meter-value {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-audience);
+      font-weight: 700;
+      color: var(--focal);
+      letter-spacing: -0.01em;
+      line-height: 1;
+    }
+
+    /* ── Main 2-col area: stage left, side panel right ───── */
+    .k5-main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(280px, 34%);
+      gap: 1.4rem;
+      min-height: 0;
+    }
+
+    .k5-stage {
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 0.7rem;
+      min-height: 0;
+    }
+    /* Flex, not another grid row: an empty/display:none flex item reserves
+       no gap, so .k5-mobile-stats costs nothing when hidden on desktop.
+       A 3rd grid row would keep charging its row-gap even empty. */
+    .k5-chips-wrap {
+      display: flex;
+      flex-direction: column;
+      gap: 0.4rem;
+      min-height: 0;
+    }
+    /* Auto-grow via the CSS grid mirror trick, not JS scrollHeight: a
+       ::after pseudo-element mirrors the textarea's own text (via
+       data-value) in the SAME grid cell, invisible but taking up real
+       layout space, so the grid row (and the textarea stretched to fill
+       it) sizes to content on every render. This is immune to the bug a
+       JS scrollHeight measurement has: if the textarea's tab panel is
+       hidden (mobile, jumping to "Painel" for the formatacao example),
+       scrollHeight reads wrong/stale at that exact moment and freezes a
+       bad inline height. The grid version just re-lays-out correctly the
+       moment the panel becomes visible again, no JS measurement involved. */
+    .k5-input-wrap {
+      position: relative;
+      display: grid;
+      box-sizing: border-box;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      min-height: 64px;
+      max-height: 46dvh;
+      overflow-y: auto;
+      transition: border-color 180ms;
+      /* Scroll stays functional (wheel/touch/keyboard), only the visible
+         scrollbar chrome is hidden; the box growing to fit content makes
+         the bar redundant in the normal case, this is just the overflow
+         safety net for pathological paste. */
+      scrollbar-width: none;
+    }
+    .k5-input-wrap::-webkit-scrollbar { display: none; }
+    .k5-input-wrap:focus-within { border-color: var(--focal); }
+    .k5-input-wrap::after {
+      content: attr(data-value) ' ';
+      white-space: pre-wrap;
+      visibility: hidden;
+    }
+    .k5-input, .k5-input-wrap::after {
+      grid-area: 1 / 1 / 2 / 2;
+      padding: 0.7rem 0.9rem;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-doc);
+      line-height: 1.4;
+      box-sizing: border-box;
+      word-wrap: break-word;
+    }
+    .k5-input {
+      width: 100%;
+      resize: none;
+      background: transparent;
+      color: var(--text);
+      border: none;
+      outline: none;
+      overflow: hidden;
+    }
+
+    .k5-chips {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow-y: auto;
+      display: flex;
+      flex-wrap: wrap;
+      align-content: flex-start;
+      gap: 0;
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 0.9rem;
+      background: var(--surface);
+    }
+    /* Square, glued, tiktokenizer-style: no radius, no gap between chips.
+       Hue rotates per TOKEN (not per word) so a word that splits into several
+       pieces still shows a color change at every piece boundary, since there
+       is no more gap/radius to hint at the split visually. */
+    .k5-chip {
+      --chip-h: 210;
+      display: inline-flex;
+      align-items: baseline;
+      flex-shrink: 0;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-body);
+      font-weight: 600;
+      padding: 0.32rem 0;
+      line-height: 1.2;
+      background: hsl(var(--chip-h) 62% 88%);
+      color: hsl(var(--chip-h) 55% 24%);
+      white-space: nowrap;
+      transition: background 150ms, color 150ms;
+    }
+    /* Horizontal padding lives ONLY on the outer edge of a token group (see
+       the `first`/`last` flags set in tokenize()). Two glued pieces of the
+       SAME word/number sit with zero gap between them, letters touching
+       exactly like they would unsplit; only the color change marks the cut. */
+    .k5-chip--first { padding-left: 0.4rem; }
+    .k5-chip--last { padding-right: 0.4rem; }
+    [data-theme="dark"] .k5-chip {
+      background: hsl(var(--chip-h) 40% 24%);
+      color: hsl(var(--chip-h) 70% 84%);
+    }
+    .k5-chip--animate { animation: k5-chip-in 220ms ease-out both; }
+    /* Hover isolates: every OTHER chip loses its color entirely (no square
+       left at all, just plain text), the one under the pointer stays 100%
+       full color. Not a dim/fade, a full on/off. */
+    .k5-chips:hover .k5-chip:not(:hover) { background: transparent; color: var(--text-dim); }
+    @keyframes k5-chip-in {
+      from { opacity: 0; transform: scale(0.75); }
+      to { opacity: 1; transform: scale(1); }
+    }
+    .k5-chip-space {
+      opacity: 0.5;
+      margin-right: 0.06em;
+      font-weight: 400;
+    }
+    .k5-chip--punct, .k5-chip--num, .k5-chip--break {
+      background: color-mix(in srgb, var(--text) 10%, transparent);
+      color: var(--text-dim);
+    }
+    .k5-chip--md {
+      background: rgba(var(--bad-rgb), 0.18);
+      color: var(--bad);
+      font-weight: 700;
+    }
+    .k5-chip--special {
+      background: rgba(var(--warm-rgb), 0.22);
+      color: var(--warm);
+      font-weight: 700;
+    }
+
+    /* ── Side panel ───────────────────────────────────────── */
+    .k5-side {
+      display: flex;
+      flex-direction: column;
+      background: var(--surface);
+      border: 1.5px solid var(--border);
+      border-radius: 14px;
+      padding: 1rem 1.1rem;
+      min-width: 0;
+      min-height: 0;
+      gap: 0.8rem;
+      overflow-y: auto;
+    }
+    .k5-side-title {
+      margin: 0;
+      font-size: var(--lab-fs-body);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .k5-side-note {
+      margin: 0;
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      line-height: 1.45;
+      text-align: justify;
+    }
+    .k5-stats {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0.6rem;
+      padding-top: 0.4rem;
+      border-top: 1px dashed var(--border);
+    }
+    .k5-stat {
+      display: flex;
+      flex-direction: column;
+      gap: 0.1rem;
+    }
+    .k5-stat-label {
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+    }
+    .k5-stat-val {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--text);
+    }
+    .k5-toggle-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 0.6rem;
+      padding-top: 0.4rem;
+      border-top: 1px dashed var(--border);
+    }
+    .k5-toggle-label {
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      font-weight: 600;
+    }
+    .k5-switch {
+      position: relative;
+      width: 52px;
+      height: 30px;
+      border-radius: 999px;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .k5-switch-knob {
+      position: absolute;
+      top: 2px; left: 2px;
+      width: 22px; height: 22px;
+      border-radius: 50%;
+      background: var(--text-dim);
+      transition: transform 180ms, background 180ms;
+    }
+    .k5-switch.k5-switch--on { border-color: var(--focal); }
+    .k5-switch.k5-switch--on .k5-switch-knob {
+      transform: translateX(22px);
+      background: var(--focal);
+    }
+    .k5-delta {
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-answer);
+      font-weight: 700;
+      color: var(--bad);
+      background: rgba(var(--bad-rgb), 0.12);
+      border-radius: 10px;
+      padding: 0.6rem 0.7rem;
+      text-align: center;
+    }
+    .k5-delta[hidden] { display: none; }
+
+    /* ── Mobile-only thin stats bar: on phone the full .k5-side panel
+       (title + note + 2x2 stats grid + toggle + delta) is dropped in favor
+       of one compact line, and the "Com formatação" toggle becomes a plain
+       button in the operator bar. No second panel/tab to jump to anymore.
+       Hidden on desktop; the real .k5-side still carries the full detail
+       there, where the extra width and height are not scarce. */
+    .k5-mobile-stats {
+      display: none;
+      align-items: center;
+      gap: 0.5rem;
+      font-family: var(--font-mono);
+      font-size: var(--lab-fs-ui);
+      color: var(--text-dim);
+      padding: 0.3rem 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k5-mobile-stats b { color: var(--text); font-weight: 700; }
+    .k5-mobile-stats-sep { opacity: 0.5; }
+    .k5-mobile-stats .k5-mobile-delta {
+      color: var(--bad);
+      font-weight: 700;
+    }
+    .k5-mobile-delta[hidden] { display: none; }
+
+    /* ── Operator bar ─────────────────────────────────────── */
+    .k5-button-bar {
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0 0.2rem;
+      flex-wrap: wrap;
+    }
+    .k5-fs-slot { margin-right: auto; }
+    .k5-btn {
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-btn);
+      font-weight: 600;
+      padding: 0.4rem 1rem;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: background 180ms, color 180ms, border-color 180ms, transform 150ms;
+      letter-spacing: 0.02em;
+      line-height: 1.15;
+      border: 1.5px solid var(--border);
+      background: transparent;
+      color: var(--text-dim);
+    }
+    .k5-btn:hover { border-color: var(--cool); color: var(--cool); transform: translateY(-1px); }
+    .k5-btn--active {
+      border-color: var(--focal);
+      background: rgba(var(--focal-rgb), 0.16);
+      color: var(--focal);
+    }
+    /* Reaches the markdown toggle without a second panel: on desktop it
+       stays put inside .k5-side (plenty of room there); on mobile the same
+       control exists here instead, right in the operator bar. Only relevant
+       for the "Custo do Markdown" example, so still gated by [hidden]. */
+    .k5-mobile-only-btn { display: none; }
+    /* display:contents on desktop: the wrapper itself takes no part in
+       .k5-button-bar's flex layout, Entenda sits exactly where it always
+       has. Only the phone media query turns this into a real flex row. */
+    .k5-info-row { display: contents; }
+
+    /* ── Responsive: phone ────────────────────────────────── */
+    @media (max-width: 700px) {
+      .k5-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
+      .k5-main { grid-template-columns: 1fr; grid-template-rows: minmax(0, 1fr); gap: 0; }
+      .k5-side { display: none; }
+      .k5-mobile-stats { display: flex; }
+      .k5-input-wrap { min-height: 72px; max-height: 36dvh; }
+      .k5-button-bar { gap: 0.4rem; padding: 0; }
+      .k5-btn { padding: 0.6rem 0.5rem; flex: 1 1 calc(50% - 0.2rem); min-height: 44px; text-align: center; }
+      /* A real flex row now, forced to exactly 100% of .k5-button-bar's
+         width (flex-basis:100% leaves literally no room for a sibling to
+         share the line, unlike giving Entenda itself flex:1 1 0 directly
+         inside .k5-button-bar: flex-wrap there packs lines by MIN-CONTENT
+         size before growth is applied, so a narrow-enough example button
+         was still joining Entenda's line and splitting it unevenly). The 4
+         example buttons below are never affected either way. */
+      .k5-info-row {
+        display: flex;
+        flex: 1 1 100%;
+        gap: 0.4rem;
+      }
+      .k5-info-row > [data-lab-info-ctl] { display: flex; flex: 1 1 0; }
+      .k5-info-row > [data-lab-info-ctl] .lab-info-btn { width: 100%; justify-content: center; }
+      /* Inside this isolated row (not .k5-button-bar's wrap), the same
+         "flex:1 1 0 on both" trick works as intended: Entenda alone fills
+         100% when the toggle is [hidden], and splits 50/50 with it once
+         "Custo do Markdown" makes the toggle relevant. */
+      .k5-info-row > .k5-mobile-only-btn:not([hidden]) { flex: 1 1 0; display: flex; align-items: center; justify-content: center; }
+      .k5-fs-slot { margin-right: 0; flex: 1 0 100%; justify-content: center; }
+    }
+    @media (max-height: 500px) and (orientation: landscape) {
+      .k5-panel { padding: 0.4rem 1rem 0.35rem; gap: 0.4rem; }
+      .k5-input-wrap { min-height: 40px; max-height: 48px; }
+      .k5-btn { min-height: 32px; }
+    }
+  </style>
+
+  <div class="lab-header" data-lab-title="Tokens" data-lab-subtitle="Palavra não é a mesma coisa que token">
+    <div class="k5-meter">
+      <span class="k5-meter-label">Tokens</span>
+      <span class="k5-meter-value" id="k5-total">0</span>
+    </div>
+  </div>
+
+  <div class="k5-main">
+    <div class="k5-stage">
+      <div class="k5-input-wrap" id="k5-input-wrap">
+        <textarea class="k5-input" id="k5-input" spellcheck="false" placeholder="Digite aqui para tokenizar..."></textarea>
+      </div>
+      <div class="k5-chips-wrap">
+        <div class="k5-chips" id="k5-chips" aria-live="polite"></div>
+        <div class="k5-mobile-stats" id="k5-mobile-stats">
+          <span><b id="k5-m-tokens">0</b> tokens</span>
+          <span class="k5-mobile-stats-sep">·</span>
+          <span><b id="k5-m-chars">0</b> car</span>
+          <span class="k5-mobile-stats-sep">·</span>
+          <span><b id="k5-m-words">0</b> palavras</span>
+          <span class="k5-mobile-delta" id="k5-mobile-delta" hidden></span>
+        </div>
+      </div>
+    </div>
+
+    <aside class="k5-side">
+      <h2 class="k5-side-title" id="k5-side-title">Palavra ≠ token</h2>
+      <p class="k5-side-note" id="k5-side-note"></p>
+
+      <div class="k5-stats">
+        <div class="k5-stat"><span class="k5-stat-label">Tokens</span><span class="k5-stat-val" id="k5-stat-tokens">0</span></div>
+        <div class="k5-stat"><span class="k5-stat-label">Caracteres</span><span class="k5-stat-val" id="k5-stat-chars">0</span></div>
+        <div class="k5-stat"><span class="k5-stat-label">Palavras</span><span class="k5-stat-val" id="k5-stat-words">0</span></div>
+        <div class="k5-stat"><span class="k5-stat-label">Tokens/palavra</span><span class="k5-stat-val" id="k5-stat-ratio">0</span></div>
+      </div>
+
+      <div class="k5-toggle-row" id="k5-toggle-row" hidden>
+        <span class="k5-toggle-label">Com formatação</span>
+        <button type="button" class="k5-switch" id="k5-switch" aria-pressed="false">
+          <span class="k5-switch-knob"></span>
+        </button>
+      </div>
+      <div class="k5-delta" id="k5-delta" hidden></div>
+    </aside>
+  </div>
+
+  <div class="k5-button-bar">
+    <div class="k5-info-row">
+      <span data-lab-info-ctl></span>
+      <button type="button" class="k5-btn k5-mobile-only-btn" id="k5-switch-mobile" aria-pressed="false" hidden>Com formatação</button>
+    </div>
+    <span class="k5-fs-slot" data-lab-fs-ctl></span>
+    <button class="k5-btn" id="k5-ex-palavra" data-example="palavra">Palavra ≠ token</button>
+    <button class="k5-btn" id="k5-ex-estrutura" data-example="estrutura">Estrutura da mensagem</button>
+    <button class="k5-btn" id="k5-ex-formatacao" data-example="formatacao">Custo do Markdown</button>
+    <button class="k5-btn" id="k5-ex-livre" data-example="livre">Livre</button>
+  </div>
+
+  <template data-lab-info data-lab-info-title="O que é um token?">
+    <p>Um token é o pedaço que o modelo realmente processa. Nem sempre é uma palavra inteira: palavras comuns costumam virar 1 token, palavras raras ou compostas quebram em vários pedaços. O espaço antes de uma palavra normalmente faz parte do token seguinte, não é separado.</p>
+    <p>Não é só a sua mensagem: o formato da conversa (quem é o sistema, quem é você, onde a mensagem termina) e qualquer formatação extra, como <strong>negrito</strong>, listas e títulos, também viram tokens. Nada disso é de graça.</p>
+    <p>A quebra exata em pedaços muda de modelo para modelo, cada um treina o seu próprio vocabulário. Esta demo usa uma aproximação didática, consistente e sem depender de internet, para mostrar o princípio: palavra não é a unidade, token é.</p>
+  </template>
+
+  <script>
+    (function () {
+      // ── Illustrative PT-BR sub-word segmenter ───────────────
+      // Not a byte-exact port of any vendor tokenizer (GPT, Claude and Gemini
+      // each train their own BPE vocabulary, none published in a form a
+      // no-build static page can vendor cheaply). This is a deterministic,
+      // offline approximation tuned by hand so the lesson (word != token,
+      // structure and formatting also cost tokens) lands consistently on
+      // stage without a CDN dependency that a venue's wifi could break.
+      var COMMON = {};
+      ['o','a','os','as','um','uma','uns','umas','de','da','do','das','dos','em','no','na','nos','nas',
+       'por','pelo','pela','pelos','pelas','para','com','sem','sob','sobre','entre','até','após','ante',
+       'desde','e','ou','mas','que','se','não','sim','é','foi','ser','são','está','estão','tem','têm',
+       'há','já','também','mais','menos','muito','pouco','como','quando','onde','porque','isso','esse',
+       'essa','este','esta','isto','aquele','aquela','seu','sua','seus','suas','meu','minha','nosso',
+       'nossa','à','às','ao','aos','autor','juiz','caso','pena','multa','valor','lei',
+       'artigo','processo','ação','parte','partes','três','dias','linhas','este','despacho'
+      ].forEach(function (w) { COMMON[w] = true; });
+
+      var SUFFIXES = [
+        'abilidades','abilidade','ivamente','osamente','izações','ização','amentos','amento',
+        'ências','ência','âncias','ância','idades','idade','ações','ação','ismos','ismo',
+        'istas','ista','adores','adora','ador','edoras','edora','edor','áveis','ável',
+        'íveis','ível','agens','agem','ando','endo','indo','ções','ção'
+      ];
+      var MAX_WHOLE = 7;
+
+      // Exact overrides, ground-truthed against the real tokenizer Élder
+      // checked these words against (not the heuristic's guess). Keyed by
+      // lowercase word, value is the piece-length split; sliced off the
+      // ORIGINAL word so capitalization survives (e.g. "Resuma" -> "Res"+"uma").
+      // These take priority over COMMON / suffix-peel / fallback chunking.
+      var OVERRIDES = {
+        'réu': [2, 1],
+        'compareceu': [7, 3],
+        'configurando': [8, 4],
+        'revelia': [5, 2],
+        'extemporaneidade': [2, 6, 3, 5],
+        'contestação': [7, 4],
+        'resuma': [3, 3],
+        'indevida': [4, 4],
+        'prazo': [3, 2]
+      };
+
+      function splitStem(stem) {
+        if (stem.length <= MAX_WHOLE) return [stem];
+        var pieces = [];
+        var rest = stem;
+        while (rest.length > MAX_WHOLE) {
+          pieces.push(rest.slice(0, 6));
+          rest = rest.slice(6);
+        }
+        if (rest) pieces.push(rest);
+        return pieces;
+      }
+
+      function splitWord(word) {
+        var lower = word.toLowerCase();
+        if (OVERRIDES[lower]) {
+          var pieces = [];
+          var pos = 0;
+          OVERRIDES[lower].forEach(function (len) {
+            pieces.push(word.slice(pos, pos + len));
+            pos += len;
+          });
+          return pieces;
+        }
+        if (COMMON[lower] || word.length <= MAX_WHOLE) return [word];
+        for (var i = 0; i < SUFFIXES.length; i++) {
+          var suf = SUFFIXES[i];
+          if (lower.length - suf.length >= 2 && lower.slice(lower.length - suf.length) === suf) {
+            var stemLen = word.length - suf.length;
+            var stem = word.slice(0, stemLen);
+            var sufText = word.slice(stemLen);
+            return splitStem(stem).concat([sufText]);
+          }
+        }
+        return splitStem(word);
+      }
+
+      // Tokenize free text into {text, kind, spaceBefore, wordIndex} pieces.
+      // kind: 'word' | 'punct' | 'num' | 'md' | 'break' | 'special'
+      var WORD_RE = /[A-Za-zÀ-ÖØ-öø-ÿ]+/y;
+      var SPECIAL_RE = /<\|[a-z_]+\|>/y;
+      function tokenize(text) {
+        var tokens = [];
+        var wordIndex = 0;
+        var pendingSpace = false;
+        var i = 0;
+        while (i < text.length) {
+          var ch = text[i];
+          if (ch === '\n') { tokens.push({ text: '↵', kind: 'break', first: true, last: true }); pendingSpace = false; i++; continue; }
+          if (/\s/.test(ch)) { pendingSpace = true; i++; continue; }
+          // Real chat-format control tokens (a reserved, atomic vocabulary entry
+          // in every major tokenizer, ChatML-style shown here since it is the
+          // one Élder pointed at). The exact reserved strings differ per vendor;
+          // the point stands for all of them, before your words start.
+          SPECIAL_RE.lastIndex = i;
+          var sm = SPECIAL_RE.exec(text);
+          if (sm && sm.index === i) {
+            tokens.push({ text: sm[0], kind: 'special', spaceBefore: pendingSpace, first: true, last: true });
+            pendingSpace = false;
+            i += sm[0].length;
+            continue;
+          }
+          if (ch === '*' && text[i + 1] === '*') { tokens.push({ text: '**', kind: 'md', spaceBefore: pendingSpace, first: true, last: true }); pendingSpace = false; i += 2; continue; }
+          if (ch === '*' || ch === '#' || ch === '-') { tokens.push({ text: ch, kind: 'md', spaceBefore: pendingSpace, first: true, last: true }); pendingSpace = false; i++; continue; }
+          if (/[.,;:!?"'()«»]/.test(ch)) { tokens.push({ text: ch, kind: 'punct', spaceBefore: pendingSpace, first: true, last: true }); pendingSpace = false; i++; continue; }
+          if (/[0-9]/.test(ch)) {
+            // Real tokenizers don't merge "8.000,00" into one piece: each run
+            // of pure digits is its own token (chunked in groups of up to 3
+            // from the right, as GPT-family vocabularies do for long numbers),
+            // and "." / "," fall through to the punct branch below as their
+            // own tokens. This is what produced "8|.|000|,|00" for Élder.
+            var start = i;
+            while (i < text.length && /[0-9]/.test(text[i])) { i++; }
+            var digits = text.slice(start, i);
+            var chunks = [];
+            var pos = digits.length;
+            while (pos > 0) {
+              var take = pos % 3 === 0 ? 3 : pos % 3;
+              chunks.unshift(digits.slice(pos - take, pos));
+              pos -= take;
+            }
+            chunks.forEach(function (c, idx) {
+              tokens.push({ text: c, kind: 'num', spaceBefore: idx === 0 ? pendingSpace : false, first: idx === 0, last: idx === chunks.length - 1 });
+            });
+            pendingSpace = false;
+            continue;
+          }
+          WORD_RE.lastIndex = i;
+          var m = WORD_RE.exec(text);
+          if (m) {
+            var pieces = splitWord(m[0]);
+            pieces.forEach(function (p, idx) {
+              tokens.push({ text: p, kind: 'word', wordIndex: wordIndex, spaceBefore: idx === 0 ? pendingSpace : false, first: idx === 0, last: idx === pieces.length - 1 });
+            });
+            wordIndex++;
+            pendingSpace = false;
+            i += m[0].length;
+            continue;
+          }
+          // Unknown symbol (currency sign, emoji, etc.): its own token.
+          tokens.push({ text: ch, kind: 'punct', spaceBefore: pendingSpace, first: true, last: true });
+          pendingSpace = false;
+          i++;
+        }
+        return { tokens: tokens, wordCount: wordIndex, charCount: text.length };
+      }
+
+      function hue(i) { return (i * 47) % 360; }
+
+      // ── Example data ─────────────────────────────────────
+      var EXAMPLES = {
+        palavra: {
+          title: 'Palavra ≠ token',
+          note: 'Cada cor é uma palavra. Quando ela quebra em mais de um pedaço, cada pedaço vira um token à parte.',
+          text: 'O réu não compareceu à audiência, configurando revelia por extemporaneidade da contestação.'
+        },
+        estrutura: {
+          title: 'Estrutura da mensagem',
+          note: 'Isso é o que o modelo realmente recebe. Marcadores como <|im_start|> e <|im_end|> delimitam cada mensagem, dizem quem fala (sistema, você, o modelo) e onde cada turno acaba. Você não digita nada disso, mas cada marcador é um token.',
+          text: 'Resuma este despacho em até três linhas.',
+          system: 'Você é um assistente do TJSE.'
+        },
+        formatacao: {
+          title: 'O custo do Markdown',
+          note: 'A mesma mensagem, com e sem formatação. Cada asterisco, cada traço de lista também é um token.',
+          plain: 'Resumo do caso: dano moral por inscrição indevida. Valor pedido: R$ 8.000,00. Prazo: 15 dias.',
+          md: '**Resumo do caso**\n\n- Dano moral por inscrição indevida\n- Valor pedido: R$ 8.000,00\n- Prazo: 15 dias'
+        },
+        livre: {
+          title: 'Escreva o seu',
+          note: 'Digite qualquer texto e veja como ele quebra em tokens, em tempo real.',
+          text: ''
+        }
+      };
+
+      var current = 'palavra';
+      var mdOn = false;
+
+      // ── DOM refs ─────────────────────────────────────────
+      var inputEl   = document.getElementById('k5-input');
+      var chipsEl   = document.getElementById('k5-chips');
+      var totalEl   = document.getElementById('k5-total');
+      var titleEl   = document.getElementById('k5-side-title');
+      var noteEl    = document.getElementById('k5-side-note');
+      var statTok   = document.getElementById('k5-stat-tokens');
+      var statChars = document.getElementById('k5-stat-chars');
+      var statWords = document.getElementById('k5-stat-words');
+      var statRatio = document.getElementById('k5-stat-ratio');
+      var toggleRow = document.getElementById('k5-toggle-row');
+      var switchBtn = document.getElementById('k5-switch');
+      var deltaEl   = document.getElementById('k5-delta');
+      var exampleBtns = document.querySelectorAll('[data-example]');
+      // Mobile-only stand-ins for the side panel's stats/toggle/delta (see
+      // the "Responsive: phone" media query, .k5-side is display:none there).
+      var mStatTok    = document.getElementById('k5-m-tokens');
+      var mStatChars  = document.getElementById('k5-m-chars');
+      var mStatWords  = document.getElementById('k5-m-words');
+      var mDeltaEl    = document.getElementById('k5-mobile-delta');
+      var switchBtnMobile = document.getElementById('k5-switch-mobile');
+
+      // Real chat-format wrapping: what the model actually receives around the
+      // visible message. ChatML-style shown here (the exact reserved strings
+      // differ per vendor, the lesson is the same for all of them).
+      function wrapAsChat(userText) {
+        return '<|im_start|>system<|im_sep|>' + EXAMPLES.estrutura.system + '<|im_end|>' +
+               '<|im_start|>user<|im_sep|>' + userText + '<|im_end|>' +
+               '<|im_start|>assistant<|im_sep|>';
+      }
+
+      function textToTokenize() {
+        var raw = inputEl.value;
+        return current === 'estrutura' ? wrapAsChat(raw) : raw;
+      }
+
+      function renderChips(text, animate) {
+        var result = tokenize(text);
+        chipsEl.innerHTML = '';
+
+        result.tokens.forEach(function (tok, i) {
+          var el = document.createElement('span');
+          var cls = 'k5-chip';
+          if (tok.kind !== 'word') cls += ' k5-chip--' + tok.kind;
+          // Padding lives only on the true left/right edge of a token GROUP
+          // (a whole word or digit run), never between two glued pieces of
+          // the same group: any padding there reads as a real space between
+          // the pieces, which is exactly the illusion Élder flagged (a split
+          // word must look unbroken except for the color change).
+          if (tok.first) cls += ' k5-chip--first';
+          if (tok.last) cls += ' k5-chip--last';
+          // The stagger-in animation only plays on example/toggle switches.
+          // Typing calls this on every keystroke, and replaying the fade-in
+          // (which starts every chip at opacity:0 during its delay) on the
+          // WHOLE token list on every character is what made Élder see it
+          // "piscar" (blink) as he typed. No class, no delay, no blink.
+          if (animate) cls += ' k5-chip--animate';
+          el.className = cls;
+          // Hue rotates per TOKEN, not per word: a word split into pieces
+          // must still show a color change at each boundary now that chips
+          // are glued together with no gap.
+          if (tok.kind === 'word') el.style.setProperty('--chip-h', String(hue(i)));
+          if (animate) el.style.animationDelay = (Math.min(i, 40) * 18) + 'ms';
+          var label = (tok.spaceBefore ? '·' : '') + tok.text;
+          el.textContent = label;
+          chipsEl.appendChild(el);
+        });
+
+        return result;
+      }
+
+      var inputWrapEl = document.getElementById('k5-input-wrap');
+      function mirrorValue() {
+        inputWrapEl.dataset.value = inputEl.value;
+      }
+
+      function render(animate) {
+        var text = textToTokenize();
+        var result = renderChips(text, animate);
+        var n = result.tokens.length;
+
+        totalEl.textContent = String(n);
+        statTok.textContent = String(n);
+        statChars.textContent = String(result.charCount);
+        statWords.textContent = String(result.wordCount);
+        statRatio.textContent = result.wordCount ? (n / result.wordCount).toFixed(1) : '0';
+        mStatTok.textContent = String(n);
+        mStatChars.textContent = String(result.charCount);
+        mStatWords.textContent = String(result.wordCount);
+
+        var def = EXAMPLES[current];
+        titleEl.textContent = def.title;
+        noteEl.textContent = def.note;
+
+        var isFormatacao = current === 'formatacao';
+        toggleRow.hidden = !isFormatacao;
+        switchBtnMobile.hidden = !isFormatacao;
+        switchBtn.classList.toggle('k5-switch--on', mdOn);
+        switchBtn.setAttribute('aria-pressed', String(mdOn));
+        switchBtnMobile.classList.toggle('k5-btn--active', mdOn);
+        switchBtnMobile.setAttribute('aria-pressed', String(mdOn));
+        if (isFormatacao) {
+          var plainN = tokenize(EXAMPLES.formatacao.plain).tokens.length;
+          var mdN = tokenize(EXAMPLES.formatacao.md).tokens.length;
+          var deltaText = '+' + (mdN - plainN) + ' tokens só de formatação';
+          deltaEl.hidden = false;
+          deltaEl.textContent = deltaText;
+          mDeltaEl.hidden = false;
+          mDeltaEl.textContent = deltaText;
+        } else {
+          deltaEl.hidden = true;
+          mDeltaEl.hidden = true;
+        }
+
+        mirrorValue();
+      }
+
+      // Same toggle, reachable from two places: the side panel on desktop,
+      // the operator bar on mobile (see .k5-mobile-only-btn). Both buttons
+      // stay in sync since they share this one function and both get their
+      // pressed/active state written on every render(), not just their own click.
+      function setMarkdown(on) {
+        mdOn = on;
+        inputEl.value = mdOn ? EXAMPLES.formatacao.md : EXAMPLES.formatacao.plain;
+        render(true);
+      }
+
+      function setExample(key) {
+        current = key;
+        exampleBtns.forEach(function (b) {
+          b.classList.toggle('k5-btn--active', b.dataset.example === key);
+        });
+        if (key === 'formatacao') {
+          mdOn = false;
+          inputEl.value = EXAMPLES.formatacao.plain;
+        } else {
+          inputEl.value = EXAMPLES[key].text;
+        }
+        render(true);
+      }
+
+      exampleBtns.forEach(function (b) {
+        b.addEventListener('click', function () { setExample(b.dataset.example); });
+      });
+
+      switchBtn.addEventListener('click', function () { setMarkdown(!mdOn); });
+      switchBtnMobile.addEventListener('click', function () { setMarkdown(!mdOn); });
+
+      inputEl.addEventListener('input', function () { render(false); });
+
+      // ── Theme sync ───────────────────────────────────────
+      window.addEventListener('storage', function (e) {
+        if (e.key !== 'bs_theme') return;
+        var t = e.newValue;
+        if (t === 'dark' || t === 'light') {
+          document.documentElement.setAttribute('data-theme', t);
+        }
+      });
+
+      // ── Init ─────────────────────────────────────────────
+      setExample('palavra');
+    })();
+  </script>
+</section>
+</body>
+</html>

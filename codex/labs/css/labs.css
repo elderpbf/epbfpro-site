@@ -454,7 +454,7 @@
   line-height: 1.55;
   color: var(--lab-text);
 }
-.lab-modal-body p { margin: 0 0 0.8rem; }
+.lab-modal-body p { margin: 0 0 0.8rem; text-align: justify; }
 .lab-modal-body p:last-child { margin-bottom: 0; }
 .lab-modal-body strong { color: var(--lab-focal); font-weight: 700; }
 .lab-modal-body ul { margin: 0 0 0.8rem; padding-left: 1.2rem; }
