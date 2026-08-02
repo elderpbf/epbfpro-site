@@ -1235,6 +1235,12 @@ export default {
   'labs.rename_hint':         'Leave blank to revert to the default name: "{title}".',
   'labs.rename_saved':        'Lab renamed.',
   'labs.renamed_tag':         'renamed',
+  'labs.search_ph':           'Search labs',
+  'labs.filter_all':          'All',
+  'labs.filter_on':           'Enabled',
+  'labs.filter_off':          'Disabled',
+  'labs.empty_search':        'No labs found.',
+  'labs.empty_filter':        'No labs in this filter.',
   // Interativos — see pt.js for the provisional-type-name note; keep both in sync.
   'interativos.type':         'Interactive',
   'interativos.title':        'Interactive',

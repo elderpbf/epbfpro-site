@@ -1240,6 +1240,12 @@ export default {
   'labs.rename_hint':         'Deixe em branco para voltar ao nome padrão: "{title}".',
   'labs.rename_saved':        'Lab renomeado.',
   'labs.renamed_tag':         'renomeado',
+  'labs.search_ph':           'Buscar lab',
+  'labs.filter_all':          'Todos',
+  'labs.filter_on':           'Ativos',
+  'labs.filter_off':          'Desativados',
+  'labs.empty_search':        'Nenhum lab encontrado.',
+  'labs.empty_filter':        'Nenhum lab neste filtro.',
   // ── Interativos (Content sub-tab + Lessons section) ──────────────────────────
   // PROVISIONAL TYPE NAME lives in 'interativos.type'. To rename the type, edit this
   // value AND its twin 'lessons.section_interativos' (the only other site, forced by

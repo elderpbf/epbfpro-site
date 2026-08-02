@@ -46,8 +46,10 @@ test('labs preserves the shared state + registry contract', () => {
 test('labs list rail supports drag-to-reorder, propagated via labs-registry', () => {
   const src = read('../content/labs.js');
   assert.match(src, /import \{[^}]*\borderedLabs\b[^}]*\bsetLabOrder\b[^}]*\} from '\.\.\/js\/labs-registry\.js'/, 'reads the ordered/emoji registry API');
-  assert.match(src, /reorder\s*=\s*\{\s*onReorder:/, 'enables the rail reorder config');
-  assert.match(src, /setLabOrder\(keys\)/, 'persists the drop order via the registry, not local state');
+  assert.match(src, /reorder\s*=\s*\{\s*\n?\s*onReorder:/, 'enables the rail reorder config');
+  // Still the registry, never local state. The argument gained a merge step once search and
+  // chips made the visible list partial (see mergeVisibleOrder below).
+  assert.match(src, /setLabOrder\(mergeVisibleOrder\(/, 'persists the drop order via the registry, not local state');
   assert.ok(!/window\.CTLabsPanel/.test(src), 'still no legacy global (regression guard)');
 });
 
@@ -61,10 +63,123 @@ test('labs strings route through t() in both dictionaries', async () => {
   const pt = (await import('../i18n/pt.js')).default;
   const en = (await import('../i18n/en.js')).default;
   for (const k of ['labs.title', 'labs.hint', 'labs.preview', 'labs.toggle', 'labs.lab_prefix', 'labs.select', 'labs.unavailable',
-    'labs.archive', 'labs.restore', 'labs.archived', 'labs.back_active']) {
+    'labs.archive', 'labs.restore', 'labs.archived', 'labs.back_active',
+    'labs.search_ph', 'labs.filter_all', 'labs.filter_on', 'labs.filter_off', 'labs.empty_search', 'labs.empty_filter']) {
     assert.ok(k in pt, `pt.js has ${k}`);
     assert.ok(k in en, `en.js has ${k}`);
   }
+});
+
+// ── search + enabled/disabled chips (fase 3) ─────────────────────────────────
+// The free-text query belongs to the RAIL (js/list-rail.js owns the input, which is what keeps
+// it alive across a keystroke repaint); the enabled/disabled cut is CONSUMER state and narrows
+// the list here, before the rail sees it. These tests pin the consumer half.
+
+const LABS = [
+  { key: 'k5',  title: 'Tokens',             summary: 'palavra nao e token' },
+  { key: 'k6',  title: 'Embeddings',         summary: 'significado vira posicao' },
+  { key: 'k20', title: 'Aposta na Citação',  summary: 'alucinação jurídica' },
+  { key: 'k22', title: 'Próximo Token',      summary: 'o pipeline do transformer' },
+];
+const OFF = new Set(['k6']);
+const enabled = (k) => !OFF.has(k);
+const keys = (list) => list.map((l) => l.key);
+
+test('the status chip cuts the list by enabled/disabled', () => {
+  assert.deepEqual(keys(labs.applyLabStatusFilter(LABS, 'all', enabled)), ['k5', 'k6', 'k20', 'k22']);
+  assert.deepEqual(keys(labs.applyLabStatusFilter(LABS, 'on', enabled)), ['k5', 'k20', 'k22']);
+  assert.deepEqual(keys(labs.applyLabStatusFilter(LABS, 'off', enabled)), ['k6']);
+});
+
+test('an unknown status behaves as "all" rather than emptying the panel', () => {
+  assert.deepEqual(keys(labs.applyLabStatusFilter(LABS, undefined, enabled)), ['k5', 'k6', 'k20', 'k22']);
+});
+
+test('applyLabStatusFilter is pure: it does not mutate the list it was given', () => {
+  const input = LABS.slice();
+  labs.applyLabStatusFilter(input, 'on', enabled);
+  assert.equal(input.length, 4);
+});
+
+test('chip counts split the whole list when there is no query', () => {
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, ''), { all: 4, on: 3, off: 1 });
+});
+
+test('chip counts follow the search, so they cannot contradict the rows on screen', () => {
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'token'), { all: 2, on: 2, off: 0 });
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'embeddings'), { all: 1, on: 0, off: 1 });
+});
+
+test('chip counts ignore accents, like every other search in Codex', () => {
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'citacao'), { all: 1, on: 1, off: 0 });
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'proximo'), { all: 1, on: 1, off: 0 });
+});
+
+test('a lab is searchable by its KEY, because Élder refers to labs by number', () => {
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'k22'), { all: 1, on: 1, off: 0 });
+});
+
+test('a query that hits nothing zeroes every chip instead of throwing', () => {
+  assert.deepEqual(labs.labChipCounts(LABS, enabled, 'zzz'), { all: 0, on: 0, off: 0 });
+});
+
+// Search and chips made a PARTIAL list possible for the first time, and setLabOrder replaces
+// the whole stored order with what it is given. Dragging while filtered would therefore have
+// dropped every hidden lab to the end of the order.
+test('reordering a filtered list leaves the hidden labs in their own slots', () => {
+  const all = ['k5', 'k6', 'k20', 'k22'];
+  // Only k5 and k20 are on screen; the drag swaps them. k6 and k22 must not move.
+  assert.deepEqual(labs.mergeVisibleOrder(all, ['k20', 'k5']), ['k20', 'k6', 'k5', 'k22']);
+});
+
+test('reordering the full list behaves exactly as it did before (no filter on)', () => {
+  const all = ['k5', 'k6', 'k20'];
+  assert.deepEqual(labs.mergeVisibleOrder(all, ['k20', 'k5', 'k6']), ['k20', 'k5', 'k6']);
+});
+
+test('mergeVisibleOrder only ever rewrites the slots the visible rows already held', () => {
+  // b and e are the two rows on screen (slots 1 and 4); the drag put e above b. a, c and d are
+  // filtered out and must not move, so only slots 1 and 4 change hands.
+  const all = ['a', 'b', 'c', 'd', 'e'];
+  assert.deepEqual(labs.mergeVisibleOrder(all, ['e', 'b']), ['a', 'e', 'c', 'd', 'b']);
+});
+
+test('mergeVisibleOrder ignores a key that is not in the full order', () => {
+  assert.deepEqual(labs.mergeVisibleOrder(['k5', 'k6'], ['k6', 'ghost', 'k5']), ['k6', 'k5']);
+});
+
+test('mergeVisibleOrder survives empty input instead of wiping the order', () => {
+  assert.deepEqual(labs.mergeVisibleOrder(['k5', 'k6'], []), ['k5', 'k6']);
+  assert.deepEqual(labs.mergeVisibleOrder([], ['k5']), []);
+  assert.deepEqual(labs.mergeVisibleOrder(null, null), []);
+});
+
+test('labs does not hand the visible-only ids straight to setLabOrder', () => {
+  const src = read('../content/labs.js');
+  assert.ok(!/setLabOrder\(keys\)/.test(src), 'a filtered drag must not overwrite the whole order');
+  assert.match(src, /setLabOrder\(mergeVisibleOrder\(/, 'the partial order is merged back in');
+});
+
+test('labs wires the rail search + chips instead of hand-rolling its own', () => {
+  const src = read('../content/labs.js');
+  assert.match(src, /search:\s*\{\s*fields:/, 'declares the rail search capability');
+  assert.match(src, /from\s+['"]\.\.\/js\/text-search\.js['"]/, 'uses the shared matcher, not its own toLowerCase');
+  assert.match(src, /cfg\.filter\s*=\s*\{\s*chips:/, 'declares the rail filter chips');
+  assert.ok(!/addEventListener\(\s*['"]input['"]/.test(src), 'does NOT wire its own search input (that is the rail\'s job)');
+  assert.ok(!/toLowerCase\(\)\.includes|indexOf\(q\)/.test(src), 'no hand-rolled matcher left behind');
+});
+
+test('the chips are the active list only: the Arquivados drawer gets search but no status cut', () => {
+  const src = read('../content/labs.js');
+  // Position, not shape: `search:` sits in the cfg literal both modes share, while `cfg.filter`
+  // is assigned afterwards inside the `if (!archived)` block. Comparing offsets survives
+  // reformatting and line endings, which a multiline regex over the two does not.
+  const searchAt = src.indexOf('search: {');
+  const gateAt = src.indexOf('if (!archived) {');
+  const filterAt = src.indexOf('cfg.filter =');
+  assert.ok(searchAt > 0 && gateAt > 0 && filterAt > 0, 'all three anchors present');
+  assert.ok(searchAt < gateAt, 'search is in the shared cfg, so it applies in the drawer too');
+  assert.ok(filterAt > gateAt, 'the status chips are gated on the active list');
 });
 
 test('labs supports archive: put-away drawer with restore, wired to the registry', () => {
