@@ -168,6 +168,14 @@ export const LABS = [
     description: 'A mesma tarefa, variando modelo (pequeno a grande) e esforço (baixo a alto). Em cada cenário, um dos dois eixos é o que realmente decide entre acertar e errar, o outro não ajuda sozinho. O demo mostra qual pergunta fazer quando a IA erra.',
     objective: 'Diagnosticar um erro de IA: falta de capacidade (modelo) ou falta de cuidado (esforço).',
     emoji: '🎚️'
+  },
+  {
+    key: 'k22',
+    title: 'Próximo Token',
+    summary: 'Não é pensamento, é probabilidade',
+    description: 'O demo gera uma frase palavra por palavra: cada token vira um vetor de números, passa pelo transformador (atenção), vira uma lista de probabilidades, e o token escolhido volta pro início do ciclo.',
+    objective: 'Ver a geração de texto como um ciclo de atenção e probabilidade repetido, não como um raciocínio contínuo.',
+    emoji: '📊'
   }
 ];
 
@@ -308,7 +316,7 @@ const LAB_GLYPH = {
   k5: 'glyph:hash', k6: 'glyph:compass',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',
-  k18: 'glyph:window', k19: 'glyph:layers', k20: 'glyph:checklist', k21: 'glyph:cpu',
+  k18: 'glyph:window', k19: 'glyph:layers', k20: 'glyph:checklist', k21: 'glyph:cpu', k22: 'glyph:bar-chart',
 };
 
 export function labIcon(key) {
