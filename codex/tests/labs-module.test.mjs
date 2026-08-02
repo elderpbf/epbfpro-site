@@ -46,7 +46,7 @@ test('labs preserves the shared state + registry contract', () => {
 test('labs list rail supports drag-to-reorder, propagated via labs-registry', () => {
   const src = read('../content/labs.js');
   assert.match(src, /import \{[^}]*\borderedLabs\b[^}]*\bsetLabOrder\b[^}]*\} from '\.\.\/js\/labs-registry\.js'/, 'reads the ordered/emoji registry API');
-  assert.match(src, /reorder\s*=\s*\{\s*\n?\s*onReorder:/, 'enables the rail reorder config');
+  assert.match(src, /cfg\.reorder\s*=\s*\{[\s\S]{0,900}?onReorder:/, 'enables the rail reorder config');
   // Still the registry, never local state. The argument gained a merge step once search and
   // chips made the visible list partial (see mergeVisibleOrder below).
   assert.match(src, /setLabOrder\(mergeVisibleOrder\(/, 'persists the drop order via the registry, not local state');
@@ -158,6 +158,13 @@ test('labs does not hand the visible-only ids straight to setLabOrder', () => {
   const src = read('../content/labs.js');
   assert.ok(!/setLabOrder\(keys\)/.test(src), 'a filtered drag must not overwrite the whole order');
   assert.match(src, /setLabOrder\(mergeVisibleOrder\(/, 'the partial order is merged back in');
+});
+
+test('the drag grip is withdrawn while the list is narrowed by a chip or a query', () => {
+  const src = read('../content/labs.js');
+  assert.match(src, /gated:\s*\(\)\s*=>\s*_isNarrowed\(\)/, 'reorder is gated on the narrowed state');
+  assert.match(src, /function _isNarrowed\(\)[\s\S]*?_statusFilter !== 'all'/, 'a chip narrows it');
+  assert.match(src, /function _isNarrowed\(\)[\s\S]*?_rail\.query\(\)/, 'a search query narrows it too');
 });
 
 test('labs wires the rail search + chips instead of hand-rolling its own', () => {

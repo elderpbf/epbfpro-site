@@ -260,6 +260,54 @@ test('rail.query() is empty for a rail with no search', () => {
   assert.equal(rail.query(), '');
 });
 
+// ── reorder.gated as a predicate ─────────────────────────────────────────────
+// A narrowed list is not the real order, so a consumer must be able to withdraw the drag grip
+// for as long as a query is on. `gated` therefore takes a predicate as well as a bool, the same
+// both-forms shape hideWhenEmpty and collapsed already use.
+
+test('reorder.gated as a predicate withdraws the grip while it returns true', () => {
+  let narrowed = false;
+  const el = makeEl();
+  const rail = mountRail(el, {
+    items: () => LABS, getId: (l) => l.key, renderRow: (l) => ({ main: l.title }),
+    reorder: { gated: () => narrowed, onReorder: () => {} },
+  });
+  rail.render();
+  assert.match(el.innerHTML, /cdx-rail-grip/, 'grip shows while not gated');
+  narrowed = true;
+  rail.render();
+  assert.doesNotMatch(el.innerHTML, /cdx-rail-grip/, 'grip is gone while gated');
+});
+
+test('reorder.gated still accepts a plain bool (the original contract)', () => {
+  const on = makeEl();
+  mountRail(on, { items: () => LABS, getId: (l) => l.key, renderRow: (l) => ({ main: l.title }),
+    reorder: { onReorder: () => {} } }).render();
+  assert.match(on.innerHTML, /cdx-rail-grip/);
+  const off = makeEl();
+  mountRail(off, { items: () => LABS, getId: (l) => l.key, renderRow: (l) => ({ main: l.title }),
+    reorder: { gated: true, onReorder: () => {} } }).render();
+  assert.doesNotMatch(off.innerHTML, /cdx-rail-grip/);
+});
+
+test('typing settles consumer state BEFORE the repaint reads it', () => {
+  // The consumer derives "am I narrowed" in onChange; if the repaint ran first it would paint
+  // one keystroke behind, leaving grips on a list that is already filtered.
+  const seen = [];
+  let narrowed = false;
+  const body = makeNode();
+  const el = makeContainer({ '.cdx-rail-body': body });
+  const rail = mountRail(el, {
+    items: () => LABS, getId: (l) => l.key, renderRow: (l) => ({ main: l.title }),
+    search: { fields: (l) => [l.title], onChange: (q) => { narrowed = !!q.trim(); } },
+    reorder: { gated: () => { seen.push(narrowed); return narrowed; }, onReorder: () => {} },
+  });
+  rail.render();
+  typeInto(el, 'tok');
+  assert.equal(seen[seen.length - 1], true, 'the repaint saw the post-keystroke state');
+  assert.doesNotMatch(body.innerHTML, /cdx-rail-grip/, 'grips left the filtered list immediately');
+});
+
 // ── chips: the array form still works ────────────────────────────────────────
 
 test('filter.chips still accepts a plain array (the original contract)', () => {

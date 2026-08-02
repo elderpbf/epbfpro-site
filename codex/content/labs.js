@@ -112,6 +112,13 @@ export function mergeVisibleOrder(allKeys, visibleKeys) {
   return out;
 }
 
+// Is the list on screen a SUBSET of the real order? True while a chip other than "Todos" is on,
+// or while the rail holds a query. Reorder is switched off in that state (see cfg.reorder.gated).
+function _isNarrowed() {
+  if (_statusFilter !== 'all') return true;
+  return !!(_rail && String(_rail.query() || '').trim());
+}
+
 // The list currently on screen: the active labs (minus the status chip), or the archived drawer.
 function _currentList() {
   return _mode === 'archived' ? archivedLabs() : applyLabStatusFilter(_labs(), _statusFilter, _isEnabled);
@@ -280,7 +287,14 @@ function _buildRail() {
   // inherit the same order via orderedLabs() too.
   if (!archived) {
     cfg.reorder = {
+      // No grip while the list is narrowed. Dragging row 2 above row 1 when those are labs #5 and
+      // #19 of the real order has no honest answer: keep their slots and the lab you did NOT drag
+      // jumps 14 places, or close the gap and every hidden lab shifts. The order you cannot see is
+      // not the order you are arranging, so the affordance goes away until the list is whole again.
+      gated: () => _isNarrowed(),
       onReorder: (keys) => {
+        // Belt and braces: gated blocks the drag, and this still merges rather than overwrites, so
+        // a partial list can never wipe the order of the labs it is hiding.
         // _labs() is still the PRE-drag order here (setLabOrder has not run yet), which is
         // exactly the list mergeVisibleOrder needs to know which slots the visible rows held.
         setLabOrder(mergeVisibleOrder((_labs() || []).map((l) => l.key), keys));

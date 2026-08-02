@@ -16,7 +16,7 @@
 //     selectedId:()=>id, onSelect:(id)=>{},
 //     emptyText: str|()=>str, emptyHtml:()=>html,   // whole list empty (Html wins; rich states)
 //     add:{label,title,onAdd}, headPanel:()=>html,   // head expands to reveal it ('' = collapsed)
-//     reorder:{onReorder:(ids)=>{}, gated:false, canDrag:(row)=>true},
+//     reorder:{onReorder:(ids)=>{}, gated:false|()=>bool, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
 //               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
@@ -128,12 +128,22 @@ export function mountRail(container, cfg) {
   let ahTimer = null;
   let ahOff = null;      // teardown for the autohide listeners
 
+  // `reorder.gated` is a bool OR a predicate, the same both-forms shape the rest of the config
+  // already uses (`hideWhenEmpty` bool-or-predicate, `collapsed:(sec)=>bool`). A predicate is what
+  // a list that can be NARROWED needs: with a search or a chip on, the rows on screen are not the
+  // whole order, so dragging one would be reordering a list the user cannot see. Read at render
+  // time (the grip) and at drag time (the pointer), so it tracks the query with no extra wiring.
+  function reorderGated() {
+    if (!reorder) return false;
+    return typeof reorder.gated === 'function' ? !!reorder.gated() : !!reorder.gated;
+  }
+
   // ── markup ────────────────────────────────────────────────────────────────
   function rowHtml(it) {
     const id = getId(it);
     const on = cfg.selectedId && String(cfg.selectedId()) === String(id);
     const rc = cfg.renderRow ? cfg.renderRow(it) : { main: esc(String(id)) };
-    const grip = (reorder && !reorder.gated)
+    const grip = (reorder && !reorderGated())
       ? '<span class="cdx-rail-grip" aria-hidden="true" title="' + esc(cfg.dragHint || 'Arrastar para reordenar') + '">' + GRIP + '</span>'
       : '';
     // rowClass(it): extra classes on the row ELEMENT, for state the consumer's own CSS keys
@@ -477,7 +487,7 @@ export function mountRail(container, cfg) {
 
   // Pointer-events drag: grip is the handle; works on touch + mouse.
   function onPointerDown(e) {
-    if (!reorder || reorder.gated) return;
+    if (!reorder || reorderGated()) return;
     const grip = e.target.closest('.cdx-rail-grip');
     if (!grip) return;
     const row = grip.closest('.cdx-rail-row');
@@ -540,8 +550,11 @@ export function mountRail(container, cfg) {
     const el = (e.target && e.target.closest) ? e.target.closest('[data-rail-search]') : null;
     if (!el) return;
     searchQuery = el.value || '';
-    renderAfterQuery();
+    // onChange BEFORE the repaint: the consumer may derive state the repaint then reads (Labs
+    // gates its drag grips on "is the list narrowed"). Repainting first would paint one keystroke
+    // behind that state, which is the two-truths bug this file already avoids elsewhere.
     if (search.onChange) search.onChange(searchQuery);
+    renderAfterQuery();
   }
 
   function wire() {
