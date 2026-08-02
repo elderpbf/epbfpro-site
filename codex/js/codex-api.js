@@ -401,6 +401,7 @@ export const releases = {
 // the trilha reads the granted apps from ct_get_turma_view's apps[] (see releases.turmaView).
 export const apps = {
   list:         (p) => call('ct_list_apps', p),           // -> { apps } (catalog: name/store_url/icon/description/enabled)
+  create:       (p) => call('ct_create_app', p),          // { app_key, name, store_url?, icon?, description?, enabled? } -> { app_key, api_key } — api_key is RAW and returned ONCE, never readable again
   updateApp:    (p) => call('ct_update_app', p),          // { app_key, name?, store_url?, icon?, description?, enabled? } (only passed fields change)
   getTurmaApps: (p) => call('ct_get_turma_apps', p),      // { turma_id } -> { apps } (grants + bound aula_number, for the toggle state)
   setTurmaApp:  (p) => call('ct_set_turma_app', p)        // { turma_id, app_key, enabled, aula_number? } (release/unrelease to an aula)
@@ -421,6 +422,16 @@ export const certificates = {
   markSigned: (p) => call('cert_mark_signed', p), // { code }
   markSent:   (p) => call('cert_mark_sent', p),   // { code }
   attachPdf:  (p) => call('cert_attach_pdf', p)   // { code, pdf_b64 }
+};
+
+// Certificates — public signer surface (track-58, no auth). Deliberately narrower
+// than `certificates` above: the Assinador desktop app has no login of its own by
+// design, so these wrap the admin actions with the constraints that make that safe
+// (no e-mail field, status locked to 'issued', writes refuse anything not 'issued').
+export const certSigner = {
+  list:       (p) => call('cert_signer_list', p),        // { } -> always status='issued', no email
+  markSigned: (p) => call('cert_signer_mark_signed', p),  // { code }
+  attachPdf:  (p) => call('cert_signer_attach_pdf', p)    // { code, pdf_b64 }
 };
 
 // track-44 — comunicados (broadcast autorado). send returns { ok, comunicado_id, reach:{bell,email,push} }.

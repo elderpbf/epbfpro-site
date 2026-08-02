@@ -25,6 +25,10 @@ function setArchived(arr) {
   if (arr == null) _store.delete('cv_labs_archived');
   else _store.set('cv_labs_archived', JSON.stringify(arr));
 }
+function setRenamed(obj) {
+  if (obj == null) _store.delete('cv_labs_renamed');
+  else _store.set('cv_labs_renamed', typeof obj === 'string' ? obj : JSON.stringify(obj));
+}
 
 const reg = await import('../js/labs-registry.js');
 
@@ -239,4 +243,60 @@ test('archivedLabs honours the stored order basis', () => {
   assert.deepEqual(reg.archivedLabs().map((l) => l.key), ['k9', 'k3'], 'archived list follows the same order');
   setOrder(null);
   setArchived(null);
+});
+
+test('labDefaultTitle returns the registry title regardless of any override', () => {
+  setRenamed(null);
+  assert.equal(reg.labDefaultTitle('k1'), 'Atenção!');
+  setRenamed({ k1: 'Atenção customizado' });
+  assert.equal(reg.labDefaultTitle('k1'), 'Atenção!', 'unaffected by an active override');
+  setRenamed(null);
+});
+
+test('isLabRenamed defaults false; setLabTitle sets an override and orderedLabs/findItem/getAllItems all reflect it', () => {
+  setRenamed(null);
+  assert.equal(reg.isLabRenamed('k1'), false, 'no override = not renamed');
+  reg.setLabTitle('k1', 'Foco Contextual');
+  assert.equal(reg.isLabRenamed('k1'), true);
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), { k1: 'Foco Contextual' });
+  assert.equal(reg.orderedLabs().find((l) => l.key === 'k1').title, 'Foco Contextual', 'orderedLabs carries the override');
+  assert.equal(reg.findItem('lab:k1').title, 'Foco Contextual', 'findItem carries the override');
+  assert.equal(reg.getAllItems().find((i) => i.id === 'lab:k1').title, 'Foco Contextual', 'getAllItems carries the override');
+  setRenamed(null);
+});
+
+test('setLabTitle trims whitespace before storing', () => {
+  setRenamed(null);
+  reg.setLabTitle('k1', '  Foco Contextual  ');
+  assert.equal(JSON.parse(_store.get('cv_labs_renamed')).k1, 'Foco Contextual');
+  setRenamed(null);
+});
+
+test('setLabTitle with blank or the default title clears the override instead of storing it', () => {
+  setRenamed({ k1: 'Foco Contextual' });
+  reg.setLabTitle('k1', '');
+  assert.equal(reg.isLabRenamed('k1'), false, 'blank clears the override');
+  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), {});
+  reg.setLabTitle('k1', 'Atenção!');
+  assert.equal(reg.isLabRenamed('k1'), false, 'same-as-default clears the override too');
+  setRenamed(null);
+});
+
+test('archived and disabled labs can still be renamed (rename is independent of visibility state)', () => {
+  setArchived(['k3']);
+  setEnabledMap({ k9: false });
+  reg.setLabTitle('k3', 'Janela Nova');
+  reg.setLabTitle('k9', 'Petição Nova');
+  assert.equal(reg.archivedLabs().find((l) => l.key === 'k3').title, 'Janela Nova');
+  assert.equal(reg.findItem('lab:k9').title, 'Petição Nova');
+  setRenamed(null);
+  setArchived(null);
+  setEnabledMap(null);
+});
+
+test('a rename override for a key no longer in the registry is simply unused (no crash)', () => {
+  setRenamed({ ghost: 'Fantasma' });
+  assert.doesNotThrow(() => reg.orderedLabs());
+  assert.equal(reg.orderedLabs().some((l) => l.title === 'Fantasma'), false);
+  setRenamed(null);
 });

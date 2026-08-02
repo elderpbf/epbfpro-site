@@ -5,8 +5,15 @@
 //   - buildAppCard(): the full card (Aplicativos tab, and inside an expanded sub-card).
 // One card builder so the two never drift. The card mirrors the app's own login screen (the
 // copy is the single source in ct_apps.description): logo + tagline + benefits + a theme-aware
-// screenshot + access note + download. The app is a Windows PC program (Microsoft Store): on
-// Windows we show Store buttons; on any other OS we hide them and say it is Windows-only.
+// screenshot + access note + the action.
+//
+// HOW THE APP IS HANDED OVER is `delivery` (track-59), read from the same description JSON:
+//   'store' (default) — a Windows PC program on the Microsoft Store. Button on Windows only;
+//                       elsewhere the card says so. This is the original behaviour, unchanged.
+//   'web'             — the app IS a site. It opens on every platform and the Windows notice
+//                       must never appear, because it would be a lie.
+// Delivery had been baked in rather than modelled: the second app is a site, so it rendered a
+// card with no action at all, and announced "Windows only" on a Mac.
 import { esc } from './utils.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
@@ -26,8 +33,16 @@ export function isWindows(win) {
 
 // The card copy lives in ct_apps.description as JSON. Parse defensively; a bad/empty value
 // yields a blank card (name + download still render), never a throw.
+const BLANK_DESC = { tagline: '', access_note: '', benefits: [], screenshots: null, delivery: 'store' };
+
+// Anything that is not the word 'web' means the Store, so a typo or an older row (every row
+// predates this field) keeps the behaviour it already had.
+export function deliveryOf(value) {
+  return value === 'web' ? 'web' : 'store';
+}
+
 export function parseDesc(raw) {
-  if (!raw) return { tagline: '', access_note: '', benefits: [], screenshots: null };
+  if (!raw) return { ...BLANK_DESC };
   try {
     const d = typeof raw === 'string' ? JSON.parse(raw) : raw;
     return {
@@ -35,10 +50,24 @@ export function parseDesc(raw) {
       access_note: d.access_note || '',
       benefits: Array.isArray(d.benefits) ? d.benefits : [],
       screenshots: (d.screenshots && (d.screenshots.light || d.screenshots.dark)) ? d.screenshots : null,
+      delivery: deliveryOf(d.delivery),
     };
   } catch (_) {
-    return { tagline: '', access_note: '', benefits: [], screenshots: null };
+    return { ...BLANK_DESC };
   }
+}
+
+// PURE. What the card offers for this app, decided in one place so the full card and the
+// collapsed row can never disagree:
+//   { kind: 'store', href }  the Store download (Windows)
+//   { kind: 'web',   href }  open the site (any platform)
+//   { kind: 'windows_only' } a Store app seen from a non-Windows device
+//   { kind: 'none' }         no URL registered yet: stay silent rather than invent a reason
+export function appAction(app, delivery, onWindows) {
+  const href = (app && app.store_url) || '';
+  if (deliveryOf(delivery) === 'web') return href ? { kind: 'web', href } : { kind: 'none' };
+  if (!onWindows) return { kind: 'windows_only' };
+  return href ? { kind: 'store', href } : { kind: 'none' };
 }
 
 function glyphHtml(key, size) {
@@ -61,11 +90,15 @@ function iconHtml(app, cls) {
   return '<span class="' + c + ' ' + c + '--ph">' + glyphHtml('grid', 24) + '</span>';
 }
 
-// A Store download link. `cls` distinguishes the top (above the print) and foot buttons.
-function downloadHtml(app, onWindows, cls) {
-  if (!onWindows || !app.store_url) return '';
-  return '<a class="cdx-tr-app-download ' + cls + '" href="' + esc(app.store_url) + '" target="_blank" rel="noopener">' +
-    glyphHtml('download', 18) + '<span>' + esc(t('apps.download')) + '</span></a>';
+// The action link for a resolved appAction. `cls` is the COMPLETE class list (the card's button
+// and the row's inline action are styled differently), `size` the glyph. Returns '' for the
+// kinds that are not a link.
+function actionHtml(action, cls, size) {
+  if (action.kind !== 'store' && action.kind !== 'web') return '';
+  const web = action.kind === 'web';
+  return '<a class="' + cls + '" href="' + esc(action.href) + '" target="_blank" rel="noopener">' +
+    glyphHtml(web ? 'external-link' : 'download', size || 18) +
+    '<span>' + esc(t(web ? 'apps.open' : 'apps.download')) + '</span></a>';
 }
 
 // Light + dark screenshots; CSS shows the one matching the active [data-theme] so it swaps
@@ -99,10 +132,11 @@ export function buildAppCard(app, opts = {}) {
   ).join('');
 
   const shots = shotsHtml(d.screenshots);
-  const topDl = downloadHtml(app, onWindows, 'cdx-tr-app-download--top');
-  const footDl = onWindows
-    ? downloadHtml(app, onWindows, 'cdx-tr-app-download--foot')
-    : '<div class="cdx-tr-app-winonly">' + esc(t('apps.windows_only')) + '</div>';
+  const action = appAction(app, d.delivery, onWindows);
+  const topDl = actionHtml(action, 'cdx-tr-app-download cdx-tr-app-download--top');
+  const footDl = action.kind === 'windows_only'
+    ? '<div class="cdx-tr-app-winonly">' + esc(t('apps.windows_only')) + '</div>'
+    : actionHtml(action, 'cdx-tr-app-download cdx-tr-app-download--foot');
 
   // Header: logo + name/tagline on the left, the top download aligned to the right.
   // Body: two columns on wide screens (benefits left, the print right), vertically
@@ -143,10 +177,10 @@ export function buildAppSub(app, opts = {}) {
   sub.setAttribute('tabindex', '0');
 
   const onWindows = isWindows(opts.window);
-  const rowDl = (onWindows && app.store_url)
-    ? '<a class="cdx-tr-item-action cdx-tr-app-row-dl" href="' + esc(app.store_url) + '" target="_blank" rel="noopener">' +
-        glyphHtml('download', 16) + '<span>' + esc(t('apps.download')) + '</span></a>'
-    : '';
+  // The row carries the action or nothing; the Windows notice is card-only (a one-line row is
+  // not the place to explain a platform).
+  const rowDl = actionHtml(appAction(app, parseDesc(app.description).delivery, onWindows),
+    'cdx-tr-item-action cdx-tr-app-row-dl', 16);
 
   sub.innerHTML =
     '<div class="cdx-tr-sub-zone cdx-tr-sub-zone--app">' + iconHtml(app, 'cdx-tr-app-sub-logo') + '</div>' +

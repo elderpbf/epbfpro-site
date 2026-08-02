@@ -12,7 +12,7 @@
 //   window.callWorker (Worker transport, set by the import below); window.pywebview.api
 //   (desktop bridge); window.WORKER_URL (set on boot); window.bsLog (debug pill)
 import '../js/worker-call.js'; // sets window.callWorker (defaults to codex-api)
-import { certificates as api, auth } from '../js/codex-api.js';
+import { certSigner as api } from '../js/codex-api.js';
 import { renderCertsPdfBase64 } from './cert-pdf.js';
 import { renderCertHtml, buildValidarUrl, formatIssuedOn } from './certificates.js';
 import { glyphWordmark, stdColors } from '../js/brand-logos.js';
@@ -29,38 +29,28 @@ const esc = (s) => String(s == null ? '' : s).replace(/[&<>"]/g, (c) => ({ '&': 
 // ── local-app bridge detection ────────────────────────────────────────────────
 // pywebview injects window.pywebview.api asynchronously and fires `pywebviewready`.
 let APP = !!(window.pywebview && window.pywebview.api);
-window.addEventListener('pywebviewready', () => { APP = true; $('#needApp').classList.add('hide'); });
+window.addEventListener('pywebviewready', () => { APP = true; $('#needApp').classList.add('hide'); bootInApp(); });
 setTimeout(() => { if (!APP && !(window.pywebview && window.pywebview.api)) $('#needApp').classList.remove('hide'); }, 1200);
 const inApp = () => APP || !!(window.pywebview && window.pywebview.api);
-
-// SHA-256 hex of the password — the bs_pw_hash auth contract (same output as
-// js/settings-auth.js hashPw; vendored inline so this standalone page doesn't pull
-// in the whole settings-drawer module).
-async function hashPw(pw) {
-  const buf = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(pw));
-  return Array.from(new Uint8Array(buf)).map((b) => b.toString(16).padStart(2, '0')).join('');
-}
 
 let _certsByCode = {};
 const _pfx = { chosen: false };
 function log(m) { $('#log').textContent = m; }
 
-// ── login ─────────────────────────────────────────────────────────────────────
-async function login() {
-  const pw = $('#pw').value;
-  if (!pw) return;
-  $('#loginMsg').textContent = '';
-  const hash = await hashPw(pw);
-  let res;
-  try { res = await auth.validate({ auth_token: hash }); }
-  catch (_) { res = { ok: false }; }
-  if (!res || !res.ok) { $('#loginMsg').textContent = 'Senha incorreta.'; return; }
-  localStorage.setItem('bs_pw_hash', hash);
-  $('#loginPanel').classList.add('hide');
+// ── boot (track-58) ─────────────────────────────────────────────────────────
+// No login, ever: Élder does not want to type or fetch anything to open this
+// page. It calls the public cert_signer_* actions (codex-api, no auth) instead
+// of the old "Senha do Codex" gate, which checked a password the product has
+// not issued since the OTP migration.
+let _booted = false;
+function bootInApp() {
+  if (_booted || !inApp()) return;
+  _booted = true;
   $('#certPanel').classList.remove('hide');
   $('#listPanel').classList.remove('hide');
-  await loadCerts();
+  loadCerts();
 }
+if (inApp()) bootInApp();
 
 // ── certificate (.pfx) pick ───────────────────────────────────────────────────
 async function choosePfx() {
@@ -158,13 +148,11 @@ async function signSelected() {
 }
 
 function busy(b) {
-  ['#signBtn', '#refreshBtn', '#pfxBtn', '#loginBtn'].forEach((s) => { const el = $(s); if (el) el.disabled = b; });
+  ['#signBtn', '#refreshBtn', '#pfxBtn'].forEach((s) => { const el = $(s); if (el) el.disabled = b; });
   if (!b) syncSign();
 }
 
 // ── wire ──────────────────────────────────────────────────────────────────────
-$('#loginBtn').addEventListener('click', login);
-$('#pw').addEventListener('keydown', (e) => { if (e.key === 'Enter') login(); });
 $('#pfxBtn').addEventListener('click', choosePfx);
 $('#refreshBtn').addEventListener('click', loadCerts);
 $('#signBtn').addEventListener('click', signSelected);
@@ -172,17 +160,3 @@ $('#selAll').addEventListener('change', (e) => {
   document.querySelectorAll('.selrow').forEach((cb) => { cb.checked = e.target.checked; });
   syncSign();
 });
-
-// If a prior session already authenticated (bs_pw_hash present), skip the login.
-(async function boot() {
-  const hash = localStorage.getItem('bs_pw_hash');
-  if (!hash) return;
-  let res;
-  try { res = await auth.validate({ auth_token: hash }); } catch (_) { res = { ok: false }; }
-  if (res && res.ok) {
-    $('#loginPanel').classList.add('hide');
-    $('#certPanel').classList.remove('hide');
-    $('#listPanel').classList.remove('hide');
-    await loadCerts();
-  }
-})();

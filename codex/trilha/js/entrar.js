@@ -63,8 +63,13 @@ async function resolveAndGo(code, els) {
   els.error.textContent = '';
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
-  let res;
-  try { res = await trail.resolveCode({ code }); } catch (_) { res = null; }
+  // "Não consegui perguntar" e "perguntei e não existe" NÃO são a mesma coisa, e tratá-las como
+  // uma só faz a tela dizer ao aluno que o código está errado quando o errado é a rede. Isso não é
+  // hipotético: foi exatamente o que disfarçou o diagnóstico de 2026-07-31 por uma rodada inteira,
+  // e o aluno que cair nisso vai ligar para o professor(a) reclamar de um código que está certo.
+  let res = null;
+  let semResposta = false;
+  try { res = await trail.resolveCode({ code }); } catch (_) { semResposta = true; }
   if (res && res.found) {
     // The code is the turma's permanent URL in its own right: land ON it (/trilha/<code>) and
     // let the student page resolve it in place. We resolve here only to validate + show an
@@ -74,7 +79,17 @@ async function resolveAndGo(code, els) {
   }
   els.state.textContent = '';
   els.btn.disabled = false;
+  if (semResposta) {
+    // O código pode estar perfeito. Apagar aqui seria punir o aluno por uma falha nossa,
+    // então a mensagem manda tentar de novo e o que ele digitou continua no campo.
+    els.error.textContent = t('entrar.offline');
+    return;
+  }
   els.error.textContent = t('entrar.not_found');
+  // Mesma regra das outras telas de código: errou, o campo esvazia e recebe o foco.
+  // Guardado atrás do if porque esta função também roda para código vindo da URL,
+  // quando não houve digitação nenhuma para desfazer.
+  if (window.CodeInput) window.CodeInput.clear(els.input);
 }
 
 // Auto-enter (Élder, 2026-06-20): NO "Continuar" banner and NO turma list. Having more
@@ -216,12 +231,14 @@ function startEmail(emailEl, root) {
       '<div class="cdx-entrar-wait-ic" aria-hidden="true">' + glyphSvg('mail', { size: 34 }) + '</div>' +
       '<h2 class="cdx-entrar-card-h">' + esc(t('login.code_title')) + '</h2>' +
       '<p class="cdx-entrar-card-p">' + esc(t('login.code_desc')) + '</p>' +
-      '<input class="cdx-entrar-field cdx-entrar-code-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
+      '<input class="cdx-entrar-field cdx-entrar-code-input" type="text" placeholder="' + esc(t('login.code_ph')) + '" aria-label="' + esc(t('login.code_label')) + '">' +
       dev +
       '<div class="cdx-entrar-error cdx-entrar-code-error" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : entryErrorText(flow.error, flow.retryAfter)) + '</div>' +
       '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-verify" type="button">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-code-input');
+    // Um só campo de código no site inteiro: maiúsculo no VALOR, tamanho certo, centralizado.
+    if (window.CodeInput) window.CodeInput.attach(input, { length: 4 });
     const verify = emailEl.querySelector('.cdx-entrar-verify');
     const err = emailEl.querySelector('.cdx-entrar-code-error');
     setTimeout(() => { try { input.focus(); } catch (_) {} }, 50);
@@ -229,7 +246,12 @@ function startEmail(emailEl, root) {
       err.textContent = '';
       verify.disabled = true; verify.textContent = t('login.sending');
       await flow.verifyCode(input.value);
-      if (flow.state === 'code' && flow.error) { err.textContent = entryErrorText(flow.error, flow.retryAfter); verify.disabled = false; verify.textContent = t('login.enroll_cta'); return; }
+      if (flow.state === 'code' && flow.error) {
+        err.textContent = entryErrorText(flow.error, flow.retryAfter);
+        // Código errado sai do campo, com o foco de volta: quem errou vai digitar outro.
+        if (window.CodeInput) window.CodeInput.clear(input);
+        verify.disabled = false; verify.textContent = t('login.enroll_cta'); return;
+      }
       settle();
     };
     verify.addEventListener('click', doVerify);
@@ -270,7 +292,15 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    input: document.getElementById('cdx-entrar-input'),
+    // NUMÉRICO, e é o alfabeto certo apesar de `ct_resolve_code` aceitar letra. O que o
+    // aluno digita é o `access_code` da turma, e ele é numérico: conferido no D1 de
+    // produção em 2026-07-31, 9 turmas, 9 códigos de 4 dígitos. A letra só aparece no
+    // `classpulse_session_id`, a coluna LEGADA que o resolvedor ainda casa para não
+    // quebrar link antigo — é compatibilidade, não é o que se pede a um aluno hoje.
+    // Élder, 2026-07-31: *"os códigos de turma são numéricos, não alfanuméricos"*.
+    input: (window.CodeInput
+      ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })
+      : document.getElementById('cdx-entrar-input')),
     btn: document.getElementById('cdx-entrar-btn'),
     error: document.getElementById('cdx-entrar-error'),
     state: document.getElementById('cdx-entrar-state'),

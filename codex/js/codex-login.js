@@ -112,6 +112,9 @@ export function mountLogin() {
   const codeStep = $('cdx-login-code-step');
   const emailEl = $('cdx-login-email');
   const codeEl = $('cdx-login-code');
+  // Um só campo de código no site inteiro (js/code-input.js): maiúsculo no VALOR (não só no
+  // que se vê), tamanho certo e centralizado. Antes disto o comportamento estava no HTML.
+  if (window.CodeInput) window.CodeInput.attach(codeEl, { length: 4 });
   const errEl = $('cdx-login-error');
   const emailBtn = $('cdx-login-email-btn');
   const codeBtn = $('cdx-login-code-btn');
@@ -161,10 +164,13 @@ export function mountLogin() {
         return;
       }
       setErr(messageFor(''));
+      if (window.CodeInput) window.CodeInput.clear(codeEl);
     } catch (e) {
       const code = (e && e.data && e.data.error) || '';
       logErr('admin_otp_verify failed: ' + (code || (e && e.message) || 'unknown'));
       setErr(messageFor(code));
+      // Código errado sai do campo, com o foco de volta (Élder 2026-07-31).
+      if (window.CodeInput) window.CodeInput.clear(codeEl);
     } finally {
       if (codeBtn) codeBtn.disabled = false;
     }

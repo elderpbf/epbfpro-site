@@ -8,7 +8,8 @@
 //
 // Public API: LABS, findItem(idStr), getAllItems(), isLabEnabled(key),
 // orderedLabs(), archivedLabs(), isLabArchived(key), setLabArchived(key,on),
-// labOrderIndex(key), setLabOrder(keys), labIcon(key).
+// labOrderIndex(key), setLabOrder(keys), labIcon(key), isLabRenamed(key),
+// setLabTitle(key,title).
 // The legacy renderSection()/LABS_GLYPH (the ClassVault "Aula" index DOM) is NOT
 // ported: Codex renders Labs natively (content/labs.js, lessons.js), so that
 // markup would be dead code emitting cv- classes the native modules forbid.
@@ -20,7 +21,9 @@
 // and an `objective` -- the Trail lab card shows all three (item-render.js). This
 // registry is the SINGLE SOURCE for lab display text: the Trail overlays these
 // onto the released lab item by lab_key (trilha/js/lab-overlay.js) so a rename
-// here reaches students on the next load, without re-seeding the DB.
+// of the `title:` field HERE (in source) reaches students on the next load,
+// without re-seeding the DB. The admin-UI rename (setLabTitle, Content > Labs)
+// is a separate, client-only override on TOP of this -- see its own comment.
 export const LABS = [
   {
     key: 'k1',
@@ -203,6 +206,48 @@ export function setLabArchived(key, on) {
   try { localStorage.setItem(LS_ARCHIVED, JSON.stringify(next)); } catch (e) { /* ignore */ }
 }
 
+// Admin rename (Content > Labs, "Renomear"): a display-title override on top of
+// the registry, same shape and same seam as the archive/order overlays above --
+// client-only for now, does not reach other admins' browsers or the public
+// Trilha (unlike editing `title:` in source, see the header comment). Storing
+// only the DIFFERENCE (default title = no entry) means a lab added later or a
+// copy edit to its registry title is never shadowed by a stale override.
+const LS_RENAMED = 'cv_labs_renamed';
+function _readRenamed() {
+  try {
+    const raw = localStorage.getItem(LS_RENAMED);
+    const obj = raw ? JSON.parse(raw) : {};
+    return (obj && typeof obj === 'object') ? obj : {};
+  } catch (e) { return {}; }
+}
+export function isLabRenamed(key) {
+  const custom = _readRenamed()[key];
+  return typeof custom === 'string' && custom.trim() !== '';
+}
+// The registry's own title for a key, ignoring any rename override -- lets a
+// caller show "revert to '<default>'" without importing LABS directly.
+export function labDefaultTitle(key) {
+  const lab = LABS.find((l) => l.key === key);
+  return lab ? lab.title : '';
+}
+// Empty string or the lab's own registry title clears the override (reverts to
+// default) instead of storing a redundant/blank entry.
+export function setLabTitle(key, title) {
+  const trimmed = (title || '').trim();
+  const lab = LABS.find((l) => l.key === key);
+  const overrides = _readRenamed();
+  if (!trimmed || (lab && trimmed === lab.title)) {
+    delete overrides[key];
+  } else {
+    overrides[key] = trimmed;
+  }
+  try { localStorage.setItem(LS_RENAMED, JSON.stringify(overrides)); } catch (e) { /* ignore */ }
+}
+function _displayTitle(lab) {
+  const custom = _readRenamed()[lab.key];
+  return (typeof custom === 'string' && custom.trim()) ? custom.trim() : lab.title;
+}
+
 // Drag-to-reorder (Content > Labs) persists here as an ordered array of keys.
 // Every consumer (the rail itself, getAllItems(), releases.js's Labs rows)
 // derives its order from orderedLabs(), so reordering in one place propagates
@@ -217,15 +262,17 @@ function _readOrder() {
   } catch (e) { return []; }
 }
 
-// LABS in the admin's chosen order. Keys no longer in the registry are
-// dropped; labs not yet in the stored order keep their registry position,
-// appended after the ordered ones (covers new labs added after the last drag).
+// LABS in the admin's chosen order, with any rename override applied to
+// `title`. Keys no longer in the registry are dropped; labs not yet in the
+// stored order keep their registry position, appended after the ordered ones
+// (covers new labs added after the last drag).
 function _allOrdered() {
   const order = _readOrder();
   const byKey = new Map(LABS.map((l) => [l.key, l]));
   const ordered = order.map((k) => byKey.get(k)).filter(Boolean);
   const seen = new Set(ordered.map((l) => l.key));
-  return ordered.concat(LABS.filter((l) => !seen.has(l.key)));
+  return ordered.concat(LABS.filter((l) => !seen.has(l.key)))
+    .map((l) => Object.assign({}, l, { title: _displayTitle(l) }));
 }
 
 // The ACTIVE labs (archived ones dropped), in the admin's chosen order. Every
@@ -275,7 +322,7 @@ function labToItem(lab) {
     type: 'lab',
     type_label: 'Lab',
     type_icon: labIcon(lab.key),
-    title: lab.title,
+    title: _displayTitle(lab),
     summary: lab.summary,
     description: lab.description || '',
     objective: lab.objective || '',

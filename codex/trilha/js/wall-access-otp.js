@@ -141,12 +141,14 @@ export function mountOtpCard(cardEl) {
       dev +
       '<div class="cdx-en-field">' +
         '<label class="cdx-en-label" for="cdx-en-code">' + esc(t('login.code_label')) + '</label>' +
-        '<input id="cdx-en-code" class="cdx-en-input" type="text" inputmode="text" autocomplete="one-time-code" maxlength="4" placeholder="' + esc(t('login.code_ph')) + '">' +
+        '<input id="cdx-en-code" class="cdx-en-input" type="text" placeholder="' + esc(t('login.code_ph')) + '">' +
       '</div>' +
       '<div class="cdx-en-error' + (flow.codeStillValid ? ' cdx-en-ok' : '') + '" aria-live="polite">' + esc(flow.codeStillValid ? t('login.code_still_valid') : errorText(flow.error, flow.retryAfter)) + '</div>' +
       '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta cdx-en-verify">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button type="button" class="cdx-en-resend">' + esc(t('login.resend')) + '</button>';
     const codeEl = cardEl.querySelector('#cdx-en-code');
+    // Um só campo de código no site inteiro (js/code-input.js).
+    if (window.CodeInput) window.CodeInput.attach(codeEl, { length: 4 });
     const verify = cardEl.querySelector('.cdx-en-verify');
     const resend = cardEl.querySelector('.cdx-en-resend');
     setTimeout(() => { try { codeEl.focus(); } catch (_) {} }, 50);

@@ -220,3 +220,22 @@
 }
 .cdx-clamp.is-open { max-height: none; }
 .cdx-clamp.is-open::after { content: none; }
+
+/* ── CAMPO DE CÓDIGO (OTP), um só para todas as telas (js/code-input.js) ──────*/
+/* Élder 2026-07-31: "o campo deve permitir apenas a quantidade esperada de caracteres,
+   centralizados e auto uppercase", e "isso tem que ser onde eles tiverem". Antes disto
+   eram CINCO campos escritos à mão, cada um com sua combinação, um com o estilo dentro
+   do HTML.
+   O `text-transform` aqui é só para o campo não piscar em minúsculo enquanto se digita:
+   quem sobe o VALOR de verdade é o js, porque `text-transform` muda o que se vê e não o
+   que se envia (o campo mostrava RPBH e mandava `rpbh`).
+   O `text-indent` compensa o `letter-spacing`: sem ele o espaço depois da última letra
+   empurra o texto para a esquerda e o "centralizado" fica torto. */
+.pia-code {
+  text-align: center;
+  text-transform: uppercase;
+  letter-spacing: .3em;
+  text-indent: .3em;
+  font-variant-numeric: tabular-nums;
+  font-weight: 600;
+}
