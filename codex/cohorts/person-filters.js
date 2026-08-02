@@ -22,6 +22,7 @@ import { esc } from '../js/dom.js';
 import { filterOptions, hasStatus, hasPending } from './students-filters.js';
 import { SORT_DEFAULT_DIR } from './person-list.js';
 import { accessOf } from '../js/access-model.js';
+import { makeMatcher } from '../js/text-search.js';
 
 export function emptyFilterState() {
   return { search: '', client: '', status: '', verified: '', turmas: '', sort: 'name', dir: 'asc' };
@@ -111,7 +112,11 @@ function accessRank(p, now) {
 // thing in the dossiê as in the roster.
 export function applyFilters(people, state) {
   const s = state || emptyFilterState();
-  const q = String(s.search || '').trim().toLowerCase();
+  // Shared matcher (js/text-search.js): folds case AND accents, so "joao" finds
+  // "João" and "inacio" finds "Inácio". A student roster is the surface where
+  // that matters most — the name was typed by the student, the query by Élder.
+  // Hoisted out of the filter: one matcher for the whole list, not per person.
+  const hit = makeMatcher(s.search);
   const rows = (people || []).filter((p) => {
     if (s.turmas === 'single' && p.turma_count !== 1) return false;
     if (s.turmas === 'multi' && p.turma_count <= 1) return false;
@@ -121,7 +126,7 @@ export function applyFilters(people, state) {
     if (s.status === 'approved' && hasPending(p)) return false;
     if (s.verified === 'yes' && !p.email_verified) return false;
     if (s.verified === 'no' && p.email_verified) return false;
-    if (q && !(nameOf(p).toLowerCase().includes(q) || String(p.email || '').toLowerCase().includes(q))) return false;
+    if (!hit(nameOf(p), p.email)) return false;
     return true;
   });
   // One comparator per COLUMN, each written in its natural ("asc") reading. The direction multiplies

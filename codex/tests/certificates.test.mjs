@@ -236,6 +236,19 @@ describe('filterCerts', () => {
     assert.equal(res[0].code, 'A1');
   });
 
+  // Holder names come from the student's own enrolment, so they carry accents;
+  // the query is typed by whoever is looking for the certificate. Both spellings
+  // must find the same person (js/text-search.js).
+  test('query ignores accents in both directions', () => {
+    const accented = [
+      { code: 'E5', holder_name: 'João Inácio', turma_id: 30, status: 'issued', course_title: 'IA' },
+      { code: 'F6', holder_name: 'Ana Silva',   turma_id: 30, status: 'issued', course_title: 'IA' },
+    ];
+    assert.equal(certs.filterCerts(accented, { q: 'joao' })[0].code, 'E5');
+    assert.equal(certs.filterCerts(accented, { q: 'João' })[0].code, 'E5');
+    assert.equal(certs.filterCerts(accented, { q: 'inacio' })[0].code, 'E5');
+  });
+
   test('combined filters: turma + status', () => {
     const res = certs.filterCerts(fixtures, { turma_id: '20', status: 'issued' });
     assert.equal(res.length, 1);

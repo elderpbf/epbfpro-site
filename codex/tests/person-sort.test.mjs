@@ -170,3 +170,27 @@ test('filtering still applies before sorting', () => {
   ];
   assert.deepEqual(names(list, { sort: 'name', status: 'pending' }), ['Ana']);
 });
+
+// ── search (js/text-search.js) ────────────────────────────────────────────────
+// A roster holds names the STUDENT typed at enrolment, searched by a query Élder
+// types while a class is running. Requiring the accents to line up made the box
+// answer "no such person" for people who are right there on the list.
+test('search ignores accents in both directions', () => {
+  const list = [person({ id: 1, name: 'João Inácio' }), person({ id: 2, name: 'Ana Silva' })];
+  assert.deepEqual(names(list, { search: 'joao' }), ['João Inácio']);
+  assert.deepEqual(names(list, { search: 'João' }), ['João Inácio']);
+  assert.deepEqual(names(list, { search: 'inacio' }), ['João Inácio']);
+});
+
+test('search still matches the email as well as the name', () => {
+  const list = [
+    person({ id: 1, name: 'Ana Silva', email: 'ana@tjse.jus.br' }),
+    person({ id: 2, name: 'Bruno Costa', email: 'bruno@x.com' }),
+  ];
+  assert.deepEqual(names(list, { search: 'tjse' }), ['Ana Silva']);
+});
+
+test('a blank search matches everyone', () => {
+  const list = [person({ id: 1, name: 'Ana' }), person({ id: 2, name: 'Bruno' })];
+  assert.deepEqual(names(list, { search: '   ' }), ['Ana', 'Bruno']);
+});
