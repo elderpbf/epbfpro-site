@@ -694,6 +694,25 @@
     });
   }
 
+  /* ---------- copiar na mão (selecionar + Ctrl+C) ---------- */
+  /* É AQUI que a demo se prova: quem copia a página "limpa" leva o texto escondido junto.
+     Sem este handler o navegador copia só o que está visível (o .inj é display:none no modo
+     olho) e a injeção não viaja. Mesmo extrator do botão, nunca um segundo. */
+  document.addEventListener('copy', function (e) {
+    var sel = window.getSelection();
+    if (!sel || sel.isCollapsed || !sel.rangeCount || !e.clipboardData) return;
+    if (!sel.getRangeAt(0).intersectsNode(main)) return;   /* seleção fora do conto: cópia normal */
+    var texto = extractPoisonedStory();
+    if (!texto) return;
+    e.clipboardData.setData('text/plain', texto);
+    /* o sabor HTML precisa ir envenenado também: Word/Docs/ChatGPT colam o HTML, e sem
+       isto o navegador serializaria de volta só o trecho visível */
+    e.clipboardData.setData('text/html', texto.split('\n\n').map(function (p) {
+      return '<p>' + p.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</p>';
+    }).join(''));
+    e.preventDefault();
+  });
+
   /* ---------- desktop: rail por hover (só onde há hover de verdade) ---------- */
   if (canHover) {
     var hideTimer = null;

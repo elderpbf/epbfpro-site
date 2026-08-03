@@ -542,7 +542,7 @@ export default {
   'cohorts.turma_name_placeholder': 'E.g. Group A',
   'cohorts.field_whatsapp':         'WhatsApp group URL',
   'cohorts.field_whatsapp_hint':    'optional',
-  'cohorts.field_classpulse':       'ClassPulse session',
+  'cohorts.field_classpulse':       'Session link',
   'cohorts.session_open_title':     'Open the session connected to this turma',
   'cohorts.session_none_title':     'No session connected to this turma',
   'cohorts.field_trail':            'Trail link',
