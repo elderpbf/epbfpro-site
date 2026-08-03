@@ -929,9 +929,13 @@ function _openTurmaForm(turma) {
           '<input type="text" id="cdx-tf-whatsapp" value="' + _esc(isEdit ? (turma.whatsapp_url || '') : '') + '" placeholder="https://chat.whatsapp.com/...">' +
           '<small class="cdx-field-hint">' + t('cohorts.field_whatsapp_hint') + '</small>' +
         '</div>' +
-        '<div class="cdx-field"><label>' + t('cohorts.field_classpulse') + '</label>' +
-          '<select id="cdx-tf-classpulse">' + cpOptions + '</select>' +
-        '</div>' +
+        // Only on EDIT: a turma being born has no session yet (ct_create_turma mints it),
+        // so on create this select could only ever offer the wrong answer.
+        (isEdit
+          ? '<div class="cdx-field"><label>' + t('cohorts.field_classpulse') + '</label>' +
+              '<select id="cdx-tf-classpulse">' + cpOptions + '</select>' +
+            '</div>'
+          : '') +
         '<div class="cdx-modal-actions">' +
           '<button class="cdx-btn" id="cdx-tf-cancel">' + t('cohorts.cancel') + '</button>' +
           '<button class="cdx-btn cdx-btn-primary" id="cdx-tf-save">' + (isEdit ? t('cohorts.save') : t('cohorts.create')) + '</button>' +
@@ -955,7 +959,8 @@ function _openTurmaForm(turma) {
       const name      = bd.querySelector('#cdx-tf-name').value.trim();
       const display   = bd.querySelector('#cdx-tf-display').value.trim();
       const whatsapp  = bd.querySelector('#cdx-tf-whatsapp').value.trim();
-      const cpSession = bd.querySelector('#cdx-tf-classpulse').value;
+      const cpSessionEl = bd.querySelector('#cdx-tf-classpulse');   // edit only
+      const cpSession = cpSessionEl ? cpSessionEl.value : '';
       if (!name) { toast.err(t('cohorts.name_required')); return; }
 
       const slug = isEdit ? turma.slug : _slugify(name);
@@ -989,14 +994,18 @@ function _openTurmaForm(turma) {
             whatsapp !== (turma.whatsapp_url || '') ||
             cpSession !== (String(turma.classpulse_session_id || ''))
           );
-          const needMeta = isEdit ? metaChanged : !!(whatsapp || cpSession);
+          const needMeta = isEdit ? metaChanged : !!whatsapp;
           if (needMeta) {
-            return api.updateTurmaMeta({
+            const meta = {
               client_slug: _selectedClientSlug,
               slug: isEdit ? turma.slug : slug,
               whatsapp_url: whatsapp || null,
-              classpulse_session_id: cpSession || null,
-            });
+            };
+            // NEVER send this key on create: ct_update_turma_meta treats the key's PRESENCE
+            // as the instruction (null = unlink), so a create that also saved a WhatsApp URL
+            // wiped the session ct_create_turma had just linked.
+            if (isEdit) meta.classpulse_session_id = cpSession || null;
+            return api.updateTurmaMeta(meta);
           }
           return Promise.resolve();
         }).then(() => {
@@ -1395,7 +1404,13 @@ function _renderDossier(turma) {
   // the crash and the minute-long Aulas sub-tab were the same bug. Empty is a legitimate answer
   // (a client with no courses yet, exactly what staging is), not a reason to ask forever.
   if (!_dossierDepsTried && ((!_turmaCourses || !_turmaCourses.length) || (!_cpSessions || !_cpSessions.length))) {
-    _ensureDossierDeps(() => { if (_dossierTurma === turma) _renderDossier(turma); });
+    // Match by client/slug, NOT by object identity: _loadAll() swaps in a fresh turma object,
+    // and an identity check silently dropped the re-render that fills these selects (the
+    // just-created turma then showed "Nenhuma" until F5).
+    _ensureDossierDeps(() => {
+      const cur = _dossierTurma;
+      if (cur && cur.client_slug === turma.client_slug && cur.slug === turma.slug) _renderDossier(cur);
+    });
   }
 
   _loadTurmaAulas(turma);

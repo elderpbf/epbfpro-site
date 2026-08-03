@@ -47,6 +47,34 @@ test('the new i18n keys exist in BOTH dictionaries', async () => {
   }
 });
 
+test('creating a turma never sends classpulse_session_id (it would unlink the fresh session)', () => {
+  // ct_create_turma mints the session and links it; ct_update_turma_meta reads the KEY'S
+  // PRESENCE as the instruction, so sending it as null right after (which the create form
+  // did whenever a WhatsApp URL was filled in) wiped the link. Prod hit this on
+  // tjse/curso-de-formacao-2026, 2026-08-03.
+  assert.match(cohortsSrc, /if \(isEdit\) meta\.classpulse_session_id = cpSession \|\| null;/,
+    'the meta key is set on edit only');
+  assert.match(cohortsSrc, /const needMeta = isEdit \? metaChanged : !!whatsapp;/,
+    'create decides on the WhatsApp field alone');
+  assert.ok(!/classpulse_session_id: cpSession \|\| null/.test(cohortsSrc),
+    'the unconditional payload key is gone');
+});
+
+test('the session select is offered on EDIT only (on create the session does not exist yet)', () => {
+  assert.match(cohortsSrc, /\(isEdit\s*\n?\s*\?\s*'<div class="cdx-field"><label>' \+ t\('cohorts\.field_classpulse'\)/,
+    'the form renders the select behind isEdit');
+  assert.match(cohortsSrc, /cpSessionEl \? cpSessionEl\.value : ''/,
+    'save reads the select defensively, since it is absent on create');
+});
+
+test('the dossier deps re-render matches the turma by client/slug, not object identity', () => {
+  // _loadAll() swaps in a fresh turma object, so an identity check dropped the re-render
+  // that fills the course/session selects and the just-created turma showed "Nenhuma".
+  assert.match(cohortsSrc, /cur\.client_slug === turma\.client_slug/);
+  assert.ok(!/_ensureDossierDeps\(\(\) => \{ if \(_dossierTurma === turma\)/.test(cohortsSrc),
+    'the identity comparison is gone');
+});
+
 test('no em dashes in the touched module sources', () => {
   assert.ok(!/—/.test(sessionsSrc), 'sessions.js has no em dash');
 });
