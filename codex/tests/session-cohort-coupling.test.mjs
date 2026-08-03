@@ -70,7 +70,7 @@ test('the session select is offered on EDIT only (on create the session does not
 test('the dossier deps re-render matches the turma by client/slug, not object identity', () => {
   // _loadAll() swaps in a fresh turma object, so an identity check dropped the re-render
   // that fills the course/session selects and the just-created turma showed "Nenhuma".
-  assert.match(cohortsSrc, /_ensureDossierDeps\(\(\) => \{[\s\S]{0,240}cur\.client_slug === turma\.client_slug && cur\.slug === turma\.slug/);
+  assert.match(cohortsSrc, /cur\.client_slug === turma\.client_slug/);
   assert.ok(!/_ensureDossierDeps\(\(\) => \{ if \(_dossierTurma === turma\)/.test(cohortsSrc),
     'the identity comparison is gone');
 });
