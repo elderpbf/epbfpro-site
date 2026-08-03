@@ -234,6 +234,23 @@ test('relaunch/bank-launch keeps the correct answer (resolves it from history co
   assert.match(src, /correctForLaunch\s*\(/, '_launchFromBank resolves the correct answer via the shared helper');
 });
 
+// reveal_answer é do ALUNO (governa o telão), não do professor. O histórico do host é a
+// tela privada dele, e condicioná-lo à flag escondia o gabarito de quem escreveu a
+// pergunta. Pior: encerrar a SESSÃO zera reveal_answer de todas as perguntas dela, então
+// o verde sumia retroativamente de toda aula passada (medido em produção 2026-08-03: 130
+// perguntas encerradas, reveal_answer falso nas 130). Os dois lados desta divisão são
+// fixados juntos de propósito, para ninguém "consertar" o lado errado depois.
+test('o histórico do host marca a correta sempre, sem depender de reveal_answer', () => {
+  const src = read('../questions/live-host.js');
+  assert.match(src, /const isCorrect = hCorrect\.indexOf\(i\) !== -1;/, 'o verde sai só do gabarito');
+  assert.ok(!/q\.reveal_answer\s*&&/.test(src), 'a condição de reveal_answer não voltou');
+});
+
+test('o lado do ALUNO continua respeitando reveal_answer', () => {
+  const src = read('../questions/question-element.js');
+  assert.match(src, /reveal_answer === true/, 'a tela do aluno segue exigindo a revelação');
+});
+
 test('history cards expose a delete-from-history action wired to the facade', () => {
   const src = read('../questions/live-host.js');
   assert.match(src, /data-hi-act="delete"/, 'history card carries an Excluir button');

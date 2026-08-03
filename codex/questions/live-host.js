@@ -516,7 +516,13 @@ function _renderHistory(closedQs) {
       const hCorrect = Array.isArray(q.correct_answers) ? q.correct_answers : [];
       resultsHtml = '<div class="cdx-hi-results">' + q.options.map((opt, i) => {
         const pct = hDenom > 0 ? Math.round(q.answer_counts[i] / hDenom * 100) : 0;
-        const isCorrect = q.reveal_answer && hCorrect.indexOf(i) !== -1;
+        // NOT gated on q.reveal_answer: that flag is the STUDENT's, it governs whether the
+        // display shows the answer, and this is the host's own private history. Gating on it
+        // meant the gabarito only ever showed after an Encerrar with "Revelar" ticked, and
+        // even then not for long, since closing the session resets reveal_answer across every
+        // question in it. Measured 2026-08-03: 130 closed questions in prod, reveal_answer
+        // false on all 130, so this green had never appeared for a single past class.
+        const isCorrect = hCorrect.indexOf(i) !== -1;
         return '<div class="cdx-hi-bar"><div class="cdx-hi-bar-label"><span class="cdx-hi-bar-badge ' + (isCorrect ? 'correct' : '') + '">' +
           LETTERS[i] + (isCorrect ? ' ✓' : '') + '</span><span class="cdx-hi-bar-text">' + _esc(opt) + '</span></div>' +
           '<div class="cdx-hi-bar-pct">' + pct + '%</div><div class="cdx-hi-bar-count">' + q.answer_counts[i] + '</div></div>';
