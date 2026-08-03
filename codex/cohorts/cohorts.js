@@ -75,7 +75,6 @@ let _clients = [];
 let _selectedClientSlug = null;
 let _expandedClient = null; // accordion: the one client group whose turmas are open
 let _turmas = [];        // ALL turmas across clients (merged Concept-A list)
-let _turmaSearch = '';   // live filter for the merged turma list
 let _turmaAulas = [];
 let _aulaRail = null;           // the aula-hub list is the shared list-rail (js/list-rail.js)
 let _relClientSlug = null;
@@ -199,12 +198,12 @@ function _readFileAsBase64(file) {
 }
 
 // ── IDs for pane elements (so we can querySelector safely) ──────────────────
-// Concept A merges Clientes+Turmas into ONE grouped list; only `list`, the
-// `search` box, and the new-client footer button remain. `aulasList` still
-// names the aula sub-list rendered inside the dossier.
+// Concept A merges Clientes+Turmas into ONE grouped list; only `list` and the
+// new-client footer button remain. `aulasList` still names the aula sub-list
+// rendered inside the dossier. (The search box is the RAIL's now, so it has no
+// id here: js/list-rail.js renders and owns it.)
 const IDS = {
   list:           'cdx-cohorts-list',
-  search:         'cdx-cohorts-search',
   aulasList:      'cdx-aulas-list',
   btnNewClient:   'cdx-btn-new-client',
 };
@@ -338,7 +337,17 @@ function _buildNavRail() {
     renderRow: (tm) => ({ main: _turmaRowMain(tm) }),
     // Phase accent + archived dimming live on the row element itself (border-left: var(--ph)).
     rowClass: (tm) => _turmaPhase(tm).cls + (tm.status === 'archived' ? ' is-archived' : ''),
-    emptyText: () => _navNotice || t(_turmaSearch.trim() ? 'cohorts.no_search_results' : 'cohorts.no_clients'),
+    // The search box is BACK (track-56 fase 4). It had been lost in the migration to this rail:
+    // the id and the .cdx-cohorts-search rules survived, and _navModel still filtered by a query
+    // variable that no input ever wrote to, so the code read as if Clientes had a search while
+    // the screen had none. The rail owns the query now, so there is nothing left to drift.
+    // A turma is findable by its own name, by the course booked into it, and by the CLIENT it
+    // belongs to, which is how Élder actually looks for one ("a turma do TJSE").
+    search: {
+      fields: (tm) => [tm.name, tm.display_name, tm.course_title, _clientNameOf(tm.client_slug)],
+      placeholder: t('cohorts.search_ph'),
+    },
+    emptyText: (q) => _navNotice || t(String(q || '').trim() ? 'cohorts.no_search_results' : 'cohorts.no_clients'),
     sections: {
       of: (tm) => tm.client_slug,
       list: () => _navModel().map((g) => ({ id: g.client.slug, client: g.client, band: g.band })),
@@ -448,23 +457,25 @@ const _SECTIONS = ['ativo', 'futuro', 'inativo'];
 // The ONE shape both rail callbacks read (items + sections.list): the visible clients, each
 // with its sorted turmas and its status band. Derived, never stored — a single source means
 // the row list and the section list cannot disagree about what is on screen.
+// The client's display name, for the rail's search fields (a turma carries only the slug).
+function _clientNameOf(slug) {
+  const c = _clients.find((x) => x.slug === slug);
+  return c ? (c.display_name || c.name || '') : '';
+}
+
 function _navModel() {
-  const q = (_turmaSearch || '').trim().toLowerCase();
   const byClient = {};
   _turmas.forEach((tm) => { (byClient[tm.client_slug] = byClient[tm.client_slug] || []).push(tm); });
+  // NO search filtering here any more: the rail owns the query, narrows `items` itself, and
+  // forces hideWhenEmpty on every level while a search is live, so a client whose turmas all miss
+  // disappears on its own. This function is back to answering one question, "what exists".
   return _clients
     .filter((c) => c.status !== 'archived')
     .map((c) => {
       const all = byClient[c.slug] || [];
-      const turmas = q
-        ? all.filter((tm) =>
-            String(tm.name || '').toLowerCase().includes(q) ||
-            String(tm.display_name || '').toLowerCase().includes(q))
-        : all;
       // band from ALL the client's turmas; rows sorted (future on top).
-      return { client: c, turmas: _sortTurmas(turmas), band: _clientStatus(all) };
-    })
-    .filter((g) => !q || g.turmas.length);   // a search hides clients with no hit
+      return { client: c, turmas: _sortTurmas(all), band: _clientStatus(all) };
+    });
 }
 
 function _renderList() {
@@ -2216,7 +2227,6 @@ export function mount(viewEl, ctx) {
   _clients = [];
   _selectedClientSlug = null;
   _turmas = [];
-  _turmaSearch = '';
   _turmaAulas = [];
   _relClientSlug = (ctx && ctx.fclient) || null;
   _relTurmaSlug = (ctx && ctx.fturma) || null;

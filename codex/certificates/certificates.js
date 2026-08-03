@@ -26,6 +26,7 @@ import { ementaToCertModules } from '../js/ementa.js';
 import { participantTier, tierLabelKey, tierTitleKey, tierBadgeClass } from '../js/participant-tier.js';
 import { generateQrDataUrl, generateQrSvg } from './vendor/qr.js';
 import { glyphSvg } from '../js/glyphs.js';
+import { makeMatcher } from '../js/text-search.js';
 import {
   CERT_TEMPLATES, CERT_THEMES, isTemplate, isTheme, defaultMeta,
   buildCertData, renderFrontPage, renderBackPage, renderCertificate, hydrate, autofitNames, autofitCurriculum,
@@ -211,7 +212,9 @@ export function filterCerts(certs, filters) {
     out = out.filter((c) => set.has(String(c.turma_id)));
   }
   if (status)   out = out.filter((c) => c.status === status);
-  if (q)        out = out.filter((c) => (c.holder_name || '').toLowerCase().includes(q.toLowerCase()));
+  // Shared matcher (js/text-search.js): folds case AND accents, so "joao" finds
+  // "João" — a certificate holder list is exactly where accented names live.
+  if (q)        { const hit = makeMatcher(q); out = out.filter((c) => hit(c.holder_name)); }
   // issued_on is an ISO yyyy-mm-dd string, so lexicographic compare == date compare.
   // A cert without an issued_on is excluded while any date bound is active.
   if (date_from) out = out.filter((c) => c.issued_on && c.issued_on >= date_from);

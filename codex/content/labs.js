@@ -25,6 +25,7 @@ import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { mountRail } from '../js/list-rail.js';
+import { makeMatcher } from '../js/text-search.js';
 import { content as api } from '../js/codex-api.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
@@ -34,6 +35,7 @@ const LS_KEY = 'cv_labs_enabled';
 let _viewEl = null;
 let _selectedKey = null;
 let _mode = 'active';     // 'active' = the labs list; 'archived' = the Arquivados drawer
+let _statusFilter = 'all';   // 'all' | 'on' | 'off', the rail's filter chips (active list only)
 let _rail = null;         // the left labs list is the shared list-rail (js/list-rail.js)
 let _onClick = null;
 let _onChange = null;
@@ -63,9 +65,72 @@ function _labs() {
   const labs = orderedLabs();
   return Array.isArray(labs) ? labs : null;
 }
-// The list currently on screen: the active labs, or the archived drawer.
+
+// Which values a lab is searchable BY. The rail owns the query and the input; this is the
+// consumer's whole side of the search contract. The KEY is in there on purpose: Élder refers to
+// labs by number out loud ("põe o k22 na aula"), so typing k22 has to land on it.
+const _SEARCH_FIELDS = (lab) => [lab.title, lab.summary, lab.key];
+
+// The enabled/disabled chips. The status filter is CONSUMER state (the rail's contract for
+// chips), so it narrows the list here, before the rail ever sees it; the free-text query is the
+// rail's and is applied after. Archived is not a chip: it is already a separate drawer with its
+// own rows (no switch, a Restaurar button), and folding it in would mean one list showing two
+// kinds of row.
+// Pure, exported for tests. `isEnabled(key)` is injected rather than read here so the core is
+// testable without localStorage, the same shape content/items.js uses for applyItemSearchSort.
+export function applyLabStatusFilter(labs, status, isEnabled) {
+  const arr = labs || [];
+  if (status === 'on')  return arr.filter((l) => isEnabled(l.key));
+  if (status === 'off') return arr.filter((l) => !isEnabled(l.key));
+  return arr.slice();
+}
+
+// Pure, exported for tests. The badges are counted over the SEARCHED list but IGNORE the active
+// chip, so each one answers "how many would I get if I clicked this"; counting them post-chip
+// instead would print 0 on every chip you are not already standing on.
+export function labChipCounts(labs, isEnabled, query) {
+  const hit = makeMatcher(query);
+  const found = (labs || []).filter((l) => hit(_SEARCH_FIELDS(l)));
+  const on = found.filter((l) => isEnabled(l.key)).length;
+  return { all: found.length, on, off: found.length - on };
+}
+
+// Pure, exported for tests. Drag reorders only the rows you can SEE, but labs-registry.setLabOrder
+// REPLACES the whole stored order with whatever list it is handed. Before search and chips existed
+// the visible list was always the complete active list, so passing it straight through was right.
+// It no longer is: with a query or a chip on, writing the visible ids back would drop every
+// filtered-out lab to the end of the order, silently rearranging labs the user cannot even see.
+// So the visible ids are poured back into the SLOTS they already occupied, which reorders exactly
+// what was dragged and leaves the hidden labs where they were.
+export function mergeVisibleOrder(allKeys, visibleKeys) {
+  const all = allKeys || [];
+  const moved = (visibleKeys || []).filter((k) => all.indexOf(k) !== -1);
+  const slots = [];
+  all.forEach((k, i) => { if (moved.indexOf(k) !== -1) slots.push(i); });
+  const out = all.slice();
+  slots.forEach((slot, i) => { out[slot] = moved[i]; });
+  return out;
+}
+
+// Is the list on screen a SUBSET of the real order? True while a chip other than "Todos" is on,
+// or while the rail holds a query. Reorder is switched off in that state (see cfg.reorder.gated).
+function _isNarrowed() {
+  if (_statusFilter !== 'all') return true;
+  return !!(_rail && String(_rail.query() || '').trim());
+}
+
+// The list currently on screen: the active labs (minus the status chip), or the archived drawer.
 function _currentList() {
-  return _mode === 'archived' ? archivedLabs() : (_labs() || []);
+  return _mode === 'archived' ? archivedLabs() : applyLabStatusFilter(_labs(), _statusFilter, _isEnabled);
+}
+
+function _chips(query) {
+  const n = labChipCounts(_labs(), _isEnabled, query);
+  return [
+    { key: 'all', label: t('labs.filter_all'), count: n.all },
+    { key: 'on',  label: t('labs.filter_on'),  count: n.on },
+    { key: 'off', label: t('labs.filter_off'), count: n.off },
+  ];
 }
 function _labByKey(key) {
   return _currentList().find((l) => String(l.key) === String(key)) || null;
@@ -211,12 +276,46 @@ function _buildRail() {
     onSelect: (key) => { _selectedKey = key; _rail.render(); _renderPreview(); },
     rowSelectIgnore: '.cdx-lab-switch, .cdx-lab-rowbtn',
     footer: () => _footerHtml(),
+    // Free text over title + summary + key, accent-folded by js/text-search.js. Works in the
+    // Arquivados drawer too: that list only grows, and it is where you go looking for one
+    // specific lab you put away months ago.
+    search: { fields: _SEARCH_FIELDS, placeholder: t('labs.search_ph') },
+    emptyText: (q) => ((q || '').trim() ? t('labs.empty_search') : t('labs.empty_filter')),
   };
   // Reorder only in the active list (archived labs have no drag grip). Order is
   // registry-wide (labs-registry.setLabOrder), so Presets/Lessons/Liberações
   // inherit the same order via orderedLabs() too.
-  if (!archived) cfg.reorder = { onReorder: (keys) => { setLabOrder(keys); _rail.render(); } };
+  if (!archived) {
+    cfg.reorder = {
+      // No grip while the list is narrowed. Dragging row 2 above row 1 when those are labs #5 and
+      // #19 of the real order has no honest answer: keep their slots and the lab you did NOT drag
+      // jumps 14 places, or close the gap and every hidden lab shifts. The order you cannot see is
+      // not the order you are arranging, so the affordance goes away until the list is whole again.
+      gated: () => _isNarrowed(),
+      onReorder: (keys) => {
+        // Belt and braces: gated blocks the drag, and this still merges rather than overwrites, so
+        // a partial list can never wipe the order of the labs it is hiding.
+        // _labs() is still the PRE-drag order here (setLabOrder has not run yet), which is
+        // exactly the list mergeVisibleOrder needs to know which slots the visible rows held.
+        setLabOrder(mergeVisibleOrder((_labs() || []).map((l) => l.key), keys));
+        _rail.render();
+      },
+    };
+    // Chips only in the active list: inside the drawer every lab is archived, so an
+    // enabled/disabled split there would offer a cut that answers nothing.
+    cfg.filter = { chips: _chips, active: () => _statusFilter, onFilter: _setStatusFilter };
+  }
   _rail = mountRail(el, cfg);
+}
+
+// Picking a chip narrows the list, so the selection may no longer be in it; re-resolve before
+// repainting, the same move _switchMode and _archive already make. The rail's own search query
+// survives this render (the rail owns it and re-emits it as the input's value).
+function _setStatusFilter(key) {
+  _statusFilter = key || 'all';
+  _selectedKey = _resolveSelection(_currentList(), _selectedKey);
+  if (_rail) _rail.render();
+  _renderPreview();
 }
 
 function _renderList() {

@@ -78,7 +78,9 @@ export const SHAPES = [
     },
   },
   {
-    name: 'cohorts CLIENTES: sections + bands + exclusive + renderHead + emptyText',
+    // Gained a real `search` in track-56 fase 4: Clientes had lost its box in the migration to
+    // this rail and nobody noticed, because the filter code and the CSS stayed behind.
+    name: 'cohorts CLIENTES: search + sections + bands + exclusive + renderHead + emptyText',
     cfg: {
       title: 'Clientes',
       add: { label: '+', title: 'Novo cliente', onAdd: () => {} },
@@ -88,7 +90,8 @@ export const SHAPES = [
       rowClass: (t) => (t.id === 't1' ? 'cdx-ph-live' : 'cdx-ph-done is-archived'),
       selectedId: () => 'acme/t1',
       onSelect: () => {},
-      emptyText: () => 'Nenhum cliente',
+      search: { fields: (t) => [t.name, t.client], placeholder: 'Buscar turma, curso ou cliente' },
+      emptyText: (q) => (String(q || '').trim() ? 'Nenhuma turma encontrada.' : 'Nenhum cliente'),
       sections: {
         of: (t) => t.client,
         list: () => CLIENTS,
@@ -159,6 +162,26 @@ export const SHAPES = [
       items: () => [{ id: 's1', n: 'S1' }],
       getId: (s) => s.id,
       renderRow: (s) => ({ main: s.n }),
+    },
+  },
+  {
+    // content/labs.js — the first consumer of BOTH search and the (long-declared, never used)
+    // filter chips. Freezing it pins the anatomy Élder chose: the search row sits between the
+    // title and the chips (architecture/list-rail.md §3).
+    name: 'labs: search + filter chips (chips as a function of the query)',
+    cfg: {
+      items: () => [{ key: 'k5', title: 'Tokens' }, { key: 'k22', title: 'Próximo Token' }],
+      getId: (l) => l.key,
+      renderRow: (l) => ({ main: l.title }),
+      selectedId: () => 'k5',
+      onSelect: () => {},
+      search: { fields: (l) => [l.title, l.key], placeholder: 'Buscar lab' },
+      filter: {
+        chips: () => [{ key: 'all', label: 'Todos', count: 2 }, { key: 'on', label: 'Ativos', count: 2 }],
+        active: () => 'all',
+        onFilter: () => {},
+      },
+      footer: () => '<button>Arquivados (0)</button>',
     },
   },
 ];
