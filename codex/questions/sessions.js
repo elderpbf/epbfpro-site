@@ -17,6 +17,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as liveHost from './live-host.js';
 import { mountRail } from '../js/list-rail.js';
+import { sessionLabel } from '../js/session-label.js';
 
 let _viewEl = null;
 let _cleanup = [];
@@ -63,14 +64,11 @@ function _fmtDate(iso) {
 }
 
 // ── Session list (the picker) ───────────────────────────────
-// The rail owns the row shell; this is only the inside. A turma-linked session is labeled
-// "Cliente · Turma" (list_sessions joins the turma + client); a standalone (avulsa) Q&A
-// session keeps its own title. The live pill goes in the row's act slot, on the right,
-// which is exactly where the bespoke card had it.
+// The rail owns the row shell; this is only the inside. The naming rule itself is
+// js/session-label.js, shared with the cohorts dossiê picker. The live pill goes in the
+// row's act slot, on the right, which is exactly where the bespoke card had it.
 function _cardMain(s) {
-  const title = (s.client_name && s.turma_name)
-    ? _esc(s.client_name) + ' · ' + _esc(s.turma_name)
-    : _esc(s.title || t('questions.sessions_untitled'));
+  const title = _esc(sessionLabel(s, t('questions.sessions_untitled')));
   return '<div class="cdx-session-info">' +
       '<div class="cdx-session-title">' + title + '</div>' +
       '<div class="cdx-session-meta">' + _fmtDate(s.created_at) + '</div>' +
@@ -234,7 +232,7 @@ async function _confirmDelete(code) {
   // already ran its generic confirm, so this only adds the turma-specific heads-up.
   const linked = _sessions.find((x) => x.code === code);
   if (linked && linked.turma_name) {
-    const label = (linked.client_name ? linked.client_name + ' · ' : '') + linked.turma_name;
+    const label = sessionLabel(linked, linked.turma_name);
     if (!window.confirm(t('questions.sessions_delete_linked_warn') + '\n\n' + label)) return;
   }
   let res;
