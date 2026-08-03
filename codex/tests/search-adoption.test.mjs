@@ -12,6 +12,7 @@ import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
+import path from 'node:path';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
@@ -48,11 +49,35 @@ test('Clientes (cohorts/cohorts.js) reaches the matcher through the rail, not di
 // (which is legitimately used for slugs, type keys and comparisons all over the repo).
 const HANDROLLED = /toLowerCase\(\)\s*\.\s*(includes|indexOf)\s*\(\s*(q|query|search|term|needle)\b/;
 
-for (const [rel, label] of CONSUMERS.concat([['cohorts/cohorts.js', 'Clientes']])) {
-  test(`${label} has no hand-rolled text matcher left`, () => {
-    assert.ok(!HANDROLLED.test(read('../' + rel)), 'found a raw toLowerCase().includes(query)');
-  });
+// Swept over the WHOLE TREE, not just the ledger above, and that is the load-bearing part. A
+// ledger that only checks its own consumers documents the past: it proves the eight files that
+// were fixed stayed fixed, and says nothing about the ninth screen someone adds next month, which
+// is exactly how the first seven copies got here. Nobody broke a rule writing them; each author
+// wrote two obvious lines alone, in a file no guard was comparing against any other. Structural
+// guards (tests/modules.test.mjs: orphans, duplicate filenames, boundaries, cross-tab imports)
+// cannot see duplicated BEHAVIOUR and stayed green through all seven. Banning the shape everywhere
+// is what makes the next copy fail out loud instead of shipping.
+function walkJs(dir, out) {
+  out = out || [];
+  for (const e of fs.readdirSync(dir, { withFileTypes: true })) {
+    if (e.name === 'desktop.ini' || e.name === 'vendor' || e.name === 'node_modules') continue;
+    const full = path.join(dir, e.name);
+    if (e.isDirectory()) walkJs(full, out);
+    else if (e.name.endsWith('.js')) out.push(full);
+  }
+  return out;
 }
+
+const CODEX_ROOT = fileURLToPath(new URL('..', import.meta.url));
+
+test('NO hand-rolled text matcher anywhere in the tree, not just in the ledger above', () => {
+  const offenders = walkJs(CODEX_ROOT)
+    .filter((f) => !f.includes(path.sep + 'tests' + path.sep))   // the tests name the shape on purpose
+    .filter((f) => HANDROLLED.test(fs.readFileSync(f, 'utf8')))
+    .map((f) => path.relative(CODEX_ROOT, f).split(path.sep).join('/'));
+  assert.deepEqual(offenders, [],
+    'these filter text by hand instead of js/text-search.js: ' + offenders.join(', '));
+});
 
 // ── the two DOM-walking searches ─────────────────────────────────────────────
 
