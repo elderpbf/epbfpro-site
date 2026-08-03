@@ -293,10 +293,14 @@ async function shootLessons() {
   }
 
   // The resting screen. Nothing stored = the order Élder designed, untouched by this work.
+  // The expected list is READ from lesson-model.js rather than spelled out here. It used to be
+  // a hardcoded copy, which went stale the moment another track added the `interativos` section:
+  // the harness then failed on every run for a reason that had nothing to do with the caller.
+  // A duplicated constant is the bug; reading the source of truth is the fix.
+  const { LESSON_SECTION_ORDER } = await import(pathToFileURL(join(ROOT, 'codex/lessons/lesson-model.js')).href);
   await shoot('01-sidebar-default-order', 1440, 900, async (p) => {
     const got = await order(p);
-    const want = ['llm', 'external', 'labs', 'items', 'drive', 'apostila', 'tarefas']
-      .filter((k) => got.includes(k));
+    const want = LESSON_SECTION_ORDER.filter((k) => got.includes(k));
     if (got.join(',') !== want.join(',')) {
       throw new Error('the default section order moved:\n  got:  ' + got.join(',') + '\n  want: ' + want.join(','));
     }

@@ -18,6 +18,7 @@ import * as itemForm from './item-form.js';
 import * as itemCreator from './item-creator.js';
 import { renderItem } from '../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
+import { makeMatcher } from '../js/text-search.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
 import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
@@ -262,10 +263,11 @@ function _loadTypes() {
 // Pure (slices before sorting) so the grid and selection-after-removal agree.
 export function applyItemSearchSort(items, search, sort, typeLabelOf) {
   let arr = items || [];
-  const q = (search || '').trim().toLowerCase();
-  if (q) arr = arr.filter((it) =>
-    String(it.title || '').toLowerCase().includes(q) ||
-    String(it.summary || '').toLowerCase().includes(q));
+  // Shared matcher (js/text-search.js): folds case AND accents, so "peticao"
+  // finds "Petição". A blank query yields a match-everything matcher, hence no
+  // `if (q)` guard.
+  const hit = makeMatcher(search);
+  arr = arr.filter((it) => hit(it.title, it.summary));
   const label = (type) => String(typeLabelOf ? typeLabelOf(type) : (type || ''));
   const byTitle = (a, b) => String(a.title || '').localeCompare(String(b.title || ''), undefined, { sensitivity: 'base' });
   if (sort === 'alpha') arr = arr.slice().sort(byTitle);

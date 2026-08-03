@@ -19,6 +19,7 @@ import { renderItem } from '../js/item-render.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import * as driveViewer from '../js/drive-viewer.js';
+import { normalize } from '../js/text-search.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -780,7 +781,7 @@ function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
   const elsewhere = Array.isArray(elsewhereAula) ? elsewhereAula : (elsewhereAula != null && elsewhereAula !== '' ? [elsewhereAula] : []);
   const hasElsewhere = elsewhere.length > 0;
   const grey = hasElsewhere && !checked;
-  return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((item.title || '').toLowerCase()) + '">' +
+  return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc(normalize(item.title)) + '">' +
     '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
     '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
       (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
@@ -904,8 +905,14 @@ function _wireComposerAccordion(container) {
     groups.forEach((g) => setOpen(g, g.getAttribute('data-acc') === openGroup));
   });
 
+  // This one KEEPS toggling style.display instead of re-rendering, unlike the other searches
+  // fixed in track-56: every row here is a <label> wrapping a real checkbox, and the composer's
+  // selection lives in that checked state, not in JS. Re-rendering on each keystroke would clear
+  // what the user had already ticked. So the fix here is only the MATCHER: data-title is stamped
+  // through normalize() and the query goes through the same function, which is what makes
+  // "peticao" find "Petição". Same folding as every other search, no structural risk.
   if (search) search.addEventListener('input', () => {
-    const q = search.value.toLowerCase().trim();
+    const q = normalize(search.value).trim();
     container.querySelectorAll('.cdx-comp-item').forEach((row) => {
       row.style.display = (!q || (row.dataset.title || '').indexOf(q) !== -1) ? '' : 'none';
     });
@@ -933,7 +940,7 @@ function _renderAulaComposer(container, aula) {
         const elsewhere = _releasedElsewhere(i.id, aulaNum) || [];
         const hasElsewhere = elsewhere.length > 0;
         const grey = hasElsewhere && !checked;
-        return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc((i.title || '').toLowerCase()) + '">' +
+        return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc(normalize(i.title)) + '">' +
           '<input type="checkbox" class="cdx-comp-cb" data-pool="apostila" value="' + _esc(i.id) + '"' + (checked ? ' checked' : '') + '>' +
           '<span>' + (i.set_position ? _esc(String(i.set_position)) + '. ' : '') + _esc(i.title) +
             (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +

@@ -20,6 +20,7 @@ import { mountRail } from '../js/list-rail.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { getAllItems as labItems } from '../js/labs-registry.js';
+import { makeMatcher } from '../js/text-search.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -135,11 +136,11 @@ function _mountPicker(host, pickerItems, selectedIds) {
   }
 
   function _renderList() {
-    const q = query.trim().toLowerCase();
-    const filtered = pickerItems.filter((it) => {
-      if (!q) return true;
-      return String((it && it.title) || '').toLowerCase().indexOf(q) !== -1;
-    });
+    // Shared matcher (js/text-search.js): folds case AND accents, and a blank query yields a
+    // match-everything predicate, so the `if (!q)` guard goes away with it.
+    const q = query.trim();
+    const hit = makeMatcher(q);
+    const filtered = pickerItems.filter((it) => hit(it && it.title, it && it.summary));
     const groups = groupPickerItems(filtered);
     if (!groups.length) {
       listEl.innerHTML = '<div class="cdx-picker-empty">' + t('presets.picker_empty') + '</div>';

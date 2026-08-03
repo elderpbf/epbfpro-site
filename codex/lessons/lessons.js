@@ -30,6 +30,7 @@ import {
 } from './lesson-model.js';
 import { mountReorder } from '../js/pointer-reorder.js';
 import { mountRail } from '../js/list-rail.js';
+import { makeMatcher } from '../js/text-search.js';
 
 // ── Module state ─────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -52,6 +53,7 @@ let _rail = null;
 // The nav model, rebuilt each render into module state so the rail's `items`/`list` callbacks
 // read the current vault without recomputing three times per render.
 let _navEntries = [];
+let _search = '';        // the sidebar search query (Lessons owns its own box; see _applySearch)
 let _navSecs = [];
 let _navSubs = [];
 // Preset filter
@@ -334,7 +336,7 @@ function _buildNav() {
 
 function _railCfg() {
   return {
-    items: () => _navEntries,
+    items: () => _visibleEntries(),
     getId: (e) => e.it.id,
     selectedId: () => _activeItemId,
     onSelect: (id) => _renderItem(id),
@@ -344,9 +346,14 @@ function _railCfg() {
       {
         of: (e) => e.sec,
         list: () => _navSecs,
-        hideWhenEmpty: (g) => _ALWAYS_SHOWN.indexOf(String(g.id)) === -1,
+        // While searching, even the always-shown sections go when they hold no hit: the
+        // question stopped being "what exists" and became "what matches".
+        hideWhenEmpty: (g) => (_search.trim() ? true : _ALWAYS_SHOWN.indexOf(String(g.id)) === -1),
         collapsible: true,
-        exclusive: true,
+        // Accordion normally, but NOT while searching: with one section open at a time, hits in
+        // the other nine would sit behind a collapsed head. The old DOM walk got this right by
+        // force-un-collapsing; the predicate is how the same rule survives data filtering.
+        exclusive: () => !_search.trim(),
         openId: _openSectionId,
         onToggle: (id) => { _toggleSection(id); _rail.render(); },
         // The opt-in capabilities. A constant `cdx-lesson-section` class (plus the per-key accent)
@@ -362,7 +369,14 @@ function _railCfg() {
         of: (e) => e.sub,
         list: () => _navSubs,
         collapsible: true,
-        exclusive: true,
+        exclusive: () => !_search.trim(),
+        // The SUB level needs the same search rule as the level above it, and for a reason worth
+        // spelling out: js/list-tree.js drops a group only when it is empty ALL THE WAY DOWN, so
+        // a sub-group that never hides keeps its parent section alive. Without this, searching
+        // left "Itens (0)" and "Drive (0)" on screen with "SLIDES 0 / PROMPT 0" under them, a
+        // column of zeroes answering a question nobody asked. Outside a search there is no
+        // hideWhenEmpty here, exactly as before.
+        hideWhenEmpty: () => !!_search.trim(),
         openId: _openSubId,
         onToggle: (id) => { _toggleSub(id); _rail.render(); },
       },
@@ -373,29 +387,32 @@ function _railCfg() {
 function _renderSidebar() {
   _buildNav();
   if (_rail) _rail.render();
-  _applySearch();
 }
 
+// The search FILTERS THE DATA and lets the rail repaint, instead of walking the painted DOM and
+// hiding rows with style.display. The old way had three defects, all of them consequences of
+// asking the screen instead of the model:
+//   1. it matched el.textContent, so it hit the TYPE BADGE and any other text the row happens to
+//      render, not the item. Searching a type label still works (type_label is a field below),
+//      but now that is a decision instead of an accident of the markup.
+//   2. any _rail.render() wiped the filter, so every call site had to remember to re-run it
+//      afterwards. Miss it once and the sidebar quietly shows rows the search excluded.
+//   3. the section counts kept badging the unfiltered totals, over a list that was filtered.
+// The box itself does NOT move into the rail: this sidebar's look is the product and is frozen
+// (architecture/list-rail.md §1), so Lessons keeps its own input in the head next to Aa and owns
+// the query. That is why the levels below take `exclusive` as a PREDICATE.
 function _applySearch() {
   const input = _q('.cdx-lessons-search');
-  const q = (input && input.value || '').toLowerCase().trim();
-  const body = _q('.cdx-lessons-sidebar-body');
-  if (!body) return;
-  if (!q) {
-    body.querySelectorAll('.cdx-rail-row').forEach((el) => { el.style.display = ''; });
-    return;
-  }
-  // Iterate TOP sections only (the constant class the rail stamps), so a hit un-collapses the
-  // section, not each type sub-group inside it.
-  body.querySelectorAll('.cdx-lesson-section').forEach((sec) => {
-    let any = false;
-    sec.querySelectorAll('.cdx-rail-row').forEach((el) => {
-      const hit = (el.textContent || '').toLowerCase().indexOf(q) !== -1;
-      el.style.display = hit ? '' : 'none';
-      if (hit) any = true;
-    });
-    if (any) sec.classList.remove('is-collapsed');
-  });
+  _search = (input && input.value) || '';
+  if (_rail) _rail.render();
+}
+
+// Entries that survive the query. One entry is (item x section it appears in), so an item that
+// lives in Favoritos AND in its type bucket is filtered the same way in both, and the two rows
+// keep lighting up together as they always have.
+function _visibleEntries() {
+  const hit = makeMatcher(_search);
+  return _navEntries.filter((e) => hit(e.it.title, e.it.summary, e.it.type_label, e.it.type));
 }
 
 // ── Preset loader ─────────────────────────────────────────────────────────────
@@ -1018,7 +1035,7 @@ export function mount(viewEl) {
   _cleanup = [];
   _reorders = [];
   if (_rail) { _rail.destroy(); _rail = null; }
-  _navEntries = []; _navSecs = []; _navSubs = [];
+  _navEntries = []; _navSecs = []; _navSubs = []; _search = '';
   _focusMountHotZones();
   _renderShellLoading();
   cohortsApi.listAllTurmas().then((d) => {
@@ -1048,7 +1065,7 @@ export function unmount() {
   _reorders.forEach((r) => r.destroy());
   _reorders = [];
   if (_rail) { _rail.destroy(); _rail = null; }
-  _navEntries = []; _navSecs = []; _navSubs = [];
+  _navEntries = []; _navSecs = []; _navSubs = []; _search = '';
   _activeItemId = null;
   _detailCache = new Map();
   _liveSession = null;

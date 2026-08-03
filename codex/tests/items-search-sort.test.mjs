@@ -40,6 +40,20 @@ test('search matches title OR summary, case-insensitive', () => {
   assert.deepEqual(bySummary.map((i) => i.id).sort(), [1, 3]);
 });
 
+// The library is Portuguese content searched by a Portuguese speaker in a hurry,
+// so an unaccented query has to reach accented titles. Before js/text-search.js
+// this compared raw strings and answered nothing for "peticao".
+test('search ignores accents in both directions', () => {
+  const acc = [
+    { id: 9, title: 'Petição inicial', summary: 'modelo', type: 'prompt', updated_at: 1 },
+    { id: 8, title: 'Contrato', summary: 'revisão de cláusulas', type: 'prompt', updated_at: 2 },
+  ];
+  assert.deepEqual(applyItemSearchSort(acc, 'peticao', 'recent', typeLabel).map((i) => i.id), [9]);
+  assert.deepEqual(applyItemSearchSort(acc, 'Petição', 'recent', typeLabel).map((i) => i.id), [9]);
+  // and on the summary field too
+  assert.deepEqual(applyItemSearchSort(acc, 'clausulas', 'recent', typeLabel).map((i) => i.id), [8]);
+});
+
 test('is pure: does not mutate the input array', () => {
   const input = ITEMS.slice();
   const snapshot = input.map((i) => i.id);
