@@ -9,6 +9,7 @@ import { esc as _esc, slugify as _slugify } from '../js/dom.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { glyphSvg } from '../js/glyphs.js';
 import { mountRail } from '../js/list-rail.js';
+import { sessionLabel } from '../js/session-label.js';
 import { openModal, closeModal } from '../js/modal.js';
 import * as qrShare from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
@@ -886,7 +887,7 @@ function _openTurmaForm(turma) {
     const cpOptions = '<option value="">' + t('cohorts.none') + '</option>' +
       _cpSessions.map(s => {
         const sel = (isEdit && turma.classpulse_session_id === s.id) ? ' selected' : '';
-        return '<option value="' + _esc(s.id) + '"' + sel + '>' + _esc(s.name) + '</option>';
+        return '<option value="' + _esc(s.id) + '"' + sel + '>' + _esc(sessionLabel(s)) + '</option>';
       }).join('');
 
     const courseOptions = '<option value="">' + t('cohorts.tf_no_course') + '</option>' +
@@ -1208,7 +1209,7 @@ function _renderDossier(turma) {
   const fmtOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
     _TF_FORMATS.map((k) => '<option value="' + k + '"' + (turma.format === k ? ' selected' : '') + '>' + _esc(t('cohorts.fmt_' + k)) + '</option>').join('');
   const cpOpts = '<option value="">' + _esc(t('cohorts.none')) + '</option>' +
-    (_cpSessions || []).map((s) => '<option value="' + _esc(s.id) + '"' + (String(turma.classpulse_session_id || '') === String(s.id) ? ' selected' : '') + '>' + _esc(s.name) + '</option>').join('');
+    (_cpSessions || []).map((s) => '<option value="' + _esc(s.id) + '"' + (String(turma.classpulse_session_id || '') === String(s.id) ? ' selected' : '') + '>' + _esc(sessionLabel(s)) + '</option>').join('');
   // The ClassPulse session fact shares its cell with a shortcut that jumps straight to the
   // connected session (Perguntas tab, deep-linked ?session=<code>). The session id IS the
   // session code (list_sessions/cp_get_live_session alias them), so it deep-links directly.

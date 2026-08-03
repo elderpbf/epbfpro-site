@@ -14,10 +14,13 @@ const read = (rel) => fs.readFileSync(path(rel), 'utf8');
 const sessionsSrc = read('../questions/sessions.js');
 const cohortsSrc = read('../cohorts/cohorts.js');
 
-test('B: session card labels a turma-linked session "Cliente · Turma", avulsa keeps its title', () => {
-  assert.match(sessionsSrc, /s\.client_name\s*&&\s*s\.turma_name/, 'card branches on the joined names');
-  assert.match(sessionsSrc, /client_name[\s\S]{0,40}·[\s\S]{0,40}turma_name/, 'linked card renders Cliente · Turma');
-  assert.match(sessionsSrc, /s\.title\s*\|\|\s*t\('questions\.sessions_untitled'\)/, 'avulsa falls back to its own title');
+// The rule itself moved to js/session-label.js once the dossiê picker was found naming
+// sessions its own (worse) way; what this asserts is that the card DELEGATES. The rule's
+// own behaviour is pinned in session-label-adoption.test.mjs.
+test('B: the session card delegates its "Cliente · Turma" naming to the shared rule', () => {
+  assert.match(sessionsSrc, /from\s+['"]\.\.\/js\/session-label\.js['"]/, 'imports the shared rule');
+  assert.match(sessionsSrc, /sessionLabel\(s,\s*t\('questions\.sessions_untitled'\)\)/,
+    'card names the session through it, avulsa falling back to its own title');
 });
 
 test('A: deleting a turma-linked session warns before deleting', () => {

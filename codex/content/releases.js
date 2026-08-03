@@ -14,6 +14,7 @@ import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
 import { installResizer } from '../js/resizable.js';
 import { isLabEnabled, isLabArchived, labIcon, labOrderIndex } from '../js/labs-registry.js';
+import { syncLabItems, syncInterativoItems } from '../js/registry-sync.js';
 import { interativoIcon } from '../js/interativos-registry.js';
 import { renderItem } from '../js/item-render.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -309,8 +310,8 @@ function _loadReleases(clientSlug, turmaSlug) {
   // silent + best-effort: a failure here (e.g. the Worker not yet carrying the interativo
   // ensure action) must NOT block the composer load, it just leaves that type absent.
   Promise.all([
-    contentApi.ensureLabItems().catch((e) => { notice.internal(_err(e)); }),
-    contentApi.ensureInterativoItems().catch((e) => { notice.internal(_err(e)); }),
+    syncLabItems().catch((e) => { notice.internal(_err(e)); }),
+    syncInterativoItems().catch((e) => { notice.internal(_err(e)); }),
   ]).then(() => Promise.all([
     contentApi.listItems(),
     cohortsApi.listTurmas({ client_slug: clientSlug }),
