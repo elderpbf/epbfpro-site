@@ -514,6 +514,7 @@ export default {
   'cohorts.no_turmas':             'Nenhuma turma cadastrada.',
   'cohorts.clients_title':         'Clientes',
   'cohorts.no_search_results':     'Nenhuma turma encontrada.',
+  'cohorts.search_ph':             'Buscar turma, curso ou cliente',
   'cohorts.phase_planned':         'Planejada',
   'cohorts.phase_live':            'Em andamento',
   'cohorts.phase_done':            'Concluída',

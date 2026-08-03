@@ -1063,18 +1063,9 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 
 /* ----- Merged turma list (Concept A: turmas grouped under client headers) ----- */
 
-.cdx-cohorts-search {
-  flex: 1;
-  width: 100%;
-  border: 1px solid var(--border);
-  border-radius: 8px;
-  padding: 0.4rem 0.6rem;
-  font: inherit;
-  font-size: 0.85rem;
-  background: var(--background);
-  color: var(--text-primary);
-}
-.cdx-cohorts-search:focus { outline: none; border-color: var(--primary); background: var(--surface); }
+/* The turma search box is the RAIL's (.cdx-rail-search in css/list-rail.css), so the
+   bespoke .cdx-cohorts-search rules that used to live here are gone. They had outlived
+   their input by a whole migration: the markup went, the CSS stayed. */
 .cdx-cohorts-listfoot {
   border-top: 1px solid var(--border);
   padding: 0.5rem;

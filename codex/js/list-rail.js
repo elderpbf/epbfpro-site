@@ -19,7 +19,7 @@
 //     reorder:{onReorder:(ids)=>{}, gated:false|()=>bool, canDrag:(row)=>true},
 //     sections:{of:(it)=>secId, list:()=>[{id,title}], editable, onCreate,onRename,onDelete,
 //               onMoveItem:(itemId,secId,orderedIds)=>{},
-//               exclusive, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
+//               exclusive:bool|()=>bool, openId:()=>secId, onToggle:(secId)=>{}, collapsed:(sec)=>bool,
 //               renderHead:(sec,count)=>({main,act}), emptyText},
 //     bands:{of:(sec)=>bandId, list:()=>[{id,title}]},   // OUTER level: band > section > row
 //     levels:[{of,list,collapsible,hideWhenEmpty,exclusive,openId,onToggle,collapsed,
@@ -211,8 +211,21 @@ export function mountRail(container, cfg) {
     return null;
   }
 
+  // `exclusive` is a bool OR a predicate, the same both-forms shape `gated` and `hideWhenEmpty`
+  // use. A consumer that owns its OWN query (Lessons keeps its search box in the sidebar head,
+  // outside the rail, because its look is frozen) needs to drop the accordion for as long as it
+  // is searching, otherwise hits sitting in the nine sections that are not the open one stay
+  // invisible behind a collapsed head.
+  function levelExclusive(lv) {
+    return typeof lv.exclusive === 'function' ? !!lv.exclusive() : !!lv.exclusive;
+  }
+
   function groupOpen(lv, g) {
-    if (lv.exclusive) return !!(lv.openId && String(lv.openId()) === String(g.id));
+    // A search never hides a hit inside a collapsed group. This is the third time that rule shows
+    // up in Codex (the presets picker and the releases composer each hand-rolled it), which by
+    // this module's own decomposition rule is exactly when it stops being a per-consumer trick.
+    if (searching()) return true;
+    if (levelExclusive(lv)) return !!(lv.openId && String(lv.openId()) === String(g.id));
     return !(lv.collapsed && lv.collapsed(g));
   }
 
@@ -469,7 +482,7 @@ export function mountRail(container, cfg) {
         // Exclusive (accordion): the open group is the CONSUMER's state. Hand it the click
         // and let its re-render decide — toggling the class here would fight that state and
         // silently win until the next render(), which is the classic two-truths bug.
-        if (lv.exclusive) { if (lv.onToggle) lv.onToggle(sid); return; }
+        if (levelExclusive(lv)) { if (lv.onToggle) lv.onToggle(sid); return; }
         tog.closest('.cdx-rail-sec').classList.toggle('is-collapsed');
         if (lv.onToggle) lv.onToggle(sid);
         return;
@@ -557,9 +570,26 @@ export function mountRail(container, cfg) {
     renderAfterQuery();
   }
 
+  // Escape inside the search box CLEARS it, and must not travel further. A width:autohide rail
+  // (Clientes, Sessões) listens for Escape on the document and closes itself, so without this the
+  // native "clear the search" gesture would fold the whole sidebar away instead. The container
+  // listener bubbles before the document one, so stopping here settles the conflict in favour of
+  // the more local intent; an empty box still lets Escape through and closes the rail as before.
+  function onKeyDown(e) {
+    if (!search || e.key !== 'Escape') return;
+    const el = (e.target && e.target.closest) ? e.target.closest('[data-rail-search]') : null;
+    if (!el || !el.value) return;
+    e.stopPropagation();
+    el.value = '';
+    searchQuery = '';
+    if (search.onChange) search.onChange('');
+    renderAfterQuery();
+  }
+
   function wire() {
     container.addEventListener('click', onClick);
     container.addEventListener('input', onInput);
+    container.addEventListener('keydown', onKeyDown);
     container.addEventListener('pointerdown', onPointerDown);
     container.addEventListener('pointermove', onPointerMove);
     container.addEventListener('pointerup', onPointerUp);
@@ -568,6 +598,7 @@ export function mountRail(container, cfg) {
   function unwire() {
     container.removeEventListener('click', onClick);
     container.removeEventListener('input', onInput);
+    container.removeEventListener('keydown', onKeyDown);
     container.removeEventListener('pointerdown', onPointerDown);
     container.removeEventListener('pointermove', onPointerMove);
     container.removeEventListener('pointerup', onPointerUp);

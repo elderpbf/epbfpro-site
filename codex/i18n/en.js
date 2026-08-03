@@ -510,6 +510,7 @@ export default {
   'cohorts.no_turmas':             'No cohorts registered.',
   'cohorts.clients_title':         'Clients',
   'cohorts.no_search_results':     'No cohorts found.',
+  'cohorts.search_ph':             'Search cohort, course or client',
   'cohorts.phase_planned':         'Planned',
   'cohorts.phase_live':            'In progress',
   'cohorts.phase_done':            'Completed',

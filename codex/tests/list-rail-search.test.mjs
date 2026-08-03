@@ -308,6 +308,90 @@ test('typing settles consumer state BEFORE the repaint reads it', () => {
   assert.doesNotMatch(body.innerHTML, /cdx-rail-grip/, 'grips left the filtered list immediately');
 });
 
+// ── a search must never hide a hit behind a collapsed head ───────────────────
+// Third time this rule appears in Codex: the presets picker and the releases composer each
+// hand-rolled it before it moved into the module.
+
+const GROUPED = {
+  items: () => LABS,
+  getId: (l) => l.key,
+  renderRow: (l) => ({ main: l.title }),
+  sections: {
+    of: (l) => (l.key === 'k20' ? 'aluc' : 'base'),
+    list: () => [{ id: 'base', title: 'Fundamentos' }, { id: 'aluc', title: 'Alucinação' }],
+    exclusive: true,
+    openId: () => 'base',            // the accordion holds ONLY Fundamentos open
+    onToggle: () => {},
+  },
+};
+
+test('an accordion group holding a hit is expanded during a search', () => {
+  const { el, body } = mounted(GROUPED);
+  // No query: the closed group is collapsed, as the accordion says.
+  assert.match(el.innerHTML, /data-sec="aluc"[^>]*class=|cdx-rail-sec is-collapsed/);
+  typeInto(el, 'citacao');           // the hit lives in the CLOSED group
+  assert.match(body.innerHTML, /Citação/, 'the hit is rendered');
+  assert.match(body.innerHTML, /data-sec="aluc"/);
+  assert.doesNotMatch(body.innerHTML, /is-collapsed/, 'no group stays collapsed over a hit');
+});
+
+test('clearing the search hands the accordion back its single open group', () => {
+  const { el, body } = mounted(GROUPED);
+  typeInto(el, 'citacao');
+  typeInto(el, '');
+  assert.match(body.innerHTML, /is-collapsed/, 'the accordion is back in charge');
+});
+
+test('levels[].exclusive accepts a predicate, for a consumer that owns its own query', () => {
+  let searching = false;
+  const el = makeEl();
+  const rail = mountRail(el, Object.assign({}, GROUPED, {
+    sections: Object.assign({}, GROUPED.sections, { exclusive: () => !searching }),
+  }));
+  rail.render();
+  assert.match(el.innerHTML, /is-collapsed/, 'exclusive while the predicate says so');
+  searching = true;
+  rail.render();
+  assert.doesNotMatch(el.innerHTML, /is-collapsed/, 'accordion dropped, every group open');
+});
+
+// ── Escape clears the box instead of closing the rail ────────────────────────
+
+function pressEscape(container, value) {
+  let stopped = false;
+  const input = { value };
+  container.fire('keydown', {
+    key: 'Escape',
+    target: { closest: (sel) => (sel === '[data-rail-search]' ? input : null) },
+    stopPropagation: () => { stopped = true; },
+  });
+  return { stopped, input };
+}
+
+test('Escape in a search box with text clears the query and stops the event', () => {
+  const { rail, el, body } = mounted();
+  typeInto(el, 'tokens');
+  assert.equal(rail.query(), 'tokens');
+  const { stopped, input } = pressEscape(el, 'tokens');
+  assert.equal(rail.query(), '', 'the query is cleared');
+  assert.equal(input.value, '', 'the element is cleared too, not just the state');
+  assert.ok(stopped, 'an autohide rail listens for Escape on the document and would close');
+  assert.match(body.innerHTML, /Embeddings/, 'the full list is back');
+});
+
+test('Escape in an EMPTY search box is left alone, so the rail can still close on it', () => {
+  const { el } = mounted();
+  const { stopped } = pressEscape(el, '');
+  assert.ok(!stopped, 'nothing to clear, so Escape keeps travelling to the autohide handler');
+});
+
+test('Escape outside the search box is never swallowed', () => {
+  const { el } = mounted();
+  let stopped = false;
+  el.fire('keydown', { key: 'Escape', target: { closest: () => null }, stopPropagation: () => { stopped = true; } });
+  assert.ok(!stopped);
+});
+
 // ── chips: the array form still works ────────────────────────────────────────
 
 test('filter.chips still accepts a plain array (the original contract)', () => {
