@@ -288,13 +288,12 @@ export const content = {
   deleteItem:      (p) => call('ct_delete_item', p),        // { id }
   duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
   bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
-  // One-time, idempotent: upserts a real ct_items row per lab in the frontend
-  // registry (labs-registry.js) so Labs can be released via the normal
-  // Liberações flow (track-34 §B). Safe to call again after adding new labs.
-  ensureLabItems:  () => call('ct_ensure_lab_items', {}),
-  // Same as ensureLabItems, for the Interativos registry (interativos-registry.js):
-  // upserts a real ct_items row per interativo so they can be released like any type.
-  ensureInterativoItems: () => call('ct_ensure_interativo_items', {}),
+  // Idempotent: upserts a real ct_items row per entry of the catalogue the CALLER sends,
+  // so a shipped-artifact type can be released via the normal Liberações flow. The
+  // catalogue is the frontend registry, and js/registry-sync.js is the one place that
+  // builds it — call these through it, never with a payload assembled on the spot.
+  ensureLabItems:  (p) => call('ct_ensure_lab_items', p),              // { labs: [{key,title,summary}] }
+  ensureInterativoItems: (p) => call('ct_ensure_interativo_items', p), // { interativos: [...] }
   uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
   ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),

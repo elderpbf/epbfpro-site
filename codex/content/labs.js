@@ -26,7 +26,7 @@ import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { openModal, closeModal } from '../js/modal.js';
 import { mountRail } from '../js/list-rail.js';
 import { makeMatcher } from '../js/text-search.js';
-import { content as api } from '../js/codex-api.js';
+import { syncLabItems } from '../js/registry-sync.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 
@@ -418,7 +418,7 @@ function _archive(key, on) {
 // section in the Liberações composer. Runs silently on mount -- enabling a
 // lab here must not require a separate manual sync step anywhere else.
 function _ensureLabItemsSilently() {
-  api.ensureLabItems().catch((e) => { notice.internal(e); });
+  syncLabItems().catch((e) => { notice.internal(e); });
 }
 
 export function mount(viewEl) {
