@@ -97,6 +97,13 @@ function messageFor(code) {
     case 'invalid_code':   return 'Código inválido.';
     case 'code_used':      return 'Este código já foi usado. Peça um novo.';
     case 'code_expired':   return 'O código expirou. Peça um novo.';
+    // Os três que faltavam. `too_many_attempts` já podia chegar aqui e caía no texto genérico, que
+    // manda a pessoa "tentar de novo" justamente quando tentar de novo não adianta mais.
+    case 'too_many_attempts': return 'Muitas tentativas neste código. Clique em reenviar para receber um novo.';
+    case 'resend_too_soon':   return 'Aguarde um instante antes de pedir outro código.';
+    // E este é o que separa erro NOSSO de erro de quem digitou: transporte fora do ar não pode
+    // aparecer como "código inválido", que acusa o usuário de um erro que é da casa.
+    case 'otp_unavailable':   return 'O serviço de código está indisponível. Tente de novo em instantes.';
     default:               return 'Não foi possível entrar. Tente novamente.';
   }
 }
@@ -132,13 +139,17 @@ export function mountLogin() {
     if (which === 'code' && codeEl) { codeEl.value = ''; codeEl.focus(); }
   }
 
-  async function requestCode(email) {
+  // `reenvio` escolhe a ação, e as duas existem de propósito: pedir e reenviar deixaram de ser a
+  // mesma coisa quando o login passou a falar com o módulo `otp` da plataforma. Pedir com código
+  // vivo NÃO manda outro e-mail (senão a pessoa fica com dois na caixa e digita o errado); só o
+  // reenvio explícito emite. Chamar `otpRequest` no "não recebi" responderia ok e não mandaria nada.
+  async function requestCode(email, reenvio) {
     setErr('');
     if (emailBtn) emailBtn.disabled = true;
     if (resendBtn) resendBtn.disabled = true;
     try {
       // callWorker throws on a worker {error}; reaching the next line means ok.
-      await auth.otpRequest({ email: email });
+      await (reenvio ? auth.otpResend({ email: email }) : auth.otpRequest({ email: email }));
       currentEmail = email;
       if (emailEcho) emailEcho.textContent = email;
       showStep('code');
@@ -187,7 +198,7 @@ export function mountLogin() {
     verifyCode(currentEmail, v);
   });
   if (backBtn) backBtn.addEventListener('click', function () { showStep('email'); });
-  if (resendBtn) resendBtn.addEventListener('click', function () { if (currentEmail) requestCode(currentEmail); });
+  if (resendBtn) resendBtn.addEventListener('click', function () { if (currentEmail) requestCode(currentEmail, true); });
 
   // Enter-to-submit on each field.
   if (emailEl) emailEl.addEventListener('keydown', function (e) { if (e.key === 'Enter' && emailBtn) emailBtn.click(); });
