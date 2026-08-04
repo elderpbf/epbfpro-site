@@ -10,6 +10,7 @@ import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
+import { openMenu } from '../../js/menu.js';
 
 // Stored asset paths (/r2/... attachment/pdf keys) are served by the codex-api
 // Worker, not the Pages origin, so an open-action href must go through assetUrl
@@ -26,7 +27,34 @@ export function getMeta(item) {
   return item.meta_json || {};
 }
 
+// Todas as ações de um item, em ordem de prioridade. A primeira é a que a linha fechada
+// mostrava sozinha antes do track-61, então um item de ação única segue idêntico.
+//
+// Antes disto isto era uma cadeia com UM `return`, e o efeito era exclusão mútua: um item
+// com anexo PERDIA o "Copiar". Prompt + arquivos juntos era irrepresentável.
+//
+// Lab, interativo e tarefa seguem exclusivos: a ação É o item, não há o que somar.
+export function getItemActions(item) {
+  const single = _exclusiveAction(item);
+  if (single) return [single];
+
+  const meta = getMeta(item);
+  const out = [];
+  if (meta.pdf_url) out.push({ kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' });
+  if (meta.attachment_url) {
+    const isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
+    out.push({ kind: 'open', label: isImg ? 'Ver imagem' : 'Baixar', url: meta.attachment_url, icon: isImg ? 'external' : 'download' });
+  }
+  if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
+  if (item.body_md) out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
+  return out;
+}
+
 export function getItemAction(item) {
+  return getItemActions(item)[0] || null;
+}
+
+function _exclusiveAction(item) {
   const meta = getMeta(item);
   if (item.type === 'tarefa') {
     // A aba Aulas não entrega nada: ela LEVA pra aba Tarefas, que é a dona do fluxo de entrega
@@ -51,13 +79,6 @@ export function getItemAction(item) {
     const url = meta.url || '';
     if (url) return { kind: 'interativo-open', label: 'Abrir', shortLabel: 'Abrir', url, icon: 'external' };
   }
-  if (meta.pdf_url) return { kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' };
-  if (meta.attachment_url) {
-    const isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
-    return { kind: 'open', label: isImg ? 'Ver imagem' : 'Baixar', url: meta.attachment_url, icon: isImg ? 'external' : 'download' };
-  }
-  if (meta.doc_url) return { kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' };
-  if (item.body_md) return { kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' };
   return null;
 }
 
@@ -85,23 +106,63 @@ function makeActionBtn(action, extraClass) {
   return btn;
 }
 
+// Executa uma ação. Só o caminho 'open' de um botão direto anda sozinho (é um <a>), por
+// isso ele não aparece aqui: dentro do menu não há âncora, então abrimos na mão.
+function runAction(action, item, sub, opts, btn) {
+  if (action.kind === 'copy') copyToClipboard(action.text, btn);
+  else if (action.kind === 'submit') openTarefaSubmit(action.item, sub, opts);
+  else if (action.kind === 'go-tarefas') goToTarefa(item.id);
+  else if (action.kind === 'lab-open') openLabViewer({ key: action.key, title: item.title });
+  else if (action.kind === 'interativo-open') openLabViewer({ url: action.url, title: item.title });
+}
+
+// Monta as ações de um item num container. UMA montagem parametrizada, usada pela linha da
+// aba Aulas e pelo corpo dos cards planos (Apostila/Outros), nunca duas fiações.
+//
+// Uma ação: o botão direto de sempre, byte a byte como antes do track-61. Duas ou mais:
+// UM gatilho "Ações" com chevron no lugar do glifo, abrindo o menu compartilhado
+// (js/menu.js). N botões teal lado a lado espremeriam o título, e no celular o botão é só
+// ícone (mobile.css), então três ícones em fila seriam ilegíveis.
+export function mountActions(container, item, opts = {}) {
+  if (!container) return;
+  container.innerHTML = '';
+  const actions = getItemActions(item);
+  if (!actions.length) return;
+  const extraClass = opts.isTarefa ? ' cdx-tr-item-action--task' : '';
+  const sub = opts.sub || null;
+
+  if (actions.length === 1) {
+    const action = actions[0];
+    const btn = makeActionBtn(action, extraClass);
+    btn.addEventListener('click', (e) => {
+      if (e && e.stopPropagation) e.stopPropagation();
+      if (action.kind === 'open') return; // o <a> abre sozinho
+      if (e && e.preventDefault) e.preventDefault();
+      runAction(action, item, sub, opts, btn);
+    });
+    container.appendChild(btn);
+    return;
+  }
+
+  const trigger = makeActionBtn({ kind: 'menu', label: 'Ações', shortLabel: 'Ações', icon: 'chevron' }, extraClass);
+  trigger.addEventListener('click', (e) => {
+    if (e && e.stopPropagation) e.stopPropagation();
+    if (e && e.preventDefault) e.preventDefault();
+    openMenu(trigger, actions.map((action) => ({
+      label: action.label,
+      onClick: () => {
+        if (action.kind === 'open') window.open(_assetSrc(action.url), '_blank', 'noopener');
+        else runAction(action, item, sub, opts, trigger);
+      },
+    })));
+  });
+  container.appendChild(trigger);
+}
+
 export function injectActionButton(sub, item, opts = {}) {
   const actionsEl = sub.querySelector('.cdx-tr-sub-actions');
   if (!actionsEl) return;
-  actionsEl.innerHTML = '';
-  const action = getItemAction(item);
-  if (!action) return;
-
-  const btn = makeActionBtn(action, opts.isTarefa ? ' cdx-tr-item-action--task' : '');
-  btn.addEventListener('click', (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
-    else if (action.kind === 'submit') { if (e && e.preventDefault) e.preventDefault(); openTarefaSubmit(action.item, sub, opts); }
-    else if (action.kind === 'go-tarefas') { if (e && e.preventDefault) e.preventDefault(); goToTarefa(item.id); }
-    else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
-    else if (action.kind === 'interativo-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ url: action.url, title: item.title }); }
-  });
-  actionsEl.appendChild(btn);
+  mountActions(actionsEl, item, Object.assign({}, opts, { sub }));
 }
 
 // Leva o aluno pra aba Tarefas, JÁ no cartão daquela tarefa. Reusa o deep-focus que o sino de
@@ -140,17 +201,9 @@ export function openTarefaSubmit(item, sub, opts) {
 }
 
 export function appendFlatActionRow(body, item) {
-  const action = getItemAction(item);
-  if (!action) return;
+  if (!getItemActions(item).length) return;
   const row = document.createElement('div');
   row.className = 'cdx-tr-flat-action-row';
-  const btn = makeActionBtn(action, '');
-  btn.addEventListener('click', (e) => {
-    if (e && e.stopPropagation) e.stopPropagation();
-    if (action.kind === 'copy') { if (e && e.preventDefault) e.preventDefault(); copyToClipboard(action.text, btn); }
-    else if (action.kind === 'lab-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ key: action.key, title: item.title }); }
-    else if (action.kind === 'interativo-open') { if (e && e.preventDefault) e.preventDefault(); openLabViewer({ url: action.url, title: item.title }); }
-  });
-  row.appendChild(btn);
+  mountActions(row, item, {});
   body.appendChild(row);
 }

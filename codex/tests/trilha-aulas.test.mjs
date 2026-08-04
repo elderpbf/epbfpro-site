@@ -4,7 +4,7 @@
 // verified visually on staging.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { getItemAction, getMeta } from '../trilha/js/actions.js';
+import { getItemAction, getItemActions, getMeta } from '../trilha/js/actions.js';
 import { isFresh, countFreshIn } from '../trilha/js/freshness.js';
 import { state } from '../trilha/js/state.js';
 
@@ -77,4 +77,39 @@ test('getItemAction: tarefa NAO consulta o localStorage (o estado nao e por nave
   assert.equal(touched, false, 'o estado de entrega nunca sai do localStorage');
   delete globalThis.localStorage;
   state.turmaSlug = null;
+});
+
+// ── getItemActions: o fim da exclusao mutua (track-61) ──────────────────────
+// A cadeia antiga tinha UM `return`, entao um item com anexo PERDIA o "Copiar" e
+// prompt + arquivos juntos era irrepresentavel. Este e o defeito que o track-61 conserta.
+test('getItemActions: anexo + corpo entregam Baixar E Copiar (antes so Baixar)', () => {
+  const as = getItemActions({ type: 'prompt', body_md: 'instrucao', meta_json: { attachment_url: 'base.pdf' } });
+  assert.deepEqual(as.map((a) => a.label), ['Baixar', 'Copiar']);
+});
+test('getItemActions: pdf + anexo + doc + corpo entregam as quatro, nessa ordem', () => {
+  const as = getItemActions({
+    type: 'x', body_md: 'txt',
+    meta_json: { pdf_url: 'a.pdf', attachment_url: 'b.zip', doc_url: 'https://d' },
+  });
+  assert.deepEqual(as.map((a) => a.label), ['Baixar PDF', 'Baixar', 'Documentação', 'Copiar']);
+});
+// A primeira acao segue sendo a que a linha fechada mostrava sozinha, entao item de acao
+// unica nao muda em nada.
+test('getItemActions: a primeira acao e a que getItemAction ja devolvia', () => {
+  const item = { type: 'x', body_md: 'txt', meta_json: { pdf_url: 'a.pdf' } };
+  assert.deepEqual(getItemActions(item)[0], getItemAction(item));
+});
+// Lab, interativo e tarefa seguem exclusivos: a acao E o item, nao ha o que somar.
+test('getItemActions: lab e exclusivo mesmo com corpo e anexo', () => {
+  const as = getItemActions({ type: 'lab', body_md: 'txt', meta_json: { lab_key: 'k1', attachment_url: 'x.pdf' } });
+  assert.equal(as.length, 1);
+  assert.equal(as[0].kind, 'lab-open');
+});
+test('getItemActions: tarefa e exclusiva mesmo com corpo', () => {
+  const as = getItemActions({ type: 'tarefa', id: 7, body_md: 'txt' });
+  assert.equal(as.length, 1);
+  assert.equal(as[0].kind, 'go-tarefas');
+});
+test('getItemActions: nada acionavel -> lista vazia', () => {
+  assert.deepEqual(getItemActions({ type: 'x' }), []);
 });
