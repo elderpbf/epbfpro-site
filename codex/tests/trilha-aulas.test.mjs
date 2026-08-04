@@ -83,8 +83,8 @@ test('getItemAction: tarefa NAO consulta o localStorage (o estado nao e por nave
 // A cadeia antiga tinha UM `return`, entao um item com anexo PERDIA o "Copiar" e
 // prompt + arquivos juntos era irrepresentavel. Este e o defeito que o track-61 conserta.
 test('getItemActions: anexo + corpo entregam Baixar E Copiar (antes so Baixar)', () => {
-  const as = getItemActions({ type: 'prompt', body_md: 'instrucao', meta_json: { attachment_url: 'base.pdf' } });
-  assert.deepEqual(as.map((a) => a.label), ['Baixar', 'Copiar']);
+  const as = getItemActions({ type: 'prompt', title: 'P', body_md: 'instrucao', meta_json: { attachment_url: 'base.pdf' } });
+  assert.deepEqual(as.map((a) => a.label), ['Baixar', 'Copiar', 'Baixar .md']);
 });
 test('getItemActions: pdf + anexo + doc + corpo entregam as quatro, nessa ordem', () => {
   const as = getItemActions({
@@ -112,4 +112,25 @@ test('getItemActions: tarefa e exclusiva mesmo com corpo', () => {
 });
 test('getItemActions: nada acionavel -> lista vazia', () => {
   assert.deepEqual(getItemActions({ type: 'x' }), []);
+});
+
+// ── download .md (track-61) ────────────────────────────────────────────────
+// Regra do Elder: quem ve os simbolos do markdown baixa .md; quem ve processado baixa PDF.
+// Hoje o unico texto literal e o `prompt` ("o prompt sempre cru").
+test('getItemActions: prompt entrega Copiar E Baixar .md', () => {
+  const as = getItemActions({ type: 'prompt', title: '# Prompt: X', body_md: 'faca isto' });
+  assert.deepEqual(as.map((a) => a.label), ['Copiar', 'Baixar .md']);
+});
+test('getItemActions: conteudo processado NAO ganha .md (sai em PDF, fatia propria)', () => {
+  const as = getItemActions({ type: 'conteudo', title: 'Aula 1', body_md: '# titulo' });
+  assert.deepEqual(as.map((a) => a.label), ['Copiar']);
+});
+// Os 3 itens reais do Elder (900028/900029/900030) sao todos `prompt`: com o .md eles passam
+// a ter DUAS acoes, que e o que finalmente faz o dropdown aparecer em item vivo.
+test('getItemActions: os 3 itens do projeto do Elder abrem o dropdown (2 acoes cada)', () => {
+  for (const t of ['# Prompt: Resumo Preparatório para Audiência para Magistrados',
+                   '# Modelo: Relatório Preparatório para Audiência CÍVEL para Magistrados',
+                   '# Modelo: Relatório Preparatório para Audiência CRIMINAL para Magistrados']) {
+    assert.equal(getItemActions({ type: 'prompt', title: t, body_md: 'x' }).length, 2, t);
+  }
 });

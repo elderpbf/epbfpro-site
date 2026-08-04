@@ -11,6 +11,7 @@ import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
+import { downloadText, fileNameFromTitle } from '../../js/item-download.js';
 
 // Stored asset paths (/r2/... attachment/pdf keys) are served by the codex-api
 // Worker, not the Pages origin, so an open-action href must go through assetUrl
@@ -46,8 +47,23 @@ export function getItemActions(item) {
     out.push({ kind: 'open', label: isImg ? 'Ver imagem' : 'Baixar', url: meta.attachment_url, icon: isImg ? 'external' : 'download' });
   }
   if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
-  if (item.body_md) out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
+  if (item.body_md) {
+    out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
+    // Só o texto VERBATIM sai em .md. Quem o aluno vê processado na tela sai em PDF, que é
+    // fatia própria: um .md de um texto que ele nunca viu como markdown seria uma surpresa.
+    if (isVerbatim(item)) {
+      out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
+    }
+  }
   return out;
+}
+
+// O texto é literal (não passa por markdown) quando o tipo é `prompt`. Élder: "o prompt
+// sempre cru". Isto hoje espelha o dispatchType() do item-render; quando a peça ganhar o
+// flag `verbatim` próprio (track-61 §5), a decisão passa a sair do flag e esta função vira
+// o único lugar a mudar.
+export function isVerbatim(item) {
+  return !!item && item.type === 'prompt';
 }
 
 export function getItemAction(item) {
@@ -110,6 +126,7 @@ function makeActionBtn(action, extraClass) {
 // isso ele não aparece aqui: dentro do menu não há âncora, então abrimos na mão.
 function runAction(action, item, sub, opts, btn) {
   if (action.kind === 'copy') copyToClipboard(action.text, btn);
+  else if (action.kind === 'download-md') downloadText(action.text, fileNameFromTitle(action.item.title, 'md'));
   else if (action.kind === 'submit') openTarefaSubmit(action.item, sub, opts);
   else if (action.kind === 'go-tarefas') goToTarefa(item.id);
   else if (action.kind === 'lab-open') openLabViewer({ key: action.key, title: item.title });
