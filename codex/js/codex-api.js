@@ -81,6 +81,10 @@ export const appConfig = {
 // instead of calling window.callWorker directly (§3b, facade-only).
 export const auth = {
   otpRequest:     (p) => call('admin_otp_request', p),   // { email }
+  // O botão "não recebi" tem ação PRÓPRIA, e não é firula: quando o login passa pelo módulo `otp`
+  // da plataforma, re-pedir com código vivo não manda outro e-mail (é o que evita dois códigos na
+  // caixa). Só o reenvio explícito emite. Sem esta linha, "não recebi" responderia ok sem nada sair.
+  otpResend:      (p) => call('admin_otp_resend', p),     // { email }
   otpVerify:      (p) => call('admin_otp_verify', p),     // { email, code }
   changePassword: (p) => call('change_password', p),      // { auth_token, new_hash }
   validate:       (p) => call('validate_auth', p),        // { auth_token } -> { ok }
