@@ -48,6 +48,15 @@ let _cleanup = [];
 // reads as "create did nothing". One source of truth so the two can't drift.
 const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
 
+// Tipos que o criador NÃO oferece. Élder 2026-08-05: "labs e interativos não são criados
+// aqui, eles são criados pelo lmm então não devem aparecer como opções no criador".
+//
+// Lista SEPARADA da de cima de propósito, e é a parte que importa: `lab` e `interativo`
+// aparecem SIM na biblioteca (é onde ele os vê e edita a descrição), só não podem ser
+// criados daqui. Tê-los somado ao NON_LIBRARY_TYPES os teria apagado da grade junto, que
+// é o contrário do pedido.
+const NON_CREATABLE_TYPES = NON_LIBRARY_TYPES.concat(['lab', 'interativo']);
+
 // The library grid hides set members and the non-library types above.
 export function filterLibraryItems(items) {
   return (items || []).filter((it) =>
@@ -562,7 +571,7 @@ function _openItem(id) {
 function _newItem() {
   const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
   itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
-    types: _types.filter((ty) => NON_LIBRARY_TYPES.indexOf(ty.slug) < 0),
+    types: _types.filter((ty) => NON_CREATABLE_TYPES.indexOf(ty.slug) < 0),
     tags: _tags,
     titleLabel: t('content.new_item_step1'),
     closeLabel: t('content.close'),
@@ -594,7 +603,7 @@ function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
     titleLabel: isEdit ? t('content.edit_item') : t('content.new_item_step2'),
     saveLabel: isEdit ? t('content.save') : t('content.create'),
     closeLabel: t('content.close'),
-    excludeTypes: isEdit ? [] : NON_LIBRARY_TYPES,
+    excludeTypes: isEdit ? [] : NON_CREATABLE_TYPES,
     onCreateType: _openTypeCreateForm,
     onSave: () => {
       closeModal(bd);

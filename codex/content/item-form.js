@@ -109,7 +109,25 @@ function _buildTypeOptsHtml(types, selectedSlug, includeNewOption, excludeTypes)
   return html;
 }
 
+// Conter outros itens deixou de ser privilégio de um tipo (Élder 2026-08-05: "uma tarefa
+// precisa às vezes de documentos dentro para o aluno baixar, não é só a tarefa"). Se uma
+// tarefa pode, então é capacidade de QUALQUER item, e um "agrupador" passa a ser só um item
+// cujo conteúdo são os filhos -- nenhum tipo novo, nenhuma taxonomia. Foi o que dispensou o
+// tipo `agrupador` que ele tinha cogitado: o nome dele ("Configuração de LLMs") é um TÍTULO,
+// não um comportamento, e tipo só se justifica quando o comportamento difere.
+//
+// Num embalador o bloco vem aberto, porque é o conteúdo do item; em qualquer outro tipo vem
+// fechado, para estar à mão sem poluir a tela de quem não vai usar.
 function _buildTypeBlock(typeSlug, body_md, meta) {
+  const inner = _buildTypeBody(typeSlug, body_md, meta);
+  if (typeSlug === 'projeto') return inner;
+  return inner.replace(/<\/div>$/,
+    '<details class="cdx-mem-details"><summary>' + t('editor.members_optional') + '</summary>' +
+      '<div id="ie-members"></div>' +
+    '</details></div>');
+}
+
+function _buildTypeBody(typeSlug, body_md, meta) {
   const m = meta || {};
   const hasBody = '<div class="cdx-field"><label>' + t('editor.body_label') + '</label>' +
     '<textarea id="ie-body" rows="10" placeholder="' + _esc(t('editor.body_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
@@ -736,6 +754,13 @@ export function mount(container, opts) {
       clearDirty();
       onSave(savedItem || { id: savedId });
     } catch (err) {
+      // O erro sai em TOAST, não só em notice.internal. Élder 2026-08-05: "após clicar em
+      // criar deve ter a mensagem de sucesso ou erro". O sucesso já fechava o modal e
+      // avisava; a falha era MUDA, porque notice.internal só aparece com a pílula de debug
+      // ligada. Foi assim que o `ct_set_item_members` respondendo "Unknown action" (Worker de
+      // staging sobrescrito por outra sessão) virou "cliquei em criar e não aconteceu nada".
+      // O notice fica, com o detalhe técnico para quem tem a pílula.
+      toast.err(_err(err));
       notice.internal(_err(err));
       saveBtn.disabled = false;
     }

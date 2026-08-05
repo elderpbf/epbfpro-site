@@ -1233,3 +1233,40 @@
 .cdx-mem-empty { padding: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
 .cdx-mem-add { display: flex; gap: 8px; align-items: center; }
 .cdx-mem-add select { flex: 1 1 auto; min-width: 0; }
+
+/* A ARVORE de itens do agrupador (Elder 05/08: "outros pode se juntar aninhados que da para
+   mostrar com indentacao e linhas laterais mostrando a ligacao"). A indentacao NAO e um
+   padding calculado por profundidade: cada nivel e uma coluna de largura fixa que ou leva
+   traco vertical (o ancestral daquele nivel ainda tem irmao abaixo) ou fica vazia. E o que
+   impede o traco de continuar descendo embaixo do ULTIMO filho. Quem decide coluna a coluna
+   e o guideHtml() do item-members.js; aqui so ha pixel. */
+.cdx-mem-tree { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cdx-mem-tree .cdx-mem-row.is-nested { background: transparent; border-style: dashed; }
+.cdx-mem-guide, .cdx-mem-elbow { flex: 0 0 auto; align-self: stretch; width: 16px; position: relative; }
+.cdx-mem-guide.is-line::before,
+.cdx-mem-elbow::before {
+  content: ''; position: absolute; left: 50%; top: -6px; bottom: 0;
+  border-left: 1px solid var(--border);
+}
+/* O ultimo irmao corta o vertical na altura do cotovelo: nada continua abaixo dele. */
+.cdx-mem-elbow.is-last::before { bottom: 50%; }
+.cdx-mem-elbow::after {
+  content: ''; position: absolute; left: 50%; right: 0; top: 50%;
+  border-top: 1px solid var(--border);
+}
+.cdx-mem-glyph { flex: 0 0 auto; display: inline-flex; align-items: center; color: var(--text-secondary); }
+.cdx-mem-nested-note { flex: 0 0 auto; font-size: 0.72rem; color: var(--text-secondary); font-style: italic; }
+.cdx-mem-picker { max-height: 260px; display: flex; flex-direction: column; }
+.cdx-mem-picker .cdx-picker-list { overflow-y: auto; }
+
+/* O glifo do tipo antes do nome da secao, no compositor de liberacoes E no editor de
+   agrupador -- e a mesma lista, entao e o mesmo cabecalho (Elder 05/08). */
+.cdx-picker-group-glyph {
+  display: inline-flex; align-items: center; margin-right: 6px;
+  color: var(--text-secondary); vertical-align: -2px;
+}
+
+/* "Itens dentro deste item" fora de um embalador: a mao, sem poluir. Ver o comentario em
+   item-form.js sobre conter itens ter deixado de ser privilegio de um tipo. */
+.cdx-mem-details { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.cdx-mem-details > summary { cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); }

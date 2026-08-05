@@ -17,6 +17,7 @@
 import { esc } from './dom.js';
 import { assetUrl } from './codex-api.js';
 import { openModal as _openLabViewer } from './lab-viewer.js';
+import { flattenTree } from './item-list.js';
 export { esc };
 
 // Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
@@ -328,6 +329,23 @@ function renderGoogleDoc(item, container, opts) {
 
 export function renderItem(item, container, opts = {}) {
   if (!item || !container) return;
+  // A previa do admin lista os itens DE DENTRO. Élder 2026-08-05: "nos itens, do lado direito
+  // ao selecionar o projeto, não lista dos documentos". Só na prévia: na trilha quem pinta os
+  // filhos é o trilha/js/projeto.js, que os monta com buildSub e por isso os deixa abrir,
+  // copiar e baixar. Pintar aqui também os desenharia duas vezes lá.
+  //
+  // Sem `case 'projeto'`: conter itens deixou de ser privilégio de um tipo, então a condição
+  // é ter filhos, e uma tarefa com documentos dentro ganha a mesma lista de graça.
+  if (opts.preview && item.children && item.children.length) {
+    const body = document.createElement('div');
+    const kids = document.createElement('div');
+    kids.className = 'ctr-children';
+    kids.innerHTML = childrenListHtml(item.children);
+    container.innerHTML = '';
+    container.appendChild(body);
+    container.appendChild(kids);
+    return renderItem(Object.assign({}, item, { children: null }), body, opts);
+  }
   switch (dispatchType(item.type)) {
     case 'prompt':     return renderPrompt(item, container, opts);
     case 'guide':      return renderGuide(item, container, opts);
@@ -340,6 +358,19 @@ export function renderItem(item, container, opts = {}) {
     case 'interativo': return renderInterativo(item, container, opts);
     default:           return renderMarkdown(item, container, opts);
   }
+}
+
+// A lista, aninhada, do que um item carrega. Só leitura: quem edita é o bloco do editor.
+// Achata pelo MESMO flattenTree que o editor usa, então as duas telas nunca discordam sobre
+// o que está dentro de quê.
+export function childrenListHtml(children) {
+  const rows = flattenTree(children).map((r) => (
+    '<li class="ctr-child" style="padding-left:' + (r.depth * 18) + 'px">' +
+      '<span class="ctr-child-title">' + esc(r.item.title || ('#' + r.item.id)) + '</span>' +
+      '<span class="ctr-child-type">' + esc(r.item.type_label || r.item.type || '') + '</span>' +
+    '</li>'
+  )).join('');
+  return '<ul class="ctr-children-list">' + rows + '</ul>';
 }
 
 function renderModelInfo(item, container, opts) {

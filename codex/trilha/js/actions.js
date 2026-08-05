@@ -40,15 +40,22 @@ export function getMeta(item) {
 // Lab, interativo e tarefa seguem exclusivos: a ação É o item, não há o que somar.
 export function getItemActions(item) {
   const single = _exclusiveAction(item);
-  if (single) return [single];
-
-  // Um embalador só oferece ações DO PACOTE. Élder testou e pegou a incoerência: o "Copiar"
-  // copiava a frase de apresentação do projeto enquanto o "Baixar" trazia um zip de 3 arquivos,
-  // então não dava pra prever o que cada botão faria. O texto do projeto é para LER, na tela.
   const pack = packageOf(item);
-  if (pack) {
-    return [{ kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: pack, icon: 'download' }];
-  }
+  const packAction = pack
+    ? { kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: pack, icon: 'download' }
+    : null;
+
+  // A ação exclusiva CONVIVE com o pacote. Uma tarefa que leva documentos dentro (Élder
+  // 2026-08-05) precisa das duas: "Entregar" continua sendo o que a tarefa É, e "Baixar
+  // tudo" é o que ela carrega. Devolver só a exclusiva esconderia os anexos; devolver só o
+  // pacote tiraria a entrega.
+  if (single) return packAction ? [single, packAction] : [single];
+
+  // Fora disso, um embalador oferece só ações DO PACOTE. Élder testou e pegou a incoerência:
+  // o "Copiar" copiava a frase de apresentação do projeto enquanto o "Baixar" trazia um zip
+  // de 3 arquivos, então não dava pra prever o que cada botão faria. O texto do projeto é
+  // para LER, na tela.
+  if (packAction) return [packAction];
 
   const meta = getMeta(item);
   const out = [];
@@ -71,10 +78,30 @@ export function getItemActions(item) {
 
 // Este item embala outros? A fonte é `item.children`, que o Worker devolve a partir de
 // `ct_item_members`. Um projeto vazio não oferece pacote.
+// O pacote de um item, ACHATADO com o caminho de pasta de cada peça. Um filho que também
+// embala vira uma PASTA no zip com o que ele carrega dentro; assim a estrutura que o aluno vê
+// na trilha é a mesma que ele abre no descompactador (Élder 2026-08-05).
+//
+// `items` continua sendo a lista de ids, agora com o `dir` ao lado, porque quem baixa precisa
+// dos dois: o id para buscar pelo mesmo ct_get_item_public de sempre, e o dir para nomear.
 export function packageOf(item) {
   const kids = item && Array.isArray(item.children) ? item.children : null;
   if (!kids || !kids.length) return null;
-  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items: kids.map((c) => c.id) };
+  const items = [];
+  (function walk(list, dir) {
+    list.forEach((c) => {
+      items.push({ id: c.id, dir });
+      const sub = Array.isArray(c.children) ? c.children : null;
+      if (sub && sub.length) walk(sub, dir + _dirName(c.title) + '/');
+    });
+  })(kids, '');
+  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items };
+}
+
+// Nome de pasta com a MESMA limpeza do nome de arquivo (acento e `#` de título não
+// sobrevivem a sistema de arquivos), só que sem extensão.
+function _dirName(title) {
+  return fileNameFromTitle(title, 'd').replace(/\.d$/, '');
 }
 
 // O texto é literal (não passa por markdown) quando o tipo é `prompt`. Élder: "o prompt
@@ -165,11 +192,11 @@ export async function downloadProject(project) {
     client_slug: state.clientSlug, turma_slug: state.turmaSlug,
     token: state.token, session_token: state.sessionToken,
   };
-  const got = await Promise.all(project.items.map((id) =>
-    trail.itemPublic(Object.assign({ item_id: id, _silent: true }, base))
-      .then((r) => (r && r.item ? r.item : null))
+  const got = await Promise.all(project.items.map((p) =>
+    trail.itemPublic(Object.assign({ item_id: p.id, _silent: true }, base))
+      .then((r) => (r && r.item ? Object.assign({ _dir: p.dir || '' }, r.item) : null))
       .catch(() => null)));
-  const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md }));
+  const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md, dir: i._dir }));
   if (!entries.length) { toast.err('Nao foi possivel montar o pacote.'); return; }
   downloadZip(entries, fileNameFromTitle(project.name, 'zip'));
   // Falha parcial é dito em voz alta: um zip com 2 de 3 arquivos passaria por completo.

@@ -9,9 +9,24 @@
 import { zipSync, strToU8 } from './vendor/fflate.js';
 import { uniqueNames } from './item-download.js';
 
-// entries: [{ title, text }]. Devolve os bytes do zip.
+// entries: [{ title, text, dir? }]. `dir` é o caminho da pasta, já terminado em '/' ('' na
+// raiz). Devolve os bytes do zip.
+//
+// O aninhamento vira PASTA (Élder 2026-08-05: um agrupador pode conter outro). A checagem de
+// colisão é POR PASTA e não global: dois "modelo.md" em pastas diferentes são dois arquivos
+// legítimos, e numerar o segundo só porque um xará existe noutro lugar seria renomear sem
+// motivo o que o autor nomeou.
 export function buildZip(entries, ext = 'md') {
-  const names = uniqueNames(entries.map((e) => e.title), ext);
+  const byDir = new Map();
+  entries.forEach((e, i) => {
+    const d = (e && e.dir) || '';
+    if (!byDir.has(d)) byDir.set(d, []);
+    byDir.get(d).push(i);
+  });
+  const names = new Array(entries.length);
+  byDir.forEach((idxs, dir) => {
+    uniqueNames(idxs.map((i) => entries[i].title), ext).forEach((n, k) => { names[idxs[k]] = dir + n; });
+  });
   const files = {};
   entries.forEach((e, i) => { files[names[i]] = strToU8(e.text == null ? '' : String(e.text)); });
   return zipSync(files, { level: 0 });

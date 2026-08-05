@@ -124,8 +124,37 @@ test('getItemActions: projeto oferece Baixar tudo (.zip)', () => {
   });
   const zip = as.find((a) => a.kind === 'download-project');
   assert.ok(zip, 'o projeto tem que oferecer o pacote');
-  assert.deepEqual(zip.project.items, [900028, 900029, 900030]);
+  assert.deepEqual(zip.project.items, [
+    { id: 900028, dir: '' }, { id: 900029, dir: '' }, { id: 900030, dir: '' },
+  ]);
   assert.equal(zip.project.name, 'Projeto Audiencia', 'o # do markdown sai do nome do arquivo');
+});
+
+// O aninhamento vira PASTA: a estrutura que o aluno ve na trilha e a que ele abre no
+// descompactador (Elder 2026-08-05).
+test('packageOf: o filho que tambem embala vira pasta no zip', () => {
+  const as = getItemActions({
+    type: 'projeto', title: 'Raiz',
+    children: [
+      { id: 1, title: 'Solto' },
+      { id: 2, title: '# Configuração de LLMs', children: [{ id: 3, title: 'A' }, { id: 4, title: 'B' }] },
+    ],
+  });
+  const zip = as.find((a) => a.kind === 'download-project');
+  assert.deepEqual(zip.project.items, [
+    { id: 1, dir: '' },
+    { id: 2, dir: '' },
+    { id: 3, dir: 'Configuracao-de-LLMs/' },
+    { id: 4, dir: 'Configuracao-de-LLMs/' },
+  ]);
+});
+
+// Uma tarefa que leva documentos dentro precisa das DUAS acoes: "Entregar" e o que ela e,
+// "Baixar tudo" e o que ela carrega. So a exclusiva esconderia os anexos.
+test('getItemActions: tarefa com filhos mantem a acao dela E ganha o pacote', () => {
+  const as = getItemActions({ type: 'tarefa', title: 'Tarefa 1', children: [{ id: 9, title: 'Anexo' }] });
+  assert.ok(as.length >= 2, 'a tarefa nao pode perder a acao propria');
+  assert.ok(as.find((a) => a.kind === 'download-project'), 'nem os documentos que ela carrega');
 });
 // Elder testou e pegou a incoerencia: o "Copiar" copiava a frase de apresentacao do projeto
 // enquanto o "Baixar" trazia um zip de 3 arquivos, entao nao dava pra prever o que cada botao
