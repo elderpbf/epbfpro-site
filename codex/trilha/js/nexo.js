@@ -102,7 +102,9 @@ function mountAnswer(sessionCode) {
   // The inner <codex-question> element sees the CLOSE edge on its own ~2s poll; wire it
   // back here so the trilha returns in ~2s instead of waiting up to POLL_LIVE_MS (15s) for
   // our own close-watch poll. schedule(idle) so a re-opened session then surfaces snappily.
-  mountAnswer_(host, { sessionCode, sessionToken: state.sessionToken, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
+  // Pass a GETTER, not a snapshot: state.sessionToken is populated by page.js asynchronously and can
+  // land after this mount, so reading it once here races to null. The getter is read at submit time.
+  mountAnswer_(host, { sessionCode, getSessionToken: () => state.sessionToken, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
   _isMounted = true;
   _lastCode = sessionCode;
 }
