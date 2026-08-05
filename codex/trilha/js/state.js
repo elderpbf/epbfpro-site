@@ -35,6 +35,7 @@ export const ICONS = {
   download: glyphSvg('download', { size: null }),
   check:    glyphSvg('check', { size: null }),
   send:     glyphSvg('send', { size: null }),
+  chevron:  glyphSvg('chevron-down', { size: null }),
 };
 
 // The WhatsApp mark moved to the shared third-party registry (js/brand-marks.js). An icon
