@@ -37,6 +37,12 @@
   cursor: pointer;
 }
 .cdx-auth-link:hover { color: var(--primary); }
+/* Enquanto a espera de 60s corre, o botão de reenvio fica visivelmente inerte: um link sublinhado
+   que não faz nada quando clicado é pior que um botão apagado, porque o usuário clica de novo. */
+.cdx-auth-link:disabled { color: var(--text-secondary); opacity: .5; cursor: default; text-decoration: none; }
+.cdx-auth-link:disabled:hover { color: var(--text-secondary); }
+/* A confirmação. Não é erro, então não é vermelha. */
+.cdx-login-note { margin: .6rem 0 0; font-size: .85rem; color: var(--text-secondary); }
 
 /* ── Rich tab strip in the Codex topbar ─────────────────────── */
 .cdx-tabs {

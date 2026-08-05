@@ -128,13 +128,44 @@ export function mountLogin() {
   const backBtn = $('cdx-login-back-btn');
   const resendBtn = $('cdx-login-resend-btn');
   const emailEcho = $('cdx-login-email-echo');
+  const noteEl = $('cdx-login-note');
   let currentEmail = '';
 
+  // A ESPERA ENTRE REENVIOS, VISÍVEL. São 60s do lado do servidor (o módulo `otp` da plataforma
+  // recusa antes disso), e enquanto ela era invisível o botão "Reenviar código" respondia com um
+  // erro seco a um clique que parecia legítimo. Contagem regressiva no próprio rótulo: a pessoa vê
+  // quando pode pedir de novo em vez de descobrir tentando.
+  const ESPERA_REENVIO_SEG = 60;
+  const ROTULO_REENVIO = (resendBtn && resendBtn.textContent) || 'Reenviar código';
+  let faltam = 0;
+  let relogio = null;
+
+  function pintarReenvio() {
+    if (!resendBtn) return;
+    resendBtn.disabled = faltam > 0;
+    resendBtn.textContent = faltam > 0 ? (ROTULO_REENVIO + ' em ' + faltam + 's') : ROTULO_REENVIO;
+  }
+  // Começa (ou RECOMEÇA) a espera. Recomeçar é o ponto: depois de um reenvio bem-sucedido a conta
+  // volta do zero, senão o segundo clique cai no mesmo erro invisível que este código veio matar.
+  function esperar(segundos) {
+    faltam = Math.max(0, Math.round(segundos || 0));
+    if (relogio) clearInterval(relogio);
+    pintarReenvio();
+    if (!faltam) return;
+    relogio = setInterval(function () {
+      faltam -= 1;
+      pintarReenvio();
+      if (faltam <= 0) { clearInterval(relogio); relogio = null; }
+    }, 1000);
+  }
+
   function setErr(msg) { if (errEl) errEl.textContent = msg || ''; }
+  function setNote(msg) { if (noteEl) noteEl.textContent = msg || ''; }
   function showStep(which) {
     if (emailStep) emailStep.hidden = which !== 'email';
     if (codeStep) codeStep.hidden = which !== 'code';
     setErr('');
+    setNote('');
     if (which === 'email' && emailEl) emailEl.focus();
     if (which === 'code' && codeEl) { codeEl.value = ''; codeEl.focus(); }
   }
@@ -145,6 +176,7 @@ export function mountLogin() {
   // reenvio explícito emite. Chamar `otpRequest` no "não recebi" responderia ok e não mandaria nada.
   async function requestCode(email, reenvio) {
     setErr('');
+    setNote('');
     if (emailBtn) emailBtn.disabled = true;
     if (resendBtn) resendBtn.disabled = true;
     try {
@@ -152,19 +184,34 @@ export function mountLogin() {
       await (reenvio ? auth.otpResend({ email: email }) : auth.otpRequest({ email: email }));
       currentEmail = email;
       if (emailEcho) emailEcho.textContent = email;
-      showStep('code');
+      if (reenvio) {
+        // NO REENVIO NÃO SE TROCA DE PASSO: a pessoa já está na tela do código. `showStep` limparia
+        // o campo e a confirmação, e o clique voltaria a não ter resposta visível nenhuma, que é
+        // exatamente o defeito. Aqui ela VÊ que outro código saiu.
+        setNote('Enviamos um novo código para ' + email + '. O anterior deixou de valer.');
+      } else {
+        showStep('code');
+      }
+      esperar(ESPERA_REENVIO_SEG);
     } catch (e) {
       const code = (e && e.data && e.data.error) || '';
       logErr('admin_otp_request failed: ' + (code || (e && e.message) || 'unknown'));
       setErr(messageFor(code));
+      // O servidor sabe quanto falta; obedecer ao número dele em vez de recomeçar 60 do nosso lado
+      // evita o relógio da tela e o do servidor divergirem depois de um recarregamento de página.
+      const faltamNoServidor = e && e.data && e.data.retry_after;
+      if (code === 'resend_too_soon' && faltamNoServidor) esperar(faltamNoServidor);
     } finally {
       if (emailBtn) emailBtn.disabled = false;
-      if (resendBtn) resendBtn.disabled = false;
+      // NÃO reabilita o reenvio à força: quem manda no estado dele é a contagem regressiva, e um
+      // `disabled = false` aqui a atropelaria justo no clique que a acabou de iniciar.
+      pintarReenvio();
     }
   }
 
   async function verifyCode(email, codeVal) {
     setErr('');
+    setNote('');
     if (codeBtn) codeBtn.disabled = true;
     try {
       const r = await auth.otpVerify({ email: email, code: codeVal });
