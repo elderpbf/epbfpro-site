@@ -38,7 +38,11 @@ export function renderProjeto(item, host, buildSub, opts = {}) {
     const body = document.createElement('div');
     body.className = 'cdx-tr-proj-intro';
     host.appendChild(body);
-    renderItem(item, body, { preview: true });
+    // `children: null` de propósito: o renderItem também sabe listar os filhos (é o que a
+    // prévia do admin usa), e a trilha passa `preview: true` como qualquer tela. Sem tirar,
+    // a lista somente-leitura sairia empilhada em cima da lista de verdade, a que abre,
+    // copia e baixa. Aqui quem pinta os filhos é este módulo.
+    renderItem(Object.assign({}, item, { children: null }), body, { preview: true });
   }
   const count = document.createElement('p');
   count.className = 'cdx-tr-proj-count';

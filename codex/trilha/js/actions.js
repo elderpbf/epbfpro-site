@@ -199,9 +199,13 @@ export async function downloadProject(project) {
   const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md, dir: i._dir }));
   if (!entries.length) { toast.err('Nao foi possivel montar o pacote.'); return; }
   downloadZip(entries, fileNameFromTitle(project.name, 'zip'));
-  // Falha parcial é dito em voz alta: um zip com 2 de 3 arquivos passaria por completo.
-  if (entries.length < project.items.length) {
-    toast.err('O pacote saiu com ' + entries.length + ' de ' + project.items.length + ' arquivos.');
+  // Falha parcial é dita em voz alta: um zip com 2 de 3 arquivos passaria por completo. Mas a
+  // conta é de itens que NÃO VOLTARAM, não de itens sem corpo: com aninhamento, um agrupador
+  // entra na lista só para dar nome à pasta e legitimamente não tem texto próprio. Contar por
+  // `entries` acusaria falha num pacote inteiro.
+  const failed = got.filter((i) => !i).length;
+  if (failed) {
+    toast.err('O pacote saiu sem ' + failed + (failed === 1 ? ' arquivo.' : ' arquivos.'));
   }
 }
 

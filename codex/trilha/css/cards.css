@@ -608,8 +608,11 @@
    segundo visual de linha de item. */
 .cdx-tr-proj-intro {
   margin: 0 0 0.5rem;
-  color: var(--text-secondary);
 }
+/* O corpo passou a sair pelo renderItem (o enunciado de uma tarefa com documentos dentro tem
+   que sair formatado). O cinza secundario servia pra frase de apresentacao de um projeto e
+   apagaria um enunciado inteiro, entao fica so nela. */
+.cdx-tr-proj-intro > p:only-child { color: var(--text-secondary); }
 .cdx-tr-proj-count {
   margin: 0 0 0.7rem;
   font-size: 0.82rem;
