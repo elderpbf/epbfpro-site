@@ -27,7 +27,7 @@ export const trail = {
   sessionState:   (p) => call('get_session_state', p),      // { code } -> live state
   submitAnswer:   (p) => call('submit_answer', p),          // { question_id, session_code, ... }
   studentInbox:   (p) => call('cp_student_inbox', p),       // { session_code, student_name }
-  submitStudentQ: (p) => call('submit_student_question', p),// { session_code, student_name, text }
+  submitStudentQ: (p) => call('submit_student_question', p),// { session_code, student_name, text, session_token? } — token (optional) links the Q to the logged-in participant for LGPD erase; display stays anonymous
 
   // Student identity (e-mail OTP: the 4-letter code that replaces the magic link).
   // Public actions; session_token-bearing calls POST automatically (see worker-call.js).
