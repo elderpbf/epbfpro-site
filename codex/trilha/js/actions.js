@@ -58,22 +58,19 @@ export function getItemActions(item) {
       out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
     }
   }
-  const proj = projectOf(item);
+  const proj = packageOf(item);
   if (proj) {
-    out.push({ kind: 'download-project', label: 'Baixar o projeto (.zip)', shortLabel: '.zip', project: proj, icon: 'download' });
+    out.push({ kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: proj, icon: 'download' });
   }
   return out;
 }
 
-// A que projeto este item pertence, se pertence.
-//
-// INTERINO: a fonte é `meta_json.project` ({ name, items: [id] }). O modelo final é a tabela
-// de junção `ct_item_set_members` (o mesmo item pode estar em dois projetos, decisão do Élder
-// 2026-08-04). Quando ela existir, só esta função muda: quem chama já lê { name, items }.
-export function projectOf(item) {
-  const p = getMeta(item).project;
-  if (!p || !Array.isArray(p.items) || p.items.length < 2) return null;
-  return { name: String(p.name || 'projeto'), items: p.items.slice() };
+// Este item embala outros? A fonte é `item.children`, que o Worker devolve a partir de
+// `ct_item_members`. Um projeto vazio não oferece pacote.
+export function packageOf(item) {
+  const kids = item && Array.isArray(item.children) ? item.children : null;
+  if (!kids || !kids.length) return null;
+  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items: kids.map((c) => c.id) };
 }
 
 // O texto é literal (não passa por markdown) quando o tipo é `prompt`. Élder: "o prompt

@@ -114,6 +114,28 @@ test('getItemActions: nada acionavel -> lista vazia', () => {
   assert.deepEqual(getItemActions({ type: 'x' }), []);
 });
 
+// ── projeto: item embalador (track-61) ─────────────────────────────────────
+// "quando eu insiro o projeto na trilha nao aparecem os 3 itens separadamente, aparece o
+// projeto, e quando eu abro ele aparecem listados os 3 itens" (Élder 2026-08-04).
+test('getItemActions: projeto oferece Baixar tudo (.zip)', () => {
+  const as = getItemActions({
+    type: 'projeto', title: '# Projeto Audiencia',
+    children: [{ id: 900028 }, { id: 900029 }, { id: 900030 }],
+  });
+  const zip = as.find((a) => a.kind === 'download-project');
+  assert.ok(zip, 'o projeto tem que oferecer o pacote');
+  assert.deepEqual(zip.project.items, [900028, 900029, 900030]);
+  assert.equal(zip.project.name, 'Projeto Audiencia', 'o # do markdown sai do nome do arquivo');
+});
+test('getItemActions: projeto vazio nao oferece pacote', () => {
+  assert.deepEqual(getItemActions({ type: 'projeto', title: 'X', children: [] }), []);
+});
+// Um item comum nao vira embalador so por ter corpo.
+test('getItemActions: item sem filhos nao oferece pacote', () => {
+  const as = getItemActions({ type: 'prompt', title: 'P', body_md: 'x' });
+  assert.equal(as.some((a) => a.kind === 'download-project'), false);
+});
+
 // ── download .md (track-61) ────────────────────────────────────────────────
 // Regra do Elder: quem ve os simbolos do markdown baixa .md; quem ve processado baixa PDF.
 // Hoje o unico texto literal e o `prompt` ("o prompt sempre cru").
