@@ -601,28 +601,3 @@
   .cdx-tr-app-cols { grid-template-columns: 1fr; gap: 18px; }
   .cdx-tr-app-col-right { order: -1; }
 }
-
-/* ── Projeto (item embalador, track-61) ──────────────────── */
-/* O corpo expandido de um projeto lista os filhos, e cada filho e uma .cdx-tr-sub igual as
-   da trilha (mesmo buildSub). O recuo diz que eles estao DENTRO do projeto sem inventar um
-   segundo visual de linha de item. */
-.cdx-tr-proj-intro {
-  margin: 0 0 0.5rem;
-}
-/* O corpo passou a sair pelo renderItem (o enunciado de uma tarefa com documentos dentro tem
-   que sair formatado). O cinza secundario servia pra frase de apresentacao de um projeto e
-   apagaria um enunciado inteiro, entao fica so nela. */
-.cdx-tr-proj-intro > p:only-child { color: var(--text-secondary); }
-.cdx-tr-proj-count {
-  margin: 0 0 0.7rem;
-  font-size: 0.82rem;
-  font-weight: 600;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-  color: var(--text-muted, var(--text-secondary));
-}
-.cdx-tr-proj-list {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-}

@@ -4,7 +4,7 @@
 // Run: node --test tests/slides-import.test.mjs
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { zipSync, strToU8 } from '../js/vendor/fflate.js';
+import { zipSync, strToU8 } from '../content/slides/js/vendor/fflate.js';
 import { parsePptx, parseSlideXml } from '../content/slides/js/import/pptx.js';
 import {
   classifyHeuristic,

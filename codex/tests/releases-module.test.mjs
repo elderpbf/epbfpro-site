@@ -162,9 +162,7 @@ test('labs3: every composer row has an eye preview that reuses the shared render
   assert.match(pv, /item\.type === 'lab'/, 'labs open the lab viewer');
   assert.match(pv, /item\.type === 'drive_file'/, 'Drive files open the Drive viewer');
   assert.match(pv, /contentApi\.getItem/, 'fetches the full item (body_md) for the body types');
-  // `childrenList: true` junto: a previa de uma PASTA tem que listar o que ela carrega, senao
-  // o professor abre o olho e ve so o texto de apresentacao (Elder 2026-08-05).
-  assert.match(pv, /renderItem\(full, host, \{ preview: true, childrenList: true \}\)/, 'renders the body read-only, with what the folder carries');
+  assert.match(pv, /renderItem\(full, host, \{ preview: true \}\)/, 'renders the body read-only');
   // The click handler dismisses on any click ("clicar em qualquer lugar fecha").
   assert.match(relSrc, /bd\.addEventListener\('click', \(\) => closeModal\(bd\)\)/, 'any click closes the preview');
   // The eye click never toggles the checkbox.

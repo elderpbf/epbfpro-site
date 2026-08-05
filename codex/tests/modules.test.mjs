@@ -95,11 +95,7 @@ const SLIDES_CORE_PREFIX = 'content/slides/js/';
 // (track-35 E), not a convenience: check the candidate against the rule and say so here.
 //   js/i18n.js    t(): keys -> strings. No state, no backend.
 //   js/glyphs.js  glyphSvg(): key -> inline SVG. No state, no backend.
-// js/vendor/fflate.js entrou no track-61, quando a trilha do aluno passou a ZIPAR o pacote de
-// um projeto com a mesma lib que o importador de .pptx já usava para DESzipar. Ela cumpre o
-// critério de membro: codec puro, transforma bytes em bytes, sem estado de app, sem store,
-// sem facade, sem rede. Duas cópias vendorizadas da mesma lib seria o problema pior.
-const SLIDES_CORE_OUTBOUND = new Set(['js/i18n.js', 'js/glyphs.js', 'js/vendor/fflate.js']);
+const SLIDES_CORE_OUTBOUND = new Set(['js/i18n.js', 'js/glyphs.js']);
 
 // Tab directories.
 const TABS = ['cohorts', 'content', 'questions', 'lessons', 'certificates'];

@@ -23,7 +23,6 @@
 import { appConfig, content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
-import { mount as mountMembers } from './item-members.js';
 import { createDriveSource, pickLocalFile } from '../js/file-source.js';
 import * as aiSpec from '../js/ai-spec.js';
 import * as notice from '../js/notice.js';
@@ -109,25 +108,7 @@ function _buildTypeOptsHtml(types, selectedSlug, includeNewOption, excludeTypes)
   return html;
 }
 
-// Conter outros itens deixou de ser privilégio de um tipo (Élder 2026-08-05: "uma tarefa
-// precisa às vezes de documentos dentro para o aluno baixar, não é só a tarefa"). Se uma
-// tarefa pode, então é capacidade de QUALQUER item, e um "agrupador" passa a ser só um item
-// cujo conteúdo são os filhos -- nenhum tipo novo, nenhuma taxonomia. Foi o que dispensou o
-// tipo `agrupador` que ele tinha cogitado: o nome dele ("Configuração de LLMs") é um TÍTULO,
-// não um comportamento, e tipo só se justifica quando o comportamento difere.
-//
-// Num embalador o bloco vem aberto, porque é o conteúdo do item; em qualquer outro tipo vem
-// fechado, para estar à mão sem poluir a tela de quem não vai usar.
 function _buildTypeBlock(typeSlug, body_md, meta) {
-  const inner = _buildTypeBody(typeSlug, body_md, meta);
-  if (typeSlug === 'projeto') return inner;
-  return inner.replace(/<\/div>$/,
-    '<details class="cdx-mem-details"><summary>' + t('editor.members_optional') + '</summary>' +
-      '<div id="ie-members"></div>' +
-    '</details></div>');
-}
-
-function _buildTypeBody(typeSlug, body_md, meta) {
   const m = meta || {};
   const hasBody = '<div class="cdx-field"><label>' + t('editor.body_label') + '</label>' +
     '<textarea id="ie-body" rows="10" placeholder="' + _esc(t('editor.body_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
@@ -139,16 +120,6 @@ function _buildTypeBody(typeSlug, body_md, meta) {
 
   if (typeSlug === 'prompt') {
     return '<div class="cdx-type-block">' + hasBody + '</div>';
-  }
-  // Um embalador não tem conteúdo próprio: o corpo é só a frase que apresenta o pacote ao
-  // aluno, e a lista de itens é montada pelo item-members depois que o bloco existe no DOM.
-  if (typeSlug === 'projeto') {
-    return '<div class="cdx-type-block">' +
-      '<div class="cdx-field"><label>' + t('editor.projeto_intro_label') + '</label>' +
-        '<textarea id="ie-body" rows="3" placeholder="' + _esc(t('editor.projeto_intro_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
-      '</div>' +
-      '<div id="ie-members"></div>' +
-    '</div>';
   }
   if (typeSlug === 'guide') {
     const hasPlatformTabs = !!(m.platform_tabs);
@@ -254,16 +225,7 @@ function _buildTypeBody(typeSlug, body_md, meta) {
   return '<div class="cdx-type-block">' + hasBody + '</div>';
 }
 
-function _wireTypeBlockEvents(block, typeSlug, onFileSelected, ctx) {
-  const memHost = block.querySelector('#ie-members');
-  if (memHost && ctx) {
-    if (ctx.members) ctx.members.destroy();
-    ctx.members = mountMembers(memHost, {
-      parentId: ctx.itemId || null,
-      children: ctx.children || [],
-      onChange: ctx.onMembersChange || function () {},
-    });
-  }
+function _wireTypeBlockEvents(block, typeSlug, onFileSelected) {
   const previewBtn = block.querySelector('#ie-preview-btn');
   if (previewBtn) {
     previewBtn.addEventListener('click', function () {
@@ -532,14 +494,6 @@ export function mount(container, opts) {
   const selectedTagIds = new Set(initialTagIds);
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
-  // Os filhos de um embalador não vão no meta_json: eles são linhas de ct_item_members,
-  // gravadas DEPOIS do save (um item novo ainda não tem id para ser pai).
-  const _memberCtx = {
-    itemId: isEdit && item ? item.id : null,
-    children: (isEdit && item && item.children) || [],
-    members: null,
-    onMembersChange: () => markDirty(),
-  };
   const typeSel = root.querySelector('#ie-type');
   const typeOptsEl = root.querySelector('#ie-type-opts');
   let lastTypeValue = initialType;
@@ -567,7 +521,7 @@ export function mount(container, opts) {
       _pendingAssetFile = file;
       _pendingAssetField = field;
       markDirty();
-    }, _memberCtx);
+    });
     block.querySelectorAll('input, textarea, select').forEach((el) => {
       el.addEventListener('input', markDirty);
       el.addEventListener('change', markDirty);
@@ -745,22 +699,9 @@ export function mount(container, opts) {
         if (progressEl) progressEl.textContent = '';
       }
 
-      // Os filhos de um embalador só podem ser gravados agora: um item novo não tinha id.
-      if (_memberCtx.members && savedId) {
-        const res = await api.setItemMembers({ parent_item_id: savedId, child_item_ids: _memberCtx.members.ids() });
-        if (res && res.error) throw new Error(res.error);
-      }
-
       clearDirty();
       onSave(savedItem || { id: savedId });
     } catch (err) {
-      // O erro sai em TOAST, não só em notice.internal. Élder 2026-08-05: "após clicar em
-      // criar deve ter a mensagem de sucesso ou erro". O sucesso já fechava o modal e
-      // avisava; a falha era MUDA, porque notice.internal só aparece com a pílula de debug
-      // ligada. Foi assim que o `ct_set_item_members` respondendo "Unknown action" (Worker de
-      // staging sobrescrito por outra sessão) virou "cliquei em criar e não aconteceu nada".
-      // O notice fica, com o detalhe técnico para quem tem a pílula.
-      toast.err(_err(err));
       notice.internal(_err(err));
       saveBtn.disabled = false;
     }

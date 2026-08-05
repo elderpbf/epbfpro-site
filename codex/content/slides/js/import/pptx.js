@@ -12,7 +12,7 @@
 //   parseSlideXml(xml, index)   -> SourceSlide                 (pure, testable)
 //   SourceSlide = { index, title, shapes:[{paragraphs:string[]}],
 //                   paragraphs:string[], imageCount }
-import { unzipSync, strFromU8 } from '../../../../js/vendor/fflate.js';
+import { unzipSync, strFromU8 } from '../vendor/fflate.js';
 
 // ---- XML scanning helpers (no DOM) -----------------------------------------
 

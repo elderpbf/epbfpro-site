@@ -9,7 +9,6 @@ import { content as contentApi, releases as api, cohorts as cohortsApi } from '.
 import { t } from '../js/i18n.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
-import { groupByType } from '../js/item-list.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
@@ -587,7 +586,7 @@ function _openCopyReleasesModal(targetAulaNum) {
       previewPoolIds = matches.map((it) => Number(it.id));
       if (!matches.length) { previewEl.innerHTML = '<div class="cdx-empty">' + t('releases.copy_scope_empty') + '</div>'; return; }
       const sections = _groupByType(matches).map((g) => ({
-        key: 'type-' + g.type, label: _sectionLabelHtml(g.type, _typeLabel(g.type)), count: g.items.length,
+        key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
         rowsHtml: g.items.map((i) => _rowHtml(i, 'copy-preview', true, typeIconHtml(_typeIcon(g.type), { size: 15 }), null)).join(''),
       }));
       previewEl.innerHTML = '<div class="cdx-picker-list">' + _accordionGroupsHtml(sections, { forceOpen: true }) + '</div>';
@@ -765,7 +764,7 @@ function _openItemPreview(id) {
     const host = bd.querySelector('#cdx-rel-preview-render');
     if (!host) return;
     host.innerHTML = '';
-    try { renderItem(full, host, { preview: true, childrenList: true }); }
+    try { renderItem(full, host, { preview: true }); }
     catch (e) { host.textContent = full.body_md || ''; notice.internal(_err(e)); }
   }).catch((e) => {
     const host = bd.querySelector('#cdx-rel-preview-render');
@@ -805,20 +804,16 @@ function _typeLabel(slug) {
 
 // Group items by their type, ordered by the ct_types registry order (unknown types
 // last). Used to lay the release composer out "por tipo" instead of one Outros bucket.
-//
-// A REGRA saiu daqui para js/item-list.js (Élder 2026-08-05: "a gente deve ter apenas uma
-// lista de itens e cada local que utiliza só faz os filtros necessários"). O editor de
-// agrupador monta as mesmas seções pelo mesmo motor; o que continua sendo desta tela é o
-// que ela pinta em cima (checkbox, contagem de liberados, o aviso "já na aula 3").
 function _groupByType(items) {
-  return groupByType(items, _types);
-}
-
-// O glifo do tipo, do tamanho do rótulo de seção. Élder: "vamos aproveitar para adicionar
-// glifos antes do nome dos tipos (para cá e nas liberações, já que será a mesma lista)".
-function _sectionLabelHtml(slug, label) {
-  const ic = typeIconHtml(_typeIcon(slug), { size: 14 });
-  return (ic ? '<span class="cdx-picker-group-glyph" aria-hidden="true">' + ic + '</span>' : '') + _esc(label);
+  const order = _types.map((tp) => tp.slug);
+  const byType = new Map();
+  items.forEach((i) => { if (!byType.has(i.type)) byType.set(i.type, []); byType.get(i.type).push(i); });
+  return Array.from(byType.keys())
+    .sort((a, b) => {
+      const ia = order.indexOf(a), ib = order.indexOf(b);
+      return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib);
+    })
+    .map((k) => ({ type: k, items: byType.get(k) }));
 }
 
 // The OTHER aulas this item is bound to (excluding aulaNum). Returns an array, or
@@ -967,7 +962,7 @@ function _renderAulaComposer(container, aula) {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
     const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
     const rows = items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), _rowGlyph(i, glyph), _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'type-' + g.type, label: _sectionLabelHtml(g.type, _typeLabel(g.type)), count: g.items.length,
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), count: g.items.length,
       releasedCount: g.items.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: rows });
   });
   if (driveItems.length) {
@@ -997,7 +992,7 @@ function _renderOutrosComposer(container) {
         const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
         return {
           key: 'type-' + g.type,
-          label: _sectionLabelHtml(g.type, _typeLabel(g.type)),
+          label: _typeLabel(g.type),
           count: g.items.length,
           releasedCount: g.items.filter((i) => _inOutros(i.id)).length,
           rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })), _releasedElsewhere(i.id, 0))).join(''),
