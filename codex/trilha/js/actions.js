@@ -135,11 +135,10 @@ function makeActionBtn(action, extraClass) {
 
   let labelHtml = '<span class="cdx-tr-ia-label-full">' + esc(action.label) + '</span>';
   if (action.shortLabel) labelHtml += '<span class="cdx-tr-ia-label-short">' + esc(action.shortLabel) + '</span>';
-  // O glifo de uma ação vem ANTES do rótulo (ele diz o que a ação é). O chevron de um menu
-  // vem DEPOIS: ele não descreve nada, aponta que há mais coisa embaixo, e à esquerda leria
-  // como "ação de descer". Élder 2026-08-04.
-  const glyph = state.ICONS[action.icon] || state.ICONS.copy;
-  btn.innerHTML = action.kind === 'menu' ? labelHtml + glyph : glyph + labelHtml;
+  // O glifo vem sempre ANTES do rótulo, chevron incluído: é o lugar dele em todo botão da
+  // trilha, e um único botão fora do padrão custa mais que a convenção de dropdown ganha
+  // (Élder 2026-08-04, depois de conferir o botão de enviar).
+  btn.innerHTML = (state.ICONS[action.icon] || state.ICONS.copy) + labelHtml;
   if (action.kind === 'submitted') btn.disabled = true;
   return btn;
 }
