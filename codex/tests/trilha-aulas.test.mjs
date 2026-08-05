@@ -127,6 +127,16 @@ test('getItemActions: projeto oferece Baixar tudo (.zip)', () => {
   assert.deepEqual(zip.project.items, [900028, 900029, 900030]);
   assert.equal(zip.project.name, 'Projeto Audiencia', 'o # do markdown sai do nome do arquivo');
 });
+// Elder testou e pegou a incoerencia: o "Copiar" copiava a frase de apresentacao do projeto
+// enquanto o "Baixar" trazia um zip de 3 arquivos, entao nao dava pra prever o que cada botao
+// faria. Um embalador so oferece acoes DO PACOTE; o texto dele e pra ler na tela.
+test('getItemActions: projeto NAO oferece Copiar da propria apresentacao', () => {
+  const as = getItemActions({
+    type: 'projeto', title: 'P', body_md: 'Baixe tudo e suba na sua IA.',
+    children: [{ id: 1 }, { id: 2 }],
+  });
+  assert.deepEqual(as.map((a) => a.kind), ['download-project']);
+});
 test('getItemActions: projeto vazio nao oferece pacote', () => {
   assert.deepEqual(getItemActions({ type: 'projeto', title: 'X', children: [] }), []);
 });

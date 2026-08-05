@@ -1212,3 +1212,24 @@
   .cdx-app-benefit { grid-template-columns: 1fr; }
   .cdx-app-benefit-glyph { justify-content: flex-start; }
 }
+
+/* ── Itens de um embalador (projeto), track-61 ─────────────────────────────── */
+/* A lista de filhos do editor: ordem visivel (o aluno recebe nessa ordem no .zip),
+   reordenar e remover na propria linha. */
+.cdx-mem-list { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cdx-mem-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface);
+}
+.cdx-mem-pos {
+  flex: 0 0 auto; min-width: 1.4em; text-align: center;
+  font-variant-numeric: tabular-nums; font-weight: 600;
+  color: var(--text-secondary);
+}
+.cdx-mem-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-mem-type { flex: 0 0 auto; font-size: 0.78rem; color: var(--text-secondary); }
+.cdx-mem-empty { padding: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
+.cdx-mem-add { display: flex; gap: 8px; align-items: center; }
+.cdx-mem-add select { flex: 1 1 auto; min-width: 0; }

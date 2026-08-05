@@ -42,6 +42,14 @@ export function getItemActions(item) {
   const single = _exclusiveAction(item);
   if (single) return [single];
 
+  // Um embalador só oferece ações DO PACOTE. Élder testou e pegou a incoerência: o "Copiar"
+  // copiava a frase de apresentação do projeto enquanto o "Baixar" trazia um zip de 3 arquivos,
+  // então não dava pra prever o que cada botão faria. O texto do projeto é para LER, na tela.
+  const pack = packageOf(item);
+  if (pack) {
+    return [{ kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: pack, icon: 'download' }];
+  }
+
   const meta = getMeta(item);
   const out = [];
   if (meta.pdf_url) out.push({ kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' });
@@ -57,10 +65,6 @@ export function getItemActions(item) {
     if (isVerbatim(item)) {
       out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
     }
-  }
-  const proj = packageOf(item);
-  if (proj) {
-    out.push({ kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: proj, icon: 'download' });
   }
   return out;
 }
