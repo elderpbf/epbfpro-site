@@ -149,6 +149,22 @@ test('packageOf: o filho que tambem embala vira pasta no zip', () => {
   ]);
 });
 
+// Elder 2026-08-05, sobre pasta com lab dentro: permitir e AVISAR, nunca proibir. Proibir
+// deixaria a regra dependente da ORDEM (poe um lab primeiro e a pasta trava contra documentos).
+test('packageOf: lab e interativo saem do zip mas sao CONTADOS, nao sumidos', () => {
+  const as = getItemActions({
+    type: 'projeto', title: 'Mista',
+    children: [
+      { id: 1, title: 'Doc', type: 'prompt' },
+      { id: 2, title: 'Lab', type: 'lab' },
+      { id: 3, title: 'Inter', type: 'interativo' },
+    ],
+  });
+  const zip = as.find((a) => a.kind === 'download-project');
+  assert.deepEqual(zip.project.items, [{ id: 1, dir: '' }]);
+  assert.equal(zip.project.skipped, 2, 'o que nao cabe no zip tem que ser dito, nao escondido');
+});
+
 // Uma tarefa que leva documentos dentro precisa das DUAS acoes: "Entregar" e o que ela e,
 // "Baixar tudo" e o que ela carrega. So a exclusiva esconderia os anexos.
 test('getItemActions: tarefa com filhos mantem a acao dela E ganha o pacote', () => {

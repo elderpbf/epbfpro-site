@@ -20,6 +20,7 @@ import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { sectionsByType, matchesQuery, selectableItems, flattenTree, idsInTree } from '../js/item-list.js';
+import { isDownloadable } from '../js/item-download.js';
 
 export { selectableItems };
 
@@ -105,7 +106,12 @@ export function mount(host, opts = {}) {
       const rows = s.items.map((i) => (
         '<label class="cdx-comp-item">' +
           '<input type="checkbox" class="cdx-mem-cb" value="' + _esc(i.id) + '"' + (top.has(Number(i.id)) ? ' checked' : '') + '>' +
-          '<span>' + _esc(i.title) + '</span>' +
+          '<span>' + _esc(i.title) +
+            // Lab e interativo podem entrar na pasta, só não cabem no .zip. A linha DIZ isso
+            // em vez de a pasta recusá-los: proibir deixaria a regra dependente da ordem (põe
+            // um lab primeiro e a pasta trava contra documentos). Élder 2026-08-05.
+            (isDownloadable(i) ? '' : ' <span class="cdx-comp-elsewhere">' + _esc(t('editor.members_no_zip')) + '</span>') +
+          '</span>' +
         '</label>'
       )).join('');
       return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +

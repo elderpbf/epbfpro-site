@@ -11,7 +11,7 @@ import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
-import { downloadText, fileNameFromTitle } from '../../js/item-download.js';
+import { downloadText, fileNameFromTitle, isDownloadable } from '../../js/item-download.js';
 import { downloadZip } from '../../js/item-zip.js';
 import { trail } from './api.js';
 import * as toast from '../../js/toast.js';
@@ -88,14 +88,19 @@ export function packageOf(item) {
   const kids = item && Array.isArray(item.children) ? item.children : null;
   if (!kids || !kids.length) return null;
   const items = [];
+  let skipped = 0;
   (function walk(list, dir) {
     list.forEach((c) => {
-      items.push({ id: c.id, dir });
+      // Lab e interativo ficam de fora do pacote, mas continuam na pasta e na trilha. São
+      // CONTADOS, não sumidos: um zip com menos arquivos do que a pasta mostra tem que dizer
+      // isso, senão passa por completo (Élder 2026-08-05).
+      if (!isDownloadable(c)) skipped++;
+      else items.push({ id: c.id, dir });
       const sub = Array.isArray(c.children) ? c.children : null;
       if (sub && sub.length) walk(sub, dir + _dirName(c.title) + '/');
     });
   })(kids, '');
-  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items };
+  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items, skipped };
 }
 
 // Nome de pasta com a MESMA limpeza do nome de arquivo (acento e `#` de título não
@@ -206,6 +211,14 @@ export async function downloadProject(project) {
   const failed = got.filter((i) => !i).length;
   if (failed) {
     toast.err('O pacote saiu sem ' + failed + (failed === 1 ? ' arquivo.' : ' arquivos.'));
+  }
+  // O que não cabe em arquivo é dito, não escondido: um zip com menos itens do que a pasta
+  // mostra passaria por completo. Nada entra no lugar deles ("we're not going to add anything
+  // to the zip because it makes no sense", Élder 2026-08-05).
+  if (project.skipped) {
+    toast.info(project.skipped === 1
+      ? '1 lab ou interativo não entra no .zip; ele abre na trilha.'
+      : project.skipped + ' labs ou interativos não entram no .zip; eles abrem na trilha.');
   }
 }
 

@@ -14,6 +14,8 @@ import { registerRenderer } from './page.js';
 import { renderItem } from '../../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 import { interceptItemOpen } from './gate.js';
+import { isProjeto, renderProjeto } from './projeto.js';
+import { buildSub } from './sub.js';
 
 export function renderApostilaTab() {
   const container = document.getElementById('cdx-tr-apostila-list');
@@ -166,7 +168,12 @@ async function toggleFlatCard(card, item) {
     body.innerHTML = '';
     const contentWrap = document.createElement('div');
     body.appendChild(contentWrap);
-    renderItem(data.item, contentWrap, { preview: true });
+    // Uma pasta abre igual aqui e na aba Aulas: o MESMO renderProjeto, com o MESMO buildSub,
+    // então cada filho abre, copia e baixa por conta própria. Sem isto o cartão de Outros
+    // mostraria só o texto da pasta e um "Baixar tudo", e o aluno não alcançaria o que está
+    // dentro sem baixar o pacote inteiro.
+    if (isProjeto(data.item)) renderProjeto(data.item, contentWrap, buildSub, {});
+    else renderItem(data.item, contentWrap, { preview: true });
     appendFlatActionRow(body, data.item);
   } catch (e) {
     if (window.bsLog) window.bsLog('trilha flat itemPublic: ' + (e && e.message || e), 'error');

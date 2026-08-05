@@ -330,13 +330,17 @@ function renderGoogleDoc(item, container, opts) {
 export function renderItem(item, container, opts = {}) {
   if (!item || !container) return;
   // A previa do admin lista os itens DE DENTRO. Élder 2026-08-05: "nos itens, do lado direito
-  // ao selecionar o projeto, não lista dos documentos". Só na prévia: na trilha quem pinta os
-  // filhos é o trilha/js/projeto.js, que os monta com buildSub e por isso os deixa abrir,
-  // copiar e baixar. Pintar aqui também os desenharia duas vezes lá.
+  // ao selecionar o projeto, não lista dos documentos".
+  //
+  // O flag é `childrenList` e NÃO `preview`, que foi meu erro na primeira versão: `preview`
+  // quer dizer "sem os botões de ação" e a trilha o passa em TODA linha, então (a) o painel
+  // de Itens, que não passa flag nenhum, nunca mostrava a lista -- o defeito que o Élder
+  // continuou vendo -- e (b) na trilha ela saía empilhada em cima da lista de verdade. Quem
+  // pede esta lista é quem só quer LER o que tem dentro.
   //
   // Sem `case 'projeto'`: conter itens deixou de ser privilégio de um tipo, então a condição
   // é ter filhos, e uma tarefa com documentos dentro ganha a mesma lista de graça.
-  if (opts.preview && item.children && item.children.length) {
+  if (opts.childrenList && item.children && item.children.length) {
     const body = document.createElement('div');
     const kids = document.createElement('div');
     kids.className = 'ctr-children';

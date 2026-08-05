@@ -765,7 +765,7 @@ function _openItemPreview(id) {
     const host = bd.querySelector('#cdx-rel-preview-render');
     if (!host) return;
     host.innerHTML = '';
-    try { renderItem(full, host, { preview: true }); }
+    try { renderItem(full, host, { preview: true, childrenList: true }); }
     catch (e) { host.textContent = full.body_md || ''; notice.internal(_err(e)); }
   }).catch((e) => {
     const host = bd.querySelector('#cdx-rel-preview-render');

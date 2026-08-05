@@ -45,3 +45,20 @@ export function downloadText(text, filename, mime = 'text/markdown;charset=utf-8
   // Revogar na hora corta o download em alguns browsers; um tick basta.
   setTimeout(() => URL.revokeObjectURL(url), 0);
 }
+
+// Um item que NAO cabe num .zip. Élder 2026-08-05, sobre pastas com lab dentro: "either we
+// forbid it... or we just allow them and they just get sidestepped". Ele escolheu permitir e
+// AVISAR: "telling correctly that this does not go into the download zip is the better thing
+// to do. And we're not going to add anything to the zip because it makes no sense" -- ou seja,
+// nada de arquivo-substituto no lugar do lab.
+//
+// Proibir seria pior e ele tinha razao em nao querer: a regra ficaria dependente da ORDEM
+// (poe um lab primeiro e a pasta trava contra documentos), e resolveria um problema de rotulo
+// com uma proibicao estrutural.
+//
+// Lab e interativo sao aplicacoes que vivem na trilha, nao arquivos. Uma fonte so, porque a
+// tela que AVISA e o download que PULA nao podem discordar.
+export function isDownloadable(item) {
+  const type = item && (item.type || item);
+  return type !== 'lab' && type !== 'interativo';
+}

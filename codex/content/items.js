@@ -409,7 +409,7 @@ function _renderPreview(item, opts) {
     host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
     return;
   }
-  try { renderItem(item, host, {}); }
+  try { renderItem(item, host, { childrenList: true }); }
   catch (_) { host.textContent = item.body_md || ''; }
 }
 
