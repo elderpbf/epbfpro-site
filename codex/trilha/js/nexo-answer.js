@@ -57,6 +57,15 @@ export function mount(host, opts) {
   if (!host || !sessionCode) return;
 
   const studentName = opts.studentName || _ensureAnonName();
+  // The logged-in student's session token (LGPD id-link, 2026-08-05): rides along on submit so the
+  // worker stores the question against this person's participant_id. Peers still see "Anônimo" (the
+  // list returns only the handle); the link is internal, for the erase. Absent on a legacy/anon path.
+  // Read via a GETTER at submit time: the token is populated asynchronously and may not exist yet at
+  // mount, so a snapshot here would race to null. Falls back to a literal opts.sessionToken for callers
+  // (tests) that pass a value instead of a getter.
+  const getSessionToken = (typeof opts.getSessionToken === 'function')
+    ? opts.getSessionToken
+    : () => (opts.sessionToken || null);
 
   // Build session-screen body (identical markup to the legacy NexoAnswer; the only
   // change is the <codex-question> tag in place of <classpulse-question>).
@@ -164,7 +173,7 @@ export function mount(host, opts) {
   };
 
   _state = {
-    host, sessionCode, studentName,
+    host, sessionCode, studentName, getSessionToken,
     activeQuestion: null, els, listeners: [], current: null,
     myAnswer: null, lastSeenAnsKey: null, inboxTimer: null,
     // Orchestrator (nexo.js) callback: fired once when the element reports the session
@@ -465,6 +474,7 @@ async function _submitStudentQ() {
     const res = await trail.submitStudentQ({
       session_code: _state.sessionCode,
       student_name: _state.studentName,
+      session_token: (_state.getSessionToken && _state.getSessionToken()) || undefined,
       text,
     });
     if (res && res.ok) {

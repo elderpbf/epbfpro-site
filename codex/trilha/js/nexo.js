@@ -7,6 +7,7 @@
 // contained (parses its own URL) so it does not depend on the page orchestrator.
 import { parseLocation, state } from './state.js';
 import { trail } from './api.js';
+import { getToken } from './student-session.js';
 import { mount as mountAnswer_, unmount as unmountAnswer_ } from './nexo-answer.js';
 
 // Cadence is asymmetric on PURPOSE, the opposite way round from the obvious one.
@@ -102,7 +103,13 @@ function mountAnswer(sessionCode) {
   // The inner <codex-question> element sees the CLOSE edge on its own ~2s poll; wire it
   // back here so the trilha returns in ~2s instead of waiting up to POLL_LIVE_MS (15s) for
   // our own close-watch poll. schedule(idle) so a re-opened session then surfaces snappily.
-  mountAnswer_(host, { sessionCode, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
+  // Pass a GETTER, read at submit time. And read the token from localStorage DIRECTLY (getToken),
+  // not from state.sessionToken: on a live-session load nexo takes over before page.js's boot
+  // populates state.sessionToken, so that field is undefined here. getToken keys off the same
+  // (client, turma) page.js would use, so it returns the logged-in student's token when there is one,
+  // and null for an anonymous viewer. state.sessionToken is preferred when already set.
+  const tokenFor = () => state.sessionToken || getToken(_loc && _loc.clientSlug, _loc && _loc.turmaSlug);
+  mountAnswer_(host, { sessionCode, getSessionToken: tokenFor, onSessionClosed: () => { unmountAnswer(); schedule(POLL_IDLE_MS); } });
   _isMounted = true;
   _lastCode = sessionCode;
 }
