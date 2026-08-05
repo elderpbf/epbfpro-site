@@ -1,4 +1,4 @@
-// vendor/fflate.js, VENDORED, do not edit by hand.
+// js/vendor/fflate.js, VENDORED, do not edit by hand.
 // fflate v0.8.2 ESM browser build (https://github.com/101arrowz/fflate), MIT.
 // Source: https://cdn.jsdelivr.net/npm/fflate@0.8.2/esm/browser.js
 // Used by js/import/pptx.js for client-side OOXML (.pptx) unzip, no build step,

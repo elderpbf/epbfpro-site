@@ -12,6 +12,9 @@ import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
 import { downloadText, fileNameFromTitle } from '../../js/item-download.js';
+import { downloadZip } from '../../js/item-zip.js';
+import { trail } from './api.js';
+import * as toast from '../../js/toast.js';
 
 // Stored asset paths (/r2/... attachment/pdf keys) are served by the codex-api
 // Worker, not the Pages origin, so an open-action href must go through assetUrl
@@ -55,7 +58,22 @@ export function getItemActions(item) {
       out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
     }
   }
+  const proj = projectOf(item);
+  if (proj) {
+    out.push({ kind: 'download-project', label: 'Baixar o projeto (.zip)', shortLabel: '.zip', project: proj, icon: 'download' });
+  }
   return out;
+}
+
+// A que projeto este item pertence, se pertence.
+//
+// INTERINO: a fonte é `meta_json.project` ({ name, items: [id] }). O modelo final é a tabela
+// de junção `ct_item_set_members` (o mesmo item pode estar em dois projetos, decisão do Élder
+// 2026-08-04). Quando ela existir, só esta função muda: quem chama já lê { name, items }.
+export function projectOf(item) {
+  const p = getMeta(item).project;
+  if (!p || !Array.isArray(p.items) || p.items.length < 2) return null;
+  return { name: String(p.name || 'projeto'), items: p.items.slice() };
 }
 
 // O texto é literal (não passa por markdown) quando o tipo é `prompt`. Élder: "o prompt
@@ -117,7 +135,11 @@ function makeActionBtn(action, extraClass) {
 
   let labelHtml = '<span class="cdx-tr-ia-label-full">' + esc(action.label) + '</span>';
   if (action.shortLabel) labelHtml += '<span class="cdx-tr-ia-label-short">' + esc(action.shortLabel) + '</span>';
-  btn.innerHTML = (state.ICONS[action.icon] || state.ICONS.copy) + labelHtml;
+  // O glifo de uma ação vem ANTES do rótulo (ele diz o que a ação é). O chevron de um menu
+  // vem DEPOIS: ele não descreve nada, aponta que há mais coisa embaixo, e à esquerda leria
+  // como "ação de descer". Élder 2026-08-04.
+  const glyph = state.ICONS[action.icon] || state.ICONS.copy;
+  btn.innerHTML = action.kind === 'menu' ? labelHtml + glyph : glyph + labelHtml;
   if (action.kind === 'submitted') btn.disabled = true;
   return btn;
 }
@@ -127,10 +149,33 @@ function makeActionBtn(action, extraClass) {
 function runAction(action, item, sub, opts, btn) {
   if (action.kind === 'copy') copyToClipboard(action.text, btn);
   else if (action.kind === 'download-md') downloadText(action.text, fileNameFromTitle(action.item.title, 'md'));
+  else if (action.kind === 'download-project') downloadProject(action.project);
   else if (action.kind === 'submit') openTarefaSubmit(action.item, sub, opts);
   else if (action.kind === 'go-tarefas') goToTarefa(item.id);
   else if (action.kind === 'lab-open') openLabViewer({ key: action.key, title: item.title });
   else if (action.kind === 'interativo-open') openLabViewer({ url: action.url, title: item.title });
+}
+
+// Baixa todos os itens do projeto num .zip. Os irmãos vêm pelo MESMO `ct_get_item_public` que
+// abrir um item usa, então o controle de acesso da turma vale igual e não há ação nova no
+// Worker: um item que o aluno não pode ver falha ali e fica fora do pacote.
+export async function downloadProject(project) {
+  toast.info('Montando o pacote...');
+  const base = {
+    client_slug: state.clientSlug, turma_slug: state.turmaSlug,
+    token: state.token, session_token: state.sessionToken,
+  };
+  const got = await Promise.all(project.items.map((id) =>
+    trail.itemPublic(Object.assign({ item_id: id, _silent: true }, base))
+      .then((r) => (r && r.item ? r.item : null))
+      .catch(() => null)));
+  const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md }));
+  if (!entries.length) { toast.err('Nao foi possivel montar o pacote.'); return; }
+  downloadZip(entries, fileNameFromTitle(project.name, 'zip'));
+  // Falha parcial é dito em voz alta: um zip com 2 de 3 arquivos passaria por completo.
+  if (entries.length < project.items.length) {
+    toast.err('O pacote saiu com ' + entries.length + ' de ' + project.items.length + ' arquivos.');
+  }
 }
 
 // Monta as ações de um item num container. UMA montagem parametrizada, usada pela linha da

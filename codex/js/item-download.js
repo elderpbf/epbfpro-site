@@ -20,6 +20,18 @@ export function fileNameFromTitle(title, ext = 'md') {
   return (base || 'item') + '.' + ext;
 }
 
+// Nomes únicos dentro de um mesmo pacote. Dois itens de título parecido colapsam no mesmo
+// nome depois de tirar acento e pontuação, e no ZIP um sobrescreveria o outro em silêncio.
+export function uniqueNames(titles, ext = 'md') {
+  const seen = new Map();
+  return titles.map((t) => {
+    const name = fileNameFromTitle(t, ext);
+    const n = (seen.get(name) || 0) + 1;
+    seen.set(name, n);
+    return n === 1 ? name : name.replace(new RegExp('\\.' + ext + '$'), '-' + n + '.' + ext);
+  });
+}
+
 // Dispara o download de um texto. Browser-only (URL.createObjectURL + clique sintético);
 // o nome do arquivo é a parte pura e testável.
 export function downloadText(text, filename, mime = 'text/markdown;charset=utf-8') {
