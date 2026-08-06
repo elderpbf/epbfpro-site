@@ -12,6 +12,7 @@
 // sozinho, sem uma linha de estado aqui.
 import { esc } from './utils.js';
 import { renderItem } from '../../js/item-render.js';
+import { MAX_INDENT } from '../../js/item-list.js';
 
 // Qualquer item que carregue outros, não só o tipo `projeto`. Élder 2026-08-05: "uma tarefa
 // precisa às vezes de documentos dentro para o aluno baixar, não é só a tarefa". A checagem
@@ -56,10 +57,14 @@ export function renderProjeto(item, host, buildSub, opts = {}) {
   // degrau só diz como eles aparecem aqui. Por isso a linha é a mesma buildSub de sempre, com
   // uma classe de degrau por cima -- não há sub-lista, não há aninhamento de DOM, e apagar um
   // membro no editor não precisa re-parentear nada.
+  // O degrau sai como VARIÁVEL na linha, e não como uma classe por nível: uma classe por nível
+  // obrigaria o CSS a conhecer o teto, e mexer no teto viraria mexer em dois arquivos (foi
+  // exatamente o que aconteceu ao subir de 3 para 5). Assim o CSS tem uma regra só e o
+  // encolhimento em tela estreita é UM número.
   item.children.forEach((child) => {
     const row = buildSub(child, opts);
-    const d = Math.max(0, Math.min(3, Number(child.indent) || 0));
-    if (d) row.classList.add('cdx-tr-in-' + d);
+    const d = Math.max(0, Math.min(MAX_INDENT, Number(child.indent) || 0));
+    if (d) { row.classList.add('cdx-tr-in'); row.style.setProperty('--cdx-in', String(d)); }
     list.appendChild(row);
   });
   host.appendChild(list);

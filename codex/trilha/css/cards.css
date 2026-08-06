@@ -630,16 +630,16 @@
 /* O recuo dos membros de um pacote. E DISPLAY: a lista e plana, e o degrau so diz como ela
    aparece (Elder 06/08). Por isso e margem numa linha irma, e nao DOM aninhado.
 
-   O passo ENCOLHE em tela estreita em vez de a estrutura ser proibida. A conta: num telefone
-   de 390px o cartao da ~270px pro titulo depois do icone e do botao de acao; a 18px o quarto
-   degrau deixaria ~200px e "Modelo: Relatorio Preparatorio para Audiencia CIVEL" viraria tres
-   linhas. A 10px sobram ~240px e ele fica em duas. Proibir profundidade pra caber na tela
-   resolveria o problema errado. */
-.cdx-tr-in-1 { margin-left: 18px; }
-.cdx-tr-in-2 { margin-left: 36px; }
-.cdx-tr-in-3 { margin-left: 54px; }
+   UMA regra, e o nivel chega em `--cdx-in` posto pelo projeto.js. Antes era uma classe por
+   nivel, o que fazia o CSS conhecer o teto: subir o teto de 3 para 5 exigia lembrar de vir
+   aqui, e esquecer significava o 4o e o 5o degrau desenhando com recuo ZERO -- o teto parecia
+   nao ter subido. Assim o teto mora so no JS e o passo aqui e um numero so.
+
+   O passo ENCOLHE em tela estreita em vez de a estrutura ser proibida: num telefone de 390px
+   o cartao da ~270px pro titulo depois do icone e do botao de acao, e cada degrau come essa
+   largura. Proibir profundidade pra caber na tela resolveria o problema errado. Se a 5 degraus
+   ficar apertado no telefone, o conserto e baixar --cdx-in-step, nao baixar o teto. */
+.cdx-tr-in { margin-left: calc(var(--cdx-in, 0) * var(--cdx-in-step, 18px)); }
 @media (max-width: 640px) {
-  .cdx-tr-in-1 { margin-left: 10px; }
-  .cdx-tr-in-2 { margin-left: 20px; }
-  .cdx-tr-in-3 { margin-left: 30px; }
+  .cdx-tr-proj-list { --cdx-in-step: 10px; }
 }

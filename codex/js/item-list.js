@@ -125,8 +125,19 @@ export function guidesFromIndent(rows) {
 // O recuo que uma linha PODE ter. Um membro não pode pular degraus: no máximo um a mais que o
 // de cima (senão o traço de ligação apontaria para um degrau que não existe), e nunca acima do
 // teto. Puro, porque é a regra que o botão →| consulta para saber se pode ficar ativo.
+// Teto de recuo, UM número para o Codex inteiro: o editor (item-members.js) e a trilha
+// (trilha/js/projeto.js) importam daqui, e o CSS deriva a margem de um passo só. Antes eram
+// três lugares com `3` escrito à mão, e o número da trilha era o que ninguém lembrava de
+// mexer. Espelha o CT_MEMBER_MAX_INDENT do Worker, que rejeita o que passar.
+//
+// Élder 2026-08-06 mandou de 3 para 5: "why 3? go to 5 so we can test. if it gets too cramped,
+// we shrink; i need to see on the page". A conta de tela estreita continua verdadeira (cada
+// degrau come largura do título), mas a resposta é ENCOLHER o degrau no CSS, não proibir o
+// degrau -- e quem decide se ficou apertado é ele olhando, não esta constante.
+export const MAX_INDENT = 5;
+
 export function maxIndentFor(rows, index, cap) {
-  const top = typeof cap === 'number' ? cap : 3;
+  const top = typeof cap === 'number' ? cap : MAX_INDENT;
   if (!rows || index <= 0) return 0;
   const prev = Math.max(0, Number(rows[index - 1].indent || 0));
   return Math.min(top, prev + 1);

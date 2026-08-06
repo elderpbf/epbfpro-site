@@ -99,7 +99,30 @@ test('selectableItems barra so o proprio item e os ancestrais dele', () => {
 // ── 0050: recuo em vez de arvore ────────────────────────────────────────────
 // Elder 2026-08-06: "o relacionamento pai-filho real so pertence ao bundle e seus itens. os
 // itens dentro estao apenas indentados ou nao, para fins organizacionais".
-import { guidesFromIndent, maxIndentFor, removeAt } from '../js/item-list.js';
+import { guidesFromIndent, maxIndentFor, removeAt, MAX_INDENT } from '../js/item-list.js';
+import { readFileSync } from 'node:fs';
+
+// O teto e UM numero (Elder subiu de 3 pra 5 em 06/08: "why 3? go to 5 so we can test"). Estes
+// dois travam o que quebrou de verdade: um `3` escrito a mao na trilha e um CSS com uma classe
+// por nivel. Com qualquer um dos dois, subir o teto nao sobe o desenho -- o 4o e o 5o degrau
+// aparecem com recuo ZERO e parece que o teto nao mudou.
+test('a trilha nao escreve o teto a mao, importa o do motor', () => {
+  const src = readFileSync(new URL('../trilha/js/projeto.js', import.meta.url), 'utf8');
+  assert.ok(/MAX_INDENT.*from '\.\.\/\.\.\/js\/item-list\.js'/.test(src), 'importa o teto');
+  assert.ok(!/Math\.min\(\s*\d/.test(src), 'nenhum teto numerico escrito a mao');
+});
+
+test('o CSS do degrau nao conhece o teto: uma regra so, com variavel', () => {
+  const css = readFileSync(new URL('../trilha/css/cards.css', import.meta.url), 'utf8');
+  assert.ok(!/\.cdx-tr-in-\d/.test(css), 'nada de uma classe por nivel');
+  assert.ok(css.includes('var(--cdx-in, 0)'), 'o nivel chega por variavel');
+  assert.ok(css.includes('--cdx-in-step: 10px'), 'o passo encolhe em tela estreita');
+});
+
+test('o teto padrao de maxIndentFor e o MAX_INDENT, nao um numero solto', () => {
+  const rows = Array.from({ length: MAX_INDENT + 2 }, (_, i) => ({ indent: Math.min(i, MAX_INDENT) }));
+  assert.equal(maxIndentFor(rows, rows.length - 1), MAX_INDENT, 'sem cap explicito, vale o teto');
+});
 
 test('guidesFromIndent: o ultimo do degrau corta o traco', () => {
   const r = guidesFromIndent([{ indent: 0 }, { indent: 1 }, { indent: 1 }, { indent: 0 }]);

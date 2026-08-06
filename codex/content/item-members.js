@@ -21,16 +21,14 @@ import { esc as _esc } from '../js/dom.js';
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
-import { sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt } from '../js/item-list.js';
+import {
+  sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, MAX_INDENT,
+} from '../js/item-list.js';
 import { isDownloadable } from '../js/item-download.js';
 
-// Teto de recuo. Espelha o CT_MEMBER_MAX_INDENT do Worker, e o limite é de LEGIBILIDADE, não
-// de estrutura: num telefone de 390px o cartão dá ~270px pro título depois do ícone e do botão
-// de ação, e cada degrau come espaço. A 18px o quarto degrau deixaria ~200px e um título como
-// "Modelo: Relatório Preparatório para Audiência CÍVEL" viraria três linhas. A resposta em tela
-// estreita é ENCOLHER o degrau (o CSS faz isso), não proibir a estrutura -- proibir estrutura
-// para caber na tela resolve o problema errado.
-export const MAX_INDENT = 3;
+// O teto de recuo mora no motor da lista (js/item-list.js) e é reexportado aqui só para quem
+// já importava daqui. Um número só para editor, trilha e CSS.
+export { MAX_INDENT };
 
 // As colunas de guia de UMA linha. `guides[k]` = ainda vem alguém no degrau k mais abaixo,
 // então aquela coluna leva traço vertical; senão fica vazia. Sem isso o traço continua
