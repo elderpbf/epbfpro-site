@@ -579,7 +579,7 @@ let _protoCtx = null;
 function _openProto() {
   // Enter nao submete: no protótipo o primeiro botao primario e uma ABA de candidata, e teclar
   // Enter num campo trocaria de tela em vez de salvar nada.
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableEnterSubmit: true });
+  const bd = openModal('<div class="cdx-modal-body cdx-modal-wide"></div>', { disableEnterSubmit: true });
   import('./item-form-proto.js').then((proto) => {
     if (_protoCtx) _protoCtx.destroy();
     _protoCtx = proto.mount(bd.querySelector('.cdx-modal-body'), {
