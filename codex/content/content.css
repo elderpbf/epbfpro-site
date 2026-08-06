@@ -1273,3 +1273,53 @@
    item-form.js sobre conter itens ter deixado de ser privilegio de um tipo. */
 .cdx-mem-details { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
 .cdx-mem-details > summary { cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* ── PROTOTIPO da tela unica (content/item-form-proto.js) ────────────────────
+   TEMPORARIO: sai inteiro quando uma das candidatas graduar. Existe porque o Elder pediu para
+   comparar as quatro AO VIVO e dentro do Codex ("nao numa pagina separada, porque ai nao
+   precisaria portar codigo depois"), entao o layout mora aqui e reusa cdx-editor / cdx-field /
+   cdx-mem-* de verdade. So o que e novo (as duas colunas, a migalha, o garfo) esta abaixo. */
+.cdx-proto-lead { margin: 0 1rem; color: var(--text-secondary); font-size: 0.9rem; }
+.cdx-proto-tabs { display: flex; flex-wrap: wrap; gap: 6px; padding: 0.6rem 1rem; border-bottom: 1px solid var(--border); }
+.cdx-proto-toggle { display: inline-flex; gap: 4px; margin-left: auto; margin-right: 8px; }
+.cdx-proto-note { margin: 0.5rem 0 0; font-size: 0.82rem; color: var(--text-secondary); line-height: 1.45; }
+.cdx-proto-banner {
+  margin-bottom: 0.85rem; padding: 0.6rem 0.75rem; border-radius: 8px; font-size: 0.88rem;
+  background: var(--surface-2, rgba(127,127,127,0.08)); border: 1px solid var(--border);
+}
+.cdx-proto-content > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cdx-proto-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-proto-sources input { flex: 1; min-width: 140px; }
+.cdx-proto-filemode { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 6px; font-size: 0.85rem; }
+
+.cdx-proto-members { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.cdx-proto-members-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 10px; justify-content: space-between;
+  font-size: 0.78rem; letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.5rem;
+}
+.cdx-proto-members-actions { display: flex; gap: 6px; margin-top: 0.5rem; }
+
+/* As duas colunas da C e da D. No telefone elas EMPILHAM, e a candidata vira a A -- que e
+   exatamente a ressalva escrita na propria tela, entao ela precisa ser verdade aqui. */
+.cdx-proto-two { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.25rem; align-items: start; }
+.cdx-proto-right { border-left: 1px solid var(--border); padding-left: 1.25rem; }
+.cdx-proto-right .cdx-proto-members { margin-top: 0; border-top: 0; padding-top: 0; }
+@media (max-width: 820px) {
+  .cdx-proto-two { grid-template-columns: 1fr; }
+  .cdx-proto-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 1rem; }
+}
+.cdx-proto-crumb {
+  display: flex; align-items: center; gap: 8px; padding: 0.5rem 1rem;
+  border-top: 1px solid var(--border); font-size: 0.86rem;
+}
+
+.cdx-proto-fork { text-align: center; }
+.cdx-proto-forkq { font-size: 1.05rem; margin: 1rem 0; }
+.cdx-proto-forkrow { display: flex; flex-wrap: wrap; gap: 1rem; justify-content: center; }
+.cdx-proto-forkcard {
+  flex: 1 1 220px; max-width: 300px; padding: 1.5rem 1rem; border-radius: 10px; cursor: pointer;
+  border: 1px solid var(--border); background: transparent; color: inherit;
+  display: flex; flex-direction: column; gap: 0.5rem; text-align: center;
+}
+.cdx-proto-forkcard:hover { border-color: var(--accent, currentColor); }
+.cdx-proto-forkcard span { font-size: 0.85rem; color: var(--text-secondary); }

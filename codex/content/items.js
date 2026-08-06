@@ -182,6 +182,9 @@ function _renderShell() {
           '<button class="cdx-btn" id="cdx-btn-manage-tags">' + t('content.manage_tags') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-manage-types">' + t('content.manage_types') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-select">' + t('content.select') + '</button>' +
+          // TEMPORARIO: as 4 candidatas da tela unica, para o Élder comparar ao vivo. Sai junto
+          // com content/item-form-proto.js quando uma delas graduar.
+          '<button class="cdx-btn" id="cdx-btn-proto">Protótipos</button>' +
         '</div>' +
       '</div>' +
       '<div class="cdx-bulk-bar" id="cdx-items-bulk" style="display:none">' +
@@ -217,6 +220,7 @@ function _renderShell() {
   _q('cdx-btn-manage-tags').addEventListener('click', _openTagManager);
   _q('cdx-btn-manage-types').addEventListener('click', _openTypeManager);
   _q('cdx-btn-select').addEventListener('click', _toggleSelectMode);
+  _q('cdx-btn-proto').addEventListener('click', _openProto);
   _q('cdx-btn-bulk-delete').addEventListener('click', _bulkDelete);
   _q('cdx-btn-bulk-cancel').addEventListener('click', _exitSelectMode);
   const searchEl = _q('cdx-items-search');
@@ -565,6 +569,24 @@ function _openItem(id) {
   api.getItem({ id }).then((d) => {
     _openItemEditorFull((d && d.item) || null, null, null);
   }).catch((e) => notice.internal(_err(e)));
+}
+
+// TEMPORARIO: as 4 candidatas da tela unica, clicaveis lado a lado. Élder 2026-08-06: "valeria
+// ver ao vivo ao invés de estar tentando ver aqui em texto, que é bem limitado". Import
+// DINAMICO de proposito: o protótipo não pesa no carregamento normal, e apagar o módulo mais
+// este bloco tira ele inteiro da tela.
+let _protoCtx = null;
+function _openProto() {
+  // Enter nao submete: no protótipo o primeiro botao primario e uma ABA de candidata, e teclar
+  // Enter num campo trocaria de tela em vez de salvar nada.
+  const bd = openModal('<div class="cdx-modal-body"></div>', { disableEnterSubmit: true });
+  import('./item-form-proto.js').then((proto) => {
+    if (_protoCtx) _protoCtx.destroy();
+    _protoCtx = proto.mount(bd.querySelector('.cdx-modal-body'), {
+      types: _types, tags: _tags,
+      onClose: () => { if (_protoCtx) { _protoCtx.destroy(); _protoCtx = null; } closeModal(bd); },
+    });
+  }).catch((err) => { closeModal(bd); notice.internal(_err(err)); });
 }
 
 // New item: content-first creator (step 1) → full editor (step 2).
