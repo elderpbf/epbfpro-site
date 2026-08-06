@@ -290,7 +290,7 @@ export const content = {
   createItem:      (p) => call('ct_create_item', p),
   updateItem:      (p) => call('ct_update_item', p),
   deleteItem:      (p) => call('ct_delete_item', p),        // { id }
-  setItemMembers:  (p) => call('ct_set_item_members', p),   // { parent_item_id, child_item_ids:[id] } -> { ok, children }
+  setItemMembers:  (p) => call('ct_set_item_members', p),   // { parent_item_id, children:[{id,indent}] } -> { ok, children }
   duplicateItem:   (p) => call('ct_duplicate_item', p),     // { id }
   bulkDeleteItems: (p) => call('ct_delete_items_bulk', p),  // { ids }
   // Idempotent: upserts a real ct_items row per entry of the catalogue the CALLER sends,

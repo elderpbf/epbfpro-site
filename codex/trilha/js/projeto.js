@@ -52,7 +52,16 @@ export function renderProjeto(item, host, buildSub, opts = {}) {
 
   const list = document.createElement('div');
   list.className = 'cdx-tr-proj-list';
-  item.children.forEach((child) => list.appendChild(buildSub(child, opts)));
+  // O recuo é DISPLAY e nada mais (Élder 2026-08-06): os membros são uma lista PLANA, e o
+  // degrau só diz como eles aparecem aqui. Por isso a linha é a mesma buildSub de sempre, com
+  // uma classe de degrau por cima -- não há sub-lista, não há aninhamento de DOM, e apagar um
+  // membro no editor não precisa re-parentear nada.
+  item.children.forEach((child) => {
+    const row = buildSub(child, opts);
+    const d = Math.max(0, Math.min(3, Number(child.indent) || 0));
+    if (d) row.classList.add('cdx-tr-in-' + d);
+    list.appendChild(row);
+  });
   host.appendChild(list);
 }
 

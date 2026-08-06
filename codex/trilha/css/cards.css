@@ -626,3 +626,20 @@
   flex-direction: column;
   gap: 8px;
 }
+
+/* O recuo dos membros de um pacote. E DISPLAY: a lista e plana, e o degrau so diz como ela
+   aparece (Elder 06/08). Por isso e margem numa linha irma, e nao DOM aninhado.
+
+   O passo ENCOLHE em tela estreita em vez de a estrutura ser proibida. A conta: num telefone
+   de 390px o cartao da ~270px pro titulo depois do icone e do botao de acao; a 18px o quarto
+   degrau deixaria ~200px e "Modelo: Relatorio Preparatorio para Audiencia CIVEL" viraria tres
+   linhas. A 10px sobram ~240px e ele fica em duas. Proibir profundidade pra caber na tela
+   resolveria o problema errado. */
+.cdx-tr-in-1 { margin-left: 18px; }
+.cdx-tr-in-2 { margin-left: 36px; }
+.cdx-tr-in-3 { margin-left: 54px; }
+@media (max-width: 640px) {
+  .cdx-tr-in-1 { margin-left: 10px; }
+  .cdx-tr-in-2 { margin-left: 20px; }
+  .cdx-tr-in-3 { margin-left: 30px; }
+}

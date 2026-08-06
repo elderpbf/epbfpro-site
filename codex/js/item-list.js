@@ -75,6 +75,80 @@ export function matchesQuery(item, query) {
   return normalize(String((item && item.title) || '')).indexOf(q) !== -1;
 }
 
+// ── O recuo dentro de um pacote ──────────────────────────────────────────────
+// Élder 2026-08-06, e é a correção que simplificou o modelo inteiro: "o relacionamento
+// pai-filho real só pertence ao bundle e seus itens. os itens dentro estão apenas indentados
+// ou não, para fins organizacionais... ser irmão ou filho não faz diferença no mundo real, é
+// só a forma como vai aparecer na trilha".
+//
+// Então os membros são uma LISTA PLANA com um inteiro de recuo. Não há árvore entre eles, e é
+// por isso que apagar um membro não recuado é só "promove quem estava embaixo": nada precisa
+// ser re-parenteado, porque nada era filho de nada.
+//
+// O que ainda precisa de cálculo é o traço de ligação, que não sai do recuo sozinho: para
+// saber se a coluna k leva traço vertical numa linha, é preciso olhar PARA FRENTE e ver se
+// ainda vem alguém naquele mesmo degrau antes de a lista subir acima dele. Sem isso o traço
+// continua descendo embaixo do último, que é o defeito clássico de árvore em texto.
+//
+//   guidesFromIndent([{indent:0},{indent:1},{indent:1},{indent:0}])
+//     -> [{indent:0,isLast:false,guides:[]},
+//         {indent:1,isLast:false,guides:[true]},
+//         {indent:1,isLast:true, guides:[true]},
+//         {indent:0,isLast:true, guides:[]}]
+export function guidesFromIndent(rows) {
+  const list = (rows || []).map((r) => ({
+    item: r,
+    indent: Math.max(0, Number((r && r.indent) || 0)),
+  }));
+  return list.map((row, i) => {
+    // Último do seu degrau = daqui pra frente ninguém mais aparece neste degrau antes de a
+    // lista voltar para um degrau mais raso.
+    let isLast = true;
+    for (let j = i + 1; j < list.length; j++) {
+      if (list[j].indent < row.indent) break;
+      if (list[j].indent === row.indent) { isLast = false; break; }
+    }
+    // A coluna k leva traço se ainda vem alguém no degrau k mais abaixo.
+    const guides = [];
+    for (let k = 0; k < row.indent; k++) {
+      let on = false;
+      for (let j = i + 1; j < list.length; j++) {
+        if (list[j].indent < k) break;
+        if (list[j].indent === k) { on = true; break; }
+      }
+      guides.push(on);
+    }
+    return { item: row.item, depth: row.indent, isLast, guides };
+  });
+}
+
+// O recuo que uma linha PODE ter. Um membro não pode pular degraus: no máximo um a mais que o
+// de cima (senão o traço de ligação apontaria para um degrau que não existe), e nunca acima do
+// teto. Puro, porque é a regra que o botão →| consulta para saber se pode ficar ativo.
+export function maxIndentFor(rows, index, cap) {
+  const top = typeof cap === 'number' ? cap : 3;
+  if (!rows || index <= 0) return 0;
+  const prev = Math.max(0, Number(rows[index - 1].indent || 0));
+  return Math.min(top, prev + 1);
+}
+
+// Apagar um membro PROMOVE quem estava recuado sob ele (Élder: "deleting the unindented from
+// the bundle just promotes the indentation, removing their indentation"). Puro e devolve uma
+// lista nova; quem chama decide quando salvar.
+export function removeAt(rows, index) {
+  const list = (rows || []).slice();
+  const gone = list[index];
+  if (!gone) return list;
+  const d = Math.max(0, Number(gone.indent || 0));
+  list.splice(index, 1);
+  for (let i = index; i < list.length; i++) {
+    const cur = Math.max(0, Number(list[i].indent || 0));
+    if (cur <= d) break;               // voltou ao degrau do apagado: acabou o bloco dele
+    list[i] = Object.assign({}, list[i], { indent: cur - 1 });
+  }
+  return list;
+}
+
 // ── A árvore ────────────────────────────────────────────────────────────────
 // Élder 2026-08-05: "alguns arquivos se juntam como irmãos em mesma hierarquia. outros pode
 // se juntar aninhados que dá para mostrar com indentação e linhas laterais mostrando a

@@ -96,11 +96,14 @@ export function packageOf(item) {
       // isso, senão passa por completo (Élder 2026-08-05).
       if (!isDownloadable(c)) skipped++;
       else items.push({ id: c.id, dir });
+      // Só um PACOTE vira pasta no zip. O recuo NÃO vira: ele é display, "só a forma como vai
+      // aparecer na trilha" (Élder 2026-08-06). Eu tinha feito ao contrário, mapeando recuo em
+      // diretório, e isso inventava pastas que não existem em lugar nenhum do modelo.
       const sub = Array.isArray(c.children) ? c.children : null;
       if (sub && sub.length) walk(sub, dir + _dirName(c.title) + '/');
     });
   })(kids, '');
-  return { name: String(item.title || 'projeto').replace(/^#+\s*/, ''), items, skipped };
+  return { name: String(item.title || 'pacote').replace(/^#+\s*/, ''), items, skipped };
 }
 
 // Nome de pasta com a MESMA limpeza do nome de arquivo (acento e `#` de título não

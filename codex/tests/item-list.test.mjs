@@ -95,3 +95,40 @@ test('selectableItems barra so o proprio item e os ancestrais dele', () => {
   assert.deepEqual(selectableItems(all, 2, [3]).map((i) => i.id), [1],
     'o ancestral fica de fora, senao vira laco');
 });
+
+// ── 0050: recuo em vez de arvore ────────────────────────────────────────────
+// Elder 2026-08-06: "o relacionamento pai-filho real so pertence ao bundle e seus itens. os
+// itens dentro estao apenas indentados ou nao, para fins organizacionais".
+import { guidesFromIndent, maxIndentFor, removeAt } from '../js/item-list.js';
+
+test('guidesFromIndent: o ultimo do degrau corta o traco', () => {
+  const r = guidesFromIndent([{ indent: 0 }, { indent: 1 }, { indent: 1 }, { indent: 0 }]);
+  assert.deepEqual(r.map((x) => [x.depth, x.isLast]), [[0, false], [1, false], [1, true], [0, true]]);
+});
+
+test('guidesFromIndent: a coluna so leva traco se ainda vem alguem naquele degrau', () => {
+  //  0  A
+  //  1    B
+  //  2      C     <- A ainda tem D abaixo, entao a coluna 0 leva traco
+  //  0  D
+  const r = guidesFromIndent([{ indent: 0 }, { indent: 1 }, { indent: 2 }, { indent: 0 }]);
+  assert.deepEqual(r[2].guides, [true, false], 'coluna 0 continua (vem D), coluna 1 nao (B era o ultimo)');
+});
+
+test('maxIndentFor: nao se pula degrau, e o teto vale', () => {
+  const rows = [{ indent: 0 }, { indent: 0 }];
+  assert.equal(maxIndentFor(rows, 0), 0, 'o primeiro nunca recua');
+  assert.equal(maxIndentFor(rows, 1), 1, 'no maximo um a mais que o de cima');
+  assert.equal(maxIndentFor([{ indent: 3 }, { indent: 3 }], 1, 3), 3, 'o teto manda');
+});
+
+// A razao pela qual apagar ficou trivial: nada era filho de nada, entao nada e re-parenteado.
+test('removeAt promove quem estava recuado sob o apagado', () => {
+  const rows = [{ id: 1, indent: 0 }, { id: 2, indent: 1 }, { id: 3, indent: 2 }, { id: 4, indent: 0 }];
+  assert.deepEqual(removeAt(rows, 0).map((r) => [r.id, r.indent]), [[2, 0], [3, 1], [4, 0]]);
+});
+
+test('removeAt nao mexe em quem ja estava no mesmo degrau ou acima', () => {
+  const rows = [{ id: 1, indent: 0 }, { id: 2, indent: 0 }, { id: 3, indent: 1 }];
+  assert.deepEqual(removeAt(rows, 0).map((r) => [r.id, r.indent]), [[2, 0], [3, 1]]);
+});

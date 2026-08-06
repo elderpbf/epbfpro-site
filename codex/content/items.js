@@ -605,10 +605,14 @@ function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
     closeLabel: t('content.close'),
     excludeTypes: isEdit ? [] : NON_CREATABLE_TYPES,
     onCreateType: _openTypeCreateForm,
-    onSave: () => {
+    onSave: (saved) => {
       closeModal(bd);
       toast.ok(isEdit ? t('content.item_updated') : t('content.item_created'));
       _detailCache.clear();   // edited content is stale; preview re-fetches
+      // O item recem-criado fica SELECIONADO (Elder 2026-08-05: "after creating an item, after
+      // the modal closes, it should focus the item created"). Sem isto a grade voltava pro
+      // topo e ele tinha que cacar o que acabou de fazer.
+      if (saved && saved.id) _selectedId = Number(saved.id);
       _loadItems({ silent: true });
       _loadTags();
     },
