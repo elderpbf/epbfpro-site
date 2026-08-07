@@ -18,6 +18,7 @@ import { esc } from './dom.js';
 import { assetUrl } from './codex-api.js';
 import { openModal as _openLabViewer } from './lab-viewer.js';
 import { flattenTree } from './item-list.js';
+import { isVerbatim } from './item-download.js';
 export { esc };
 
 // Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
@@ -350,6 +351,11 @@ export function renderItem(item, container, opts = {}) {
     container.appendChild(kids);
     return renderItem(Object.assign({}, item, { children: null }), body, opts);
   }
+  // O flag `verbatim` vem ANTES do tipo: quem manda mostrar o texto literal é o item, não o
+  // palpite que a IA deu sobre o tipo dele (ver isVerbatim em js/item-download.js). O
+  // dispatchType continua puro e por tipo, que é o que os testes dele travam; o que mudou é
+  // que existe uma resposta com precedência sobre ele.
+  if (isVerbatim(item)) return renderPrompt(item, container, opts);
   switch (dispatchType(item.type)) {
     case 'prompt':     return renderPrompt(item, container, opts);
     case 'guide':      return renderGuide(item, container, opts);

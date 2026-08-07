@@ -24,6 +24,8 @@ import { extractText, hasExtractableText } from '../js/file-text.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as aiSpec from '../js/ai-spec.js';
+import { AI_CHOICES, getChoice, setChoice, paramsFor } from '../js/ai-models.js';
+import { openMenu } from '../js/menu.js';
 
 // Google Picker key for the "Arquivo do Drive" import option: fetched once, read live by the
 // shared Drive source (same as the Slides gallery + the arquivo type editor). The Drive button
@@ -119,6 +121,9 @@ export function mount(container, opts) {
           '<button class="cdx-btn" id="cf-cancel">' + t('content.cancel') + '</button>' +
           '<button class="cdx-btn" id="cf-manual" type="button">' + t('creator.manual') + '</button>' +
           '<button class="cdx-btn cdx-btn-primary" id="cf-ai" type="button">' + AI_GLYPH + ' ' + t('creator.ai_format') + '</button>' +
+          // Qual IA atende. A seta fica COLADA no botao porque a escolha e sobre aquela
+          // acao, nao uma preferencia de tela solta num canto (Elder 07/08).
+          '<button class="cdx-btn cdx-btn-primary cdx-ai-pick" id="cf-ai-pick" type="button" title="Escolher a IA">▾</button>' +
         '</div>' +
       '</div>' +
     '</div>';
@@ -201,6 +206,20 @@ export function mount(container, opts) {
     onManual({ body_md: rawEl.value });
   });
 
+  const _pickEl = container.querySelector('#cf-ai-pick');
+  const _paintChoice = () => { if (_pickEl) _pickEl.title = 'IA: ' + getChoice().label; };
+  _paintChoice();
+  if (_pickEl) {
+    _pickEl.addEventListener('click', function (e) {
+      e.stopPropagation();
+      const atual = getChoice().id;
+      openMenu(_pickEl, AI_CHOICES.map((c) => ({
+        label: (c.id === atual ? '✓ ' : '   ') + c.label,
+        onClick: () => { setChoice(c.id); _paintChoice(); },
+      })));
+    });
+  }
+
   container.querySelector('#cf-ai').addEventListener('click', async function () {
     const raw = rawEl.value.trim();
     // A file with no extractable text (an image, a binary) still gets an AI pass from its
@@ -215,16 +234,16 @@ export function mount(container, opts) {
     btn.textContent = t('creator.ai_generating');
     try {
       const systemPrompt = aiSpec.buildSystemPrompt(types, tags, { addEmojis });
-      const res = await aiApi.chat({
+      const res = await aiApi.chat(Object.assign({
         system: systemPrompt,
         messages: [{ role: 'user', content: aiInput }],
         temperature: 0.3,
         max_tokens: aiSpec.MAX_TOKENS
-      });
+      }, paramsFor(getChoice().id)));
       if (!res || !res.text) { _logAi('no content', res); notice.internal(t('creator.ai_no_content')); return; }
       let parsed = aiSpec.parseModelJson(res.text);
       if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('creator.ai_bad_format')); return; }
-      parsed = aiSpec.enforcePromptVerbatim(parsed, aiInput);
+      parsed = aiSpec.applyVerbatim(parsed, aiInput, null);
       // Truncation guard. Deferred cleanup: convert to a cdx confirm modal.
       if (parsed.type !== 'prompt' && aiSpec.looksTruncated(aiInput, parsed.body_md)) {
         if (!window.confirm(t('creator.ai_truncated_confirm'))) return;

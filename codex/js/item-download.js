@@ -62,3 +62,24 @@ export function isDownloadable(item) {
   const type = item && (item.type || item);
   return type !== 'lab' && type !== 'interativo';
 }
+
+// O item é CRU? Cru quer dizer três coisas de uma vez: a IA não reescreve o corpo dele, a trilha
+// mostra o texto literal em vez de markdown processado, e o `.md` sai exatamente como está.
+//
+// Era INFERIDO do tipo (`type === 'prompt'`), e Élder 2026-08-07 pegou o defeito disso: "às
+// vezes a IA toma como prompt algo que não é e aí não faz a formatação. Ele deveria formatar de
+// qualquer jeito, mas se o tipo ou a opção não permitir, aí ele mostra o texto original". Ou
+// seja: um palpite da IA sobre o TIPO estava decidindo, sem ninguém pedir, que aquele texto
+// nunca seria formatado. Agora quem decide é um flag do item, que o editor mostra e o usuário
+// controla; a IA sempre formata, e o flag decide se o resultado é aceito.
+//
+// O legado continua certo sem migração: item antigo não tem o flag, e aí `prompt` significa cru
+// como sempre significou. Escrever o flag em cima é o que muda a resposta.
+export function isVerbatim(item) {
+  if (!item) return false;
+  const m = item.meta_json;
+  let meta = m;
+  if (typeof m === 'string') { try { meta = JSON.parse(m) || {}; } catch (_) { meta = {}; } }
+  if (meta && typeof meta.verbatim === 'boolean') return meta.verbatim;
+  return item.type === 'prompt';
+}

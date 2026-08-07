@@ -160,6 +160,49 @@ export function removeAt(rows, index) {
   return list;
 }
 
+// O BLOCO de uma linha: ela mesma mais tudo o que vem depois com recuo MAIOR. É o que a tela
+// chama de "o que está dentro dela", e existe só por causa do recuo, não por parentesco: os
+// membros continuam uma lista plana.
+export function blockAt(rows, index) {
+  const list = rows || [];
+  if (!list[index]) return [index, index];
+  const d = Math.max(0, Number(list[index].indent || 0));
+  let end = index + 1;
+  while (end < list.length && Math.max(0, Number(list[end].indent || 0)) > d) end++;
+  return [index, end];
+}
+
+// Mudar o degrau de uma linha move o BLOCO INTEIRO junto, pelo mesmo tanto.
+//
+// Élder 2026-08-07: "um item só pode estar uma indentação do item imediatamente acima; se eu
+// tiro a indentação do terceiro item, todos que vêm depois que estão indentados nele devem
+// perder indentação igual". Sem isto, tirar um degrau de quem tem gente dentro deixaria os de
+// dentro pendurados num degrau que pulou um nível, que é justamente o que a regra proíbe.
+//
+// Devolve uma lista NOVA, ou a MESMA lista quando o movimento é recusado. Recusar inteiro em vez
+// de aplicar pela metade é deliberado: um bloco que "quase cabe" e entra torto é pior que um
+// botão que não acende. Por isso o teto é conferido no membro MAIS FUNDO do bloco, e não na
+// linha movida -- só olhar a linha movida deixaria um filho furar o teto numa lista funda.
+export function shiftIndent(rows, index, delta, cap) {
+  const top = typeof cap === 'number' ? cap : MAX_INDENT;
+  const list = rows || [];
+  const row = list[index];
+  if (!row || !delta) return list;
+  const cur = Math.max(0, Number(row.indent || 0));
+  const next = cur + delta;
+  if (next < 0) return list;
+  if (next > maxIndentFor(list, index, top)) return list;   // não se pula degrau
+  const [start, end] = blockAt(list, index);
+  let deepest = 0;
+  for (let i = start; i < end; i++) deepest = Math.max(deepest, Math.max(0, Number(list[i].indent || 0)));
+  if (deepest + delta > top) return list;                   // o bloco inteiro tem que caber
+  const out = list.slice();
+  for (let i = start; i < end; i++) {
+    out[i] = Object.assign({}, out[i], { indent: Math.max(0, Number(out[i].indent || 0)) + delta });
+  }
+  return out;
+}
+
 // ── A árvore ────────────────────────────────────────────────────────────────
 // Élder 2026-08-05: "alguns arquivos se juntam como irmãos em mesma hierarquia. outros pode
 // se juntar aninhados que dá para mostrar com indentação e linhas laterais mostrando a

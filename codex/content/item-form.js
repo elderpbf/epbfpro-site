@@ -26,6 +26,7 @@ import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import { mount as mountMembers } from './item-members.js';
 import { createDriveSource, pickLocalFile } from '../js/file-source.js';
 import * as aiSpec from '../js/ai-spec.js';
+import { getChoice, paramsFor } from '../js/ai-models.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 
@@ -648,16 +649,20 @@ export function mount(container, opts) {
         const systemPrompt = aiSpec.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
         const userMsg = aiSpec.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
 
-        const res = await aiApi.chat({
+        // A mesma IA que o usuario escolheu no passo do conteudo atende o Refazer: trocar de
+        // modelo no meio de um item comparado com ele mesmo daria diferenca sem explicacao.
+        const res = await aiApi.chat(Object.assign({
           system: systemPrompt,
           messages: [{ role: 'user', content: userMsg }],
           temperature: 0.3,
           max_tokens: aiSpec.MAX_TOKENS
-        });
+        }, paramsFor(getChoice().id)));
         if (!res || !res.text) { _logAi('no content', res); notice.internal(t('editor.ai_no_content')); return; }
         let parsed = aiSpec.parseModelJson(res.text);
         if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('editor.ai_bad_format')); return; }
-        parsed = aiSpec.enforcePromptVerbatim(parsed, aiContext.rawInput);
+        // `null`: ninguem escolheu ainda, entao vale o comportamento antigo (o palpite do tipo).
+        // A tela nova passa o flag de verdade no lugar deste null.
+        parsed = aiSpec.applyVerbatim(parsed, aiContext.rawInput, null);
 
         aiContext.firstOutput = parsed;
         root.querySelector('#ie-title').value = parsed.title || '';

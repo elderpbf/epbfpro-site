@@ -11,7 +11,7 @@ import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
-import { downloadText, fileNameFromTitle, isDownloadable } from '../../js/item-download.js';
+import { downloadText, fileNameFromTitle, isDownloadable, isVerbatim } from '../../js/item-download.js';
 import { downloadZip } from '../../js/item-zip.js';
 import { trail } from './api.js';
 import * as toast from '../../js/toast.js';
@@ -112,13 +112,11 @@ function _dirName(title) {
   return fileNameFromTitle(title, 'd').replace(/\.d$/, '');
 }
 
-// O texto é literal (não passa por markdown) quando o tipo é `prompt`. Élder: "o prompt
-// sempre cru". Isto hoje espelha o dispatchType() do item-render; quando a peça ganhar o
-// flag `verbatim` próprio (track-61 §5), a decisão passa a sair do flag e esta função vira
-// o único lugar a mudar.
-export function isVerbatim(item) {
-  return !!item && item.type === 'prompt';
-}
+// Reexportado, não redefinido: a regra do "cru" mora em js/item-download.js e agora sai de um
+// FLAG do item, não do tipo (o comentário lá conta por quê). Este `export` fica só porque a
+// trilha já importava daqui; um segundo corpo aqui é exatamente como o admin e a trilha
+// passariam a discordar sobre o que é cru.
+export { isVerbatim };
 
 export function getItemAction(item) {
   return getItemActions(item)[0] || null;

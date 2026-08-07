@@ -11,7 +11,7 @@ import {
   computeEditDiff,
   parseModelJson,
   looksTruncated,
-  enforcePromptVerbatim,
+  applyVerbatim,
   MAX_TOKENS,
 } from '../js/ai-spec.js';
 
@@ -79,14 +79,38 @@ test('looksTruncated: missing input/output -> false', () => {
   assert.equal(looksTruncated('x', ''), false);
 });
 
-// ── enforcePromptVerbatim ────────────────────────────────────────────────────
-test('enforcePromptVerbatim: prompt type body is forced to the raw input', () => {
-  const out = enforcePromptVerbatim({ type: 'prompt', body_md: 'reformatted' }, 'RAW**verbatim**');
-  assert.equal(out.body_md, 'RAW**verbatim**');
+// ── applyVerbatim ────────────────────────────────────────────────────────────
+// Elder 2026-08-07: "as vezes a IA toma como prompt algo que nao e e ai nao faz a formatacao.
+// Ele deveria formatar de qualquer jeito, mas se o tipo ou a opcao nao permitir, ai ele mostra
+// o texto original". O que mudou: a formatacao da IA nao e mais JOGADA FORA por um palpite de
+// tipo, ela fica guardada, e quem escolhe e a tela.
+test('applyVerbatim: guarda os DOIS corpos, para a tela poder alternar sem chamar de novo', () => {
+  const out = applyVerbatim({ type: 'guide', body_md: 'formatado' }, 'CRU', false);
+  assert.equal(out.body_raw, 'CRU');
+  assert.equal(out.body_ai, 'formatado');
+  assert.equal(out.body_md, 'formatado', 'verbatim=false fica com o da IA');
+  assert.equal(out.verbatim, false);
 });
-test('enforcePromptVerbatim: non-prompt untouched; null passthrough', () => {
-  assert.deepEqual(enforcePromptVerbatim({ type: 'guide', body_md: 'kept' }, 'RAW'), { type: 'guide', body_md: 'kept' });
-  assert.equal(enforcePromptVerbatim(null, 'RAW'), null);
+
+test('applyVerbatim: com verbatim=true o corpo e o texto original, e o da IA continua guardado', () => {
+  const out = applyVerbatim({ type: 'guide', body_md: 'formatado' }, 'CRU', true);
+  assert.equal(out.body_md, 'CRU');
+  assert.equal(out.body_ai, 'formatado', 'nada foi perdido');
+});
+
+// `null` = ninguem escolheu ainda (item novo). E o que preserva "o prompt sempre cru" para o
+// acervo inteiro, que nunca tocou na caixinha.
+test('applyVerbatim: sem escolha, vale o palpite do tipo, como antes', () => {
+  assert.equal(applyVerbatim({ type: 'prompt', body_md: 'reformatado' }, 'RAW**cru**', null).body_md, 'RAW**cru**');
+  assert.equal(applyVerbatim({ type: 'guide', body_md: 'kept' }, 'RAW', null).body_md, 'kept');
+  assert.equal(applyVerbatim(null, 'RAW', null), null);
+});
+
+// A escolha do usuario VENCE o palpite do tipo: era exatamente o caso que ele descreveu, um
+// texto classificado como prompt sem ser, que nunca era formatado.
+test('applyVerbatim: a escolha da tela vence o tipo que a IA adivinhou', () => {
+  const out = applyVerbatim({ type: 'prompt', body_md: 'formatado' }, 'CRU', false);
+  assert.equal(out.body_md, 'formatado');
 });
 
 // ── prompt builders (structural contract) ────────────────────────────────────

@@ -82,17 +82,24 @@
       '  "body_md":    "..."        // texto formatado em Markdown (regras abaixo)\n' +
       '}\n\n' +
 
+      // Esta regra MANDAVA o modelo devolver o input intacto quando ele achasse que era um
+      // prompt, e era o defeito que o Élder pegou em 07/08: "às vezes a IA toma como prompt
+      // algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito, mas
+      // se o tipo ou a opção não permitir, aí ele mostra o texto original". Ou seja, um palpite
+      // do modelo estava jogando fora a formatação, sem volta e sem ninguém pedir.
+      //
+      // Agora ele SEMPRE formata e continua classificando o tipo. Quem guarda o texto cru é o
+      // cliente (applyVerbatim), que já tinha o input na mão, e quem escolhe entre os dois é a
+      // caixinha na tela. Trocar entre cru e formatado deixou de exigir uma chamada nova.
       'REGRA ESPECIAL — TIPO PROMPT:\n' +
       'Se o conteudo do input for um prompt para uma IA (instrucoes dirigidas\n' +
-      'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), ENTAO:\n' +
+      'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), marque\n' +
       '  - type: "prompt"\n' +
-      '  - body_md: copie o input EXATAMENTE como veio, caractere por caractere.\n' +
-      '    Sem reformatar, sem mexer em asteriscos, sem trocar quebras de linha,\n' +
-      '    sem adicionar ## headers, SEM mexer em emojis. O texto do prompt e\n' +
-      '    instrucao para a IA; qualquer caractere e parte do prompt.\n' +
-      '  - title, summary e tag_labels: voce ainda gera normalmente.\n' +
       'Sinais de que e um prompt: "voce e...", "atue como...", "sua tarefa e...",\n' +
-      '"responda em formato...", instrucoes a um modelo de IA.\n\n' +
+      '"responda em formato...", instrucoes a um modelo de IA.\n' +
+      'Mesmo nesse caso, gere body_md formatado normalmente: quem decide se o\n' +
+      'texto final sera o formatado ou o original e o usuario, na tela, e ele\n' +
+      'precisa dos dois para escolher.\n\n' +
 
       'REGRAS PARA body_md (todos os outros tipos):\n' + MARKDOWN_RULES + '\n' +
 
@@ -174,10 +181,30 @@
     return b < a * 0.55;
   }
 
-  // Client-side belt-and-suspenders: prompts always keep their raw body.
-  function enforcePromptVerbatim(parsed, rawInput) {
+  // Quem fica com o corpo: o texto CRU que entrou, ou a formatação que a IA devolveu.
+  //
+  // Antes, quem decidia era o palpite da IA sobre o TIPO: `parsed.type === 'prompt'` e pronto,
+  // o corpo formatado ia fora. Élder 2026-08-07 pegou o defeito: "às vezes a IA toma como
+  // prompt algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito,
+  // mas se o tipo ou a opção não permitir, aí ele mostra o texto original". Duas coisas
+  // mudaram por causa disso:
+  //
+  //   1. A IA formata SEMPRE. O trabalho dela não é mais jogado fora antes de existir, então
+  //      desmarcar "manter cru" já mostra o texto formatado, sem precisar rodar de novo.
+  //   2. Quem decide é `verbatim`, que vem da tela. `null` (ninguém escolheu ainda, item novo)
+  //      cai no comportamento antigo, o palpite do tipo -- é o que preserva "o prompt sempre
+  //      cru" para quem nunca tocou na caixinha.
+  //
+  // Devolve os dois corpos, porque a tela precisa dos dois para alternar sem nova chamada.
+  function applyVerbatim(parsed, rawInput, verbatim) {
     if (!parsed) return parsed;
-    if (parsed.type === 'prompt') parsed.body_md = rawInput;
+    const cru = rawInput;
+    const formatado = parsed.body_md;
+    const usaCru = (typeof verbatim === 'boolean') ? verbatim : (parsed.type === 'prompt');
+    parsed.body_raw = cru;
+    parsed.body_ai = formatado;
+    parsed.verbatim = usaCru;
+    parsed.body_md = usaCru ? cru : formatado;
     return parsed;
   }
 
@@ -188,6 +215,6 @@ export {
   computeEditDiff,
   parseModelJson,
   looksTruncated,
-  enforcePromptVerbatim,
+  applyVerbatim,
 };
 export const MAX_TOKENS = 8000;

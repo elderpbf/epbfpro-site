@@ -1386,3 +1386,7 @@
   flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 0.45rem 1rem;
   border-top: 1px solid var(--border); font-size: var(--p-sm);
 }
+
+/* A seta de escolher a IA, colada no botao da IA. A escolha e sobre AQUELA acao, entao ela
+   nao vira preferencia solta num canto de tela (Elder 07/08). */
+.cdx-ai-pick { padding-left: 6px; padding-right: 6px; margin-left: -4px; }

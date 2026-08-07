@@ -155,3 +155,62 @@ test('removeAt nao mexe em quem ja estava no mesmo degrau ou acima', () => {
   const rows = [{ id: 1, indent: 0 }, { id: 2, indent: 0 }, { id: 3, indent: 1 }];
   assert.deepEqual(removeAt(rows, 0).map((r) => [r.id, r.indent]), [[2, 0], [3, 1]]);
 });
+
+// ── 07/08: o degrau move o BLOCO ────────────────────────────────────────────
+// Elder: "um item so pode estar uma indentacao do item imediatamente acima; se eu tiro a
+// indentacao do terceiro item, todos que vem depois que estao indentados nele devem perder
+// indentacao igual".
+import { shiftIndent, blockAt } from '../js/item-list.js';
+
+const R = (...ind) => ind.map((indent, i) => ({ id: i + 1, indent }));
+const IND = (rows) => rows.map((r) => r.indent);
+
+test('blockAt pega a linha e tudo que esta mais fundo depois dela', () => {
+  const rows = R(0, 1, 2, 1, 0);
+  // Para no indice 3: degrau IGUAL e irmao, nao esta dentro. So degrau MAIOR entra no bloco.
+  assert.deepEqual(blockAt(rows, 1), [1, 3]);
+  assert.deepEqual(blockAt(rows, 0), [0, 4], 'o bloco de A vai ate antes do proximo degrau 0');
+  assert.deepEqual(blockAt(rows, 4), [4, 5], 'o ultimo e um bloco de si mesmo');
+});
+
+test('tirar um degrau leva junto quem estava dentro, pelo mesmo tanto', () => {
+  //  0 A / 1 B / 2 C / 2 D / 0 E   ->  tirar o degrau de B
+  const rows = R(0, 1, 2, 2, 0);
+  assert.deepEqual(IND(shiftIndent(rows, 1, -1)), [0, 0, 1, 1, 0]);
+});
+
+test('por um degrau tambem leva o bloco junto', () => {
+  //  0 A / 0 B / 1 C   ->  B entra um degrau, e C, que estava dentro de B, vai junto
+  const rows = R(0, 0, 1);
+  assert.deepEqual(IND(shiftIndent(rows, 1, +1)), [0, 1, 2]);
+});
+
+// Um item que ja esta um degrau abaixo do de cima nao tem para onde entrar: entrar de novo
+// pularia degrau. E a mesma regra do maxIndentFor, agora valendo para o bloco.
+test('quem ja esta um degrau abaixo do de cima nao entra mais', () => {
+  const rows = R(0, 1, 2, 0);
+  assert.equal(shiftIndent(rows, 1, +1), rows, 'recusado, e devolve a mesma lista');
+});
+
+test('recusa o movimento inteiro em vez de aplicar pela metade', () => {
+  // A linha movida caberia (1 -> 2), mas o filho dela ja esta no teto: entrar levaria o filho
+  // para 6. Este e o caso que parece certo numa lista rasa e quebra numa funda.
+  const rows = R(0, 1, MAX_INDENT);
+  assert.equal(shiftIndent(rows, 1, +1), rows, 'devolve a MESMA lista, nada aplicado');
+});
+
+test('nao se pula degrau nem se sai de onde nao se esta', () => {
+  const rows = R(0, 0, 0);
+  assert.equal(shiftIndent(rows, 0, +1), rows, 'o primeiro nunca recua');
+  assert.equal(shiftIndent(rows, 0, -1), rows, 'nem sai do degrau zero');
+  assert.deepEqual(IND(shiftIndent(rows, 1, +1)), [0, 1, 0], 'um a mais que o de cima, pode');
+  const dois = R(0, 0);
+  assert.equal(shiftIndent(dois, 1, +2), dois, 'dois a mais, nao');
+});
+
+test('shiftIndent nao muta a lista que recebeu', () => {
+  const rows = R(0, 1, 2);
+  const out = shiftIndent(rows, 1, -1);
+  assert.deepEqual(IND(rows), [0, 1, 2], 'a original fica intacta');
+  assert.deepEqual(IND(out), [0, 0, 1]);
+});
