@@ -1309,17 +1309,12 @@
 
 /* O modal LARGO, e quem rola e o CORPO. Elder: "voce poderia ter um modal mais largo e preferiu
    um estreito, onde eu tenho que usar rolagem para ver os dados". So alargar nao resolvia: com
-   6 membros a pagina crescia, as ABAS saiam da tela e trocar de candidata exigia subir de volta.
-   Entao cabecalho, abas, migalha e rodape ficam presos, e o miolo rola sozinho. */
+   6 membros a pagina crescia e o rodape saia da tela. Entao cabecalho, migalha e rodape ficam
+   presos, e o miolo rola sozinho. */
 .cdx-modal-body.cdx-modal-wide { max-width: min(1240px, 96vw); }
 .cdx-proto { display: flex; flex-direction: column; max-height: 92vh; }
 .cdx-proto-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
 .cdx-proto .cdx-editor-header { flex: 0 0 auto; align-items: center; gap: 8px; }
-.cdx-proto-tabs {
-  flex: 0 0 auto; display: flex; flex-wrap: wrap; gap: 6px; align-items: center;
-  padding: 0.5rem 1rem; border-bottom: 1px solid var(--border);
-}
-.cdx-proto-lead { color: var(--text-secondary); font-size: var(--p-sm); flex: 1 1 240px; }
 .cdx-proto-toggle { display: inline-flex; gap: 4px; margin-left: auto; }
 .cdx-proto-note { margin: 0.6rem 0 0; font-size: var(--p-sm); color: var(--text-secondary); line-height: 1.45; }
 .cdx-proto-banner {
@@ -1346,11 +1341,26 @@
   font-size: var(--p-xs); letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.35rem;
 }
 .cdx-proto-members-acts { display: inline-flex; gap: 4px; }
+/* A barra de acoes da lista: UMA linha selecionada e as acoes em cima, em vez de seis botoes
+   repetidos em cada linha. Numa coluna estreita os botoes por linha empurram o titulo para
+   fora, e seis linhas com seis botoes sao 36 botoes competindo com o conteudo. */
+.cdx-proto-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.4rem; }
+.cdx-proto-bar .cdx-btn[disabled] { opacity: 0.4; }
+.cdx-proto-tree .cdx-mem-row { cursor: pointer; }
+.cdx-proto-tree .cdx-mem-row.is-sel {
+  border-color: var(--primary); background: var(--cdx-card-sel-bg);
+}
 .cdx-proto-onlyhere { display: block; margin-top: 0.45rem; }
 .cdx-proto-tree .cdx-mem-row {
   padding: 2px 4px; gap: 4px; font-size: var(--p-md); min-height: 0;
 }
-.cdx-proto-tree .cdx-mem-title { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-proto-tree { overflow: hidden; }
+/* min-width:0 no titulo: sem isso o conteudo do flex tem largura minima automatica, as colunas
+   de guia somam por cima e a LINHA fica mais larga que a coluna, vazando pela direita. */
+.cdx-proto-tree .cdx-mem-row { max-width: 100%; box-sizing: border-box; }
+.cdx-proto-tree .cdx-mem-title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
 .cdx-proto-tree .cdx-mem-type { font-size: var(--p-xs); }
 .cdx-proto-tree .cdx-btn { padding: 1px 5px; line-height: 1.3; }
 .cdx-proto-tree .cdx-mem-guide, .cdx-proto-tree .cdx-mem-elbow { width: 12px; }
