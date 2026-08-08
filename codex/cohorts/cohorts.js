@@ -28,7 +28,7 @@ import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings 
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 import * as students from './students.js';
-// track-44 — Comunicações (broadcast autorado), superfície de nível Cohorts.
+// track-44: Comunicados (authored broadcast), a Cohorts-level surface.
 import * as comunicados from './comunicados.js';
 // Turma-scoped management surfaces, mounted turma-bound into the dossier sub-tabs
 // (the same modules the Content tab used to host, now { turma }-driven so they skip
@@ -117,11 +117,11 @@ let _roteiroLoadToken = 0;
 // WHEN it is pinned, through _navRail.pin(bool).
 let _navRail = null;
 let _navNotice = null;   // loading/error line shown in place of the list (via the rail's emptyText)
-// "Continuar de onde eu estava": a última turma aberta, pra sobreviver a um refresh.
-// O SET sempre existiu (em _selectTurma, com o comentário "reopen this turma after a
-// refresh"); o READ nunca foi escrito, então todo F5 caía no prompt vazio com o rail
-// pinado — a queixa do Élder. Um deep-link (?fclient/?fturma) tem precedência: é uma
-// intenção explícita, o último aberto é só o default.
+// "Continue where I was": the last turma opened, to survive a refresh.
+// The SET always existed (in _selectTurma, with the comment "reopen this turma after a
+// refresh"); the READ was never written, so every F5 landed on the empty prompt with the
+// rail pinned, Élder's complaint. A deep-link (?fclient/?fturma) takes precedence: it is an
+// explicit intent, the last one opened is only the default.
 const LS_LAST = 'cdx_cohorts_last';
 function _lsLastSet(clientSlug, turmaSlug) {
   try { localStorage.setItem(LS_LAST, clientSlug + '\n' + turmaSlug); } catch (_) { /* private mode */ }
@@ -2231,8 +2231,8 @@ export function mount(viewEl, ctx) {
   _turmaAulas = [];
   _relClientSlug = (ctx && ctx.fclient) || null;
   _relTurmaSlug = (ctx && ctx.fturma) || null;
-  // Sem deep-link, retoma a última turma aberta (ver LS_LAST). Se ela sumiu ou foi
-  // arquivada, o _loadAll não a acha e cai no prompt vazio de sempre: sem guarda extra.
+  // No deep-link, resumes the last turma opened (see LS_LAST). If it disappeared or was
+  // archived, _loadAll won't find it and falls back to the usual empty prompt: no extra guard needed.
   if (!_relClientSlug && !_relTurmaSlug) {
     const last = _lsLastGet();
     if (last) { _relClientSlug = last.client; _relTurmaSlug = last.turma; }

@@ -34,14 +34,14 @@ test('the resizer persists to localStorage via the --cdx-rz-w var', () => {
   assert.match(resizableJs, /class="cdx-rz-grip"|className = 'cdx-rz-grip'/, 'creates the grip element');
 });
 
-// TAREFAS SAIU DAQUI em 2026-07-16 (track-41). Ela nunca foi um "split consumer" de verdade:
-// o `_renderShell` só emitia o pane t1b, então NINGUÉM criava `#cdx-tarefas-split` e o
-// `installResizer(_q('cdx-tarefas-split'))` rodava sobre `null`, atrás de um ramo
-// `_lockedAula == null` inalcançável (content.js monta bankOnly, cohorts.js sempre passa
-// aulaNumber). Este teste lia só o FONTE, então passava verde sobre código morto. Contraste
-// que prova: `releases.js` EMITE `<div class="cdx-items-split cdx-releases-split" ...>`; o
-// tarefas.js não emitia nada equivalente. O CSS `.cdx-tarefas-split` fica (regra órfã não
-// pinta nada, e mexer em CSS é onde mora o risco de desvio visual).
+// TAREFAS LEFT HERE in 2026-07-16 (track-41). It was never really a "split consumer":
+// `_renderShell` only emitted the t1b pane, so NOBODY created `#cdx-tarefas-split` and
+// `installResizer(_q('cdx-tarefas-split'))` ran over `null`, behind an unreachable
+// `_lockedAula == null` branch (content.js mounts bankOnly, cohorts.js always passes
+// aulaNumber). This test only read the SOURCE, so it passed green over dead code. Proof
+// by contrast: `releases.js` EMITS `<div class="cdx-items-split cdx-releases-split" ...>`;
+// tarefas.js emitted nothing equivalent. The CSS `.cdx-tarefas-split` stays (an orphan
+// rule paints nothing, and CSS is where the risk of visual drift lives).
 test('the split surface installs the shared resizer (no duplicated drag code)', () => {
   assert.match(releasesJs, /from '\.\.\/js\/resizable\.js'/, 'releases imports the helper');
   assert.match(releasesJs, /installResizer\(/, 'releases installs the resizer');
@@ -61,10 +61,10 @@ test('CSS keeps the split grid var, the grip, and the Clientes title', () => {
   // only the Liberações/Tarefas split drives a grid from --cdx-rz-w (asserted below).
   assert.match(cohortsCss, /\.cdx-rz-grip\s*\{/, 'grip styled (for the Liberações/Tarefas split)');
   assert.match(cohortsCss, /\.cdx-rz-grip\s*\{\s*display:\s*none|cdx-rz-grip\s*\{\s*display:\s*none/, 'grip hidden on mobile (in a media query)');
-  // Clientes title: dossiê size (1.25rem), no uppercase.
+  // Clientes title: dossier size (1.25rem), no uppercase.
   const title = cohortsCss.match(/\.cdx-pane-title\s*\{[^}]*\}/);
   assert.ok(title, '.cdx-pane-title rule present');
-  assert.match(title[0], /font-size:\s*1\.25rem/, 'title at the dossiê size');
+  assert.match(title[0], /font-size:\s*1\.25rem/, 'title at the dossier size');
   assert.ok(!/text-transform:\s*uppercase/.test(title[0]), 'title is not uppercased');
   assert.match(contentCss, /\.cdx-releases-split,\s*\.cdx-tarefas-split[^}]*var\(--cdx-rz-w/, 'split uses the var');
 });

@@ -82,15 +82,17 @@
       '  "body_md":    "..."        // texto formatado em Markdown (regras abaixo)\n' +
       '}\n\n' +
 
-      // Esta regra MANDAVA o modelo devolver o input intacto quando ele achasse que era um
-      // prompt, e era o defeito que o Élder pegou em 07/08: "às vezes a IA toma como prompt
-      // algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito, mas
-      // se o tipo ou a opção não permitir, aí ele mostra o texto original". Ou seja, um palpite
-      // do modelo estava jogando fora a formatação, sem volta e sem ninguém pedir.
+      // This rule USED TO tell the model to return the input untouched whenever it thought it
+      // was a prompt, and that was the bug Élder caught on 07/08: "às vezes a IA toma como
+      // prompt algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito,
+      // mas se o tipo ou a opção não permitir, aí ele mostra o texto original". In other words,
+      // a guess by the model was throwing away the formatting, with no way back and no one
+      // asking for it.
       //
-      // Agora ele SEMPRE formata e continua classificando o tipo. Quem guarda o texto cru é o
-      // cliente (applyVerbatim), que já tinha o input na mão, e quem escolhe entre os dois é a
-      // caixinha na tela. Trocar entre cru e formatado deixou de exigir uma chamada nova.
+      // Now it ALWAYS formats and still classifies the type. The client (applyVerbatim) is the
+      // one that keeps the raw text, since it already had the input in hand, and the checkbox
+      // on the screen is what chooses between the two. Switching between raw and formatted no
+      // longer requires a new call.
       'REGRA ESPECIAL — TIPO PROMPT:\n' +
       'Se o conteudo do input for um prompt para uma IA (instrucoes dirigidas\n' +
       'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), marque\n' +
@@ -181,21 +183,21 @@
     return b < a * 0.55;
   }
 
-  // Quem fica com o corpo: o texto CRU que entrou, ou a formatação que a IA devolveu.
+  // Which text wins as the body: the RAW text that came in, or the formatting the AI returned.
   //
-  // Antes, quem decidia era o palpite da IA sobre o TIPO: `parsed.type === 'prompt'` e pronto,
-  // o corpo formatado ia fora. Élder 2026-08-07 pegou o defeito: "às vezes a IA toma como
-  // prompt algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito,
-  // mas se o tipo ou a opção não permitir, aí ele mostra o texto original". Duas coisas
-  // mudaram por causa disso:
+  // Before, the AI's guess about the TYPE decided it: `parsed.type === 'prompt'` and that was
+  // that, the formatted body got dropped. Élder caught the bug on 2026-08-07: "às vezes a IA
+  // toma como prompt algo que não é e aí não faz a formatação. Ele deveria formatar de
+  // qualquer jeito, mas se o tipo ou a opção não permitir, aí ele mostra o texto original".
+  // Two things changed because of that:
   //
-  //   1. A IA formata SEMPRE. O trabalho dela não é mais jogado fora antes de existir, então
-  //      desmarcar "manter cru" já mostra o texto formatado, sem precisar rodar de novo.
-  //   2. Quem decide é `verbatim`, que vem da tela. `null` (ninguém escolheu ainda, item novo)
-  //      cai no comportamento antigo, o palpite do tipo -- é o que preserva "o prompt sempre
-  //      cru" para quem nunca tocou na caixinha.
+  //   1. The AI ALWAYS formats. Its work is no longer discarded before it even exists, so
+  //      unchecking "keep raw" already shows the formatted text, with no need to run again.
+  //   2. `verbatim`, which comes from the screen, is what decides. `null` (nobody has chosen
+  //      yet, a new item) falls back to the old behavior, the type guess, which is what
+  //      preserves "prompts always stay raw" for anyone who never touched the checkbox.
   //
-  // Devolve os dois corpos, porque a tela precisa dos dois para alternar sem nova chamada.
+  // Returns both bodies, because the screen needs both to switch without a new call.
   function applyVerbatim(parsed, rawInput, verbatim) {
     if (!parsed) return parsed;
     const cru = rawInput;

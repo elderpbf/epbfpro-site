@@ -2,28 +2,28 @@
 // The ENGINE behind every "escolha itens do acervo" list. Pure: no DOM, no CSS, no markup,
 // no state. Same split as js/list-tree.js, and for the same reason.
 //
-// Why it exists (Élder 2026-08-05, sobre o bloco de itens do projeto que eu tinha acabado de
-// escrever): "na lista de itens do projeto, deve ser que nem a lista de liberações (não
+// Why it exists (Élder 2026-08-05, about the project items block I had just finished
+// writing): "na lista de itens do projeto, deve ser que nem a lista de liberações (não
 // duplique)... a gente deve ter apenas uma lista de itens e cada local que utiliza só faz os
-// filtros necessários". Ele estava certo, e é a MESMA correção que ele já tinha feito em
-// 2026-07-17 e que fez nascer o list-tree.js. Eu tinha escrito um `<select>` próprio no
-// item-members.js enquanto Liberações já montava seções por tipo, com glifo e ordem do
-// registro `ct_types`. Duas listas divergem: uma ganha um tipo novo, a outra não.
+// filtros necessários". He was right, and it's the SAME fix he had already made on
+// 2026-07-17, the one that gave birth to list-tree.js. I had written my own `<select>` in
+// item-members.js while Liberações already built sections by type, with glyph and order from
+// the `ct_types` registry. Two lists diverge: one gets a new type, the other doesn't.
 //
-// A objeção óbvia era "mas Liberações tem coisa que o editor de projeto não tem: checkbox,
-// contagem de liberados, o aviso 'já na aula 3'". Élder respondeu: "o único problema é a
+// The obvious objection was "but Liberações has things the project editor doesn't: checkbox,
+// released count, the 'already in class 3' warning". Élder answered: "o único problema é a
 // tabela de releases que tem as necessidades próprias dela... então não é problema. o
-// problema era construir do zero desde o começo". É exatamente a divisão motor/pintor: o
-// motor entrega QUAIS itens, em QUE seções, em QUE ordem, com QUE glifo; cada tela pinta as
-// colunas que só ela tem.
+// problema era construir do zero desde o começo". It's exactly the engine/painter split: the
+// engine delivers WHICH items, in WHICH sections, in WHAT order, with WHAT glyph; each screen
+// paints the columns only it has.
 //
-// Consumidores: content/releases.js (compositor de aula e de Outros) e content/item-members.js
-// (os itens de um agrupador).
+// Consumers: content/releases.js (the class and Others compositor) and content/item-members.js
+// (a grouper's items).
 import { normalize } from './text-search.js';
 
-// A ordem do registro `ct_types` manda; tipo fora do registro cai no fim, mas não some --
-// um item com tipo desconhecido tem que continuar aparecendo, senão ele fica inatingível
-// pela tela que deveria consertá-lo.
+// The `ct_types` registry order rules; a type outside the registry falls to the end, but
+// doesn't disappear, an item with an unknown type has to keep appearing, or else it becomes
+// unreachable by the screen that should fix it.
 export function typeOrder(types) {
   const order = (types || []).map((tp) => tp.slug);
   return (a, b) => {
@@ -32,7 +32,7 @@ export function typeOrder(types) {
   };
 }
 
-// Agrupa por tipo, na ordem do registro. Era o `_groupByType` particular do releases.js.
+// Groups by type, in registry order. Used to be releases.js's own private `_groupByType`.
 export function groupByType(items, types) {
   const cmp = typeOrder(types);
   const byType = new Map();
@@ -43,16 +43,17 @@ export function groupByType(items, types) {
   return Array.from(byType.keys()).sort(cmp).map((k) => ({ type: k, items: byType.get(k) }));
 }
 
-// As seções de uma lista de itens, uma por tipo.
+// The sections of an item list, one per type.
 //
-//   opts.types        registro ct_types [{slug, label, icon}]
-//   opts.labelOf      (slug) => rótulo   (i18n vence a label do banco; ver releases.js)
-//   opts.iconOf       (slug) => ícone
-//   opts.sortWithin   (slug, items) => items   (labs saem na ordem do registro deles)
+//   opts.types        ct_types registry [{slug, label, icon}]
+//   opts.labelOf      (slug) => label   (i18n wins over the DB label; see releases.js)
+//   opts.iconOf       (slug) => icon
+//   opts.sortWithin   (slug, items) => items   (labs come out in their registry order)
 //
-// Retorna [{ key, type, label, icon, count, items }]. Sem HTML de propósito: o glifo vai como
-// NOME de ícone, e quem pinta decide o tamanho e se ele vai antes do rótulo (vai, era o
-// pedido do Élder: "vamos aproveitar para adicionar glifos antes do nome dos tipos").
+// Returns [{ key, type, label, icon, count, items }]. No HTML on purpose: the glyph goes as
+// an icon NAME, and the painter decides the size and whether it goes before the label (it
+// does, it was Élder's request: "vamos aproveitar para adicionar glifos antes do nome dos
+// tipos").
 export function sectionsByType(items, opts) {
   opts = opts || {};
   const labelOf = opts.labelOf || ((s) => s);
@@ -68,27 +69,29 @@ export function sectionsByType(items, opts) {
   }));
 }
 
-// Busca com a MESMA dobra de acento do resto do Codex (é o que faz "peticao" achar "Petição").
+// Search with the SAME accent folding as the rest of Codex (it's what makes "peticao" find
+// "Petição").
 export function matchesQuery(item, query) {
   const q = normalize(String(query == null ? '' : query)).trim();
   if (!q) return true;
   return normalize(String((item && item.title) || '')).indexOf(q) !== -1;
 }
 
-// ── O recuo dentro de um pacote ──────────────────────────────────────────────
-// Élder 2026-08-06, e é a correção que simplificou o modelo inteiro: "o relacionamento
+// ── The indent inside a package ───────────────────────────────────────────────
+// Élder 2026-08-06, and it's the fix that simplified the whole model: "o relacionamento
 // pai-filho real só pertence ao bundle e seus itens. os itens dentro estão apenas indentados
 // ou não, para fins organizacionais... ser irmão ou filho não faz diferença no mundo real, é
 // só a forma como vai aparecer na trilha".
 //
-// Então os membros são uma LISTA PLANA com um inteiro de recuo. Não há árvore entre eles, e é
-// por isso que apagar um membro não recuado é só "promove quem estava embaixo": nada precisa
-// ser re-parenteado, porque nada era filho de nada.
+// So members are a FLAT LIST with an indent integer. There's no tree between them, and that's
+// why removing a non-indented member is just "promote whoever was underneath": nothing needs
+// to be re-parented, because nothing was a child of anything.
 //
-// O que ainda precisa de cálculo é o traço de ligação, que não sai do recuo sozinho: para
-// saber se a coluna k leva traço vertical numa linha, é preciso olhar PARA FRENTE e ver se
-// ainda vem alguém naquele mesmo degrau antes de a lista subir acima dele. Sem isso o traço
-// continua descendo embaixo do último, que é o defeito clássico de árvore em texto.
+// What still needs computing is the connector line, which doesn't fall out of the indent by
+// itself: to know whether column k carries a vertical line on a given row, you have to look
+// AHEAD and see whether someone still comes at that same step before the list rises above it.
+// Without this the line would keep going down below the last one, the classic bug of drawing
+// a tree in text.
 //
 //   guidesFromIndent([{indent:0},{indent:1},{indent:1},{indent:0}])
 //     -> [{indent:0,isLast:false,guides:[]},
@@ -101,14 +104,14 @@ export function guidesFromIndent(rows) {
     indent: Math.max(0, Number((r && r.indent) || 0)),
   }));
   return list.map((row, i) => {
-    // Último do seu degrau = daqui pra frente ninguém mais aparece neste degrau antes de a
-    // lista voltar para um degrau mais raso.
+    // Last of its step = from here on nobody else appears at this step before the list
+    // goes back to a shallower step.
     let isLast = true;
     for (let j = i + 1; j < list.length; j++) {
       if (list[j].indent < row.indent) break;
       if (list[j].indent === row.indent) { isLast = false; break; }
     }
-    // A coluna k leva traço se ainda vem alguém no degrau k mais abaixo.
+    // Column k carries a line if someone still comes at step k further down.
     const guides = [];
     for (let k = 0; k < row.indent; k++) {
       let on = false;
@@ -122,18 +125,19 @@ export function guidesFromIndent(rows) {
   });
 }
 
-// O recuo que uma linha PODE ter. Um membro não pode pular degraus: no máximo um a mais que o
-// de cima (senão o traço de ligação apontaria para um degrau que não existe), e nunca acima do
-// teto. Puro, porque é a regra que o botão →| consulta para saber se pode ficar ativo.
-// Teto de recuo, UM número para o Codex inteiro: o editor (item-members.js) e a trilha
-// (trilha/js/projeto.js) importam daqui, e o CSS deriva a margem de um passo só. Antes eram
-// três lugares com `3` escrito à mão, e o número da trilha era o que ninguém lembrava de
-// mexer. Espelha o CT_MEMBER_MAX_INDENT do Worker, que rejeita o que passar.
+// The indent a row CAN have. A member can't skip steps: at most one more than the one above
+// (otherwise the connector line would point at a step that doesn't exist), and never above the
+// cap. Pure, because it's the rule the →| button checks to know whether it can be active.
+// One indent cap, ONE number for the whole Codex: the editor (item-members.js) and the trail
+// (trilha/js/projeto.js) import it from here, and the CSS derives the margin in a single step.
+// Before there were three places with `3` written by hand, and the trail's number was the one
+// nobody remembered to change. Mirrors the Worker's CT_MEMBER_MAX_INDENT, which rejects
+// whatever goes over.
 //
-// Élder 2026-08-06 mandou de 3 para 5: "why 3? go to 5 so we can test. if it gets too cramped,
-// we shrink; i need to see on the page". A conta de tela estreita continua verdadeira (cada
-// degrau come largura do título), mas a resposta é ENCOLHER o degrau no CSS, não proibir o
-// degrau -- e quem decide se ficou apertado é ele olhando, não esta constante.
+// Élder 2026-08-06 raised it from 3 to 5: "why 3? go to 5 so we can test. if it gets too
+// cramped, we shrink; i need to see on the page". The narrow-screen math still holds (each
+// step eats title width), but the answer is to SHRINK the step in CSS, not to forbid the step,
+// and it's him looking at it who decides whether it got too tight, not this constant.
 export const MAX_INDENT = 5;
 
 export function maxIndentFor(rows, index, cap) {
@@ -143,9 +147,9 @@ export function maxIndentFor(rows, index, cap) {
   return Math.min(top, prev + 1);
 }
 
-// Apagar um membro PROMOVE quem estava recuado sob ele (Élder: "deleting the unindented from
-// the bundle just promotes the indentation, removing their indentation"). Puro e devolve uma
-// lista nova; quem chama decide quando salvar.
+// Removing a member PROMOTES whoever was indented under it (Élder: "deleting the unindented
+// from the bundle just promotes the indentation, removing their indentation"). Pure, returns a
+// new list; the caller decides when to save.
 export function removeAt(rows, index) {
   const list = (rows || []).slice();
   const gone = list[index];
@@ -154,15 +158,15 @@ export function removeAt(rows, index) {
   list.splice(index, 1);
   for (let i = index; i < list.length; i++) {
     const cur = Math.max(0, Number(list[i].indent || 0));
-    if (cur <= d) break;               // voltou ao degrau do apagado: acabou o bloco dele
+    if (cur <= d) break;               // back to the removed one's step: its block is over
     list[i] = Object.assign({}, list[i], { indent: cur - 1 });
   }
   return list;
 }
 
-// O BLOCO de uma linha: ela mesma mais tudo o que vem depois com recuo MAIOR. É o que a tela
-// chama de "o que está dentro dela", e existe só por causa do recuo, não por parentesco: os
-// membros continuam uma lista plana.
+// A row's BLOCK: the row itself plus everything after it with a GREATER indent. It's what the
+// screen calls "what's inside it", and it exists only because of the indent, not parentage:
+// members are still a flat list.
 export function blockAt(rows, index) {
   const list = rows || [];
   if (!list[index]) return [index, index];
@@ -172,17 +176,18 @@ export function blockAt(rows, index) {
   return [index, end];
 }
 
-// Mudar o degrau de uma linha move o BLOCO INTEIRO junto, pelo mesmo tanto.
+// Changing a row's step moves the WHOLE BLOCK along with it, by the same amount.
 //
 // Élder 2026-08-07: "um item só pode estar uma indentação do item imediatamente acima; se eu
 // tiro a indentação do terceiro item, todos que vêm depois que estão indentados nele devem
-// perder indentação igual". Sem isto, tirar um degrau de quem tem gente dentro deixaria os de
-// dentro pendurados num degrau que pulou um nível, que é justamente o que a regra proíbe.
+// perder indentação igual". Without this, removing a step from someone with people inside would
+// leave the ones inside hanging at a step that skipped a level, exactly what the rule forbids.
 //
-// Devolve uma lista NOVA, ou a MESMA lista quando o movimento é recusado. Recusar inteiro em vez
-// de aplicar pela metade é deliberado: um bloco que "quase cabe" e entra torto é pior que um
-// botão que não acende. Por isso o teto é conferido no membro MAIS FUNDO do bloco, e não na
-// linha movida -- só olhar a linha movida deixaria um filho furar o teto numa lista funda.
+// Returns a NEW list, or the SAME list when the move is refused. Refusing entirely instead of
+// applying it halfway is deliberate: a block that "almost fits" and lands crooked is worse than
+// a button that doesn't light up. That's why the cap is checked on the block's DEEPEST member,
+// not on the row that moved, looking only at the moved row would let a child punch through the
+// cap in a deep list.
 export function shiftIndent(rows, index, delta, cap) {
   const top = typeof cap === 'number' ? cap : MAX_INDENT;
   const list = rows || [];
@@ -191,11 +196,11 @@ export function shiftIndent(rows, index, delta, cap) {
   const cur = Math.max(0, Number(row.indent || 0));
   const next = cur + delta;
   if (next < 0) return list;
-  if (next > maxIndentFor(list, index, top)) return list;   // não se pula degrau
+  if (next > maxIndentFor(list, index, top)) return list;   // can't skip a step
   const [start, end] = blockAt(list, index);
   let deepest = 0;
   for (let i = start; i < end; i++) deepest = Math.max(deepest, Math.max(0, Number(list[i].indent || 0)));
-  if (deepest + delta > top) return list;                   // o bloco inteiro tem que caber
+  if (deepest + delta > top) return list;                   // the whole block has to fit
   const out = list.slice();
   for (let i = start; i < end; i++) {
     out[i] = Object.assign({}, out[i], { indent: Math.max(0, Number(out[i].indent || 0)) + delta });
@@ -203,17 +208,17 @@ export function shiftIndent(rows, index, delta, cap) {
   return out;
 }
 
-// ── A árvore ────────────────────────────────────────────────────────────────
+// ── The tree ────────────────────────────────────────────────────────────────
 // Élder 2026-08-05: "alguns arquivos se juntam como irmãos em mesma hierarquia. outros pode
 // se juntar aninhados que dá para mostrar com indentação e linhas laterais mostrando a
-// ligação". As linhas laterais são o motivo desta função existir em vez de um `map` recursivo
-// dentro do pintor: para saber SE desenhar o segmento vertical numa coluna, a linha precisa
-// saber se cada ancestral dela era ou não o último irmão do seu nível. Um traço que continua
-// abaixo do último filho é o defeito clássico de árvore em texto.
+// ligação". The side lines are why this function exists instead of a recursive `map` inside
+// the painter: to know WHETHER to draw the vertical segment in a column, the row needs to
+// know whether each of its ancestors was or wasn't the last sibling of its level. A line that
+// keeps going below the last child is the classic bug of drawing a tree in text.
 //
-// Achata { children } em linhas:
-//   { item, depth, isLast, guides:[bool] }   guides[k] = o ancestral do nível k ainda tem irmão
-//                                            depois dele, então a coluna k leva traço vertical
+// Flattens { children } into rows:
+//   { item, depth, isLast, guides:[bool] }   guides[k] = the ancestor at level k still has a
+//                                            sibling after it, so column k carries a vertical line
 export function flattenTree(nodes, depth, guides) {
   depth = depth || 0;
   guides = guides || [];
@@ -228,20 +233,20 @@ export function flattenTree(nodes, depth, guides) {
   return out;
 }
 
-// Os ids já presentes na árvore, em qualquer profundidade. Quem escolhe itens usa para não
-// oferecer de novo o que já está dentro.
+// The ids already present in the tree, at any depth. Item pickers use this so they don't
+// offer again what's already inside.
 export function idsInTree(nodes) {
   const out = new Set();
   flattenTree(nodes).forEach((r) => out.add(Number(r.item.id)));
   return out;
 }
 
-// Um item pode conter outro? Só não pode conter a SI MESMO nem um ANCESTRAL seu -- isso é
-// ciclo, e a trilha entraria em recursão ao montar o cartão. Nada além disso é proibido:
-// a guarda antiga barrava agrupador dentro de agrupador, que era defensiva e o Élder
-// derrubou ("o erro é criar superfícies não flexíveis de cara, depois dá muito mais
-// trabalho"). O Worker rejeita ciclo de novo no save; esta é a versão da tela, para não
-// oferecer o que vai voltar erro.
+// Can an item contain another? It just can't contain ITSELF or one of its ANCESTORS, that's a
+// cycle, and the trail would recurse forever building the card. Nothing beyond that is
+// forbidden: the old guard used to bar grouper-inside-grouper, which was defensive and Élder
+// tore down ("o erro é criar superfícies não flexíveis de cara, depois dá muito mais
+// trabalho"). The Worker rejects a cycle again on save; this is the screen's version, so it
+// doesn't offer what will come back as an error.
 export function selectableItems(all, parentId, ancestorIds) {
   const barred = new Set([Number(parentId)]);
   (ancestorIds || []).forEach((id) => barred.add(Number(id)));

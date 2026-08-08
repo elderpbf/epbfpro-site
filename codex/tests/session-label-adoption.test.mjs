@@ -15,7 +15,7 @@ const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url
 
 const CONSUMERS = [
   ['questions/sessions.js', 'Perguntas > Sessões'],
-  ['cohorts/cohorts.js',    'o picker do dossiê'],
+  ['cohorts/cohorts.js',    'the dossier picker'],
 ];
 
 for (const [rel, label] of CONSUMERS) {

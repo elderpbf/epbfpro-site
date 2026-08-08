@@ -160,7 +160,7 @@ export function labHtml(item, opts = {}) {
   const openBtn = (!opts.preview && key)
     ? '<button type="button" class="ctr-lab-open-btn" data-lab-key="' + esc(key) + '">Abrir</button>'
     : '';
-  // A lab card explains itself in three beats (Élder): a one-line "o que é"
+  // A lab card explains itself in three beats (Élder): a one-line "what it is"
   // (summary), a short description, and the objective. All three come from the
   // code registry via the Trail overlay (lab-overlay.js), so they never go stale.
   const oneLine = item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '';
@@ -330,17 +330,17 @@ function renderGoogleDoc(item, container, opts) {
 
 export function renderItem(item, container, opts = {}) {
   if (!item || !container) return;
-  // A previa do admin lista os itens DE DENTRO. Élder 2026-08-05: "nos itens, do lado direito
-  // ao selecionar o projeto, não lista dos documentos".
+  // The admin preview lists the items FROM INSIDE. Élder 2026-08-05: "nos itens, do lado
+  // direito ao selecionar o projeto, não lista dos documentos".
   //
-  // O flag é `childrenList` e NÃO `preview`, que foi meu erro na primeira versão: `preview`
-  // quer dizer "sem os botões de ação" e a trilha o passa em TODA linha, então (a) o painel
-  // de Itens, que não passa flag nenhum, nunca mostrava a lista -- o defeito que o Élder
-  // continuou vendo -- e (b) na trilha ela saía empilhada em cima da lista de verdade. Quem
-  // pede esta lista é quem só quer LER o que tem dentro.
+  // The flag is `childrenList` and NOT `preview`, which was my mistake in the first version:
+  // `preview` means "no action buttons" and the Trail passes it on EVERY row, so (a) the Items
+  // panel, which passes no flag at all, never showed the list, the bug Élder kept seeing, and
+  // (b) in the Trail it came out stacked on top of the real list. Whoever asks for this list
+  // just wants to READ what's inside.
   //
-  // Sem `case 'projeto'`: conter itens deixou de ser privilégio de um tipo, então a condição
-  // é ter filhos, e uma tarefa com documentos dentro ganha a mesma lista de graça.
+  // Without `case 'projeto'`: containing items is no longer a single type's privilege, so the
+  // condition is having children, and a tarefa with documents inside gets the same list for free.
   if (opts.childrenList && item.children && item.children.length) {
     const body = document.createElement('div');
     const kids = document.createElement('div');
@@ -351,10 +351,10 @@ export function renderItem(item, container, opts = {}) {
     container.appendChild(kids);
     return renderItem(Object.assign({}, item, { children: null }), body, opts);
   }
-  // O flag `verbatim` vem ANTES do tipo: quem manda mostrar o texto literal é o item, não o
-  // palpite que a IA deu sobre o tipo dele (ver isVerbatim em js/item-download.js). O
-  // dispatchType continua puro e por tipo, que é o que os testes dele travam; o que mudou é
-  // que existe uma resposta com precedência sobre ele.
+  // The `verbatim` flag comes BEFORE the type: it's the item itself, not the AI's guess about
+  // its type, that decides whether to show the literal text (see isVerbatim in
+  // js/item-download.js). dispatchType stays pure and type-based, which is what its tests
+  // pin down; what changed is that there's now an answer that takes precedence over it.
   if (isVerbatim(item)) return renderPrompt(item, container, opts);
   switch (dispatchType(item.type)) {
     case 'prompt':     return renderPrompt(item, container, opts);
@@ -370,9 +370,9 @@ export function renderItem(item, container, opts = {}) {
   }
 }
 
-// A lista, aninhada, do que um item carrega. Só leitura: quem edita é o bloco do editor.
-// Achata pelo MESMO flattenTree que o editor usa, então as duas telas nunca discordam sobre
-// o que está dentro de quê.
+// The nested list of what an item carries. Read-only: the editor block is what edits.
+// Flattens via the SAME flattenTree the editor uses, so the two screens never disagree about
+// what's inside what.
 export function childrenListHtml(children) {
   const rows = flattenTree(children).map((r) => (
     '<li class="ctr-child" style="padding-left:' + (r.depth * 18) + 'px">' +

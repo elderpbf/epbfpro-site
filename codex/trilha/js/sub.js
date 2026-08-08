@@ -118,8 +118,8 @@ export async function toggleSub(sub, item, opts = {}) {
     overlayLabItem(data.item);
     overlayInterativoItem(data.item);
     exp.innerHTML = '';
-    // Um embalador não renderiza conteúdo, lista os filhos (track-61). Cada filho é uma linha
-    // igual a qualquer outra, montada pelo mesmo buildSub.
+    // A wrapper doesn't render content, it lists its children (track-61). Each child is a row
+    // just like any other, built by the same buildSub.
     if (isProjeto(data.item)) renderProjeto(data.item, exp, buildSub, opts);
     else renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);

@@ -63,10 +63,10 @@ async function resolveAndGo(code, els) {
   els.error.textContent = '';
   els.btn.disabled = true;
   els.state.textContent = t('entrar.entering');
-  // "Não consegui perguntar" e "perguntei e não existe" NÃO são a mesma coisa, e tratá-las como
-  // uma só faz a tela dizer ao aluno que o código está errado quando o errado é a rede. Isso não é
-  // hipotético: foi exatamente o que disfarçou o diagnóstico de 2026-07-31 por uma rodada inteira,
-  // e o aluno que cair nisso vai ligar para o professor(a) reclamar de um código que está certo.
+  // "Couldn't ask" and "asked and it doesn't exist" are NOT the same thing, and treating them as
+  // one makes the screen tell the student the code is wrong when the actual problem is the network.
+  // This is not hypothetical: it is exactly what disguised the 2026-07-31 diagnosis for a whole
+  // round, and a student who hits this will call the instructor to complain about a code that is correct.
   let res = null;
   let semResposta = false;
   try { res = await trail.resolveCode({ code }); } catch (_) { semResposta = true; }
@@ -80,15 +80,15 @@ async function resolveAndGo(code, els) {
   els.state.textContent = '';
   els.btn.disabled = false;
   if (semResposta) {
-    // O código pode estar perfeito. Apagar aqui seria punir o aluno por uma falha nossa,
-    // então a mensagem manda tentar de novo e o que ele digitou continua no campo.
+    // The code may be perfectly fine. Clearing it here would punish the student for a failure
+    // on our end, so the message asks them to try again and what they typed stays in the field.
     els.error.textContent = t('entrar.offline');
     return;
   }
   els.error.textContent = t('entrar.not_found');
-  // Mesma regra das outras telas de código: errou, o campo esvazia e recebe o foco.
-  // Guardado atrás do if porque esta função também roda para código vindo da URL,
-  // quando não houve digitação nenhuma para desfazer.
+  // Same rule as the other code screens: on a wrong code, the field empties and gets focus.
+  // Guarded behind the if because this function also runs for a code coming from the URL,
+  // when there was no typing to undo.
   if (window.CodeInput) window.CodeInput.clear(els.input);
 }
 
@@ -237,7 +237,7 @@ function startEmail(emailEl, root) {
       '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-verify" type="button">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button class="cdx-entrar-link cdx-entrar-back" type="button">' + esc(t('entrar.other_email')) + '</button>';
     const input = emailEl.querySelector('.cdx-entrar-code-input');
-    // Um só campo de código no site inteiro: maiúsculo no VALOR, tamanho certo, centralizado.
+    // Just one code field across the whole site: uppercase in the VALUE, right size, centered.
     if (window.CodeInput) window.CodeInput.attach(input, { length: 4 });
     const verify = emailEl.querySelector('.cdx-entrar-verify');
     const err = emailEl.querySelector('.cdx-entrar-code-error');
@@ -248,7 +248,7 @@ function startEmail(emailEl, root) {
       await flow.verifyCode(input.value);
       if (flow.state === 'code' && flow.error) {
         err.textContent = entryErrorText(flow.error, flow.retryAfter);
-        // Código errado sai do campo, com o foco de volta: quem errou vai digitar outro.
+        // A wrong code leaves the field, with focus back on it: whoever got it wrong types another.
         if (window.CodeInput) window.CodeInput.clear(input);
         verify.disabled = false; verify.textContent = t('login.enroll_cta'); return;
       }
@@ -292,11 +292,11 @@ export function start() {
   const els = {
     root: document.getElementById('cdx-entrar'),
     form: document.getElementById('cdx-entrar-form'),
-    // NUMÉRICO, e é o alfabeto certo apesar de `ct_resolve_code` aceitar letra. O que o
-    // aluno digita é o `access_code` da turma, e ele é numérico: conferido no D1 de
-    // produção em 2026-07-31, 9 turmas, 9 códigos de 4 dígitos. A letra só aparece no
-    // `classpulse_session_id`, a coluna LEGADA que o resolvedor ainda casa para não
-    // quebrar link antigo — é compatibilidade, não é o que se pede a um aluno hoje.
+    // NUMERIC, and that is the right alphabet even though `ct_resolve_code` accepts a letter.
+    // What the student types is the turma's `access_code`, and it is numeric, confirmed on
+    // production D1 on 2026-07-31, 9 turmas, 9 four-digit codes. The letter only shows up in
+    // `classpulse_session_id`, the LEGACY column the resolver still matches so it doesn't
+    // break an old link, that is compatibility, not what is asked of a student today.
     // Élder, 2026-07-31: *"os códigos de turma são numéricos, não alfanuméricos"*.
     input: (window.CodeInput
       ? window.CodeInput.attach(document.getElementById('cdx-entrar-input'), { length: 4, mode: 'digits' })

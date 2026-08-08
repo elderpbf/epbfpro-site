@@ -25,7 +25,7 @@ export const BASE_PATH = '/codex/interativos/';
 
 const ID_PREFIX = 'interativo:';
 
-// Shipped data. Each entry: key (folder + id), title, summary ("o que é"),
+// Shipped data. Each entry: key (folder + id), title, summary ("what it is"),
 // description, objective, and an optional `icon` (a 'glyph:<name>' from js/glyphs.js;
 // defaults to the family glyph). The three text beats mirror the Lab card.
 export const INTERATIVOS = [

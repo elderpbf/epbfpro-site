@@ -95,10 +95,10 @@ const SLIDES_CORE_PREFIX = 'content/slides/js/';
 // (track-35 E), not a convenience: check the candidate against the rule and say so here.
 //   js/i18n.js    t(): keys -> strings. No state, no backend.
 //   js/glyphs.js  glyphSvg(): key -> inline SVG. No state, no backend.
-// js/vendor/fflate.js entrou no track-61, quando a trilha do aluno passou a ZIPAR o pacote de
-// um projeto com a mesma lib que o importador de .pptx já usava para DESzipar. Ela cumpre o
-// critério de membro: codec puro, transforma bytes em bytes, sem estado de app, sem store,
-// sem facade, sem rede. Duas cópias vendorizadas da mesma lib seria o problema pior.
+// js/vendor/fflate.js joined in track-61, when the student trail started ZIPPING a project's
+// package with the same lib the .pptx importer already used to UNzip. It meets the membership
+// criterion: a pure codec, turns bytes into bytes, no app state, no store, no facade, no
+// network. Two vendored copies of the same lib would be the worse problem.
 const SLIDES_CORE_OUTBOUND = new Set(['js/i18n.js', 'js/glyphs.js', 'js/vendor/fflate.js']);
 
 // Tab directories.

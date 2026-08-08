@@ -81,9 +81,10 @@ export const appConfig = {
 // instead of calling window.callWorker directly (§3b, facade-only).
 export const auth = {
   otpRequest:     (p) => call('admin_otp_request', p),   // { email }
-  // O botão "não recebi" tem ação PRÓPRIA, e não é firula: quando o login passa pelo módulo `otp`
-  // da plataforma, re-pedir com código vivo não manda outro e-mail (é o que evita dois códigos na
-  // caixa). Só o reenvio explícito emite. Sem esta linha, "não recebi" responderia ok sem nada sair.
+  // The "não recebi" (didn't receive it) button has its OWN action, and it's not for show: when
+  // login goes through the platform's `otp` module, re-requesting with a still-live code doesn't
+  // send another e-mail (that's what stops two codes landing in the inbox). Only the explicit
+  // resend sends one. Without this line, "não recebi" would answer ok with nothing going out.
   otpResend:      (p) => call('admin_otp_resend', p),     // { email }
   otpVerify:      (p) => call('admin_otp_verify', p),     // { email, code }
   changePassword: (p) => call('change_password', p),      // { auth_token, new_hash }
@@ -333,8 +334,8 @@ export const content = {
   // reuse label across turmas.
   listItemTurmas:  (p) => call('ct_list_item_turmas', p),   // { item_id }
   listSubmissions: (p) => call('ct_list_submissions', p),   // { item_id, client_slug, turma_slug } -> { submissions, flags }
-  // Os toggles de TODAS as tarefas da turma, de uma vez. O painel precisa deles pra DESENHAR a
-  // lista; sem isto ele só conhecia os do cartão aberto e desenhava o resto desligado.
+  // The toggles for ALL of the turma's tarefas, at once. The panel needs them to DRAW the
+  // list; without this it only knew the open card's and drew the rest as off.
   listTarefaFlags: (p) => call('ct_list_tarefa_flags', p), // { client_slug, turma_slug } -> { flags: { <item_id>: {...} } }
   deleteSubmission:(p) => call('ct_delete_submission', p),  // { id }
   // Instructor reply + grade per submission, and the per-instance toggles (t1b redesign).

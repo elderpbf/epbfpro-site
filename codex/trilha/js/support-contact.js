@@ -1,8 +1,8 @@
 // codex/trilha/js/support-contact.js
 // The single support-entry affordance for the Trail: it renders the consistent
 // "Precisa de ajuda?" pill (shared /css/support-entry.css, `psup-` namespace) that
-// links to /suporte — the ONE hub with channels + FAQ. It carries the origin
-// (`source`) + live context (client·turma·nome) so /suporte pre-fills the WhatsApp/
+// links to /suporte, the ONE hub with channels + FAQ. It carries the origin
+// (`source`) + live context (client, turma, nome) so /suporte pre-fills the WhatsApp/
 // e-mail message for this exact student. No inline channels here: one consistent
 // entry across every page beats a different affordance per screen (Élder 2026-07-08).
 import { esc } from './utils.js';

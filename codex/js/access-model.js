@@ -1,22 +1,24 @@
 // js/access-model.js
 // THE vocabulary of the student gate, for every admin surface (track-28a2, Élder 2026-07-14).
 //
-// The doctrine is NOT invented here — it is `manifest/architecture/access.md` §"Os 3 conceitos
-// (independentes, NÃO confundir)". This module only teaches the UI to say it. Three axes, never
-// to be conflated:
+// The doctrine is NOT invented here, it lives in `manifest/architecture/access.md` §"Os 3
+// conceitos (independentes, NÃO confundir)" (the 3 concepts, independent, do NOT conflate them).
+// This module only teaches the UI to say it. Three axes, never to be conflated:
 //
-//   APROVAÇÃO  — "esta pessoa PODE ter acesso": pending / approved / denied, plus WHERE it came
-//                from (approved_via). Nothing to do with the e-mail existing.
-//   VALIDAÇÃO  — proof of inbox possession (email_verified). Alone it gives NO access; it only
-//                qualifies the DURATION (validado -> 15 dias, não validado -> 12h provisório).
-//   ACESSO     — the live session. It has a deadline and it EXPIRES. Expired = no access even
-//                when approved AND validated.
+//   APROVAÇÃO (approval) — "this person CAN have access": pending / approved / denied, plus
+//                WHERE it came from (approved_via). Nothing to do with the e-mail existing.
+//   VALIDAÇÃO (validation) — proof of inbox possession (email_verified). Alone it gives NO
+//                access; it only qualifies the DURATION (validado -> 15 days, não validado ->
+//                12h provisional).
+//   ACESSO (access) — the live session. It has a deadline and it EXPIRES. Expired = no access
+//                even when approved AND validated.
 //
 // WHY THIS FILE EXISTS: the two lists each grew their own vocabulary and both ended up wrong.
 // `alunos.via_*` had no word for `enrollment` (it printed the raw English), and the participants
 // panel bucketed `enrollment` + `simple` into its else-branch and called 23 people "Lista" when
-// they came through the janela or the emergência. Same DB column, two renderers, two lies. One
-// map, one set of keys, every surface reads from here.
+// they came through the janela (enrollment window) or the emergencia (emergency access path).
+// Same DB column, two renderers, two lies. One map, one set of keys, every surface reads from
+// here.
 import { t } from './i18n.js';
 import { esc } from './dom.js';
 
@@ -26,10 +28,11 @@ export const APPROVAL_STATES = ['pending', 'approved', 'denied'];
 // approved_via (raw, as stored) -> the one word the admin sees. Live values: manual(48),
 // enrollment(14), simple(9), presence(8), null(1). `roster` and `window` are written/returned by
 // real code paths that simply have no live rows yet, so they map too.
-//   enrollment = entrou pela janela de matrícula (código/QR aberto na aula)
-//   presence   = o aparelho já estava na aula (grant de presença, dentro da mesma janela)
-//   window     = legado ClassPulse (sessão aberta) — mesma ideia, mesma palavra
-//   simple     = "Emergência" (e-mail + nome, 8h COM identidade) — access.md §Mecânica
+//   enrollment = came in through the janela de matrícula (enrollment window, code/QR opened
+//                during class)
+//   presence   = the device was already in class (presence grant, within the same janela)
+//   window     = legacy ClassPulse (open session), same idea, same word
+//   simple     = "Emergência" (e-mail + name, 8h WITH identity), access.md §Mecânica
 const ORIGIN_OF = {
   manual: 'manual',
   roster: 'lista',
@@ -40,7 +43,7 @@ const ORIGIN_OF = {
   simple: 'emergencia',
 };
 
-// null when the turma is not gated (approved_via IS NULL) or the value is unknown — the caller
+// null when the turma is not gated (approved_via IS NULL) or the value is unknown, the caller
 // shows nothing rather than inventing a word. An unknown value must never fall through to a
 // plausible-looking default; that silent else-branch is exactly what produced the "Lista" lie.
 export function originOf(via) {
@@ -75,9 +78,10 @@ export const STATE_TONE = {
   approved: 'cdx-badge-success',
 };
 
-// What the aprovação cell says: a person who is not yet approved shows the STATE (the thing you
-// must act on); an approved one shows WHERE the approval came from. access.md: "Quem já está
-// aprovado não mostra situação, só a origem acima."
+// What the aprovação (approval) cell says: a person who is not yet approved shows the STATE
+// (the thing you must act on); an approved one shows WHERE the approval came from. access.md:
+// "Quem já está aprovado não mostra situação, só a origem acima." (Someone already approved
+// does not show a status, only the origin above.)
 export function approvalOf(row) {
   const st = String((row && row.access_status) || 'pending').toLowerCase();
   if (st !== 'approved') {
@@ -89,8 +93,9 @@ export function approvalOf(row) {
   return { kind: 'origin', value: origin, i18n: ORIGIN_I18N[origin], tone: ORIGIN_TONE[origin] };
 }
 
-// THE aprovação badge. Both lists render this exact markup, so the word AND its colour agree by
-// construction. Two renderers reading one map would still be two renderers; this is one.
+// THE aprovação (approval) badge. Both lists render this exact markup, so the word AND its
+// colour agree by construction. Two renderers reading one map would still be two renderers;
+// this is one.
 export function approvalTagHtml(row) {
   const a = approvalOf(row);
   const teal = a.value === 'janela' ? ' style="--acc:var(--acc-teal)"' : '';
@@ -104,8 +109,8 @@ export function validationOf(row) {
 }
 
 // ── ACESSO ────────────────────────────────────────────────────────────────────────
-// The live session, from access.md §Constantes: durável (validado) = 15 dias · provisório (não
-// validado) = 12h · Emergência/simple = 8h. `expires_at` is a unix timestamp (seconds).
+// The live session, from access.md §Constantes: durável (validated) = 15 days, provisório (not
+// validated) = 12h, Emergência/simple = 8h. `expires_at` is a unix timestamp (seconds).
 // Never approved -> there is no session to speak of, so the cell is empty, NOT "expired".
 export function accessOf(row, nowSec) {
   const now = Number(nowSec) || Math.floor(Date.now() / 1000);

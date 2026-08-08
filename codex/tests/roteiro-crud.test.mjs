@@ -48,30 +48,30 @@ const rotulos = (r) => r.blocos.flatMap((b) => b.pontos.map((p) => p.rotulo));
 const blocoNomes = (r) => r.blocos.map((b) => b.nome);
 
 // ── IDs ─────────────────────────────────────────────────────────────────────
-test('normalizeRoteiro atribui ids determinísticos a blocos (b1,b2…) e pontos (p1,p2…)', () => {
+test('normalizeRoteiro assigns deterministic ids to blocos (b1,b2…) and pontos (p1,p2…)', () => {
   const r = seed();
   assert.deepEqual(r.blocos.map((b) => b.id), ['b1', 'b2']);
   assert.deepEqual(r.blocos.flatMap((b) => b.pontos.map((p) => p.id)), ['p1', 'p2', 'p3']);
 });
 
-test('normalizeRoteiro PRESERVA ids existentes e preenche só os que faltam, a partir do máximo', () => {
+test('normalizeRoteiro PRESERVES existing ids and fills only the missing ones, from the max', () => {
   const r = normalizeRoteiro({
     blocos: [
       { id: 'b7', nome: 'A', pontos: [{ id: 'p4', rotulo: 'x', tipo: 'expositivo', dur: 5 }] },
       { nome: 'B', pontos: [{ rotulo: 'y', tipo: 'expositivo', dur: 5 }] },
     ],
   });
-  assert.deepEqual(r.blocos.map((b) => b.id), ['b7', 'b8'], 'o novo bloco continua do máximo, não colide');
+  assert.deepEqual(r.blocos.map((b) => b.id), ['b7', 'b8'], 'the new bloco continues from the max, no collision');
   assert.deepEqual(r.blocos.flatMap((b) => b.pontos.map((p) => p.id)), ['p4', 'p5']);
 });
 
-test('normalizar duas vezes é estável: os ids não mudam (idempotência)', () => {
+test('normalizing twice is stable: the ids do not change (idempotency)', () => {
   const once = seed();
   const twice = normalizeRoteiro(snapshot(once));
   assert.deepEqual(twice, once);
 });
 
-test('nextBlocoId / nextPontoId são previsíveis, e num roteiro vazio começam em 1', () => {
+test('nextBlocoId / nextPontoId are predictable, and start at 1 for an empty roteiro', () => {
   assert.equal(nextBlocoId(emptyRoteiro()), 'b1');
   assert.equal(nextPontoId(emptyRoteiro()), 'p1');
   const r = seed();
@@ -79,31 +79,31 @@ test('nextBlocoId / nextPontoId são previsíveis, e num roteiro vazio começam 
   assert.equal(nextPontoId(r), 'p4');
 });
 
-// Ids são DOCUMENT-scoped: todo roteiro recomeça em b1/p1. Então um id que vem de
-// OUTRO documento colide de rotina — que é exatamente o que `promover` faz
-// (patchPonto tira um ponto da base do curso e enfia no roteiro da aula, id junto).
-// Id duplicado é corrupção silenciosa: findPonto/updatePonto/removePonto param no
-// PRIMEIRO match, então editar ou apagar "aquele ponto" acerta o errado.
-// normalizeRoteiro é o guardião único: o primeiro fica, o repetido é remintado.
+// Ids are DOCUMENT-scoped: every roteiro restarts at b1/p1. So an id coming from
+// ANOTHER document collides routinely, which is exactly what `promover` does
+// (patchPonto takes a ponto from the course base and shoves it into the aula's
+// roteiro, id and all). A duplicate id is silent corruption: findPonto/updatePonto/
+// removePonto stop at the FIRST match, so editing or deleting "that ponto" hits the
+// wrong one. normalizeRoteiro is the sole guardian: the first stays, the repeat gets reminted.
 const allIds = (r) => r.blocos.flatMap((b) => [b.id, ...b.pontos.map((p) => p.id)]);
 const hasDupes = (xs) => new Set(xs).size !== xs.length;
 
-test('normalizeRoteiro REMINTA id repetido: o primeiro fica, o duplicado ganha um novo', () => {
+test('normalizeRoteiro REMINTS a repeated id: the first stays, the duplicate gets a new one', () => {
   const r = normalizeRoteiro({
     blocos: [
       { id: 'b1', nome: 'A', pontos: [{ id: 'p1', rotulo: 'primeiro', tipo: 'expositivo', dur: 5 }] },
       { id: 'b1', nome: 'B', pontos: [{ id: 'p1', rotulo: 'colidido', tipo: 'expositivo', dur: 5 }] },
     ],
   });
-  assert.ok(!hasDupes(allIds(r)), 'nenhum id repetido sobrevive ao normalize');
-  assert.equal(r.blocos[0].id, 'b1', 'o primeiro mantém a identidade');
+  assert.ok(!hasDupes(allIds(r)), 'no repeated id survives the normalize');
+  assert.equal(r.blocos[0].id, 'b1', 'the first keeps its identity');
   assert.equal(r.blocos[0].pontos[0].id, 'p1');
   assert.notEqual(r.blocos[1].id, 'b1');
   assert.notEqual(r.blocos[1].pontos[0].id, 'p1');
-  assert.equal(r.blocos[1].pontos[0].rotulo, 'colidido', 'o conteúdo do duplicado não se perde');
+  assert.equal(r.blocos[1].pontos[0].rotulo, 'colidido', 'the duplicate\'s content is not lost');
 });
 
-test('depois do remint, cada id resolve para o ponto CERTO (era o dano real do duplicado)', () => {
+test('after the remint, each id resolves to the CORRECT ponto (the real damage from the duplicate)', () => {
   const r = normalizeRoteiro({
     blocos: [{ nome: 'A', pontos: [
       { id: 'p1', rotulo: 'primeiro', tipo: 'expositivo', dur: 5 },
@@ -112,12 +112,12 @@ test('depois do remint, cada id resolve para o ponto CERTO (era o dano real do d
   });
   const [a, b] = r.blocos[0].pontos;
   assert.equal(findPonto(r, a.id).ponto.rotulo, 'primeiro');
-  assert.equal(findPonto(r, b.id).ponto.rotulo, 'segundo', 'o segundo é alcançável, não some atrás do primeiro');
+  assert.equal(findPonto(r, b.id).ponto.rotulo, 'segundo', 'the second is reachable, does not vanish behind the first');
   const out = removePonto(r, b.id);
-  assert.deepEqual(rotulos(out), ['primeiro'], 'apagar o segundo apaga o segundo, não o primeiro');
+  assert.deepEqual(rotulos(out), ['primeiro'], 'deleting the second deletes the second, not the first');
 });
 
-test('normalizar de novo é estável mesmo tendo remintado (não fica renomeando a cada load)', () => {
+test('normalizing again is stable even after a remint (does not keep renaming on every load)', () => {
   const once = normalizeRoteiro({
     blocos: [{ nome: 'A', pontos: [
       { id: 'p1', rotulo: 'x', tipo: 'expositivo', dur: 5 },
@@ -128,7 +128,7 @@ test('normalizar de novo é estável mesmo tendo remintado (não fica renomeando
 });
 
 // ── Blocos ──────────────────────────────────────────────────────────────────
-test('addBloco acrescenta no fim, com o id previsto por nextBlocoId e pontos vazios', () => {
+test('addBloco appends at the end, with the id predicted by nextBlocoId and empty pontos', () => {
   const r = seed();
   const id = nextBlocoId(r);
   const out = addBloco(r, { nome: 'Fechamento' });
@@ -138,45 +138,45 @@ test('addBloco acrescenta no fim, com o id previsto por nextBlocoId e pontos vaz
   assert.deepEqual(out.blocos[2].pontos, []);
 });
 
-test('addBloco NÃO muta o roteiro de entrada', () => {
+test('addBloco does NOT mutate the input roteiro', () => {
   const r = seed();
   const before = snapshot(r);
   addBloco(r, { nome: 'Novo' });
-  assert.deepEqual(r, before, 'a entrada saiu intacta');
+  assert.deepEqual(r, before, 'the input came out intact');
 });
 
-test('renameBloco troca só o nome do bloco alvo', () => {
+test('renameBloco swaps only the target bloco\'s name', () => {
   const out = renameBloco(seed(), 'b2', 'Estrutura');
   assert.deepEqual(blocoNomes(out), ['Resgate', 'Estrutura']);
-  assert.equal(out.blocos[1].pontos.length, 2, 'os pontos ficam onde estavam');
+  assert.equal(out.blocos[1].pontos.length, 2, 'the pontos stay where they were');
 });
 
-test('removeBloco leva os pontos dele junto e renumera o que sobrou', () => {
+test('removeBloco takes its pontos along and renumbers what is left', () => {
   const out = removeBloco(seed(), 'b1');
   assert.deepEqual(blocoNomes(out), ['Contexto']);
   assert.deepEqual(rotulos(out), ['Embeddings', 'Prática 2']);
-  assert.deepEqual(out.blocos[0].pontos.map((p) => p.n), [0, 1], 'renumerado do zero');
+  assert.deepEqual(out.blocos[0].pontos.map((p) => p.n), [0, 1], 'renumbered from zero');
 });
 
-test('reorderBlocos reordena pela lista de ids e ignora id desconhecido sem perder bloco', () => {
+test('reorderBlocos reorders by the id list and ignores an unknown id without losing any bloco', () => {
   const out = reorderBlocos(seed(), ['b2', 'b1']);
   assert.deepEqual(blocoNomes(out), ['Contexto', 'Resgate']);
   const partial = reorderBlocos(seed(), ['b2', 'bZZ']);
-  assert.equal(partial.blocos.length, 2, 'nenhum bloco some por causa de um id que não existe');
+  assert.equal(partial.blocos.length, 2, 'no bloco vanishes because of an id that does not exist');
 });
 
 // ── Pontos ──────────────────────────────────────────────────────────────────
-test('addPonto acrescenta no fim do bloco alvo com o id previsto', () => {
+test('addPonto appends at the end of the target bloco with the predicted id', () => {
   const r = seed();
   const id = nextPontoId(r);
   const out = addPonto(r, 'b1', { rotulo: 'Novo ponto', tipo: 'pratica', dur: 12 });
   assert.equal(out.blocos[0].pontos.length, 2);
   assert.equal(out.blocos[0].pontos[1].id, id);
   assert.equal(out.blocos[0].pontos[1].tipo, 'pratica');
-  assert.deepEqual(out.blocos[0].pontos[1].notas, [], 'ponto novo já nasce com notas[]');
+  assert.deepEqual(out.blocos[0].pontos[1].notas, [], 'a new ponto is already born with notas[]');
 });
 
-test('addPonto sem campos usa defaults sãos (tipo expositivo, dur numérica, rótulo vazio)', () => {
+test('addPonto with no fields uses sane defaults (tipo expositivo, numeric dur, empty rótulo)', () => {
   const out = addPonto(seed(), 'b1', {});
   const p = out.blocos[0].pontos[1];
   assert.equal(p.tipo, 'expositivo');
@@ -184,15 +184,15 @@ test('addPonto sem campos usa defaults sãos (tipo expositivo, dur numérica, r�
   assert.equal(typeof p.rotulo, 'string');
 });
 
-test('updatePonto aplica só o patch pedido e preserva o resto do ponto', () => {
+test('updatePonto applies only the requested patch and preserves the rest of the ponto', () => {
   const out = updatePonto(seed(), 'p2', { rotulo: 'Janela de contexto', dur: 20 });
   const p = findPonto(out, 'p2').ponto;
   assert.equal(p.rotulo, 'Janela de contexto');
   assert.equal(p.dur, 20);
-  assert.equal(p.tipo, 'expositivo', 'campo não citado no patch não se mexe');
+  assert.equal(p.tipo, 'expositivo', 'a field not named in the patch is untouched');
 });
 
-test('updatePonto edita tipo, chamada e notas (os campos que o painel direito expõe)', () => {
+test('updatePonto edits tipo, chamada, and notas (the fields the right-hand panel exposes)', () => {
   let out = updatePonto(seed(), 'p3', { tipo: 'fechamento' });
   out = updatePonto(out, 'p3', { chamada: 'Quem já usou isso na prática?' });
   out = updatePonto(out, 'p3', { notas: ['citar o caso do cliente'] });
@@ -202,32 +202,32 @@ test('updatePonto edita tipo, chamada e notas (os campos que o painel direito ex
   assert.deepEqual(p.notas, ['citar o caso do cliente']);
 });
 
-test('updatePonto NÃO deixa reescrever id nem n por dentro do patch', () => {
+test('updatePonto does NOT allow overwriting id or n through the patch', () => {
   const out = updatePonto(seed(), 'p2', { id: 'pHACK', n: 99, rotulo: 'ok' });
-  assert.equal(findPonto(out, 'p2').ponto.rotulo, 'ok', 'o campo legítimo passou');
-  assert.equal(findPonto(out, 'pHACK'), null, 'o id não foi sequestrado');
+  assert.equal(findPonto(out, 'p2').ponto.rotulo, 'ok', 'the legitimate field went through');
+  assert.equal(findPonto(out, 'pHACK'), null, 'the id was not hijacked');
 });
 
-test('removePonto tira o ponto e renumera os seguintes', () => {
+test('removePonto removes the ponto and renumbers the ones that follow', () => {
   const out = removePonto(seed(), 'p2');
   assert.deepEqual(rotulos(out), ['Resgate da Aula 1', 'Prática 2']);
   assert.deepEqual(out.blocos.flatMap((b) => b.pontos.map((p) => p.n)), [0, 1]);
 });
 
-test('movePonto leva o ponto para outro bloco, na posição pedida pela ordem de ids', () => {
-  // 'p3' (Prática 2) sai do bloco Contexto e entra no Resgate ANTES do ponto que já estava lá.
+test('movePonto moves the ponto to another bloco, at the position requested by the id order', () => {
+  // 'p3' (Prática 2) leaves the Contexto bloco and enters Resgate BEFORE the ponto already there.
   const out = movePonto(seed(), 'p3', 'b1', ['p3', 'p1']);
   assert.deepEqual(out.blocos[0].pontos.map((p) => p.rotulo), ['Prática 2', 'Resgate da Aula 1']);
   assert.deepEqual(out.blocos[1].pontos.map((p) => p.rotulo), ['Embeddings']);
-  assert.deepEqual(out.blocos.flatMap((b) => b.pontos.map((p) => p.n)), [0, 1, 2], 'renumera no documento inteiro');
+  assert.deepEqual(out.blocos.flatMap((b) => b.pontos.map((p) => p.n)), [0, 1, 2], 'renumbers across the whole document');
 });
 
-test('reorderPontos reordena dentro do mesmo bloco', () => {
+test('reorderPontos reorders within the same bloco', () => {
   const out = reorderPontos(seed(), 'b2', ['p3', 'p2']);
   assert.deepEqual(out.blocos[1].pontos.map((p) => p.rotulo), ['Prática 2', 'Embeddings']);
 });
 
-test('findPonto devolve o ponto, o bloco e os índices; null quando não existe', () => {
+test('findPonto returns the ponto, the bloco, and the indexes; null when it does not exist', () => {
   const r = seed();
   const hit = findPonto(r, 'p3');
   assert.equal(hit.ponto.rotulo, 'Prática 2');
@@ -238,7 +238,7 @@ test('findPonto devolve o ponto, o bloco e os índices; null quando não existe'
 });
 
 // ── Pausa ───────────────────────────────────────────────────────────────────
-test('addPausa cria um bloco de pausa com um ponto de tipo pausa, e o tempo dela conta no total', () => {
+test('addPausa creates a pausa bloco with one ponto of tipo pausa, and its time counts toward the total', () => {
   const r = seed();
   const out = addPausa(r, { dur: 10 });
   const pausaBloco = out.blocos[out.blocos.length - 1];
@@ -246,26 +246,26 @@ test('addPausa cria um bloco de pausa com um ponto de tipo pausa, e o tempo dela
   assert.equal(pausaBloco.pontos.length, 1);
   assert.equal(pausaBloco.pontos[0].tipo, 'pausa');
   assert.equal(pausaBloco.pontos[0].dur, 10);
-  assert.equal(totalMin(out), totalMin(r) + 10, 'a pausa entra no tempo planejado');
+  assert.equal(totalMin(out), totalMin(r) + 10, 'the pausa counts toward the planned time');
 });
 
-test('a pausa NÃO recebe número e NÃO conta como ponto nas estatísticas', () => {
+test('the pausa does NOT get a number and does NOT count as a ponto in the statistics', () => {
   const out = addPausa(seed(), { dur: 10 });
   const pausa = out.blocos[out.blocos.length - 1].pontos[0];
   assert.equal(pausa.n, null);
-  assert.equal(roteiroStats(out).pontos, 3, 'os 3 pontos de verdade, a pausa fora');
+  assert.equal(roteiroStats(out).pontos, 3, 'the 3 real pontos, the pausa excluded');
 });
 
 // ── renumber ────────────────────────────────────────────────────────────────
-test('renumber numera 0..N-1 os pontos não-pausa na ordem do documento', () => {
+test('renumber numbers the non-pausa pontos 0..N-1 in document order', () => {
   const r = addPausa(seed(), { dur: 10 });
   const out = renumber(reorderBlocos(r, ['b2', 'b1', r.blocos[2].id]));
   const ns = out.blocos.flatMap((b) => b.pontos.map((p) => p.n));
-  assert.deepEqual(ns, [0, 1, 2, null], 'renumerado na nova ordem; a pausa fica null');
+  assert.deepEqual(ns, [0, 1, 2, null], 'renumbered in the new order; the pausa stays null');
 });
 
-// ── Totalidade: nada disso pode lançar ──────────────────────────────────────
-test('id inexistente NUNCA lança: devolve o roteiro normalizado e intacto', () => {
+// ── Totality: none of this can throw ──────────────────────────────────────
+test('a nonexistent id NEVER throws: returns the roteiro normalized and intact', () => {
   const r = seed();
   const same = snapshot(r);
   assert.deepEqual(renameBloco(r, 'bNOPE', 'x'), same);
@@ -277,14 +277,14 @@ test('id inexistente NUNCA lança: devolve o roteiro normalizado e intacto', () 
   assert.deepEqual(reorderPontos(r, 'bNOPE', []), same);
 });
 
-test('lixo na entrada de qualquer mutador vira roteiro vazio, sem exceção', () => {
-  assert.deepEqual(addBloco(null, { nome: 'x' }).blocos.length, 1, 'null vira vazio e aceita o bloco');
+test('garbage input to any mutator turns into an empty roteiro, no exception', () => {
+  assert.deepEqual(addBloco(null, { nome: 'x' }).blocos.length, 1, 'null becomes empty and accepts the bloco');
   assert.deepEqual(removeBloco('lixo{', 'b1'), emptyRoteiro());
   assert.deepEqual(updatePonto(undefined, 'p1', {}), emptyRoteiro());
   assert.deepEqual(reorderBlocos(42, []), emptyRoteiro());
 });
 
-test('TODOS os mutadores são puros: a entrada sai byte a byte igual', () => {
+test('ALL mutators are pure: the input comes out byte for byte equal', () => {
   const r = seed();
   const before = snapshot(r);
   renameBloco(r, 'b1', 'X');
@@ -300,14 +300,14 @@ test('TODOS os mutadores são puros: a entrada sai byte a byte igual', () => {
   assert.deepEqual(r, before);
 });
 
-test('updatePonto com notas não deixa o array compartilhado com o chamador (cópia, não alias)', () => {
+test('updatePonto with notas does not leave the array shared with the caller (copy, not alias)', () => {
   const notas = ['uma'];
   const out = updatePonto(seed(), 'p1', { notas });
   notas.push('duas');
-  assert.deepEqual(findPonto(out, 'p1').ponto.notas, ['uma'], 'mexer no array de fora não alcança o roteiro');
+  assert.deepEqual(findPonto(out, 'p1').ponto.notas, ['uma'], 'mutating the outside array does not reach the roteiro');
 });
 
 // ── TIPOS ───────────────────────────────────────────────────────────────────
-test('TIPOS lista os tipos escolhíveis no dropdown, sem pausa (pausa é bloco, não escolha)', () => {
+test('TIPOS lists the choosable types in the dropdown, without pausa (pausa is a bloco, not a choice)', () => {
   assert.deepEqual(TIPOS, ['resgate', 'expositivo', 'pratica', 'fechamento']);
 });

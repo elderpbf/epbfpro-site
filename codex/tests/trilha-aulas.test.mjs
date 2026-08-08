@@ -56,17 +56,17 @@ test('getItemAction: interativo -> interativo-open (opens the viewer by url)', (
   assert.equal(a.label, 'Abrir');
   assert.equal(a.url, '/codex/interativos/demo-peca/');
 });
-// A aba Aulas nao entrega nada: ela LEVA pra aba Tarefas, dona do fluxo (Élder 2026-07-15).
+// The Aulas tab delivers nothing itself: it LEADS to the Tarefas tab, which owns the flow (Élder 2026-07-15).
 test('getItemAction: tarefa precedence over meta -> go-tarefas', () => {
   const a = getItemAction({ type: 'tarefa', id: 7, meta_json: { pdf_url: 'x' } });
   assert.equal(a.kind, 'go-tarefas');
   assert.equal(a.label, 'Ir para tarefas');
 });
-// Era 'submitted (localStorage)'. A chave 'ct_tarefa_submitted_<item>_<turma>' NAO tinha o aluno
-// dentro: era por NAVEGADOR, entao o segundo aluno no mesmo aparelho herdava o "Resposta enviada"
-// do primeiro e nao conseguia enviar. Bug VIVO em producao. A aba Aulas nao pergunta mais nada ao
-// localStorage; quem sabe se entregou e o servidor.
-test('getItemAction: tarefa NAO consulta o localStorage (o estado nao e por navegador)', () => {
+// Used to be 'submitted (localStorage)'. The key 'ct_tarefa_submitted_<item>_<turma>' did NOT
+// carry the student in it: it was scoped by BROWSER, so a second student on the same device
+// inherited the first one's "Resposta enviada" and could not submit. A LIVE bug in production.
+// The Aulas tab no longer asks localStorage anything; the server is the one who knows if it was submitted.
+test('getItemAction: tarefa does NOT consult localStorage (state is not per-browser)', () => {
   state.turmaSlug = 'turma1';
   let touched = false;
   globalThis.localStorage = {
@@ -74,65 +74,67 @@ test('getItemAction: tarefa NAO consulta o localStorage (o estado nao e por nave
     setItem() {},
   };
   assert.equal(getItemAction({ type: 'tarefa', id: 7 }).kind, 'go-tarefas');
-  assert.equal(touched, false, 'o estado de entrega nunca sai do localStorage');
+  assert.equal(touched, false, 'submission state never comes from localStorage');
   delete globalThis.localStorage;
   state.turmaSlug = null;
 });
 
-// ── getItemActions: o fim da exclusao mutua (track-61) ──────────────────────
-// A cadeia antiga tinha UM `return`, entao um item com anexo PERDIA o "Copiar" e
-// prompt + arquivos juntos era irrepresentavel. Este e o defeito que o track-61 conserta.
-test('getItemActions: anexo + corpo entregam Baixar E Copiar (antes so Baixar)', () => {
+// ── getItemActions: the end of mutual exclusion (track-61) ──────────────────────
+// The old chain had ONE `return`, so an item with an attachment LOST "Copiar" and
+// prompt + files together was unrepresentable. This is the defect track-61 fixes.
+test('getItemActions: attachment + body deliver Baixar AND Copiar (used to be Baixar only)', () => {
   const as = getItemActions({ type: 'prompt', title: 'P', body_md: 'instrucao', meta_json: { attachment_url: 'base.pdf' } });
   assert.deepEqual(as.map((a) => a.label), ['Baixar', 'Copiar', 'Baixar .md']);
 });
-test('getItemActions: pdf + anexo + doc + corpo entregam as quatro, nessa ordem', () => {
+test('getItemActions: pdf + attachment + doc + body deliver all four, in that order', () => {
   const as = getItemActions({
     type: 'x', body_md: 'txt',
     meta_json: { pdf_url: 'a.pdf', attachment_url: 'b.zip', doc_url: 'https://d' },
   });
   assert.deepEqual(as.map((a) => a.label), ['Baixar PDF', 'Baixar', 'Documentação', 'Copiar']);
 });
-// A primeira acao segue sendo a que a linha fechada mostrava sozinha, entao item de acao
-// unica nao muda em nada.
-test('getItemActions: a primeira acao e a que getItemAction ja devolvia', () => {
+// The first action is still what the closed row used to show alone, so a single-action
+// item does not change at all.
+test('getItemActions: the first action is the same one getItemAction already returned', () => {
   const item = { type: 'x', body_md: 'txt', meta_json: { pdf_url: 'a.pdf' } };
   assert.deepEqual(getItemActions(item)[0], getItemAction(item));
 });
-// Lab, interativo e tarefa seguem exclusivos: a acao E o item, nao ha o que somar.
-test('getItemActions: lab e exclusivo mesmo com corpo e anexo', () => {
+// Lab, interativo, and tarefa stay exclusive: the action IS the item, there is nothing to add.
+test('getItemActions: lab is exclusive even with a body and attachment', () => {
   const as = getItemActions({ type: 'lab', body_md: 'txt', meta_json: { lab_key: 'k1', attachment_url: 'x.pdf' } });
   assert.equal(as.length, 1);
   assert.equal(as[0].kind, 'lab-open');
 });
-test('getItemActions: tarefa e exclusiva mesmo com corpo', () => {
+test('getItemActions: tarefa is exclusive even with a body', () => {
   const as = getItemActions({ type: 'tarefa', id: 7, body_md: 'txt' });
   assert.equal(as.length, 1);
   assert.equal(as[0].kind, 'go-tarefas');
 });
-test('getItemActions: nada acionavel -> lista vazia', () => {
+test('getItemActions: nothing actionable -> empty list', () => {
   assert.deepEqual(getItemActions({ type: 'x' }), []);
 });
 
-// ── projeto: item embalador (track-61) ─────────────────────────────────────
+// ── projeto: the packaging item (track-61) ─────────────────────────────────────
 // "quando eu insiro o projeto na trilha nao aparecem os 3 itens separadamente, aparece o
-// projeto, e quando eu abro ele aparecem listados os 3 itens" (Élder 2026-08-04).
-test('getItemActions: projeto oferece Baixar tudo (.zip)', () => {
+// projeto, e quando eu abro ele aparecem listados os 3 itens" (when I insert the project
+// into the trilha the 3 items don't show separately, the project shows, and when I open it
+// the 3 items appear listed) (Élder 2026-08-04).
+test('getItemActions: projeto offers Baixar tudo (.zip)', () => {
   const as = getItemActions({
     type: 'projeto', title: '# Projeto Audiencia',
     children: [{ id: 900028 }, { id: 900029 }, { id: 900030 }],
   });
   const zip = as.find((a) => a.kind === 'download-project');
-  assert.ok(zip, 'o projeto tem que oferecer o pacote');
+  assert.ok(zip, 'the project has to offer the bundle');
   assert.deepEqual(zip.project.items, [
     { id: 900028, dir: '' }, { id: 900029, dir: '' }, { id: 900030, dir: '' },
   ]);
-  assert.equal(zip.project.name, 'Projeto Audiencia', 'o # do markdown sai do nome do arquivo');
+  assert.equal(zip.project.name, 'Projeto Audiencia', 'the markdown # feeds the file name');
 });
 
-// O aninhamento vira PASTA: a estrutura que o aluno ve na trilha e a que ele abre no
-// descompactador (Elder 2026-08-05).
-test('packageOf: o filho que tambem embala vira pasta no zip', () => {
+// Nesting becomes a FOLDER: the structure the student sees in the trilha is the one they
+// open in the unzip tool (Elder 2026-08-05).
+test('packageOf: a child that is itself a package becomes a folder in the zip', () => {
   const as = getItemActions({
     type: 'projeto', title: 'Raiz',
     children: [
@@ -149,9 +151,9 @@ test('packageOf: o filho que tambem embala vira pasta no zip', () => {
   ]);
 });
 
-// Elder 2026-08-05, sobre pasta com lab dentro: permitir e AVISAR, nunca proibir. Proibir
-// deixaria a regra dependente da ORDEM (poe um lab primeiro e a pasta trava contra documentos).
-test('packageOf: lab e interativo saem do zip mas sao CONTADOS, nao sumidos', () => {
+// Elder 2026-08-05, about a folder with a lab inside: allow it and WARN, never forbid.
+// Forbidding would make the rule depend on ORDER (put a lab first and the folder locks against documents).
+test('packageOf: lab and interativo leave the zip but are COUNTED, not silently dropped', () => {
   const as = getItemActions({
     type: 'projeto', title: 'Mista',
     children: [
@@ -162,49 +164,50 @@ test('packageOf: lab e interativo saem do zip mas sao CONTADOS, nao sumidos', ()
   });
   const zip = as.find((a) => a.kind === 'download-project');
   assert.deepEqual(zip.project.items, [{ id: 1, dir: '' }]);
-  assert.equal(zip.project.skipped, 2, 'o que nao cabe no zip tem que ser dito, nao escondido');
+  assert.equal(zip.project.skipped, 2, 'what does not fit in the zip has to be stated, not hidden');
 });
 
-// Uma tarefa que leva documentos dentro precisa das DUAS acoes: "Entregar" e o que ela e,
-// "Baixar tudo" e o que ela carrega. So a exclusiva esconderia os anexos.
-test('getItemActions: tarefa com filhos mantem a acao dela E ganha o pacote', () => {
+// A tarefa that carries documents needs BOTH actions: "Entregar" is what it is,
+// "Baixar tudo" is what it carries. Only the exclusive one would hide the attachments.
+test('getItemActions: a tarefa with children keeps its own action AND gets the bundle', () => {
   const as = getItemActions({ type: 'tarefa', title: 'Tarefa 1', children: [{ id: 9, title: 'Anexo' }] });
-  assert.ok(as.length >= 2, 'a tarefa nao pode perder a acao propria');
-  assert.ok(as.find((a) => a.kind === 'download-project'), 'nem os documentos que ela carrega');
+  assert.ok(as.length >= 2, 'the tarefa cannot lose its own action');
+  assert.ok(as.find((a) => a.kind === 'download-project'), 'nor the documents it carries');
 });
-// Elder testou e pegou a incoerencia: o "Copiar" copiava a frase de apresentacao do projeto
-// enquanto o "Baixar" trazia um zip de 3 arquivos, entao nao dava pra prever o que cada botao
-// faria. Um embalador so oferece acoes DO PACOTE; o texto dele e pra ler na tela.
-test('getItemActions: projeto NAO oferece Copiar da propria apresentacao', () => {
+// Elder tested it and caught the inconsistency: "Copiar" copied the project's intro sentence
+// while "Baixar" brought a zip of 3 files, so there was no way to predict what each button
+// would do. A packaging item only offers actions ON THE BUNDLE; its own text is meant to be
+// read on screen.
+test('getItemActions: projeto does NOT offer Copiar of its own intro text', () => {
   const as = getItemActions({
     type: 'projeto', title: 'P', body_md: 'Baixe tudo e suba na sua IA.',
     children: [{ id: 1 }, { id: 2 }],
   });
   assert.deepEqual(as.map((a) => a.kind), ['download-project']);
 });
-test('getItemActions: projeto vazio nao oferece pacote', () => {
+test('getItemActions: an empty projeto offers no bundle', () => {
   assert.deepEqual(getItemActions({ type: 'projeto', title: 'X', children: [] }), []);
 });
-// Um item comum nao vira embalador so por ter corpo.
-test('getItemActions: item sem filhos nao oferece pacote', () => {
+// A regular item does not become a packaging item just for having a body.
+test('getItemActions: an item with no children offers no bundle', () => {
   const as = getItemActions({ type: 'prompt', title: 'P', body_md: 'x' });
   assert.equal(as.some((a) => a.kind === 'download-project'), false);
 });
 
-// ── download .md (track-61) ────────────────────────────────────────────────
-// Regra do Elder: quem ve os simbolos do markdown baixa .md; quem ve processado baixa PDF.
-// Hoje o unico texto literal e o `prompt` ("o prompt sempre cru").
-test('getItemActions: prompt entrega Copiar E Baixar .md', () => {
+// ── .md download (track-61) ────────────────────────────────────────────────
+// Elder's rule: whoever sees the raw markdown symbols downloads .md; whoever sees it
+// rendered downloads PDF. Today the only literal text is `prompt` ("the prompt is always raw").
+test('getItemActions: prompt delivers Copiar AND Baixar .md', () => {
   const as = getItemActions({ type: 'prompt', title: '# Prompt: X', body_md: 'faca isto' });
   assert.deepEqual(as.map((a) => a.label), ['Copiar', 'Baixar .md']);
 });
-test('getItemActions: conteudo processado NAO ganha .md (sai em PDF, fatia propria)', () => {
+test('getItemActions: processed content does NOT get .md (comes out as PDF, its own slice)', () => {
   const as = getItemActions({ type: 'conteudo', title: 'Aula 1', body_md: '# titulo' });
   assert.deepEqual(as.map((a) => a.label), ['Copiar']);
 });
-// Os 3 itens reais do Elder (900028/900029/900030) sao todos `prompt`: com o .md eles passam
-// a ter DUAS acoes, que e o que finalmente faz o dropdown aparecer em item vivo.
-test('getItemActions: os 3 itens do projeto do Elder abrem o dropdown (2 acoes cada)', () => {
+// Elder's 3 real items (900028/900029/900030) are all `prompt`: with the .md they end up
+// with TWO actions, which is what finally makes the dropdown show up on a live item.
+test('getItemActions: Elder\'s 3 project items open the dropdown (2 actions each)', () => {
   for (const t of ['# Prompt: Resumo Preparatório para Audiência para Magistrados',
                    '# Modelo: Relatório Preparatório para Audiência CÍVEL para Magistrados',
                    '# Modelo: Relatório Preparatório para Audiência CRIMINAL para Magistrados']) {

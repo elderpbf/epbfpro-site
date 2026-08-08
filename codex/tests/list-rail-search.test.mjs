@@ -1,4 +1,4 @@
-// The search capability of js/list-rail.js (fase 2).
+// The search capability of js/list-rail.js (phase 2).
 //
 // The markup is frozen by list-rail-snapshot.test.mjs (shape "labs: search + filter chips").
 // What is NOT visible in a snapshot, and is the whole reason the capability lives in the module

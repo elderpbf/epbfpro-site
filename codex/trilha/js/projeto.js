@@ -1,48 +1,49 @@
 // codex/trilha/js/projeto.js
-// O cartão de um item EMBALADOR (tipo `projeto`): abrir mostra os filhos listados, e cada
-// filho abre, copia e baixa como qualquer item da trilha.
+// The card for a WRAPPER item (type `projeto`, "project"): opening it lists the children, and
+// each child opens, copies and downloads like any trail item.
 //
 // Élder 2026-08-04: "quando eu insiro o projeto na trilha não aparecem os 3 itens
 // separadamente, aparece o projeto, e quando eu abro ele aparecem listados os 3 itens. cada um
 // eu posso abrir independentemente mas eles são dentro do projeto".
 //
-// A economia que faz isto ser pequeno: `buildSub()` já constrói a linha de um item com ações e
-// expansão, e `toggleSub()` já fecha os irmãos olhando o `parentNode`. Montando os filhos com o
-// MESMO buildSub dentro de um container próprio, fechar um filho ao abrir outro sai correto
-// sozinho, sem uma linha de estado aqui.
+// What keeps this small: `buildSub()` already builds an item's row with its actions and
+// expansion, and `toggleSub()` already closes siblings by looking at `parentNode`. Building the
+// children with that SAME buildSub inside their own container, closing one child when another
+// opens comes out correct on its own, with no state line needed here.
 import { esc } from './utils.js';
 import { renderItem } from '../../js/item-render.js';
 import { MAX_INDENT } from '../../js/item-list.js';
 
-// Qualquer item que carregue outros, não só o tipo `projeto`. Élder 2026-08-05: "uma tarefa
-// precisa às vezes de documentos dentro para o aluno baixar, não é só a tarefa". A checagem
-// sempre foi por CONTEÚDO (tem filhos?) e não por tipo, então já servia; o que mudou é que
-// agora isso é intencional em vez de acidental.
+// Any item that carries others, not only the `projeto` type. Élder 2026-08-05: "uma tarefa
+// precisa às vezes de documentos dentro para o aluno baixar, não é só a tarefa". The check was
+// always by CONTENT (does it have children?) rather than by type, so it already worked; what
+// changed is that this is now intentional instead of accidental.
 export function isProjeto(item) {
   return !!item && Array.isArray(item.children) && item.children.length > 0;
 }
 
-// Renderiza o corpo do item em `host`, seguido dos filhos. `buildSub` chega por parâmetro (e
-// não por import) porque sub.js já importa este módulo: importar de volta fecharia o ciclo.
+// Renders the item's body into `host`, followed by the children. `buildSub` arrives as a
+// parameter (not an import) because sub.js already imports this module: importing it back
+// would close the cycle.
 //
-// O corpo passa pelo renderItem NORMAL, e não mais como texto cru. Enquanto isto só valia
-// para `projeto` o cru bastava (o corpo é uma frase de apresentação); com uma TAREFA levando
-// documentos dentro, o corpo é o enunciado dela e tem que sair renderizado como sairia se ela
-// não tivesse filho nenhum.
+// The body goes through the NORMAL renderItem, no longer as raw text. While this only applied
+// to `projeto` the raw text was enough (the body is an intro sentence); with a TASK now carrying
+// documents inside, the body is its prompt and has to render the same way it would if it had no
+// children at all.
 //
-// O aninhamento sai de graça: cada filho é montado pelo mesmo buildSub, e abrir um filho
-// refaz o ct_get_item_public, que devolve os filhos DELE -- então este mesmo renderizador
-// roda de novo um nível abaixo, sem recursão escrita aqui.
+// Nesting comes for free: each child is built by the same buildSub, and opening a child re-runs
+// ct_get_item_public, which returns ITS OWN children, so this same renderer runs again one level
+// down, with no recursion written here.
 export function renderProjeto(item, host, buildSub, opts = {}) {
   host.innerHTML = '';
   if (item.body_md) {
     const body = document.createElement('div');
     body.className = 'cdx-tr-proj-intro';
     host.appendChild(body);
-    // `children: null` de propósito: o renderItem também sabe listar os filhos (é o que a
-    // prévia do admin usa), e a trilha passa `preview: true` como qualquer tela. Sem tirar,
-    // a lista somente-leitura sairia empilhada em cima da lista de verdade, a que abre,
-    // copia e baixa. Aqui quem pinta os filhos é este módulo.
+    // `children: null` on purpose: renderItem also knows how to list children (that's what the
+    // admin preview uses), and the trail passes `preview: true` like any screen. Without
+    // stripping it, the read-only list would stack on top of the real list, the one that opens,
+    // copies and downloads. Here, this module is the one that paints the children.
     renderItem(Object.assign({}, item, { children: null }), body, { preview: true });
   }
   const count = document.createElement('p');
@@ -53,14 +54,14 @@ export function renderProjeto(item, host, buildSub, opts = {}) {
 
   const list = document.createElement('div');
   list.className = 'cdx-tr-proj-list';
-  // O recuo é DISPLAY e nada mais (Élder 2026-08-06): os membros são uma lista PLANA, e o
-  // degrau só diz como eles aparecem aqui. Por isso a linha é a mesma buildSub de sempre, com
-  // uma classe de degrau por cima -- não há sub-lista, não há aninhamento de DOM, e apagar um
-  // membro no editor não precisa re-parentear nada.
-  // O degrau sai como VARIÁVEL na linha, e não como uma classe por nível: uma classe por nível
-  // obrigaria o CSS a conhecer o teto, e mexer no teto viraria mexer em dois arquivos (foi
-  // exatamente o que aconteceu ao subir de 3 para 5). Assim o CSS tem uma regra só e o
-  // encolhimento em tela estreita é UM número.
+  // The indent is DISPLAY ONLY (Élder 2026-08-06): the members are a FLAT list, and the step
+  // only says how they appear here. That's why the row is the same buildSub as always, with an
+  // indent class layered on top, there is no sub-list, no DOM nesting, and removing a member in
+  // the editor needs no re-parenting.
+  // The indent comes out as a VARIABLE on the row, not as a class per level: a class per level
+  // would force the CSS to know the ceiling, and touching the ceiling would mean touching two
+  // files (which is exactly what happened going from 3 to 5). This way the CSS has a single
+  // rule and the narrow-screen shrink is ONE number.
   item.children.forEach((child) => {
     const row = buildSub(child, opts);
     const d = Math.max(0, Math.min(MAX_INDENT, Number(child.indent) || 0));
@@ -70,7 +71,7 @@ export function renderProjeto(item, host, buildSub, opts = {}) {
   host.appendChild(list);
 }
 
-// Rótulo do pacote, usado no nome do .zip e no menu.
+// Package label, used in the .zip filename and in the menu.
 export function projectLabel(item) {
   return esc(item && item.title ? String(item.title).replace(/^#+\s*/, '') : 'projeto');
 }

@@ -1,21 +1,22 @@
 // js/item-zip.js
-// Empacota vários textos num .zip, no browser, sem rede.
+// Packs several texts into a .zip, in the browser, with no network.
 //
-// fflate já estava vendorizado (o importador de .pptx do Slides o usa para DESzipar); aqui
-// ele zipa. Zero dependência nova, zero CDN.
+// fflate was already vendored (Slides' .pptx importer uses it to UNzip); here it zips. Zero
+// new dependency, zero CDN.
 //
-// Modo `store` (level 0) de propósito: markdown já é pequeno e o ganho de comprimir não paga
-// o custo em aparelho fraco. Se um dia entrar PDF/imagem no pacote, eles já vêm comprimidos.
+// `store` mode (level 0) on purpose: markdown is already small and the gain from compressing
+// doesn't pay for the cost on a weak device. If PDF/image ever enters the package, they
+// already come compressed.
 import { zipSync, strToU8 } from './vendor/fflate.js';
 import { uniqueNames } from './item-download.js';
 
-// entries: [{ title, text, dir? }]. `dir` é o caminho da pasta, já terminado em '/' ('' na
-// raiz). Devolve os bytes do zip.
+// entries: [{ title, text, dir? }]. `dir` is the folder path, already ending in '/' ('' at
+// the root). Returns the zip bytes.
 //
-// O aninhamento vira PASTA (Élder 2026-08-05: um agrupador pode conter outro). A checagem de
-// colisão é POR PASTA e não global: dois "modelo.md" em pastas diferentes são dois arquivos
-// legítimos, e numerar o segundo só porque um xará existe noutro lugar seria renomear sem
-// motivo o que o autor nomeou.
+// Nesting becomes a FOLDER (Élder 2026-08-05: a grouper can contain another). The collision
+// check is PER FOLDER, not global: two "modelo.md" in different folders are two legitimate
+// files, and numbering the second one just because a namesake exists elsewhere would rename,
+// with no reason, what the author named.
 export function buildZip(entries, ext = 'md') {
   const byDir = new Map();
   entries.forEach((e, i) => {
@@ -32,7 +33,7 @@ export function buildZip(entries, ext = 'md') {
   return zipSync(files, { level: 0 });
 }
 
-// Browser-only: monta o zip e dispara o download.
+// Browser-only: builds the zip and triggers the download.
 export function downloadZip(entries, filename, ext = 'md') {
   const url = URL.createObjectURL(new Blob([buildZip(entries, ext)], { type: 'application/zip' }));
   const a = document.createElement('a');

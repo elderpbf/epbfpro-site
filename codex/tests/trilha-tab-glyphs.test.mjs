@@ -1,13 +1,13 @@
-// trilha-tab-glyphs.test.mjs — os ícones da barra de abas da Trilha vêm da biblioteca.
+// trilha-tab-glyphs.test.mjs — the Trilha tab bar icons come from the library.
 //
-// Existe por uma regra do Élder (2026-07-16): o ícone vem do js/glyphs.js, sempre. Ele
-// perguntou pelo balão de conversa e o achado foi que o `trilha/index.html` desenhava SEIS
-// <svg> à mão na barra de abas do mobile, sendo QUATRO cópias byte-a-byte de desenho que a
-// biblioteca já tinha (message-square, folder, grid, book), um re-encode do `checklist`
-// (path x polyline, mesmos vértices) e um único mark que faltava lá (`lines`, registrado).
+// Exists because of a rule of Élder's (2026-07-16): the icon comes from js/glyphs.js, always.
+// He asked about the chat bubble and the finding was that `trilha/index.html` drew SIX <svg>
+// by hand in the mobile tab bar, FOUR of them byte-for-byte copies of drawings the library
+// already had (message-square, folder, grid, book), one re-encode of `checklist` (path x
+// polyline, same vertices), and a single mark missing from the library (`lines`, now registered).
 //
-// Isto trava a CLASSE: uma aba nova não pode nascer com svg à mão, e nenhuma chave do mapa
-// pode sumir da biblioteca sem alguém perceber.
+// This pins the CLASS: a new tab cannot be born with a hand-drawn svg, and no map key can
+// vanish from the library without someone noticing.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -19,42 +19,43 @@ const ROOT = fileURLToPath(new URL('..', import.meta.url));        // .../codex/
 const SITE = path.join(ROOT, '..');                                 // repo root
 const PAGE = path.join(ROOT, 'trilha', 'js', 'page.js');
 
-// PURO: o mapa data-tab -> chave de glifo, lido do page.js (fonte única).
+// PURE: the data-tab -> glyph-key map, read from page.js (single source).
 function tabGlyphMap() {
   const src = fs.readFileSync(PAGE, 'utf8');
   const m = /const TAB_GLYPH = \{([\s\S]*?)\};/.exec(src);
-  assert.ok(m, 'TAB_GLYPH existe no page.js');
+  assert.ok(m, 'TAB_GLYPH exists in page.js');
   return Object.fromEntries([...m[1].matchAll(/(\w+):\s*'([\w-]+)'/g)].map((x) => [x[1], x[2]]));
 }
 
-test('o HTML da Trilha não desenha ícone de aba à mão', () => {
+test('the Trilha HTML does not draw a tab icon by hand', () => {
   const html = fs.readFileSync(path.join(SITE, 'trilha', 'index.html'), 'utf8');
   assert.equal((html.match(/<svg/g) || []).length, 0,
-    'trilha/index.html voltou a ter <svg> inline; o ícone vem do glyphSvg (ver TAB_GLYPH no page.js)');
+    'trilha/index.html has inline <svg> again; the icon should come from glyphSvg (see TAB_GLYPH in page.js)');
 });
 
-test('toda chave do TAB_GLYPH existe na biblioteca', () => {
+test('every TAB_GLYPH key exists in the library', () => {
   const map = tabGlyphMap();
-  assert.ok(Object.keys(map).length >= 6, 'as 6 abas estão mapeadas (achou ' + Object.keys(map).length + ')');
-  const faltando = Object.entries(map).filter(([, key]) => !hasGlyph(key)).map(([tab, key]) => tab + ' -> ' + key);
-  assert.deepEqual(faltando, [], 'aba(s) apontando pra chave que não existe no glyphs.js');
+  assert.ok(Object.keys(map).length >= 6, 'the 6 tabs are mapped (found ' + Object.keys(map).length + ')');
+  const missing = Object.entries(map).filter(([, key]) => !hasGlyph(key)).map(([tab, key]) => tab + ' -> ' + key);
+  assert.deepEqual(missing, [], 'tab(s) pointing to a key that does not exist in glyphs.js');
 });
 
-// Toda aba do HTML precisa estar no mapa, senão ela renderiza SEM ícone no mobile (falha muda:
-// o desktop esconde o ícone, então passaria despercebido em qualquer teste de desktop).
-test('toda aba do HTML tem entrada no TAB_GLYPH', () => {
+// Every tab in the HTML must be in the map, otherwise it renders with NO icon on mobile (a
+// silent failure: desktop hides the icon, so it would go unnoticed by any desktop test).
+test('every tab in the HTML has an entry in TAB_GLYPH', () => {
   const html = fs.readFileSync(path.join(SITE, 'trilha', 'index.html'), 'utf8');
-  // `[^"]*` no class: a aba ativa nasce com `class="cdx-tr-tab-btn active"` e um regex que exige
-  // a aspa logo depois perde justamente ela (foi o que este teste pegou na 1ª rodada).
+  // `[^"]*` in the class: the active tab is born with `class="cdx-tr-tab-btn active"` and a
+  // regex that requires the quote right after would miss exactly that one (this is what this
+  // test caught on its 1st run).
   const tabs = [...html.matchAll(/class="cdx-tr-tab-btn[^"]*"[^>]*data-tab="(\w+)"/g)].map((m) => m[1]);
-  assert.ok(tabs.length >= 6, 'achou as abas no HTML (' + tabs.length + ')');
+  assert.ok(tabs.length >= 6, 'found the tabs in the HTML (' + tabs.length + ')');
   const map = tabGlyphMap();
-  assert.deepEqual(tabs.filter((tab) => !map[tab]), [], 'aba(s) do HTML sem glifo no mapa');
+  assert.deepEqual(tabs.filter((tab) => !map[tab]), [], 'HTML tab(s) with no glyph in the map');
 });
 
-test('o page.js injeta pela biblioteca, com o CSS dono do tamanho', () => {
+test('page.js injects via the library, with CSS owning the size', () => {
   const src = fs.readFileSync(PAGE, 'utf8');
-  assert.match(src, /import \{ glyphSvg \} from '\.\.\/\.\.\/js\/glyphs\.js'/, 'importa a biblioteca');
+  assert.match(src, /import \{ glyphSvg \} from '\.\.\/\.\.\/js\/glyphs\.js'/, 'imports the library');
   assert.match(src, /glyphSvg\(key, \{ size: null, cls: 'cdx-tr-tab-ico' \}\)/,
-    'size:null (mobile.css é dono de width/height/stroke, até o stroke-width 1.9)');
+    'size:null (mobile.css owns width/height/stroke, down to stroke-width 1.9)');
 });

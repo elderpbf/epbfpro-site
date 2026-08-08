@@ -1,20 +1,20 @@
-// item-zip.test.mjs, o pacote .zip de vários itens (js/item-zip.js). O disparo do download é
-// browser-only; aqui fica o empacotamento, que é puro: entra [{title,text}], sai um zip real,
-// conferido desempacotando com o mesmo fflate.
+// item-zip.test.mjs, the multi-item .zip bundle (js/item-zip.js). The download trigger is
+// browser-only; here lives the packaging, which is pure: [{title,text}] goes in, a real zip
+// comes out, checked by unpacking it with the same fflate.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { buildZip } from '../js/item-zip.js';
 import { uniqueNames } from '../js/item-download.js';
 import { unzipSync, strFromU8 } from '../js/vendor/fflate.js';
 
-// O projeto real do Élder: a instrução + os dois modelos da base de conhecimento.
+// Élder's real project: the instruction plus the two knowledge-base templates.
 const PROJETO = [
   { title: '# Prompt: Resumo Preparatório para Audiência para Magistrados', text: 'instrucao' },
   { title: '# Modelo: Relatório Preparatório para Audiência CÍVEL para Magistrados', text: 'civel' },
   { title: '# Modelo: Relatório Preparatório para Audiência CRIMINAL para Magistrados', text: 'crime' },
 ];
 
-test('empacota os 3 itens com nome legivel e conteudo intacto', () => {
+test('bundles the 3 items with readable names and intact content', () => {
   const files = unzipSync(buildZip(PROJETO));
   const names = Object.keys(files).sort();
   assert.equal(names.length, 3);
@@ -23,14 +23,14 @@ test('empacota os 3 itens com nome legivel e conteudo intacto', () => {
   assert.ok(byText.instrucao && byText.civel && byText.crime);
 });
 
-test('acento no conteudo sobrevive ao round-trip (UTF-8)', () => {
+test('accented content survives the round trip (UTF-8)', () => {
   const files = unzipSync(buildZip([{ title: 'A', text: 'Audiência preparatória: ação e ré' }]));
   assert.equal(strFromU8(files['A.md']), 'Audiência preparatória: ação e ré');
 });
 
-// Dois titulos diferentes podem colapsar no mesmo nome depois de tirar acento e pontuacao;
-// no zip um sobrescreveria o outro em silencio.
-test('titulos que colapsam no mesmo nome nao se sobrescrevem', () => {
+// Two different titles can collapse into the same name once accents and punctuation are
+// stripped; in the zip one would silently overwrite the other.
+test('titles that collapse into the same name do not overwrite each other', () => {
   const files = unzipSync(buildZip([
     { title: 'Relatório: ação', text: 'a' },
     { title: 'Relatorio ação!', text: 'b' },
@@ -39,10 +39,10 @@ test('titulos que colapsam no mesmo nome nao se sobrescrevem', () => {
   assert.deepEqual(Object.values(files).map(strFromU8).sort(), ['a', 'b']);
 });
 
-test('uniqueNames numera a partir da segunda colisao', () => {
+test('uniqueNames numbers starting from the second collision', () => {
   assert.deepEqual(uniqueNames(['X', 'X', 'X']), ['X.md', 'X-2.md', 'X-3.md']);
 });
 
-test('pacote vazio ainda gera um zip valido', () => {
+test('an empty bundle still produces a valid zip', () => {
   assert.deepEqual(Object.keys(unzipSync(buildZip([]))), []);
 });

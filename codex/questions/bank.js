@@ -1170,7 +1170,7 @@ function _ensureCell(audKey, varKey) {
   return a.values[varKey];
 }
 // AI-audience-create: strict-JSON system prompt. The model gets a name/
-// description of a público and returns ONE audience object the matrix can stage.
+// description of an audience and returns ONE audience object the matrix can stage.
 // Strict JSON (no markdown) is load-bearing for the cheap fallback models; one
 // worked example anchors the schema. Fills only the existing variable vocabulary.
 function _audSysPrompt(variables) {
@@ -1187,7 +1187,7 @@ function _audSysPrompt(variables) {
 
 // Generate a whole audience from a typed name/description via ai.chat. The result
 // is a REVIEWABLE DRAFT staged in memory only (never auto-saved): it lands in the
-// config and we switch to the variables grid so Élder can edit; lint + Salvar own
+// config and we switch to the variables grid so Élder can edit; lint + Save own
 // persistence. Errors route to notice (pill) + the inline error line.
 async function _aiCreateAudience() {
   const inp = _q('.cdx-aud-ai-input');

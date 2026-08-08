@@ -64,11 +64,11 @@ export function parseTopics(raw) {
   return String(raw).split(',').map((t) => t.trim()).filter(Boolean);
 }
 
-// (tarefaSubmittedKey / hasSubmittedTarefa removidas em 2026-07-15. A chave era
-// 'ct_tarefa_submitted_<item>_<turma>': SEM o aluno dentro, ou seja, por NAVEGADOR. O
-// segundo aluno a entrar no mesmo aparelho herdava o "Resposta enviada" do primeiro e
-// nao conseguia enviar. Quem sabe se o aluno entregou e o servidor, via o `state` do
-// ct_list_my_tarefas: nao ha estado de entrega no localStorage.)
+// (tarefaSubmittedKey / hasSubmittedTarefa removed on 2026-07-15. The key was
+// 'ct_tarefa_submitted_<item>_<turma>': WITHOUT the student in it, i.e. per BROWSER. The
+// second student to log in on the same device inherited the first one's "Resposta enviada"
+// and could not submit. Whether the student submitted is known by the server, via the
+// `state` from ct_list_my_tarefas: there is no submission state in localStorage.)
 
 export function copyFallback(text) {
   const ta = document.createElement('textarea');

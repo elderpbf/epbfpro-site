@@ -31,13 +31,15 @@ export function getMeta(item) {
   return item.meta_json || {};
 }
 
-// Todas as ações de um item, em ordem de prioridade. A primeira é a que a linha fechada
-// mostrava sozinha antes do track-61, então um item de ação única segue idêntico.
+// All actions for an item, in priority order. The first is what the closed row used to
+// show by itself before track-61, so a single-action item behaves identically.
 //
-// Antes disto isto era uma cadeia com UM `return`, e o efeito era exclusão mútua: um item
-// com anexo PERDIA o "Copiar". Prompt + arquivos juntos era irrepresentável.
+// Before this it was a chain with a SINGLE `return`, and the effect was mutual exclusion:
+// an item with an attachment LOST "Copiar" (Copy). Prompt + files together was impossible
+// to represent.
 //
-// Lab, interativo e tarefa seguem exclusivos: a ação É o item, não há o que somar.
+// Lab, interativo (interactive), and tarefa (task) stay exclusive: the action IS the item,
+// there's nothing to add on top of it.
 export function getItemActions(item) {
   const single = _exclusiveAction(item);
   const pack = packageOf(item);
@@ -45,16 +47,16 @@ export function getItemActions(item) {
     ? { kind: 'download-project', label: 'Baixar tudo (.zip)', shortLabel: '.zip', project: pack, icon: 'download' }
     : null;
 
-  // A ação exclusiva CONVIVE com o pacote. Uma tarefa que leva documentos dentro (Élder
-  // 2026-08-05) precisa das duas: "Entregar" continua sendo o que a tarefa É, e "Baixar
-  // tudo" é o que ela carrega. Devolver só a exclusiva esconderia os anexos; devolver só o
-  // pacote tiraria a entrega.
+  // The exclusive action COEXISTS with the package. A tarefa that carries documents inside
+  // it (Elder 2026-08-05) needs both: "Entregar" (Submit) keeps being what the tarefa IS,
+  // and "Baixar tudo" (Download all) is what it carries. Returning only the exclusive action
+  // would hide the attachments; returning only the package would drop the submission.
   if (single) return packAction ? [single, packAction] : [single];
 
-  // Fora disso, um embalador oferece só ações DO PACOTE. Élder testou e pegou a incoerência:
-  // o "Copiar" copiava a frase de apresentação do projeto enquanto o "Baixar" trazia um zip
-  // de 3 arquivos, então não dava pra prever o que cada botão faria. O texto do projeto é
-  // para LER, na tela.
+  // Outside of that, a packager only offers PACKAGE actions. Elder tested it and caught the
+  // inconsistency: "Copiar" (Copy) copied the project's presentation blurb while "Baixar"
+  // (Download) brought a zip of 3 files, so there was no way to predict what each button
+  // would do. The project's text is meant to be READ, on screen.
   if (packAction) return [packAction];
 
   const meta = getMeta(item);
@@ -67,8 +69,9 @@ export function getItemActions(item) {
   if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
   if (item.body_md) {
     out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
-    // Só o texto VERBATIM sai em .md. Quem o aluno vê processado na tela sai em PDF, que é
-    // fatia própria: um .md de um texto que ele nunca viu como markdown seria uma surpresa.
+    // Only VERBATIM text goes out as .md. What the student sees rendered on screen goes out
+    // as PDF, which is its own separate slice: a .md of text they never saw as markdown
+    // would be a surprise.
     if (isVerbatim(item)) {
       out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
     }
@@ -76,14 +79,15 @@ export function getItemActions(item) {
   return out;
 }
 
-// Este item embala outros? A fonte é `item.children`, que o Worker devolve a partir de
-// `ct_item_members`. Um projeto vazio não oferece pacote.
-// O pacote de um item, ACHATADO com o caminho de pasta de cada peça. Um filho que também
-// embala vira uma PASTA no zip com o que ele carrega dentro; assim a estrutura que o aluno vê
-// na trilha é a mesma que ele abre no descompactador (Élder 2026-08-05).
+// Does this item package others? The source is `item.children`, which the Worker returns
+// from `ct_item_members`. An empty project offers no package.
+// The item's package, FLATTENED with each piece's folder path. A child that also packages
+// becomes a FOLDER in the zip with what it carries inside, so the structure the student
+// sees in the trail is the same one they open in the unzip tool (Elder 2026-08-05).
 //
-// `items` continua sendo a lista de ids, agora com o `dir` ao lado, porque quem baixa precisa
-// dos dois: o id para buscar pelo mesmo ct_get_item_public de sempre, e o dir para nomear.
+// `items` is still the list of ids, now with `dir` alongside it, because whoever downloads
+// needs both: the id to fetch via the same ct_get_item_public as always, and the dir to
+// name it.
 export function packageOf(item) {
   const kids = item && Array.isArray(item.children) ? item.children : null;
   if (!kids || !kids.length) return null;
@@ -91,14 +95,15 @@ export function packageOf(item) {
   let skipped = 0;
   (function walk(list, dir) {
     list.forEach((c) => {
-      // Lab e interativo ficam de fora do pacote, mas continuam na pasta e na trilha. São
-      // CONTADOS, não sumidos: um zip com menos arquivos do que a pasta mostra tem que dizer
-      // isso, senão passa por completo (Élder 2026-08-05).
+      // Lab and interativo stay out of the package, but remain in the folder and in the
+      // trail. They are COUNTED, not dropped: a zip with fewer files than the folder shows
+      // has to say so, otherwise it passes as complete (Elder 2026-08-05).
       if (!isDownloadable(c)) skipped++;
       else items.push({ id: c.id, dir });
-      // Só um PACOTE vira pasta no zip. O recuo NÃO vira: ele é display, "só a forma como vai
-      // aparecer na trilha" (Élder 2026-08-06). Eu tinha feito ao contrário, mapeando recuo em
-      // diretório, e isso inventava pastas que não existem em lugar nenhum do modelo.
+      // Only a PACKAGE becomes a folder in the zip. Indentation does NOT: it's display,
+      // "just how it's going to appear in the trail" (Elder 2026-08-06). I had done it the
+      // other way, mapping indentation to a directory, and that invented folders that don't
+      // exist anywhere in the model.
       const sub = Array.isArray(c.children) ? c.children : null;
       if (sub && sub.length) walk(sub, dir + _dirName(c.title) + '/');
     });
@@ -106,16 +111,16 @@ export function packageOf(item) {
   return { name: String(item.title || 'pacote').replace(/^#+\s*/, ''), items, skipped };
 }
 
-// Nome de pasta com a MESMA limpeza do nome de arquivo (acento e `#` de título não
-// sobrevivem a sistema de arquivos), só que sem extensão.
+// Folder name with the SAME cleanup as the file name (accents and a title's `#` don't
+// survive the file system), just without an extension.
 function _dirName(title) {
   return fileNameFromTitle(title, 'd').replace(/\.d$/, '');
 }
 
-// Reexportado, não redefinido: a regra do "cru" mora em js/item-download.js e agora sai de um
-// FLAG do item, não do tipo (o comentário lá conta por quê). Este `export` fica só porque a
-// trilha já importava daqui; um segundo corpo aqui é exatamente como o admin e a trilha
-// passariam a discordar sobre o que é cru.
+// Re-exported, not redefined: the "cru" (raw) rule lives in js/item-download.js and now
+// comes from an item FLAG, not the type (the comment there explains why). This `export`
+// exists only because the trail already imported from here; a second body here is exactly
+// how admin and trail would end up disagreeing about what counts as cru.
 export { isVerbatim };
 
 export function getItemAction(item) {
@@ -125,12 +130,14 @@ export function getItemAction(item) {
 function _exclusiveAction(item) {
   const meta = getMeta(item);
   if (item.type === 'tarefa') {
-    // A aba Aulas não entrega nada: ela LEVA pra aba Tarefas, que é a dona do fluxo de entrega
-    // (Élder 2026-07-15). Isso também mata um bug vivo: o estado "Resposta enviada" saía do
-    // localStorage (`ct_tarefa_submitted_<item>_<turma>`), uma chave SEM o aluno dentro, então
-    // era por NAVEGADOR: o segundo aluno a entrar no mesmo aparelho via a tarefa como já
-    // entregue e não conseguia enviar. Aqui não se pergunta mais nada ao localStorage, e a aba
-    // Tarefas decide pelo `state` que o servidor manda, que é quem sabe a verdade.
+    // The Aulas (Lessons) tab doesn't deliver anything: it TAKES you to the Tarefas
+    // (Tasks) tab, which owns the submission flow (Elder 2026-07-15). This also kills a
+    // live bug: the "Resposta enviada" (Answer submitted) state came from localStorage
+    // (`ct_tarefa_submitted_<item>_<turma>`), a key WITHOUT the student in it, so it was
+    // PER BROWSER: a second student logging in on the same device saw the tarefa as
+    // already submitted and couldn't submit. Here nothing is asked of localStorage
+    // anymore; the Tarefas tab decides based on the `state` the server sends, which is
+    // what actually knows the truth.
     return { kind: 'go-tarefas', label: 'Ir para tarefas', shortLabel: 'Tarefas', icon: 'external', item };
   }
   // A lab is an interactive demo, not a download: its action opens the shared
@@ -169,16 +176,17 @@ function makeActionBtn(action, extraClass) {
 
   let labelHtml = '<span class="cdx-tr-ia-label-full">' + esc(action.label) + '</span>';
   if (action.shortLabel) labelHtml += '<span class="cdx-tr-ia-label-short">' + esc(action.shortLabel) + '</span>';
-  // O glifo vem sempre ANTES do rótulo, chevron incluído: é o lugar dele em todo botão da
-  // trilha, e um único botão fora do padrão custa mais que a convenção de dropdown ganha
-  // (Élder 2026-08-04, depois de conferir o botão de enviar).
+  // The glyph always comes BEFORE the label, chevron included: that's its place in every
+  // button in the trail, and a single off-pattern button costs more than the dropdown
+  // convention gains (Elder 2026-08-04, after checking the submit button).
   btn.innerHTML = (state.ICONS[action.icon] || state.ICONS.copy) + labelHtml;
   if (action.kind === 'submitted') btn.disabled = true;
   return btn;
 }
 
-// Executa uma ação. Só o caminho 'open' de um botão direto anda sozinho (é um <a>), por
-// isso ele não aparece aqui: dentro do menu não há âncora, então abrimos na mão.
+// Runs an action. Only a direct button's 'open' path works on its own (it's an <a>),
+// which is why it's not handled here: there's no anchor inside the menu, so we open it
+// by hand.
 function runAction(action, item, sub, opts, btn) {
   if (action.kind === 'copy') copyToClipboard(action.text, btn);
   else if (action.kind === 'download-md') downloadText(action.text, fileNameFromTitle(action.item.title, 'md'));
@@ -189,9 +197,10 @@ function runAction(action, item, sub, opts, btn) {
   else if (action.kind === 'interativo-open') openLabViewer({ url: action.url, title: item.title });
 }
 
-// Baixa todos os itens do projeto num .zip. Os irmãos vêm pelo MESMO `ct_get_item_public` que
-// abrir um item usa, então o controle de acesso da turma vale igual e não há ação nova no
-// Worker: um item que o aluno não pode ver falha ali e fica fora do pacote.
+// Downloads all of the project's items as a .zip. The siblings come through the SAME
+// `ct_get_item_public` that opening an item uses, so the class's access control applies
+// the same way and there's no new Worker action: an item the student can't see fails
+// there and stays out of the package.
 export async function downloadProject(project) {
   toast.info('Montando o pacote...');
   const base = {
@@ -205,17 +214,17 @@ export async function downloadProject(project) {
   const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md, dir: i._dir }));
   if (!entries.length) { toast.err('Nao foi possivel montar o pacote.'); return; }
   downloadZip(entries, fileNameFromTitle(project.name, 'zip'));
-  // Falha parcial é dita em voz alta: um zip com 2 de 3 arquivos passaria por completo. Mas a
-  // conta é de itens que NÃO VOLTARAM, não de itens sem corpo: com aninhamento, um agrupador
-  // entra na lista só para dar nome à pasta e legitimamente não tem texto próprio. Contar por
-  // `entries` acusaria falha num pacote inteiro.
+  // Partial failure is stated out loud: a zip with 2 of 3 files would pass as complete.
+  // But the count is of items that DID NOT COME BACK, not of items without a body: with
+  // nesting, a grouper enters the list only to name the folder and legitimately has no
+  // text of its own. Counting by `entries` would flag failure for an entire package.
   const failed = got.filter((i) => !i).length;
   if (failed) {
     toast.err('O pacote saiu sem ' + failed + (failed === 1 ? ' arquivo.' : ' arquivos.'));
   }
-  // O que não cabe em arquivo é dito, não escondido: um zip com menos itens do que a pasta
-  // mostra passaria por completo. Nada entra no lugar deles ("we're not going to add anything
-  // to the zip because it makes no sense", Élder 2026-08-05).
+  // What doesn't fit in a file is stated, not hidden: a zip with fewer items than the
+  // folder shows would pass as complete. Nothing takes their place ("we're not going to
+  // add anything to the zip because it makes no sense", Elder 2026-08-05).
   if (project.skipped) {
     toast.info(project.skipped === 1
       ? '1 lab ou interativo não entra no .zip; ele abre na trilha.'
@@ -223,13 +232,13 @@ export async function downloadProject(project) {
   }
 }
 
-// Monta as ações de um item num container. UMA montagem parametrizada, usada pela linha da
-// aba Aulas e pelo corpo dos cards planos (Apostila/Outros), nunca duas fiações.
+// Mounts an item's actions into a container. ONE parametrized mount, used by the Aulas
+// tab row and by the flat cards' body (Apostila/Outros), never two separate wirings.
 //
-// Uma ação: o botão direto de sempre, byte a byte como antes do track-61. Duas ou mais:
-// UM gatilho "Ações" com chevron no lugar do glifo, abrindo o menu compartilhado
-// (js/menu.js). N botões teal lado a lado espremeriam o título, e no celular o botão é só
-// ícone (mobile.css), então três ícones em fila seriam ilegíveis.
+// One action: the same direct button as always, byte for byte like before track-61. Two
+// or more: ONE "Ações" (Actions) trigger with a chevron in place of the glyph, opening the
+// shared menu (js/menu.js). N teal buttons side by side would squeeze the title, and on
+// mobile the button is icon-only (mobile.css), so three icons in a row would be unreadable.
 export function mountActions(container, item, opts = {}) {
   if (!container) return;
   container.innerHTML = '';
@@ -243,7 +252,7 @@ export function mountActions(container, item, opts = {}) {
     const btn = makeActionBtn(action, extraClass);
     btn.addEventListener('click', (e) => {
       if (e && e.stopPropagation) e.stopPropagation();
-      if (action.kind === 'open') return; // o <a> abre sozinho
+      if (action.kind === 'open') return; // the <a> opens on its own
       if (e && e.preventDefault) e.preventDefault();
       runAction(action, item, sub, opts, btn);
     });
@@ -272,9 +281,10 @@ export function injectActionButton(sub, item, opts = {}) {
   mountActions(actionsEl, item, Object.assign({}, opts, { sub }));
 }
 
-// Leva o aluno pra aba Tarefas, JÁ no cartão daquela tarefa. Reusa o deep-focus que o sino de
-// notificações usa (focusTarefa): mesmo problema, mesma solução, nada duplicado. Import dinâmico
-// porque tarefas.js importa page.js, e um import estático aqui fecharia o ciclo.
+// Takes the student to the Tarefas tab, already on that tarefa's card. Reuses the
+// deep-focus that the notification bell uses (focusTarefa): same problem, same solution,
+// nothing duplicated. Dynamic import because tarefas.js imports page.js, and a static
+// import here would close the cycle.
 export function goToTarefa(itemId) {
   const go = () => { if (typeof location !== 'undefined') location.hash = '#tarefas'; };
   import('./tarefas.js').then((m) => { if (m && m.focusTarefa) m.focusTarefa(itemId); go(); }).catch(go);

@@ -129,26 +129,26 @@ test('renderHead do bloco traz o tempo SOMADO daquele bloco (melhoria aprovada n
   assert.match(html, new RegExp(fmtDur(blocoMin(r.blocos[1]))), 'o cabeçalho soma 27 min do bloco');
 });
 
-// ── Capacidades que o Élder pediu explicitamente ────────────────────────────
-test('SPLITTER: width é resize, com o gridEl EXPLÍCITO (não confia no parentNode)', () => {
+// ── Capabilities Élder explicitly asked for ────────────────────────────
+test('SPLITTER: width is resize, with an EXPLICIT gridEl (does not trust parentNode)', () => {
   const cfg = build(seed());
   assert.equal(cfg.width.mode, 'resize');
-  assert.equal(cfg.width.gridEl, GRID, 'o grid vai explícito na config');
-  assert.ok(cfg.width.storeKey, 'a largura é lembrada entre sessões');
+  assert.equal(cfg.width.gridEl, GRID, 'the grid is passed explicitly in the config');
+  assert.ok(cfg.width.storeKey, 'the width is remembered across sessions');
   assert.ok(cfg.width.min < cfg.width.max);
 });
 
-test('SEÇÕES COLAPSÁVEIS: collapsed pergunta ao estado da view, e onToggle devolve pra ela', () => {
+test('COLLAPSIBLE SECTIONS: collapsed asks the view\'s state, and onToggle reports back to it', () => {
   const c = calls();
   const cfg = build(seed(), { isOpen: (id) => id === 'b1' }, c.handlers);
   const [b1, b2] = cfg.sections.list();
-  assert.equal(cfg.sections.collapsed(b1), false, 'bloco aberto');
-  assert.equal(cfg.sections.collapsed(b2), true, 'bloco fechado');
+  assert.equal(cfg.sections.collapsed(b1), false, 'bloco open');
+  assert.equal(cfg.sections.collapsed(b2), true, 'bloco closed');
   cfg.sections.onToggle('b2');
   assert.deepEqual(c.seen, [['toggleBloco', 'b2']]);
 });
 
-test('CRIAR/RENOMEAR/APAGAR bloco: sections.editable ligado e os três callbacks ligados', () => {
+test('CREATE/RENAME/DELETE bloco: sections.editable on and all three callbacks wired', () => {
   const c = calls();
   const cfg = build(seed(), null, c.handlers);
   assert.equal(cfg.sections.editable, true);
@@ -158,7 +158,7 @@ test('CRIAR/RENOMEAR/APAGAR bloco: sections.editable ligado e os três callbacks
   assert.deepEqual(c.seen, [['createBloco'], ['renameBloco', 'b1'], ['deleteBloco', 'b2']]);
 });
 
-test('ADICIONAR PONTO: o botão + do topo existe e chama a view', () => {
+test('ADD PONTO: the + button at the top exists and calls the view', () => {
   const c = calls();
   const cfg = build(seed(), null, c.handlers);
   assert.ok(cfg.add && typeof cfg.add.onAdd === 'function');
@@ -166,7 +166,7 @@ test('ADICIONAR PONTO: o botão + do topo existe e chama a view', () => {
   assert.deepEqual(c.seen, [['addPonto']]);
 });
 
-test('ARRASTAR: reordenar dentro do bloco e MOVER entre blocos, ambos ligados', () => {
+test('DRAG: reordering within a bloco and MOVING between blocos, both wired', () => {
   const c = calls();
   const cfg = build(seed(), null, c.handlers);
   cfg.reorder.onReorder(['p3', 'p2']);
@@ -177,7 +177,7 @@ test('ARRASTAR: reordenar dentro do bloco e MOVER entre blocos, ambos ligados', 
   ]);
 });
 
-test('SELECIONAR ponto: selectedId reflete o estado e onSelect devolve o id', () => {
+test('SELECT ponto: selectedId reflects the state and onSelect reports back the id', () => {
   const c = calls();
   const cfg = build(seed(), { selectedPontoId: 'p2' }, c.handlers);
   assert.equal(cfg.selectedId(), 'p2');
@@ -185,101 +185,101 @@ test('SELECIONAR ponto: selectedId reflete o estado e onSelect devolve o id', ()
   assert.deepEqual(c.seen, [['selectPonto', 'p3']]);
 });
 
-test('PAUSA: o rodapé do rail carrega a afordância de inserir pausa', () => {
+test('PAUSA: the rail\'s footer carries the affordance to insert a pausa', () => {
   const cfg = build(seed());
-  assert.ok(typeof cfg.footer === 'function', 'o rail tem rodapé');
-  assert.match(cfg.footer(), /data-roteiro-add-pausa/, 'o botão de pausa mora lá');
+  assert.ok(typeof cfg.footer === 'function', 'the rail has a footer');
+  assert.match(cfg.footer(), /data-roteiro-add-pausa/, 'the pausa button lives there');
 });
 
-test('um bloco de PAUSA aparece na lista com rótulo próprio, nunca com título vazio', () => {
+test('a PAUSA bloco appears in the list with its own rótulo, never with an empty title', () => {
   const cfg = build(addPausa(seed(), { dur: 10 }));
   const secs = cfg.sections.list();
   assert.equal(secs.length, 3);
-  assert.ok(String(secs[2].title || '').trim().length > 0, 'a pausa se identifica na lista');
+  assert.ok(String(secs[2].title || '').trim().length > 0, 'the pausa identifies itself in the list');
 });
 
-test('roteiro vazio: a config não quebra, só não tem linha nem seção', () => {
+test('empty roteiro: the config does not break, it just has no row or section', () => {
   const cfg = build(normalizeRoteiro(null));
   assert.deepEqual(cfg.items(), []);
   assert.deepEqual(cfg.sections.list(), []);
-  assert.ok(cfg.emptyText || cfg.emptyHtml, 'ainda diz ao Élder que está vazio');
+  assert.ok(cfg.emptyText || cfg.emptyHtml, 'still tells Élder it is empty');
 });
 
-// ── Contrato de fonte: o que só se prova lendo o arquivo ────────────────────
-test('a view MONTA o list-rail e não pinta mais o painel esquerdo à mão', () => {
+// ── Source contract: what can only be proven by reading the file ────────────────────
+test('the view MOUNTS list-rail and no longer paints the left panel by hand', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
-  assert.match(src, /from\s+['"]\.\.\/js\/list-rail\.js['"]/, 'importa o módulo padrão');
-  assert.match(src, /mountRail\s*\(/, 'monta o rail');
-  assert.ok(!/cdx-roteiro-bloco-head/.test(src), 'o cabeçalho de bloco à mão morreu');
-  assert.ok(!/data-roteiro-ponto\b/.test(src), 'a linha de ponto à mão morreu (agora é .cdx-rail-row)');
+  assert.match(src, /from\s+['"]\.\.\/js\/list-rail\.js['"]/, 'imports the standard module');
+  assert.match(src, /mountRail\s*\(/, 'mounts the rail');
+  assert.ok(!/cdx-roteiro-bloco-head/.test(src), 'the hand-built bloco header is gone');
+  assert.ok(!/data-roteiro-ponto\b/.test(src), 'the hand-built ponto row is gone (now .cdx-rail-row)');
 });
 
-test('a FALA DE CHAMADA é textarea: input type=text nunca faz wrap (queixa do Élder)', () => {
+test('the CHAMADA prompt field is a textarea: input type=text never wraps (Élder\'s complaint)', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
-  assert.match(src, /<textarea[^>]*data-roteiro-chamada/, 'chamada é textarea');
-  assert.ok(!/<input[^>]*data-roteiro-chamada/.test(src), 'não sobrou input de uma linha');
+  assert.match(src, /<textarea[^>]*data-roteiro-chamada/, 'chamada is a textarea');
+  assert.ok(!/<input[^>]*data-roteiro-chamada/.test(src), 'no single-line input left over');
 });
 
-test('o painel direito edita TODOS os campos do ponto, não só chamada/notas', () => {
+test('the right panel edits ALL of the ponto\'s fields, not just chamada/notas', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
-  assert.match(src, /data-roteiro-rotulo/, 'rótulo editável');
-  assert.match(src, /<select[^>]*data-roteiro-tipo/, 'tipo é dropdown');
-  assert.match(src, /data-roteiro-dur/, 'duração editável');
-  assert.match(src, /data-roteiro-del-ponto/, 'dá pra apagar o ponto');
+  assert.match(src, /data-roteiro-rotulo/, 'rótulo editable');
+  assert.match(src, /<select[^>]*data-roteiro-tipo/, 'tipo is a dropdown');
+  assert.match(src, /data-roteiro-dur/, 'duration editable');
+  assert.match(src, /data-roteiro-del-ponto/, 'the ponto can be deleted');
 });
 
-test('o grid dos 2 painéis está no CSS do jeito que o installResizer exige', () => {
+test('the 2-panel grid is in the CSS the way installResizer requires', () => {
   const css = readSrc('../roteiro/roteiro.css');
-  assert.match(css, /\.cdx-roteiro-body\s*\{[^}]*display:\s*grid/, 'o corpo é grid');
-  assert.match(css, /grid-template-columns:\s*var\(--cdx-rz-w/, 'a 1ª coluna é a largura do resizer');
+  assert.match(css, /\.cdx-roteiro-body\s*\{[^}]*display:\s*grid/, 'the body is grid');
+  assert.match(css, /grid-template-columns:\s*var\(--cdx-rz-w/, 'the 1st column is the resizer width');
   assert.match(css, /@media[^{]*max-width:\s*980px[^{]*\{[^}]*\.cdx-roteiro-body[^}]*1fr/,
-    'colapsa pra uma coluna no celular, igual ao .cdx-aulas-hub');
+    'collapses to a single column on mobile, same as .cdx-aulas-hub');
 });
 
-test('WARN da fatia 1 fechado: o badge de tipo não usa --acc-* como cor de TEXTO', () => {
+test('fatia 1 WARN closed: the type badge does not use --acc-* as TEXT color', () => {
   const css = readSrc('../roteiro/roteiro.css');
   const m = css.match(/\.cdx-roteiro-detail-badge\s*\{([^}]*)\}/);
-  assert.ok(m, 'a regra do badge existe');
+  assert.ok(m, 'the badge rule exists');
   assert.ok(!/color:\s*var\(--rot-color/.test(m[1]),
-    'tokens.css: os --acc-* são "never rendered as text"; o texto vai de --text-primary');
+    'tokens.css: the --acc-* are "never rendered as text"; the text comes from --text-primary');
   assert.match(m[1], /color:\s*var\(--text-primary\)/);
 });
 
-// Regressão do "clique perdido", achado na auditoria desta fatia: commitar campo
-// digitado no BLUR fazia o clique numa linha do rail disparar change -> re-render
-// do rail, trocando o DOM da linha ENTRE mousedown e mouseup. O clique ficava sem
-// alvo vivo e a seleção era engolida — "edite o rótulo, clique no próximo ponto"
-// exigia dois cliques. Aplicar no 'input' faz o blur não ter mais nada a mudar.
-test('campos digitados commitam no input (não no blur), senão o clique seguinte se perde', () => {
+// Regression for the "lost click", found in this slice's audit: committing a typed
+// field on BLUR made a click on a rail row fire change -> re-render of the rail,
+// swapping the row's DOM BETWEEN mousedown and mouseup. The click was left with no
+// live target and the selection got swallowed, "edit the rótulo, click the next
+// ponto" took two clicks. Committing on 'input' leaves blur with nothing left to change.
+test('typed fields commit on input (not on blur), otherwise the next click gets lost', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
   const onInput = src.slice(src.indexOf('function _onInput'), src.indexOf('function _onKeydown'));
   for (const f of ['data-roteiro-rotulo', 'data-roteiro-dur', 'data-roteiro-chamada']) {
-    assert.ok(onInput.includes(f), f + ' tem que ser aplicado no _onInput');
+    assert.ok(onInput.includes(f), f + ' must be applied in _onInput');
   }
   const onChange = src.slice(src.indexOf('function _onChange'), src.indexOf('function _onInput'));
-  assert.ok(!/_commit\(updatePonto\([^)]*rotulo/.test(onChange), 'o rótulo não volta a commitar no blur');
+  assert.ok(!/_commit\(updatePonto\([^)]*rotulo/.test(onChange), 'the rótulo does not go back to committing on blur');
 });
 
-test('o painel direito NUNCA é repintado por digitação (destruiria o campo em foco)', () => {
+test('the right panel is NEVER repainted by typing (would destroy the focused field)', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
   const applyField = src.slice(src.indexOf('function _applyField'), src.indexOf('function _onChange'));
-  assert.ok(!/_renderRight\(/.test(applyField), '_applyField não pode repintar o painel direito');
+  assert.ok(!/_renderRight\(/.test(applyField), '_applyField must not repaint the right panel');
 });
 
-test('a gravação é debounced mas o unmount dá FLUSH (trocar de aba não pode perder edição)', () => {
+test('saving is debounced but unmount FLUSHES it (switching tabs must not lose an edit)', () => {
   const src = readSrc('../roteiro/roteiro-view.js');
-  assert.match(src, /function\s+_persistSoon/, 'existe debounce');
+  assert.match(src, /function\s+_persistSoon/, 'a debounce exists');
   const unmountFn = src.slice(src.indexOf('export function unmount'), src.indexOf('// ── Store seam'));
-  assert.match(unmountFn, /_flushPersist\(\)/, 'unmount descarrega a gravação pendente');
+  assert.match(unmountFn, /_flushPersist\(\)/, 'unmount flushes the pending save');
 });
 
-test('as chaves i18n novas existem em pt.js E en.js (ARCHITECTURE §5)', () => {
+test('the new i18n keys exist in pt.js AND en.js (ARCHITECTURE §5)', () => {
   const pt = readSrc('../i18n/pt.js');
   const en = readSrc('../i18n/en.js');
   for (const k of ['roteiro.bloco_new', 'roteiro.bloco_rename', 'roteiro.bloco_delete',
     'roteiro.ponto_new', 'roteiro.add_pausa', 'roteiro.field_rotulo',
     'roteiro.field_tipo', 'roteiro.field_dur']) {
-    assert.match(pt, new RegExp("['\"]" + k.replace('.', '\\.') + "['\"]\\s*:"), 'falta em pt.js: ' + k);
-    assert.match(en, new RegExp("['\"]" + k.replace('.', '\\.') + "['\"]\\s*:"), 'falta em en.js: ' + k);
+    assert.match(pt, new RegExp("['\"]" + k.replace('.', '\\.') + "['\"]\\s*:"), 'missing in pt.js: ' + k);
+    assert.match(en, new RegExp("['\"]" + k.replace('.', '\\.') + "['\"]\\s*:"), 'missing in en.js: ' + k);
   }
 });

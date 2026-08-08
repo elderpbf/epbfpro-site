@@ -1,20 +1,20 @@
 // js/ai-models.js
-// Qual IA atende a chamada. Élder 2026-08-07: "o botão da IA deve ter um dropdown para escolher
+// Which AI handles the call. Élder 2026-08-07: "o botão da IA deve ter um dropdown para escolher
 // a IA que será usada... seria difícil?".
 //
-// Não foi: o Worker JÁ aceita `provider` e `openrouter_model` em `ai_chat` (src/ai.js), e o
-// facade repassa os parâmetros sem tocar. Então isto aqui é uma LISTA e uma preferência
-// guardada, não integração nova. Nenhuma chave passa pelo navegador: o cliente diz QUEM deve
-// atender, e as chaves continuam só no ambiente do Worker.
+// It wasn't: the Worker ALREADY accepts `provider` and `openrouter_model` in `ai_chat`
+// (src/ai.js), and the facade passes the params through untouched. So this here is a LIST and
+// a stored preference, not new integration. No key ever reaches the browser: the client says
+// WHO should handle it, and the keys stay only in the Worker environment.
 //
-// Uma correção de fato, para não escolher errado a partir de memória: o padrão do OpenRouter
-// NÃO é mais o Mistral. Foi trocado em 2026-07-20, por decisão registrada do próprio Élder, de
-// `mistralai/mistral-small-24b` para `qwen/qwen3-30b-a3b-instruct-2507` (a justificativa e a
-// ressalva estão em src/ai.js:297-307 do codex-api). O Mistral continua escolhível aqui.
+// A factual correction, so as not to pick wrong from memory: the OpenRouter default is
+// NO LONGER Mistral. It was swapped on 2026-07-20, by Élder's own recorded decision, from
+// `mistralai/mistral-small-24b` to `qwen/qwen3-30b-a3b-instruct-2507` (the rationale and the
+// caveat are in src/ai.js:297-307 of codex-api). Mistral is still selectable here.
 
-// `provider` vazio = a CADEIA padrão do Worker: as duas chaves Gemini primeiro (uma cobre a
-// falta da outra) e o OpenRouter como reserva paga. É o que sempre rodou, e continua sendo o
-// padrão: quem não quer pensar não pensa.
+// Empty `provider` = the Worker's default CHAIN: the two Gemini keys first (one covers for the
+// other's absence) and OpenRouter as the paid fallback. It's what always ran, and stays the
+// default: whoever doesn't want to think, doesn't have to.
 export const AI_CHOICES = [
   {
     id: 'auto',
@@ -54,8 +54,8 @@ export function choiceById(id) {
   return AI_CHOICES.find((c) => c.id === id) || AI_CHOICES[0];
 }
 
-// A escolha sobrevive ao fechamento da tela: trocar de modelo a cada item seria trabalho
-// repetido, e o caso real é "hoje eu quero testar com outro".
+// The choice survives closing the screen: switching model on every item would be repeated
+// work, and the real use case is "today I want to test with another one".
 export function getChoice() {
   let id = '';
   try { id = localStorage.getItem(STORE_KEY) || ''; } catch (_) { id = ''; }
@@ -63,11 +63,11 @@ export function getChoice() {
 }
 
 export function setChoice(id) {
-  try { localStorage.setItem(STORE_KEY, choiceById(id).id); } catch (_) { /* modo privado */ }
+  try { localStorage.setItem(STORE_KEY, choiceById(id).id); } catch (_) { /* private mode */ }
 }
 
-// Os parâmetros que vão junto na chamada. Sempre um objeto novo: quem chama faz
-// Object.assign no corpo do pedido, e devolver o mesmo objeto deixaria um caller sujar a lista.
+// The params that go along with the call. Always a new object: the caller does
+// Object.assign on the request body, and returning the same object would let a caller dirty the list.
 export function paramsFor(id) {
   return Object.assign({}, choiceById(id).params);
 }

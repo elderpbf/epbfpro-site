@@ -168,10 +168,10 @@ async function toggleFlatCard(card, item) {
     body.innerHTML = '';
     const contentWrap = document.createElement('div');
     body.appendChild(contentWrap);
-    // Uma pasta abre igual aqui e na aba Aulas: o MESMO renderProjeto, com o MESMO buildSub,
-    // então cada filho abre, copia e baixa por conta própria. Sem isto o cartão de Outros
-    // mostraria só o texto da pasta e um "Baixar tudo", e o aluno não alcançaria o que está
-    // dentro sem baixar o pacote inteiro.
+    // A folder opens the same way here and in the Aulas tab: the SAME renderProjeto, with the
+    // SAME buildSub, so each child opens, copies, and downloads on its own. Without this, the
+    // Outros (Others) card would show only the folder's text and a "Baixar tudo" (download all),
+    // and the student would not reach what is inside without downloading the whole package.
     if (isProjeto(data.item)) renderProjeto(data.item, contentWrap, buildSub, {});
     else renderItem(data.item, contentWrap, { preview: true });
     appendFlatActionRow(body, data.item);

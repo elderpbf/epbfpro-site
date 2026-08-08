@@ -82,33 +82,33 @@ test('looksTruncated: missing input/output -> false', () => {
 // ── applyVerbatim ────────────────────────────────────────────────────────────
 // Elder 2026-08-07: "as vezes a IA toma como prompt algo que nao e e ai nao faz a formatacao.
 // Ele deveria formatar de qualquer jeito, mas se o tipo ou a opcao nao permitir, ai ele mostra
-// o texto original". O que mudou: a formatacao da IA nao e mais JOGADA FORA por um palpite de
-// tipo, ela fica guardada, e quem escolhe e a tela.
-test('applyVerbatim: guarda os DOIS corpos, para a tela poder alternar sem chamar de novo', () => {
+// o texto original". What changed: the AI's formatting is no longer THROWN AWAY on a type guess,
+// it stays stored, and the screen is what chooses.
+test('applyVerbatim: keeps BOTH bodies, so the screen can switch without calling again', () => {
   const out = applyVerbatim({ type: 'guide', body_md: 'formatado' }, 'CRU', false);
   assert.equal(out.body_raw, 'CRU');
   assert.equal(out.body_ai, 'formatado');
-  assert.equal(out.body_md, 'formatado', 'verbatim=false fica com o da IA');
+  assert.equal(out.body_md, 'formatado', 'verbatim=false keeps the AI version');
   assert.equal(out.verbatim, false);
 });
 
-test('applyVerbatim: com verbatim=true o corpo e o texto original, e o da IA continua guardado', () => {
+test('applyVerbatim: with verbatim=true the body is the original text, and the AI version stays stored', () => {
   const out = applyVerbatim({ type: 'guide', body_md: 'formatado' }, 'CRU', true);
   assert.equal(out.body_md, 'CRU');
-  assert.equal(out.body_ai, 'formatado', 'nada foi perdido');
+  assert.equal(out.body_ai, 'formatado', 'nothing was lost');
 });
 
-// `null` = ninguem escolheu ainda (item novo). E o que preserva "o prompt sempre cru" para o
-// acervo inteiro, que nunca tocou na caixinha.
-test('applyVerbatim: sem escolha, vale o palpite do tipo, como antes', () => {
+// `null` = nobody has chosen yet (new item). This is what preserves "the prompt is always raw"
+// for the whole collection, which never touched the toggle.
+test('applyVerbatim: with no choice made, the type guess wins, as before', () => {
   assert.equal(applyVerbatim({ type: 'prompt', body_md: 'reformatado' }, 'RAW**cru**', null).body_md, 'RAW**cru**');
   assert.equal(applyVerbatim({ type: 'guide', body_md: 'kept' }, 'RAW', null).body_md, 'kept');
   assert.equal(applyVerbatim(null, 'RAW', null), null);
 });
 
-// A escolha do usuario VENCE o palpite do tipo: era exatamente o caso que ele descreveu, um
-// texto classificado como prompt sem ser, que nunca era formatado.
-test('applyVerbatim: a escolha da tela vence o tipo que a IA adivinhou', () => {
+// The user's choice OVERRIDES the type guess: this is exactly the case he described, a text
+// classified as prompt without being one, that never got formatted.
+test('applyVerbatim: the screen choice wins over the type the AI guessed', () => {
   const out = applyVerbatim({ type: 'prompt', body_md: 'formatado' }, 'CRU', false);
   assert.equal(out.body_md, 'formatado');
 });

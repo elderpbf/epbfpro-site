@@ -21,7 +21,7 @@ test('aulaDateStatusKey classifies lesson dates against today', () => {
   assert.equal(rel.aulaDateStatusKey({}, today).key, 'tbd', 'no dates = tbd');
 });
 
-test('opção B: diffOutrosSelection pins/unpins the Outros sentinel (0) and unreleases the last home', () => {
+test('Option B: diffOutrosSelection pins/unpins the Outros sentinel (0) and unreleases the last home', () => {
   // item 1: not released, checked -> first release + pin 0 (Outros only)
   // item 2: legacy in-Outros (released, no aula), unchecked -> unrelease (Outros was its only home)
   // item 3: released to aula 4 (not Outros), checked -> ADD 0 (now aula 4 AND Outros), still released
@@ -40,7 +40,7 @@ test('opção B: diffOutrosSelection pins/unpins the Outros sentinel (0) and unr
   assert.equal(byId[5], undefined, 'already-in-Outros + still checked -> no change');
 });
 
-test('R3 + R1a: composer groups items por tipo and greys items already released to another aula', () => {
+test('R3 + R1a: composer groups items by type and greys items already released to another aula', () => {
   // R3: items laid out by type (one section per ct_types slug), not one Outros bucket.
   assert.match(relSrc, /function _groupByType/, 'has a group-by-type helper');
   assert.match(relSrc, /_groupByType\(outrosItems\)/, 'aula composer groups the pool by type');
@@ -71,7 +71,7 @@ test('#23: an item can be bound to SEVERAL aulas (additive, not move)', async ()
   r = mod.diffAulaMultiSelection({ released: [], aulaNumbersOf: () => [], aulaNum: 2, poolIds: [9], selectedIds: [9] });
   assert.deepEqual(r.toRelease, [9], 'unreleased item gets a first ct_release');
   assert.deepEqual(r.updates[0], { id: 9, aulaNumbers: [2] });
-  // Opção B: unchecking the LAST aula (nothing else holds it) unreleases from the turma,
+  // Option B: unchecking the LAST aula (nothing else holds it) unreleases from the turma,
   // it must NOT silently fall into Outros.
   r = mod.diffAulaMultiSelection({ released: [7], aulaNumbersOf: (id) => (id === 7 ? [1] : []), aulaNum: 1, poolIds: [7], selectedIds: [] });
   assert.deepEqual(r.toUnrelease, [7], 'last aula unchecked -> unrelease');
@@ -162,8 +162,8 @@ test('labs3: every composer row has an eye preview that reuses the shared render
   assert.match(pv, /item\.type === 'lab'/, 'labs open the lab viewer');
   assert.match(pv, /item\.type === 'drive_file'/, 'Drive files open the Drive viewer');
   assert.match(pv, /contentApi\.getItem/, 'fetches the full item (body_md) for the body types');
-  // `childrenList: true` junto: a previa de uma PASTA tem que listar o que ela carrega, senao
-  // o professor abre o olho e ve so o texto de apresentacao (Elder 2026-08-05).
+  // `childrenList: true` alongside: the preview of a FOLDER has to list what it carries,
+  // otherwise the teacher opens the eye and sees only the intro text (Elder 2026-08-05).
   assert.match(pv, /renderItem\(full, host, \{ preview: true, childrenList: true \}\)/, 'renders the body read-only, with what the folder carries');
   // The click handler dismisses on any click ("clicar em qualquer lugar fecha").
   assert.match(relSrc, /bd\.addEventListener\('click', \(\) => closeModal\(bd\)\)/, 'any click closes the preview');

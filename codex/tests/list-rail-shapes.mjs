@@ -78,7 +78,7 @@ export const SHAPES = [
     },
   },
   {
-    // Gained a real `search` in track-56 fase 4: Clientes had lost its box in the migration to
+    // Gained a real `search` in track-56 phase 4: Clientes had lost its box in the migration to
     // this rail and nobody noticed, because the filter code and the CSS stayed behind.
     name: 'cohorts CLIENTES: search + sections + bands + exclusive + renderHead + emptyText',
     cfg: {

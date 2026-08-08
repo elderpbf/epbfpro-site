@@ -97,12 +97,12 @@ function messageFor(code) {
     case 'invalid_code':   return 'Código inválido.';
     case 'code_used':      return 'Este código já foi usado. Peça um novo.';
     case 'code_expired':   return 'O código expirou. Peça um novo.';
-    // Os três que faltavam. `too_many_attempts` já podia chegar aqui e caía no texto genérico, que
-    // manda a pessoa "tentar de novo" justamente quando tentar de novo não adianta mais.
+    // The three that were missing. `too_many_attempts` could already reach here and fell into the
+    // generic text, which tells the person to "try again" right when trying again no longer helps.
     case 'too_many_attempts': return 'Muitas tentativas neste código. Clique em reenviar para receber um novo.';
     case 'resend_too_soon':   return 'Aguarde um instante antes de pedir outro código.';
-    // E este é o que separa erro NOSSO de erro de quem digitou: transporte fora do ar não pode
-    // aparecer como "código inválido", que acusa o usuário de um erro que é da casa.
+    // And this is the one that separates OUR error from the typist's error: transport being down
+    // can't show up as "invalid code", which accuses the user of a mistake that's actually ours.
     case 'otp_unavailable':   return 'O serviço de código está indisponível. Tente de novo em instantes.';
     default:               return 'Não foi possível entrar. Tente novamente.';
   }
@@ -119,8 +119,8 @@ export function mountLogin() {
   const codeStep = $('cdx-login-code-step');
   const emailEl = $('cdx-login-email');
   const codeEl = $('cdx-login-code');
-  // Um só campo de código no site inteiro (js/code-input.js): maiúsculo no VALOR (não só no
-  // que se vê), tamanho certo e centralizado. Antes disto o comportamento estava no HTML.
+  // A single code field for the whole site (js/code-input.js): uppercase in the VALUE (not just
+  // what's shown), correct size and centered. Before this the behavior lived in the HTML.
   if (window.CodeInput) window.CodeInput.attach(codeEl, { length: 4 });
   const errEl = $('cdx-login-error');
   const emailBtn = $('cdx-login-email-btn');
@@ -131,10 +131,10 @@ export function mountLogin() {
   const noteEl = $('cdx-login-note');
   let currentEmail = '';
 
-  // A ESPERA ENTRE REENVIOS, VISÍVEL. São 60s do lado do servidor (o módulo `otp` da plataforma
-  // recusa antes disso), e enquanto ela era invisível o botão "Reenviar código" respondia com um
-  // erro seco a um clique que parecia legítimo. Contagem regressiva no próprio rótulo: a pessoa vê
-  // quando pode pedir de novo em vez de descobrir tentando.
+  // THE WAIT BETWEEN RESENDS, VISIBLE. It's 60s on the server side (the platform's `otp` module
+  // refuses before that), and while it was invisible the "Reenviar código" button answered with
+  // a flat error to a click that looked legitimate. Countdown right in the label: the person
+  // sees when they can ask again instead of finding out by trying.
   const ESPERA_REENVIO_SEG = 60;
   const ROTULO_REENVIO = (resendBtn && resendBtn.textContent) || 'Reenviar código';
   let faltam = 0;
@@ -145,8 +145,9 @@ export function mountLogin() {
     resendBtn.disabled = faltam > 0;
     resendBtn.textContent = faltam > 0 ? (ROTULO_REENVIO + ' em ' + faltam + 's') : ROTULO_REENVIO;
   }
-  // Começa (ou RECOMEÇA) a espera. Recomeçar é o ponto: depois de um reenvio bem-sucedido a conta
-  // volta do zero, senão o segundo clique cai no mesmo erro invisível que este código veio matar.
+  // Starts (or RESTARTS) the wait. Restarting is the whole point: after a successful resend the
+  // count goes back to zero, otherwise the second click falls into the same invisible error
+  // this code was written to kill.
   function esperar(segundos) {
     faltam = Math.max(0, Math.round(segundos || 0));
     if (relogio) clearInterval(relogio);
@@ -170,10 +171,11 @@ export function mountLogin() {
     if (which === 'code' && codeEl) { codeEl.value = ''; codeEl.focus(); }
   }
 
-  // `reenvio` escolhe a ação, e as duas existem de propósito: pedir e reenviar deixaram de ser a
-  // mesma coisa quando o login passou a falar com o módulo `otp` da plataforma. Pedir com código
-  // vivo NÃO manda outro e-mail (senão a pessoa fica com dois na caixa e digita o errado); só o
-  // reenvio explícito emite. Chamar `otpRequest` no "não recebi" responderia ok e não mandaria nada.
+  // `reenvio` picks the action, and both exist on purpose: requesting and resending stopped being
+  // the same thing once login started talking to the platform's `otp` module. Requesting with a
+  // still-live code does NOT send another e-mail (otherwise the person ends up with two in the
+  // inbox and types the wrong one); only the explicit resend sends one. Calling `otpRequest` on
+  // "não recebi" would answer ok and send nothing.
   async function requestCode(email, reenvio) {
     setErr('');
     setNote('');
@@ -185,9 +187,9 @@ export function mountLogin() {
       currentEmail = email;
       if (emailEcho) emailEcho.textContent = email;
       if (reenvio) {
-        // NO REENVIO NÃO SE TROCA DE PASSO: a pessoa já está na tela do código. `showStep` limparia
-        // o campo e a confirmação, e o clique voltaria a não ter resposta visível nenhuma, que é
-        // exatamente o defeito. Aqui ela VÊ que outro código saiu.
+        // ON RESEND THE STEP DOESN'T CHANGE: the person is already on the code screen. `showStep`
+        // would clear the field and the confirmation, and the click would go back to having no
+        // visible response at all, exactly the bug. Here she SEES that another code went out.
         setNote('Enviamos um novo código para ' + email + '. O anterior deixou de valer.');
       } else {
         showStep('code');
@@ -197,14 +199,14 @@ export function mountLogin() {
       const code = (e && e.data && e.data.error) || '';
       logErr('admin_otp_request failed: ' + (code || (e && e.message) || 'unknown'));
       setErr(messageFor(code));
-      // O servidor sabe quanto falta; obedecer ao número dele em vez de recomeçar 60 do nosso lado
-      // evita o relógio da tela e o do servidor divergirem depois de um recarregamento de página.
+      // The server knows how much time is left; obeying its number instead of restarting our own
+      // 60 avoids the screen's clock and the server's diverging after a page reload.
       const faltamNoServidor = e && e.data && e.data.retry_after;
       if (code === 'resend_too_soon' && faltamNoServidor) esperar(faltamNoServidor);
     } finally {
       if (emailBtn) emailBtn.disabled = false;
-      // NÃO reabilita o reenvio à força: quem manda no estado dele é a contagem regressiva, e um
-      // `disabled = false` aqui a atropelaria justo no clique que a acabou de iniciar.
+      // Does NOT force re-enable the resend: the countdown is what controls its state, and a
+      // `disabled = false` here would run right over the click that just started it.
       pintarReenvio();
     }
   }
@@ -227,7 +229,7 @@ export function mountLogin() {
       const code = (e && e.data && e.data.error) || '';
       logErr('admin_otp_verify failed: ' + (code || (e && e.message) || 'unknown'));
       setErr(messageFor(code));
-      // Código errado sai do campo, com o foco de volta (Élder 2026-07-31).
+      // A wrong code clears the field, with focus back on it (Élder 2026-07-31).
       if (window.CodeInput) window.CodeInput.clear(codeEl);
     } finally {
       if (codeBtn) codeBtn.disabled = false;

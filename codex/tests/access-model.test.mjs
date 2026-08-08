@@ -1,5 +1,5 @@
 // The gate's vocabulary (js/access-model.js). The doctrine under test is NOT invented here — it is
-// manifest/architecture/access.md §"Os 3 conceitos". These tests exist because the SAME DB column
+// manifest/architecture/access.md §"Os 3 conceitos" (the 3 concepts). These tests exist because the SAME DB column
 // rendered two different ways in two lists and both were wrong: the participants panel bucketed
 // `enrollment` + `simple` into an else-branch and called them "Lista", while the Alunos roster
 // printed the raw English column. Every live approved_via value is pinned here.
@@ -51,7 +51,7 @@ test('every origin has an i18n key (no word can render as a raw slug)', () => {
   }
 });
 
-// ── aprovação: state while pending/denied, origin once approved ──────────────────
+// ── approval: state while pending/denied, origin once approved ───────────────────
 test('approvalOf: not-yet-approved shows the STATE (the actionable fact)', () => {
   assert.deepEqual(
     (({ kind, value }) => ({ kind, value }))(approvalOf({ access_status: 'pending' })),
@@ -97,7 +97,7 @@ test('APPROVAL_STATES is the closed set', () => {
   assert.deepEqual(APPROVAL_STATES, ['pending', 'approved', 'denied']);
 });
 
-// ── validação: proves the inbox exists. Nothing else. ────────────────────────────
+// ── validation: proves the inbox exists. Nothing else. ────────────────────────────
 test('validationOf: the flag, and only the flag', () => {
   assert.equal(validationOf({ email_verified: 1 }).validated, true);
   assert.equal(validationOf({ email_verified: 0 }).validated, false);
@@ -106,11 +106,11 @@ test('validationOf: the flag, and only the flag', () => {
   assert.equal(validationOf({ access_status: 'approved' }).validated, false);
 });
 
-// ── acesso: the live session. Has a deadline and EXPIRES. ────────────────────────
+// ── access: the live session. Has a deadline and EXPIRES. ─────────────────────────
 const NOW = 1_700_000_000;
 
 test('accessOf: no approval means there is no session to speak of', () => {
-  // Not "expired" — empty. access.md: sem aprovação → sem acesso.
+  // Not "expired" — empty. access.md: no approval → no access.
   assert.equal(accessOf({ access_status: 'pending', session_expires_at: NOW + 999 }, NOW).state, 'none');
   assert.equal(accessOf({ access_status: 'denied' }, NOW).state, 'none');
 });
@@ -122,7 +122,7 @@ test('accessOf: approved but never entered vs lapsed vs live', () => {
 });
 
 test('accessOf: validation decides the DURATION, so it decides the label', () => {
-  // access.md §Constantes: validado -> 15 dias durável; não validado -> 12h provisório.
+  // access.md §Constants: validated -> 15 days durable; not validated -> 12h provisional.
   const live = (v) => accessOf({ access_status: 'approved', email_verified: v, session_expires_at: NOW + 3600 }, NOW);
   assert.equal(live(1).provisional, false);
   assert.equal(live(1).i18n, 'access.left');

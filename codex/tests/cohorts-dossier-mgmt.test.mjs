@@ -99,13 +99,13 @@ test('releases supports a turma-bound (picker-less) mount', () => {
   assert.match(releasesJs, /_loadReleases\(ctx\.clientSlug, ctx\.turmaSlug\)/, 'loads the bound turma directly');
 });
 
-// Tarefas é turma-bound SEMPRE (track-41, 2026-07-16), então não há mais "picker-less mount"
-// como um DOS DOIS modos: o outro modo não existia. O `else` do picker montava o
-// turmaPicker em `_q('cdx-tar-picker')`, e esse id nunca era emitido por shell nenhum
-// (`_renderShell` só emitia o pane t1b) — ou seja, montava sobre `null`. Inalcançável na
-// prática: content.js monta `{bankOnly:true}` e cohorts.js sempre passa clientSlug+turmaSlug
-// +aulaNumber. Removido junto com o resto do standalone. `releases.js` (acima) segue com os
-// DOIS modos de verdade, e é por isso que o teste dele continua cobrando o condicional.
+// Tarefas is ALWAYS turma-bound (track-41, 2026-07-16), so there is no more "picker-less mount"
+// as one of TWO modes: the other mode never existed. The picker's `else` branch mounted the
+// turmaPicker into `_q('cdx-tar-picker')`, and that id was never emitted by any shell
+// (`_renderShell` only emitted the t1b pane), meaning it mounted onto `null`. Unreachable in
+// practice: content.js mounts `{bankOnly:true}` and cohorts.js always passes clientSlug+turmaSlug
+// +aulaNumber. Removed along with the rest of the standalone. `releases.js` (above) still has the
+// TWO real modes, which is why its test still exercises the conditional.
 test('tarefas mounts turma-bound, always (no picker branch)', () => {
   assert.match(tarefasJs, /export function mount\(viewEl, ctx = \{\}\)/, 'mount accepts a ctx');
   assert.match(tarefasJs, /_loadTarefas\(ctx\.clientSlug, ctx\.turmaSlug\)/, 'loads the bound turma directly');
@@ -149,7 +149,7 @@ test('labs3: the dossier shows the 4-digit access code (click-to-copy) and the t
   }
 });
 
-test('labs3 rodada 3: the roster connection mark is ✓ acessou / ✕ não acessou with recency, not the ambiguous ● / ⚠', () => {
+test('labs3 round 3: the roster connection mark is ✓ accessed / ✕ not accessed with recency, not the ambiguous ● / ⚠', () => {
   // Élder 2026-07-09: the old ● read like the legend's • "não logou"; the ⚠ (e-mail não
   // confirmado) was a different axis that misfired as an alarm. Now one axis, two explicit
   // marks, plus how long ago the last access was.

@@ -147,7 +147,7 @@ export function mountOtpCard(cardEl) {
       '<button type="button" class="tr-btn tr-btn-primary cdx-btn cdx-en-cta cdx-en-verify">' + esc(t('login.enroll_cta')) + '</button>' +
       '<button type="button" class="cdx-en-resend">' + esc(t('login.resend')) + '</button>';
     const codeEl = cardEl.querySelector('#cdx-en-code');
-    // Um só campo de código no site inteiro (js/code-input.js).
+    // Only one code field across the whole site (js/code-input.js).
     if (window.CodeInput) window.CodeInput.attach(codeEl, { length: 4 });
     const verify = cardEl.querySelector('.cdx-en-verify');
     const resend = cardEl.querySelector('.cdx-en-resend');
