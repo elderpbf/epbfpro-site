@@ -399,7 +399,7 @@ function _renderSidebar() {
 //      afterwards. Miss it once and the sidebar quietly shows rows the search excluded.
 //   3. the section counts kept badging the unfiltered totals, over a list that was filtered.
 // The box itself does NOT move into the rail: this sidebar's look is the product and is frozen
-// (architecture/list-rail.md §1), so Lessons keeps its own input in the head next to Aa and owns
+// (recipe `side-panel` §2), so Lessons keeps its own input in the head next to Aa and owns
 // the query. That is why the levels below take `exclusive` as a PREDICATE.
 function _applySearch() {
   const input = _q('.cdx-lessons-search');

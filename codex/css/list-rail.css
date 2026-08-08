@@ -1,5 +1,6 @@
 /* css/list-rail.css — the standard left-panel rail (js/list-rail.js).
-   Contract: manifest/architecture/list-rail.md. Namespace cdx-rail-*, tokens only
+   Contract: manifest/architecture/list-rail.md §1 (the CSS stayed Codex's; the general
+   contract is the platform's `side-panel` recipe). Namespace cdx-rail-*, tokens only
    (surface/background/border/text/primary/tint already carry dark values, so no
    per-variable dark override is needed here). */
 

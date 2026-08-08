@@ -1,6 +1,7 @@
 // js/list-rail.js
-// The ONE standard left-panel rail for Codex. Full contract: manifest/architecture/
-// list-rail.md. Renders any left list with a FIXED layout; each consumer enables only the
+// The ONE standard left-panel rail for Codex. Full contract: the platform's `side-panel`
+// recipe (POST /recipes/get { "name": "side-panel" }); manifest/architecture/list-rail.md
+// keeps only what is ours, the CSS and the js/reorder.js coexistence. Renders any left list with a FIXED layout; each consumer enables only the
 // capabilities it needs via config (select/add/reorder/sections/filter/width). The module
 // NEVER talks to the Worker — it calls back into the consumer (backend seam stays in
 // codex-api.js, ARCHITECTURE §3).
@@ -8,7 +9,7 @@
 // Reorder uses POINTER EVENTS (pointerdown/move/up) with the grip as the drag handle, so it
 // works on touch AND mouse — the grip is a real handle on mobile too (unlike the HTML5-DnD
 // js/reorder.js, which is desktop-only and still serves the not-yet-migrated rails; see
-// architecture/list-rail.md §8).
+// architecture/list-rail.md §2).
 //
 //   const rail = mountRail(containerEl, {
 //     title, items:()=>[...], getId:(it)=>it.id, renderRow:(it)=>({main, act}),
@@ -348,7 +349,7 @@ export function mountRail(container, cfg) {
     // that opens a modal would add a click and a surface to a flow he runs live at the start of
     // every class. Expanding in place keeps type-and-submit and still frees the top.
     const panel = cfg.headPanel ? (cfg.headPanel() || '') : '';
-    // Anatomy (architecture/list-rail.md §3, Élder 2026-08-02): the search box is its OWN row
+    // Anatomy (recipe `side-panel` §4, Élder 2026-08-02): the search box is its OWN row
     // between the title and the chips. Both narrow the same list, so they sit together, and
     // search comes first because it is the more frequent gesture. Crammed into the title row it
     // would fight the title + add button, which on Clientes is already tight on a phone.

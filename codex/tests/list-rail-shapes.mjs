@@ -167,7 +167,7 @@ export const SHAPES = [
   {
     // content/labs.js — the first consumer of BOTH search and the (long-declared, never used)
     // filter chips. Freezing it pins the anatomy Élder chose: the search row sits between the
-    // title and the chips (architecture/list-rail.md §3).
+    // title and the chips (recipe `side-panel` §4).
     name: 'labs: search + filter chips (chips as a function of the query)',
     cfg: {
       items: () => [{ key: 'k5', title: 'Tokens' }, { key: 'k22', title: 'Próximo Token' }],
