@@ -17,6 +17,9 @@ Parts of this codebase still carry Portuguese comments from before this rule. Th
 debt, not a precedent: a file you touch gets its comments translated as you go, and no new
 Portuguese comment gets written.
 
+**Finding a breach is a mandate, not a report.** Fix it on the spot, whatever else you were doing,
+then say you found it and fixed it. Never ask permission to enforce this.
+
 ## A repeated surface is ONE module parameterized by scope, never two mountings
 
 When the same surface (the person table, the editor, an action modal) appears on two screens, it is

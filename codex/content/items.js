@@ -11,11 +11,10 @@
 // js/type-filter.js), imported below.
 // Type icons now come from the Codex glyph library (js/glyphs.js), not BSTypeIcon.
 // The item editor and content-first creator are now Codex-native modules
-// (item-form.js / item-creator.js), no longer the legacy window globals.
+// (item-form.js), no longer the legacy window globals.
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
-import * as itemCreator from './item-creator.js';
 import { renderItem } from '../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { makeMatcher } from '../js/text-search.js';
@@ -182,9 +181,6 @@ function _renderShell() {
           '<button class="cdx-btn" id="cdx-btn-manage-tags">' + t('content.manage_tags') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-manage-types">' + t('content.manage_types') + '</button>' +
           '<button class="cdx-btn" id="cdx-btn-select">' + t('content.select') + '</button>' +
-          // TEMPORARIO: as 4 candidatas da tela unica, para o Élder comparar ao vivo. Sai junto
-          // com content/item-form-proto.js quando uma delas graduar.
-          '<button class="cdx-btn" id="cdx-btn-proto">Protótipos</button>' +
         '</div>' +
       '</div>' +
       '<div class="cdx-bulk-bar" id="cdx-items-bulk" style="display:none">' +
@@ -220,7 +216,6 @@ function _renderShell() {
   _q('cdx-btn-manage-tags').addEventListener('click', _openTagManager);
   _q('cdx-btn-manage-types').addEventListener('click', _openTypeManager);
   _q('cdx-btn-select').addEventListener('click', _toggleSelectMode);
-  _q('cdx-btn-proto').addEventListener('click', _openProto);
   _q('cdx-btn-bulk-delete').addEventListener('click', _bulkDelete);
   _q('cdx-btn-bulk-cancel').addEventListener('click', _exitSelectMode);
   const searchEl = _q('cdx-items-search');
@@ -571,45 +566,11 @@ function _openItem(id) {
   }).catch((e) => notice.internal(_err(e)));
 }
 
-// TEMPORARIO: as 4 candidatas da tela unica, clicaveis lado a lado. Élder 2026-08-06: "valeria
-// ver ao vivo ao invés de estar tentando ver aqui em texto, que é bem limitado". Import
-// DINAMICO de proposito: o protótipo não pesa no carregamento normal, e apagar o módulo mais
-// este bloco tira ele inteiro da tela.
-let _protoCtx = null;
-function _openProto() {
-  // Enter nao submete: no protótipo o primeiro botao primario e uma ABA de candidata, e teclar
-  // Enter num campo trocaria de tela em vez de salvar nada.
-  const bd = openModal('<div class="cdx-modal-body cdx-modal-wide"></div>', { disableEnterSubmit: true });
-  import('./item-form-proto.js').then((proto) => {
-    if (_protoCtx) _protoCtx.destroy();
-    _protoCtx = proto.mount(bd.querySelector('.cdx-modal-body'), {
-      types: _types, tags: _tags,
-      onClose: () => { if (_protoCtx) { _protoCtx.destroy(); _protoCtx = null; } closeModal(bd); },
-    });
-  }).catch((err) => { closeModal(bd); notice.internal(_err(err)); });
-}
-
-// New item: content-first creator (step 1) → full editor (step 2).
+// New item: ONE screen. The content-first step used to be a separate modal you crossed into the
+// editor from, and editing skipped it entirely; both are the same screen now, with the AI box at
+// the top of it (Elder 2026-08-06: "this all has to become one screen").
 function _newItem() {
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
-    types: _types.filter((ty) => NON_CREATABLE_TYPES.indexOf(ty.slug) < 0),
-    tags: _tags,
-    titleLabel: t('content.new_item_step1'),
-    closeLabel: t('content.close'),
-    onClose: () => closeModal(bd),
-    onCancel: () => closeModal(bd),
-    onManual: (out) => { closeModal(bd); _openItemEditorFull(null, { body_md: out.body_md }, null); },
-    onFile: (out) => { closeModal(bd); _openItemEditorFull(null, { type: 'arquivo' }, null, out.file); },
-    onAIComplete: async (result) => {
-      closeModal(bd);
-      const tagIds = await _tagsByLabels(result.tagLabels || []);
-      const prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
-      // result.file is set when a picked file is used "for download": open the arquivo item
-      // with the AI-filled fields AND the file already attached (pending upload on save).
-      _openItemEditorFull(null, prefill, result.aiContext, result.file || null);
-    },
-  });
+  _openItemEditorFull(null, null, null, null);
 }
 
 function _openItemEditorFull(item, prefill, aiContext, pendingFile) {

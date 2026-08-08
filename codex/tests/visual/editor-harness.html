@@ -1,0 +1,49 @@
+<!doctype html>
+<!-- Mounts the REAL item editor (content/item-form.js) against fake types/tags, with no admin
+     session and no Worker. It exists because the editor's shape (one screen, the AI box on top,
+     the type block below, the member list for a bundle) can only be checked in a browser, and
+     node:test has no eye. Driven by tests/visual/editor-check.mjs. -->
+<html lang="pt-BR" data-theme="light"><head><meta charset="utf-8">
+<link rel="stylesheet" href="/codex/css/theme.css">
+<link rel="stylesheet" href="/codex/css/backstage.css">
+<link rel="stylesheet" href="/codex/css/item-render.css">
+<link rel="stylesheet" href="/codex/css/tokens.css">
+<link rel="stylesheet" href="/codex/css/components.css">
+<link rel="stylesheet" href="/codex/css/codex.css">
+<link rel="stylesheet" href="/codex/cohorts/cohorts.css">
+<link rel="stylesheet" href="/codex/content/content.css">
+</head><body>
+<div class="cdx-modal-backdrop"><div class="cdx-modal-body" id="host"></div></div>
+<script>
+// The transport seam. codex-api.js calls a `callWorker` GLOBAL that a Backstage script sets
+// before the module boot on the real page; without it every facade call is a ReferenceError
+// that aborts whatever was mid-mount. Stubbed here so this harness exercises the SCREEN and
+// never the network: any call resolves empty.
+window.callWorker = () => Promise.resolve({});
+</script>
+<script type="module">
+import * as itemForm from '/codex/content/item-form.js';
+
+const types = [
+  { slug: 'prompt', label: 'Prompt', icon: 'glyph:file' },
+  { slug: 'guide', label: 'Guia', icon: 'glyph:file' },
+  { slug: 'arquivo', label: 'Arquivo', icon: 'glyph:file' },
+  { slug: 'pasta', label: 'Pasta', icon: 'glyph:folder', family: 'bundle' },
+];
+const tags = [{ id: 1, label: 'audiência' }, { id: 2, label: 'magistrados' }];
+
+const params = new URLSearchParams(location.search);
+const mode = params.get('mode') || 'new';
+const item = mode === 'edit'
+  ? { id: 1, type: 'prompt', title: 'Prompt: Resumo Preparatório', summary: 'x', body_md: 'corpo', meta_json: null, tags: [{ id: 1 }] }
+  : (mode === 'bundle'
+      ? { id: 2, type: 'pasta', title: 'Pacote: Preparação', summary: '', body_md: 'intro', meta_json: null, tags: [], children: [] }
+      : null);
+
+window.__h = itemForm.mount(document.getElementById('host'), {
+  item, types, tags,
+  onSave: () => { window.__saved = true; },
+  onCancel: () => { window.__cancelled = true; },
+});
+</script>
+</body></html>

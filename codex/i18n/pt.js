@@ -837,7 +837,6 @@ export default {
   'content.confirm_delete_btn':  'Excluir',
 
   // Content → Items — editor labels (passed to the shared item form)
-  'content.new_item_step1':   'Novo item · 1 de 2',
   'content.new_item_step2':   'Novo item · 2 de 2',
   'content.edit_item':        'Editar item',
   'content.save':             'Salvar',
@@ -940,6 +939,8 @@ export default {
   'editor.mi_doc_url_label':      'URL da documentação',
   'editor.mi_doc_url_placeholder': 'https://...',
   'editor.refazer':               'Refazer com IA',
+  'editor.keep_raw':              'Manter o texto exatamente como está (a IA não reescreve)',
+  'editor.ai_which':              'Escolher a IA',
   'editor.refazer_loading':       'Refazendo...',
   'editor.item_redone':           'Item refeito.',
   'editor.select_type':           'Selecione um tipo.',
@@ -951,7 +952,6 @@ export default {
   // Content → Items — content-first creator (item-creator.js)
   'creator.raw_label':            'Cole ou escreva seu conteúdo',
   'creator.raw_placeholder':      'Cole aqui o texto do prompt, exemplo, exercício, dica...',
-  'creator.import_prompt':        'ou importe um documento:',
   'creator.file_extract':         'Extrair o texto como conteúdo',
   'creator.file_download':        'Usar como arquivo para download',
   'creator.file_extracting':      'Extraindo o texto…',
@@ -962,8 +962,6 @@ export default {
   'creator.loading':              'Carregando...',
   'creator.gdoc_hint':            'O documento deve estar compartilhado como "Qualquer pessoa com o link pode visualizar".',
   'creator.emoji_toggle':         'Adicionar emojis quando ajudar',
-  'creator.emoji_helper':         '* Se o conteúdo for um prompt para IA, ele será mantido exatamente como está, sem alterações.',
-  'creator.manual':               'Continuar manualmente',
   'creator.ai_format':            'Formatar com IA',
   'creator.ai_generating':        'Gerando...',
   'creator.gdoc_url_required':    'Informe a URL do Google Docs.',

@@ -26,6 +26,7 @@ import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import {
   buildTypeBlock, wireTypeBlock, collectTypeData, setBundleSlugs, isBundleSlug, renderMarkdown,
 } from './editor/type-block.js';
+import { mount as mountAiBox } from './editor/ai-box.js';
 import * as aiSpec from '../js/ai-spec.js';
 import { getChoice, paramsFor } from '../js/ai-models.js';
 import * as notice from '../js/notice.js';
@@ -35,6 +36,7 @@ import * as toast from '../js/toast.js';
 const AI_GLYPH = glyphSvg('sparkle', { cls: 'cdx-btn-glyph', size: 15 });
 
 import { esc as _esc } from '../js/dom.js';
+import { isVerbatim } from '../js/item-download.js';
 
 import { errMsg as _err } from '../js/content-err.js';
 
@@ -206,6 +208,9 @@ export function mount(container, opts) {
       closeBtn +
     '</div>' +
     '<div class="cdx-editor-body">' +
+      // The AI box is the FIRST thing, in create and in edit alike. It was a separate screen
+      // ("step 1 of 2") and edit never saw it, which is the break Elder called terrible.
+      '<div id="ie-aibox"></div>' +
       '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
         '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
       '</div>' +
@@ -277,6 +282,40 @@ export function mount(container, opts) {
   }
 
   renderTypeBlock(initialType);
+
+  // ── the AI box, mounted where the separate creator screen used to be ───────
+  // It fills the fields; it does not own them. Every field it writes stays editable by hand,
+  // which is the whole reason the two screens could merge without losing anything.
+  const _aiBox = mountAiBox(root.querySelector('#ie-aibox'), {
+    types,
+    tags,
+    compact: !!opts.compact,
+    initialVerbatim: isEdit ? isVerbatim(item) : (prefill ? !!prefill.verbatim : null),
+    onDirty: markDirty,
+    onResult: (parsed, ctx) => {
+      root.querySelector('#ie-title').value = parsed.title || '';
+      root.querySelector('#ie-summary').value = parsed.summary || '';
+      if (parsed.type) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
+      const bodyEl = root.querySelector('#ie-body');
+      if (bodyEl) bodyEl.value = parsed.body_md || '';
+      const pre = root.querySelector('#ie-preview');
+      if (pre && pre.style.display !== 'none') renderMarkdown(parsed.body_md || '', pre);
+      // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
+      // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
+      if (ctx && ctx.file) {
+        _pendingAssetFile = ctx.file;
+        _pendingAssetField = 'attachment_url';
+        const nm = root.querySelector('#ie-doc-filename');
+        if (nm) nm.textContent = t('editor.file_selected') + ' ' + ctx.file.name;
+      }
+      _tagsByLabels(tags, parsed.tag_labels || []).then((ids) => {
+        selectedTagIds.clear();
+        ids.forEach((id) => selectedTagIds.add(id));
+        _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
+      });
+      markDirty();
+    },
+  });
 
   // A file picked at the creator step (arquivo import) arrives as opts.pendingFile: seed the
   // same pending-upload path the type editor uses, and show the chosen name. The type is
@@ -392,10 +431,16 @@ export function mount(container, opts) {
     const title = root.querySelector('#ie-title').value.trim();
     const summary = root.querySelector('#ie-summary').value.trim();
     const typeData = collectTypeData(root, type);
+    // The raw flag rides in meta_json, and it is written only once the user has actually chosen.
+    // Writing `false` by default would silently un-raw every existing prompt on its next save,
+    // because absence is exactly what means "follow the type" (see isVerbatim).
+    const chosen = _aiBox.verbatim();
+    let meta = typeData.meta_json;
+    if (typeof chosen === 'boolean') meta = Object.assign({}, meta || {}, { verbatim: chosen });
     return {
       type, title, summary,
       body_md: typeData.body_md,
-      meta_json: typeData.meta_json,
+      meta_json: meta,
       tag_ids: Array.from(selectedTagIds)
     };
   }
@@ -475,6 +520,6 @@ export function mount(container, opts) {
   return {
     isDirty: () => isDirty,
     getState,
-    destroy: () => { container.innerHTML = ''; }
+    destroy: () => { _aiBox.destroy(); container.innerHTML = ''; }
   };
 }

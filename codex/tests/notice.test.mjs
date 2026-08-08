@@ -46,7 +46,7 @@ test('items.js routes internal errors to the pill and type_in_use to a warn noti
 });
 
 test('GDoc fetch failure surfaces an actionable notice in both dictionaries', () => {
-  const creator = read('../content/item-creator.js');
+  const creator = read('../content/editor/ai-box.js');
   assert.match(creator, /notice\.warn\(t\('creator\.gdoc_not_shared'\)\)/, 'GDoc failure -> actionable warn');
   const pt = read('../i18n/pt.js');
   const en = read('../i18n/en.js');

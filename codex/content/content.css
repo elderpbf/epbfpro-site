@@ -1274,119 +1274,19 @@
 .cdx-mem-details { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
 .cdx-mem-details > summary { cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); }
 
-/* ── PROTOTIPO da tela unica (content/item-form-proto.js) ────────────────────
-   TEMPORARIO: sai inteiro quando uma das candidatas graduar. Existe porque o Elder pediu para
-   comparar as quatro AO VIVO e dentro do Codex ("nao numa pagina separada, porque ai nao
-   precisaria portar codigo depois"), entao reusa cdx-editor / cdx-field / cdx-mem-* de verdade
-   e so o que e novo mora aqui.
-
-   ESCALA DE FONTE, o primeiro defeito que ele apontou ("inconsistencia gigantesca do tamanho
-   das fontes"). Ele esta descrevendo o app, nao so o prototipo: content.css tem 0.7, 0.72,
-   0.78, 0.8, 0.82, 0.85, 0.88, 0.9 e 0.92rem convivendo. Aqui sao QUATRO degraus e nada mais.
-   Declarados em .cdx-proto de proposito, NUNCA em :root: um arquivo descartavel nao pode
-   reestilizar o admin inteiro pelas costas. Se a candidata graduar, a escala sobe junto. */
-.cdx-proto {
-  --p-xs: 0.72rem;   /* meta: tipo do item, contadores, rotulos de secao */
-  --p-sm: 0.8rem;    /* secundario: notas, ajuda, migalha */
-  --p-md: 0.875rem;  /* corpo: campos, linhas da lista, botoes */
-  --p-lg: 1rem;      /* titulo da tela */
-  font-size: var(--p-md);
+/* The AI box that opens the editor (content/editor/ai-box.js). It used to be a whole separate
+   screen; as a block it needs its own spacing, and the AI button rides on its label so the
+   action and its model choice sit together. */
+.cdx-aib > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.cdx-aib-actions { display: inline-flex; gap: 0; }
+.cdx-aib-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-aib-sources input { flex: 1 1 160px; min-width: 120px; }
+.cdx-aib-picked { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
+.cdx-aib-flags { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
+/* `.cdx-field label` (cohorts.css) is a DESCENDANT selector, so it uppercases every nested
+   label, including the ones sitting beside a checkbox. Undo it here rather than app-wide:
+   changing that selector touches every admin screen and is not this change's call to make. */
+.cdx-aib .cdx-radio-label {
+  text-transform: none; letter-spacing: 0; font-weight: 400; margin-bottom: 0;
+  display: inline-flex; color: var(--text-primary); font-size: 0.85rem;
 }
-.cdx-proto .cdx-editor-title { font-size: var(--p-lg); }
-.cdx-proto input, .cdx-proto textarea, .cdx-proto .cdx-btn,
-.cdx-proto .cdx-type-opt, .cdx-proto .cdx-tag-chip, .cdx-proto .cdx-tag-add-chip { font-size: var(--p-md); }
-.cdx-proto .cdx-field > label { font-size: var(--p-xs); letter-spacing: 0.03em; }
-.cdx-proto .cdx-radio-label {
-  font-size: var(--p-sm); text-transform: none; letter-spacing: 0; font-weight: 400;
-  display: inline-flex; margin-bottom: 0; color: var(--text-primary);
-}
-/* Por que existe: `.cdx-field label` (cohorts.css:193) e DESCENDENTE, nao filho, entao ele
-   MAIUSCULIZA qualquer label aninhado -- inclusive um "extrair o texto" ao lado de um radio.
-   E o mesmo defeito que o Elder chamou de "inconsistencia gigantesca do tamanho das fontes",
-   acontecendo no app de verdade. Aqui esta desfeito no escopo do prototipo; consertar na raiz
-   (trocar para `>`) mexe em toda tela do admin e e decisao dele, nao efeito colateral disto. */
-.cdx-proto .cdx-proto-note + .cdx-field { margin-top: 0.85rem; }
-
-/* O modal LARGO, e quem rola e o CORPO. Elder: "voce poderia ter um modal mais largo e preferiu
-   um estreito, onde eu tenho que usar rolagem para ver os dados". So alargar nao resolvia: com
-   6 membros a pagina crescia e o rodape saia da tela. Entao cabecalho, migalha e rodape ficam
-   presos, e o miolo rola sozinho. */
-.cdx-modal-body.cdx-modal-wide { max-width: min(1240px, 96vw); }
-.cdx-proto { display: flex; flex-direction: column; max-height: 92vh; }
-.cdx-proto-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
-.cdx-proto .cdx-editor-header { flex: 0 0 auto; align-items: center; gap: 8px; }
-.cdx-proto-toggle { display: inline-flex; gap: 4px; margin-left: auto; }
-.cdx-proto-note { margin: 0.6rem 0 0; font-size: var(--p-sm); color: var(--text-secondary); line-height: 1.45; }
-.cdx-proto-banner {
-  margin-bottom: 0.75rem; padding: 0.5rem 0.7rem; border-radius: 8px; font-size: var(--p-sm);
-  background: var(--cdx-card-sel-bg, rgba(127,127,127,0.08)); border: 1px solid var(--border);
-}
-.cdx-proto-content > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.cdx-proto-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
-.cdx-proto-sources input { flex: 1 1 140px; min-width: 120px; }
-.cdx-proto-filemode { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; }
-.cdx-proto-filemode .cdx-radio-label { white-space: nowrap; }
-/* Tipo e etiquetas lado a lado: era uma linha inteira cada, e sozinhas empurravam a lista para
-   fora da tela. Com o modal largo elas cabem juntas. */
-.cdx-proto-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
-@media (max-width: 700px) { .cdx-proto-row2 { grid-template-columns: 1fr; } }
-
-/* A LISTA COMPACTA. Elder: "a lista de itens pode ser bem mais compacta e com a fonte menor,
-   para aparecerem melhor os 2 paineis". Densidade e o ponto: com 6 membros a lista tem que
-   caber junto com os campos, senao as duas colunas nao se comparam. */
-.cdx-proto-members { margin-top: 0.9rem; border-top: 1px solid var(--border); padding-top: 0.6rem; }
-.cdx-proto-members.is-flush { margin-top: 0; border-top: 0; padding-top: 0; }
-.cdx-proto-members-head {
-  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between;
-  font-size: var(--p-xs); letter-spacing: 0.04em; color: var(--text-secondary); margin-bottom: 0.35rem;
-}
-.cdx-proto-members-acts { display: inline-flex; gap: 4px; }
-/* A barra de acoes da lista: UMA linha selecionada e as acoes em cima, em vez de seis botoes
-   repetidos em cada linha. Numa coluna estreita os botoes por linha empurram o titulo para
-   fora, e seis linhas com seis botoes sao 36 botoes competindo com o conteudo. */
-.cdx-proto-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.4rem; }
-.cdx-proto-bar .cdx-btn[disabled] { opacity: 0.4; }
-.cdx-proto-tree .cdx-mem-row { cursor: pointer; }
-.cdx-proto-tree .cdx-mem-row.is-sel {
-  border-color: var(--primary); background: var(--cdx-card-sel-bg);
-}
-.cdx-proto-onlyhere { display: block; margin-top: 0.45rem; }
-.cdx-proto-tree .cdx-mem-row {
-  padding: 2px 4px; gap: 4px; font-size: var(--p-md); min-height: 0;
-}
-.cdx-proto-tree { overflow: hidden; }
-/* min-width:0 no titulo: sem isso o conteudo do flex tem largura minima automatica, as colunas
-   de guia somam por cima e a LINHA fica mais larga que a coluna, vazando pela direita. */
-.cdx-proto-tree .cdx-mem-row { max-width: 100%; box-sizing: border-box; }
-.cdx-proto-tree .cdx-mem-title {
-  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
-}
-.cdx-proto-tree .cdx-mem-type { font-size: var(--p-xs); }
-.cdx-proto-tree .cdx-btn { padding: 1px 5px; line-height: 1.3; }
-.cdx-proto-tree .cdx-mem-guide, .cdx-proto-tree .cdx-mem-elbow { width: 12px; }
-
-/* As duas colunas da C e da D, com o ARRASTADOR compartilhado (js/resizable.js, o mesmo de
-   Liberacoes e do dossie). A primeira coluna TEM que ser var(--cdx-rz-w, ...) e a grade tem que
-   ser position:relative, senao a alca (posicionada em left: var(--cdx-rz-w)) nao acompanha e o
-   arraste nao faz nada visivel.
-
-   O empilhamento e em 980px, e nao em 820, porque .cdx-rz-grip (cohorts.css) se esconde em 980:
-   entre os dois valores existiriam duas colunas SEM alca, que e a pior das combinacoes. */
-.cdx-proto-two {
-  position: relative; display: grid; grid-template-columns: var(--cdx-rz-w, 620px) 1fr;
-  gap: 0 1.25rem; align-items: start; min-height: 320px;
-}
-.cdx-proto-right { border-left: 1px solid var(--border); padding-left: 1.25rem; min-width: 0; }
-.cdx-proto-left { min-width: 0; }
-@media (max-width: 980px) {
-  .cdx-proto-two { grid-template-columns: 1fr; }
-  .cdx-proto-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
-}
-.cdx-proto-crumb {
-  flex: 0 0 auto; display: flex; align-items: center; gap: 8px; padding: 0.45rem 1rem;
-  border-top: 1px solid var(--border); font-size: var(--p-sm);
-}
-
-/* A seta de escolher a IA, colada no botao da IA. A escolha e sobre AQUELA acao, entao ela
-   nao vira preferencia solta num canto de tela (Elder 07/08). */
-.cdx-ai-pick { padding-left: 6px; padding-right: 6px; margin-left: -4px; }

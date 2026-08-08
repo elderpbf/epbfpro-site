@@ -11,7 +11,6 @@
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
-import * as itemCreator from './item-creator.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { renderItem } from '../js/item-render.js';
@@ -454,18 +453,10 @@ function _onPreviewClick(e) {
 // pick a file, organized by the AI) reused verbatim from the Items tab, then the editor
 // (step 2). Only on CREATE; editing a section opens the editor directly.
 function _addSection() {
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
-    types: _types,
-    tags: _tags,
-    titleLabel: t('apostila.new_section'),
-    closeLabel: t('content.close'),
-    onClose: () => closeModal(bd),
-    onCancel: () => closeModal(bd),
-    onManual: () => { closeModal(bd); _openNewSectionEditor(null, null); },
-    onFile: () => { closeModal(bd); _openNewSectionEditor(null, null); },
-    onAIComplete: (result) => { closeModal(bd); _openNewSectionEditor(result.prefill, result.aiContext); },
-  });
+  // One screen. The content-first step used to be a separate modal that funnelled every one of
+  // its exits into this same editor; the step is a block inside the editor now, so the detour
+  // and its three identical callbacks are gone.
+  _openNewSectionEditor(null, null);
 }
 
 function _openNewSectionEditor(prefill, aiContext) {

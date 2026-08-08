@@ -831,7 +831,6 @@ export default {
   'content.confirm_delete_btn':  'Delete',
 
   // Content → Items — editor labels (passed to the shared item form)
-  'content.new_item_step1':   'New item · 1 of 2',
   'content.new_item_step2':   'New item · 2 of 2',
   'content.edit_item':        'Edit item',
   'content.save':             'Save',
@@ -934,6 +933,8 @@ export default {
   'editor.mi_doc_url_label':      'Documentation URL',
   'editor.mi_doc_url_placeholder': 'https://...',
   'editor.refazer':               'Redo with AI',
+  'editor.keep_raw':              'Keep the text exactly as it is (the AI does not rewrite it)',
+  'editor.ai_which':              'Choose the AI',
   'editor.refazer_loading':       'Redoing...',
   'editor.item_redone':           'Item redone.',
   'editor.select_type':           'Select a type.',
@@ -945,7 +946,6 @@ export default {
   // Content → Items — content-first creator (item-creator.js)
   'creator.raw_label':            'Paste or write your content',
   'creator.raw_placeholder':      'Paste the prompt, example, exercise or tip text here...',
-  'creator.import_prompt':        'or import a document:',
   'creator.file_extract':         'Extract the text as content',
   'creator.file_download':        'Use as a downloadable file',
   'creator.file_extracting':      'Extracting the text…',
@@ -956,8 +956,6 @@ export default {
   'creator.loading':              'Loading...',
   'creator.gdoc_hint':            'The document must be shared as "Anyone with the link can view".',
   'creator.emoji_toggle':         'Add emojis when helpful',
-  'creator.emoji_helper':         '* If the content is an AI prompt, it is kept exactly as is, with no changes.',
-  'creator.manual':               'Continue manually',
   'creator.ai_format':            'Format with AI',
   'creator.ai_generating':        'Generating...',
   'creator.gdoc_url_required':    'Enter the Google Docs URL.',
