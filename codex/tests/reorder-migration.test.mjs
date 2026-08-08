@@ -24,7 +24,7 @@ test('reorder.js exposes the shared capabilities every hand-rolled copy needed',
 // (mobile-capable) and lives INSIDE the module — so a migrated surface no longer imports
 // makeReorderable, it mounts the rail. Either way the invariant holds: NO surface
 // hand-rolls a dragstart listener. Move a surface from PENDING to MIGRATED as it adopts
-// the rail; when PENDING empties, js/reorder.js is retired (architecture/list-rail.md §8).
+// the rail; when PENDING empties, js/reorder.js is retired (architecture/list-rail.md §2).
 const PENDING_ON_REORDER_JS = ['questions/bank.js', 'questions/live-host.js'];
 const MIGRATED_TO_LIST_RAIL = ['content/apostila.js', 'cohorts/cohorts.js'];
 
