@@ -92,21 +92,24 @@ export function mount(host, opts = {}) {
     '</div>';
 
   host.innerHTML =
+    // EVERY control sits AFTER the box it acts on (Élder 2026-08-08: "formatar com ia still
+    // before text box", "preview button before the preview window"). A button above the field it
+    // reads asks you to act before you have written anything, and a preview button that is not
+    // next to the preview leaves you looking for what changed.
     '<div class="cdx-field cdx-aib cdx-ie-content">' +
-      '<label>' + _esc(label) +
-        '<span class="cdx-aib-actions">' +
-          '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="aib-run">' + AI_GLYPH + ' ' + t('creator.ai_format') + '</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-ai-pick" id="aib-pick" title="' + _esc(t('editor.ai_which')) + '">▾</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-preview-btn">' + t('editor.preview_show') + '</button>' +
-        '</span>' +
-      '</label>' +
+      '<label>' + _esc(label) + '</label>' +
       '<textarea id="ie-body" rows="' + rows + '" placeholder="' + _esc(placeholder) + '">' + _esc(opts.initialBody || '') + '</textarea>' +
       importRow +
+      '<div class="cdx-aib-actions">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="aib-run">' + AI_GLYPH + ' ' + t('creator.ai_format') + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-ai-pick" id="aib-pick" title="' + _esc(t('editor.ai_which')) + '">▾</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-preview-btn">' + t('editor.preview_show') + '</button>' +
+      '</div>' +
+      '<div class="cdx-preview-area" id="ie-preview" style="display:none"></div>' +
       '<div class="cdx-aib-flags">' +
         '<label class="cdx-radio-label"><input type="checkbox" id="aib-emoji" checked> ' + _esc(t('creator.emoji_toggle')) + '</label>' +
         '<label class="cdx-radio-label"><input type="checkbox" id="aib-verbatim"' + (verbatim ? ' checked' : '') + '> ' + _esc(t('editor.keep_raw')) + '</label>' +
       '</div>' +
-      '<div class="cdx-preview-area" id="ie-preview" style="display:none"></div>' +
     '</div>';
 
   const rawEl = host.querySelector('#ie-body');

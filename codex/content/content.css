@@ -1307,8 +1307,12 @@
   background: var(--cdx-card-sel-bg, rgba(127,127,127,0.08)); border: 1px solid var(--border);
 }
 
-/* The content box: the AI sits ON its label, because the choice is about that action. */
-.cdx-ie-content > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+/* The content box. Every control sits AFTER the field it acts on: the AI reads what you wrote,
+   and the preview button sits against the preview it opens. */
+.cdx-aib-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-aib-flags { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; }
+.cdx-aib-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-aib-sources input { flex: 1 1 140px; min-width: 120px; }
 
 /* Type and tags side by side: one full row each, and on their own they pushed the list off the
    screen. With the wide modal they fit together. */
@@ -1327,6 +1331,10 @@
 }
 .cdx-ie-left { min-width: 0; }
 .cdx-ie-right { border-left: 1px solid var(--border); padding-left: 1.25rem; min-width: 0; }
+/* An ordinary item has no right column, so there is no second track and no grip to drag. */
+.cdx-ie-two.is-single { grid-template-columns: 1fr; }
+.cdx-ie-two.is-single > .cdx-ie-right { display: none; }
+.cdx-ie-two.is-single > .cdx-rz-grip { display: none; }
 @media (max-width: 980px) {
   .cdx-ie-two { grid-template-columns: 1fr; }
   .cdx-ie-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
@@ -1402,15 +1410,11 @@
 .cdx-mem-details { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
 .cdx-mem-details > summary { cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); }
 
-/* The AI box that opens the editor (content/editor/ai-box.js). It used to be a whole separate
-   screen; as a block it needs its own spacing, and the AI button rides on its label so the
-   action and its model choice sit together. */
-.cdx-aib > label { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
-.cdx-aib-actions { display: inline-flex; gap: 0; }
-.cdx-aib-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
-.cdx-aib-sources input { flex: 1 1 160px; min-width: 120px; }
+/* The content box (content/editor/ai-box.js). Its layout rules live with the rest of the editor
+   in the .cdx-ie block above: the actions, the sources and the flags all sit BELOW the field,
+   and duplicating them here is what made an older `display:inline-flex` win by source order and
+   flatten the new action row. */
 .cdx-aib-picked { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
-.cdx-aib-flags { display: flex; flex-wrap: wrap; gap: 6px 18px; margin-top: 8px; }
 /* `.cdx-field label` (cohorts.css) is a DESCENDANT selector, so it uppercases every nested
    label, including the ones sitting beside a checkbox. Undo it here rather than app-wide:
    changing that selector touches every admin screen and is not this change's call to make. */

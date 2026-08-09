@@ -157,24 +157,23 @@ function _renderTagPicker(container, tags, selectedTagIds, onChange) {
   render();
 }
 
-async function _tagsByLabels(tags, labels) {
+// Resolve the AI's tag labels to ids, MATCHING ONLY. It used to create whatever the model named,
+// which is how a Wikipedia paste minted a brand-new "história" tag in the archive. Élder
+// 2026-08-08: the screen promises "ela escolhe tipo e etiqueta entre os que já existem... quando
+// nada serve, deixa em branco em vez de inventar categoria", and it was not true.
+//
+// Creating a tag is a deliberate act and it still has its button ("+ etiqueta"). What the model
+// cannot do is grow the vocabulary as a side effect of reading a document, because a taxonomy
+// that anything can add to stops being one.
+function _tagsByLabels(tags, labels) {
   const ids = [];
   for (const raw of labels) {
     const label = (raw || '').trim();
     if (!label) continue;
     const existing = tags.find((tg) => tg.label.toLowerCase() === label.toLowerCase());
-    if (existing) { ids.push(existing.id); continue; }
-    try {
-      const res = await api.createTag({ label });
-      if (res && res.tag) {
-        if (!tags.find((tg) => tg.id === res.tag.id)) {
-          tags.push({ id: res.tag.id, label: res.tag.label, item_count: 0 });
-        }
-        ids.push(res.tag.id);
-      }
-    } catch (_) { /* skip */ }
+    if (existing) ids.push(existing.id);
   }
-  return ids;
+  return Promise.resolve(ids);
 }
 
 // The header sentence. Élder 2026-08-07 asked the header to SAY WHAT IT IS: with the stack, an
@@ -266,10 +265,20 @@ function _mountLevel(container, opts) {
         '<div class="cdx-ie-left">' +
           // The content box owns #ie-body and carries the AI, the imports and the raw flag.
           '<div id="ie-aibox"></div>' +
-          '<p class="cdx-ie-note">' + _esc(t('editor.ai_note')) + '</p>' +
           '<div id="ie-zipintro"></div>' +
+          '<p class="cdx-ie-note">' + _esc(t('editor.ai_note')) + '</p>' +
+          // THE ORDER, and it is the question Élder asked to have answered rather than guessed
+          // ("analyse the order of the content so we can make this more reasonable"). Content
+          // first, because that is what you arrive with and what the AI reads. Then the two prose
+          // fields you read back and correct, title and summary, together because they are the
+          // same act. Classification last, because type and tags are the only fields the archive
+          // needs and you do not. Summary used to sit BELOW the chips, which split the prose in
+          // two around a grid of buttons.
           '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
             '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
+          '</div>' +
+          '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
+            '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
           '</div>' +
           // Type and tags side by side: one full row each pushed the list off the screen, and the
           // wide modal is what makes them fit together.
@@ -281,9 +290,6 @@ function _mountLevel(container, opts) {
             '<div class="cdx-field"><label>' + t('editor.tags_label') + '</label>' +
               '<div class="cdx-tag-picker" id="ie-tag-picker"></div>' +
             '</div>' +
-          '</div>' +
-          '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
-            '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
           '</div>' +
           '<div id="ie-extras"></div>' +
         '</div>' +
@@ -353,7 +359,12 @@ function _mountLevel(container, opts) {
     const right = root.querySelector('#ie-right');
     const html = buildTypeBlock(typeSlug, _currentBody(), initialMeta);
     left.innerHTML = bundle ? '' : html;
-    right.innerHTML = bundle ? html : '<div class="cdx-ie-hint">' + _esc(t('editor.right_empty')) + '</div>';
+    right.innerHTML = bundle ? html : '';
+    // An ordinary item has nothing on the right, so the right column stops EXISTING and the grid
+    // collapses to one. Élder 2026-08-08: "right side still open even when just 1 item". A panel
+    // reserved for content that is not there is worse than no panel: it reads as broken.
+    const split = root.querySelector('#ie-split');
+    if (split) split.classList.toggle('is-single', !bundle);
     const block = bundle ? right : left;
     // The ".zip" choice only exists for a package, and it sits under the box it governs.
     root.querySelector('#ie-zipintro').innerHTML = bundle ? buildZipIntro(initialMeta) : '';
@@ -423,7 +434,10 @@ function _mountLevel(container, opts) {
       onResult: (parsed, ctx) => {
         root.querySelector('#ie-title').value = parsed.title || '';
         root.querySelector('#ie-summary').value = parsed.summary || '';
-        if (parsed.type && parsed.type !== typeSel.value) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
+        // Same rule as the tags: the model picks from the registry or it picks nothing. An
+        // unregistered slug used to land in the field and render as "(não registrado)".
+        const known = parsed.type && types.some((ty) => ty.slug === parsed.type);
+        if (known && parsed.type !== typeSel.value) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
         _aiBox.setValue(parsed.body_md || '');
         _bodyCarry = parsed.body_md || '';
         // There IS a first output now, so comparing against it is meaningful. This is what makes
@@ -467,6 +481,18 @@ function _mountLevel(container, opts) {
         onCreateType(function (newSlug) {
           if (newSlug) {
             typeSel.value = newSlug;
+            // The type EXISTS now, so the local registry has to learn it or the chip keeps saying
+            // "(não registrado)" about a type that was just created (Élder 2026-08-08). Refetched
+            // rather than guessed, because the label and the glyph came from the create form.
+            api.listTypes().then((r) => {
+              const fresh = (r && r.types) || [];
+              const row = fresh.find((ty) => ty.slug === newSlug);
+              if (row && !types.some((ty) => ty.slug === newSlug)) {
+                types.push(row);
+                setBundleSlugs(types);
+              }
+              _refreshPicker(newSlug);
+            }).catch((e) => { notice.internal(_err(e)); _refreshPicker(newSlug); });
             _refreshPicker(newSlug);
             lastTypeValue = newSlug;
             renderTypeBlock(newSlug);

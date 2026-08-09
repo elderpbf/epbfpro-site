@@ -97,9 +97,10 @@ export function contentBoxChanged(fromSlug, toSlug) {
 export function buildTypeBlock(typeSlug, body_md, meta) {
   const m = meta || {};
 
-  if (typeSlug === 'prompt') {
-    return '<div class="cdx-type-block"></div>';
-  }
+  // Nothing to add: return EMPTY, not an empty container. Élder saw the container
+  // (2026-08-08: "theres a green box empty on the bottom"), because .cdx-type-block carries a
+  // surface of its own and a type with no extras painted a box around nothing.
+  if (typeSlug === 'prompt') return '';
   // A BUNDLE has no content of its own: the body is the sentence that introduces it to the
   // student, and the member list is mounted into #ie-members once this block exists in the DOM.
   // Keyed on the family, not on a fixed slug, so a bundle type created on the types screen
@@ -204,7 +205,7 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
-  return '<div class="cdx-type-block"></div>';
+  return '';
 }
 
 // The ".zip" choice for a package, rendered by the assembling mount right under the content box

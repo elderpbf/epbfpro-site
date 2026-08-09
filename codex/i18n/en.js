@@ -907,7 +907,6 @@ export default {
   'editor.kind_item':               'Item',
   'editor.kind_bundle':             'Package',
   'editor.ai_note':                 'The AI reads the box above and fills whatever is empty. It picks the type and tags from the ones that already exist: when none fit, it leaves them blank instead of inventing a category.',
-  'editor.right_empty':             'An ordinary item. Switch to Package at the top to put other items inside it.',
   'editor.no_type_for_kind':        'No type registered for that.',
   'editor.members_open':          'Open',
   'editor.members_open_blocked':  'Save it first, or the package is already too deep.',

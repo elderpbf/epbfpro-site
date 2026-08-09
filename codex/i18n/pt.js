@@ -913,7 +913,6 @@ export default {
   'editor.kind_item':               'Item',
   'editor.kind_bundle':             'Pacote',
   'editor.ai_note':                 'A IA lê o que está na caixa acima e preenche o que estiver vazio. Ela escolhe tipo e etiqueta entre os que já existem: quando nada serve, deixa em branco em vez de inventar categoria.',
-  'editor.right_empty':             'Um item comum. Mude para Pacote no topo para pôr outros itens dentro dele.',
   'editor.no_type_for_kind':        'Nenhum tipo cadastrado para isso.',
   'editor.members_open':          'Abrir',
   'editor.members_open_blocked':  'Salve primeiro, ou o pacote já está fundo demais.',
