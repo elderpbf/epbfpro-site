@@ -1234,12 +1234,12 @@
 .cdx-mem-add { display: flex; gap: 8px; align-items: center; }
 .cdx-mem-add select { flex: 1 1 auto; min-width: 0; }
 
-/* A ARVORE de itens do agrupador (Elder 05/08: "outros pode se juntar aninhados que da para
-   mostrar com indentacao e linhas laterais mostrando a ligacao"). A indentacao NAO e um
-   padding calculado por profundidade: cada nivel e uma coluna de largura fixa que ou leva
-   traco vertical (o ancestral daquele nivel ainda tem irmao abaixo) ou fica vazia. E o que
-   impede o traco de continuar descendo embaixo do ULTIMO filho. Quem decide coluna a coluna
-   e o guideHtml() do item-members.js; aqui so ha pixel. */
+/* The package's item TREE (Élder 2026-08-05: "outros pode se juntar aninhados que dá para
+   mostrar com indentação e linhas laterais mostrando a ligação"). The indent is NOT a padding
+   computed from the depth: each level is a fixed-width column that either carries a vertical
+   line (that level's ancestor still has a sibling below) or stays blank. That is what keeps the
+   line from continuing below the LAST child. guideHtml() in item-members.js decides column by
+   column; there is only pixel here. */
 .cdx-mem-tree { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 4px; }
 .cdx-mem-tree .cdx-mem-row.is-nested { background: transparent; border-style: dashed; }
 .cdx-mem-guide, .cdx-mem-elbow { flex: 0 0 auto; align-self: stretch; width: 16px; position: relative; }
@@ -1248,7 +1248,7 @@
   content: ''; position: absolute; left: 50%; top: -6px; bottom: 0;
   border-left: 1px solid var(--border);
 }
-/* O ultimo irmao corta o vertical na altura do cotovelo: nada continua abaixo dele. */
+/* The last sibling cuts the vertical at the elbow: nothing continues below it. */
 .cdx-mem-elbow.is-last::before { bottom: 50%; }
 .cdx-mem-elbow::after {
   content: ''; position: absolute; left: 50%; right: 0; top: 50%;
@@ -1258,8 +1258,39 @@
 .cdx-mem-nested-note { flex: 0 0 auto; font-size: 0.72rem; color: var(--text-secondary); font-style: italic; }
 .cdx-mem-picker { max-height: 260px; display: flex; flex-direction: column; }
 .cdx-mem-picker .cdx-picker-list { overflow-y: auto; }
-/* As linhas recuadas DENTRO da secao, senao nao se ve o que pertence a que cabecalho
-   (Elder 05/08: "items should be indented to show they're inside the section"). */
+
+/* The two deliberate ways in: pick from the archive, or write a new one right here. The picker
+   below them starts hidden, because with the whole archive permanently open the list you are
+   actually building is the smaller half of the screen. */
+.cdx-mem-actions { display: flex; gap: 8px; margin: 0 0 0.5rem; }
+/* A member that exists only as a draft: it has no id until the single Save creates it, and the
+   row has to say so or it reads like something already stored. */
+.cdx-mem-new { font-size: 0.72rem; color: var(--tint-warn-tx); font-style: italic; }
+
+/* The breadcrumb of the editor's navigation stack (a package, a package inside it, an item).
+   It is a trail and not a back button because at three levels a lone back button hides where
+   you are. Painted by editor/breadcrumb.js. */
+.cdx-editor-crumbs {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 0.4rem 1rem; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.cdx-crumb {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--accent); font: inherit; text-decoration: underline;
+}
+.cdx-crumb.is-here { color: var(--text-secondary); cursor: default; text-decoration: none; font-weight: 600; }
+.cdx-crumb-sep { color: var(--text-secondary); }
+
+/* A checkbox that belongs to the field right above it, not to a settings block elsewhere
+   (Élder 2026-08-07, about "include this description in the .zip"). */
+.cdx-check-inline {
+  display: flex; align-items: center; gap: 6px; margin-top: 0.35rem;
+  font-size: 0.82rem; color: var(--text-secondary);
+}
+
+/* The rows indented INSIDE the section, otherwise you cannot see what belongs to which header
+   (Élder 2026-08-05: "items should be indented to show they're inside the section"). */
 .cdx-picker-group-rows > .cdx-mem-pick { padding-left: 1.4rem; }
 
 /* O glifo do tipo antes do nome da secao, no compositor de liberacoes E no editor de

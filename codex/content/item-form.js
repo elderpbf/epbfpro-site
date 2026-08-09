@@ -1,19 +1,32 @@
 // content/item-form.js
-// Codex-native item editor. A clean ES-module port of the legacy
-// window.CTItemForm: native imports, backend through the codex-api facade only,
-// cdx- styling (drops the classtrail.css dependency), every string via t().
-// The legacy global stays live for ClassVault/ClassTrail until Phase 3/4.
+// Codex-native item editor. ONE screen: the AI box, the shared fields, the per-type block and,
+// for a package, the member list, all in the same mount. The "step 1 / step 2" pair is gone
+// (Élder 2026-08-06: "isto tudo tem que virar uma tela só... na edição a gente só vê a segunda
+// tela, o que é péssimo").
 //
-// Mount options (the public surface Items relies on):
+// This file ASSEMBLES; it does not know content types (editor/type-block.js does), it does not
+// know the AI (editor/ai-box.js does), it does not know what a navigation stack is
+// (editor/nav.js does) and it does not paint the breadcrumb (editor/breadcrumb.js does).
+//
+// Two layers live here, and the split is the point:
+//   mount()        owns the STACK: which item you are editing right now, what you left behind on
+//                  the way in, and the single Save that writes all of it.
+//   _mountLevel()  owns ONE level: the fields on screen. It has no idea it might be level two.
+// Before this split, stepping into a member meant the host closing one modal and opening another,
+// which is exactly how the old two-screen flow lost what you had typed.
+//
+// Mount options (the public surface the three hosts rely on):
 //   container   element to render into
 //   item        existing item for edit mode; null/undefined => create mode
-//   prefill     initial values for create mode (e.g. from the AI step-1)
-//   aiContext   { rawInput, firstOutput, addEmojis } enables the "Refazer" button
-//   types       ct_types rows (slug, label, icon)
+//   prefill     initial values for create mode
+//   aiContext   { rawInput, firstOutput, addEmojis } enables "Refazer" from the start
+//   types       ct_types rows (slug, label, icon, family)
 //   tags        ct_tags rows (id, label); mutated in place when a tag is created inline
 //   titleLabel / saveLabel / closeLabel   header + button text ('' hides close)
 //   excludeTypes  type slugs to hide from the dropdown
 //   onCreateType(cb)  user picked "+ new type"; caller opens its modal then calls cb(slug|null)
+//   onDeleteItem(item, done)  host owns the confirm + the release checks; absent => no button
+//   saveFn(params, ctx)       host-owned persistence (the Apostila writes into a set)
 //   onSave(savedItem) / onCancel() / onDirtyChange(isDirty)
 // Returns: { isDirty(), getState(), destroy() }
 //
@@ -27,6 +40,8 @@ import {
   buildTypeBlock, wireTypeBlock, collectTypeData, setBundleSlugs, isBundleSlug, renderMarkdown,
 } from './editor/type-block.js';
 import { mount as mountAiBox } from './editor/ai-box.js';
+import { createNav, planSave, resolveMembers, isNewKey, MAX_DEPTH } from './editor/nav.js';
+import { breadcrumbHtml, wireBreadcrumb } from './editor/breadcrumb.js';
 import * as aiSpec from '../js/ai-spec.js';
 import { getChoice, paramsFor } from '../js/ai-models.js';
 import * as notice from '../js/notice.js';
@@ -160,24 +175,37 @@ async function _tagsByLabels(tags, labels) {
   return ids;
 }
 
-// ───────────────────────── public API ─────────────────────────
-export function mount(container, opts) {
+// The header sentence. Élder 2026-08-07 asked the header to SAY WHAT IT IS: with the stack, an
+// unlabelled header at level two is indistinguishable from level one, and "Editar item" over a
+// package is simply wrong.
+function _headerLabel(isEdit, typeSlug, title) {
+  const what = isBundleSlug(typeSlug) ? t('editor.header_bundle') : t('editor.header_item');
+  if (!isEdit) return t('editor.header_new') + ' ' + what;
+  const clean = String(title || '').replace(/^#+\s*/, '').trim();
+  return t('editor.header_editing') + ' ' + what + (clean ? ' «' + clean + '»' : '');
+}
+
+// ───────────────────────── one level ─────────────────────────
+// Everything below is a single editing surface. It knows nothing about the stack: it is HANDED
+// callbacks (_onOpenChild, _onCreateChild, _onCrumb, _onSaveAll, _onBack) and calls them.
+function _mountLevel(container, opts) {
   opts = opts || {};
   const item = opts.item || null;
   const prefill = opts.prefill || null;
   const aiContext = opts.aiContext || null;
   const types = opts.types || [];
-  setBundleSlugs(types);   // qual tipo e de PACOTE sai do registro, nao de um slug fixo
+  setBundleSlugs(types);   // which type is a PACKAGE comes from the registry, not a fixed slug
   const tags = opts.tags || [];
-  const titleLabel = opts.titleLabel || (item ? t('content.edit_item') : t('content.new_item'));
-  const saveLabel = opts.saveLabel || (item ? t('content.save') : t('content.create'));
   const closeLabel = opts.closeLabel != null ? opts.closeLabel : t('content.close');
-  const onSave = opts.onSave || function () {};
   const onCancel = opts.onCancel || function () {};
   const onDirtyChange = opts.onDirtyChange || function () {};
   const onCreateType = opts.onCreateType || null;
   const excludeTypes = Array.isArray(opts.excludeTypes) ? opts.excludeTypes : [];
-  const pendingFile = opts.pendingFile || null; // a File chosen at the creator step (arquivo import)
+  const pendingFile = opts.pendingFile || null; // a File chosen before the editor opened
+
+  const nav = opts._nav || null;
+  const depth = nav ? nav.depth() : 1;
+  const isNested = depth > 1;
 
   const isEdit = !!item;
   const src = prefill || item || {};
@@ -188,18 +216,26 @@ export function mount(container, opts) {
   const initialTitle = src.title != null ? src.title : '';
   const initialSummary = src.summary != null ? src.summary : '';
   const initialBody = src.body_md != null ? src.body_md : '';
-  const initialMeta = (isEdit && item.meta_json)
-    ? (typeof item.meta_json === 'string' ? JSON.parse(item.meta_json) : item.meta_json)
+  const initialMeta = src.meta_json
+    ? (typeof src.meta_json === 'string' ? JSON.parse(src.meta_json) : src.meta_json)
     : {};
   const initialTagIds = Array.isArray(src.tag_ids)
     ? src.tag_ids
     : (isEdit && Array.isArray(item.tags) ? item.tags.map((tg) => tg.id) : []);
 
-  const refazerBtn = aiContext
-    ? '<button class="cdx-btn" id="ie-refazer-btn" type="button">' + AI_GLYPH + ' ' + t('editor.refazer') + '</button>'
-    : '';
+  const titleLabel = opts.titleLabel || _headerLabel(isEdit, initialType, initialTitle);
+  const saveLabel = opts.saveLabel || (isNested ? t('editor.save_all') : (isEdit ? t('content.save') : t('content.create')));
+
+  // "Refazer" only makes sense once there IS a first AI output to compare against (Élder's #29g).
+  // It ships hidden and the AI box reveals it, instead of the host having to pass an aiContext
+  // that only the deleted creator screen ever built.
+  const refazerBtn = '<button class="cdx-btn" id="ie-refazer-btn" type="button"' +
+    (aiContext ? '' : ' hidden') + '>' + AI_GLYPH + ' ' + t('editor.refazer') + '</button>';
   const closeBtn = closeLabel
     ? '<button class="cdx-btn cdx-btn-sm" id="ie-close">' + _esc(closeLabel) + '</button>'
+    : '';
+  const deleteBtn = (isEdit && typeof opts.onDeleteItem === 'function')
+    ? '<button class="cdx-btn cdx-btn-danger" id="ie-delete" type="button">' + _esc(t('editor.delete_item')) + '</button>'
     : '';
 
   container.innerHTML = '<div class="cdx-editor">' +
@@ -207,9 +243,10 @@ export function mount(container, opts) {
       '<span class="cdx-editor-title">' + _esc(titleLabel) + '</span>' +
       closeBtn +
     '</div>' +
+    (nav ? '<div id="ie-crumbs">' + breadcrumbHtml(nav.path()) + '</div>' : '') +
     '<div class="cdx-editor-body">' +
       // The AI box is the FIRST thing, in create and in edit alike. It was a separate screen
-      // ("step 1 of 2") and edit never saw it, which is the break Elder called terrible.
+      // ("step 1 of 2") and edit never saw it, which is the break Élder called terrible.
       '<div id="ie-aibox"></div>' +
       '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
         '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
@@ -228,7 +265,10 @@ export function mount(container, opts) {
     '</div>' +
     '<div class="cdx-editor-footer">' +
       '<div class="cdx-modal-actions">' +
-        '<button class="cdx-btn" id="ie-cancel">' + t('content.cancel') + '</button>' +
+        deleteBtn +
+        (isNested
+          ? '<button class="cdx-btn" id="ie-back">&#8592; ' + _esc(t('editor.back_to_parent')) + '</button>'
+          : '<button class="cdx-btn" id="ie-cancel">' + t('content.cancel') + '</button>') +
         refazerBtn +
         '<button class="cdx-btn cdx-btn-primary" id="ie-save">' + _esc(saveLabel) + '</button>' +
       '</div>' +
@@ -239,13 +279,17 @@ export function mount(container, opts) {
   const selectedTagIds = new Set(initialTagIds);
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
-  // Os filhos de um embalador não vão no meta_json: eles são linhas de ct_item_members,
-  // gravadas DEPOIS do save (um item novo ainda não tem id para ser pai).
+  let _aiCtx = aiContext;
+  // A package's members are not meta_json: they are ct_item_members rows, written AFTER the save
+  // (a brand-new item has no id yet to be a parent).
   const _memberCtx = {
     itemId: isEdit && item ? item.id : null,
-    children: (isEdit && item && item.children) || [],
+    children: (src.children || (isEdit && item && item.children) || []),
     members: null,
     onMembersChange: () => markDirty(),
+    onOpenMember: opts._onOpenChild || null,
+    onCreateInside: opts._onCreateChild || null,
+    canOpenMember: opts._canOpenChild || null,
   };
   const typeSel = root.querySelector('#ie-type');
   const typeOptsEl = root.querySelector('#ie-type-opts');
@@ -253,7 +297,6 @@ export function mount(container, opts) {
   let isDirty = false;
 
   function markDirty() { if (!isDirty) { isDirty = true; onDirtyChange(true); } }
-  function clearDirty() { if (isDirty) { isDirty = false; onDirtyChange(false); } }
 
   function _refreshPicker(slug) {
     typeOptsEl.innerHTML = _buildTypeOptsHtml(types, slug, !!onCreateType, excludeTypes);
@@ -267,9 +310,16 @@ export function mount(container, opts) {
     typeSel.dispatchEvent(new Event('change'));
   });
 
+  function _syncHeader() {
+    const h = root.querySelector('.cdx-editor-title');
+    if (h && !opts.titleLabel) {
+      h.textContent = _headerLabel(isEdit, typeSel.value, root.querySelector('#ie-title').value);
+    }
+  }
+
   function renderTypeBlock(typeSlug) {
     const block = root.querySelector('#ie-type-block');
-    block.innerHTML = buildTypeBlock(typeSlug, initialBody, initialMeta);
+    block.innerHTML = buildTypeBlock(typeSlug, _currentBody(), initialMeta);
     wireTypeBlock(block, typeSlug, function (file, field) {
       _pendingAssetFile = file;
       _pendingAssetField = field;
@@ -281,6 +331,15 @@ export function mount(container, opts) {
     });
   }
 
+  // Switching type rebuilds the block, and the body has to survive the switch: typing a prompt,
+  // realising it is a guide and losing the text is the kind of loss the one-screen editor was
+  // supposed to end. Read before the rebuild, written into the new block.
+  let _bodyCarry = initialBody;
+  function _currentBody() {
+    const el = root.querySelector('#ie-body');
+    return el ? el.value : _bodyCarry;
+  }
+
   renderTypeBlock(initialType);
 
   // ── the AI box, mounted where the separate creator screen used to be ───────
@@ -290,7 +349,7 @@ export function mount(container, opts) {
     types,
     tags,
     compact: !!opts.compact,
-    initialVerbatim: isEdit ? isVerbatim(item) : (prefill ? !!prefill.verbatim : null),
+    initialVerbatim: src.verbatim != null ? !!src.verbatim : (isEdit ? isVerbatim(item) : null),
     onDirty: markDirty,
     onResult: (parsed, ctx) => {
       root.querySelector('#ie-title').value = parsed.title || '';
@@ -298,8 +357,14 @@ export function mount(container, opts) {
       if (parsed.type) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
       const bodyEl = root.querySelector('#ie-body');
       if (bodyEl) bodyEl.value = parsed.body_md || '';
+      _bodyCarry = parsed.body_md || '';
       const pre = root.querySelector('#ie-preview');
       if (pre && pre.style.display !== 'none') renderMarkdown(parsed.body_md || '', pre);
+      // There IS a first output now, so comparing against it is meaningful. This is what makes
+      // "Refazer" appear only after an AI pass instead of sitting there dead.
+      _aiCtx = { rawInput: (ctx && ctx.rawInput) || '', firstOutput: parsed, addEmojis: !!(ctx && ctx.addEmojis) };
+      const rb = root.querySelector('#ie-refazer-btn');
+      if (rb) rb.hidden = false;
       // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
       // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
       if (ctx && ctx.file) {
@@ -313,13 +378,13 @@ export function mount(container, opts) {
         ids.forEach((id) => selectedTagIds.add(id));
         _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
       });
+      _syncHeader();
       markDirty();
     },
   });
 
-  // A file picked at the creator step (arquivo import) arrives as opts.pendingFile: seed the
-  // same pending-upload path the type editor uses, and show the chosen name. The type is
-  // already 'arquivo' via prefill.type, so its block (with #ie-doc-filename) is mounted.
+  // A file picked before the editor opened arrives as opts.pendingFile: seed the same
+  // pending-upload path the type editor uses, and show the chosen name.
   if (pendingFile) {
     _pendingAssetFile = pendingFile;
     _pendingAssetField = 'attachment_url';
@@ -337,6 +402,7 @@ export function mount(container, opts) {
             _refreshPicker(newSlug);
             lastTypeValue = newSlug;
             renderTypeBlock(newSlug);
+            _syncHeader();
             markDirty();
           } else {
             typeSel.value = lastTypeValue;
@@ -349,82 +415,107 @@ export function mount(container, opts) {
       }
       return;
     }
+    // Leaving the bundle family with members inside would orphan them: only a bundle has a member
+    // list, so the rows stop being shown and the next Save writes an empty list. Élder's guard
+    // (#30) is to ASK, not to forbid: he may well want to empty a package and turn it into a
+    // plain item. Refusing silently would be the worse half of both.
+    const leavingBundle = isBundleSlug(lastTypeValue) && !isBundleSlug(typeSel.value);
+    const memberCount = _memberCtx.members ? _memberCtx.members.rows().length : 0;
+    if (leavingBundle && memberCount) {
+      const goOn = window.confirm(t('editor.type_change_drops_members').replace('{n}', String(memberCount)));
+      if (!goOn) {
+        typeSel.value = lastTypeValue;
+        _refreshPicker(lastTypeValue);
+        return;
+      }
+    }
+    _bodyCarry = _currentBody();
     lastTypeValue = typeSel.value;
-    _refreshPicker(typeSel.value); // move the is-active highlight to the clicked type (was only set at build)
+    _refreshPicker(typeSel.value); // move the is-active highlight to the clicked type
     renderTypeBlock(typeSel.value);
+    _syncHeader();
     markDirty();
   });
 
   _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
 
-  root.querySelector('#ie-title').addEventListener('input', markDirty);
+  root.querySelector('#ie-title').addEventListener('input', () => { markDirty(); _syncHeader(); });
   root.querySelector('#ie-summary').addEventListener('input', markDirty);
 
   const closeBtnEl = root.querySelector('#ie-close');
   if (closeBtnEl) closeBtnEl.addEventListener('click', () => onCancel());
-  root.querySelector('#ie-cancel').addEventListener('click', () => onCancel());
+  const cancelEl = root.querySelector('#ie-cancel');
+  if (cancelEl) cancelEl.addEventListener('click', () => onCancel());
+  const backEl = root.querySelector('#ie-back');
+  if (backEl) backEl.addEventListener('click', () => { if (opts._onBack) opts._onBack(); });
 
-  if (aiContext) {
-    root.querySelector('#ie-refazer-btn').addEventListener('click', async function () {
-      const btn = this;
-      const prev = btn.innerHTML;
-      btn.disabled = true;
-      btn.textContent = t('editor.refazer_loading');
-      try {
-        const currentTagLabels = Array.from(selectedTagIds).map((id) => {
-          const tg = tags.find((x) => x.id === id);
-          return tg ? tg.label : null;
-        }).filter(Boolean);
+  const crumbHost = root.querySelector('#ie-crumbs');
+  if (crumbHost && opts._onCrumb) wireBreadcrumb(crumbHost, opts._onCrumb);
 
-        const bodyEl = root.querySelector('#ie-body');
-        const current = {
-          title: root.querySelector('#ie-title').value.trim(),
-          summary: root.querySelector('#ie-summary').value.trim(),
-          type: root.querySelector('#ie-type').value,
-          body_md: bodyEl ? bodyEl.value : '',
-          tag_labels: currentTagLabels
-        };
-        const diff = aiSpec.computeEditDiff(aiContext.firstOutput, current);
-        const systemPrompt = aiSpec.buildRefineSystemPrompt({ addEmojis: aiContext.addEmojis });
-        const userMsg = aiSpec.buildRefineUserMessage(aiContext.rawInput, aiContext.firstOutput, diff);
+  const delEl = root.querySelector('#ie-delete');
+  if (delEl) delEl.addEventListener('click', () => opts.onDeleteItem(item));
 
-        // A mesma IA que o usuario escolheu no passo do conteudo atende o Refazer: trocar de
-        // modelo no meio de um item comparado com ele mesmo daria diferenca sem explicacao.
-        const res = await aiApi.chat(Object.assign({
-          system: systemPrompt,
-          messages: [{ role: 'user', content: userMsg }],
-          temperature: 0.3,
-          max_tokens: aiSpec.MAX_TOKENS
-        }, paramsFor(getChoice().id)));
-        if (!res || !res.text) { _logAi('no content', res); notice.internal(t('editor.ai_no_content')); return; }
-        let parsed = aiSpec.parseModelJson(res.text);
-        if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('editor.ai_bad_format')); return; }
-        // `null`: ninguem escolheu ainda, entao vale o comportamento antigo (o palpite do tipo).
-        // A tela nova passa o flag de verdade no lugar deste null.
-        parsed = aiSpec.applyVerbatim(parsed, aiContext.rawInput, null);
+  root.querySelector('#ie-refazer-btn').addEventListener('click', async function () {
+    if (!_aiCtx) return;
+    const btn = this;
+    const prev = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = t('editor.refazer_loading');
+    try {
+      const currentTagLabels = Array.from(selectedTagIds).map((id) => {
+        const tg = tags.find((x) => x.id === id);
+        return tg ? tg.label : null;
+      }).filter(Boolean);
 
-        aiContext.firstOutput = parsed;
-        root.querySelector('#ie-title').value = parsed.title || '';
-        root.querySelector('#ie-summary').value = parsed.summary || '';
-        if (parsed.type) { root.querySelector('#ie-type').value = parsed.type; _refreshPicker(parsed.type); }
-        if (bodyEl) bodyEl.value = parsed.body_md || '';
-        const newTagIds = await _tagsByLabels(tags, parsed.tag_labels || []);
-        selectedTagIds.clear();
-        newTagIds.forEach((id) => selectedTagIds.add(id));
-        _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
-        const pre = root.querySelector('#ie-preview');
-        if (pre && pre.style.display !== 'none') renderMarkdown(parsed.body_md || '', pre);
-        markDirty();
-        toast.ok(t('editor.item_redone'));
-      } catch (e) {
-        _logAi('exception', null);
-        notice.internal(_err(e));
-      } finally {
-        btn.disabled = false;
-        btn.innerHTML = prev;
-      }
-    });
-  }
+      const bodyEl = root.querySelector('#ie-body');
+      const current = {
+        title: root.querySelector('#ie-title').value.trim(),
+        summary: root.querySelector('#ie-summary').value.trim(),
+        type: root.querySelector('#ie-type').value,
+        body_md: bodyEl ? bodyEl.value : '',
+        tag_labels: currentTagLabels
+      };
+      const diff = aiSpec.computeEditDiff(_aiCtx.firstOutput, current);
+      const systemPrompt = aiSpec.buildRefineSystemPrompt({ addEmojis: _aiCtx.addEmojis });
+      const userMsg = aiSpec.buildRefineUserMessage(_aiCtx.rawInput, _aiCtx.firstOutput, diff);
+
+      // The SAME AI the user chose for the content step answers the Refazer: swapping models
+      // halfway through an item compared against itself would give a difference with no cause.
+      const res = await aiApi.chat(Object.assign({
+        system: systemPrompt,
+        messages: [{ role: 'user', content: userMsg }],
+        temperature: 0.3,
+        max_tokens: aiSpec.MAX_TOKENS
+      }, paramsFor(getChoice().id)));
+      if (!res || !res.text) { _logAi('no content', res); notice.internal(t('editor.ai_no_content')); return; }
+      let parsed = aiSpec.parseModelJson(res.text);
+      if (!parsed || !parsed.body_md) { _logAi('unparseable / no body_md', res); notice.internal(t('editor.ai_bad_format')); return; }
+      // The raw flag comes from the box the user actually ticked, not from a guess about the type.
+      parsed = aiSpec.applyVerbatim(parsed, _aiCtx.rawInput, _aiBox.verbatim());
+
+      _aiCtx.firstOutput = parsed;
+      root.querySelector('#ie-title').value = parsed.title || '';
+      root.querySelector('#ie-summary').value = parsed.summary || '';
+      if (parsed.type) { root.querySelector('#ie-type').value = parsed.type; _refreshPicker(parsed.type); }
+      if (bodyEl) bodyEl.value = parsed.body_md || '';
+      _bodyCarry = parsed.body_md || '';
+      const newTagIds = await _tagsByLabels(tags, parsed.tag_labels || []);
+      selectedTagIds.clear();
+      newTagIds.forEach((id) => selectedTagIds.add(id));
+      _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
+      const pre = root.querySelector('#ie-preview');
+      if (pre && pre.style.display !== 'none') renderMarkdown(parsed.body_md || '', pre);
+      _syncHeader();
+      markDirty();
+      toast.ok(t('editor.item_redone'));
+    } catch (e) {
+      _logAi('exception', null);
+      notice.internal(_err(e));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = prev;
+    }
+  });
 
   function getState() {
     const type = typeSel.value;
@@ -445,81 +536,266 @@ export function mount(container, opts) {
     };
   }
 
-  root.querySelector('#ie-save').addEventListener('click', async function () {
+  // Everything this level is holding, in the shape editor/nav.js stores and planSave() reads.
+  // Called on the way OUT (stepping into a member, or clicking a crumb) and on Save.
+  function getDraft() {
+    const state = getState();
+    const d = {
+      isNew: !isEdit,
+      params: {
+        type: state.type,
+        title: state.title,
+        summary: state.summary || null,
+        body_md: state.body_md,
+        meta_json: state.meta_json ? JSON.stringify(state.meta_json) : null,
+        tag_ids: state.tag_ids,
+      },
+      pendingFile: _pendingAssetFile,
+      pendingField: _pendingAssetField,
+      verbatim: _aiBox.verbatim(),
+      dirty: isDirty,
+    };
+    if (isBundleSlug(state.type) && _memberCtx.members) {
+      d.members = _memberCtx.members.members();
+      d.memberRows = _memberCtx.members.rows();
+    }
+    return d;
+  }
+
+  root.querySelector('#ie-save').addEventListener('click', function () {
     const state = getState();
     if (state.type === '__new__') { toast.err(t('editor.select_type')); return; }
     if (!state.title) { toast.err(t('editor.title_required')); return; }
-
-    const params = {
-      type: state.type,
-      title: state.title,
-      summary: state.summary || null,
-      body_md: state.body_md,
-      meta_json: state.meta_json ? JSON.stringify(state.meta_json) : null,
-      tag_ids: state.tag_ids
-    };
-
-    const saveBtn = this;
-    saveBtn.disabled = true;
-    try {
-      let saveRes;
-      // saveFn override: the Apostila editor persists into a set (createItem with set_id)
-      // or the working copy (saveDraftSection), not the plain bank. When absent the default
-      // bank create/update path runs unchanged.
-      if (typeof opts.saveFn === 'function') {
-        if (isEdit && item) params.id = item.id;
-        saveRes = await opts.saveFn(params, { isEdit, item });
-      } else if (isEdit) { params.id = item.id; saveRes = await api.updateItem(params); }
-      else { saveRes = await api.createItem(params); }
-      if (saveRes && saveRes.error) throw new Error(saveRes.error);
-      const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
-      const savedId = isEdit
-        ? item.id
-        : (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));
-
-      if (_pendingAssetFile && savedId) {
-        const progressEl = root.querySelector('.cdx-upload-progress');
-        if (progressEl) progressEl.textContent = t('editor.uploading');
-        const b64 = await _readFileAsBase64(_pendingAssetFile);
-        const uploadRes = await api.uploadAsset({
-          item_id: savedId,
-          filename: _pendingAssetFile.name,
-          content_b64: b64
-        });
-        const assetUrl = uploadRes && uploadRes.url;
-        if (assetUrl && _pendingAssetField) {
-          const updatedMeta = Object.assign({}, state.meta_json || {});
-          updatedMeta[_pendingAssetField] = assetUrl;
-          await api.updateItem({ id: savedId, meta_json: JSON.stringify(updatedMeta) });
-          if (savedItem) savedItem.meta_json = JSON.stringify(updatedMeta);
-        }
-        if (progressEl) progressEl.textContent = '';
-      }
-
-      // Os filhos de um embalador só podem ser gravados agora: um item novo não tinha id.
-      if (_memberCtx.members && savedId) {
-        const res = await api.setItemMembers({ parent_item_id: savedId, children: _memberCtx.members.members() });
-        if (res && res.error) throw new Error(res.error);
-      }
-
-      clearDirty();
-      onSave(savedItem || { id: savedId });
-    } catch (err) {
-      // O erro sai em TOAST, não só em notice.internal. Élder 2026-08-05: "após clicar em
-      // criar deve ter a mensagem de sucesso ou erro". O sucesso já fechava o modal e
-      // avisava; a falha era MUDA, porque notice.internal só aparece com a pílula de debug
-      // ligada. Foi assim que o `ct_set_item_members` respondendo "Unknown action" (Worker de
-      // staging sobrescrito por outra sessão) virou "cliquei em criar e não aconteceu nada".
-      // O notice fica, com o detalhe técnico para quem tem a pílula.
-      toast.err(_err(err));
-      notice.internal(_err(err));
-      saveBtn.disabled = false;
-    }
+    opts._onSaveAll(this);
   });
 
   return {
     isDirty: () => isDirty,
     getState,
+    getDraft,
+    members: () => _memberCtx.members,
+    addMember: (entry) => { if (_memberCtx.members) _memberCtx.members.add(entry); markDirty(); },
     destroy: () => { _aiBox.destroy(); container.innerHTML = ''; }
+  };
+}
+
+// ── persistence, shared by both save paths ───────────────────────────────────
+// Writes ONE draft and returns the id it now has. Members are NOT written here: they need every
+// sibling to exist first, so the stack's save does that pass separately.
+async function _persist(draft, existingId, opts) {
+  const params = Object.assign({}, draft.params);
+  let saveRes;
+  // saveFn override: the Apostila editor persists into a set (createItem with set_id) or the
+  // working copy (saveDraftSection), not the plain bank.
+  if (typeof opts.saveFn === 'function') {
+    if (existingId) params.id = existingId;
+    saveRes = await opts.saveFn(params, { isEdit: !!existingId, item: opts.item });
+  } else if (existingId) { params.id = existingId; saveRes = await api.updateItem(params); }
+  else { saveRes = await api.createItem(params); }
+  if (saveRes && saveRes.error) throw new Error(saveRes.error);
+  const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
+  const savedId = existingId || (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));
+
+  if (draft.pendingFile && savedId) {
+    const b64 = await _readFileAsBase64(draft.pendingFile);
+    const uploadRes = await api.uploadAsset({
+      item_id: savedId,
+      filename: draft.pendingFile.name,
+      content_b64: b64
+    });
+    const assetUrl = uploadRes && uploadRes.url;
+    if (assetUrl && draft.pendingField) {
+      const meta = draft.params.meta_json ? JSON.parse(draft.params.meta_json) : {};
+      meta[draft.pendingField] = assetUrl;
+      await api.updateItem({ id: savedId, meta_json: JSON.stringify(meta) });
+    }
+  }
+  return savedId;
+}
+
+// ───────────────────────── public API: the stack ─────────────────────────
+export function mount(container, opts) {
+  opts = opts || {};
+  const types = opts.types || [];
+  setBundleSlugs(types);
+  const nav = createNav({ maxDepth: MAX_DEPTH });
+  let level = null;
+  let destroyed = false;
+
+  const rootKey = opts.item ? Number(opts.item.id) : nav.nextNewKey();
+  nav.push({
+    key: rootKey,
+    id: opts.item ? Number(opts.item.id) : null,
+    title: (opts.item && opts.item.title) || (opts.prefill && opts.prefill.title) || '',
+    isNew: !opts.item,
+    isBundle: isBundleSlug((opts.item && opts.item.type) || (opts.prefill && opts.prefill.type)),
+  });
+  // Level options, keyed the same way the drafts are. Holds what a level needs that a draft does
+  // not carry: the loaded item (for its id and tags) and the per-level overrides.
+  const levelOpts = new Map();
+  levelOpts.set(rootKey, { item: opts.item || null, prefill: opts.prefill || null, aiContext: opts.aiContext || null, pendingFile: opts.pendingFile || null });
+
+  function _stash() {
+    if (!level) return;
+    const entry = nav.current();
+    const d = level.getDraft();
+    nav.stash(entry.key, d);
+    entry.title = d.params.title || entry.title;
+    entry.isBundle = isBundleSlug(d.params.type);
+  }
+
+  // Anything typed and not yet written, anywhere in the stack.
+  function _anyDirty() {
+    if (level && level.isDirty()) return true;
+    return nav.drafts().some(([, d]) => d && d.dirty);
+  }
+
+  // A member row whose own level has a draft shows what the draft says, not what it said when the
+  // row was created. Without this, naming a "+ criar aqui" item one level down and coming back
+  // would show a blank row, and the package would look like it contained nothing.
+  function _freshRows(rows) {
+    return (rows || []).map((r) => {
+      const d = nav.draft(r.key);
+      if (!d || !d.params) return r;
+      return Object.assign({}, r, { title: d.params.title || r.title, type: d.params.type || r.type });
+    });
+  }
+
+  function _paint() {
+    if (destroyed) return;
+    const entry = nav.current();
+    const lo = levelOpts.get(entry.key) || {};
+    const draft = nav.draft(entry.key);
+    // Coming BACK to a level restores what was typed, not what the server has. That is the whole
+    // of "leaving a member never discards" (Élder 2026-08-07, #28).
+    const prefill = draft ? {
+      type: draft.params.type,
+      title: draft.params.title,
+      summary: draft.params.summary,
+      body_md: draft.params.body_md,
+      meta_json: draft.params.meta_json,
+      tag_ids: draft.params.tag_ids,
+      verbatim: draft.verbatim,
+      children: _freshRows(draft.memberRows),
+    } : lo.prefill;
+
+    if (level) level.destroy();
+    level = _mountLevel(container, Object.assign({}, opts, {
+      item: lo.item || null,
+      prefill,
+      aiContext: lo.aiContext || null,
+      pendingFile: draft ? draft.pendingFile : (lo.pendingFile || null),
+      titleLabel: nav.depth() === 1 ? opts.titleLabel : null,
+      saveLabel: nav.depth() === 1 ? opts.saveLabel : null,
+      // Deleting is offered only at the root. One level down you are inside a package, and
+      // "delete" there reads as "take it out of the package", which is what Remove already does.
+      onDeleteItem: nav.depth() === 1 ? opts.onDeleteItem : null,
+      onCancel: _cancelAll,
+      onSave: opts.onSave,
+      _nav: nav,
+      _onCrumb: _goToCrumb,
+      _onBack: _goBack,
+      _onOpenChild: _openChild,
+      _onCreateChild: nav.canPush() ? _createChild : null,
+      _canOpenChild: (row) => nav.canPush() && !!row && !isNewKey(row.key),
+      _onSaveAll: _saveAll,
+    }));
+  }
+
+  function _goToCrumb(index) {
+    _stash();
+    if (nav.popTo(index)) _paint();
+  }
+  function _goBack() {
+    _stash();
+    if (nav.pop()) _paint();
+  }
+
+  // Stepping INTO a member. The parent's draft is stashed first, so what it holds survives even
+  // though its DOM is about to be thrown away.
+  function _openChild(row) {
+    if (!nav.canPush()) { toast.err(t('editor.depth_limit')); return; }
+    if (isNewKey(row.key)) { toast.err(t('editor.open_unsaved')); return; }
+    _stash();
+    api.getItem({ id: row.id }).then((d) => {
+      const it = (d && d.item) || null;
+      if (!it) { toast.err(t('editor.open_failed')); return; }
+      levelOpts.set(Number(it.id), { item: it, prefill: null, aiContext: null, pendingFile: null });
+      nav.push({ key: Number(it.id), id: Number(it.id), title: it.title, isNew: false, isBundle: isBundleSlug(it.type) });
+      _paint();
+    }).catch((e) => notice.internal(_err(e)));
+  }
+
+  // "+ criar aqui": a blank level whose result becomes a member of the package below it. The row
+  // is added to the parent's list IMMEDIATELY, with a temporary key, so the package shows what it
+  // is about to contain instead of looking unchanged until the save.
+  function _createChild() {
+    if (!nav.canPush()) { toast.err(t('editor.depth_limit')); return; }
+    const key = nav.nextNewKey();
+    if (level) level.addMember({ key, id: null, title: '', type: '', type_label: '', indent: 0, isNew: true });
+    _stash();
+    levelOpts.set(key, { item: null, prefill: null, aiContext: null, pendingFile: null });
+    nav.push({ key, id: null, title: '', isNew: true, isBundle: false });
+    _paint();
+  }
+
+  function _cancelAll() {
+    if (_anyDirty() && !window.confirm(t('editor.discard_confirm'))) return;
+    (opts.onCancel || function () {})();
+  }
+
+  // ONE Save writes the level you are on AND every level you passed through. Élder 2026-08-07:
+  // "um Save grava o pacote e todos os membros mexidos". The order is the plan's, not this
+  // function's: new items first (a member with no id cannot be listed), then the edits, then the
+  // member lists, which is the only pass that can name every id.
+  async function _saveAll(saveBtn) {
+    _stash();
+    if (saveBtn) saveBtn.disabled = true;
+    try {
+      const plan = planSave(nav.drafts());
+      const idByKey = new Map();
+      for (const [key, d] of nav.drafts()) if (!d.isNew) idByKey.set(key, Number(key));
+
+      for (const step of plan) {
+        if (step.op === 'create') {
+          const lo = levelOpts.get(step.key) || {};
+          const draft = nav.draft(step.key);
+          if (!step.params.title) throw new Error(t('editor.title_required'));
+          const id = await _persist(draft, null, Object.assign({}, opts, { item: lo.item || null }));
+          idByKey.set(step.key, Number(id));
+        } else if (step.op === 'update') {
+          const lo = levelOpts.get(step.key) || {};
+          const draft = nav.draft(step.key);
+          await _persist(draft, Number(step.key), Object.assign({}, opts, { item: lo.item || null }));
+        } else if (step.op === 'members') {
+          const parentId = idByKey.get(step.key);
+          if (!parentId) continue;
+          const res = await api.setItemMembers({
+            parent_item_id: parentId,
+            children: resolveMembers(step.children, idByKey),
+          });
+          if (res && res.error) throw new Error(res.error);
+        }
+      }
+
+      const savedRootId = idByKey.get(rootKey) || null;
+      nav.clearDrafts();
+      (opts.onSave || function () {})({ id: savedRootId });
+    } catch (err) {
+      // The error goes out as a TOAST, not only as notice.internal. Élder 2026-08-05: "após
+      // clicar em criar deve ter a mensagem de sucesso ou erro". Success already closed the modal
+      // and said so; failure was MUTE, because notice.internal only shows with the debug pill on.
+      toast.err(_err(err));
+      notice.internal(_err(err));
+      if (saveBtn) saveBtn.disabled = false;
+    }
+  }
+
+  _paint();
+
+  return {
+    isDirty: () => _anyDirty(),
+    getState: () => (level ? level.getState() : null),
+    destroy: () => { destroyed = true; if (level) level.destroy(); level = null; },
   };
 }

@@ -80,9 +80,16 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
   // Keyed on the family, not on a fixed slug, so a bundle type created on the types screen
   // works with no code change.
   if (isBundleSlug(typeSlug)) {
+    // The "goes into the .zip" choice sits UNDER the box it governs, not in a settings block
+    // somewhere else (Élder 2026-08-07). Default ON for a package that already had no opinion:
+    // the intro is the sentence that explains the folder, and a folder of files with no note is
+    // the thing the student writes back to ask about.
+    const zipIntro = (m.zip_intro !== false);
     return '<div class="cdx-type-block">' +
       '<div class="cdx-field"><label>' + t('editor.projeto_intro_label') + '</label>' +
         '<textarea id="ie-body" rows="3" placeholder="' + _esc(t('editor.projeto_intro_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
+        '<label class="cdx-check-inline"><input type="checkbox" id="ie-zip-intro"' + (zipIntro ? ' checked' : '') + '> ' +
+          _esc(t('editor.projeto_intro_in_zip')) + '</label>' +
       '</div>' +
       '<div id="ie-members"></div>' +
     '</div>';
@@ -199,6 +206,11 @@ export function wireTypeBlock(block, typeSlug, onFileSelected, ctx) {
       parentId: ctx.itemId || null,
       children: ctx.children || [],
       onChange: ctx.onMembersChange || function () {},
+      // Navigation belongs to the assembling mount (it owns the stack); this module only forwards
+      // it, so the Apostila and Lessons mounts, which pass none of these, keep the old behaviour.
+      onOpen: ctx.onOpenMember || null,
+      onCreateInside: ctx.onCreateInside || null,
+      canOpen: ctx.canOpenMember || null,
     });
   }
   const previewBtn = block.querySelector('#ie-preview-btn');
@@ -294,6 +306,12 @@ export function collectTypeData(root, typeSlug) {
         }
       };
     }
+  } else if (isBundleSlug(typeSlug)) {
+    // Only written when the user turned it OFF, for the same reason the raw flag is: absence has
+    // to keep meaning "the default", or every package saved once would gain an opinion it never
+    // expressed. `buildTypeBlock` reads `!== false`, so absent and true are the same thing.
+    const zipEl = root.querySelector('#ie-zip-intro');
+    meta_json = (zipEl && !zipEl.checked) ? { zip_intro: false } : {};
   } else if (typeSlug === 'material') {
     meta_json = {};
   } else if (typeSlug === 'arquivo') {

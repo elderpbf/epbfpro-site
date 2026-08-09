@@ -501,12 +501,15 @@ function _bulkDelete() {
 }
 
 // ── Item CRUD ───────────────────────────────────────────────────────────────
-function _deleteItem(id) {
+// `onDone` fires only after the server confirms the deletion. It exists because the item can now
+// be deleted from INSIDE the editor (Élder's #29e), and that screen has to close itself -- but only
+// on a real deletion, never on a refusal, or the modal would vanish and take the edit with it.
+function _deleteItem(id, onDone) {
   _openConfirm({
     title: t('content.delete_item_title'),
     message: t('content.confirm_delete_item'),
     danger: true,
-    onConfirm() { _doDeleteItem(id, false); },
+    onConfirm() { _doDeleteItem(id, false, onDone); },
   });
 }
 
@@ -515,7 +518,7 @@ function _deleteItem(id) {
 // it is released and offer a second confirm that force-deletes (cascading the releases).
 // Non-optimistic: only drop it from the list once the server confirms, so a refusal
 // leaves the UI intact.
-function _doDeleteItem(id, force) {
+function _doDeleteItem(id, force, onDone) {
   api.deleteItem({ id, force: !!force, _silent: true }).then(() => {
     const nextId = selectionAfterRemoval(_visibleItems(), id);
     const idx = _items.findIndex((it) => Number(it.id) === Number(id));
@@ -524,15 +527,16 @@ function _doDeleteItem(id, force) {
     if (Number(_selectedId) === Number(id)) _selectedId = nextId;
     _renderItems();
     toast.ok(t('content.item_deleted'));
+    if (typeof onDone === 'function') onDone();
   }).catch((e) => {
-    if (e && e.data && e.data.error === 'item_released') { _confirmForceDelete(id, e.data); return; }
+    if (e && e.data && e.data.error === 'item_released') { _confirmForceDelete(id, e.data, onDone); return; }
     notice.internal(_err(e));
     _selectedId = Number(id);
     _loadItems();
   });
 }
 
-function _confirmForceDelete(id, data) {
+function _confirmForceDelete(id, data, onDone) {
   const turmas = Array.isArray(data.turmas) ? data.turmas : [];
   const where = turmas.length
     ? turmas.map((x) => x.label).join('; ')
@@ -542,7 +546,7 @@ function _confirmForceDelete(id, data) {
     message: t('content.delete_released_where') + ' ' + where + '. ' + t('content.delete_released_warn'),
     confirmLabel: t('content.delete_anyway'),
     danger: true,
-    onConfirm() { _doDeleteItem(id, true); },
+    onConfirm() { _doDeleteItem(id, true, onDone); },
   });
 }
 
@@ -588,6 +592,11 @@ function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
     closeLabel: t('content.close'),
     excludeTypes: isEdit ? [] : NON_CREATABLE_TYPES,
     onCreateType: _openTypeCreateForm,
+    onDeleteItem: isEdit ? (it) => _deleteItem((it && it.id) || item.id, () => {
+      closeModal(bd);
+      _detailCache.clear();
+      _loadItems({ silent: true });
+    }) : null,
     onSave: (saved) => {
       closeModal(bd);
       toast.ok(isEdit ? t('content.item_updated') : t('content.item_created'));

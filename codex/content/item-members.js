@@ -1,38 +1,42 @@
 // content/item-members.js
-// Os itens de um PACOTE, no editor: quais são, em que ordem, e em que degrau aparecem.
+// The items inside a PACKAGE, in the editor: which ones, in what order, and on what step.
 //
-// O modelo (Élder 2026-08-06, corrigindo o meu): o parentesco de verdade é só pacote→itens.
-// Entre os itens não há parentesco nenhum -- eles são uma lista plana, e o recuo é DISPLAY,
-// "só a forma como vai aparecer na trilha". Por isso aqui não existe árvore: existe uma lista
-// e um inteiro por linha, mexido pelos botões →| e |←.
+// The model (Élder 2026-08-06, correcting mine): real parenthood is only bundle -> items. Between
+// the items there is no parenthood at all, they are a FLAT list, and the indent is DISPLAY,
+// "só a forma como vai aparecer na trilha". That is why there is no tree here: there is a list
+// and one integer per row, moved by the →| and |← buttons.
 //
-// O que essa correção apagou deste arquivo: re-parentear ao apagar, validar consistência de
-// árvore, e a pergunta "irmão ou filho?" (é a mesma coisa vista de dois lugares). Apagar um
-// membro é `removeAt`, que promove quem estava sob ele. Nada mais.
+// What that correction deleted from this file: re-parenting on delete, tree-consistency checks,
+// and the question "sibling or child?" (the same thing seen from two places). Removing a member
+// is `removeAt`, which promotes whoever was under it. Nothing more.
 //
-// É um PINTOR sobre js/item-list.js, não uma lista própria (Élder 2026-08-05: "a gente deve
-// ter apenas uma lista de itens e cada local que utiliza só faz os filtros necessários"). As
-// classes são as mesmas `.cdx-picker*` do compositor de Liberações. A consolidação dos TRÊS
-// pintores num só é a tarefa #23, não este arquivo.
+// It is a PAINTER over js/item-list.js, not a list of its own (Élder 2026-08-05: "a gente deve
+// ter apenas uma lista de itens e cada local que utiliza só faz os filtros necessários"). The
+// classes are the same `.cdx-picker*` as the Releases compositor. Folding the THREE painters into
+// one is task #23, not this file.
 //
-// Guarda só o estado. Quem persiste é o item-form, depois do save, via api.setItemMembers --
-// um item novo ainda não tem id para ser pai.
+// It holds state only. The item-form persists, after the save, via api.setItemMembers: a new item
+// has no id yet to be a parent.
+//
+// A member's identity here is a KEY, not an id, because an item created inside the bundle has no
+// id until the single Save runs (see editor/nav.js). For everything that already exists the key
+// IS the id, so the common case reads the same as before.
 import { esc as _esc } from '../js/dom.js';
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import {
-  sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, MAX_INDENT,
+  sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, shiftIndent, MAX_INDENT,
 } from '../js/item-list.js';
 import { isDownloadable } from '../js/item-download.js';
 
-// O teto de recuo mora no motor da lista (js/item-list.js) e é reexportado aqui só para quem
-// já importava daqui. Um número só para editor, trilha e CSS.
+// The indent cap lives in the list engine (js/item-list.js) and is re-exported here only for
+// whoever already imported it from here. One number for the editor, the trail and the CSS.
 export { MAX_INDENT };
 
-// As colunas de guia de UMA linha. `guides[k]` = ainda vem alguém no degrau k mais abaixo,
-// então aquela coluna leva traço vertical; senão fica vazia. Sem isso o traço continua
-// descendo embaixo do último, que é o defeito clássico de árvore em texto.
+// The guide columns of ONE row. `guides[k]` = someone still comes at step k further down, so that
+// column carries a vertical line; otherwise it is blank. Without this the line keeps going below
+// the last one, the classic bug of drawing a tree in text.
 export function guideHtml(guides, isLast, depth) {
   if (!depth) return '';
   const cols = (guides || []).slice(0, depth - 1)
@@ -46,12 +50,25 @@ export function mount(host, opts = {}) {
   let pool = [];
   let types = [];
   let query = '';
+  let pickerOpen = false;
   const onChange = opts.onChange || function () {};
+  // Opening a member and creating one inside are the screen's business, not this painter's: it
+  // only says WHICH row was asked for. Absent callbacks simply hide the controls, which is what
+  // keeps the Apostila and Lessons mounts working unchanged.
+  const onOpen = typeof opts.onOpen === 'function' ? opts.onOpen : null;
+  const onCreateInside = typeof opts.onCreateInside === 'function' ? opts.onCreateInside : null;
+  // Can this member be opened as its own level? The stack ceiling is nav.js's answer, asked here
+  // so a refusal is a greyed button instead of a dead click.
+  const canOpen = typeof opts.canOpen === 'function' ? opts.canOpen : () => true;
 
   function _norm(c) {
+    const key = c.key != null ? c.key : Number(c.id);
     return {
-      id: Number(c.id), title: c.title, type: c.type || '',
+      key,
+      id: c.id != null ? Number(c.id) : null,
+      title: c.title, type: c.type || '',
       type_label: c.type_label || c.type || '',
+      isNew: !!c.isNew,
       indent: Math.max(0, Math.min(MAX_INDENT, Number(c.indent) || 0)),
     };
   }
@@ -65,31 +82,45 @@ export function mount(host, opts = {}) {
     return ty && ty.icon;
   }
 
-  // ── A lista do que está dentro ───────────────────────────────────────────
+  // ── The list of what is inside ───────────────────────────────────────────
   function listHtml() {
     if (!chosen.length) return '<li class="cdx-mem-empty">' + t('editor.members_empty') + '</li>';
     return guidesFromIndent(chosen).map((row, i) => {
       const c = row.item;
       const glyph = typeIconHtml(_typeIcon(c.type), { size: 14 });
-      const canIn = c.indent < maxIndentFor(chosen, i, MAX_INDENT);
-      const canOut = c.indent > 0;
+      // The buttons light up from the SAME rule the move uses (shiftIndent refuses whatever
+      // would skip a step or push the block past the ceiling), so a live button never no-ops.
+      const canIn = shiftIndent(chosen, i, +1, MAX_INDENT) !== chosen;
+      const canOut = shiftIndent(chosen, i, -1, MAX_INDENT) !== chosen;
+      const openable = !!onOpen && canOpen(c);
+      const openBtn = onOpen
+        ? '<button type="button" class="cdx-btn cdx-btn-sm" data-act="open"' + (openable ? '' : ' disabled title="' + _esc(t('editor.members_open_blocked')) + '"') + '>' + t('editor.members_open') + '</button>'
+        : '';
+      // Lab and interativo may go into a package, they just do not fit in the .zip. The row SAYS
+      // so instead of the package refusing them: forbidding would make the rule depend on ORDER
+      // (put a lab first and the package locks against documents). Élder 2026-08-05. The picker
+      // already said it; the row says it too, because after adding, the picker is where you are
+      // not looking.
+      const noZip = isDownloadable(c) ? '' : ' <span class="cdx-comp-elsewhere">' + _esc(t('editor.members_no_zip')) + '</span>';
+      const newTag = c.isNew ? ' <span class="cdx-mem-new">' + _esc(t('editor.members_unsaved')) + '</span>' : '';
       return '<li class="cdx-mem-row" data-i="' + i + '" data-indent="' + c.indent + '">' +
           guideHtml(row.guides, row.isLast, row.depth) +
           (glyph ? '<span class="cdx-mem-glyph" aria-hidden="true">' + glyph + '</span>' : '') +
-          '<span class="cdx-mem-title">' + _esc(c.title || ('#' + c.id)) + '</span>' +
+          '<span class="cdx-mem-title">' + _esc(c.title || ('#' + c.key)) + newTag + noZip + '</span>' +
           '<span class="cdx-mem-type">' + _esc(c.type_label) + '</span>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-act="out"' + (canOut ? '' : ' disabled') + ' title="' + _esc(t('editor.members_outdent')) + '">|&#8592;</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-act="in"' + (canIn ? '' : ' disabled') + ' title="' + _esc(t('editor.members_indent')) + '">&#8594;|</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-act="up"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-act="down"' + (i === chosen.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
+          openBtn +
           '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rm">' + t('editor.members_remove') + '</button>' +
         '</li>';
     }).join('');
   }
 
-  // ── O escolhedor: as MESMAS seções de Liberações, com checkbox ───────────
+  // ── The picker: the SAME sections as Releases, with a checkbox ───────────
   function pickerHtml() {
-    const inside = new Set(chosen.map((c) => c.id));
+    const inside = new Set(chosen.map((c) => c.id).filter(Boolean));
     const eligible = (pool || [])
       .filter((i) => Number(i.id) !== Number(parentId))
       .filter((i) => matchesQuery(i, query));
@@ -102,9 +133,6 @@ export function mount(host, opts = {}) {
         '<label class="cdx-comp-item cdx-mem-pick" data-id="' + _esc(i.id) + '">' +
           '<input type="checkbox" class="cdx-mem-cb" value="' + _esc(i.id) + '"' + (inside.has(Number(i.id)) ? ' checked' : '') + '>' +
           '<span>' + _esc(i.title) +
-            // Lab e interativo podem entrar no pacote, só não cabem no .zip. A linha DIZ isso
-            // em vez de o pacote recusá-los: proibir deixaria a regra dependente da ordem (põe
-            // um lab primeiro e o pacote trava contra documentos). Élder 2026-08-05.
             (isDownloadable(i) ? '' : ' <span class="cdx-comp-elsewhere">' + _esc(t('editor.members_no_zip')) + '</span>') +
           '</span>' +
         '</label>'
@@ -120,10 +148,10 @@ export function mount(host, opts = {}) {
     }).join('');
   }
 
-  // A lista de dentro é repintada sozinha, SEM tocar no escolhedor. Élder 2026-08-05:
-  // "clicking on one checkbox make the list refresh and i have to find stuff again". Eu
-  // chamava render() no handler do checkbox, o que refazia o escolhedor inteiro e jogava fora
-  // a seção aberta, a rolagem e o lugar onde ele estava.
+  // The inside list repaints on its own, WITHOUT touching the picker. Élder 2026-08-05:
+  // "clicking on one checkbox make the list refresh and i have to find stuff again". I used to
+  // call render() from the checkbox handler, which rebuilt the whole picker and threw away the
+  // open section, the scroll and the place he was in.
   function paintList() {
     const ul = host.querySelector('.cdx-mem-tree');
     if (!ul) return;
@@ -131,12 +159,19 @@ export function mount(host, opts = {}) {
     wireList();
   }
 
+  // The picker starts CLOSED behind its own button. Élder asked for "+ existente" and
+  // "+ criar aqui" as two deliberate actions: with the whole archive permanently open under the
+  // member list, the list you are actually building is the smaller half of the screen.
   function render() {
     host.innerHTML =
       '<div class="cdx-field">' +
         '<label>' + t('editor.members_label') + '</label>' +
         '<ul class="cdx-mem-tree">' + listHtml() + '</ul>' +
-        '<div class="cdx-picker cdx-mem-picker">' +
+        '<div class="cdx-mem-actions">' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-add">' + t('editor.members_add_existing') + '</button>' +
+          (onCreateInside ? '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-new">' + t('editor.members_create_here') + '</button>' : '') +
+        '</div>' +
+        '<div class="cdx-picker cdx-mem-picker"' + (pickerOpen ? '' : ' style="display:none"') + '>' +
           '<div class="cdx-picker-toolbar">' +
             '<input type="search" class="cdx-picker-search cdx-mem-search" placeholder="' + _esc(t('editor.members_search')) + '" autocomplete="off" spellcheck="false" value="' + _esc(query) + '">' +
           '</div>' +
@@ -145,6 +180,18 @@ export function mount(host, opts = {}) {
       '</div>';
     wireList();
     wirePicker();
+    const addBtn = host.querySelector('#ie-mem-add');
+    if (addBtn) addBtn.addEventListener('click', () => {
+      pickerOpen = !pickerOpen;
+      const box = host.querySelector('.cdx-mem-picker');
+      if (box) box.style.display = pickerOpen ? '' : 'none';
+      if (pickerOpen) {
+        const s = host.querySelector('.cdx-mem-search');
+        if (s) s.focus();
+      }
+    });
+    const newBtn = host.querySelector('#ie-mem-new');
+    if (newBtn) newBtn.addEventListener('click', () => onCreateInside());
   }
 
   function wireList() {
@@ -152,14 +199,23 @@ export function mount(host, opts = {}) {
       b.addEventListener('click', () => {
         const i = Number(b.closest('.cdx-mem-row').dataset.i);
         const act = b.dataset.act;
+        if (act === 'open') { if (onOpen) onOpen(chosen[i], i); return; }
         if (act === 'rm') chosen = removeAt(chosen, i);
-        else if (act === 'in') chosen[i].indent = Math.min(MAX_INDENT, maxIndentFor(chosen, i, MAX_INDENT));
-        else if (act === 'out') chosen[i].indent = Math.max(0, chosen[i].indent - 1);
+        // The step moves the WHOLE BLOCK (Élder 2026-08-07: "se eu tiro a indentação do terceiro
+        // item, todos que vêm depois que estão indentados nele devem perder indentação igual").
+        // This used to assign chosen[i].indent directly, which left whoever was inside hanging at
+        // a step that skipped a level, exactly what the rule forbids. The engine refuses a move
+        // that would not fit, and returns the SAME array when it does, so `||` is not needed.
+        else if (act === 'in') chosen = shiftIndent(chosen, i, +1, MAX_INDENT);
+        else if (act === 'out') chosen = shiftIndent(chosen, i, -1, MAX_INDENT);
         else if (act === 'up') chosen.splice(i - 1, 0, chosen.splice(i, 1)[0]);
         else if (act === 'down') chosen.splice(i + 1, 0, chosen.splice(i, 1)[0]);
-        // Mover pode deixar uma linha num degrau que não existe mais (o de cima mudou), então
-        // o recuo é normalizado depois de qualquer mexida na ordem.
-        chosen.forEach((c, k) => { c.indent = Math.min(c.indent, maxIndentFor(chosen, k, MAX_INDENT)); });
+        // Reordering can leave a row on a step that no longer exists (the one above changed), so
+        // the indent is normalised after any change to the ORDER. Not after in/out: those already
+        // went through the engine, and re-clamping there would silently undo a legal block move.
+        if (act === 'up' || act === 'down' || act === 'rm') {
+          chosen.forEach((c, k) => { c.indent = Math.min(c.indent, maxIndentFor(chosen, k, MAX_INDENT)); });
+        }
         paintList();
         _syncChecks();
         onChange(members());
@@ -168,7 +224,7 @@ export function mount(host, opts = {}) {
   }
 
   function _syncChecks() {
-    const inside = new Set(chosen.map((c) => c.id));
+    const inside = new Set(chosen.map((c) => c.id).filter(Boolean));
     host.querySelectorAll('.cdx-mem-cb').forEach((cb) => { cb.checked = inside.has(Number(cb.value)); });
   }
 
@@ -186,11 +242,11 @@ export function mount(host, opts = {}) {
           const i = chosen.findIndex((c) => c.id === id);
           if (i !== -1) chosen = removeAt(chosen, i);
         }
-        paintList();          // só a lista; o escolhedor fica exatamente onde estava
+        paintList();          // only the list; the picker stays exactly where it was
         onChange(members());
       });
-      // Acordeão de uma seção aberta por vez. Durante uma busca fica tudo aberto: colapsar
-      // esconderia justamente o que ele procurou.
+      // One section open at a time. During a search everything stays open: collapsing would hide
+      // precisely what was searched for.
       list.addEventListener('click', (e) => {
         const tgl = e.target.closest('[data-acc-toggle]');
         if (!tgl || query) return;
@@ -210,12 +266,33 @@ export function mount(host, opts = {}) {
     if (search) search.addEventListener('input', () => {
       query = search.value;
       const box = host.querySelector('.cdx-picker-list');
-      if (box) box.innerHTML = pickerHtml();     // idem: a busca não repinta a lista de dentro
+      if (box) box.innerHTML = pickerHtml();     // likewise: the search does not repaint the list
     });
   }
 
-  function members() { return chosen.map((c) => ({ id: c.id, indent: c.indent })); }
-  function ids() { return chosen.map((c) => c.id); }
+  // What the screen persists. The KEY travels, not the id: a member created inside the bundle
+  // only gets an id when the single Save creates it (editor/nav.js resolveMembers swaps them).
+  function members() { return chosen.map((c) => ({ key: c.key, indent: c.indent })); }
+  function ids() { return chosen.map((c) => c.id).filter(Boolean); }
+  // The FULL rows, titles included. The editor stashes these when you step into a member, so
+  // coming back repaints the list you had built instead of re-fetching one that would have lost
+  // every member that does not exist on the server yet.
+  function rows() { return chosen.map((c) => Object.assign({}, c)); }
+
+  // Add something the screen just produced (the "+ criar aqui" round trip), or update the row of
+  // a member whose title changed while it was open one level down.
+  function add(entry) {
+    chosen.push(_norm(entry));
+    paintList();
+    _syncChecks();
+    onChange(members());
+  }
+  function patch(key, fields) {
+    const row = chosen.find((c) => String(c.key) === String(key));
+    if (!row) return;
+    Object.assign(row, fields || {});
+    paintList();
+  }
 
   render();
   Promise.all([
@@ -227,5 +304,5 @@ export function mount(host, opts = {}) {
     render();
   });
 
-  return { members, ids, destroy: () => { host.innerHTML = ''; } };
+  return { members, ids, rows, add, patch, destroy: () => { host.innerHTML = ''; } };
 }

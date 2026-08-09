@@ -1,8 +1,9 @@
 <!doctype html>
-<!-- Mounts the REAL item editor (content/item-form.js) against fake types/tags, with no admin
+<!-- Mounts the REAL item editor (content/item-form.js) against a fake archive, with no admin
      session and no Worker. It exists because the editor's shape (one screen, the AI box on top,
-     the type block below, the member list for a bundle) can only be checked in a browser, and
-     node:test has no eye. Driven by tests/visual/editor-check.mjs. -->
+     the type block below, the member list for a package, the breadcrumb once you step into a
+     member) can only be checked in a browser, and node:test has no eye.
+     Driven by tests/visual/editor-check.mjs. -->
 <html lang="pt-BR" data-theme="light"><head><meta charset="utf-8">
 <link rel="stylesheet" href="/codex/css/theme.css">
 <link rel="stylesheet" href="/codex/css/backstage.css">
@@ -17,33 +18,62 @@
 <script>
 // The transport seam. codex-api.js calls a `callWorker` GLOBAL that a Backstage script sets
 // before the module boot on the real page; without it every facade call is a ReferenceError
-// that aborts whatever was mid-mount. Stubbed here so this harness exercises the SCREEN and
-// never the network: any call resolves empty.
-window.callWorker = () => Promise.resolve({});
+// that aborts whatever was mid-mount. Here it is a FAKE ARCHIVE rather than an empty stub: the
+// member list, "Abrir" and the save plan all need real-shaped answers, and an empty one made
+// the type switch look broken for a reason that had nothing to do with the editor.
+window.__calls = [];
+const ITEMS = {
+  11: { id: 11, type: 'prompt', title: 'Prompt: Resumo Preparatório', summary: 's1', body_md: 'corpo 1', meta_json: null, tags: [] },
+  12: { id: 12, type: 'conteudo', title: 'Modelo de Ata', summary: 's2', body_md: 'corpo 2', meta_json: null, tags: [] },
+  13: { id: 13, type: 'lab', title: 'Lab: Tokens', summary: 's3', body_md: '', meta_json: null, tags: [] },
+  2:  { id: 2, type: 'pasta', title: 'Pacote: Preparação', summary: '', body_md: 'intro', meta_json: null, tags: [],
+        children: [{ id: 11, title: ITEMS_TITLE(11), type: 'prompt', type_label: 'Prompt', indent: 0 },
+                   { id: 12, title: ITEMS_TITLE(12), type: 'conteudo', type_label: 'Conteúdo', indent: 1 },
+                   { id: 13, title: ITEMS_TITLE(13), type: 'lab', type_label: 'Lab', indent: 1 }] },
+};
+function ITEMS_TITLE(id) {
+  return { 11: 'Prompt: Resumo Preparatório', 12: 'Modelo de Ata', 13: 'Lab: Tokens' }[id];
+}
+window.callWorker = (params) => {
+  const p = params || {};
+  window.__calls.push(p);
+  if (p.action === 'ct_list_items') return Promise.resolve({ ok: true, items: [ITEMS[11], ITEMS[12], ITEMS[13]] });
+  if (p.action === 'ct_list_types') return Promise.resolve({ ok: true, types: window.__types });
+  if (p.action === 'ct_get_item') return Promise.resolve({ ok: true, item: ITEMS[Number(p.id)] || null });
+  if (p.action === 'ct_create_item') return Promise.resolve({ ok: true, item: { id: 999, title: p.title, type: p.type } });
+  if (p.action === 'ct_update_item') return Promise.resolve({ ok: true });
+  if (p.action === 'ct_set_item_members') return Promise.resolve({ ok: true, children: [] });
+  return Promise.resolve({});
+};
+window.__types = [
+  { slug: 'prompt', label: 'Prompt', icon: 'glyph:file' },
+  { slug: 'conteudo', label: 'Conteúdo', icon: 'glyph:file' },
+  { slug: 'lab', label: 'Lab', icon: 'glyph:file' },
+  { slug: 'pasta', label: 'Pasta', icon: 'glyph:folder', family: 'bundle' },
+];
 </script>
 <script type="module">
 import * as itemForm from '/codex/content/item-form.js';
 
-const types = [
-  { slug: 'prompt', label: 'Prompt', icon: 'glyph:file' },
-  { slug: 'guide', label: 'Guia', icon: 'glyph:file' },
-  { slug: 'arquivo', label: 'Arquivo', icon: 'glyph:file' },
-  { slug: 'pasta', label: 'Pasta', icon: 'glyph:folder', family: 'bundle' },
-];
+const types = window.__types;
 const tags = [{ id: 1, label: 'audiência' }, { id: 2, label: 'magistrados' }];
 
 const params = new URLSearchParams(location.search);
 const mode = params.get('mode') || 'new';
-const item = mode === 'edit'
-  ? { id: 1, type: 'prompt', title: 'Prompt: Resumo Preparatório', summary: 'x', body_md: 'corpo', meta_json: null, tags: [{ id: 1 }] }
+const item = mode === 'edit' ? { id: 11, type: 'prompt', title: 'Prompt: Resumo Preparatório', summary: 'x', body_md: 'corpo', meta_json: null, tags: [{ id: 1 }] }
   : (mode === 'bundle'
-      ? { id: 2, type: 'pasta', title: 'Pacote: Preparação', summary: '', body_md: 'intro', meta_json: null, tags: [], children: [] }
+      ? { id: 2, type: 'pasta', title: 'Pacote: Preparação', summary: '', body_md: 'intro', meta_json: null, tags: [],
+          children: [{ id: 11, title: 'Prompt: Resumo Preparatório', type: 'prompt', type_label: 'Prompt', indent: 0 },
+                     { id: 12, title: 'Modelo de Ata', type: 'conteudo', type_label: 'Conteúdo', indent: 1 },
+                     { id: 13, title: 'Lab: Tokens', type: 'lab', type_label: 'Lab', indent: 1 }] }
       : null);
 
+window.__deleted = null;
 window.__h = itemForm.mount(document.getElementById('host'), {
   item, types, tags,
-  onSave: () => { window.__saved = true; },
+  onSave: (saved) => { window.__saved = saved || true; },
   onCancel: () => { window.__cancelled = true; },
+  onDeleteItem: (it) => { window.__deleted = it && it.id; },
 });
 </script>
 </body></html>

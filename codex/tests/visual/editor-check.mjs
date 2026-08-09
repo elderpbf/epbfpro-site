@@ -1,6 +1,7 @@
 // Browser check for the merged item editor. node:test has no eye and no DOM: it cannot tell
-// whether the AI box actually mounted, whether the type block swapped when the type changed, or
-// whether the member list appeared for a bundle. This can.
+// whether the AI box actually mounted, whether the type block swapped when the type changed,
+// whether stepping into a member paints a breadcrumb, or whether ONE Save writes the package and
+// the member it touched. This can.
 //
 // Playwright is NOT a repo dependency on purpose (this repo IS the deploy artifact, a
 // node_modules here would ship to the CDN). Install it anywhere and point CDX_PLAYWRIGHT at it:
@@ -37,12 +38,17 @@ const browser = await chromium.launch();
 
 const fails = [];
 const ok = (cond, label) => { console.log((cond ? 'ok   ' : 'FAIL ') + label); if (!cond) fails.push(label); };
+const shot = (page, name) => page.screenshot({
+  path: (process.argv[2] ? process.argv[2] + '/' : '') + name + '.png', fullPage: true });
 
 async function open(mode) {
-  const page = await browser.newPage({ viewport: { width: 1200, height: 1000 } });
+  const page = await browser.newPage({ viewport: { width: 1200, height: 1100 } });
   const errs = [];
   page.on('pageerror', (e) => errs.push(String(e)));
   page.on('console', (m) => { if (m.type() === 'error') errs.push('console: ' + m.text()); });
+  // window.confirm blocks a headless run forever; the guards under test USE it, so it is
+  // answered here rather than avoided. Default yes: each check overrides when it needs no.
+  page.on('dialog', (d) => d.accept());
   await page.goto('http://127.0.0.1:8794/codex/tests/visual/editor-harness.html?mode=' + mode);
   await page.waitForSelector('.cdx-editor', { timeout: 10000 });
   return { page, errs };
@@ -59,8 +65,11 @@ async function open(mode) {
   ok(await page.$('#ie-type-block') !== null, 'new: the type block is on the same screen');
   // The old flow had two modals; the merged one must not open a second.
   ok((await page.$$('.cdx-editor')).length === 1, 'new: exactly one editor on screen');
+  ok(await page.$('#ie-crumbs .cdx-crumb') === null, 'new: no breadcrumb at the root level');
+  ok(await page.$('#ie-delete') === null, 'new: nothing to delete before it exists');
+  ok(await page.$eval('#ie-refazer-btn', (el) => el.hidden) === true, 'new: Refazer stays hidden until an AI pass');
   ok(errs.length === 0, 'new: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
-  await page.screenshot({ path: process.argv[2] ? process.argv[2] + '/editor-new.png' : 'editor-new.png', fullPage: true });
+  await shot(page, 'editor-new');
   await page.close();
 }
 
@@ -70,25 +79,135 @@ async function open(mode) {
   ok(await page.$('#ie-aibox .cdx-aib') !== null, 'edit: the AI box is present too (it never was before)');
   ok(await page.$eval('#ie-title', (el) => el.value) === 'Prompt: Resumo Preparatório', 'edit: the title arrived filled');
   ok(await page.$eval('#aib-verbatim', (el) => el.checked) === true, 'edit: a prompt reads back as raw');
+  ok(await page.$('#ie-delete') !== null, 'edit: the item can be deleted from this screen');
+  ok((await page.$eval('.cdx-editor-title', (el) => el.textContent)).indexOf('item') >= 0,
+    'edit: the header says WHAT it is');
+  await page.click('#ie-delete');
+  ok(await page.evaluate(() => window.__deleted) === 11, 'edit: delete hands the item to the host, confirm and all');
   ok(errs.length === 0, 'edit: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
-  await page.screenshot({ path: process.argv[2] ? process.argv[2] + '/editor-edit.png' : 'editor-edit.png', fullPage: true });
+  await shot(page, 'editor-edit');
   await page.close();
 }
 
 // ── bundle: the member list belongs to the bundle family ────────────────────
 {
   const { page, errs } = await open('bundle');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
   ok(await page.$('#ie-members') !== null, 'bundle: the member list mounted');
   ok(await page.$('#ie-body') !== null, 'bundle: the intro text field is there');
+  ok(await page.$('#ie-zip-intro') !== null, 'bundle: the ".zip" choice sits next to the box it governs');
+  ok((await page.$eval('.cdx-editor-title', (el) => el.textContent)).indexOf('pacote') >= 0,
+    'bundle: the header says it is a package');
+  ok(await page.$('#ie-mem-add') !== null, 'bundle: "+ adicionar existente" is a deliberate action');
+  ok(await page.$('#ie-mem-new') !== null, 'bundle: "+ criar aqui" is there too');
+  ok(await page.$eval('.cdx-mem-picker', (el) => el.style.display) === 'none',
+    'bundle: the archive picker starts closed, so the list you are building owns the screen');
+  await page.click('#ie-mem-add');
+  ok(await page.$eval('.cdx-mem-picker', (el) => el.style.display) !== 'none', 'bundle: and it opens on demand');
+
   // Switching to a non-bundle type must swap the block, which is the part that silently breaks.
+  // With members inside it also has to ASK first (the dialog handler above answers yes).
   await page.click('[data-val="prompt"]');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   ok(await page.$('#ie-members') === null, 'bundle -> prompt: the member list went away with the type');
   await page.click('[data-val="pasta"]');
-  await page.waitForTimeout(200);
+  await page.waitForTimeout(250);
   ok(await page.$('#ie-members') !== null, 'prompt -> bundle: and it came back');
   ok(errs.length === 0, 'bundle: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
-  await page.screenshot({ path: process.argv[2] ? process.argv[2] + '/editor-bundle.png' : 'editor-bundle.png', fullPage: true });
+  await shot(page, 'editor-bundle');
+  await page.close();
+}
+
+// ── the indent moves in BLOCKS ──────────────────────────────────────────────
+// Élder 2026-08-07: "se eu tiro a indentação do terceiro item, todos que vêm depois que estão
+// indentados nele devem perder indentação igual". The pure engine was tested and the screen still
+// assigned the number by hand, so this checks the CLICK, not the function.
+{
+  const { page, errs } = await open('bundle');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  const indents = () => page.$$eval('#ie-members .cdx-mem-row', (rows) => rows.map((r) => r.dataset.indent));
+  ok(JSON.stringify(await indents()) === '["0","1","1"]', 'blocks: the seeded steps are 0, 1, 1');
+  // The FIRST row cannot be indented: it has nothing above it to sit under.
+  ok(await page.$eval('#ie-members .cdx-mem-row:nth-child(1) [data-act="in"]', (b) => b.disabled) === true,
+    'blocks: the first row cannot be indented, and the button says so');
+  // Row 2 cannot go deeper either: it is already one step past the row above it, and skipping a
+  // step is exactly what the rule forbids.
+  ok(await page.$eval('#ie-members .cdx-mem-row:nth-child(2) [data-act="in"]', (b) => b.disabled) === true,
+    'blocks: no row may skip a step, so the button is dead rather than lying');
+  // Row 3 CAN, because row 2 is at step 1. That puts row 3 INSIDE row 2's block.
+  await page.click('#ie-members .cdx-mem-row:nth-child(3) [data-act="in"]');
+  await page.waitForTimeout(120);
+  ok(JSON.stringify(await indents()) === '["0","1","2"]', 'blocks: row 3 went under row 2');
+  // Now pull row 2 out. Row 3 is inside it, so it has to come along: this is the whole rule.
+  await page.click('#ie-members .cdx-mem-row:nth-child(2) [data-act="out"]');
+  await page.waitForTimeout(120);
+  ok(JSON.stringify(await indents()) === '["0","0","1"]',
+    'blocks: pulling a row out brings everything inside it along');
+  ok(errs.length === 0, 'blocks: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
+  await page.close();
+}
+
+// ── stepping INTO a member, and coming back with what you typed ─────────────
+{
+  const { page, errs } = await open('bundle');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  await page.fill('#ie-body', 'introducao editada no pacote');
+  await page.click('#ie-members .cdx-mem-row:nth-child(1) [data-act="open"]');
+  await page.waitForSelector('#ie-crumbs .cdx-crumb', { timeout: 5000 });
+  ok((await page.$$('#ie-crumbs .cdx-crumb')).length === 2, 'nav: the breadcrumb shows both levels');
+  ok(await page.$eval('#ie-title', (el) => el.value) === 'Prompt: Resumo Preparatório', 'nav: the member opened in the SAME screen');
+  ok(await page.$('#ie-back') !== null, 'nav: one level down, Cancel becomes "back to the package"');
+  ok(await page.$('#ie-delete') === null, 'nav: deleting is a root-level action, not an inside-the-package one');
+  await page.fill('#ie-title', 'Prompt renomeado');
+  await page.click('#ie-back');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  ok(await page.$eval('#ie-body', (el) => el.value) === 'introducao editada no pacote',
+    'nav: coming back kept the package intro (leaving a member never discards)');
+  const firstTitle = await page.$eval('#ie-members .cdx-mem-row:nth-child(1) .cdx-mem-title', (el) => el.textContent);
+  ok(firstTitle.indexOf('Prompt renomeado') >= 0, 'nav: the row shows the new name, unsaved and all');
+
+  // ONE Save writes the member AND the package AND the member list.
+  await page.evaluate(() => { window.__calls.length = 0; });
+  await page.click('#ie-save');
+  await page.waitForTimeout(400);
+  const acts = await page.evaluate(() => window.__calls.map((c) => c.action));
+  ok(acts.filter((a) => a === 'ct_update_item').length === 2, 'save: both the package and the touched member were written');
+  ok(acts.indexOf('ct_set_item_members') > acts.lastIndexOf('ct_update_item'),
+    'save: the member list is written last, once every member exists');
+  ok(await page.evaluate(() => !!window.__saved), 'save: the host was told');
+  ok(errs.length === 0, 'nav: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
+  await shot(page, 'editor-nested');
+  await page.close();
+}
+
+// ── "+ criar aqui": a member born inside the package ────────────────────────
+{
+  const { page, errs } = await open('bundle');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  await page.click('#ie-mem-new');
+  await page.waitForSelector('#ie-crumbs .cdx-crumb', { timeout: 5000 });
+  ok(await page.$eval('#ie-title', (el) => el.value) === '', 'create-here: the new level opens blank');
+  await page.fill('#ie-title', 'Nascido dentro');
+  await page.click('#ie-back');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  const rows = await page.$$eval('#ie-members .cdx-mem-row .cdx-mem-title', (els) => els.map((e) => e.textContent));
+  ok(rows.length === 4, 'create-here: the package shows what it is about to contain');
+  ok(rows[3].indexOf('Nascido dentro') >= 0, 'create-here: with the name just given');
+  ok(rows[3].indexOf('não salvo') >= 0, 'create-here: and it SAYS it is not saved yet');
+
+  await page.evaluate(() => { window.__calls.length = 0; });
+  await page.click('#ie-save');
+  await page.waitForTimeout(400);
+  const calls = await page.evaluate(() => window.__calls);
+  const acts = calls.map((c) => c.action);
+  ok(acts.indexOf('ct_create_item') >= 0, 'create-here: the new item was created');
+  ok(acts.indexOf('ct_create_item') < acts.indexOf('ct_set_item_members'),
+    'create-here: created BEFORE the list that names it');
+  const members = calls.find((c) => c.action === 'ct_set_item_members');
+  ok(!!members && members.children.some((c) => Number(c.id) === 999),
+    'create-here: the temporary key was swapped for the real id');
+  ok(errs.length === 0, 'create-here: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
+  await shot(page, 'editor-create-here');
   await page.close();
 }
 
