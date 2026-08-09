@@ -58,11 +58,17 @@ async function open(mode) {
 {
   const { page, errs } = await open('new');
   ok(await page.$('#ie-aibox .cdx-aib') !== null, 'new: the AI box mounted inside the editor');
-  ok(await page.$('#aib-raw') !== null, 'new: the raw-content textarea is there');
+  ok(await page.$('#ie-aibox #ie-body') !== null, 'new: ONE content box, and the AI is attached to it');
+  ok(await page.$$eval('textarea#ie-body', (e) => e.length) === 1, 'new: exactly one body field, not a raw box plus a body');
   ok(await page.$('#aib-verbatim') !== null, 'new: the keep-raw checkbox is there');
   ok(await page.$('#aib-pick') !== null, 'new: the AI chooser caret is there');
   ok(await page.$('#ie-title') !== null, 'new: the title field is on the SAME screen');
-  ok(await page.$('#ie-type-block') !== null, 'new: the type block is on the same screen');
+  ok(await page.$('#ie-extras') !== null, 'new: the per-type extras are on the same screen');
+  // The layout Élder approved: two columns with a grip. A single column is what he rejected.
+  ok(await page.$('#ie-split') !== null, 'new: the two-column split is there');
+  ok(await page.$('.cdx-ie-left') !== null && await page.$('.cdx-ie-right') !== null, 'new: BOTH panels exist');
+  ok(await page.$('.cdx-rz-grip') !== null, 'new: the columns have a draggable grip');
+  ok(await page.$('[data-pack="1"]') !== null, 'new: the Item|Pacote switch is in the header from the first frame');
   // The old flow had two modals; the merged one must not open a second.
   ok((await page.$$('.cdx-editor')).length === 1, 'new: exactly one editor on screen');
   ok(await page.$('#ie-crumbs .cdx-crumb') === null, 'new: no breadcrumb at the root level');
@@ -94,6 +100,7 @@ async function open(mode) {
   const { page, errs } = await open('bundle');
   await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
   ok(await page.$('#ie-members') !== null, 'bundle: the member list mounted');
+  ok(await page.$('.cdx-ie-right #ie-members') !== null, 'bundle: the member list is in the RIGHT panel');
   ok(await page.$('#ie-body') !== null, 'bundle: the intro text field is there');
   ok(await page.$('#ie-zip-intro') !== null, 'bundle: the ".zip" choice sits next to the box it governs');
   ok((await page.$eval('.cdx-editor-title', (el) => el.textContent)).indexOf('pacote') >= 0,
@@ -128,18 +135,22 @@ async function open(mode) {
   const indents = () => page.$$eval('#ie-members .cdx-mem-row', (rows) => rows.map((r) => r.dataset.indent));
   ok(JSON.stringify(await indents()) === '["0","1","1"]', 'blocks: the seeded steps are 0, 1, 1');
   // The FIRST row cannot be indented: it has nothing above it to sit under.
-  ok(await page.$eval('#ie-members .cdx-mem-row:nth-child(1) [data-act="in"]', (b) => b.disabled) === true,
-    'blocks: the first row cannot be indented, and the button says so');
+  await page.click('#ie-members .cdx-mem-row:nth-child(1)');
+  ok(await page.$eval('.cdx-ie-bar [data-act="in"]', (b) => b.disabled) === true,
+    'blocks: with row 1 selected, the indent action is dead, because it has nothing above it');
   // Row 2 cannot go deeper either: it is already one step past the row above it, and skipping a
   // step is exactly what the rule forbids.
-  ok(await page.$eval('#ie-members .cdx-mem-row:nth-child(2) [data-act="in"]', (b) => b.disabled) === true,
-    'blocks: no row may skip a step, so the button is dead rather than lying');
+  await page.click('#ie-members .cdx-mem-row:nth-child(2)');
+  ok(await page.$eval('.cdx-ie-bar [data-act="in"]', (b) => b.disabled) === true,
+    'blocks: no row may skip a step, so the action is dead rather than lying');
   // Row 3 CAN, because row 2 is at step 1. That puts row 3 INSIDE row 2's block.
-  await page.click('#ie-members .cdx-mem-row:nth-child(3) [data-act="in"]');
+  await page.click('#ie-members .cdx-mem-row:nth-child(3)');
+  await page.click('.cdx-ie-bar [data-act="in"]');
   await page.waitForTimeout(120);
   ok(JSON.stringify(await indents()) === '["0","1","2"]', 'blocks: row 3 went under row 2');
   // Now pull row 2 out. Row 3 is inside it, so it has to come along: this is the whole rule.
-  await page.click('#ie-members .cdx-mem-row:nth-child(2) [data-act="out"]');
+  await page.click('#ie-members .cdx-mem-row:nth-child(2)');
+  await page.click('.cdx-ie-bar [data-act="out"]');
   await page.waitForTimeout(120);
   ok(JSON.stringify(await indents()) === '["0","0","1"]',
     'blocks: pulling a row out brings everything inside it along');
@@ -152,7 +163,8 @@ async function open(mode) {
   const { page, errs } = await open('bundle');
   await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
   await page.fill('#ie-body', 'introducao editada no pacote');
-  await page.click('#ie-members .cdx-mem-row:nth-child(1) [data-act="open"]');
+  await page.click('#ie-members .cdx-mem-row:nth-child(1)');
+  await page.click('.cdx-ie-bar [data-act="open"]');
   await page.waitForSelector('#ie-crumbs .cdx-crumb', { timeout: 5000 });
   ok((await page.$$('#ie-crumbs .cdx-crumb')).length === 2, 'nav: the breadcrumb shows both levels');
   ok(await page.$eval('#ie-title', (el) => el.value) === 'Prompt: Resumo Preparatório', 'nav: the member opened in the SAME screen');

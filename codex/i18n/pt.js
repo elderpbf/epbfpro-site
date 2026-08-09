@@ -837,7 +837,6 @@ export default {
   'content.confirm_delete_btn':  'Excluir',
 
   // Content → Items — editor labels (passed to the shared item form)
-  'content.new_item_step2':   'Novo item · 2 de 2',
   'content.edit_item':        'Editar item',
   'content.save':             'Salvar',
   'content.create':           'Criar',
@@ -911,6 +910,11 @@ export default {
   'editor.members_no_zip':        'não entra no .zip',
   'editor.members_indent':        'Recuar (fica sob o de cima)',
   'editor.members_outdent':       'Voltar um degrau',
+  'editor.kind_item':               'Item',
+  'editor.kind_bundle':             'Pacote',
+  'editor.ai_note':                 'A IA lê o que está na caixa acima e preenche o que estiver vazio. Ela escolhe tipo e etiqueta entre os que já existem: quando nada serve, deixa em branco em vez de inventar categoria.',
+  'editor.right_empty':             'Um item comum. Mude para Pacote no topo para pôr outros itens dentro dele.',
+  'editor.no_type_for_kind':        'Nenhum tipo cadastrado para isso.',
   'editor.members_open':          'Abrir',
   'editor.members_open_blocked':  'Salve primeiro, ou o pacote já está fundo demais.',
   'editor.members_unsaved':       'ainda não salvo',

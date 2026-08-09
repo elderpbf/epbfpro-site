@@ -579,7 +579,9 @@ function _newItem() {
 
 function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
   const isEdit = !!item;
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  // The WIDE modal: the editor is two columns now, and the narrow default is the shape Élder
+  // rejected ("você poderia ter um modal mais largo e preferiu colocar um modal estreito").
+  const bd = openModal('<div class="cdx-modal-body cdx-modal-wide"></div>', { disableBackdropClose: true });
   itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
@@ -587,7 +589,9 @@ function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
     pendingFile,
     types: _types,
     tags: _tags,
-    titleLabel: isEdit ? t('content.edit_item') : t('content.new_item_step2'),
+    // No titleLabel override: the editor's own header says WHAT it is ("Editando pacote «X»").
+    // The old value here was "Novo item · 2 de 2", a leftover from the two-screen flow that
+    // survived the merge and made the one screen announce itself as step two of two.
     saveLabel: isEdit ? t('content.save') : t('content.create'),
     closeLabel: t('content.close'),
     excludeTypes: isEdit ? [] : NON_CREATABLE_TYPES,

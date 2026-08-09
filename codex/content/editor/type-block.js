@@ -62,42 +62,56 @@ export function setBundleSlugs(types) {
   _bundleSlugs = new Set((types || []).filter((ty) => ty.family === 'bundle').map((ty) => ty.slug));
 }
 
+// WHAT THE SINGLE CONTENT BOX IS FOR, per type. The box itself lives in editor/ai-box.js and the
+// assembling mount places it, but only this module is allowed to know that a `paper` keeps
+// complementary notes there while the article is the PDF, or that a package keeps its intro and
+// must not be offered "use as a file to download" (a package is not a file).
+//
+// It exists as a function rather than as three ternaries in item-form.js because
+// tests/editor-module.test.mjs enforces that the assembling mount never branches on a type slug,
+// and that guard is right: type knowledge in two places is how the two drift.
+export function contentBoxSpec(typeSlug) {
+  if (isBundleSlug(typeSlug)) {
+    return { labelKey: 'editor.projeto_intro_label', placeholderKey: 'editor.projeto_intro_placeholder',
+      rows: 4, sources: false };
+  }
+  if (typeSlug === 'paper') {
+    return { labelKey: 'editor.paper_extra_label', placeholderKey: 'editor.paper_extra_placeholder',
+      rows: 6, sources: true };
+  }
+  return { labelKey: 'editor.body_label', placeholderKey: 'editor.body_placeholder', rows: 8, sources: true };
+}
+
+// Does moving from one type to another change what the content box IS? The mount asks before
+// deciding whether to rebuild it, and asking here keeps the answer next to the spec above.
+export function contentBoxChanged(fromSlug, toSlug) {
+  const a = contentBoxSpec(fromSlug), b = contentBoxSpec(toSlug);
+  return a.labelKey !== b.labelKey || a.sources !== b.sources || a.rows !== b.rows;
+}
+
+// THE BODY IS NOT HERE ANY MORE. In the layout Élder approved there is ONE content box, at the
+// top of the left column, and the AI is attached to it (editor/ai-box.js owns `#ie-body`). This
+// module emits only what a type adds BEYOND a body: a guide's platform tabs, an arquivo's upload,
+// a paper's authors, a package's member list. `collectTypeData` still finds `#ie-body` because it
+// queries from the editor root, not from this block.
 export function buildTypeBlock(typeSlug, body_md, meta) {
   const m = meta || {};
-  const hasBody = '<div class="cdx-field"><label>' + t('editor.body_label') + '</label>' +
-    '<textarea id="ie-body" rows="10" placeholder="' + _esc(t('editor.body_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
-    '<div class="cdx-editor-toolbar">' +
-      '<button class="cdx-btn cdx-btn-sm" id="ie-preview-btn" type="button">' + t('editor.preview_show') + '</button>' +
-    '</div>' +
-    '<div class="cdx-preview-area" id="ie-preview" style="display:none"></div>' +
-  '</div>';
 
   if (typeSlug === 'prompt') {
-    return '<div class="cdx-type-block">' + hasBody + '</div>';
+    return '<div class="cdx-type-block"></div>';
   }
   // A BUNDLE has no content of its own: the body is the sentence that introduces it to the
   // student, and the member list is mounted into #ie-members once this block exists in the DOM.
   // Keyed on the family, not on a fixed slug, so a bundle type created on the types screen
   // works with no code change.
   if (isBundleSlug(typeSlug)) {
-    // The "goes into the .zip" choice sits UNDER the box it governs, not in a settings block
-    // somewhere else (Élder 2026-08-07). Default ON for a package that already had no opinion:
-    // the intro is the sentence that explains the folder, and a folder of files with no note is
-    // the thing the student writes back to ask about.
-    const zipIntro = (m.zip_intro !== false);
-    return '<div class="cdx-type-block">' +
-      '<div class="cdx-field"><label>' + t('editor.projeto_intro_label') + '</label>' +
-        '<textarea id="ie-body" rows="3" placeholder="' + _esc(t('editor.projeto_intro_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
-        '<label class="cdx-check-inline"><input type="checkbox" id="ie-zip-intro"' + (zipIntro ? ' checked' : '') + '> ' +
-          _esc(t('editor.projeto_intro_in_zip')) + '</label>' +
-      '</div>' +
-      '<div id="ie-members"></div>' +
-    '</div>';
+    // Only the member list: the package's description IS the content box on the left, and the
+    // ".zip" choice sits under that box, next to the thing it governs (buildZipIntro below).
+    return '<div class="cdx-type-block"><div id="ie-members"></div></div>';
   }
   if (typeSlug === 'guide') {
     const hasPlatformTabs = !!(m.platform_tabs);
     return '<div class="cdx-type-block">' +
-      hasBody +
       '<div class="cdx-field">' +
         '<label class="cdx-toggle-label">' +
           '<span class="cdx-toggle">' +
@@ -124,7 +138,6 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
   }
   if (typeSlug === 'material') {
     return '<div class="cdx-type-block">' +
-      hasBody +
       '<div class="cdx-field"><label>' + t('editor.material_file_label') + '</label>' +
         '<div class="cdx-upload-row">' +
           '<input type="file" id="ie-material-file" accept=".png,.jpg,.jpeg,.pdf,image/png,image/jpeg,application/pdf">' +
@@ -139,7 +152,6 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
     // shared file-source module. The student gets a "Download" action on the trail (actions.js
     // renders attachment_url generically). The Drive button hides until the Picker key lands.
     return '<div class="cdx-type-block">' +
-      hasBody +
       '<div class="cdx-field"><label>' + t('editor.arquivo_file_label') + '</label>' +
         '<div class="cdx-upload-row">' +
           '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-local">' + t('editor.file_from_computer') + '</button>' +
@@ -170,9 +182,6 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
         '</div>' +
         (m.pdf_url ? '<div class="cdx-upload-filename">' + t('editor.current_pdf') + ' <a href="' + _esc(m.pdf_url) + '" target="_blank" rel="noopener">' + t('editor.view') + '</a></div>' : '') +
       '</div>' +
-      '<div class="cdx-field"><label>' + t('editor.paper_extra_label') + '</label>' +
-        '<textarea id="ie-body" rows="6" placeholder="' + _esc(t('editor.paper_extra_placeholder')) + '">' + _esc(body_md || '') + '</textarea>' +
-      '</div>' +
     '</div>';
   }
   if (typeSlug === 'model_info') {
@@ -195,7 +204,16 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
-  return '<div class="cdx-type-block">' + hasBody + '</div>';
+  return '<div class="cdx-type-block"></div>';
+}
+
+// The ".zip" choice for a package, rendered by the assembling mount right under the content box
+// it governs (Élder 2026-08-07). Default ON for a package that never expressed an opinion: a
+// folder of files with no note is the thing the student writes back to ask about.
+export function buildZipIntro(meta) {
+  const m = meta || {};
+  return '<label class="cdx-check-inline"><input type="checkbox" id="ie-zip-intro"' +
+    (m.zip_intro !== false ? ' checked' : '') + '> ' + _esc(t('editor.projeto_intro_in_zip')) + '</label>';
 }
 
 export function wireTypeBlock(block, typeSlug, onFileSelected, ctx) {

@@ -51,6 +51,7 @@ export function mount(host, opts = {}) {
   let types = [];
   let query = '';
   let pickerOpen = false;
+  let sel = null;   // the ONE selected row the action bar acts on
   const onChange = opts.onChange || function () {};
   // Opening a member and creating one inside are the screen's business, not this painter's: it
   // only says WHICH row was asked for. Absent callbacks simply hide the controls, which is what
@@ -82,40 +83,50 @@ export function mount(host, opts = {}) {
     return ty && ty.icon;
   }
 
-  // ── The list of what is inside ───────────────────────────────────────────
+  // ── The list of what is inside ─────────────────────────────
+  // ONE selected row, and the actions in a BAR above it, not six buttons repeated on every row.
+  // Elder approved this shape ("d looks nice, but lacks the ->| controls") and the reason it is a
+  // bar is the narrow column: per-row buttons push the title out of view, and six rows of six
+  // buttons are thirty-six buttons competing with the content.
+  //
+  // The bar also gives the "only exists inside this package" checkbox a SUBJECT. Before the
+  // selection existed, that sentence spoke about a row nobody had pointed at.
   function listHtml() {
     if (!chosen.length) return '<li class="cdx-mem-empty">' + t('editor.members_empty') + '</li>';
     return guidesFromIndent(chosen).map((row, i) => {
       const c = row.item;
-      const glyph = typeIconHtml(_typeIcon(c.type), { size: 14 });
-      // The buttons light up from the SAME rule the move uses (shiftIndent refuses whatever
-      // would skip a step or push the block past the ceiling), so a live button never no-ops.
-      const canIn = shiftIndent(chosen, i, +1, MAX_INDENT) !== chosen;
-      const canOut = shiftIndent(chosen, i, -1, MAX_INDENT) !== chosen;
-      const openable = !!onOpen && canOpen(c);
-      const openBtn = onOpen
-        ? '<button type="button" class="cdx-btn cdx-btn-sm" data-act="open"' + (openable ? '' : ' disabled title="' + _esc(t('editor.members_open_blocked')) + '"') + '>' + t('editor.members_open') + '</button>'
-        : '';
+      const glyph = typeIconHtml(_typeIcon(c.type), { size: 13 });
       // Lab and interativo may go into a package, they just do not fit in the .zip. The row SAYS
       // so instead of the package refusing them: forbidding would make the rule depend on ORDER
-      // (put a lab first and the package locks against documents). Élder 2026-08-05. The picker
-      // already said it; the row says it too, because after adding, the picker is where you are
-      // not looking.
+      // (put a lab first and the package locks against documents). Elder 2026-08-05.
       const noZip = isDownloadable(c) ? '' : ' <span class="cdx-comp-elsewhere">' + _esc(t('editor.members_no_zip')) + '</span>';
       const newTag = c.isNew ? ' <span class="cdx-mem-new">' + _esc(t('editor.members_unsaved')) + '</span>' : '';
-      return '<li class="cdx-mem-row" data-i="' + i + '" data-indent="' + c.indent + '">' +
+      return '<li class="cdx-mem-row' + (i === sel ? ' is-sel' : '') + '" data-i="' + i + '" data-indent="' + c.indent + '">' +
           guideHtml(row.guides, row.isLast, row.depth) +
           (glyph ? '<span class="cdx-mem-glyph" aria-hidden="true">' + glyph + '</span>' : '') +
           '<span class="cdx-mem-title">' + _esc(c.title || ('#' + c.key)) + newTag + noZip + '</span>' +
           '<span class="cdx-mem-type">' + _esc(c.type_label) + '</span>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-act="out"' + (canOut ? '' : ' disabled') + ' title="' + _esc(t('editor.members_outdent')) + '">|&#8592;</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-act="in"' + (canIn ? '' : ' disabled') + ' title="' + _esc(t('editor.members_indent')) + '">&#8594;|</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-act="up"' + (i === 0 ? ' disabled' : '') + '>&#8593;</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-act="down"' + (i === chosen.length - 1 ? ' disabled' : '') + '>&#8595;</button>' +
-          openBtn +
-          '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rm">' + t('editor.members_remove') + '</button>' +
         '</li>';
     }).join('');
+  }
+
+  // The action bar. Every button reads the SAME rule the move uses, so a live button never no-ops
+  // and a refusal is visible before the click.
+  function barHtml() {
+    const has = sel != null && chosen[sel];
+    const off = (on) => (on ? '' : ' disabled');
+    const canIn = has && shiftIndent(chosen, sel, +1, MAX_INDENT) !== chosen;
+    const canOut = has && shiftIndent(chosen, sel, -1, MAX_INDENT) !== chosen;
+    const canOpenSel = has && !!onOpen && canOpen(chosen[sel]);
+    return '<div class="cdx-ie-bar">' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="out"' + off(canOut) + ' title="' + _esc(t('editor.members_outdent')) + '">|&#8592;</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="in"' + off(canIn) + ' title="' + _esc(t('editor.members_indent')) + '">&#8594;|</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="up"' + off(has && sel > 0) + '>&#8593;</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="down"' + off(has && sel < chosen.length - 1) + '>&#8595;</button>' +
+        (onOpen ? '<button type="button" class="cdx-btn cdx-btn-sm" data-act="open"' + off(canOpenSel) +
+          (canOpenSel ? '' : ' title="' + _esc(t('editor.members_open_blocked')) + '"') + '>' + t('editor.members_open') + '</button>' : '') +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rm"' + off(has) + '>' + t('editor.members_remove') + '</button>' +
+      '</div>';
   }
 
   // ── The picker: the SAME sections as Releases, with a checkbox ───────────
@@ -156,6 +167,10 @@ export function mount(host, opts = {}) {
     const ul = host.querySelector('.cdx-mem-tree');
     if (!ul) return;
     ul.innerHTML = listHtml();
+    const bar = host.querySelector('.cdx-ie-bar');
+    if (bar) bar.outerHTML = barHtml();
+    const head = host.querySelector('.cdx-ie-members-name');
+    if (head) head.textContent = t('editor.members_label') + (chosen.length ? ' (' + chosen.length + ')' : '');
     wireList();
   }
 
@@ -164,13 +179,16 @@ export function mount(host, opts = {}) {
   // member list, the list you are actually building is the smaller half of the screen.
   function render() {
     host.innerHTML =
-      '<div class="cdx-field">' +
-        '<label>' + t('editor.members_label') + '</label>' +
-        '<ul class="cdx-mem-tree">' + listHtml() + '</ul>' +
-        '<div class="cdx-mem-actions">' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-add">' + t('editor.members_add_existing') + '</button>' +
-          (onCreateInside ? '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-new">' + t('editor.members_create_here') + '</button>' : '') +
+      '<div class="cdx-ie-members">' +
+        '<div class="cdx-ie-members-head">' +
+          '<span class="cdx-ie-members-name">' + t('editor.members_label') + (chosen.length ? ' (' + chosen.length + ')' : '') + '</span>' +
+          '<span class="cdx-ie-members-acts">' +
+            '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-add">' + t('editor.members_add_existing') + '</button>' +
+            (onCreateInside ? '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-mem-new">' + t('editor.members_create_here') + '</button>' : '') +
+          '</span>' +
         '</div>' +
+        barHtml() +
+        '<ul class="cdx-mem-tree cdx-ie-tree">' + listHtml() + '</ul>' +
         '<div class="cdx-picker cdx-mem-picker"' + (pickerOpen ? '' : ' style="display:none"') + '>' +
           '<div class="cdx-picker-toolbar">' +
             '<input type="search" class="cdx-picker-search cdx-mem-search" placeholder="' + _esc(t('editor.members_search')) + '" autocomplete="off" spellcheck="false" value="' + _esc(query) + '">' +
@@ -185,34 +203,37 @@ export function mount(host, opts = {}) {
       pickerOpen = !pickerOpen;
       const box = host.querySelector('.cdx-mem-picker');
       if (box) box.style.display = pickerOpen ? '' : 'none';
-      if (pickerOpen) {
-        const s = host.querySelector('.cdx-mem-search');
-        if (s) s.focus();
-      }
+      if (pickerOpen) { const q = host.querySelector('.cdx-mem-search'); if (q) q.focus(); }
     });
     const newBtn = host.querySelector('#ie-mem-new');
     if (newBtn) newBtn.addEventListener('click', () => onCreateInside());
   }
 
   function wireList() {
-    host.querySelectorAll('.cdx-mem-row button').forEach((b) => {
+    host.querySelectorAll('.cdx-ie-tree .cdx-mem-row').forEach((li) => {
+      li.addEventListener('click', () => {
+        const i = Number(li.dataset.i);
+        sel = (sel === i) ? null : i;    // clicking the same row again clears the selection
+        paintList();
+      });
+    });
+    host.querySelectorAll('.cdx-ie-bar button').forEach((b) => {
       b.addEventListener('click', () => {
-        const i = Number(b.closest('.cdx-mem-row').dataset.i);
+        const i = sel;
+        if (i == null || !chosen[i]) return;
         const act = b.dataset.act;
         if (act === 'open') { if (onOpen) onOpen(chosen[i], i); return; }
-        if (act === 'rm') chosen = removeAt(chosen, i);
-        // The step moves the WHOLE BLOCK (Élder 2026-08-07: "se eu tiro a indentação do terceiro
-        // item, todos que vêm depois que estão indentados nele devem perder indentação igual").
-        // This used to assign chosen[i].indent directly, which left whoever was inside hanging at
-        // a step that skipped a level, exactly what the rule forbids. The engine refuses a move
-        // that would not fit, and returns the SAME array when it does, so `||` is not needed.
+        if (act === 'rm') { chosen = removeAt(chosen, i); sel = null; }
+        // The step moves the WHOLE BLOCK (Elder 2026-08-07: "se eu tiro a indentacao do terceiro
+        // item, todos que vem depois que estao indentados nele devem perder indentacao igual").
+        // The engine refuses a move that would not fit, returning the SAME array.
         else if (act === 'in') chosen = shiftIndent(chosen, i, +1, MAX_INDENT);
         else if (act === 'out') chosen = shiftIndent(chosen, i, -1, MAX_INDENT);
-        else if (act === 'up') chosen.splice(i - 1, 0, chosen.splice(i, 1)[0]);
-        else if (act === 'down') chosen.splice(i + 1, 0, chosen.splice(i, 1)[0]);
-        // Reordering can leave a row on a step that no longer exists (the one above changed), so
-        // the indent is normalised after any change to the ORDER. Not after in/out: those already
-        // went through the engine, and re-clamping there would silently undo a legal block move.
+        else if (act === 'up' && i > 0) { chosen.splice(i - 1, 0, chosen.splice(i, 1)[0]); sel = i - 1; }
+        else if (act === 'down' && i < chosen.length - 1) { chosen.splice(i + 1, 0, chosen.splice(i, 1)[0]); sel = i + 1; }
+        // Reordering can leave a row on a step that no longer exists (the one above changed). Not
+        // after in/out: those already went through the engine, and re-clamping there would
+        // silently undo a legal block move.
         if (act === 'up' || act === 'down' || act === 'rm') {
           chosen.forEach((c, k) => { c.indent = Math.min(c.indent, maxIndentFor(chosen, k, MAX_INDENT)); });
         }

@@ -38,7 +38,9 @@ import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import {
   buildTypeBlock, wireTypeBlock, collectTypeData, setBundleSlugs, isBundleSlug, renderMarkdown,
+  buildZipIntro, contentBoxSpec, contentBoxChanged,
 } from './editor/type-block.js';
+import { installResizer } from '../js/resizable.js';
 import { mount as mountAiBox } from './editor/ai-box.js';
 import { createNav, planSave, resolveMembers, isNewKey, MAX_DEPTH } from './editor/nav.js';
 import { breadcrumbHtml, wireBreadcrumb } from './editor/breadcrumb.js';
@@ -238,31 +240,57 @@ function _mountLevel(container, opts) {
     ? '<button class="cdx-btn cdx-btn-danger" id="ie-delete" type="button">' + _esc(t('editor.delete_item')) + '</button>'
     : '';
 
-  container.innerHTML = '<div class="cdx-editor">' +
+  // ── the layout Élder approved (candidate D, 2026-08-06) ────────────────────
+  // TWO COLUMNS with a draggable grip: the item on the left, what is inside it on the right.
+  // Not decoration, and I got this wrong once by shipping a single column: with one column the
+  // member list sits below the fold, so building a package means scrolling between the thing and
+  // its contents. His words when he saw the single column: "there's no right panel... it's like it
+  // was fully reversed".
+  //
+  // The order inside the left column is also his: the CONTENT BOX FIRST, with the AI attached to
+  // it, and the identification (title, type, tags, summary) under it. Content first is the point
+  // of the merge, because the AI reads what you pasted and fills the rest.
+  const wide = '<div class="cdx-ie-toggle" role="group">' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-pack="0">' + _esc(t('editor.kind_item')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-pack="1">' + _esc(t('editor.kind_bundle')) + '</button>' +
+    '</div>';
+
+  container.innerHTML = '<div class="cdx-editor cdx-ie">' +
     '<div class="cdx-editor-header">' +
       '<span class="cdx-editor-title">' + _esc(titleLabel) + '</span>' +
+      wide +
       closeBtn +
     '</div>' +
-    (nav ? '<div id="ie-crumbs">' + breadcrumbHtml(nav.path()) + '</div>' : '') +
-    '<div class="cdx-editor-body">' +
-      // The AI box is the FIRST thing, in create and in edit alike. It was a separate screen
-      // ("step 1 of 2") and edit never saw it, which is the break Élder called terrible.
-      '<div id="ie-aibox"></div>' +
-      '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
-        '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
+    '<div class="cdx-editor-body cdx-ie-body">' +
+      '<div class="cdx-ie-two" id="ie-split">' +
+        '<div class="cdx-ie-left">' +
+          // The content box owns #ie-body and carries the AI, the imports and the raw flag.
+          '<div id="ie-aibox"></div>' +
+          '<p class="cdx-ie-note">' + _esc(t('editor.ai_note')) + '</p>' +
+          '<div id="ie-zipintro"></div>' +
+          '<div class="cdx-field"><label>' + t('editor.title_label') + '</label>' +
+            '<input type="text" id="ie-title" value="' + _esc(initialTitle) + '" placeholder="' + _esc(t('editor.title_placeholder')) + '">' +
+          '</div>' +
+          // Type and tags side by side: one full row each pushed the list off the screen, and the
+          // wide modal is what makes them fit together.
+          '<div class="cdx-ie-row2">' +
+            '<div class="cdx-field"><label>' + t('editor.type_label') + '</label>' +
+              '<input type="hidden" id="ie-type" value="' + _esc(initialType) + '">' +
+              '<div class="cdx-type-opts" id="ie-type-opts"></div>' +
+            '</div>' +
+            '<div class="cdx-field"><label>' + t('editor.tags_label') + '</label>' +
+              '<div class="cdx-tag-picker" id="ie-tag-picker"></div>' +
+            '</div>' +
+          '</div>' +
+          '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
+            '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
+          '</div>' +
+          '<div id="ie-extras"></div>' +
+        '</div>' +
+        '<div class="cdx-ie-right" id="ie-right"></div>' +
       '</div>' +
-      '<div class="cdx-field"><label>' + t('editor.type_label') + '</label>' +
-        '<input type="hidden" id="ie-type" value="' + _esc(initialType) + '">' +
-        '<div class="cdx-type-opts" id="ie-type-opts"></div>' +
-      '</div>' +
-      '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
-        '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
-      '</div>' +
-      '<div class="cdx-field"><label>' + t('editor.tags_label') + '</label>' +
-        '<div class="cdx-tag-picker" id="ie-tag-picker"></div>' +
-      '</div>' +
-      '<div id="ie-type-block"></div>' +
     '</div>' +
+    (nav ? '<div id="ie-crumbs">' + breadcrumbHtml(nav.path()) + '</div>' : '') +
     '<div class="cdx-editor-footer">' +
       '<div class="cdx-modal-actions">' +
         deleteBtn +
@@ -279,7 +307,6 @@ function _mountLevel(container, opts) {
   const selectedTagIds = new Set(initialTagIds);
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
-  let _aiCtx = aiContext;
   // A package's members are not meta_json: they are ct_item_members rows, written AFTER the save
   // (a brand-new item has no id yet to be a parent).
   const _memberCtx = {
@@ -317,17 +344,39 @@ function _mountLevel(container, opts) {
     }
   }
 
+  // A PACKAGE's extras are its member list, and that belongs in the RIGHT column. Every other
+  // type's extras (platform tabs, an upload, a paper's authors) belong under the fields on the
+  // left. One function decides, so the two columns can never both claim the block.
   function renderTypeBlock(typeSlug) {
-    const block = root.querySelector('#ie-type-block');
-    block.innerHTML = buildTypeBlock(typeSlug, _currentBody(), initialMeta);
+    const bundle = isBundleSlug(typeSlug);
+    const left = root.querySelector('#ie-extras');
+    const right = root.querySelector('#ie-right');
+    const html = buildTypeBlock(typeSlug, _currentBody(), initialMeta);
+    left.innerHTML = bundle ? '' : html;
+    right.innerHTML = bundle ? html : '<div class="cdx-ie-hint">' + _esc(t('editor.right_empty')) + '</div>';
+    const block = bundle ? right : left;
+    // The ".zip" choice only exists for a package, and it sits under the box it governs.
+    root.querySelector('#ie-zipintro').innerHTML = bundle ? buildZipIntro(initialMeta) : '';
     wireTypeBlock(block, typeSlug, function (file, field) {
       _pendingAssetFile = file;
       _pendingAssetField = field;
       markDirty();
     }, _memberCtx);
-    block.querySelectorAll('input, textarea, select').forEach((el) => {
+    root.querySelectorAll('#ie-extras input, #ie-extras textarea, #ie-extras select, ' +
+      '#ie-right input, #ie-right textarea, #ie-zipintro input').forEach((el) => {
       el.addEventListener('input', markDirty);
       el.addEventListener('change', markDirty);
+    });
+    _paintToggle(bundle);
+  }
+
+  // The Item|Pacote switch in the header, valid from the first frame. It was a two-door fork in an
+  // earlier design and Élder killed it ("são 2 telas quando eu falei que só seria uma, e se eu
+  // mudar de ideia depois a escolha já passou"). As a switch, changing your mind is one click and
+  // it exists identically while editing.
+  function _paintToggle(bundle) {
+    root.querySelectorAll('[data-pack]').forEach((b) => {
+      b.classList.toggle('cdx-btn-primary', (b.dataset.pack === '1') === !!bundle);
     });
   }
 
@@ -339,49 +388,68 @@ function _mountLevel(container, opts) {
     const el = root.querySelector('#ie-body');
     return el ? el.value : _bodyCarry;
   }
+  // The AI context, filled by the first AI pass. Declared here because both the content box and
+  // the Refazer button read it.
+  let _aiCtx = aiContext;
 
   renderTypeBlock(initialType);
 
   // ── the AI box, mounted where the separate creator screen used to be ───────
   // It fills the fields; it does not own them. Every field it writes stays editable by hand,
   // which is the whole reason the two screens could merge without losing anything.
-  const _aiBox = mountAiBox(root.querySelector('#ie-aibox'), {
-    types,
-    tags,
-    compact: !!opts.compact,
-    initialVerbatim: src.verbatim != null ? !!src.verbatim : (isEdit ? isVerbatim(item) : null),
-    onDirty: markDirty,
-    onResult: (parsed, ctx) => {
-      root.querySelector('#ie-title').value = parsed.title || '';
-      root.querySelector('#ie-summary').value = parsed.summary || '';
-      if (parsed.type) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
-      const bodyEl = root.querySelector('#ie-body');
-      if (bodyEl) bodyEl.value = parsed.body_md || '';
-      _bodyCarry = parsed.body_md || '';
-      const pre = root.querySelector('#ie-preview');
-      if (pre && pre.style.display !== 'none') renderMarkdown(parsed.body_md || '', pre);
-      // There IS a first output now, so comparing against it is meaningful. This is what makes
-      // "Refazer" appear only after an AI pass instead of sitting there dead.
-      _aiCtx = { rawInput: (ctx && ctx.rawInput) || '', firstOutput: parsed, addEmojis: !!(ctx && ctx.addEmojis) };
-      const rb = root.querySelector('#ie-refazer-btn');
-      if (rb) rb.hidden = false;
-      // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
-      // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
-      if (ctx && ctx.file) {
-        _pendingAssetFile = ctx.file;
-        _pendingAssetField = 'attachment_url';
-        const nm = root.querySelector('#ie-doc-filename');
-        if (nm) nm.textContent = t('editor.file_selected') + ' ' + ctx.file.name;
-      }
-      _tagsByLabels(tags, parsed.tag_labels || []).then((ids) => {
-        selectedTagIds.clear();
-        ids.forEach((id) => selectedTagIds.add(id));
-        _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
-      });
-      _syncHeader();
-      markDirty();
-    },
-  });
+  // The CONTENT BOX. It owns #ie-body, so the body survives a type change for free: the box is not
+  // rebuilt when the type block is. It IS rebuilt when the item crosses the item/package line,
+  // because a package's box is a description with no file sources (a package is not a file).
+  let _aiBox = null;
+  function mountContent(typeSlug, keepValue) {
+    const spec = contentBoxSpec(typeSlug);
+    const prev = _aiBox ? { v: _aiBox.value(), verb: _aiBox.verbatim() } : null;
+    if (_aiBox) _aiBox.destroy();
+    _aiBox = mountAiBox(root.querySelector('#ie-aibox'), {
+      types,
+      tags,
+      compact: !!opts.compact,
+      // What the one box is FOR comes from type-block.js, the only module allowed to know that a
+      // paper keeps complementary notes there or that a package must not offer file sources.
+      label: t(spec.labelKey),
+      placeholder: t(spec.placeholderKey),
+      rows: spec.rows,
+      sources: spec.sources,
+      initialBody: keepValue && prev ? prev.v : _bodyCarry,
+      initialVerbatim: prev ? prev.verb
+        : (src.verbatim != null ? !!src.verbatim : (isEdit ? isVerbatim(item) : null)),
+      renderMarkdown,
+      onDirty: markDirty,
+      onResult: (parsed, ctx) => {
+        root.querySelector('#ie-title').value = parsed.title || '';
+        root.querySelector('#ie-summary').value = parsed.summary || '';
+        if (parsed.type && parsed.type !== typeSel.value) { typeSel.value = parsed.type; typeSel.dispatchEvent(new Event('change')); }
+        _aiBox.setValue(parsed.body_md || '');
+        _bodyCarry = parsed.body_md || '';
+        // There IS a first output now, so comparing against it is meaningful. This is what makes
+        // "Refazer" appear only after an AI pass instead of sitting there dead.
+        _aiCtx = { rawInput: (ctx && ctx.rawInput) || '', firstOutput: parsed, addEmojis: !!(ctx && ctx.addEmojis) };
+        const rb = root.querySelector('#ie-refazer-btn');
+        if (rb) rb.hidden = false;
+        // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
+        // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
+        if (ctx && ctx.file) {
+          _pendingAssetFile = ctx.file;
+          _pendingAssetField = 'attachment_url';
+          const nm = root.querySelector('#ie-doc-filename');
+          if (nm) nm.textContent = t('editor.file_selected') + ' ' + ctx.file.name;
+        }
+        _tagsByLabels(tags, parsed.tag_labels || []).then((ids) => {
+          selectedTagIds.clear();
+          ids.forEach((id) => selectedTagIds.add(id));
+          _renderTagPicker(root.querySelector('#ie-tag-picker'), tags, selectedTagIds, markDirty);
+        });
+        _syncHeader();
+        markDirty();
+      },
+    });
+  }
+  mountContent(initialType, false);
 
   // A file picked before the editor opened arrives as opts.pendingFile: seed the same
   // pending-upload path the type editor uses, and show the chosen name.
@@ -430,8 +498,11 @@ function _mountLevel(container, opts) {
       }
     }
     _bodyCarry = _currentBody();
+    // Rebuild the content box only when the new type changes what that box IS.
+    const crossed = contentBoxChanged(lastTypeValue, typeSel.value);
     lastTypeValue = typeSel.value;
     _refreshPicker(typeSel.value); // move the is-active highlight to the clicked type
+    if (crossed) mountContent(typeSel.value, true);
     renderTypeBlock(typeSel.value);
     _syncHeader();
     markDirty();
@@ -441,6 +512,29 @@ function _mountLevel(container, opts) {
 
   root.querySelector('#ie-title').addEventListener('input', () => { markDirty(); _syncHeader(); });
   root.querySelector('#ie-summary').addEventListener('input', markDirty);
+
+  // The Item|Pacote switch picks the FIRST registered type of each family rather than a hard-coded
+  // slug, so a bundle type created on the Types screen works with no code change here.
+  root.querySelectorAll('[data-pack]').forEach((b) => {
+    b.addEventListener('click', () => {
+      const wantBundle = b.dataset.pack === '1';
+      if (wantBundle === isBundleSlug(typeSel.value)) return;
+      const target = types.find((ty) => (ty.family === 'bundle') === wantBundle
+        && excludeTypes.indexOf(ty.slug) < 0);
+      if (!target) { toast.err(t('editor.no_type_for_kind')); return; }
+      typeSel.value = target.slug;
+      typeSel.dispatchEvent(new Event('change'));
+    });
+  });
+
+  // The draggable grip between the two columns is the SHARED js/resizable.js (the same one
+  // Releases and the client dossier use). It is installed once here because, unlike the
+  // prototype, this screen does not rewrite its own innerHTML on every interaction: only the two
+  // extras hosts are repainted, and the grid survives them.
+  const _split = root.querySelector('#ie-split');
+  const _uninstallRz = _split
+    ? installResizer(_split, { storeKey: 'cdx_rz_item_editor', defaultPx: 620, min: 340, max: 900 })
+    : null;
 
   const closeBtnEl = root.querySelector('#ie-close');
   if (closeBtnEl) closeBtnEl.addEventListener('click', () => onCancel());
@@ -575,7 +669,11 @@ function _mountLevel(container, opts) {
     getDraft,
     members: () => _memberCtx.members,
     addMember: (entry) => { if (_memberCtx.members) _memberCtx.members.add(entry); markDirty(); },
-    destroy: () => { _aiBox.destroy(); container.innerHTML = ''; }
+    destroy: () => {
+      if (_uninstallRz) _uninstallRz();
+      if (_aiBox) _aiBox.destroy();
+      container.innerHTML = '';
+    }
   };
 }
 

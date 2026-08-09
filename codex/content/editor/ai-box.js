@@ -1,6 +1,12 @@
 // content/editor/ai-box.js
-// The content-first box that opens the item editor: paste or import the raw text, let the AI read
-// it, and have it fill the fields below.
+// THE CONTENT BOX. The item's body, with the AI attached to it, and the file/Drive/Doc imports
+// under it. It is the first thing on the left column and it is the heart of the screen.
+//
+// It owns `#ie-body` ITSELF. There used to be two boxes, a "raw paste" one at the top and the
+// real body further down in the type block, and Élder saw the duplication at once
+// (2026-08-08: "the AI part is on the top instead of after the box"). In the design he approved
+// there is ONE box: the AI acts on the field that is already there and possibly already filled,
+// which is the whole reason the two screens could merge. type-block.js no longer emits a body.
 //
 // This used to be a whole separate screen (content/item-creator.js, "step 1 of 2"), and creating
 // an item meant crossing from it into the editor. Élder, 2026-08-06: "I think this all has to
@@ -14,6 +20,11 @@
 // mount(host, opts) -> { value(), verbatim(), setVerbatim(b), pendingFile(), reset(), destroy() }
 //   opts.types / opts.tags     feed the AI system prompt
 //   opts.initialVerbatim       true | false | null (null = nobody chose yet)
+//   opts.initialBody           what the box opens with (an existing item's body)
+//   opts.label / opts.placeholder / opts.rows
+//   opts.sources               false for a PACKAGE: a package is not a file, so offering
+//                              "use as a file to download" on its description would produce a
+//                              package that is also an attachment, which the model has no room for
 //   opts.compact               true hides the import row (inline hosts, e.g. the lessons pane)
 //   opts.onResult(parsed)      an AI pass succeeded; parsed carries body_raw + body_ai + verbatim
 //   opts.onDirty()             the user typed or toggled something
@@ -61,8 +72,12 @@ export function mount(host, opts = {}) {
   // the choice wins over the guess.
   let verbatim = (typeof opts.initialVerbatim === 'boolean') ? opts.initialVerbatim : null;
   let pickedFile = null;
+  const label = opts.label || t('creator.raw_label');
+  const placeholder = opts.placeholder || t('creator.raw_placeholder');
+  const rows = opts.rows || 6;
+  const wantSources = opts.sources !== false;
 
-  const importRow = opts.compact ? '' :
+  const importRow = (opts.compact || !wantSources) ? '' :
     '<div class="cdx-aib-sources">' +
       '<button type="button" class="cdx-btn cdx-btn-sm" id="aib-file">' + t('editor.file_from_computer') + '</button>' +
       '<button type="button" class="cdx-btn cdx-btn-sm" id="aib-drive" style="display:none">' + t('editor.file_from_drive') + '</button>' +
@@ -77,22 +92,24 @@ export function mount(host, opts = {}) {
     '</div>';
 
   host.innerHTML =
-    '<div class="cdx-field cdx-aib">' +
-      '<label>' + t('creator.raw_label') +
+    '<div class="cdx-field cdx-aib cdx-ie-content">' +
+      '<label>' + _esc(label) +
         '<span class="cdx-aib-actions">' +
           '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary" id="aib-run">' + AI_GLYPH + ' ' + t('creator.ai_format') + '</button>' +
           '<button type="button" class="cdx-btn cdx-btn-sm cdx-btn-primary cdx-ai-pick" id="aib-pick" title="' + _esc(t('editor.ai_which')) + '">▾</button>' +
+          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-preview-btn">' + t('editor.preview_show') + '</button>' +
         '</span>' +
       '</label>' +
-      '<textarea id="aib-raw" rows="6" placeholder="' + _esc(t('creator.raw_placeholder')) + '"></textarea>' +
+      '<textarea id="ie-body" rows="' + rows + '" placeholder="' + _esc(placeholder) + '">' + _esc(opts.initialBody || '') + '</textarea>' +
       importRow +
       '<div class="cdx-aib-flags">' +
         '<label class="cdx-radio-label"><input type="checkbox" id="aib-emoji" checked> ' + _esc(t('creator.emoji_toggle')) + '</label>' +
         '<label class="cdx-radio-label"><input type="checkbox" id="aib-verbatim"' + (verbatim ? ' checked' : '') + '> ' + _esc(t('editor.keep_raw')) + '</label>' +
       '</div>' +
+      '<div class="cdx-preview-area" id="ie-preview" style="display:none"></div>' +
     '</div>';
 
-  const rawEl = host.querySelector('#aib-raw');
+  const rawEl = host.querySelector('#ie-body');
   const verbEl = host.querySelector('#aib-verbatim');
   rawEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') e.stopPropagation(); });
   rawEl.addEventListener('input', onDirty);
@@ -120,6 +137,23 @@ export function mount(host, opts = {}) {
     })));
   });
 
+  // The preview moved here with the body. A RAW item renders verbatim on the student page, so the
+  // preview mirrors that instead of formatting markdown: the flag is what tells the truth since
+  // 2026-08-07, not the type slug.
+  const previewBtn = host.querySelector('#ie-preview-btn');
+  const previewEl = host.querySelector('#ie-preview');
+  previewBtn.addEventListener('click', () => {
+    if (previewEl.style.display === 'none') {
+      previewEl.style.display = '';
+      if (verbatim) previewEl.innerHTML = '<div class="cdx-preview-verbatim">' + _esc(rawEl.value) + '</div>';
+      else if (opts.renderMarkdown) opts.renderMarkdown(rawEl.value, previewEl);
+      previewBtn.textContent = t('editor.preview_hide');
+    } else {
+      previewEl.style.display = 'none';
+      previewBtn.textContent = t('editor.preview_show');
+    }
+  });
+
   // ── importing raw text ────────────────────────────────────────────────────
   const fileMode = () => {
     const r = host.querySelector('input[name="aib-mode"]:checked');
@@ -145,7 +179,9 @@ export function mount(host, opts = {}) {
     }
   }
 
-  if (!opts.compact) {
+  // Gated on wantSources too, not only on compact: a PACKAGE renders no import row, and wiring
+  // buttons that were never rendered threw on the very first mount of a package editor.
+  if (!opts.compact && wantSources) {
     _primePickerKey();
     const fileBtn = host.querySelector('#aib-file');
     const driveBtn = host.querySelector('#aib-drive');
@@ -231,6 +267,7 @@ export function mount(host, opts = {}) {
 
   return {
     value: () => rawEl.value,
+    setValue: (v) => { rawEl.value = v == null ? '' : String(v); },
     verbatim: () => verbatim,
     setVerbatim: (b) => { verbatim = b; verbEl.checked = !!b; },
     pendingFile: () => (pickedFile && fileMode() === 'download' ? pickedFile : null),

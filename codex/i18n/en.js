@@ -831,7 +831,6 @@ export default {
   'content.confirm_delete_btn':  'Delete',
 
   // Content → Items — editor labels (passed to the shared item form)
-  'content.new_item_step2':   'New item · 2 of 2',
   'content.edit_item':        'Edit item',
   'content.save':             'Save',
   'content.create':           'Create',
@@ -905,6 +904,11 @@ export default {
   'editor.members_no_zip':        'not included in the .zip',
   'editor.members_indent':        'Indent (sits under the one above)',
   'editor.members_outdent':       'Outdent one step',
+  'editor.kind_item':               'Item',
+  'editor.kind_bundle':             'Package',
+  'editor.ai_note':                 'The AI reads the box above and fills whatever is empty. It picks the type and tags from the ones that already exist: when none fit, it leaves them blank instead of inventing a category.',
+  'editor.right_empty':             'An ordinary item. Switch to Package at the top to put other items inside it.',
+  'editor.no_type_for_kind':        'No type registered for that.',
   'editor.members_open':          'Open',
   'editor.members_open_blocked':  'Save it first, or the package is already too deep.',
   'editor.members_unsaved':       'not saved yet',
