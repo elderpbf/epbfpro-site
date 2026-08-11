@@ -343,6 +343,12 @@ function _mountLevel(container, opts) {
     typeSel.dispatchEvent(new Event('change'));
   });
 
+  // Local mirror of the handle's hasContent(), because the toggle is wired before the handle
+  // object exists.
+  function level_hasContent() {
+    return !!(root.querySelector('#ie-title').value.trim() || _currentBody().trim());
+  }
+
   function _syncHeader() {
     const h = root.querySelector('.cdx-editor-title');
     if (h && !opts.titleLabel) {
@@ -548,6 +554,13 @@ function _mountLevel(container, opts) {
       const target = types.find((ty) => (ty.family === 'bundle') === wantBundle
         && excludeTypes.indexOf(ty.slug) < 0);
       if (!target) { toast.err(t('editor.no_type_for_kind')); return; }
+      // Item -> Pacote on something you have already written is NOT a type change. Élder
+      // 2026-08-11: "when a second item is added to a normal item both of them become items of
+      // the package". The item keeps being the item it was and moves INSIDE a package that is
+      // born to hold it; converting it in place would silently turn a prompt somebody wrote into
+      // an empty folder. Handled by the stack, which owns identity; the level cannot do it
+      // because it would have to change its own key.
+      if (wantBundle && opts._onDemote && level_hasContent()) { opts._onDemote(target.slug); return; }
       typeSel.value = target.slug;
       typeSel.dispatchEvent(new Event('change'));
     });
@@ -693,6 +706,18 @@ function _mountLevel(container, opts) {
     isDirty: () => isDirty,
     getState,
     getDraft,
+    // A one-line summary of what this level holds, for the row it becomes when the item is
+    // demoted into a package. Cheap enough to ask for on every toggle.
+    asMemberRow: (key) => {
+      const st = getState();
+      const ty = types.find((x) => x.slug === st.type);
+      return { key, id: isEdit && item ? Number(item.id) : null, title: st.title,
+        type: st.type, type_label: (ty && ty.label) || st.type, isNew: !isEdit, indent: 0 };
+    },
+    hasContent: () => {
+      const st = getState();
+      return !!(st.title || (st.body_md || '').trim());
+    },
     members: () => _memberCtx.members,
     addMember: (entry) => { if (_memberCtx.members) _memberCtx.members.add(entry); markDirty(); },
     destroy: () => {
@@ -746,9 +771,12 @@ export function mount(container, opts) {
   let level = null;
   let destroyed = false;
 
-  const rootKey = opts.item ? Number(opts.item.id) : nav.nextNewKey();
+  // Mutable: a demotion replaces the root, because the screen stops being the item and becomes
+  // the package that now holds it.
+  let _rootKey = opts.item ? Number(opts.item.id) : nav.nextNewKey();
+  const rootKey = _rootKey;
   nav.push({
-    key: rootKey,
+    key: _rootKey,
     id: opts.item ? Number(opts.item.id) : null,
     title: (opts.item && opts.item.title) || (opts.prefill && opts.prefill.title) || '',
     isNew: !opts.item,
@@ -757,7 +785,7 @@ export function mount(container, opts) {
   // Level options, keyed the same way the drafts are. Holds what a level needs that a draft does
   // not carry: the loaded item (for its id and tags) and the per-level overrides.
   const levelOpts = new Map();
-  levelOpts.set(rootKey, { item: opts.item || null, prefill: opts.prefill || null, aiContext: opts.aiContext || null, pendingFile: opts.pendingFile || null });
+  levelOpts.set(_rootKey, { item: opts.item || null, prefill: opts.prefill || null, aiContext: opts.aiContext || null, pendingFile: opts.pendingFile || null });
 
   function _stash() {
     if (!level) return;
@@ -823,6 +851,7 @@ export function mount(container, opts) {
       _onCreateChild: nav.canPush() ? _createChild : null,
       _canOpenChild: (row) => nav.canPush() && !!row && !isNewKey(row.key),
       _onSaveAll: _saveAll,
+      _onDemote: _demoteIntoPackage,
     }));
   }
 
@@ -861,6 +890,43 @@ export function mount(container, opts) {
     levelOpts.set(key, { item: null, prefill: null, aiContext: null, pendingFile: null });
     nav.push({ key, id: null, title: '', isNew: true, isBundle: false });
     _paint();
+  }
+
+  // An item that gains company does not become a parent: a PACKAGE is born holding it. Élder has
+  // said this twice, first as the model (2026-08-06, "um item que ganha companhia não vira pai,
+  // nasce um pacote que segura os dois") and then as the screen (2026-08-11). The prototype showed
+  // it and the merge lost it.
+  //
+  // Mechanically it is an identity change, which is why it lives here and not in the level: the
+  // thing on screen stops being the item and becomes a NEW package, while the item it was keeps
+  // its own key, its own draft and its own id, and turns into member number one.
+  //
+  // Note what is NOT written yet. Nothing is saved: the package is a draft like any other, and one
+  // Save writes the item, then the package, then the list that names both, in that order, because
+  // planSave already knows a member has to exist before it can be listed.
+  function _demoteIntoPackage(bundleSlug) {
+    const entry = nav.current();
+    const oldKey = entry.key;
+    const row = level.asMemberRow(oldKey);
+    _stash();                                   // the item keeps its draft, under its own key
+
+    const packKey = nav.nextNewKey();
+    levelOpts.set(packKey, { item: null, prefill: null, aiContext: null, pendingFile: null });
+    nav.stash(packKey, {
+      isNew: true,
+      params: { type: bundleSlug, title: '', summary: null, body_md: '', meta_json: null, tag_ids: [] },
+      members: [{ key: oldKey, indent: 0 }],
+      memberRows: [row],
+      verbatim: null,
+      dirty: true,
+    });
+    // Replace the level in place rather than pushing: the package is not INSIDE the item, it is
+    // what the screen is about now. Pushing would draw a breadcrumb crumb for a parent the
+    // package does not have.
+    nav.replaceCurrent({ key: packKey, id: null, title: '', isNew: true, isBundle: true });
+    if (nav.depth() === 1) _rootKey = packKey;
+    _paint();
+    toast.ok(t('editor.became_package'));
   }
 
   function _cancelAll() {
@@ -902,7 +968,7 @@ export function mount(container, opts) {
         }
       }
 
-      const savedRootId = idByKey.get(rootKey) || null;
+      const savedRootId = idByKey.get(_rootKey) || null;
       nav.clearDrafts();
       (opts.onSave || function () {})({ id: savedRootId });
     } catch (err) {

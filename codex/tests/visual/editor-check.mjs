@@ -223,6 +223,42 @@ async function open(mode) {
   await page.close();
 }
 
+// ── an item that gains company becomes the FIRST ITEM of a new package ─────
+// Élder, twice: as the model (2026-08-06, "um item que ganha companhia não vira pai, nasce um
+// pacote que segura os dois") and as the screen (2026-08-11, "when a second item is added to a
+// normal item both of them become items of the package"). Converting the item in place would
+// silently turn a prompt somebody wrote into an empty folder.
+{
+  const { page, errs } = await open('new');
+  await page.fill('#ie-title', 'Prompt que eu escrevi');
+  await page.fill('#ie-body', 'o corpo do prompt');
+  await page.click('[data-pack="1"]');
+  await page.waitForSelector('#ie-members .cdx-mem-row', { timeout: 5000 });
+  const rows = await page.$$eval('#ie-members .cdx-mem-row .cdx-mem-title', (els) => els.map((e) => e.textContent));
+  ok(rows.length === 1, 'demote: the package is born holding exactly one thing');
+  ok(rows[0].indexOf('Prompt que eu escrevi') >= 0, 'demote: and that thing is the item you wrote');
+  ok(await page.$eval('#ie-title', (el) => el.value) === '', 'demote: the PACKAGE gets its own blank title');
+  ok((await page.$eval('#ie-body', (el) => el.value)) === '', 'demote: and its own blank description');
+  ok(await page.$('#ie-crumbs .cdx-crumb') === null, 'demote: no breadcrumb, the package is not inside the item');
+
+  await page.fill('#ie-title', 'Meu pacote');
+  await page.evaluate(() => { window.__calls.length = 0; });
+  await page.click('#ie-save');
+  await page.waitForTimeout(500);
+  const calls = await page.evaluate(() => window.__calls);
+  const creates = calls.filter((c) => c.action === 'ct_create_item');
+  ok(creates.length === 2, 'demote+save: TWO records are written, the item and the package');
+  ok(creates.some((c) => c.title === 'Prompt que eu escrevi'), 'demote+save: the item kept being itself');
+  ok(creates.some((c) => c.title === 'Meu pacote'), 'demote+save: and the package is its own record');
+  const members = calls.find((c) => c.action === 'ct_set_item_members');
+  ok(!!members && members.children.length === 1, 'demote+save: the package lists the item');
+  ok(calls.indexOf(members) > calls.lastIndexOf(creates[creates.length - 1]),
+    'demote+save: the list is written after both exist');
+  ok(errs.length === 0, 'demote: no page errors' + (errs.length ? ' -> ' + errs.join(' | ') : ''));
+  await shot(page, 'editor-demote');
+  await page.close();
+}
+
 await browser.close();
 srv.close();
 console.log(fails.length ? '\nFAILED: ' + fails.length : '\nall checks passed');

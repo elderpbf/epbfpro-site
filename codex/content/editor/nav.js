@@ -46,6 +46,15 @@ export function createNav(opts) {
       return true;
     },
     pop() { return stack.length > 1 ? stack.pop() : null; },
+    // Swap what this level IS, without pushing a new one. The demotion needs it: when an item
+    // gains company, the screen stops being the item and becomes the package born to hold it,
+    // and that package is not INSIDE the item, so a push would draw a crumb for a parent that
+    // does not exist. path() hands out a COPY, so this cannot be done from outside.
+    replaceCurrent(entry) {
+      if (!stack.length || !entry) return false;
+      stack[stack.length - 1] = entry;
+      return true;
+    },
     // Back to an ancestor by position: the breadcrumb's click. Everything deeper is dropped from
     // the stack, but NOT from the drafts, which is exactly what "leaving never discards" means.
     popTo(index) {

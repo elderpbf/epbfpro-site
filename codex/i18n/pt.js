@@ -910,6 +910,7 @@ export default {
   'editor.members_no_zip':        'não entra no .zip',
   'editor.members_indent':        'Recuar (fica sob o de cima)',
   'editor.members_outdent':       'Voltar um degrau',
+  'editor.became_package':        'Virou um pacote. O item que você escreveu é o primeiro de dentro.',
   'editor.kind_item':               'Item',
   'editor.kind_bundle':             'Pacote',
   'editor.ai_note':                 'A IA lê o que está na caixa acima e preenche o que estiver vazio. Ela escolhe tipo e etiqueta entre os que já existem: quando nada serve, deixa em branco em vez de inventar categoria.',

@@ -904,6 +904,7 @@ export default {
   'editor.members_no_zip':        'not included in the .zip',
   'editor.members_indent':        'Indent (sits under the one above)',
   'editor.members_outdent':       'Outdent one step',
+  'editor.became_package':        'It is a package now. What you wrote is the first item inside it.',
   'editor.kind_item':               'Item',
   'editor.kind_bundle':             'Package',
   'editor.ai_note':                 'The AI reads the box above and fills whatever is empty. It picks the type and tags from the ones that already exist: when none fit, it leaves them blank instead of inventing a category.',
