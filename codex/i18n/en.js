@@ -912,6 +912,8 @@ export default {
   'editor.members_open':          'Open',
   'editor.members_open_blocked':  'Save it first, or the package is already too deep.',
   'editor.members_unsaved':       'not saved yet',
+  'editor.members_only_here':     'Only lives in this package. Removing it here leaves the item loose in the archive.',
+  'editor.members_in_packages':   'This item is in {n} packages.',
   'editor.members_add_existing':  '+ Add existing',
   'editor.members_create_here':   '+ Create here',
   'editor.projeto_intro_in_zip':  'Include this intro in the .zip (as README.md)',

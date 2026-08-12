@@ -1352,8 +1352,14 @@
 /* The action bar: ONE selected row and the actions above it, instead of six buttons repeated on
    every row. In a narrow column per-row buttons push the title out of view, and six rows of six
    buttons are thirty-six buttons competing with the content. */
-.cdx-ie-bar { display: flex; flex-wrap: wrap; gap: 4px; margin-bottom: 0.4rem; }
+.cdx-ie-bar { display: flex; flex-wrap: wrap; gap: 4px; }
 .cdx-ie-bar .cdx-btn[disabled] { opacity: 0.4; }
+.cdx-ie-barwrap { margin-bottom: 0.4rem; }
+/* The selected member's other homes, right above the Remove button that would take this one
+   away. "Só existe neste pacote" is the load-bearing case (task #31), so IT gets the warning
+   color; being in several packages is said in the quiet voice. */
+.cdx-mem-status { font-size: var(--p-xs); color: var(--text-secondary); margin-top: 2px; }
+.cdx-mem-status.is-only { color: var(--tint-warn-tx); }
 .cdx-ie-tree { overflow: hidden; }
 .cdx-ie-tree .cdx-mem-row {
   cursor: pointer; padding: 2px 4px; gap: 4px; font-size: var(--p-md); min-height: 0;

@@ -71,6 +71,10 @@ export function mount(host, opts = {}) {
       type_label: c.type_label || c.type || '',
       isNew: !!c.isNew,
       indent: Math.max(0, Math.min(MAX_INDENT, Number(c.indent) || 0)),
+      // In how many packages this item lives, counted by the Worker (task #31). null, not 0,
+      // when the row did not come from the server (picked from the pool, created here, or an
+      // older Worker): "I do not know" must not read as "it lives nowhere".
+      parents: c.parents != null ? Number(c.parents) : null,
     };
   }
 
@@ -110,6 +114,20 @@ export function mount(host, opts = {}) {
     }).join('');
   }
 
+  // The selected member's other homes, next to the Remove button that would take this one away.
+  // "Só existe neste pacote" is the warning Élder asked for (task #31); "está em N pacotes" is
+  // its calm sibling, said so the ABSENCE of the warning is visible too. Nothing is said for a
+  // row the server did not count (parents == null): a new or just-picked member would show a
+  // stale zero, and "I do not know" must never be dressed as a fact.
+  function statusHtml() {
+    const c = sel != null ? chosen[sel] : null;
+    if (!c || c.isNew || c.parents == null) return '';
+    const msg = c.parents <= 1
+      ? t('editor.members_only_here')
+      : t('editor.members_in_packages').replace('{n}', String(c.parents));
+    return '<div class="cdx-mem-status' + (c.parents <= 1 ? ' is-only' : '') + '">' + _esc(msg) + '</div>';
+  }
+
   // The action bar. Every button reads the SAME rule the move uses, so a live button never no-ops
   // and a refusal is visible before the click.
   function barHtml() {
@@ -118,7 +136,8 @@ export function mount(host, opts = {}) {
     const canIn = has && shiftIndent(chosen, sel, +1, MAX_INDENT) !== chosen;
     const canOut = has && shiftIndent(chosen, sel, -1, MAX_INDENT) !== chosen;
     const canOpenSel = has && !!onOpen && canOpen(chosen[sel]);
-    return '<div class="cdx-ie-bar">' +
+    return '<div class="cdx-ie-barwrap">' +
+      '<div class="cdx-ie-bar">' +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-act="out"' + off(canOut) + ' title="' + _esc(t('editor.members_outdent')) + '">|&#8592;</button>' +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-act="in"' + off(canIn) + ' title="' + _esc(t('editor.members_indent')) + '">&#8594;|</button>' +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-act="up"' + off(has && sel > 0) + '>&#8593;</button>' +
@@ -126,7 +145,9 @@ export function mount(host, opts = {}) {
         (onOpen ? '<button type="button" class="cdx-btn cdx-btn-sm" data-act="open"' + off(canOpenSel) +
           (canOpenSel ? '' : ' title="' + _esc(t('editor.members_open_blocked')) + '"') + '>' + t('editor.members_open') + '</button>' : '') +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-act="rm"' + off(has) + '>' + t('editor.members_remove') + '</button>' +
-      '</div>';
+      '</div>' +
+      statusHtml() +
+    '</div>';
   }
 
   // ── The picker: the SAME sections as Releases, with a checkbox ───────────
@@ -167,7 +188,7 @@ export function mount(host, opts = {}) {
     const ul = host.querySelector('.cdx-mem-tree');
     if (!ul) return;
     ul.innerHTML = listHtml();
-    const bar = host.querySelector('.cdx-ie-bar');
+    const bar = host.querySelector('.cdx-ie-barwrap');
     if (bar) bar.outerHTML = barHtml();
     const head = host.querySelector('.cdx-ie-members-name');
     if (head) head.textContent = t('editor.members_label') + (chosen.length ? ' (' + chosen.length + ')' : '');

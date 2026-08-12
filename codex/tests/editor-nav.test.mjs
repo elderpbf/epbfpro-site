@@ -98,6 +98,28 @@ test('resolveMembers: an unresolved key is DROPPED, never sent as null', () => {
     [{ id: 3, indent: 1 }]);
 });
 
+// ── the "só existe aqui" status (task #31) ──────────────────────────────────
+test('the selected member says in how many packages it lives, and never guesses', () => {
+  const src = read('../content/item-members.js');
+  const pt = read('../i18n/pt.js');
+  const en = read('../i18n/en.js');
+  // The number comes FROM the server row. A member picked from the pool or created here has no
+  // count, and the two states that must not exist are: a fresh pick reading "só existe aqui"
+  // (stale zero dressed as a fact), and a draft reading anything at all.
+  assert.ok(/parents:\s*c\.parents != null \? Number\(c\.parents\) : null/.test(src),
+    '_norm keeps parents, with null (not 0) for "the server did not say"');
+  assert.ok(/c\.isNew \|\| c\.parents == null\) return ''/.test(src),
+    'no status for drafts or uncounted rows');
+  // One package is the warning; several is said too, so the absence of the warning is visible.
+  assert.ok(/editor\.members_only_here/.test(src));
+  assert.ok(/editor\.members_in_packages/.test(src));
+  assert.ok(/replace\('\{n\}'/.test(src), 'the count is interpolated, house {n} convention');
+  for (const dict of [pt, en]) {
+    assert.ok(dict.indexOf("'editor.members_only_here'") !== -1);
+    assert.ok(dict.indexOf("'editor.members_in_packages'") !== -1);
+  }
+});
+
 // ── the caller guard ─────────────────────────────────────────────────────────
 test('the member list moves the indent through the ENGINE, never by assignment', () => {
   const src = read('../content/item-members.js');

@@ -918,6 +918,8 @@ export default {
   'editor.members_open':          'Abrir',
   'editor.members_open_blocked':  'Salve primeiro, ou o pacote já está fundo demais.',
   'editor.members_unsaved':       'ainda não salvo',
+  'editor.members_only_here':     'Só existe neste pacote. Remover daqui deixa o item solto no acervo.',
+  'editor.members_in_packages':   'Este item está em {n} pacotes.',
   'editor.members_add_existing':  '+ Adicionar existente',
   'editor.members_create_here':   '+ Criar aqui',
   'editor.projeto_intro_in_zip':  'Incluir esta apresentação no .zip (como LEIA-ME.md)',
