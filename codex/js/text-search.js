@@ -10,7 +10,7 @@
 // composer, certificates, alunos), so a matcher that lived in the rail could not
 // reach them and they would keep the accent bug. Same shape as width:resize,
 // which is thin rail wiring over the pre-existing js/resizable.js
-// (architecture/list-rail.md §6: "o módulo só encapsula o WIRING").
+// (recipe `side-panel` §7: "o módulo só encapsula o WIRING").
 //
 // STRIPPING DIACRITICS IS THE POINT, not a nicety: Codex content is Portuguese,
 // so a search that compares raw strings answers nothing for "citacao" typed

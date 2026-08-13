@@ -11,6 +11,7 @@ import { esc } from './utils.js';
 import { createLoginFlow, validateEmail } from './student-login.js';
 import { getKnownTurmas, getToken, setToken, forgetTurma } from './student-session.js';
 import { mountEntry } from './support-contact.js';
+import { consentNoticeHtml } from './consent-notice.js';
 import { glyphSvg } from '../../js/glyphs.js';
 
 function applyI18n(root) {
@@ -56,6 +57,11 @@ function entryErrorText(code, retryAfter) {
   }
   if (code === 'invalid_code') return t('login.code_invalid');
   if (code === 'code_expired' || code === 'code_used') return t('login.code_expired');
+  // The code LOCKS after five wrong guesses, and from then on even the correct one is refused.
+  // Without this branch the sixth attempt fell through to "could not sign in, try again", which is
+  // advice that cannot work: retrying is exactly what will keep failing. Found on 2026-08-11 by
+  // driving the real flow, and it is a message the student meets at their worst moment.
+  if (code === 'too_many_attempts') return t('login.too_many_attempts');
   return t('login.error');
 }
 
@@ -148,7 +154,74 @@ function startEmail(emailEl, root) {
     if (flow.state === 'validating') { renderMagicSent(); startPoll('validation'); return; }
     if (flow.state === 'pendingApproval') { renderPending(); startPoll('approval'); return; }
     if (flow.state === 'code') { renderCodeStep(); return; } // 'code' turma: type the emailed OTP
-    renderForm(); // needName can't happen for an enrolled e-mail; fall back to the form
+    if (flow.state === 'profile') { renderProfileStep(); return; }
+    // The fallback is the e-mail form, and it is now LOUD. The whole defect above was a state with
+    // no branch falling through to a blank screen that looked like a reset, so the fallback has to
+    // say when it is catching something it does not recognise. `email` is the form on purpose;
+    // anything else reaching here is a hole like the last one.
+    if (flow.state && flow.state !== 'email' && flow.state !== 'anonymous') {
+      if (typeof window.bsLog === 'function') window.bsLog('entrar: unhandled login state "' + flow.state + '"', 'error');
+      if (typeof window.dbg === 'function') window.dbg('error', 'entrar: unhandled login state ' + flow.state);
+    }
+    renderForm();
+  }
+
+  // FIRST LOGIN: the name and the consent.
+  //
+  // THE BUG THIS FIXES, and it was live for students. This branch did not exist, and the fallback
+  // above used to carry the comment "needName can't happen for an enrolled e-mail", which is
+  // simply false: a participant the instructor approved but who has never logged in has
+  // consent_at IS NULL, so the server answers `needs_profile` and the flow moves to 'profile'.
+  // With no branch for it, settle() fell through to a BLANK e-mail form: the student had typed the
+  // CORRECT code, saw the screen reset with no error, and their single-use code was already burnt.
+  // Trying again mints a new code every time until the hourly cap turns it into `rate_limited`, so
+  // a first-time student could be locked out of their own first login without ever seeing a
+  // message. Reproduced in a browser against real server responses on 2026-08-11.
+  //
+  // The step is not invented here: it is the same name + consent + notice the login modal renders
+  // (student-login-modal.js renderProfile), through the same flow.saveProfile, with this page's
+  // classes. Two profile steps that could disagree about consent is not a thing worth having.
+  function renderProfileStep() {
+    clearPoll();
+    if (root) root.classList.add('cdx-entrar-step-code');
+    emailEl.innerHTML =
+      '<h2 class="cdx-entrar-card-h">' + esc(t('login.profile_title')) + '</h2>' +
+      '<p class="cdx-entrar-card-p">' + esc(t('login.profile_desc')) + '</p>' +
+      '<input class="cdx-entrar-field cdx-entrar-name-input" type="text" autocomplete="name" ' +
+        'placeholder="' + esc(t('login.name_placeholder')) + '" aria-label="' + esc(t('login.name_label')) + '">' +
+      '<div class="cdx-entrar-consent">' + consentNoticeHtml() +
+        '<label class="cdx-entrar-consent-row">' +
+          '<input type="checkbox" class="cdx-entrar-consent-cb">' +
+          '<span>' + esc(t('login.consent_label')) + '</span>' +
+        '</label>' +
+      '</div>' +
+      '<div class="cdx-entrar-error cdx-entrar-profile-error" aria-live="polite"></div>' +
+      '<button class="cdx-entrar-btn cdx-btn cdx-btn-primary cdx-entrar-finish" type="button">' + esc(t('login.finish')) + '</button>';
+    const nameEl = emailEl.querySelector('.cdx-entrar-name-input');
+    const consentEl = emailEl.querySelector('.cdx-entrar-consent-cb');
+    const finish = emailEl.querySelector('.cdx-entrar-finish');
+    const err = emailEl.querySelector('.cdx-entrar-profile-error');
+    setTimeout(() => { try { nameEl.focus(); } catch (_) {} }, 50);
+    const doFinish = async () => {
+      err.textContent = '';
+      finish.disabled = true; finish.textContent = t('login.sending');
+      await flow.saveProfile(nameEl.value, !!consentEl.checked);
+      finish.disabled = false; finish.textContent = t('login.finish');
+      // Staying on 'profile' means it was refused (no consent, empty name). Saying so beats
+      // re-rendering the same screen silently, which is the shape of the bug this replaces.
+      if (flow.state === 'profile') { err.textContent = profileErrorText(flow.error); return; }
+      settle();
+    };
+    finish.addEventListener('click', doFinish);
+    nameEl.addEventListener('keydown', (e) => { if (e.key === 'Enter') doFinish(); });
+  }
+
+  // The profile step's own refusals. Kept apart from entryErrorText because these are about what
+  // the person has not filled in yet, not about a code.
+  function profileErrorText(code) {
+    if (code === 'consent_required') return t('login.consent_required');
+    if (code === 'name_required') return t('login.name_required');
+    return code ? t('login.error') : '';
   }
 
   function renderForm() {

@@ -1,5 +1,6 @@
 // Contract test for the shared left-panel rail (js/list-rail.js). Full contract:
-// manifest/architecture/list-rail.md. Source-regex + one import smoke, the house style
+// the platform's `side-panel` recipe (the Codex annex manifest/architecture/list-rail.md
+// keeps only the CSS and the js/reorder.js coexistence). Source-regex + one import smoke, the house style
 // (no DOM in node --test). The grip + Pointer Events decision (Élder 2026-07-05) is the
 // load-bearing part, so it is asserted explicitly.
 import { test } from 'node:test';
