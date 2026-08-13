@@ -11,11 +11,10 @@
 // js/type-filter.js), imported below.
 // Type icons now come from the Codex glyph library (js/glyphs.js), not BSTypeIcon.
 // The item editor and content-first creator are now Codex-native modules
-// (item-form.js / item-creator.js), no longer the legacy window globals.
+// (item-form.js), no longer the legacy window globals.
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import * as itemForm from './item-form.js';
-import * as itemCreator from './item-creator.js';
 import { renderItem } from '../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { makeMatcher } from '../js/text-search.js';
@@ -47,6 +46,15 @@ let _cleanup = [];
 // `conteudo`) and the item gets saved but then filtered out of the grid, which
 // reads as "create did nothing". One source of truth so the two can't drift.
 const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
+
+// Tipos que o criador NÃO oferece. Élder 2026-08-05: "labs e interativos não são criados
+// aqui, eles são criados pelo lmm então não devem aparecer como opções no criador".
+//
+// Lista SEPARADA da de cima de propósito, e é a parte que importa: `lab` e `interativo`
+// aparecem SIM na biblioteca (é onde ele os vê e edita a descrição), só não podem ser
+// criados daqui. Tê-los somado ao NON_LIBRARY_TYPES os teria apagado da grade junto, que
+// é o contrário do pedido.
+const NON_CREATABLE_TYPES = NON_LIBRARY_TYPES.concat(['lab', 'interativo']);
 
 // The library grid hides set members and the non-library types above.
 export function filterLibraryItems(items) {
@@ -400,7 +408,7 @@ function _renderPreview(item, opts) {
     host.innerHTML = '<div class="cdx-empty">' + t('content.loading') + '</div>';
     return;
   }
-  try { renderItem(item, host, {}); }
+  try { renderItem(item, host, { childrenList: true }); }
   catch (_) { host.textContent = item.body_md || ''; }
 }
 
@@ -493,12 +501,15 @@ function _bulkDelete() {
 }
 
 // ── Item CRUD ───────────────────────────────────────────────────────────────
-function _deleteItem(id) {
+// `onDone` fires only after the server confirms the deletion. It exists because the item can now
+// be deleted from INSIDE the editor (Élder's #29e), and that screen has to close itself -- but only
+// on a real deletion, never on a refusal, or the modal would vanish and take the edit with it.
+function _deleteItem(id, onDone) {
   _openConfirm({
     title: t('content.delete_item_title'),
     message: t('content.confirm_delete_item'),
     danger: true,
-    onConfirm() { _doDeleteItem(id, false); },
+    onConfirm() { _doDeleteItem(id, false, onDone); },
   });
 }
 
@@ -507,7 +518,7 @@ function _deleteItem(id) {
 // it is released and offer a second confirm that force-deletes (cascading the releases).
 // Non-optimistic: only drop it from the list once the server confirms, so a refusal
 // leaves the UI intact.
-function _doDeleteItem(id, force) {
+function _doDeleteItem(id, force, onDone) {
   api.deleteItem({ id, force: !!force, _silent: true }).then(() => {
     const nextId = selectionAfterRemoval(_visibleItems(), id);
     const idx = _items.findIndex((it) => Number(it.id) === Number(id));
@@ -516,15 +527,16 @@ function _doDeleteItem(id, force) {
     if (Number(_selectedId) === Number(id)) _selectedId = nextId;
     _renderItems();
     toast.ok(t('content.item_deleted'));
+    if (typeof onDone === 'function') onDone();
   }).catch((e) => {
-    if (e && e.data && e.data.error === 'item_released') { _confirmForceDelete(id, e.data); return; }
+    if (e && e.data && e.data.error === 'item_released') { _confirmForceDelete(id, e.data, onDone); return; }
     notice.internal(_err(e));
     _selectedId = Number(id);
     _loadItems();
   });
 }
 
-function _confirmForceDelete(id, data) {
+function _confirmForceDelete(id, data, onDone) {
   const turmas = Array.isArray(data.turmas) ? data.turmas : [];
   const where = turmas.length
     ? turmas.map((x) => x.label).join('; ')
@@ -534,7 +546,7 @@ function _confirmForceDelete(id, data) {
     message: t('content.delete_released_where') + ' ' + where + '. ' + t('content.delete_released_warn'),
     confirmLabel: t('content.delete_anyway'),
     danger: true,
-    onConfirm() { _doDeleteItem(id, true); },
+    onConfirm() { _doDeleteItem(id, true, onDone); },
   });
 }
 
@@ -558,32 +570,18 @@ function _openItem(id) {
   }).catch((e) => notice.internal(_err(e)));
 }
 
-// New item: content-first creator (step 1) → full editor (step 2).
+// New item: ONE screen. The content-first step used to be a separate modal you crossed into the
+// editor from, and editing skipped it entirely; both are the same screen now, with the AI box at
+// the top of it (Elder 2026-08-06: "this all has to become one screen").
 function _newItem() {
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
-  itemCreator.mount(bd.querySelector('.cdx-modal-body'), {
-    types: _types.filter((ty) => NON_LIBRARY_TYPES.indexOf(ty.slug) < 0),
-    tags: _tags,
-    titleLabel: t('content.new_item_step1'),
-    closeLabel: t('content.close'),
-    onClose: () => closeModal(bd),
-    onCancel: () => closeModal(bd),
-    onManual: (out) => { closeModal(bd); _openItemEditorFull(null, { body_md: out.body_md }, null); },
-    onFile: (out) => { closeModal(bd); _openItemEditorFull(null, { type: 'arquivo' }, null, out.file); },
-    onAIComplete: async (result) => {
-      closeModal(bd);
-      const tagIds = await _tagsByLabels(result.tagLabels || []);
-      const prefill = Object.assign({}, result.prefill, { tag_ids: tagIds });
-      // result.file is set when a picked file is used "for download": open the arquivo item
-      // with the AI-filled fields AND the file already attached (pending upload on save).
-      _openItemEditorFull(null, prefill, result.aiContext, result.file || null);
-    },
-  });
+  _openItemEditorFull(null, null, null, null);
 }
 
 function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
   const isEdit = !!item;
-  const bd = openModal('<div class="cdx-modal-body"></div>', { disableBackdropClose: true });
+  // The WIDE modal: the editor is two columns now, and the narrow default is the shape Élder
+  // rejected ("você poderia ter um modal mais largo e preferiu colocar um modal estreito").
+  const bd = openModal('<div class="cdx-modal-body cdx-modal-wide"></div>', { disableBackdropClose: true });
   itemForm.mount(bd.querySelector('.cdx-modal-body'), {
     item,
     prefill,
@@ -591,15 +589,26 @@ function _openItemEditorFull(item, prefill, aiContext, pendingFile) {
     pendingFile,
     types: _types,
     tags: _tags,
-    titleLabel: isEdit ? t('content.edit_item') : t('content.new_item_step2'),
+    // No titleLabel override: the editor's own header says WHAT it is ("Editando pacote «X»").
+    // The old value here was "Novo item · 2 de 2", a leftover from the two-screen flow that
+    // survived the merge and made the one screen announce itself as step two of two.
     saveLabel: isEdit ? t('content.save') : t('content.create'),
     closeLabel: t('content.close'),
-    excludeTypes: isEdit ? [] : NON_LIBRARY_TYPES,
+    excludeTypes: isEdit ? [] : NON_CREATABLE_TYPES,
     onCreateType: _openTypeCreateForm,
-    onSave: () => {
+    onDeleteItem: isEdit ? (it) => _deleteItem((it && it.id) || item.id, () => {
+      closeModal(bd);
+      _detailCache.clear();
+      _loadItems({ silent: true });
+    }) : null,
+    onSave: (saved) => {
       closeModal(bd);
       toast.ok(isEdit ? t('content.item_updated') : t('content.item_created'));
       _detailCache.clear();   // edited content is stale; preview re-fetches
+      // O item recem-criado fica SELECIONADO (Elder 2026-08-05: "after creating an item, after
+      // the modal closes, it should focus the item created"). Sem isto a grade voltava pro
+      // topo e ele tinha que cacar o que acabou de fazer.
+      if (saved && saved.id) _selectedId = Number(saved.id);
       _loadItems({ silent: true });
       _loadTags();
     },

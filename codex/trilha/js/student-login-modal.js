@@ -194,7 +194,7 @@ export function openLoginModal(opts = {}) {
         '<button type="button" class="cdx-btn cdx-btn-vazado tr-login-resend">' + esc(t('login.resend')) + '</button>' +
       '</div>';
     const input = bodyEl.querySelector('.tr-login-code');
-    // Um só campo de código no site inteiro (js/code-input.js).
+    // One single code field across the whole site (js/code-input.js).
     if (window.CodeInput) window.CodeInput.attach(input, { length: 4 });
     if (flow.devCode) input.value = flow.devCode;
     const verify = bodyEl.querySelector('.tr-login-verify');

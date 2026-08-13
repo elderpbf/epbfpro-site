@@ -89,166 +89,166 @@ test('answerText: an unknown payload shape still degrades to JSON rather than bl
 // ── resolveTab knows the tarefas tab ─────────────────────────────────────────
 test('resolveTab: #tarefas -> tarefas', () => assert.equal(resolveTab('#tarefas'), 'tarefas'));
 
-// ── tarefaKind / canSend / isExpandable (semantica do Élder, 2026-07-15) ─────
-// A tag descreve O QUE O ALUNO FEZ, e so isso. A fala do professor e MENSAGEM, nao estado da
-// entrega: foi misturar as duas que tornou "Corrigida"/"Respondida" impossivel de nomear
-// ("respondida por quem?").
+// ── tarefaKind / canSend / isExpandable (Élder's semantics, 2026-07-15) ─────
+// The tag describes WHAT THE STUDENT DID, and only that. The teacher's words are a MESSAGE,
+// not the delivery's state: mixing the two is what made "Corrigida"/"Respondida" impossible
+// to name ("responded by whom?").
 const feita = (extra) => Object.assign({ item_id: 1, submissions: [{ answer_json: '"x"' }] }, extra || {});
 
-test('tarefaKind: sem envio -> nao_respondida', () => {
+test('tarefaKind: no submission -> nao_respondida', () => {
   assert.equal(tarefaKind({ item_id: 1, submissions: [] }), 'nao_respondida');
 });
-test('tarefaKind: enviou e o professor fechou -> respondida', () => {
+test('tarefaKind: submitted and the teacher closed it -> respondida', () => {
   assert.equal(tarefaKind(feita({ allow_multi: false })), 'respondida');
 });
-test('tarefaKind: enviou e pode de novo -> de_novo', () => {
+test('tarefaKind: submitted and can submit again -> de_novo', () => {
   assert.equal(tarefaKind(feita({ allow_multi: true })), 'de_novo');
 });
-test('tarefaKind: a MENSAGEM do professor NAO mexe na tag da entrega', () => {
+test('tarefaKind: the teacher\'s MESSAGE does NOT change the delivery tag', () => {
   assert.equal(tarefaKind(feita({ allow_multi: false, has_instructor_message: true })), 'respondida');
   assert.equal(tarefaKind(feita({ allow_multi: true, has_instructor_message: true })), 'de_novo');
 });
 
-test('canSend: da pra enviar quando falta responder ou quando pode de novo', () => {
-  assert.equal(canSend({ item_id: 1, submissions: [] }), true);        // primeira resposta
-  assert.equal(canSend(feita({ allow_multi: true })), true);           // responder de novo
-  assert.equal(canSend(feita({ allow_multi: false })), false);         // fechada
+test('canSend: can submit when a response is still missing or when it can go again', () => {
+  assert.equal(canSend({ item_id: 1, submissions: [] }), true);        // first response
+  assert.equal(canSend(feita({ allow_multi: true })), true);           // submit again
+  assert.equal(canSend(feita({ allow_multi: false })), false);         // closed
 });
 
-// O cartao entregue SEMPRE abre. Amarrar isso ao allow_multi (como ficou por um momento)
-// escondia a propria resposta do professor assim que ele fechava a tarefa: o avesso do certo.
-test('isExpandable: qualquer tarefa entregue abre, mesmo sem multipla entrega', () => {
+// The delivered card ALWAYS opens. Tying this to allow_multi (as it was for a moment) hid the
+// teacher's own reply the instant they closed the task: the opposite of correct.
+test('isExpandable: any delivered task opens, even without multiple delivery', () => {
   assert.equal(isExpandable(feita({ allow_multi: false })), true);
 });
-test('isExpandable: entregue com multipla entrega tambem abre', () => {
+test('isExpandable: delivered with multiple delivery also opens', () => {
   assert.equal(isExpandable(feita({ allow_multi: true })), true);
 });
-test('isExpandable: sem entrega nao abre (nao ha o que ler)', () => {
+test('isExpandable: no delivery does not open (there is nothing to read)', () => {
   assert.equal(isExpandable({ item_id: 1, submissions: [] }), false);
 });
 
-// A aba tem que renderizar certo mesmo contra um Worker que ainda nao foi promovido.
-test('deliveries: cai pro `submission` singular quando o worker e antigo', () => {
+// The tab has to render correctly even against a Worker that has not been promoted yet.
+test('deliveries: falls back to the singular `submission` when the worker is old', () => {
   assert.deepEqual(deliveries({ submission: { answer_json: '"a"' } }), [{ answer_json: '"a"' }]);
   assert.deepEqual(deliveries({ submissions: [], submission: null }), []);
 });
-test('deliveries: prefere a lista quando o worker manda', () => {
+test('deliveries: prefers the list when the worker sends one', () => {
   assert.equal(deliveries({ submissions: [{ answer_json: '"n"' }, { answer_json: '"v"' }] }).length, 2);
 });
 
-// ── assinatura + carimbo de cada interacao (Élder 2026-07-15) ───────────────
-test('deliveryWho: assinada com o nome de quem entregou', () => {
+// ── signature + timestamp for each interaction (Élder 2026-07-15) ───────────
+test('deliveryWho: signed with the deliverer\'s name', () => {
   assert.equal(deliveryWho({ student_name: 'Ana Prado' }), 'Ana Prado');
 });
-test('deliveryWho: entrega anonima diz Anonimo, NAO o nome da sessao', () => {
-  // O nome falta porque o aluno escolheu; a ausencia e o fato, nao um buraco pra tapar.
+test('deliveryWho: an anonymous delivery says Anonimo, NOT the session name', () => {
+  // The name is missing because the student chose that; the absence is the fact, not a gap to patch.
   assert.equal(deliveryWho({ student_name: null }), 'Anônimo');
   assert.equal(deliveryWho({}), 'Anônimo');
   assert.equal(deliveryWho(null), 'Anônimo');
 });
 
-test('fill: troca os placeholders da frase', () => {
+test('fill: swaps the placeholders in the sentence', () => {
   assert.equal(fill('de {who} em {when}', { who: 'Ana', when: '23/06/2026 às 12h26' }),
     'de Ana em 23/06/2026 às 12h26');
 });
-test('fill: um {token} sem valor fica como esta, nao vira "undefined"', () => {
+test('fill: a {token} with no value stays as-is, does not become "undefined"', () => {
   assert.equal(fill('de {who} em {when}', { who: 'Ana' }), 'de Ana em {when}');
 });
-test('fill: um nome com $& NAO e reinjetado pelo String.replace', () => {
-  // O motivo de fill() usar funcao replacer em vez de string: '$&' na substituicao string
-  // significa "o trecho casado", e o nome do aluno viraria "{who}" na tela.
+test('fill: a name containing $& is NOT re-injected by String.replace', () => {
+  // Why fill() uses a replacer function instead of a string: '$&' in a string replacement
+  // means "the matched span", and the student's name would turn into "{who}" on screen.
   assert.equal(fill('de {who} em x', { who: 'A$&B' }), 'de A$&B em x');
 });
 
-test('stampTime: o momento exato, formato PT-BR fechado', () => {
-  const d = new Date(2026, 5, 23, 12, 26, 0);            // 23/06/2026 12h26, hora local
+test('stampTime: the exact moment, fixed PT-BR format', () => {
+  const d = new Date(2026, 5, 23, 12, 26, 0);            // 23/06/2026 12h26, local time
   assert.equal(stampTime(Math.floor(d.getTime() / 1000)), '23/06/2026 às 12h26');
 });
-test('stampTime: zero-pad em dia/mes/hora/minuto', () => {
+test('stampTime: zero-pads day/month/hour/minute', () => {
   const d = new Date(2026, 0, 5, 9, 7, 0);               // 05/01/2026 09h07
   assert.equal(stampTime(Math.floor(d.getTime() / 1000)), '05/01/2026 às 09h07');
 });
-test('stampTime: sem timestamp -> vazio, nunca "Invalid Date" na cara do aluno', () => {
+test('stampTime: no timestamp -> empty, never "Invalid Date" in front of the student', () => {
   assert.equal(stampTime(null), '');
   assert.equal(stampTime(0), '');
   assert.equal(stampTime(undefined), '');
 });
 
 // ── source contract ─────────────────────────────────────────────────────────
-test('toda interacao do cartao e assinada e carimbada', () => {
+test('every card interaction is signed and timestamped', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.match(src, /from '\.\.\/\.\.\/js\/rel-time\.js'/, 'o carimbo vem do modulo compartilhado');
-  assert.ok(!/toLocaleString/.test(src), 'o cartao nao formata data por conta propria');
-  assert.match(src, /tarefas\.by_at/, 'a entrega diz de quem e de quando');
-  assert.match(src, /tarefas\.msg_by_at/, 'a mensagem do professor tambem');
-  assert.match(src, /who: t\('tarefas\.instructor'\)/, 'o professor assina como Instrutor');
+  assert.match(src, /from '\.\.\/\.\.\/js\/rel-time\.js'/, 'the timestamp comes from the shared module');
+  assert.ok(!/toLocaleString/.test(src), 'the card does not format dates on its own');
+  assert.match(src, /tarefas\.by_at/, 'the delivery states who and when');
+  assert.match(src, /tarefas\.msg_by_at/, 'so does the teacher\'s message');
+  assert.match(src, /who: t\('tarefas\.instructor'\)/, 'the teacher signs as Instrutor');
 });
-test('o botao diz o VERBO, nao o estado', () => {
+test('the button states the VERB, not the state', () => {
   const pt = read('../trilha/i18n.js');
-  assert.match(pt, /'tarefas\.badge_unanswered':\s*'Responder'/, 'o rotulo do botao e a acao');
-  // O estado nao sumiu: ele mora no cabecalho da secao, que e o lugar de um estado.
-  assert.match(pt, /'tarefas\.section_pending':\s*'Não respondidas'/, 'o estado fica na secao');
+  assert.match(pt, /'tarefas\.badge_unanswered':\s*'Responder'/, 'the button label is the action');
+  // The state did not disappear: it lives in the section header, which is the right place for a state.
+  assert.match(pt, /'tarefas\.section_pending':\s*'Não respondidas'/, 'the state stays in the section');
 });
-test('o glifo vem DEPOIS do texto no botao', () => {
+test('the glyph comes AFTER the text in the button', () => {
   const src = read('../trilha/js/tarefas.js');
   const inner = /const inner = '<span>' \+ esc\(t\(def\.label\)\) \+ '<\/span>' \+ icon;/;
-  assert.match(src, inner, 'le-se o verbo, depois ve-se o aviao');
+  assert.match(src, inner, 'read the verb first, then see the icon');
 });
-test('o chevron abre o CARTAO: vem antes do conteudo e centralizado', () => {
+test('the chevron opens the CARD: it comes before the content and is centered', () => {
   const src = read('../trilha/js/tarefas.js');
   const top = src.slice(src.indexOf("'<div class=\"cdx-tt-top\"'"));
-  assert.ok(top.indexOf('chevron +') < top.indexOf('cdx-tt-info'), 'chevron a esquerda do conteudo');
-  assert.match(src, /cdx-tt-chev--none/, 'o slot vazio segura o alinhamento do titulo');
+  assert.ok(top.indexOf('chevron +') < top.indexOf('cdx-tt-info'), 'chevron to the left of the content');
+  assert.match(src, /cdx-tt-chev--none/, 'the empty slot holds the title alignment');
   const css = read('../trilha/css/tarefas.css');
-  assert.match(css, /\.cdx-tt-chev\s*\{[^}]*align-self:\s*center/, 'centralizado na vertical');
+  assert.match(css, /\.cdx-tt-chev\s*\{[^}]*align-self:\s*center/, 'vertically centered');
 });
-// TODAS as tags na linha do titulo, a ACAO sempre por ULTIMO, a direita (Élder 2026-07-15):
-// [mensagem do professor] [responder]. Ordem fixa: a ponta direita do cartao e sempre o que
-// faz alguma coisa, e o que so avisa nunca ocupa esse lugar.
-test('todas as tags na linha do titulo, a acao por ultimo', () => {
+// ALL tags on the title row, the ACTION always LAST, on the right (Élder 2026-07-15):
+// [teacher message] [respond]. Fixed order: the card's right edge is always what does
+// something, and what only notifies never occupies that spot.
+test('all tags on the title row, the action last', () => {
   const src = read('../trilha/js/tarefas.js');
   const top = src.slice(src.indexOf("'<div class=\"cdx-tt-top\"'"), src.indexOf('function wireList'));
-  assert.ok(top.indexOf('cdx-tt-info') < top.indexOf('cdx-tt-tags'), 'as tags fecham a linha do titulo');
-  assert.match(top, /cdx-tt-tags">' \+ msgBadgeHtml\(tarefa\) \+ badgeHtml\(tarefa\) \+/, 'mensagem primeiro, acao por ultimo');
-  assert.ok(top.indexOf('chevron +') < top.indexOf('cdx-tt-info'), 'e o chevron continua abrindo pela esquerda');
+  assert.ok(top.indexOf('cdx-tt-info') < top.indexOf('cdx-tt-tags'), 'the tags close the title row');
+  assert.match(top, /cdx-tt-tags">' \+ msgBadgeHtml\(tarefa\) \+ badgeHtml\(tarefa\) \+/, 'message first, action last');
+  assert.ok(top.indexOf('chevron +') < top.indexOf('cdx-tt-info'), 'and the chevron still opens from the left');
   const css = read('../trilha/css/tarefas.css');
-  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*justify-content:\s*flex-end/, 'a acao fica colada na direita mesmo se o grupo quebrar');
-  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*flex-shrink:\s*0/, 'quem cede largura e o titulo, nao a tag');
+  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*justify-content:\s*flex-end/, 'the action stays pinned to the right even if the group wraps');
+  assert.match(css, /\.cdx-tt-tags\s*\{[^}]*flex-shrink:\s*0/, 'the title gives up width, not the tag');
 });
-test('texto longo vira janela: o clamp e o compartilhado, medido, nao chutado', () => {
+test('long text becomes a window: the clamp is the shared, measured one, not guessed', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.match(src, /from '\.\.\/\.\.\/js\/clamp\.js'/, 'usa o clamp compartilhado');
-  assert.match(src, /wireClamps\(_root, '\[data-tt-text\]'\)/, 'clampa as respostas');
+  assert.match(src, /from '\.\.\/\.\.\/js\/clamp\.js'/, 'uses the shared clamp');
+  assert.match(src, /wireClamps\(_root, '\[data-tt-text\]'\)/, 'clamps the responses');
   const clamp = read('../js/clamp.js');
-  assert.match(clamp, /scrollHeight <= el\.clientHeight/, 'mede o transbordo de verdade');
-  assert.ok(!/length >|charAt|substring/.test(clamp), 'nao chuta pelo numero de caracteres');
+  assert.match(clamp, /scrollHeight <= el\.clientHeight/, 'measures real overflow');
+  assert.ok(!/length >|charAt|substring/.test(clamp), 'does not guess by character count');
 });
-test('o CSS do texto da entrega nao ficou orfao', () => {
-  // O wrapper que escopava estas regras morreu junto com o subHtml, e a regra escopada nele
-  // deixou o texto da entrega SEM pre-wrap: as quebras de linha que o aluno digitou sumiam.
-  // Os comentarios saem antes da checagem, senao o teste casa com a propria explicacao.
+test('the delivery text CSS did not become orphaned', () => {
+  // The wrapper that scoped these rules died along with subHtml, and the rule scoped to it
+  // left the delivery text WITHOUT pre-wrap: the line breaks the student typed disappeared.
+  // Comments are stripped before checking, or the test would match its own explanation.
   const css = read('../trilha/css/tarefas.css').replace(/\/\*[\s\S]*?\*\//g, '');
   const js = read('../trilha/js/tarefas.js');
-  assert.ok(!/\.cdx-tt-field/.test(css), 'nenhuma regra presa a um seletor que nao existe mais');
-  assert.ok(!/cdx-tt-field/.test(js), 'e o seletor de fato nao e mais emitido');
-  assert.match(css, /^\.cdx-tt-fv\s*\{[^}]*white-space:\s*pre-wrap/m, 'o texto respeita as quebras');
+  assert.ok(!/\.cdx-tt-field/.test(css), 'no rule stuck to a selector that no longer exists');
+  assert.ok(!/cdx-tt-field/.test(js), 'and the selector is in fact no longer emitted');
+  assert.match(css, /^\.cdx-tt-fv\s*\{[^}]*white-space:\s*pre-wrap/m, 'the text respects line breaks');
 });
 
-test('a tag E o botao: nao existe mais botao separado de "enviar outra"', () => {
+test('the tag IS the button: there is no separate "send another" button anymore', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.ok(!/data-tt-again/.test(src), 'o botao de baixo morreu; a tag em cima envia');
-  assert.match(src, /data-tt-send/, 'a tag e quem envia');
-  assert.match(src, /stopPropagation/, 'enviar nao pode fechar o cartao');
+  assert.ok(!/data-tt-again/.test(src), 'the button below is gone; the tag on top submits');
+  assert.match(src, /data-tt-send/, 'the tag is what submits');
+  assert.match(src, /stopPropagation/, 'submitting must not close the card');
 });
-test('os glifos vem do banco, nenhum svg inventado no cartao', () => {
+test('the glyphs come from the bank, no invented svg in the card', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.match(src, /from '\.\.\/\.\.\/js\/glyphs\.js'/, 'importa o banco de glifos');
-  assert.ok(!/<svg/i.test(src), 'nenhum SVG solto no modulo do cartao');
+  assert.match(src, /from '\.\.\/\.\.\/js\/glyphs\.js'/, 'imports the glyph bank');
+  assert.ok(!/<svg/i.test(src), 'no loose SVG in the card module');
 });
-test('a nota de plumbing e a sub-legenda de espera sumiram', () => {
+test('the plumbing note and the waiting sub-caption are gone', () => {
   const src = read('../trilha/js/tarefas.js');
-  assert.ok(!/gate_note/.test(src), 'a nota de plumbing morreu');
-  assert.ok(!/sub_sent|sub_graded|subHtml/.test(src), '"aguardando correção do professor" morreu');
+  assert.ok(!/gate_note/.test(src), 'the plumbing note is gone');
+  assert.ok(!/sub_sent|sub_graded|subHtml/.test(src), '"aguardando correção do professor" is gone');
 });
 
 test('tarefas.js self-registers a renderer and uses the facade only', () => {

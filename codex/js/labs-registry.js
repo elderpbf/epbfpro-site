@@ -17,7 +17,7 @@
 // Lab definitions are SHIPPED DATA — kept byte-identical with the legacy registry
 // so the same lab pages resolve. The lab HTML still lives at /codex/labs/<key>/
 // (moving it is the legacy quarantine step, not this port).
-// Each lab carries a one-line `summary` (the "o que é"), a longer `description`,
+// Each lab carries a one-line `summary` (the "what it is"), a longer `description`,
 // and an `objective` -- the Trail lab card shows all three (item-render.js). This
 // registry is the SINGLE SOURCE for lab display text: the Trail overlays these
 // onto the released lab item by lab_key (trilha/js/lab-overlay.js) so a rename

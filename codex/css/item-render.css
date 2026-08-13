@@ -426,3 +426,12 @@
     padding: 10px 12px;
   }
 }
+
+/* Os itens DE DENTRO, na previa do admin (Elder 05/08: "nos itens, do lado direito ao
+   selecionar o projeto, nao lista dos documentos"). So leitura; a indentacao vem do
+   flattenTree, o mesmo do editor, entao as duas telas nao discordam do aninhamento. */
+.ctr-children { margin-top: 1rem; border-top: 1px solid var(--border); padding-top: 0.75rem; }
+.ctr-children-list { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 3px; }
+.ctr-child { display: flex; align-items: baseline; gap: 8px; font-size: 0.86rem; }
+.ctr-child-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ctr-child-type { flex: 0 0 auto; font-size: 0.74rem; color: var(--text-secondary); }

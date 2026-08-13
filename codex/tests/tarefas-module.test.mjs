@@ -91,13 +91,13 @@ test('the tarefa toggles are declared in one table, including allow_multi', () =
   assert.ok(!/flag === 'reply' \? 'reply_enabled' : 'grade_enabled'/.test(src), 'no ternary that silently excludes the third toggle');
 });
 
-// Era 'offered in BOTH the standalone pane and the aula card head' e exigia 2 call sites.
-// A fileira do "standalone pane" foi REMOVIDA em 2026-07-16 (track-41) porque NUNCA renderizou:
-// o _renderShell só emitia o pane t1b, então #cdx-tarefas-preview/#cdx-tarefas-list não existiam,
-// e a fileira morava atrás de um ramo _lockedAula == null que nenhum consumidor alcança
-// (content.js monta bankOnly, cohorts.js sempre passa aulaNumber). O teste passava lendo só o
-// FONTE, que é exatamente a falsa confiança que o CLAUDE.md nomeia ("passing unit tests on
-// [unmounted code] are false confidence"). Agora ele cobra a fileira que de fato renderiza.
+// It used to be 'offered in BOTH the standalone pane and the aula card head' and required 2 call
+// sites. The "standalone pane" row was REMOVED on 2026-07-16 (track-41) because it NEVER
+// rendered: `_renderShell` only emitted the t1b pane, so #cdx-tarefas-preview/#cdx-tarefas-list
+// never existed, and the row lived behind a `_lockedAula == null` branch no consumer ever
+// reaches (content.js mounts bankOnly, cohorts.js always passes aulaNumber). The test passed by
+// only reading the SOURCE, which is exactly the false confidence CLAUDE.md names ("passing unit
+// tests on [unmounted code] are false confidence"). Now it holds the row that actually renders.
 test('the aula card head offers all four per-instance toggles', () => {
   for (const f of ['reply', 'grade', 'multi', 'anon']) {
     assert.match(src, new RegExp("_flagToggleHtml\\('" + f + "'"), f + ' toggle in the card-head row');

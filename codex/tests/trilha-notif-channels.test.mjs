@@ -178,22 +178,22 @@ test('displayPrefs feeds into gridRows and actually turns the comunicado push ce
   assert.equal(com.cells.find((c) => c.channel === 'push').disabled, false, 'still TOGGLEABLE, just not pre-checked');
 });
 
-// A categoria cujo produtor ainda não chama dispatch() não pode oferecer e-mail/push: o
-// interruptor entregaria nada. Fórum é o caso aberto (um post abre pra turma inteira, então
-// ligar o e-mail exige a fila antes). Mesma regra de honestidade da coluna de push.
-test('a categoria com extras pendentes desabilita e-mail e push, e nunca os mostra ligados', () => {
+// A category whose producer does not call dispatch() yet must not offer e-mail/push: the
+// switch would deliver nothing. Fórum is the open case (a post opens to the whole cohort, so
+// turning on e-mail requires the queue first). Same honesty rule as the push column.
+test('a category with pending extras disables e-mail and push, and never shows them on', () => {
   const rows = gridRows({ forum: { bell: true, email: true, push: true } }, { pushAvailable: true });
   const forum = rows.find((r) => r.key === 'forum');
   for (const ch of ['email', 'push']) {
     const cell = forum.cells.find((c) => c.channel === ch);
-    assert.equal(cell.disabled, true, ch + ' deve estar desabilitado');
-    assert.equal(cell.enabled, false, ch + ' nunca aparece ligado enquanto não entrega');
+    assert.equal(cell.disabled, true, ch + ' must be disabled');
+    assert.equal(cell.enabled, false, ch + ' never shows on while it does not deliver');
   }
-  // O sino da mesma linha segue valendo: ele é PULL e já mostra o fórum hoje.
+  // The bell on the same row still holds: it is PULL and already shows the forum today.
   assert.equal(forum.cells.find((c) => c.channel === 'bell').enabled, true);
 });
 
-test('as demais categorias não são afetadas pelo flag de pendência', () => {
+test('other categories are not affected by the pending-extras flag', () => {
   const rows = gridRows({ comunicado: { bell: true, email: true, push: true } }, { pushAvailable: true });
   const com = rows.find((r) => r.key === 'comunicado');
   assert.equal(com.cells.find((c) => c.channel === 'email').disabled, false);

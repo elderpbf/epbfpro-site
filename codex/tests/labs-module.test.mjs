@@ -70,7 +70,7 @@ test('labs strings route through t() in both dictionaries', async () => {
   }
 });
 
-// ── search + enabled/disabled chips (fase 3) ─────────────────────────────────
+// ── search + enabled/disabled chips (phase 3) ─────────────────────────────────
 // The free-text query belongs to the RAIL (js/list-rail.js owns the input, which is what keeps
 // it alive across a keystroke repaint); the enabled/disabled cut is CONSUMER state and narrows
 // the list here, before the rail sees it. These tests pin the consumer half.

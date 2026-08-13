@@ -52,57 +52,57 @@ function vncAula2() {
   };
 }
 
-test('emptyRoteiro é uma forma vazia válida', () => {
+test('emptyRoteiro is a valid empty shape', () => {
   assert.deepEqual(emptyRoteiro(), { blocos: [] });
 });
 
-test('normalizeRoteiro coage lixo/JSON inválido pra vazio, NUNCA lança', () => {
+test('normalizeRoteiro coerces garbage/invalid JSON to empty, NEVER throws', () => {
   assert.deepEqual(normalizeRoteiro('lixo{'), { blocos: [] });
   assert.deepEqual(normalizeRoteiro(null), { blocos: [] });
   assert.deepEqual(normalizeRoteiro(42), { blocos: [] });
   assert.deepEqual(normalizeRoteiro(undefined), { blocos: [] });
 });
 
-test('normalizeRoteiro preserva blocos/pontos válidos e completa notas[] default', () => {
+test('normalizeRoteiro preserves valid blocos/pontos and fills in the notas[] default', () => {
   const r = normalizeRoteiro({ blocos: [ { nome: 'Resgate', pontos: [ { n: 0, rotulo: 'x', tipo: 'resgate', dur: 5 } ] } ] });
   assert.equal(r.blocos.length, 1);
   assert.equal(r.blocos[0].pontos[0].dur, 5);
-  assert.ok(Array.isArray(r.blocos[0].pontos[0].notas), 'ponto ganha notas:[] default');
+  assert.ok(Array.isArray(r.blocos[0].pontos[0].notas), 'ponto gets the notas:[] default');
 });
 
-test('normalizeRoteiro aceita string JSON válida', () => {
+test('normalizeRoteiro accepts a valid JSON string', () => {
   const r = normalizeRoteiro(JSON.stringify(vncAula2()));
   assert.equal(totalMin(r), 143);
 });
 
-test('totalMin soma todos os pontos, inclusive a pausa', () => {
+test('totalMin sums every ponto, including the pausa', () => {
   assert.equal(totalMin(vncAula2()), 143);
 });
 
-test('blocoMin soma os pontos de um bloco', () => {
+test('blocoMin sums the pontos of a bloco', () => {
   const r = vncAula2();
   assert.equal(blocoMin(r.blocos.find((b) => b.nome === 'Resgate')), 5);
   assert.equal(blocoMin(r.blocos.find((b) => b.nome === 'Contexto')), 39);
 });
 
-test('roteiroStats conta pontos, práticas e pausa', () => {
+test('roteiroStats counts pontos, práticas, and the pausa', () => {
   const s = roteiroStats(vncAula2());
-  assert.equal(s.pontos, 14);   // 0..13, a pausa não conta como ponto numerado
+  assert.equal(s.pontos, 14);   // 0..13, the pausa does not count as a numbered ponto
   assert.equal(s.praticas, 3);
 });
 
-test('compat lê aula.hours (em horas) e devolve planejado/reserva/estouro', () => {
+test('compat reads aula.hours (in hours) and returns planejado/reserva/estouro', () => {
   assert.deepEqual(compat(vncAula2(), 4), { planejadoMin: 143, reservaMin: 97, estouro: false });
 });
 
-test('compat marca estouro quando o roteiro passa das horas da aula', () => {
-  const c = compat(vncAula2(), 2); // 120 min < 143 planejado
+test('compat flags estouro (overflow) when the roteiro exceeds the aula\'s hours', () => {
+  const c = compat(vncAula2(), 2); // 120 min < 143 planned
   assert.equal(c.estouro, true);
   assert.equal(c.planejadoMin, 143);
-  assert.equal(c.reservaMin, 0); // reserva nunca negativa
+  assert.equal(c.reservaMin, 0); // reserva is never negative
 });
 
-test('fmtDur formata minutos e horas', () => {
+test('fmtDur formats minutes and hours', () => {
   assert.equal(fmtDur(45), '45 min');
   assert.equal(fmtDur(60), '1h');
   assert.equal(fmtDur(90), '1h30');
@@ -110,7 +110,7 @@ test('fmtDur formata minutos e horas', () => {
 });
 
 // ── track-46 fatia 2: promover helpers ──────────────────────────────────────
-test('patchPonto substitui o ponto de mesmo n no target, mantendo o resto intacto', () => {
+test('patchPonto replaces the ponto with the same n in the target, keeping the rest intact', () => {
   const target = { blocos: [
     { nome: 'Resgate', pontos: [{ n: 0, rotulo: 'antigo', tipo: 'resgate', dur: 5, notas: [] }] },
     { nome: 'Fechamento', pontos: [{ n: 1, rotulo: 'fecho', tipo: 'fechamento', dur: 5, notas: [] }] },
@@ -122,11 +122,11 @@ test('patchPonto substitui o ponto de mesmo n no target, mantendo o resto intact
   assert.equal(out.blocos[0].pontos[0].rotulo, 'novo');
   assert.equal(out.blocos[0].pontos[0].dur, 8);
   assert.deepEqual(out.blocos[0].pontos[0].notas, ['melhor']);
-  // o resto do target não foi tocado
+  // the rest of the target was not touched
   assert.equal(out.blocos[1].pontos[0].rotulo, 'fecho');
 });
 
-test('patchPonto nunca muta os roteiros de entrada (target/source)', () => {
+test('patchPonto never mutates the input roteiros (target/source)', () => {
   const target = { blocos: [{ nome: 'B', pontos: [{ n: 0, rotulo: 'x', tipo: 'expositivo', dur: 5, notas: [] }] }] };
   const targetSnapshot = JSON.parse(JSON.stringify(target));
   const source = { blocos: [{ nome: 'B', pontos: [{ n: 0, rotulo: 'y', tipo: 'expositivo', dur: 9, notas: [] }] }] };
@@ -136,7 +136,7 @@ test('patchPonto nunca muta os roteiros de entrada (target/source)', () => {
   assert.deepEqual(normalizeRoteiro(source), normalizeRoteiro(sourceSnapshot));
 });
 
-test('patchPonto sem match por n cai pra posição bi/pi e faz push se não existir', () => {
+test('patchPonto with no match by n falls back to the bi/pi position and pushes if it does not exist', () => {
   const target = { blocos: [{ nome: 'B', pontos: [] }] };
   const source = { blocos: [{ nome: 'B', pontos: [{ n: 3, rotulo: 'novo ponto', tipo: 'pratica', dur: 12, notas: [] }] }] };
   const out = patchPonto(target, source, { bi: 0, pi: 0 });
@@ -144,7 +144,7 @@ test('patchPonto sem match por n cai pra posição bi/pi e faz push se não exis
   assert.equal(out.blocos[0].pontos[0].rotulo, 'novo ponto');
 });
 
-test('patchPonto com bi fora do range do target acrescenta um novo bloco no final (nunca lança)', () => {
+test('patchPonto with bi outside the target\'s range appends a new bloco at the end (never throws)', () => {
   const target = { blocos: [] };
   const source = { blocos: [{ nome: 'Contexto', pontos: [{ n: 5, rotulo: 'embeddings', tipo: 'expositivo', dur: 15, notas: [] }] }] };
   const out = patchPonto(target, source, { bi: 0, pi: 0 });
@@ -153,18 +153,18 @@ test('patchPonto com bi fora do range do target acrescenta um novo bloco no fina
   assert.equal(out.blocos[0].pontos[0].rotulo, 'embeddings');
 });
 
-test('patchPonto com ref inválida (nenhum ponto na fonte) devolve o target normalizado, intacto', () => {
+test('patchPonto with an invalid ref (no ponto in the source) returns the target normalized, intact', () => {
   const target = { blocos: [{ nome: 'B', pontos: [{ n: 0, rotulo: 'x', tipo: 'expositivo', dur: 5, notas: [] }] }] };
   const out = patchPonto(target, { blocos: [] }, { bi: 0, pi: 0 });
   assert.deepEqual(out, normalizeRoteiro(target));
 });
 
-// Regressão do BLOCK do sentinel (fatia 2.5): promover copia um ponto de OUTRO
-// documento (a base do curso) para dentro deste, id junto — e como todo roteiro
-// recomeça em p1, esse id colide de rotina com um ponto que já mora aqui. Duplicado
-// = corrupção silenciosa (findPonto/removePonto param no primeiro match). O conserto
-// mora no normalizeRoteiro, então o que este teste trava é o resultado do fluxo real.
-test('promover um ponto de outro documento NÃO deixa id duplicado no destino', () => {
+// Regression for the sentinel's BLOCK (fatia 2.5): promover copies a ponto from ANOTHER
+// document (the course base) into this one, id and all, and since every roteiro
+// restarts at p1, that id collides routinely with a ponto that already lives here.
+// A duplicate = silent corruption (findPonto/removePonto stop at the first match). The
+// fix lives in normalizeRoteiro, so what this test pins down is the real flow's result.
+test('promoting a ponto from another document does NOT leave a duplicate id at the destination', () => {
   const target = normalizeRoteiro({
     blocos: [{ nome: 'Aula', pontos: [
       { rotulo: 'a', tipo: 'expositivo', dur: 5 },
@@ -172,7 +172,7 @@ test('promover um ponto de outro documento NÃO deixa id duplicado no destino', 
       { rotulo: 'c', tipo: 'expositivo', dur: 5 },
     ] }],
   });
-  // A base do curso, normalizada por conta própria, também tem p1/p2/p3.
+  // The course base, normalized on its own, also has p1/p2/p3.
   const source = normalizeRoteiro({
     blocos: [{ nome: 'Base', pontos: [
       { rotulo: 'x', tipo: 'expositivo', dur: 5 },
@@ -180,28 +180,28 @@ test('promover um ponto de outro documento NÃO deixa id duplicado no destino', 
       { rotulo: 'promovido', tipo: 'pratica', dur: 12 },
     ] }],
   });
-  assert.equal(source.blocos[0].pontos[2].id, 'p3', 'a fonte de fato reusa um id que o destino já tem');
+  assert.equal(source.blocos[0].pontos[2].id, 'p3', 'the source really does reuse an id the destination already has');
 
   const out = normalizeRoteiro(patchPonto(target, source, { bi: 0, pi: 2 }));
   const ids = out.blocos.flatMap((b) => b.pontos.map((p) => p.id));
-  assert.equal(new Set(ids).size, ids.length, 'nenhum id repetido depois de promover');
+  assert.equal(new Set(ids).size, ids.length, 'no repeated id after promoting');
 
-  // E o dano que o duplicado causava não acontece: cada id acha o seu ponto.
+  // And the damage the duplicate used to cause does not happen: each id finds its own ponto.
   for (const p of out.blocos[0].pontos) {
     assert.equal(findPonto(out, p.id).ponto.rotulo, p.rotulo);
   }
 });
 
-test('nextBaseNumber devolve 1 quando não há bases e max+1 quando há', () => {
+test('nextBaseNumber returns 1 when there are no bases and max+1 when there are', () => {
   assert.equal(nextBaseNumber([]), 1);
   assert.equal(nextBaseNumber(null), 1);
   assert.equal(nextBaseNumber([1, 2, 3]), 4);
   assert.equal(nextBaseNumber([1, 5, 3]), 6);
-  assert.equal(nextBaseNumber(['2', '4']), 5); // string numbers coagidos
+  assert.equal(nextBaseNumber(['2', '4']), 5); // string numbers coerced
 });
 
-test('roteiro-model.js é DOM-free (sem window/document)', () => {
+test('roteiro-model.js is DOM-free (no window/document)', () => {
   const src = readSrc('../js/roteiro-model.js');
-  assert.ok(!/\bwindow\b/.test(src), 'sem window');
-  assert.ok(!/\bdocument\b/.test(src), 'sem document');
+  assert.ok(!/\bwindow\b/.test(src), 'no window');
+  assert.ok(!/\bdocument\b/.test(src), 'no document');
 });

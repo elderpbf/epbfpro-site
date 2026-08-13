@@ -1,11 +1,15 @@
-// Editar a entrega ATE O INSTRUTOR RESPONDER (track-26 item 3).
+// Editing the delivery UNTIL THE INSTRUCTOR REPLIES (track-26 item 3).
 //
 // Élder 2026-07-15: "eu sempre posso editar E o aluno pode editar ate eu responder e pronto;
-// nada de abrir pagina e bloquear tudo, nada disso" + "nao ha motivo de travar nota com mensagem;
-// sao coisas independentes" + "a nota nao e mensagem do professor, mensagem e so mensagem".
+// nada de abrir pagina e bloquear tudo, nada disso" (I can always edit AND the student can
+// edit until I reply, that's it; no opening a page and locking everything, none of that) +
+// "nao ha motivo de travar nota com mensagem; sao coisas independentes" (there's no reason to
+// lock the grade with the message; they're independent things) + "a nota nao e mensagem do
+// professor, mensagem e so mensagem" (the grade is not the teacher's message, a message is
+// just a message).
 //
-// A porta e A RESPOSTA, nao o ato de olhar: nenhuma tela tranca ninguem por ter sido aberta, e
-// quem decide e o servidor (can_edit), nao estas abas.
+// The gate is THE REPLY, not the act of looking: no screen locks anyone out for having been
+// opened, and the server (can_edit) decides, not these tabs.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -15,91 +19,91 @@ import { findDelivery } from '../trilha/js/tarefas.js';
 
 const read = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
-// ── Nada tranca por ser aberto ───────────────────────────────────────────────
+// ── Nothing locks by being opened ───────────────────────────────────────────────
 
-// "Nada de abrir pagina e bloquear tudo, nada disso" (Élder). Abrir uma tela nao pode ter
-// consequencia nenhuma. Se um dia alguem repuser um carimbo de "vi", estes testes caem.
-test('nenhuma tela carimba "eu vi": abrir nao muda nada', () => {
-  for (const [nome, rel] of [['aba do aluno', '../trilha/js/tarefas.js'], ['painel do professor', '../content/tarefas.js']]) {
-    assert.ok(!/markReplySeen|markAnswersSeen|_seen_at/.test(read(rel)), nome + ' nao carimba nada');
+// "Nada de abrir pagina e bloquear tudo, nada disso" (Élder). Opening a screen must have no
+// consequence at all. If someone ever brings back a "seen" stamp, these tests fail.
+test('no screen stamps "I saw it": opening changes nothing', () => {
+  for (const [name, rel] of [['student tab', '../trilha/js/tarefas.js'], ['teacher panel', '../content/tarefas.js']]) {
+    assert.ok(!/markReplySeen|markAnswersSeen|_seen_at/.test(read(rel)), name + ' stamps nothing');
   }
-  assert.ok(!/mark_(answers|reply)_seen/.test(read('../trilha/js/api.js')), 'a fachada do aluno tambem nao');
-  assert.ok(!/mark_(answers|reply)_seen/.test(read('../js/codex-api.js')), 'nem a do admin');
+  assert.ok(!/mark_(answers|reply)_seen/.test(read('../trilha/js/api.js')), 'the student facade does not either');
+  assert.ok(!/mark_(answers|reply)_seen/.test(read('../js/codex-api.js')), 'nor the admin one');
 });
 
-// "Eu sempre posso editar" (Élder): o professor e dono do que escreveu, e uma nota "pode
-// precisar ser ajustada depois". Nenhum campo do painel dele fica cinza por decisao de ninguem.
-test('o painel do professor nunca trava a resposta nem a nota', () => {
+// "Eu sempre posso editar" (Élder, "I can always edit"): the teacher owns what they wrote,
+// and a grade "may need adjusting later". No field on their panel is greyed out by anyone's decision.
+test('the teacher panel never locks the reply nor the grade', () => {
   const src = read('../content/tarefas.js');
   const bloco = src.slice(src.indexOf('function _replyBlockHtml'), src.indexOf('function _toggleFlag'));
-  assert.ok(!/disabled/.test(bloco), 'nada de campo desabilitado');
-  assert.match(bloco, /cdx-resp-reply-send/, 'o botao de responder existe sempre');
-  assert.match(bloco, /cdx-resp-grade-save/, 'o de salvar a nota tambem');
+  assert.ok(!/disabled/.test(bloco), 'no disabled field');
+  assert.match(bloco, /cdx-resp-reply-send/, 'the reply button always exists');
+  assert.match(bloco, /cdx-resp-grade-save/, 'so does the save-grade one');
 });
 
-// ── O modal em modo edicao ───────────────────────────────────────────────────
+// ── The modal in edit mode ───────────────────────────────────────────────────
 
-// A caixa nao esta propondo nada aqui: esta mostrando o que a entrega E. Vir desmarcada sobre uma
-// entrega anonima identificaria quem escolheu nao aparecer, so por salvar uma virgula, e um nome
-// nao volta pra dentro do anonimato depois de aparecer.
-test('editando uma entrega ANONIMA, a caixa vem marcada: e o estado dela, nao uma proposta', () => {
+// The checkbox is not proposing anything here: it is showing what the delivery IS. Coming in
+// unchecked over an anonymous delivery would identify who chose not to appear, just from
+// saving a comma, and a name does not go back into anonymity once it has appeared.
+test('editing an ANONYMOUS delivery, the checkbox comes checked: it is its state, not a proposal', () => {
   const c = identityConfig('Ana', true, true);
   assert.equal(c.showAnonCheckbox, true);
   assert.equal(c.anonChecked, true);
 });
-test('editando uma entrega IDENTIFICADA, a caixa vem desmarcada', () => {
+test('editing an IDENTIFIED delivery, the checkbox comes unchecked', () => {
   assert.equal(identityConfig('Ana', true, false).anonChecked, false);
 });
-// A tarefa manda: se ela nao aceita anonimo, nao ha caixa nenhuma, e o envio recusaria.
-test('numa tarefa que exige identificacao nao ha caixa, nem editando uma linha antiga anonima', () => {
+// The task rules: if it does not accept anonymous, there is no checkbox at all, and submission would refuse it.
+test('in a task that requires identification there is no checkbox, even editing an old anonymous row', () => {
   const c = identityConfig('Ana', false, true);
   assert.equal(c.showAnonCheckbox, false);
   assert.equal(c.anonChecked, false);
 });
-// Enviar (sem editing) segue como antes: NUNCA pre-marcada.
-test('enviando, a caixa continua nunca vindo marcada', () => {
+// Submitting (no editing) stays as before: NEVER pre-checked.
+test('submitting, the checkbox still never comes checked', () => {
   assert.equal(identityConfig('Ana', true).anonChecked, false);
   assert.equal(identityConfig('', true).anonChecked, false);
 });
 
-test('o modal edita pelo ct_edit_submission, nao reenvia', () => {
+test('the modal edits via ct_edit_submission, does not resubmit', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
-  // Reenviar seria uma SEGUNDA entrega, e numa tarefa de entrega unica levaria already_submitted.
-  assert.match(src, /if \(editing\) \{\s*await trail\.editTarefa\(/, 'editando -> editTarefa');
-  assert.match(src, /id: editing\.id/, 'na MESMA linha');
+  // Resubmitting would be a SECOND delivery, and on a single-submission task it would hit already_submitted.
+  assert.match(src, /if \(editing\) \{\s*await trail\.editTarefa\(/, 'editing -> editTarefa');
+  assert.match(src, /id: editing\.id/, 'on the SAME row');
 });
-test('o modal explica a trava em vez de dizer "erro"', () => {
+test('the modal explains the lock instead of saying "error"', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
   assert.match(src, /code === 'already_replied'/);
-  assert.ok(!/already_seen/.test(src), 'o codigo velho morreu junto com a regra velha');
+  assert.ok(!/already_seen/.test(src), 'the old code died along with the old rule');
 });
-// Editar comeca do que foi enviado: campo vazio obrigaria a redigitar tudo pra trocar uma frase.
-test('o campo volta preenchido, e quem desempacota o payload e o registry', () => {
+// Editing starts from what was submitted: an empty field would force retyping everything to change a sentence.
+test('the field comes back pre-filled, and the registry is what unpacks the payload', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
   assert.match(src, /initial: parseAnswer\(editing\.answer_json\)/);
   assert.match(src, /import \{ getField, parseAnswer \} from '\.\.\/\.\.\/js\/tarefa-fields\.js'/,
-    'a forma do payload mora no registry, nao duplicada aqui');
+    'the payload shape lives in the registry, not duplicated here');
 });
 
-// Bug ANTIGO, achado pelo playtest desta feature: o <div> do modal e o <button> de enviar tinham
-// a MESMA classe, e o querySelector casava com o div primeiro (ordem do documento). O "botao" era
-// o modal inteiro: tocar em qualquer lugar dele enviava, o textContent = 'Enviando...' apagava o
-// modal e deixava so a palavra na tela, e o .disabled = true nao fazia nada (div nao tem
-// disabled). Estava vivo no envio, em producao. O js/frame-trail.js ja tinha o 'button.' como
-// contorno, que era o fossil do bug.
-test('a classe do botao de enviar e SO do botao', () => {
+// OLD bug, found by this feature's playtest: the modal's <div> and the submit <button> had the
+// SAME class, and querySelector matched the div first (document order). The "button" was the
+// entire modal: touching anywhere on it submitted, textContent = 'Enviando...' erased the modal
+// and left only the word on screen, and .disabled = true did nothing (a div has no disabled).
+// It was live on submit, in production. js/frame-trail.js already had the 'button.' prefix as a
+// workaround, which was the fossil of the bug.
+test('the submit button\'s class belongs ONLY to the button', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
-  // (?![-\w]) e nao \b: o \b depois de "submit" casaria com o hifen de tr-tarefa-submit-modal e
-  // de tr-tarefa-submit-backdrop, que sao classes DIFERENTES e legitimas.
+  // (?![-\w]) instead of \b: \b after "submit" would match the hyphen in tr-tarefa-submit-modal
+  // and tr-tarefa-submit-backdrop, which are DIFFERENT, legitimate classes.
   const classes = [...src.matchAll(/class="([^"]*\btr-tarefa-submit(?![-\w])[^"]*)"/g)].map((m) => m[1]);
-  assert.equal(classes.length, 1, 'so um elemento carrega a classe: ' + JSON.stringify(classes));
-  assert.match(src, /<button[^>]*class="[^"]*\btr-tarefa-submit(?![-\w])/, 'e ele e o <button>');
-  assert.match(src, /bd\.querySelector\('button\.tr-tarefa-submit'\)/, 'e a busca exige o button');
+  assert.equal(classes.length, 1, 'only one element carries the class: ' + JSON.stringify(classes));
+  assert.match(src, /<button[^>]*class="[^"]*\btr-tarefa-submit(?![-\w])/, 'and it is the <button>');
+  assert.match(src, /bd\.querySelector\('button\.tr-tarefa-submit'\)/, 'and the lookup requires the button');
 });
 
-// ── A aba do aluno ───────────────────────────────────────────────────────────
+// ── The student tab ───────────────────────────────────────────────────────────
 
-test('findDelivery acha a entrega pelo id DELA, nao pelo da tarefa', () => {
+test('findDelivery finds the delivery by ITS OWN id, not the task\'s', () => {
   const tarefas = [
     { item_id: 1, submissions: [{ id: 10 }, { id: 11 }] },
     { item_id: 2, submissions: [{ id: 20 }] },
@@ -111,20 +115,20 @@ test('findDelivery acha a entrega pelo id DELA, nao pelo da tarefa', () => {
   assert.equal(findDelivery(null, 1), null);
 });
 
-// O servidor decide. Se a aba rederivasse a regra, o botao apareceria numa entrega que o envio
-// recusa e o aluno digitaria tudo de novo pra levar erro no fim.
-test('o botao de editar segue o can_edit do servidor', () => {
+// The server decides. If the tab re-derived the rule, the button would appear on a delivery
+// submission would reject, and the student would retype everything only to hit an error at the end.
+test('the edit button follows the server\'s can_edit', () => {
   assert.match(read('../trilha/js/tarefas.js'), /if \(sub\.can_edit\)/);
 });
 
-// "A nota nao e mensagem do professor, mensagem e so mensagem" (Élder). Dentro do bloco da
-// mensagem, uma entrega so com nota desenhava um "Mensagem do Instrutor em ..." que nao continha
-// mensagem nenhuma: so um numero.
-test('a nota fica FORA do bloco da mensagem, com rotulo proprio', () => {
+// "A nota nao e mensagem do professor, mensagem e so mensagem" (Élder). Inside the message
+// block, a delivery with only a grade used to draw a "Mensagem do Instrutor em ..." that had
+// no message at all in it, just a number.
+test('the grade sits OUTSIDE the message block, with its own label', () => {
   const src = read('../trilha/js/tarefas.js');
   const del = src.slice(src.indexOf('function deliveryHtml'), src.indexOf('function bodyHtml'));
-  assert.match(del, /if \(sub\.instructor_reply\) \{/, 'o bloco da mensagem so existe se HA mensagem');
+  assert.match(del, /if \(sub\.instructor_reply\) \{/, 'the message block only exists if there IS a message');
   const reply = del.slice(del.indexOf('if (sub.instructor_reply) {'), del.indexOf('if (sub.grade) {'));
-  assert.ok(!/grade/.test(reply), 'e a nota nao mora dentro dele');
-  assert.match(del, /tarefas\.grade_label/, 'solta, a nota carrega o proprio rotulo');
+  assert.ok(!/grade/.test(reply), 'and the grade does not live inside it');
+  assert.match(del, /tarefas\.grade_label/, 'standing alone, the grade carries its own label');
 });

@@ -23,9 +23,9 @@ const CONSUMERS = [
   ['cohorts/person-filters.js',  'Alunos'],
   ['content/labs.js',            'Labs'],
   ['lessons/lessons.js',         'Aulas'],
-  ['content/presets.js',         'picker de Presets'],
-  ['content/releases.js',        'compositor de Liberações'],
-  ['js/list-rail.js',            'o próprio rail'],
+  ['content/presets.js',         'the Presets picker'],
+  ['content/releases.js',        'the Releases composer'],
+  ['js/list-rail.js',            'the rail itself'],
 ];
 
 for (const [rel, label] of CONSUMERS) {

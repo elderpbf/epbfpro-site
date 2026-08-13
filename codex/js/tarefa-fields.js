@@ -14,10 +14,10 @@
 import { esc } from './dom.js';
 export { esc };
 
-// answer_json -> o PAYLOAD do campo, que é o formato que renderForm({ initial }) e renderStored
-// falam. Exportado porque a edição da entrega precisa devolver uma já gravada PRA DENTRO do
-// formulário, e o registry é quem conhece a forma do payload: reimplementar isso no modal seria
-// pôr a mesma regra em dois lugares pra corrigirem juntos pra sempre.
+// answer_json -> the field's PAYLOAD, the format renderForm({ initial }) and renderStored
+// speak. Exported because editing a submission needs to feed an already-saved one BACK INTO
+// the form, and the registry is what knows the payload's shape: reimplementing this in the
+// modal would put the same rule in two places, forever needing to be fixed together.
 export function parseAnswer(answer_json) {
   if (!answer_json) return null;
   if (typeof answer_json !== 'string') return answer_json;

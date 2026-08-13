@@ -17,6 +17,8 @@
 import { esc } from './dom.js';
 import { assetUrl } from './codex-api.js';
 import { openModal as _openLabViewer } from './lab-viewer.js';
+import { flattenTree } from './item-list.js';
+import { isVerbatim } from './item-download.js';
 export { esc };
 
 // Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
@@ -158,7 +160,7 @@ export function labHtml(item, opts = {}) {
   const openBtn = (!opts.preview && key)
     ? '<button type="button" class="ctr-lab-open-btn" data-lab-key="' + esc(key) + '">Abrir</button>'
     : '';
-  // A lab card explains itself in three beats (Élder): a one-line "o que é"
+  // A lab card explains itself in three beats (Élder): a one-line "what it is"
   // (summary), a short description, and the objective. All three come from the
   // code registry via the Trail overlay (lab-overlay.js), so they never go stale.
   const oneLine = item.summary ? '<p class="ctr-lab-summary">' + esc(item.summary) + '</p>' : '';
@@ -328,6 +330,32 @@ function renderGoogleDoc(item, container, opts) {
 
 export function renderItem(item, container, opts = {}) {
   if (!item || !container) return;
+  // The admin preview lists the items FROM INSIDE. Élder 2026-08-05: "nos itens, do lado
+  // direito ao selecionar o projeto, não lista dos documentos".
+  //
+  // The flag is `childrenList` and NOT `preview`, which was my mistake in the first version:
+  // `preview` means "no action buttons" and the Trail passes it on EVERY row, so (a) the Items
+  // panel, which passes no flag at all, never showed the list, the bug Élder kept seeing, and
+  // (b) in the Trail it came out stacked on top of the real list. Whoever asks for this list
+  // just wants to READ what's inside.
+  //
+  // Without `case 'projeto'`: containing items is no longer a single type's privilege, so the
+  // condition is having children, and a tarefa with documents inside gets the same list for free.
+  if (opts.childrenList && item.children && item.children.length) {
+    const body = document.createElement('div');
+    const kids = document.createElement('div');
+    kids.className = 'ctr-children';
+    kids.innerHTML = childrenListHtml(item.children);
+    container.innerHTML = '';
+    container.appendChild(body);
+    container.appendChild(kids);
+    return renderItem(Object.assign({}, item, { children: null }), body, opts);
+  }
+  // The `verbatim` flag comes BEFORE the type: it's the item itself, not the AI's guess about
+  // its type, that decides whether to show the literal text (see isVerbatim in
+  // js/item-download.js). dispatchType stays pure and type-based, which is what its tests
+  // pin down; what changed is that there's now an answer that takes precedence over it.
+  if (isVerbatim(item)) return renderPrompt(item, container, opts);
   switch (dispatchType(item.type)) {
     case 'prompt':     return renderPrompt(item, container, opts);
     case 'guide':      return renderGuide(item, container, opts);
@@ -340,6 +368,19 @@ export function renderItem(item, container, opts = {}) {
     case 'interativo': return renderInterativo(item, container, opts);
     default:           return renderMarkdown(item, container, opts);
   }
+}
+
+// The nested list of what an item carries. Read-only: the editor block is what edits.
+// Flattens via the SAME flattenTree the editor uses, so the two screens never disagree about
+// what's inside what.
+export function childrenListHtml(children) {
+  const rows = flattenTree(children).map((r) => (
+    '<li class="ctr-child" style="padding-left:' + (r.depth * 18) + 'px">' +
+      '<span class="ctr-child-title">' + esc(r.item.title || ('#' + r.item.id)) + '</span>' +
+      '<span class="ctr-child-type">' + esc(r.item.type_label || r.item.type || '') + '</span>' +
+    '</li>'
+  )).join('');
+  return '<ul class="ctr-children-list">' + rows + '</ul>';
 }
 
 function renderModelInfo(item, container, opts) {

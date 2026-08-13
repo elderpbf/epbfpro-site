@@ -35,11 +35,13 @@ test('identityConfig: logged-in student drops the name field', () => {
   assert.equal(c.authed, true);
   assert.equal(c.showNameField, false);
 });
-// NUNCA vem marcado (Élder 2026-07-15: "o usuário deve marcar para ser anônimo"). Vinha, e isso
-// invertia o consentimento: quem entrasse identificado e so clicasse "Enviar" mandava anonimo SEM
-// QUERER, e a entrega chegava sem dono no painel do professor. E irreversivel: a coluna do nome
-// fica nula e nao ha de onde recuperar. Anonimato e o desvio, nao o padrao.
-test('identityConfig: logged-in + anon-allowed mostra a opcao, mas NAO marcada', () => {
+// NEVER comes pre-checked (Élder 2026-07-15: "o usuário deve marcar para ser anônimo" - the
+// user has to check it to be anonymous). It used to, and that inverted consent: someone who
+// logged in identified and just clicked "Enviar" ended up submitting anonymous WITHOUT
+// MEANING TO, and the delivery arrived with no owner on the teacher's panel. It is
+// irreversible: the name column goes null and there is nowhere to recover it from. Anonymity
+// is the deviation, not the default.
+test('identityConfig: logged-in + anon-allowed shows the option, but NOT checked', () => {
   const c = identityConfig('Ana', true);
   assert.equal(c.showAnonCheckbox, true);
   assert.equal(c.anonChecked, false);
@@ -50,13 +52,14 @@ test('identityConfig: logged-in + anon-NOT-allowed hides the checkbox entirely',
   assert.equal(c.anonChecked, false);
 });
 
-// "Pode ser anonima" e escolha do professor PRA ESTA TURMA (release, migration 0036), nao marca
-// do item do BANCO: la valia pra toda turma que usasse a tarefa. Tem que ser a MESMA fonte que o
-// ct_submit_tarefa consulta, senao o modal oferece o que o envio recusa.
-test('a opcao de anonimo vem do release, nao do meta_json do banco', () => {
+// "Pode ser anonima" (can be anonymous) is the teacher's choice FOR THIS TURMA (release,
+// migration 0036), not a flag on the BANK item: there it would apply to every turma using the
+// task. It has to be the SAME source ct_submit_tarefa consults, otherwise the modal offers
+// what submission refuses.
+test('the anonymous option comes from the release, not from the bank item\'s meta_json', () => {
   const src = read('../trilha/js/tarefa-submit-modal.js');
-  assert.match(src, /const allowAnon = !!item\.allow_anonymous;/, 'le a escolha da turma');
-  assert.ok(!/meta\.allow_anonymous/.test(src), 'nao le mais a marca do banco');
+  assert.match(src, /const allowAnon = !!item\.allow_anonymous;/, 'reads the turma\'s choice');
+  assert.ok(!/meta\.allow_anonymous/.test(src), 'no longer reads the bank flag');
 });
 test('identityConfig: open turma (no name) keeps the name field, anon never pre-checked', () => {
   const anon = identityConfig('', true);

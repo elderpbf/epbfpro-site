@@ -11,7 +11,7 @@ import { trail } from './api.js';
 import { t } from '../i18n.js';
 import { registerRenderer } from './page.js';
 import { openTarefaSubmitModal } from './tarefa-submit-modal.js';
-import { glyphSvg } from '../../js/glyphs.js';   // o banco de glifos: nada de icone novo aqui
+import { glyphSvg } from '../../js/glyphs.js';   // the glyph library: no new icons here
 import { stampTime } from '../../js/rel-time.js';
 import { wireClamps } from '../../js/clamp.js';
 
@@ -256,18 +256,19 @@ function deliveryHtml(sub, ordinal, total) {
   if (total > 1) html += '<span class="cdx-tt-dlabel">' + esc(fill(t('tarefas.delivery_n'), { n: ordinal })) + '</span>';
   html += '<span class="cdx-tt-by">' +
     esc(fill(t('tarefas.by_at'), { who: deliveryWho(sub), when: stampTime(sub.submitted_at) })) + '</span>';
-  // Editar até o instrutor responder (Élder 2026-07-15: "o aluno pode editar até eu responder e
-  // pronto"). Quem decide é o SERVIDOR (can_edit), nunca esta aba: é a mesma coluna que o
-  // ct_edit_submission consulta pra aceitar. O botão fica na assinatura da entrega, junto do "de
-  // Fulano em ...": é ali que se diz de quem é e de quando é, então é ali que se mexe nela.
+  // Editable until the instructor replies (Élder 2026-07-15: "o aluno pode editar até eu
+  // responder e pronto"). The SERVER decides (can_edit), never this tab: it's the same
+  // column ct_edit_submission checks to accept an edit. The button lives on the entrega's
+  // signature line, next to "de Fulano em ...": that's where it says whose it is and when,
+  // so that's where you act on it.
   if (sub.can_edit) {
     html += '<button type="button" class="cdx-tt-edit" data-tt-edit="' + esc(sub.id) + '">' +
       esc(t('tarefas.edit')) + '</button>';
   }
   html += '</div>';
   html += '<div class="cdx-tt-fv" data-tt-text>' + esc(answerText(sub)) + '</div>';
-  // A mensagem do instrutor. Ele assina como "Instrutor" (Élder), não pelo nome: o aluno está
-  // falando com o papel.
+  // The instructor's message. They sign as "Instrutor" (Élder), not by name: the student is
+  // talking to the role.
   if (sub.instructor_reply) {
     html += '<div class="cdx-tt-reply">' +
       '<div class="cdx-tt-meta"><span class="cdx-tt-by">' +
@@ -276,10 +277,10 @@ function deliveryHtml(sub, ordinal, total) {
       '<div class="cdx-tt-fv" data-tt-text>' + esc(sub.instructor_reply) + '</div>' +
     '</div>';
   }
-  // A nota vive FORA do bloco da mensagem (Élder 2026-07-15: "a nota não é mensagem do
-  // professor, mensagem é só mensagem"). Dentro dele, uma entrega só com nota desenhava um
-  // "Mensagem do Instrutor em ..." que não continha mensagem nenhuma: só um número. São coisas
-  // independentes, e cada uma tem o seu lugar no cartão.
+  // The score lives OUTSIDE the message block (Élder 2026-07-15: "a nota não é mensagem do
+  // professor, mensagem é só mensagem"). Inside it, an entrega with only a score drew a
+  // "Mensagem do Instrutor em ..." that contained no message at all, just a number. They are
+  // independent things, and each has its own place on the card.
   if (sub.grade) {
     html += '<div class="cdx-tt-grade">' +
       '<span class="cdx-tt-gl">' + esc(t('tarefas.grade_label')) + '</span>' +
@@ -302,18 +303,19 @@ function bodyHtml(tarefa) {
 function cardHtml(tarefa, aulas) {
   const open = _openId === tarefa.item_id;
   const expandable = isExpandable(tarefa);
-  // O chevron mora À ESQUERDA do cartão, centralizado na vertical (Élder): ali ele aponta pro
-  // CARTÃO, que é o que abre. À direita ele disputava a borda com o botão de ação e virava mais
-  // um controle solto. Quando não há o que abrir o slot continua ocupando a mesma largura, senão
-  // o título de um cartão sem entrega desalinha de todos os outros da lista.
+  // The chevron lives to the LEFT of the card, vertically centered (Élder): there it points at
+  // the CARD, which is what opens. On the right it competed with the action button for the
+  // edge and became one more loose control. When there is nothing to open, the slot still
+  // occupies the same width, otherwise the title of a card with no entrega would misalign
+  // against every other one in the list.
   const chevron = expandable
     ? '<span class="cdx-tt-chev' + (open ? ' is-open' : '') + '">' + glyphSvg('chevron-down', { size: 18 }) + '</span>'
     : '<span class="cdx-tt-chev cdx-tt-chev--none"></span>';
-  // TODAS as tags na linha do título, a AÇÃO sempre por último, à direita (Élder 2026-07-15):
-  // [mensagem do professor ✉] [responder ✈]. Ordem fixa, então o polegar aprende UM lugar: a
-  // ponta direita do cartão é sempre o que faz alguma coisa, e o que só avisa nunca ocupa esse
-  // lugar. Quando não cabem lado a lado o grupo quebra INTEIRO pra linha de baixo, alinhado à
-  // direita — a ação continua sendo a última, que é o que a regra pede.
+  // ALL tags on the title row, the ACTION always last, on the right (Élder 2026-07-15):
+  // [teacher message ✉] [reply ✈]. Fixed order, so the thumb learns ONE spot: the card's
+  // right edge is always what does something, and what merely notifies never occupies that
+  // spot. When they don't fit side by side, the WHOLE group wraps to the line below, right
+  // aligned, the action stays last, which is what the rule calls for.
   return '<div class="cdx-tt-card' + (open ? ' cdx-tt-card--open' : '') + '" data-tt-card="' + tarefa.item_id + '">' +
     '<div class="cdx-tt-top"' + (expandable ? ' data-tt-open="' + tarefa.item_id + '"' : '') + '>' +
       chevron +
@@ -341,7 +343,7 @@ function wireList() {
   });
   _root.querySelectorAll('[data-tt-edit]').forEach((btn) => {
     btn.addEventListener('click', (e) => {
-      e.stopPropagation();   // o botão mora dentro do corpo do cartão aberto
+      e.stopPropagation();   // the button lives inside the open card's body
       openEdit(parseInt(btn.getAttribute('data-tt-edit'), 10));
     });
   });
@@ -353,13 +355,15 @@ function wireList() {
       if (tarefa) openSubmit(tarefa);
     });
   });
-  // Resposta longa vira janela, não parede (Élder): o bloco fecha numa altura legível e abre no
-  // toque. Só o que REALMENTE transborda fica clicável — quem mede isso é o clamp compartilhado.
+  // A long answer becomes a window, not a wall (Élder): the block closes at a readable height
+  // and opens on tap. Only what REALLY overflows becomes clickable, the shared clamp is what
+  // measures that.
   wireClamps(_root, '[data-tt-text]');
 }
 
-// O modal precisa do ITEM (enunciado + tipo de campo + se aceita anônimo), que a lista não
-// carrega. Um caminho só pros dois verbos: o que muda entre responder e editar é `editing`.
+// The modal needs the ITEM (instructions + field type + whether it accepts anonymous), which
+// the list doesn't load. One path for both verbs: what changes between answering and editing
+// is `editing`.
 async function openModal(tarefa, editing) {
   let item;
   try {
@@ -388,8 +392,8 @@ async function openModal(tarefa, editing) {
 
 const openSubmit = (tarefa) => openModal(tarefa, null);
 
-// PURE. Achar a entrega (e a tarefa dela) por id. O botão de editar carrega o id da ENTREGA, não
-// o da tarefa: numa tarefa com várias entregas o id da tarefa não diz qual delas abrir.
+// PURE. Find the entrega (and its tarefa) by id. The edit button carries the ENTREGA's id, not
+// the tarefa's: on a tarefa with several entregas the tarefa's id doesn't say which one to open.
 export function findDelivery(tarefas, subId) {
   for (const tf of tarefas || []) {
     const sub = deliveries(tf).find((s) => s.id === subId);
@@ -401,9 +405,9 @@ export function findDelivery(tarefas, subId) {
 function openEdit(subId) {
   const hit = findDelivery(_tarefas, subId);
   if (!hit) return;
-  // `anon` é o que a entrega É hoje (sem nome = anônima), não uma proposta: a caixa do modal
-  // mostra o estado atual pra que salvar uma correção de vírgula não identifique quem escolheu
-  // não aparecer.
+  // `anon` is what the entrega IS today (no name = anonymous), not a proposal: the modal's
+  // checkbox shows the current state so that saving a comma fix doesn't identify someone who
+  // chose not to appear.
   openModal(hit.tarefa, { id: hit.sub.id, answer_json: hit.sub.answer_json, anon: !hit.sub.student_name });
 }
 

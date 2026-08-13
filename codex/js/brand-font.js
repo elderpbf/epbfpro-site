@@ -1,27 +1,29 @@
 // codex/js/brand-font.js
-// A fonte da marca (Comfortaa) em subset, para viajar DENTRO do SVG do logo.
+// The brand font (Comfortaa) as a subset, to travel INSIDE the logo's SVG.
 //
-// Por que isto existe: no artwork da PensoIA o "P" e vetor, mas o wordmark "ensoIA", a
-// tagline e o texto do cartao sao elementos de texto em Comfortaa. Sem a fonte o navegador
-// cai numa sans generica e a marca sai errada em qualquer aparelho que nao a tenha
-// instalada. Em contexto isolado -- SVG carregado como imagem, arquivo aberto offline --
-// nao ha webfont da pagina para socorrer, entao a fonte tem que estar no proprio SVG.
+// Why this exists: in the PensoIA artwork the "P" is a vector, but the wordmark "ensoIA",
+// the tagline and the card text are text elements in Comfortaa. Without the font the
+// browser falls back to a generic sans and the brand renders wrong on any device that
+// doesn't have it installed. In an isolated context, SVG loaded as an image, file opened
+// offline, there is no page webfont to fall back on, so the font has to live inside the
+// SVG itself.
 //
-// Subset dos 29 caracteres que TODO o artwork da marca usa (varridos os 36 SVGs de
-// PensoIA/Brand/Logo/): "ensoIA", "pensoIA", a tagline e o cartao. ~2 KB por peso, gerado
-// dos masters canonicos Brand/Logo/source/Comfortaa/static/Comfortaa-{Regular,Bold}.ttf.
-// Receita de como regerar: manifest/architecture/interativos.md, passo 3 da receita.
+// Subset of the 29 characters that ALL of the brand artwork uses (scanned across the 36
+// SVGs in PensoIA/Brand/Logo/): "ensoIA", "pensoIA", the tagline and the card. ~2 KB per
+// weight, generated from the canonical masters
+// Brand/Logo/source/Comfortaa/static/Comfortaa-{Regular,Bold}.ttf.
+// Recipe to regenerate: manifest/architecture/interativos.md, step 3 of the recipe.
 //
-// O unicode-range NAO e enfeite e nao pode ser removido: sem ele esta face reivindica
-// TODO caractere e, para os que nao tem glifo, o navegador desenha quadrado vazio em vez
-// de seguir para a proxima fonte. Como o Codex carrega a Comfortaa completa do Google
-// Fonts no theme.css, as duas faces convivem na mesma familia -- e e o unicode-range que
-// garante que cada uma so responda pelo que sabe desenhar. Se alguem acrescentar texto
-// novo ao artwork, REGERE o subset e a lista; nao basta editar o SVG.
+// unicode-range is NOT decoration and can't be removed: without it this face claims EVERY
+// character, and for the ones without a glyph the browser draws an empty square instead of
+// falling through to the next font. Since Codex loads the full Comfortaa from Google Fonts
+// in theme.css, the two faces coexist in the same family, and it's the unicode-range that
+// makes sure each one only answers for what it knows how to draw. If anyone adds new text
+// to the artwork, REGENERATE the subset and the list; editing the SVG alone isn't enough.
 //
-// ATENCAO ao editar: este CSS entra no <style> de um SVG. Carregado como imagem o SVG e
-// lido como XML, onde "<" e "&" soltos sao erro de parse e derrubam o arquivo INTEIRO.
-// Nada de sinal de menor-que nem E-comercial aqui dentro.
+// CAUTION when editing: this CSS goes inside an SVG's <style>. Loaded as an image the SVG
+// is read as XML, where a stray "<" or "&" is a parse error and brings down the ENTIRE file.
+// No less-than sign or ampersand in here.
 
 const RANGE = 'U+0020,U+002C,U+002E,U+0040,U+0041,U+0042,U+0046,U+0049,U+0050,U+0061,U+0062,U+0063,U+0064,U+0065,U+0067,U+0068,U+0069,U+006C,U+006D,U+006E,U+006F,U+0070,U+0072,U+0073,U+0074,U+0075,U+00B7,U+00C9,U+00EA';
 const W400 = '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';
@@ -32,5 +34,5 @@ const face = (w, b64) =>
   "unicode-range:" + RANGE + ";" +
   "src:url(data:font/woff2;base64," + b64 + ") format('woff2')}";
 
-/** CSS das duas faces, pronto para ir dentro de um <style> (de SVG ou de pagina). */
+/** CSS for both faces, ready to go inside a <style> (of an SVG or a page). */
 export const BRAND_FONT_CSS = face(400, W400) + face(700, W700);

@@ -82,17 +82,26 @@
       '  "body_md":    "..."        // texto formatado em Markdown (regras abaixo)\n' +
       '}\n\n' +
 
+      // This rule USED TO tell the model to return the input untouched whenever it thought it
+      // was a prompt, and that was the bug Élder caught on 07/08: "às vezes a IA toma como
+      // prompt algo que não é e aí não faz a formatação. Ele deveria formatar de qualquer jeito,
+      // mas se o tipo ou a opção não permitir, aí ele mostra o texto original". In other words,
+      // a guess by the model was throwing away the formatting, with no way back and no one
+      // asking for it.
+      //
+      // Now it ALWAYS formats and still classifies the type. The client (applyVerbatim) is the
+      // one that keeps the raw text, since it already had the input in hand, and the checkbox
+      // on the screen is what chooses between the two. Switching between raw and formatted no
+      // longer requires a new call.
       'REGRA ESPECIAL — TIPO PROMPT:\n' +
       'Se o conteudo do input for um prompt para uma IA (instrucoes dirigidas\n' +
-      'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), ENTAO:\n' +
+      'a um modelo de linguagem como ChatGPT, Claude, Gemini etc), marque\n' +
       '  - type: "prompt"\n' +
-      '  - body_md: copie o input EXATAMENTE como veio, caractere por caractere.\n' +
-      '    Sem reformatar, sem mexer em asteriscos, sem trocar quebras de linha,\n' +
-      '    sem adicionar ## headers, SEM mexer em emojis. O texto do prompt e\n' +
-      '    instrucao para a IA; qualquer caractere e parte do prompt.\n' +
-      '  - title, summary e tag_labels: voce ainda gera normalmente.\n' +
       'Sinais de que e um prompt: "voce e...", "atue como...", "sua tarefa e...",\n' +
-      '"responda em formato...", instrucoes a um modelo de IA.\n\n' +
+      '"responda em formato...", instrucoes a um modelo de IA.\n' +
+      'Mesmo nesse caso, gere body_md formatado normalmente: quem decide se o\n' +
+      'texto final sera o formatado ou o original e o usuario, na tela, e ele\n' +
+      'precisa dos dois para escolher.\n\n' +
 
       'REGRAS PARA body_md (todos os outros tipos):\n' + MARKDOWN_RULES + '\n' +
 
@@ -174,10 +183,30 @@
     return b < a * 0.55;
   }
 
-  // Client-side belt-and-suspenders: prompts always keep their raw body.
-  function enforcePromptVerbatim(parsed, rawInput) {
+  // Which text wins as the body: the RAW text that came in, or the formatting the AI returned.
+  //
+  // Before, the AI's guess about the TYPE decided it: `parsed.type === 'prompt'` and that was
+  // that, the formatted body got dropped. Élder caught the bug on 2026-08-07: "às vezes a IA
+  // toma como prompt algo que não é e aí não faz a formatação. Ele deveria formatar de
+  // qualquer jeito, mas se o tipo ou a opção não permitir, aí ele mostra o texto original".
+  // Two things changed because of that:
+  //
+  //   1. The AI ALWAYS formats. Its work is no longer discarded before it even exists, so
+  //      unchecking "keep raw" already shows the formatted text, with no need to run again.
+  //   2. `verbatim`, which comes from the screen, is what decides. `null` (nobody has chosen
+  //      yet, a new item) falls back to the old behavior, the type guess, which is what
+  //      preserves "prompts always stay raw" for anyone who never touched the checkbox.
+  //
+  // Returns both bodies, because the screen needs both to switch without a new call.
+  function applyVerbatim(parsed, rawInput, verbatim) {
     if (!parsed) return parsed;
-    if (parsed.type === 'prompt') parsed.body_md = rawInput;
+    const cru = rawInput;
+    const formatado = parsed.body_md;
+    const usaCru = (typeof verbatim === 'boolean') ? verbatim : (parsed.type === 'prompt');
+    parsed.body_raw = cru;
+    parsed.body_ai = formatado;
+    parsed.verbatim = usaCru;
+    parsed.body_md = usaCru ? cru : formatado;
     return parsed;
   }
 
@@ -188,6 +217,6 @@ export {
   computeEditDiff,
   parseModelJson,
   looksTruncated,
-  enforcePromptVerbatim,
+  applyVerbatim,
 };
 export const MAX_TOKENS = 8000;

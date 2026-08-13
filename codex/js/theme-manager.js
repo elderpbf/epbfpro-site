@@ -85,18 +85,19 @@ var ThemeManager = (function() {
     if (config.toggleEl) config.toggleEl.setAttribute('aria-pressed', current === 'dark');
   }
 
-  // O tema das telas públicas, em ordem de autoridade: URL > escolha guardada > SISTEMA > padrão.
+  // The theme for public screens, in order of authority: URL > saved choice > SYSTEM > default.
   //
-  // O SISTEMA entrou em 2026-07-31, e o motivo foi um relato do Élder abrindo a Trilha:
-  // *"percebi que ele não tem darkmode. abriu no light do nada, quase fico cego"*. Estava certo: a
-  // função nunca perguntou ao navegador, então quem chegava pela primeira vez com o aparelho no
-  // escuro tomava uma tela branca na cara. Não era ausência de tema escuro (ele existe inteiro), era
-  // a primeira visita ignorando a única informação disponível sobre a pessoa.
+  // SYSTEM was added on 2026-07-31, and the reason was Élder reporting opening the Trail:
+  // *"percebi que ele não tem darkmode. abriu no light do nada, quase fico cego"*. He was right:
+  // the function never asked the browser, so whoever arrived for the first time with their
+  // device in dark mode got a white screen in their face. It wasn't the absence of a dark theme
+  // (it exists in full), it was the first visit ignoring the only information available about
+  // the person.
   //
-  // A ordem importa e é ela que evita o erro oposto: quem JÁ escolheu claro num aparelho escuro
-  // escolheu, e `prefers-color-scheme` não pode desfazer isso na próxima visita. Por isso o sistema
-  // vem DEPOIS do que está guardado, e o padrão declarado só sobra para o navegador que não sabe
-  // responder.
+  // The order matters, and it's what avoids the opposite mistake: whoever has ALREADY chosen
+  // light on a dark device made that choice, and `prefers-color-scheme` can't undo it on the
+  // next visit. That's why system comes AFTER what's saved, and the declared default is left
+  // only for the browser that can't answer.
   function initPublic(opts) {
     opts = opts || {};
     var key      = opts.storageKey   || 'bs_theme_public';

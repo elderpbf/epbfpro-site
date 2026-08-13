@@ -14,6 +14,7 @@ import { renderItem } from '../../js/item-render.js';
 import { interceptItemOpen } from './gate.js';
 import { overlayLabItem } from './lab-overlay.js';
 import { overlayInterativoItem } from './interativo-overlay.js';
+import { isProjeto, renderProjeto } from './projeto.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -117,7 +118,10 @@ export async function toggleSub(sub, item, opts = {}) {
     overlayLabItem(data.item);
     overlayInterativoItem(data.item);
     exp.innerHTML = '';
-    renderItem(data.item, exp, { preview: true });
+    // A wrapper doesn't render content, it lists its children (track-61). Each child is a row
+    // just like any other, built by the same buildSub.
+    if (isProjeto(data.item)) renderProjeto(data.item, exp, buildSub, opts);
+    else renderItem(data.item, exp, { preview: true });
     injectActionButton(sub, data.item, opts);
   } catch (e) {
     if (window.bsLog) window.bsLog('trilha sub itemPublic: ' + (e && e.message || e), 'error');

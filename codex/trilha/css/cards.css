@@ -601,3 +601,45 @@
   .cdx-tr-app-cols { grid-template-columns: 1fr; gap: 18px; }
   .cdx-tr-app-col-right { order: -1; }
 }
+
+/* ── Projeto (item embalador, track-61) ──────────────────── */
+/* O corpo expandido de um projeto lista os filhos, e cada filho e uma .cdx-tr-sub igual as
+   da trilha (mesmo buildSub). O recuo diz que eles estao DENTRO do projeto sem inventar um
+   segundo visual de linha de item. */
+.cdx-tr-proj-intro {
+  margin: 0 0 0.5rem;
+}
+/* O corpo passou a sair pelo renderItem (o enunciado de uma tarefa com documentos dentro tem
+   que sair formatado). O cinza secundario servia pra frase de apresentacao de um projeto e
+   apagaria um enunciado inteiro, entao fica so nela. */
+.cdx-tr-proj-intro > p:only-child { color: var(--text-secondary); }
+.cdx-tr-proj-count {
+  margin: 0 0 0.7rem;
+  font-size: 0.82rem;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-muted, var(--text-secondary));
+}
+.cdx-tr-proj-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* O recuo dos membros de um pacote. E DISPLAY: a lista e plana, e o degrau so diz como ela
+   aparece (Elder 06/08). Por isso e margem numa linha irma, e nao DOM aninhado.
+
+   UMA regra, e o nivel chega em `--cdx-in` posto pelo projeto.js. Antes era uma classe por
+   nivel, o que fazia o CSS conhecer o teto: subir o teto de 3 para 5 exigia lembrar de vir
+   aqui, e esquecer significava o 4o e o 5o degrau desenhando com recuo ZERO -- o teto parecia
+   nao ter subido. Assim o teto mora so no JS e o passo aqui e um numero so.
+
+   O passo ENCOLHE em tela estreita em vez de a estrutura ser proibida: num telefone de 390px
+   o cartao da ~270px pro titulo depois do icone e do botao de acao, e cada degrau come essa
+   largura. Proibir profundidade pra caber na tela resolveria o problema errado. Se a 5 degraus
+   ficar apertado no telefone, o conserto e baixar --cdx-in-step, nao baixar o teto. */
+.cdx-tr-in { margin-left: calc(var(--cdx-in, 0) * var(--cdx-in-step, 18px)); }
+@media (max-width: 640px) {
+  .cdx-tr-proj-list { --cdx-in-step: 10px; }
+}

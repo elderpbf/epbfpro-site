@@ -14,6 +14,8 @@ import { registerRenderer } from './page.js';
 import { renderItem } from '../../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 import { interceptItemOpen } from './gate.js';
+import { isProjeto, renderProjeto } from './projeto.js';
+import { buildSub } from './sub.js';
 
 export function renderApostilaTab() {
   const container = document.getElementById('cdx-tr-apostila-list');
@@ -166,7 +168,12 @@ async function toggleFlatCard(card, item) {
     body.innerHTML = '';
     const contentWrap = document.createElement('div');
     body.appendChild(contentWrap);
-    renderItem(data.item, contentWrap, { preview: true });
+    // A folder opens the same way here and in the Aulas tab: the SAME renderProjeto, with the
+    // SAME buildSub, so each child opens, copies, and downloads on its own. Without this, the
+    // Outros (Others) card would show only the folder's text and a "Baixar tudo" (download all),
+    // and the student would not reach what is inside without downloading the whole package.
+    if (isProjeto(data.item)) renderProjeto(data.item, contentWrap, buildSub, {});
+    else renderItem(data.item, contentWrap, { preview: true });
     appendFlatActionRow(body, data.item);
   } catch (e) {
     if (window.bsLog) window.bsLog('trilha flat itemPublic: ' + (e && e.message || e), 'error');

@@ -1212,3 +1212,219 @@
   .cdx-app-benefit { grid-template-columns: 1fr; }
   .cdx-app-benefit-glyph { justify-content: flex-start; }
 }
+
+/* ── Itens de um embalador (projeto), track-61 ─────────────────────────────── */
+/* A lista de filhos do editor: ordem visivel (o aluno recebe nessa ordem no .zip),
+   reordenar e remover na propria linha. */
+.cdx-mem-list { list-style: none; margin: 0 0 0.5rem; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cdx-mem-row {
+  display: flex; align-items: center; gap: 8px;
+  padding: 0.35rem 0.5rem;
+  border: 1px solid var(--border); border-radius: 8px;
+  background: var(--surface);
+}
+.cdx-mem-pos {
+  flex: 0 0 auto; min-width: 1.4em; text-align: center;
+  font-variant-numeric: tabular-nums; font-weight: 600;
+  color: var(--text-secondary);
+}
+.cdx-mem-title { flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-mem-type { flex: 0 0 auto; font-size: 0.78rem; color: var(--text-secondary); }
+.cdx-mem-empty { padding: 0.5rem; color: var(--text-secondary); font-size: 0.9rem; }
+.cdx-mem-add { display: flex; gap: 8px; align-items: center; }
+.cdx-mem-add select { flex: 1 1 auto; min-width: 0; }
+
+/* The package's item TREE (Élder 2026-08-05: "outros pode se juntar aninhados que dá para
+   mostrar com indentação e linhas laterais mostrando a ligação"). The indent is NOT a padding
+   computed from the depth: each level is a fixed-width column that either carries a vertical
+   line (that level's ancestor still has a sibling below) or stays blank. That is what keeps the
+   line from continuing below the LAST child. guideHtml() in item-members.js decides column by
+   column; there is only pixel here. */
+.cdx-mem-tree { list-style: none; margin: 0 0 0.6rem; padding: 0; display: flex; flex-direction: column; gap: 4px; }
+.cdx-mem-tree .cdx-mem-row.is-nested { background: transparent; border-style: dashed; }
+.cdx-mem-guide, .cdx-mem-elbow { flex: 0 0 auto; align-self: stretch; width: 16px; position: relative; }
+.cdx-mem-guide.is-line::before,
+.cdx-mem-elbow::before {
+  content: ''; position: absolute; left: 50%; top: -6px; bottom: 0;
+  border-left: 1px solid var(--border);
+}
+/* The last sibling cuts the vertical at the elbow: nothing continues below it. */
+.cdx-mem-elbow.is-last::before { bottom: 50%; }
+.cdx-mem-elbow::after {
+  content: ''; position: absolute; left: 50%; right: 0; top: 50%;
+  border-top: 1px solid var(--border);
+}
+.cdx-mem-glyph { flex: 0 0 auto; display: inline-flex; align-items: center; color: var(--text-secondary); }
+.cdx-mem-nested-note { flex: 0 0 auto; font-size: 0.72rem; color: var(--text-secondary); font-style: italic; }
+.cdx-mem-picker { max-height: 260px; display: flex; flex-direction: column; }
+.cdx-mem-picker .cdx-picker-list { overflow-y: auto; }
+
+/* ============================================================================
+   THE ITEM EDITOR, layout D (the one Élder approved on 2026-08-06).
+
+   Two columns with a draggable grip: the item on the left, what is inside it on the right. I
+   shipped a single column once and he caught it immediately ("there's no right panel... it's
+   like it was fully reversed"), and he was right: with one column the member list sits below
+   the fold, so building a package means scrolling between the thing and its contents.
+
+   FONT SCALE, the first defect he named ("inconsistência gigantesca do tamanho das fontes").
+   FOUR steps and nothing else, declared on .cdx-ie and never on :root, so the editor cannot
+   restyle the whole admin behind its back.
+   ========================================================================= */
+.cdx-ie {
+  --p-xs: 0.72rem;   /* meta: item type, counters, section labels */
+  --p-sm: 0.8rem;    /* secondary: notes, help, breadcrumb */
+  --p-md: 0.875rem;  /* body: fields, list rows, buttons */
+  --p-lg: 1rem;      /* the screen title */
+  font-size: var(--p-md);
+  display: flex; flex-direction: column; max-height: 92vh;
+}
+.cdx-ie .cdx-editor-title { font-size: var(--p-lg); }
+.cdx-ie input, .cdx-ie textarea, .cdx-ie .cdx-btn,
+.cdx-ie .cdx-type-opt, .cdx-ie .cdx-tag-chip, .cdx-ie .cdx-tag-add-chip { font-size: var(--p-md); }
+.cdx-ie .cdx-field > label { font-size: var(--p-xs); letter-spacing: 0.03em; }
+/* `.cdx-field label` (cohorts.css) is a DESCENDANT selector, not a child one, so it uppercases
+   any nested label, including an "extract the text" next to a radio. Undone here, in the
+   editor's scope only: fixing it at the root (changing it to `>`) touches every admin screen
+   and is his call, not a side effect of this. */
+.cdx-ie .cdx-radio-label, .cdx-ie .cdx-check-inline {
+  font-size: var(--p-sm); text-transform: none; letter-spacing: 0; font-weight: 400;
+  display: inline-flex; margin-bottom: 0; color: var(--text-primary);
+}
+
+/* The WIDE modal, and the BODY is what scrolls. Élder: "você poderia ter um modal mais largo e
+   preferiu um estreito, onde eu tenho que usar rolagem para ver os dados". Widening alone did
+   not do it: with six members the page grew and the footer left the screen. So the header, the
+   breadcrumb and the footer are pinned and only the middle scrolls. */
+.cdx-modal-body.cdx-modal-wide { max-width: min(1240px, 96vw); }
+.cdx-ie-body { overflow-y: auto; flex: 1 1 auto; min-height: 0; }
+.cdx-ie .cdx-editor-header { flex: 0 0 auto; align-items: center; gap: 8px; }
+.cdx-ie-toggle { display: inline-flex; gap: 4px; margin-left: auto; }
+.cdx-ie-note { margin: 0.6rem 0 0; font-size: var(--p-sm); color: var(--text-secondary); line-height: 1.45; }
+.cdx-ie-note + .cdx-field, .cdx-ie-note + div + .cdx-field { margin-top: 0.85rem; }
+.cdx-ie-hint {
+  padding: 0.5rem 0.7rem; border-radius: 8px; font-size: var(--p-sm); color: var(--text-secondary);
+  background: var(--cdx-card-sel-bg, rgba(127,127,127,0.08)); border: 1px solid var(--border);
+}
+
+/* The content box. Every control sits AFTER the field it acts on: the AI reads what you wrote,
+   and the preview button sits against the preview it opens. */
+.cdx-aib-actions { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-aib-flags { display: flex; flex-wrap: wrap; gap: 4px 18px; margin-top: 6px; }
+.cdx-aib-sources { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.cdx-aib-sources input { flex: 1 1 140px; min-width: 120px; }
+
+/* Type and tags side by side: one full row each, and on their own they pushed the list off the
+   screen. With the wide modal they fit together. */
+.cdx-ie-row2 { display: grid; grid-template-columns: 1fr 1fr; gap: 0 1rem; }
+@media (max-width: 700px) { .cdx-ie-row2 { grid-template-columns: 1fr; } }
+
+/* THE TWO COLUMNS, with the SHARED grip (js/resizable.js, the same one Releases and the dossier
+   use). The first column MUST be var(--cdx-rz-w, ...) and the grid MUST be position:relative,
+   otherwise the handle (positioned at left: var(--cdx-rz-w)) does not follow and dragging does
+   nothing visible.
+   Stacking happens at 980px and not at 820, because .cdx-rz-grip (cohorts.css) hides itself at
+   980: between the two values there would be two columns with NO handle, the worst combination. */
+.cdx-ie-two {
+  position: relative; display: grid; grid-template-columns: var(--cdx-rz-w, 620px) 1fr;
+  gap: 0 1.25rem; align-items: start; min-height: 320px;
+}
+.cdx-ie-left { min-width: 0; }
+.cdx-ie-right { border-left: 1px solid var(--border); padding-left: 1.25rem; min-width: 0; }
+/* An ordinary item has no right column, so there is no second track and no grip to drag. */
+.cdx-ie-two.is-single { grid-template-columns: 1fr; }
+.cdx-ie-two.is-single > .cdx-ie-right { display: none; }
+.cdx-ie-two.is-single > .cdx-rz-grip { display: none; }
+@media (max-width: 980px) {
+  .cdx-ie-two { grid-template-columns: 1fr; }
+  .cdx-ie-right { border-left: 0; padding-left: 0; border-top: 1px solid var(--border); padding-top: 1rem; margin-top: 1rem; }
+}
+
+/* THE COMPACT LIST. Élder: "a lista de itens pode ser bem mais compacta e com a fonte menor,
+   para aparecerem melhor os 2 painéis". Density is the point: with six members the list has to
+   fit alongside the fields, or the two columns do not compare. */
+.cdx-ie-members-head {
+  display: flex; flex-wrap: wrap; align-items: center; gap: 8px; justify-content: space-between;
+  font-size: var(--p-xs); letter-spacing: 0.04em; text-transform: uppercase;
+  color: var(--text-secondary); margin-bottom: 0.35rem;
+}
+.cdx-ie-members-acts { display: inline-flex; gap: 4px; }
+/* The action bar: ONE selected row and the actions above it, instead of six buttons repeated on
+   every row. In a narrow column per-row buttons push the title out of view, and six rows of six
+   buttons are thirty-six buttons competing with the content. */
+.cdx-ie-bar { display: flex; flex-wrap: wrap; gap: 4px; }
+.cdx-ie-bar .cdx-btn[disabled] { opacity: 0.4; }
+.cdx-ie-barwrap { margin-bottom: 0.4rem; }
+/* The selected member's other homes, right above the Remove button that would take this one
+   away. "Só existe neste pacote" is the load-bearing case (task #31), so IT gets the warning
+   color; being in several packages is said in the quiet voice. */
+.cdx-mem-status { font-size: var(--p-xs); color: var(--text-secondary); margin-top: 2px; }
+.cdx-mem-status.is-only { color: var(--tint-warn-tx); }
+.cdx-ie-tree { overflow: hidden; }
+.cdx-ie-tree .cdx-mem-row {
+  cursor: pointer; padding: 2px 4px; gap: 4px; font-size: var(--p-md); min-height: 0;
+  max-width: 100%; box-sizing: border-box;
+}
+.cdx-ie-tree .cdx-mem-row.is-sel { border-color: var(--primary); background: var(--cdx-card-sel-bg); }
+/* min-width:0 on the title: without it the flex content has an automatic minimum width, the guide
+   columns add on top, and the ROW ends up wider than the column, spilling out to the right. */
+.cdx-ie-tree .cdx-mem-title {
+  flex: 1 1 auto; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+}
+.cdx-ie-tree .cdx-mem-type { font-size: var(--p-xs); }
+.cdx-ie-tree .cdx-mem-guide, .cdx-ie-tree .cdx-mem-elbow { width: 12px; }
+/* A member that exists only as a draft: it has no id until the single Save creates it, and the
+   row has to say so or it reads like something already stored. */
+.cdx-mem-new { font-size: var(--p-xs); color: var(--tint-warn-tx); font-style: italic; }
+
+/* The breadcrumb of the editor's navigation stack (a package, a package inside it, an item).
+   It is a trail and not a back button because at three levels a lone back button hides where
+   you are. Painted by editor/breadcrumb.js. */
+.cdx-ie #ie-crumbs { flex: 0 0 auto; }
+.cdx-editor-crumbs {
+  display: flex; align-items: center; gap: 4px; flex-wrap: wrap;
+  padding: 0.4rem 1rem; border-bottom: 1px solid var(--border);
+  font-size: 0.82rem;
+}
+.cdx-crumb {
+  background: none; border: 0; padding: 0; cursor: pointer;
+  color: var(--accent); font: inherit; text-decoration: underline;
+}
+.cdx-crumb.is-here { color: var(--text-secondary); cursor: default; text-decoration: none; font-weight: 600; }
+.cdx-crumb-sep { color: var(--text-secondary); }
+
+/* A checkbox that belongs to the field right above it, not to a settings block elsewhere
+   (Élder 2026-08-07, about "include this description in the .zip"). */
+.cdx-check-inline {
+  display: flex; align-items: center; gap: 6px; margin-top: 0.35rem;
+  font-size: 0.82rem; color: var(--text-secondary);
+}
+
+/* The rows indented INSIDE the section, otherwise you cannot see what belongs to which header
+   (Élder 2026-08-05: "items should be indented to show they're inside the section"). */
+.cdx-picker-group-rows > .cdx-mem-pick { padding-left: 1.4rem; }
+
+/* O glifo do tipo antes do nome da secao, no compositor de liberacoes E no editor de
+   agrupador -- e a mesma lista, entao e o mesmo cabecalho (Elder 05/08). */
+.cdx-picker-group-glyph {
+  display: inline-flex; align-items: center; margin-right: 6px;
+  color: var(--text-secondary); vertical-align: -2px;
+}
+
+/* "Itens dentro deste item" fora de um embalador: a mao, sem poluir. Ver o comentario em
+   item-form.js sobre conter itens ter deixado de ser privilegio de um tipo. */
+.cdx-mem-details { margin-top: 0.75rem; border-top: 1px solid var(--border); padding-top: 0.5rem; }
+.cdx-mem-details > summary { cursor: pointer; font-size: 0.85rem; color: var(--text-secondary); }
+
+/* The content box (content/editor/ai-box.js). Its layout rules live with the rest of the editor
+   in the .cdx-ie block above: the actions, the sources and the flags all sit BELOW the field,
+   and duplicating them here is what made an older `display:inline-flex` win by source order and
+   flatten the new action row. */
+.cdx-aib-picked { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
+/* `.cdx-field label` (cohorts.css) is a DESCENDANT selector, so it uppercases every nested
+   label, including the ones sitting beside a checkbox. Undo it here rather than app-wide:
+   changing that selector touches every admin screen and is not this change's call to make. */
+.cdx-aib .cdx-radio-label {
+  text-transform: none; letter-spacing: 0; font-weight: 400; margin-bottom: 0;
+  display: inline-flex; color: var(--text-primary); font-size: 0.85rem;
+}

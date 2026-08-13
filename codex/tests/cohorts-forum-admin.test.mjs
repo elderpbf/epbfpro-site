@@ -1,5 +1,5 @@
 // tests/cohorts-forum-admin.test.mjs
-// Codex Cohorts · Fórum moderation pane (2-pane, Opção A). The instructor moderates
+// Codex Cohorts · Forum moderation pane (2-pane, Option A). The instructor moderates
 // entirely from Codex, so this is the full toolkit. Unit-tests the shared relative-
 // time helper + source-contract assertions (facade-only, full toolkit present, i18n
 // parity, mounted by the dossier). The 2-pane DOM is verified visually on staging.

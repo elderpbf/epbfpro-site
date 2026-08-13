@@ -121,63 +121,63 @@ test('entrar i18n carries the new entry copy in both langs', () => {
 });
 
 // ---------------------------------------------------------------------------------
-// track-57: o campo pedia um codigo que o produto parou de emitir.
+// track-57: the field asked for a code that the product stopped issuing.
 //
 // Elder, 2026-07-31: *"na tela de trilha/entrar, pede um codigo numerico que nao
 // existe mais. o codigo numerico e da turma agora. nao existe mais codigo criado na
-// hora. aquele espaco deve ser para colocar o codigo da turma para acessar"*, e
-// decidiu onde validar: *"valida la em entrar mesmo, nao tem como ir para area do
+// hora. aquele espaco deve ser para colocar o codigo da turma para acessar"*, and
+// decided where to validate: *"valida la em entrar mesmo, nao tem como ir para area do
 // aluno sem ter o codigo de uma turma existente"*.
 //
-// O CODIGO E NUMERICO, e isto esta pinado porque o resolvedor no Worker aceita
-// `[A-Za-z0-9]{4}` e essa folga ja induziu ao erro uma vez. Ela existe para casar o
-// `classpulse_session_id` LEGADO (letras, ex. TVKV) e nao quebrar link antigo; o que
-// o aluno digita e o `access_code`, e ele e numerico: conferido no D1 de producao em
-// 2026-07-31, 9 turmas, 9 codigos de 4 digitos. Elder: *"os codigos de turma sao
+// THE CODE IS NUMERIC, and this is pinned because the Worker's resolver accepts
+// `[A-Za-z0-9]{4}`, and that slack already caused a mistake once. It exists to match the
+// LEGACY `classpulse_session_id` (letters, e.g. TVKV) and not break old links; what
+// the student types is the `access_code`, and it is numeric: checked against production D1 on
+// 2026-07-31, 9 turmas, 9 four-digit codes. Elder: *"os codigos de turma sao
 // numericos, nao alfanumericos"*.
 
-test('o campo e o portao continuam numericos, como o access_code da turma', () => {
-  assert.match(js, /getElementById\('cdx-entrar-input'\)[\s\S]{0,160}mode:\s*'digits'/, "o campo e mode:'digits'");
-  assert.match(js, /\/\^\[0-9\]\{4\}\$\//, 'o submit exige 4 digitos');
+test('the field and the gate stay numeric, like the turma access_code', () => {
+  assert.match(js, /getElementById\('cdx-entrar-input'\)[\s\S]{0,160}mode:\s*'digits'/, "the field is mode:'digits'");
+  assert.match(js, /\/\^\[0-9\]\{4\}\$\//, 'submit requires 4 digits');
 });
 
-test('codigo que nao existe e apagado do campo, como nas outras telas', () => {
-  // Mesma regra que ja vale nas cinco telas de codigo: errou, o campo esvazia e
-  // recebe o foco, em vez de o aluno ter que apagar a mao o que acabou de digitar.
+test('a code that does not exist is cleared from the field, like the other screens', () => {
+  // Same rule that already applies on the five code screens: on error, the field clears
+  // and gets focus, instead of the student having to manually erase what they just typed.
   const bloco = js.slice(js.indexOf('async function resolveAndGo'), js.indexOf('async function autoEnter'));
-  assert.match(bloco, /entrar\.not_found/, 'o erro inline continua sendo o de codigo nao encontrado');
-  assert.match(bloco, /CodeInput\.clear\(/, 'o campo e limpo quando o codigo nao resolve');
+  assert.match(bloco, /entrar\.not_found/, 'the inline error is still the code-not-found one');
+  assert.match(bloco, /CodeInput\.clear\(/, 'the field is cleared when the code does not resolve');
 });
 
-test('a copia fala do codigo da turma, nao da aula ao vivo', () => {
-  // A frase antiga descrevia um codigo gerado na hora, que o produto nao emite mais,
-  // e mandava o aluno "conferir na tela" que deixou de existir.
-  assert.ok(!/aula ao vivo/.test(html), 'a promessa da aula ao vivo saiu do HTML');
-  assert.ok(!/aula ao vivo/.test(i18n), 'a promessa da aula ao vivo saiu do pt');
-  assert.ok(!/live class/i.test(i18n), 'a promessa da aula ao vivo saiu do en');
-  assert.ok(!/Confira na tela/.test(i18n), 'o erro nao manda mais olhar a tela da aula');
-  assert.match(i18n, /'entrar\.code_sub':\s*'O código de 4 números da sua turma\.'/, 'pt fala do código de 4 números da turma');
-  assert.match(i18n, /'entrar\.code_ph':\s*'0000'/, 'o exemplo no campo é numérico');
+test('the copy talks about the turma code, not the live class', () => {
+  // The old copy described a code generated on the spot, which the product no longer issues,
+  // and told the student to "check the screen", which no longer exists.
+  assert.ok(!/aula ao vivo/.test(html), 'the live-class promise is gone from the HTML');
+  assert.ok(!/aula ao vivo/.test(i18n), 'the live-class promise is gone from pt');
+  assert.ok(!/live class/i.test(i18n), 'the live-class promise is gone from en');
+  assert.ok(!/Confira na tela/.test(i18n), 'the error no longer tells the student to look at the class screen');
+  assert.match(i18n, /'entrar\.code_sub':\s*'O código de 4 números da sua turma\.'/, 'pt talks about the turma 4-digit code');
+  assert.match(i18n, /'entrar\.code_ph':\s*'0000'/, 'the field placeholder example is numeric');
   for (const k of ['entrar.code_sub', 'entrar.code_label', 'entrar.code_ph']) {
     const count = (i18n.match(new RegExp("'" + k.replace('.', '\.') + "'", 'g')) || []).length;
-    assert.ok(count >= 2, `${k} continua nos dois idiomas`);
+    assert.ok(count >= 2, `${k} still present in both languages`);
   }
 });
 
-test('rede caida nao e reportada ao aluno como codigo errado', () => {
-  // As duas falhas caiam no MESMO ramo, entao qualquer erro de transporte dizia ao aluno que o
-  // codigo dele estava errado. Foi o que disfarcou o diagnostico de 2026-07-31 por uma rodada, e
-  // e o que faria um aluno com o codigo certo ligar para o professor(a) reclamar dele.
+test('a network outage is not reported to the student as a wrong code', () => {
+  // Both failures fell into the SAME branch, so any transport error told the student their
+  // code was wrong. That is what disguised the 2026-07-31 diagnosis for a round, and
+  // is what would make a student with the right code call the teacher to complain about it.
   const bloco = js.slice(js.indexOf('async function resolveAndGo'), js.indexOf('async function autoEnter'));
-  assert.match(bloco, /catch\s*\(_\)\s*\{\s*semResposta\s*=\s*true/, 'o throw e marcado, nao confundido com found:false');
-  assert.match(bloco, /entrar\.offline/, 'falha de transporte tem mensagem propria');
-  assert.match(bloco, /entrar\.not_found/, 'codigo inexistente mantem a sua');
-  // E o campo NAO e apagado quando a rede caiu: o codigo pode estar perfeito.
+  assert.match(bloco, /catch\s*\(_\)\s*\{\s*semResposta\s*=\s*true/, 'the throw is flagged, not confused with found:false');
+  assert.match(bloco, /entrar\.offline/, 'transport failure has its own message');
+  assert.match(bloco, /entrar\.not_found/, 'nonexistent code keeps its own');
+  // And the field is NOT cleared when the network is down: the code may be perfectly fine.
   const semResposta = bloco.slice(bloco.indexOf('if (semResposta)'));
   assert.ok(semResposta.indexOf('return;') < semResposta.indexOf('CodeInput.clear('),
-    'o ramo de rede caida retorna ANTES de limpar o campo');
+    'the network-outage branch returns BEFORE clearing the field');
   for (const k of ['entrar.offline']) {
     const count = (i18n.match(new RegExp("'" + k.replace('.', '\.') + "'", 'g')) || []).length;
-    assert.ok(count >= 2, `${k} nos dois idiomas`);
+    assert.ok(count >= 2, `${k} in both languages`);
   }
 });

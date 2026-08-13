@@ -73,44 +73,44 @@ test('glyphWordmarkTag adds the canonical tagline, right-aligned', () => {
   assert.match(svg, /fill-rule="evenodd"/, 'glyph present');
 });
 
-// A fonte da marca viaja DENTRO do SVG (js/brand-font.js). Sem isso o wordmark
-// "ensoIA", que e <text> em Comfortaa e nao contorno, cai numa sans generica em
-// qualquer contexto isolado: <img>/data: URI, aparelho sem a fonte, uso offline.
-test('todo SVG com wordmark embute a fonte da marca; mark() nao paga por ela', () => {
+// The brand font travels INSIDE the SVG (js/brand-font.js). Without it, the wordmark
+// "ensoIA", which is <text> in Comfortaa rather than an outline, falls back to a generic
+// sans in any isolated context: <img>/data: URI, a device without the font, offline use.
+test('every SVG with a wordmark embeds the brand font; mark() does not pay for it', () => {
   const c = brand.stdColors('navy');
   for (const [nome, svg] of [
     ['fontWordmark', brand.fontWordmark(c)],
     ['glyphWordmark', brand.glyphWordmark(c)],
     ['glyphWordmarkTag', brand.glyphWordmarkTag(c)],
   ]) {
-    assert.equal((svg.match(/@font-face/g) || []).length, 2, `${nome}: as duas faces (400 e 700)`);
-    assert.match(svg, /url\(data:font\/woff2;base64,[A-Za-z0-9+/=]+\) format\('woff2'\)/, `${nome}: fonte embutida, sem rede`);
-    assert.match(svg, /text\{font-family:'Comfortaa',sans-serif\}/, `${nome}: a regra de familia continua`);
-    // Sem unicode-range esta face reivindica TODO caractere e desenha quadrado vazio
-    // nos que nao tem glifo -- inclusive por cima da Comfortaa completa que o theme.css
-    // carrega. E o que torna a injecao no topbar provadamente inofensiva.
-    assert.match(svg, /unicode-range:U\+0020,/, `${nome}: face limitada aos caracteres que sabe desenhar`);
+    assert.equal((svg.match(/@font-face/g) || []).length, 2, `${nome}: both faces (400 and 700)`);
+    assert.match(svg, /url\(data:font\/woff2;base64,[A-Za-z0-9+/=]+\) format\('woff2'\)/, `${nome}: font embedded, no network`);
+    assert.match(svg, /text\{font-family:'Comfortaa',sans-serif\}/, `${nome}: the family rule is still there`);
+    // Without unicode-range this face claims EVERY character and draws an empty square
+    // for the ones it has no glyph for, even over the full Comfortaa that theme.css
+    // loads. That is what makes the topbar injection provably harmless.
+    assert.match(svg, /unicode-range:U\+0020,/, `${nome}: face limited to the characters it knows how to draw`);
   }
   const soGlifo = brand.mark(c);
-  assert.ok(!soGlifo.includes('@font-face'), 'mark() nao tem texto, entao nao carrega fonte');
+  assert.ok(!soGlifo.includes('@font-face'), 'mark() has no text, so it loads no font');
 });
 
-// Carregado por <img src>, o SVG e lido como XML: '<' ou '&' soltos dentro do
-// <style> sao erro de parse e derrubam o arquivo inteiro. Ja aconteceu uma vez.
-test('o <style> gerado nao tem caractere que quebre o SVG lido como XML', () => {
+// Loaded via <img src>, the SVG is read as XML: a stray '<' or '&' inside
+// <style> is a parse error that brings down the whole file. It has happened once already.
+test('the generated <style> has no character that breaks the SVG read as XML', () => {
   const style = brand.glyphWordmark(brand.stdColors('navy')).match(/<style>([\s\S]*?)<\/style>/)[1];
-  assert.ok(!style.includes('<'), 'nada de menor-que dentro do <style>');
-  assert.ok(!style.includes('&'), 'nada de E-comercial dentro do <style>');
+  assert.ok(!style.includes('<'), 'no less-than inside <style>');
+  assert.ok(!style.includes('&'), 'no ampersand inside <style>');
 });
 
-// ── As variantes de placa e o cartao (track-47 4.b) ──────────────────────────
-// Ate o 4.b elas nao existiam no gerador: os 12 arquivos canonicos eram compostos
-// fora dele, e por isso eram os unicos que nenhum teste alcancava.
+// ── The plate variants and the card (track-47 4.b) ───────────────────────────
+// Until 4.b they did not exist in the generator: the 12 canonical files were composed
+// outside it, and so they were the only ones no test reached.
 
-test('iconPlate centra a marca por DERIVACAO, nunca por numero digitado', () => {
-  // Um icone com o glifo fora do centro e o defeito classico de export manual. Aqui
-  // x e y saem de markHeight, entao nao ha onde errar. Os valores conferidos sao os
-  // do conjunto canonico em PensoIA/Brand/Logo/with bg/.
+test('iconPlate centers the mark by DERIVATION, never by a typed-in number', () => {
+  // An icon with the glyph off-center is the classic manual-export defect. Here
+  // x and y come from markHeight, so there is nowhere to get it wrong. The checked values
+  // are the ones from the canonical set in PensoIA/Brand/Logo/with bg/.
   const casos = [
     [brand.faviconSquare('navy'), 640, 'rect', 220],
     [brand.faviconCircle('navy'), 640, 'circle', null],
@@ -120,46 +120,46 @@ test('iconPlate centra a marca por DERIVACAO, nunca por numero digitado', () => 
   ];
   for (const [svg, h, forma, rx] of casos) {
     const w = h * (600 / 757);
-    assert.match(svg, /viewBox="0 0 1000 1000"/, 'placa de 1000x1000');
+    assert.match(svg, /viewBox="0 0 1000 1000"/, '1000x1000 plate');
     assert.ok(svg.includes(`x="${(1000 - w) / 2}" y="${(1000 - h) / 2}" width="${w}" height="${h}"`),
-      `marca centrada e no aspecto 600:757 (h=${h})`);
+      `mark centered and at 600:757 aspect ratio (h=${h})`);
     if (forma === 'circle') assert.match(svg, /<circle cx="500" cy="500" r="500"/);
-    else assert.ok(svg.includes(`<rect width="1000" height="1000" rx="${rx}"`), `raio ${rx}`);
+    else assert.ok(svg.includes(`<rect width="1000" height="1000" rx="${rx}"`), `radius ${rx}`);
   }
 });
 
-test('a placa nao repete <style> nem fonte: quem hospeda declara uma vez', () => {
+test('the plate does not repeat <style> or the font: the host declares once', () => {
   const svg = brand.faviconSquare('navy');
-  // A placa nao tem <text> proprio; uma regra text{} nela seria regra morta por cima
-  // da viva que o artwork aninhado carrega.
-  assert.equal(svg.indexOf('<style>'), svg.lastIndexOf('<style>'), 'um unico <style>, o do aninhado');
-  assert.ok(!svg.includes('@font-face'), 'placa e geometria pura, nao paga fonte');
+  // The plate has no <text> of its own; a text{} rule on it would be a dead rule on top
+  // of the live one the nested artwork carries.
+  assert.equal(svg.indexOf('<style>'), svg.lastIndexOf('<style>'), "a single <style>, the nested one's");
+  assert.ok(!svg.includes('@font-face'), 'plate is pure geometry, does not pay for the font');
 });
 
-test('bizCard embute a fonte UMA vez e mantem o e-mail em monoespacada', () => {
+test('bizCard embeds the font ONCE and keeps the email in monospace', () => {
   const svg = brand.bizCard('navy');
   assert.match(svg, /viewBox="0 0 320 188"/);
-  assert.equal((svg.match(/@font-face/g) || []).length, 2, 'as duas faces, uma vez so');
+  assert.equal((svg.match(/@font-face/g) || []).length, 2, 'both faces, just once');
   assert.ok(!svg.slice(svg.indexOf('<svg', 1)).includes('@font-face'),
-    'o wordmark aninhado NAO repete a fonte do hospedeiro');
+    'the nested wordmark does NOT repeat the host font');
   assert.match(svg, /font-family="ui-monospace,Menlo,monospace">contato@pensoia\.com/,
-    'endereco em monoespacada, mais facil de transcrever a olho');
-  assert.match(svg, /Élder Prudente Barbosa Filho/, 'o nome com acento, que o subset cobre');
+    'address in monospace, easier to transcribe by eye');
+  assert.match(svg, /Élder Prudente Barbosa Filho/, 'the name with accent, which the subset covers');
 });
 
-test('bizCard e a variante de texto VARIAVEL, entao aceita outra pessoa', () => {
-  // E por isso que ela e a que precisa manter fonte de verdade em vez de contorno.
+test('bizCard is the VARIABLE text variant, so it accepts another person', () => {
+  // That is why it is the one that needs to keep the real font instead of an outline.
   const svg = brand.bizCard('white', { nome: 'Fulana de Tal', papel: 'Instrutora', email: 'f@pensoia.com' });
   assert.match(svg, /Fulana de Tal/);
   assert.match(svg, /Instrutora/);
-  assert.ok(!svg.includes('Élder'), 'o padrao nao vaza quando se passa outro nome');
+  assert.ok(!svg.includes('Élder'), 'the default does not leak when another name is passed');
 });
 
-test('toda variante nova sobrevive ao <style> lido como XML', () => {
+test('every new variant survives the <style> read as XML', () => {
   for (const svg of [brand.faviconSquare('navy'), brand.appiconAdaptiveCircle('white'), brand.bizCard('navy')]) {
     for (const style of svg.match(/<style>([\s\S]*?)<\/style>/g) || []) {
       const corpo = style.slice(7, -8);
-      assert.ok(!corpo.includes('<') && !corpo.includes('&'), 'nada que quebre o parse XML');
+      assert.ok(!corpo.includes('<') && !corpo.includes('&'), 'nothing that breaks the XML parse');
     }
   }
 });

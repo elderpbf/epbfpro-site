@@ -18,8 +18,8 @@ export const trail = {
   itemPublic:     (p) => call('ct_get_item_public', p),     // { item_id, ... } -> item detail
   submitTarefa:   (p) => call('ct_submit_tarefa', p),       // { client_slug, turma_slug, token, item_id, student_name, answer_type, answer_json }
   myTarefas:      (p) => call('ct_list_my_tarefas', p),     // { client_slug, turma_slug, session_token } -> { ok, tarefas:[{item_id,title,summary,aula_number,reply_enabled,grade_enabled,state,submission}] }
-  // O aluno reescreve a própria entrega até o instrutor responder (Élder: "o aluno pode editar
-  // até eu responder e pronto"). Nada de carimbo de "vi": abrir uma tela não tranca ninguém.
+  // The student can rewrite their own submission until the instructor replies (Élder: "o aluno pode editar
+  // até eu responder e pronto"). No "seen" stamp: opening a screen locks nothing for anyone.
   editTarefa:     (p) => call('ct_edit_submission', p),     // { client_slug, turma_slug, session_token, id, answer_json, student_name } -> { ok } | { error:'already_replied'|... }
 
   // Live questions (ClassPulse public surface)
@@ -127,7 +127,7 @@ export { assetUrl };
 // hiccup that must NOT be read as "logged out" or "not approved"; the client keeps its
 // current state and retries instead of walling/clearing the session (the "sumiu em minutos"
 // bug). FALSE for authoritative verdicts (needs_approval, not_found, forbidden, unauthorized,
-// email_not_enrolled, ...), which the caller acts on normally. The worker's own new soluço
+// email_not_enrolled, ...), which the caller acts on normally. The worker's own new hiccup
 // code is `server_busy`; the transport (worker-call.js) emits the http_5xx / network_error /
 // server_returned_html / json_parse_error / body_read_error / no_fetch family; and the legacy
 // generic worker crash is `Internal error`.

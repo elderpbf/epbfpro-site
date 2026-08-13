@@ -7,9 +7,10 @@
 // answer field comes from the Codex tarefa-fields registry.
 //
 // Public API: openTarefaSubmitModal({ item, clientSlug, turmaSlug, token, onSubmitted, editing })
-// `editing` ({ id, answer_json, anon }) troca o modal pro modo EDIÇÃO da entrega que já existe:
-// mesmo campo, mesmas regras, outro verbo. Um modal só, porque é o mesmo ato
-// de responder — um segundo modal quase igual seria duas telas pra corrigir juntas pra sempre.
+// `editing` ({ id, answer_json, anon }) switches the modal to EDIT mode for an entrega
+// (submission) that already exists: same field, same rules, different verb. Just one modal,
+// because it is the same act of answering, a second near-identical modal would mean two
+// screens to fix together forever.
 // The pure helpers
 // (errorMessage / parseMeta) are unit-tested; the modal DOM is verified on staging.
 import { renderItem } from '../../js/item-render.js';
@@ -22,8 +23,8 @@ const LS_NAME = 'ct_student_name';
 // PURE. Map a Worker error code to a student-facing message.
 export function errorMessage(code) {
   if (code === 'already_submitted') return 'Você já enviou uma resposta para esta tarefa. Cada aluno só pode enviar uma vez.';
-  // A trava, na cara de quem esbarrou nela. O texto diz O QUE ACONTECEU e o que ainda dá pra
-  // fazer: "erro ao salvar" mandaria o aluno tentar de novo pra sempre.
+  // The block, right in front of whoever hit it. The text says WHAT HAPPENED and what can
+  // still be done: "erro ao salvar" (save error) would send the student to retry forever.
   if (code === 'already_replied') return 'O instrutor já respondeu esta entrega, então ela não pode mais ser editada. Se a tarefa aceitar, envie outra resposta.';
   if (code === 'anon_not_allowed') return 'Esta tarefa exige identificação. Informe seu nome.';
   if (code === 'needs_approval') return 'Seu acesso a esta turma está em análise. Aguarde a liberação para enviar.';
@@ -47,16 +48,17 @@ export function parseMeta(metaJson) {
 // An open (non-gated) turma has no session identity, so it keeps the name field + the
 // "identificação obrigatória" hint.
 //
-// Não vem marcado (Élder 2026-07-15: "o usuário deve marcar para ser anônimo"). Vinha, e isso
-// invertia o consentimento: quem entrasse identificado e só clicasse "Enviar" mandava anônimo
-// SEM QUERER, e a entrega chegava sem dono no painel do professor — irreversível, porque a
-// coluna do nome fica nula e não há de onde recuperar. Anonimato é o desvio, não o padrão:
-// quem quer se esconder marca.
+// It does not come checked (Élder 2026-07-15: "o usuário deve marcar para ser anônimo").
+// It used to, and that inverted consent: whoever arrived identified and just clicked
+// "Enviar" would send anonymous WITHOUT MEANING TO, and the entrega would land ownerless
+// in the professor's panel, irreversibly, because the name column stays null and there is
+// nowhere to recover it from. Anonymity is the opt-in, not the default: whoever wants to
+// hide checks the box.
 //
-// `currentAnon` só existe na EDIÇÃO: aí a caixa não está propondo nada, está mostrando o que a
-// entrega É neste momento. Vir desmarcada sobre uma entrega anônima seria a mesma inversão de
-// consentimento ao contrário — quem salvasse uma correção de vírgula se identificaria sem
-// perceber, e um nome não volta pra dentro do anonimato depois de aparecer.
+// `currentAnon` only exists in EDIT mode: there the checkbox isn't proposing anything, it's
+// showing what the entrega IS right now. Coming unchecked over an anonymous entrega would be
+// the same consent inversion in reverse, whoever saved a comma fix would get identified
+// without noticing, and a name doesn't go back into anonymity once it's appeared.
 export function identityConfig(participantName, allowAnon, currentAnon) {
   const authed = !!String(participantName == null ? '' : participantName).trim();
   return {
@@ -76,17 +78,17 @@ export function openTarefaSubmitModal(opts) {
   const sessionToken = opts.sessionToken; // gated turmas require an approved session to submit
   const participantName = String(opts.participantName || '').trim(); // the logged-in student, if any
   const onSubmitted = opts.onSubmitted || (() => {});
-  // Modo edição: a MESMA entrega volta pro mesmo campo. `anon` é o que ela é hoje, não uma
-  // proposta.
+  // Edit mode: the SAME entrega goes back into the same field. `anon` is what it is today,
+  // not a proposal.
   const editing = opts.editing || null;
   const SEND_LABEL = editing ? 'Salvar alterações' : 'Enviar resposta';
 
   const meta = parseMeta(item.meta_json);
   const fieldType = meta.field_type || 'text';
-  // Vem do RELEASE (ct_get_item_public devolve item.allow_anonymous a partir da coluna que a
-  // migration 0036 criou), não mais do meta_json do item do BANCO: lá a marca valia pra toda
-  // turma que usasse a tarefa. Uma fonte só — a mesma que o ct_submit_tarefa consulta pra
-  // aceitar ou recusar — senão o modal oferece o que o envio recusa.
+  // Comes from the RELEASE (ct_get_item_public returns item.allow_anonymous from the column
+  // migration 0036 created), no longer from the DB item's meta_json: there the flag applied to
+  // every turma that used the tarefa. One source only, the same one ct_submit_tarefa checks to
+  // accept or reject, otherwise the modal would offer what the submit refuses.
   const allowAnon = !!item.allow_anonymous;
   const idCfg = identityConfig(participantName, allowAnon, editing && editing.anon);
   let savedName = '';
@@ -118,13 +120,14 @@ export function openTarefaSubmitModal(opts) {
   const bd = document.createElement('div');
   bd.className = 'tr-modal-backdrop tr-tarefa-submit-backdrop';
   bd.innerHTML =
-    // A classe deste <div> NAO pode ser a mesma do <button> la embaixo: o
-    // bd.querySelector('.tr-tarefa-submit') casava com ele PRIMEIRO (ordem do documento) e o
-    // "botao de enviar" do modal era, na verdade, o modal inteiro. Consequencias reais, ao vivo:
-    // tocar em QUALQUER lugar do modal (o enunciado, o rotulo) enviava a resposta; o
-    // textContent = 'Enviando...' apagava o modal inteiro e deixava so a palavra na tela; e o
-    // .disabled = true nao fazia nada, porque <div> nao tem disabled (nada segurava um envio
-    // duplo). Nenhum CSS usa esta classe: era peso morto com uma armadilha dentro.
+    // This <div>'s class CANNOT be the same as the <button> down below: bd.querySelector
+    // ('.tr-tarefa-submit') would match it FIRST (document order), and the modal's
+    // "submit button" was actually the whole modal. Real, live consequences: tapping
+    // ANYWHERE in the modal (the instructions, the label) submitted the answer; the
+    // textContent = 'Enviando...' assignment wiped out the whole modal and left only that
+    // word on screen; and .disabled = true did nothing, because a <div> has no disabled
+    // (nothing guarded against a double submit). No CSS uses this class: it was dead
+    // weight with a trap inside.
     '<div class="tr-modal tr-tarefa-submit-modal">' +
       '<button class="tr-modal-close" type="button" aria-label="Fechar">×</button>' +
       '<h2 class="tr-modal-title">' + esc(item.title) + '</h2>' +
@@ -149,16 +152,16 @@ export function openTarefaSubmitModal(opts) {
 
   const fieldEl = bd.querySelector('.tr-tarefa-field');
   const field = getField(fieldType);
-  // Editar começa do que foi enviado, não de um campo vazio: reescrever tudo do zero pra trocar
-  // uma frase não é editar. Quem desempacota o answer_json é o próprio registry (parseAnswer),
-  // que é quem conhece a forma do payload.
+  // Editing starts from what was submitted, not from an empty field: rewriting everything
+  // from scratch to change one sentence isn't editing. The registry itself (parseAnswer)
+  // unpacks the answer_json, since it's the one that knows the payload's shape.
   field.renderForm(fieldEl, editing ? { initial: parseAnswer(editing.answer_json) } : {});
 
   const nameInput = bd.querySelector('.tr-tarefa-name');
   const anonCb = bd.querySelector('.tr-tarefa-anon-cb');
   const errorEl = bd.querySelector('.tr-tarefa-error');
-  // 'button.' explicito: cinto e suspensorio com o rename la em cima. Um dia alguem poe
-  // tr-tarefa-submit num wrapper de novo, e aqui continua pegando o botao.
+  // Explicit 'button.': belt and suspenders with the rename above. Someday someone puts
+  // tr-tarefa-submit on a wrapper again, and this will still grab the button.
   const submitBtn = bd.querySelector('button.tr-tarefa-submit');
   const cancelBtn = bd.querySelector('.tr-tarefa-cancel');
   const closeBtn = bd.querySelector('.tr-modal-close');
@@ -209,8 +212,8 @@ export function openTarefaSubmitModal(opts) {
     }
 
     try {
-      // Editar não é enviar de novo: seria uma segunda entrega, e numa tarefa de entrega única
-      // levaria 'already_submitted'. Mesma linha, mesmo id.
+      // Editing is not submitting again: that would be a second entrega, and on a
+      // single-submission tarefa it would trigger 'already_submitted'. Same row, same id.
       if (editing) {
         await trail.editTarefa({
           client_slug: clientSlug,

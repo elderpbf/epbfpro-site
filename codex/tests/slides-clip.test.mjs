@@ -1,21 +1,21 @@
-// slides-clip.test.mjs, copiar/colar de slides = a forma padrão de compartilhar
+// slides-clip.test.mjs, copy/paste of slides = the standard way to share
 // (track-35 C, Élder 2026-07-17).
 //
-// A regra que estes testes existem pra travar: **colar vinculado converte OS DOIS lados**.
-// Se só o lado colado virar ref, "mexer em um atualiza o outro" é mentira em metade dos
-// casos, e é a metade que o Élder não olha (o deck de origem, que está fechado). Um vínculo
-// de mão única passa em qualquer teste ingênuo: o deck novo propaga lindamente.
+// The rule these tests exist to pin down: **linked paste converts BOTH sides**.
+// If only the pasted side becomes a ref, "editing one updates the other" is a lie
+// half the time, and it's the half Élder doesn't look at (the source deck, which is
+// closed). A one-way link passes any naive test: the new deck propagates beautifully.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { createSlideClip, CLIP_KEY } from '../content/slides/adapters/slideClip.js';
 
-// localStorage de mentira (o adapter aceita `storage` injetado justamente pra isto).
+// Fake localStorage (the adapter accepts an injected `storage` for exactly this).
 function fakeStorage() {
   const m = new Map();
   return { getItem: (k) => (m.has(k) ? m.get(k) : null), setItem: (k, v) => m.set(k, v), _raw: () => m };
 }
 
-// Biblioteca de mentira: conta as publicações, que é como se prova que não republica.
+// Fake library: counts publications, which is how you prove it does not republish.
 function fakeLibrary() {
   const saved = [];
   return {
@@ -28,7 +28,7 @@ function fakeLibrary() {
   };
 }
 
-// Facade de mentira: os decks por slug, e o registro das gravações.
+// Fake facade: the decks by slug, and the record of saves.
 function fakeFacade(decks) {
   const calls = { saves: [] };
   return {
@@ -44,7 +44,7 @@ function fakeFacade(decks) {
 
 const slide = (id, text, ref) => ({ id, layout: 'statement', slots: { text }, ...(ref ? { ref } : {}) });
 
-test('copy é captura PURA: não publica nada e não mexe no deck', () => {
+test('copy is a PURE capture: publishes nothing and does not touch the deck', () => {
   const storage = fakeStorage(), library = fakeLibrary();
   const clip = createSlideClip({ storage, library, facade: fakeFacade({}) });
   const s = slide('s1', 'oi');
@@ -52,13 +52,13 @@ test('copy é captura PURA: não publica nada e não mexe no deck', () => {
   const out = clip.copy([s], { srcSlug: 'jurista', srcTitle: 'Deck Jurista' });
 
   assert.equal(out.items.length, 1);
-  assert.equal(library.saved.length, 0, 'copiar NÃO publica: a decisão é do colar');
-  assert.deepEqual(s, slide('s1', 'oi'), 'o slide de origem sai intacto do Ctrl+C');
-  assert.equal(out.srcTitle, 'Deck Jurista', 'a origem viaja junto (o colar vinculado precisa dela)');
+  assert.equal(library.saved.length, 0, 'copy does NOT publish: that decision belongs to paste');
+  assert.deepEqual(s, slide('s1', 'oi'), 'the source slide comes out of Ctrl+C intact');
+  assert.equal(out.srcTitle, 'Deck Jurista', 'the source travels along (linked paste needs it)');
   assert.equal(JSON.parse(storage._raw().get(CLIP_KEY)).items[0].slideId, 's1');
 });
 
-test('colar SOLTO: cópias independentes, id novo, sem ref, sem tocar na biblioteca', () => {
+test('LOOSE paste: independent copies, fresh id, no ref, does not touch the library', () => {
   const library = fakeLibrary();
   const clip = createSlideClip({ storage: fakeStorage(), library, facade: fakeFacade({}) });
   const payload = clip.copy([slide('s1', 'oi')], { srcSlug: 'jurista' });
@@ -66,13 +66,13 @@ test('colar SOLTO: cópias independentes, id novo, sem ref, sem tocar na bibliot
   const out = clip.pasteLoose(payload);
 
   assert.equal(out.length, 1);
-  assert.equal(out[0].ref, undefined, 'solto = sem vínculo, pode divergir');
-  assert.notEqual(out[0].id, 's1', 'id fresco');
+  assert.equal(out[0].ref, undefined, 'loose = no link, can diverge');
+  assert.notEqual(out[0].id, 's1', 'fresh id');
   assert.equal(out[0].slots.text, 'oi');
   assert.equal(library.saved.length, 0);
 });
 
-test('colar VINCULADO converte OS DOIS lados (é a regra inteira do recurso)', async () => {
+test('LINKED paste converts BOTH sides (this is the whole rule behind the feature)', async () => {
   const decks = { jurista: { slides: [slide('s1', 'abertura'), slide('s2', 'outro')] } };
   const facade = fakeFacade(decks);
   const library = fakeLibrary();
@@ -82,18 +82,18 @@ test('colar VINCULADO converte OS DOIS lados (é a regra inteira do recurso)', a
   const { slides, sourceFailed } = await clip.pasteLinked(payload);
 
   assert.equal(sourceFailed.length, 0);
-  // lado colado
-  assert.equal(slides[0].ref, 'L1', 'o slide colado aponta pra entrada nova');
+  // pasted side
+  assert.equal(slides[0].ref, 'L1', 'the pasted slide points to the new entry');
   assert.equal(slides[0].slots.text, 'abertura');
-  // lado de ORIGEM: o que ninguém olha e onde a mentira moraria
+  // SOURCE side: the one nobody looks at, where the lie would live
   assert.deepEqual(decks.jurista.slides[0], { id: 's1', ref: 'L1' },
-    'o slide de ORIGEM virou vínculo: sem isto, editar lá não mudaria nada aqui');
-  assert.deepEqual(decks.jurista.slides[1], slide('s2', 'outro'), 'os outros slides do deck origem não são tocados');
-  assert.equal(library.saved[0].from.title, 'Deck Jurista', 'a entrada guarda o deck de origem (as seções do +slide)');
+    'the SOURCE slide became a link: without this, editing there would change nothing here');
+  assert.deepEqual(decks.jurista.slides[1], slide('s2', 'outro'), 'the source deck\'s other slides are untouched');
+  assert.equal(library.saved[0].from.title, 'Deck Jurista', 'the entry keeps the source deck (the +slide sections)');
 });
 
-test('colar vinculado um slide JÁ compartilhado reusa o ref: não republica', async () => {
-  // Esta é a queixa "deixa compartilhar o mesmo slide infinitas vezes", na raiz.
+test('linked-pasting a slide ALREADY shared reuses the ref: does not republish', async () => {
+  // This is the root of the "let me share the same slide infinite times" complaint.
   const decks = { jurista: { slides: [slide('s1', 'abertura', 'L9')] } };
   const facade = fakeFacade(decks);
   const library = fakeLibrary();
@@ -102,12 +102,12 @@ test('colar vinculado um slide JÁ compartilhado reusa o ref: não republica', a
 
   const { slides } = await clip.pasteLinked(payload);
 
-  assert.equal(slides[0].ref, 'L9', 'aponta pra MESMA entrada');
-  assert.equal(library.saved.length, 0, 'nenhuma entrada nova: uma entrada por slide, não por colagem');
-  assert.equal(facade.calls.saves.length, 0, 'nem precisa mexer no deck de origem: já era vínculo');
+  assert.equal(slides[0].ref, 'L9', 'points to the SAME entry');
+  assert.equal(library.saved.length, 0, 'no new entry: one entry per slide, not per paste');
+  assert.equal(facade.calls.saves.length, 0, 'does not even need to touch the source deck: it was already linked');
 });
 
-test('colar o MESMO clipboard duas vezes não cria duas entradas', async () => {
+test('pasting the SAME clipboard twice does not create two entries', async () => {
   const decks = { jurista: { slides: [slide('s1', 'abertura')] } };
   const clip = createSlideClip({ storage: fakeStorage(), library: (() => { const l = fakeLibrary(); return l; })(), facade: fakeFacade(decks) });
   const library = fakeLibrary();
@@ -117,13 +117,13 @@ test('colar o MESMO clipboard duas vezes não cria duas entradas', async () => {
   const a = await clip2.pasteLinked(payload);
   const b = await clip2.pasteLinked(payload);
 
-  assert.equal(library.saved.length, 1, 'a 2ª colagem reusa a entrada da 1ª');
-  assert.equal(a.slides[0].ref, b.slides[0].ref, 'os dois colados apontam pro mesmo slide');
-  assert.notEqual(a.slides[0].id, b.slides[0].id, 'mas são posições distintas no deck');
+  assert.equal(library.saved.length, 1, 'the 2nd paste reuses the 1st entry');
+  assert.equal(a.slides[0].ref, b.slides[0].ref, 'both pasted slides point to the same slide');
+  assert.notEqual(a.slides[0].id, b.slides[0].id, 'but they are different positions in the deck');
   void clip;
 });
 
-test('origem ABERTA: converte em memória e NÃO grava por fora (o autosave clobbaria)', async () => {
+test('OPEN source: converts in memory and does NOT write from outside (autosave would clobber it)', async () => {
   const decks = { jurista: { slides: [slide('s1', 'abertura')] } };
   const facade = fakeFacade(decks);
   const seen = [];
@@ -136,23 +136,23 @@ test('origem ABERTA: converte em memória e NÃO grava por fora (o autosave clob
   const { sourceFailed } = await clip.pasteLinked(payload);
 
   assert.equal(sourceFailed.length, 0);
-  assert.equal(seen.length, 1, 'o editor aberto tratou');
+  assert.equal(seen.length, 1, 'the open editor handled it');
   assert.equal(seen[0][0], 'jurista');
-  assert.equal(facade.calls.saves.length, 0, 'nenhuma gravação por fora do editor aberto');
+  assert.equal(facade.calls.saves.length, 0, 'no write from outside the open editor');
 });
 
-test('origem sumida: a colagem VALE e a falha é DEVOLVIDA (nunca vínculo de mão única calado)', async () => {
-  const facade = fakeFacade({}); // o deck de origem não existe mais
+test('missing source: the paste still HAPPENS and the failure is RETURNED (never a silent one-way link)', async () => {
+  const facade = fakeFacade({}); // the source deck no longer exists
   const clip = createSlideClip({ storage: fakeStorage(), library: fakeLibrary(), facade });
   const payload = clip.copy([slide('s1', 'abertura')], { srcSlug: 'sumiu' });
 
   const { slides, sourceFailed } = await clip.pasteLinked(payload);
 
-  assert.equal(slides[0].ref, 'L1', 'o slide colado entra vinculado do mesmo jeito');
-  assert.deepEqual(sourceFailed, ['s1'], 'e o chamador RECEBE a falha pra avisar');
+  assert.equal(slides[0].ref, 'L1', 'the pasted slide still comes in linked the same way');
+  assert.deepEqual(sourceFailed, ['s1'], 'and the caller GETS the failure to warn about it');
 });
 
-test('slide apagado no deck de origem desde o Ctrl+C: mesma regra', async () => {
+test('slide deleted from the source deck since Ctrl+C: same rule', async () => {
   const decks = { jurista: { slides: [slide('outro', 'sobrou')] } };
   const facade = fakeFacade(decks);
   const clip = createSlideClip({ storage: fakeStorage(), library: fakeLibrary(), facade });
@@ -161,55 +161,55 @@ test('slide apagado no deck de origem desde o Ctrl+C: mesma regra', async () => 
   const { sourceFailed } = await clip.pasteLinked(payload);
 
   assert.deepEqual(sourceFailed, ['s1']);
-  assert.equal(facade.calls.saves.length, 0, 'não salva um deck que não mudou');
-  assert.deepEqual(decks.jurista.slides, [slide('outro', 'sobrou')], 'e não inventa o slide de volta');
+  assert.equal(facade.calls.saves.length, 0, 'does not save a deck that did not change');
+  assert.deepEqual(decks.jurista.slides, [slide('outro', 'sobrou')], 'and does not invent the slide back');
 });
 
-test('clipboard vazio/corrompido = colar não faz nada (nunca joga)', () => {
+test('empty/corrupt clipboard = paste does nothing (never throws)', () => {
   const storage = fakeStorage();
   const clip = createSlideClip({ storage, library: fakeLibrary(), facade: fakeFacade({}) });
-  assert.equal(clip.read(), null, 'vazio');
+  assert.equal(clip.read(), null, 'empty');
   storage.setItem(CLIP_KEY, '{isto nao e json');
-  assert.equal(clip.read(), null, 'corrompido lê como vazio, não como exceção');
+  assert.equal(clip.read(), null, 'corrupt reads as empty, not as an exception');
   storage.setItem(CLIP_KEY, JSON.stringify({ items: [] }));
-  assert.equal(clip.read(), null, 'sem itens = sem clipboard');
+  assert.equal(clip.read(), null, 'no items = no clipboard');
 });
 
-test('copiar VÁRIOS slides preserva a ordem da régua', () => {
+test('copying SEVERAL slides preserves the ruler order', () => {
   const clip = createSlideClip({ storage: fakeStorage(), library: fakeLibrary(), facade: fakeFacade({}) });
   const out = clip.copy([slide('a', '1'), slide('b', '2'), slide('c', '3')], { srcSlug: 'd' });
   assert.deepEqual(out.items.map((i) => i.slideId), ['a', 'b', 'c']);
   assert.deepEqual(clip.pasteLoose(out).map((s) => s.slots.text), ['1', '2', '3']);
 });
 
-// ── A tab "Biblioteca" do +slide, seccionada pelo deck de origem ─────────────
+// ── The +slide "Library" tab, sectioned by source deck ─────────────
 import { groupTemplates } from '../content/slides/js/edit/addslide.js';
 
 const tplFrom = (id, slug, title) => ({ id, name: id, layout: 'cover', from: slug ? { slug, title } : null });
 
-test('groupTemplates secciona pelo DECK de origem, em ordem alfabética', () => {
+test('groupTemplates sections by the source DECK, alphabetically', () => {
   const out = groupTemplates([
     tplFrom('a', 'jurista', 'Deck Jurista'),
     tplFrom('b', 'advogado', 'Deck Advogado'),
     tplFrom('c', 'jurista', 'Deck Jurista'),
   ]);
   assert.deepEqual(out.map((g) => g.title), ['Deck Advogado', 'Deck Jurista']);
-  assert.deepEqual(out[1].items.map((t2) => t2.id), ['a', 'c'], 'a ordem dentro da seção é a de inserção');
+  assert.deepEqual(out[1].items.map((t2) => t2.id), ['a', 'c'], 'the order within a section is insertion order');
 });
 
-test('o título da seção é o ATUAL do deck: renomear o deck renomeia a seção', () => {
-  // O `from.title` é o nome de quando compartilhou. Congelar nele deixaria a seção com um
-  // nome que não existe mais em lugar nenhum da tela.
+test('the section title is the deck\'s CURRENT name: renaming the deck renames the section', () => {
+  // `from.title` is the name at share time. Freezing on it would leave a section with a
+  // name that no longer exists anywhere else on screen.
   const out = groupTemplates([tplFrom('a', 'jurista', 'Nome Velho')], (slug) => (slug === 'jurista' ? 'Nome Novo' : null));
   assert.equal(out[0].title, 'Nome Novo');
 });
 
-test('deck de origem APAGADO: cai no nome gravado, não some da biblioteca', () => {
+test('DELETED source deck: falls back to the saved name, does not vanish from the library', () => {
   const out = groupTemplates([tplFrom('a', 'sumiu', 'Deck Que Sumiu')], () => null);
-  assert.equal(out[0].title, 'Deck Que Sumiu', 'a entrada continua inserível');
+  assert.equal(out[0].title, 'Deck Que Sumiu', 'the entry is still insertable');
 });
 
-test('entradas SEM origem (salvar-como-layout, ou de antes do `from`) viram UMA seção, por último', () => {
+test('entries WITHOUT a source (save-as-layout, or from before `from` existed) become ONE section, last', () => {
   const out = groupTemplates([
     tplFrom('legado', null),
     tplFrom('a', 'zzz', 'Ultimo Alfabetico'),
@@ -217,18 +217,18 @@ test('entradas SEM origem (salvar-como-layout, ou de antes do `from`) viram UMA 
   ]);
   assert.equal(out.length, 2);
   assert.equal(out[0].title, 'Ultimo Alfabetico');
-  assert.equal(out[1].key, '__none__', 'o catch-all é o último, sempre');
-  assert.deepEqual(out[1].items.map((t2) => t2.id), ['legado', 'outro-legado'], 'nada é escondido');
+  assert.equal(out[1].key, '__none__', 'the catch-all is always last');
+  assert.deepEqual(out[1].items.map((t2) => t2.id), ['legado', 'outro-legado'], 'nothing is hidden');
 });
 
-// ── O bug do "colar vinculado: nada aconteceu" (Élder 2026-07-17) ────────────
+// ── The "linked paste: nothing happened" bug (Élder 2026-07-17) ────────────
 import { createLibrary } from '../content/slides/adapters/library.js';
 
-test('a PRIMEIRA gravação na biblioteca funciona (a ação congelada rejeita, não devolve vazio)', async () => {
-  // O estado exato: _ensure() acabou de REGISTRAR a linha, então ela existe e não tem json.
-  // Nesse instante o get_presentation_json REJEITA "not found". O _load() jurava devolver
-  // null aí, e não devolvia: jogava. Toda 1ª publicação na biblioteca morria, e o throw só
-  // chegava na pílula de debug, então na tela "nada acontecia".
+test('the FIRST save to the library works (the frozen action rejects, does not return empty)', async () => {
+  // The exact state: _ensure() just REGISTERED the row, so it exists and has no json.
+  // At that instant get_presentation_json REJECTS "not found". _load() swore it would
+  // return null there, and did not: it threw. Every 1st publish to the library died, and
+  // the throw only reached the debug pill, so on screen "nothing happened".
   const rows = [];
   let container = null;
   const facade = {
@@ -245,13 +245,13 @@ test('a PRIMEIRA gravação na biblioteca funciona (a ação congelada rejeita, 
   const tpl = await lib.save({ layout: 'cover', slots: { title: 'oi' } }, 'Primeira');
 
   assert.equal(tpl.name, 'Primeira');
-  assert.equal(container.slides.length, 1, 'a entrada existe de verdade no container');
-  // E a segunda continua funcionando (agora o _load acha json).
+  assert.equal(container.slides.length, 1, 'the entry really exists in the container');
+  // And the second one keeps working (now _load finds json).
   await lib.save({ layout: 'cover', slots: { title: 'dois' } }, 'Segunda');
   assert.equal(container.slides.length, 2);
 });
 
-test('falha de verdade (rede/auth) na biblioteca ainda PROPAGA: só not-found é container vazio', async () => {
+test('a real failure (network/auth) in the library still PROPAGATES: only not-found is an empty container', async () => {
   const facade = {
     async list() { return { presentations: [{ slug: '__library__' }] }; },
     async register() { return { ok: true }; },
@@ -260,5 +260,5 @@ test('falha de verdade (rede/auth) na biblioteca ainda PROPAGA: só not-found é
   };
   const lib = createLibrary({ facade });
   await assert.rejects(() => lib.save({ layout: 'cover' }, 'x'), /401/,
-    'engolir isto como "container vazio" apagaria a biblioteca inteira na próxima gravação');
+    'swallowing this as "empty container" would wipe the whole library on the next save');
 });

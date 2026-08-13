@@ -1,17 +1,19 @@
-// slides-t-shadow.test.mjs, num arquivo que importa o tradutor como `t`, o
-// identificador `t` é RESERVADO: nada pode redeclarar.
+// slides-t-shadow.test.mjs, in a file that imports the translator as `t`, the
+// identifier `t` is RESERVED: nothing may redeclare it.
 //
-// Existe por um bug que eu mesmo pus em produção (commit 11f1061, 2026-07-16, ao
-// traduzir o tooltip do selo ⚠): o navigator.js fazia `const t = createElement("div")`
-// dentro do forEach e chamava `t("slides.ed_reflow_warn")` NA MESMA closure. O `t`
-// local sombreia o import pro escopo inteiro, então todo slide com `reflowWarn` virava
-// "t is not a function" e MATAVA o render da régua inteira. Não é hipótese: a mesma
-// classe já tinha mordido o `imgInner` do helpers.js (renomeado pra `tf`) horas antes.
+// Exists because of a bug I put into production myself (commit 11f1061, 2026-07-16,
+// while translating the ⚠ badge tooltip): navigator.js did `const t =
+// createElement("div")` inside the forEach and called `t("slides.ed_reflow_warn")`
+// in the SAME closure. The local `t` shadows the import for the whole scope, so every
+// slide with `reflowWarn` turned into "t is not a function" and KILLED the whole
+// ruler's render. Not hypothetical: the same class of bug had already bitten
+// helpers.js's `imgInner` (renamed to `tf`) hours earlier.
 //
-// A regra é a CLASSE, não o caso: "importou `t`, não redeclara `t`". Um teste que
-// tentasse decidir se o `t()` cai DENTRO do escopo sombreado precisaria de um parser;
-// proibir a redeclaração é checável por regex e não tem falso-negativo caro (o preço é
-// renomear uma variável local, que é o que a gente quer mesmo).
+// The rule is the CLASS, not the instance: "imported `t`, do not redeclare `t`". A
+// test that tried to decide whether `t()` falls INSIDE the shadowed scope would need
+// a parser; banning the redeclaration outright is checkable by regex and has no
+// costly false negative (the price is renaming a local variable, which is what we
+// actually want anyway).
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -30,7 +32,7 @@ function walk(dir) {
   return out;
 }
 
-// Os arquivos do núcleo que trazem o tradutor de fora.
+// The core files that bring in the translator from outside.
 function filesImportingT() {
   return walk(SLIDES).filter((f) => {
     const src = fs.readFileSync(f, 'utf8');
@@ -38,8 +40,8 @@ function filesImportingT() {
   });
 }
 
-// Toda redeclaração de `t` num arquivo: declaração (const/let/var), parâmetro de arrow
-// de um argumento, ou parâmetro numa lista. Retorna [{line, text}].
+// Every redeclaration of `t` in a file: declaration (const/let/var), single-argument
+// arrow parameter, or a parameter in a list. Returns [{line, text}].
 function rebindsOfT(src) {
   const PATTERNS = [
     /\b(?:const|let|var)\s+t\s*[=;,)]/,   // const t = ... / let t;
@@ -50,14 +52,14 @@ function rebindsOfT(src) {
   ];
   const out = [];
   src.split('\n').forEach((line, i) => {
-    if (/^\s*(\/\/|\*)/.test(line)) return;          // comentário: o navigator explica o scar
-    if (/^\s*import\b/.test(line)) return;           // o próprio import do t
+    if (/^\s*(\/\/|\*)/.test(line)) return;          // comment: the navigator explains the scar
+    if (/^\s*import\b/.test(line)) return;           // the `t` import itself
     if (PATTERNS.some((re) => re.test(line))) out.push({ line: i + 1, text: line.trim() });
   });
   return out;
 }
 
-test('`t` nunca é redeclarado num arquivo que importa o tradutor', () => {
+test('`t` is never redeclared in a file that imports the translator', () => {
   const offenders = [];
   for (const f of filesImportingT()) {
     for (const hit of rebindsOfT(fs.readFileSync(f, 'utf8'))) {
@@ -65,12 +67,12 @@ test('`t` nunca é redeclarado num arquivo que importa o tradutor', () => {
     }
   }
   assert.deepEqual(offenders, [],
-    'Estes sombreiam o tradutor `t`. Renomeie a local (o navigator usa `th`, o helpers `tf`):\n' +
+    'These shadow the `t` translator. Rename the local (navigator uses `th`, helpers uses `tf`):\n' +
     offenders.join('\n'));
 });
 
-test('o teste enxerga o caso REAL que quebrou a produção', () => {
-  // O snippet exato do commit 11f1061, pra este guard não virar um regex que passa em tudo.
+test('the test recognizes the REAL case that broke production', () => {
+  // The exact snippet from commit 11f1061, so this guard does not become a regex that passes on everything.
   const bug = [
     'import { t } from "../../../../js/i18n.js";',
     'deck.slides.forEach((s, i) => {',
@@ -78,11 +80,11 @@ test('o teste enxerga o caso REAL que quebrou a produção', () => {
     '  t.innerHTML = (s.reflowWarn ? `<div title="${t("slides.ed_reflow_warn")}">⚠</div>` : "");',
     '});',
   ].join('\n');
-  assert.equal(rebindsOfT(bug).length, 1, 'o `const t = createElement` tem de ser pego');
+  assert.equal(rebindsOfT(bug).length, 1, 'the `const t = createElement` must be caught');
 });
 
-test('o navigator chama t() e não redeclara t', () => {
+test('the navigator calls t() and does not redeclare t', () => {
   const src = fs.readFileSync(path.join(SLIDES, 'edit/navigator.js'), 'utf8');
-  assert.match(src, /t\("slides\.ed_reflow_warn"\)/, 'o tooltip do ⚠ segue traduzido');
-  assert.equal(rebindsOfT(src).length, 0, 'nenhuma local chamada `t` no navigator');
+  assert.match(src, /t\("slides\.ed_reflow_warn"\)/, 'the ⚠ tooltip stays translated');
+  assert.equal(rebindsOfT(src).length, 0, 'no local `t` call in the navigator');
 });
