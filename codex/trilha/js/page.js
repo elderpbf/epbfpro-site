@@ -21,6 +21,7 @@ import { renderNoticePage } from './notice-page.js';
 import { createBell } from '../../js/notif-bell.js';
 import { filterByPrefs, getPrefs, createNotifSettings } from './notif-prefs.js';
 import { initInstallPrompt, showInstallPrompt } from './install-prompt.js';
+import { initPushInvite, hidePushInvite } from './push-invite.js';
 import { mountEntry, contextFromState } from './support-contact.js';
 import { openMyData } from './my-data.js';
 import { overlayLabItems } from './lab-overlay.js';
@@ -396,7 +397,9 @@ function renderHeaderActions() {
                 win: _win,
                 getVapidKey: () => trail.pushVapidKey(),
                 saveSubscription: (sub) => trail.pushSubscribe({ session_token: state.sessionToken, ...sub }),
-              }),
+              // Subscribing HERE answers the strip's question too, so the strip goes. Leaving it
+              // up would keep offering something the student has already done.
+              }).then((res) => { if (res && res.ok) hidePushInvite(); return res; }),
               // Drives displayPrefs (notif-channels.js): a comunicado push cell (default ON)
               // must render UNCHECKED until this device is confirmed subscribed, or the
               // student would never see a reason to toggle it and would never subscribe.
@@ -494,6 +497,20 @@ function renderTrilhaView(root, loc) {
     // wall), and only when the turma enables it (per-turma flag, DEFAULT-ON). Self-guards: no-op
     // if installed, not installable, or previously dismissed.
     if (turma.app_install_prompt !== 0) initInstallPrompt(root, { win: _win });
+    // The push invite takes that same spot once the install bar has no reason to be there
+    // (track-44). It self-guards on the whole ladder, including "the install bar is up right
+    // now", so the order of these two calls is what decides who owns the strip, and install
+    // wins. Only for a student who holds access: a subscription is saved against an identity.
+    const access = (state.data || {}).access || {};
+    initPushInvite(root, {
+      win: _win,
+      hasSession: !!(LOGIN_ENABLED && state.sessionToken && access.status === 'approved'),
+      subscribe: () => import('./push-subscribe.js').then((ps) => ps.subscribePush({
+        win: _win,
+        getVapidKey: () => trail.pushVapidKey(),
+        saveSubscription: (sub) => trail.pushSubscribe({ session_token: state.sessionToken, ...sub }),
+      })),
+    });
   }
 }
 

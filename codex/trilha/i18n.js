@@ -65,6 +65,13 @@ const pt = {
   'install.btn':            'Instalar',
   'install.ios_hint':       'Toque em Compartilhar e depois em "Adicionar à Tela de Início".',
   'install.dismiss':        'Dispensar',
+  // Convite de push (track-44). Genérico de propósito: a permissão do navegador vale pro
+  // domínio inteiro e cobre TODA categoria, então prometer uma coisa só ("aviso da aula")
+  // seria promessa que o próximo produtor quebra. A granularidade fica na grade de prefs.
+  'pushinvite.title':       'Receba atualizações da sua trilha',
+  'pushinvite.desc':        'Novos materiais e lembretes',
+  'pushinvite.btn':         'Ativar',
+  'pushinvite.pill':        'Avisos da trilha',
   'login.title':            'Entrar na trilha',
   'login.subtitle':         'Use seu e-mail para entrar ou criar seu acesso. Enviamos um código de 4 letras, sem senha.',
   'login.email_label':      'Seu e-mail',
@@ -316,6 +323,13 @@ const en = {
   'install.btn':            'Install',
   'install.ios_hint':       'Tap Share, then "Add to Home Screen".',
   'install.dismiss':        'Dismiss',
+  // Push invite (track-44). Generic on purpose: browser permission is per domain and covers
+  // EVERY category, so promising one thing ("we will remind you about class") is a promise
+  // the next producer breaks. The fine grain lives in the preferences grid.
+  'pushinvite.title':       'Get updates from your trail',
+  'pushinvite.desc':        'New material and reminders',
+  'pushinvite.btn':         'Turn on',
+  'pushinvite.pill':        'Trail alerts',
   'login.title':            'Sign in to your trail',
   'login.subtitle':         'Use your email to sign in or create your access. We send a 4-letter code, no password.',
   'login.email_label':      'Your email',
