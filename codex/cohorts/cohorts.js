@@ -11,6 +11,7 @@ import { glyphSvg } from '../js/glyphs.js';
 import { mountRail } from '../js/list-rail.js';
 import { sessionLabel } from '../js/session-label.js';
 import { openModal, closeModal } from '../js/modal.js';
+import { promptAulaReminder } from '../js/aula-reminder-prompt.js';
 import * as qrShare from '../js/qr-share-modal.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
@@ -2099,6 +2100,7 @@ function _markAulaHappened(aula) {
     toast.ok(t('releases.mark_happened_done'));
     _renderAulaHubRows();
     _renderAulaDetail(turma);
+    promptAulaReminder(r && r.reminder);
   }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
@@ -2162,6 +2164,9 @@ function _wireAulaDadosEditor(container, aula, turma) {
       _renderAulaHubRows();
       _renderAulaDetail(turma);
       _refreshDerivedFacts();
+      // The save is done and reported before this: the question is about warning the turma, and
+      // it must never read as if it were part of whether the aula persisted (track-55).
+      promptAulaReminder(res && res.reminder);
     }).catch(err => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
   });
 

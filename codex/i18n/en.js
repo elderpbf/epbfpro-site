@@ -59,6 +59,29 @@ export default {
   'notif.tier_act':   'Actionable',
   'notif.tier_dismiss': 'Dismissable',
 
+  // Late class reminder (track-55, shared js/aula-reminder-prompt.js). It says "less than 24
+  // hours" and never "tomorrow": the class may be TODAY, and the question only appears once the
+  // daily sweep can no longer reach the date.
+  'reminder.ask_title':       'Warn the class now?',
+  'reminder.ask_what':        'Aula {aula} is {when}, which is less than 24 hours away.',
+  'reminder.ask_reach':       'Warning them now sends {reach}.',
+  'reminder.ask_consequence': 'If you do not warn them now, nobody will be warned about this class: the automatic reminder sweeps a date only on the eve, and that pass has already happened.',
+  'reminder.when_today':      'today',
+  'reminder.when_tomorrow':   'tomorrow',
+  'reminder.at':              'at',
+  'reminder.and':             'and',
+  'reminder.unit_email':      'e-mail',
+  'reminder.unit_emails':     'e-mails',
+  'reminder.unit_push':       'push',
+  'reminder.skip':            'Do not warn',
+  'reminder.send_now':        'Warn now',
+  'reminder.sending':         'Sending…',
+  'reminder.skipped':         'Nobody was warned about this class.',
+  'reminder.sent':            'Class warned: {reach}.',
+  'reminder.sent_bare':       'Class warned.',
+  'reminder.not_sent':        'The reminder did not go out, and the class was not warned',
+  'reminder.send_failed':     'Could not send the reminder',
+
   // Alunos (student access) admin section
   'alunos.title': 'Users',
   'alunos.turma':        'Class',

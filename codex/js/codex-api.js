@@ -186,6 +186,9 @@ export const cohorts = {
   createAula:      (p) => call('ct_create_aula', p),
   updateAula:      (p) => call('ct_update_aula', p),
   deleteAula:      (p) => call('ct_delete_aula', p),           // { id }
+  // track-55: the ONLY path that mails a class reminder outside the daily sweep. Saving an aula
+  // answers `reminder` (imminent + who it would reach) and sends nothing; this is the admin's yes.
+  sendAulaReminder: (p) => call('ct_send_aula_reminder', p),   // { id }
   reorderAulas:    (p) => call('ct_reorder_aulas', p),         // { client_slug, turma_slug, ordered_ids: [aula_id...] } — renumbers + remaps release/plan bindings in lockstep
   // Participant roster (API.md — Participant Roster, ct_* family, auth required)
   listParticipants:   (p) => call('ct_list_participants', p),  // { turma_id }

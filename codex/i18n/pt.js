@@ -59,6 +59,29 @@ export default {
   'notif.tier_act':   'Acionáveis',
   'notif.tier_dismiss': 'Dispensáveis',
 
+  // Aviso de aula em cima da hora (track-55, shared js/aula-reminder-prompt.js). Fala em "menos
+  // de 24 horas" e nunca em "amanhã": a aula pode ser HOJE, e a pergunta só aparece quando a
+  // varredura diária já não alcança a data.
+  'reminder.ask_title':       'Avisar a turma agora?',
+  'reminder.ask_what':        'A aula {aula} é {when}, ou seja, faltam menos de 24 horas.',
+  'reminder.ask_reach':       'Avisar agora envia {reach}.',
+  'reminder.ask_consequence': 'Se não avisar agora, ninguém será avisado desta aula: o envio automático varre uma data só na véspera, e essa passagem já aconteceu.',
+  'reminder.when_today':      'hoje',
+  'reminder.when_tomorrow':   'amanhã',
+  'reminder.at':              'às',
+  'reminder.and':             'e',
+  'reminder.unit_email':      'e-mail',
+  'reminder.unit_emails':     'e-mails',
+  'reminder.unit_push':       'push',
+  'reminder.skip':            'Não avisar',
+  'reminder.send_now':        'Avisar agora',
+  'reminder.sending':         'Enviando…',
+  'reminder.skipped':         'Ninguém foi avisado desta aula.',
+  'reminder.sent':            'Turma avisada: {reach}.',
+  'reminder.sent_bare':       'Turma avisada.',
+  'reminder.not_sent':        'O aviso não saiu, e a turma não foi avisada',
+  'reminder.send_failed':     'Falha ao enviar o aviso',
+
   // Alunos (student access) admin section
   'alunos.title':        'Usuários',
   'alunos.turma':        'Turma',

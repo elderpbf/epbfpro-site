@@ -22,6 +22,7 @@ import { openModal, closeModal } from '../js/modal.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import * as driveViewer from '../js/drive-viewer.js';
 import { normalize } from '../js/text-search.js';
+import { promptAulaReminder } from '../js/aula-reminder-prompt.js';
 
 const LS_CLIENT = 'ct_admin_releases_last_client';
 const LS_TURMA = 'ct_admin_releases_last_turma';
@@ -704,6 +705,7 @@ function _markAulaHappened(aulaId) {
     aula.happened_on = aula.scheduled_for;
     toast.ok(t('releases.mark_happened_done'));
     _renderList();
+    promptAulaReminder(r && r.reminder);
   }).catch((err) => notice.internal(_err(err)));
 }
 
