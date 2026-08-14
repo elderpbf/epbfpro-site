@@ -24,6 +24,9 @@
 import { esc as _esc } from '../js/dom.js';
 import { content as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { openModal, closeModal } from '../js/modal.js';
+import * as toast from '../js/toast.js';
+import * as notice from '../js/notice.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import {
   sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, shiftIndent, MAX_INDENT,
@@ -75,6 +78,9 @@ export function mount(host, opts = {}) {
       // when the row did not come from the server (picked from the pool, created here, or an
       // older Worker): "I do not know" must not read as "it lives nowhere".
       parents: c.parents != null ? Number(c.parents) : null,
+      // "Only ever delivered inside a package" (track-61, Élder 2026-08-14). A property of the
+      // ITEM: it may still live in several packages, it just never gets a release of its own.
+      bundleOnly: !!(c.bundle_only || c.bundleOnly),
     };
   }
 
@@ -114,18 +120,87 @@ export function mount(host, opts = {}) {
     }).join('');
   }
 
-  // The selected member's other homes, next to the Remove button that would take this one away.
-  // "Só existe neste pacote" is the warning Élder asked for (task #31); "está em N pacotes" is
-  // its calm sibling, said so the ABSENCE of the warning is visible too. Nothing is said for a
-  // row the server did not count (parents == null): a new or just-picked member would show a
-  // stale zero, and "I do not know" must never be dressed as a fact.
+  // The selected member's other homes, next to the Remove button that would take this one away,
+  // and the switch that decides whether it may be delivered on its own.
+  //
+  // THE OLD SENTENCE WAS WRONG, and Élder caught it (2026-08-14): it read "Só existe neste
+  // pacote. Remover daqui deixa o item solto no acervo", but `parents` counts ct_item_members
+  // rows and never looks at ct_releases, so an item released by itself in three turmas still
+  // said "só existe neste pacote". And the second half described a transition that never
+  // happens: the item is in the archive from birth, joining a package never took it out. Now
+  // the line reports the count and nothing else, and the exclusivity it used to imply is a
+  // switch the admin actually sets.
+  //
+  // Nothing is said for a row the server did not count (parents == null): a new or just-picked
+  // member would show a stale zero, and "I do not know" must never be dressed as a fact.
   function statusHtml() {
     const c = sel != null ? chosen[sel] : null;
-    if (!c || c.isNew || c.parents == null) return '';
-    const msg = c.parents <= 1
+    if (!c) return '';
+    const box = _bundleOnlyHtml(c);
+    if (c.isNew || c.parents == null) return box;
+    const where = c.parents <= 1
       ? t('editor.members_only_here')
       : t('editor.members_in_packages').replace('{n}', String(c.parents));
-    return '<div class="cdx-mem-status' + (c.parents <= 1 ? ' is-only' : '') + '">' + _esc(msg) + '</div>';
+    const alone = c.bundleOnly ? t('editor.members_bundle_only_on') : t('editor.members_also_alone');
+    return box +
+      '<div class="cdx-mem-status' + (c.bundleOnly ? ' is-only' : '') + '">' +
+        _esc(where) + ' ' + _esc(alone) +
+      '</div>';
+  }
+
+  // The switch itself. Disabled for a member that does not exist on the server yet: the guard it
+  // depends on (is this already released on its own?) is a question only the Worker can answer,
+  // and an item with no id has no releases to conflict with anyway.
+  function _bundleOnlyHtml(c) {
+    const off = c.isNew || c.id == null;
+    return '<label class="cdx-mem-excl' + (off ? ' is-off' : '') + '" title="' + _esc(t('editor.members_bundle_only_hint')) + '">' +
+        '<input type="checkbox" class="cdx-mem-excl-cb"' + (c.bundleOnly ? ' checked' : '') + (off ? ' disabled' : '') + '>' +
+        '<span>' + _esc(t('editor.members_bundle_only')) + '</span>' +
+      '</label>';
+  }
+
+  // Turning it ON over an item that is already released by itself is a QUESTION, not a toggle:
+  // those students have the item today. The Worker refuses and names the turmas (the same shape
+  // ctDeleteItem has always used), and this is the only place that may answer with `force`.
+  function _confirmExclusive(row, turmas) {
+    const list = (turmas || []).map((x) => '<li>' + _esc(x.label) + '</li>').join('');
+    const html =
+      '<div class="cdx-modal cdx-modal--sm">' +
+        '<div class="cdx-modal-title">' + _esc(t('editor.excl_title')) + '</div>' +
+        '<p style="margin:0 0 .6rem;font-size:.88rem;color:var(--text-secondary)">' +
+          _esc(t('editor.excl_msg').replace('{title}', row.title || '').replace('{n}', String((turmas || []).length))) +
+        '</p>' +
+        '<ul class="cdx-mem-excl-list">' + list + '</ul>' +
+        '<p style="margin:.6rem 0 1.2rem;font-size:.82rem;color:var(--text-secondary)">' +
+          _esc(t('editor.excl_consequence')) +
+        '</p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" id="cdx-excl-cancel">' + _esc(t('editor.excl_cancel')) + '</button>' +
+          '<button class="cdx-btn cdx-btn-danger-solid" id="cdx-excl-ok">' + _esc(t('editor.excl_confirm')) + '</button>' +
+        '</div>' +
+      '</div>';
+    const bd = openModal(html, { disableBackdropClose: true });
+    bd.querySelector('#cdx-excl-cancel').addEventListener('click', () => { closeModal(bd); paintList(); });
+    bd.querySelector('#cdx-excl-ok').addEventListener('click', () => {
+      closeModal(bd);
+      _setExclusive(row, true, true);
+    });
+  }
+
+  function _setExclusive(row, on, force) {
+    api.setItemBundleOnly({ id: row.id, bundle_only: on, force: !!force }).then((res) => {
+      if (res && res.error === 'item_released' && !force) { _confirmExclusive(row, res.turmas); return; }
+      if (res && res.error) throw new Error(res.error);
+      row.bundleOnly = on;
+      // The pool row too, so re-opening the picker does not show the old state.
+      const p = pool.find((i) => Number(i.id) === Number(row.id));
+      if (p) p.bundle_only = on ? 1 : 0;
+      toast.ok(t(on ? 'editor.excl_on' : 'editor.excl_off'));
+      paintList();
+    }).catch((err) => {
+      notice.internal(t('editor.excl_failed') + ': ' + (err.message || err));
+      paintList();
+    });
   }
 
   // The action bar. Every button reads the SAME rule the move uses, so a live button never no-ops
@@ -237,6 +312,12 @@ export function mount(host, opts = {}) {
         sel = (sel === i) ? null : i;    // clicking the same row again clears the selection
         paintList();
       });
+    });
+    const excl = host.querySelector('.cdx-mem-excl-cb');
+    if (excl) excl.addEventListener('change', () => {
+      const c = sel != null ? chosen[sel] : null;
+      if (!c || c.id == null) return;
+      _setExclusive(c, excl.checked, false);
     });
     host.querySelectorAll('.cdx-ie-bar button').forEach((b) => {
       b.addEventListener('click', () => {

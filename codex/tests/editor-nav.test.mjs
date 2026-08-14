@@ -108,8 +108,11 @@ test('the selected member says in how many packages it lives, and never guesses'
   // (stale zero dressed as a fact), and a draft reading anything at all.
   assert.ok(/parents:\s*c\.parents != null \? Number\(c\.parents\) : null/.test(src),
     '_norm keeps parents, with null (not 0) for "the server did not say"');
-  assert.ok(/c\.isNew \|\| c\.parents == null\) return ''/.test(src),
-    'no status for drafts or uncounted rows');
+  // track-61 (2026-08-14): the early return now yields the exclusivity checkbox instead of an
+  // empty string. The guarantee is unchanged and is about the COUNT: a draft or an uncounted row
+  // still states no number. What may show is a switch, which asserts nothing about packages.
+  assert.ok(/if \(c\.isNew \|\| c\.parents == null\) return box;/.test(src),
+    'no count for drafts or uncounted rows');
   // One package is the warning; several is said too, so the absence of the warning is visible.
   assert.ok(/editor\.members_only_here/.test(src));
   assert.ok(/editor\.members_in_packages/.test(src));

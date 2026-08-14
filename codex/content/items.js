@@ -309,12 +309,25 @@ function _renderItems() {
   _showPreview(_selectedId);  // sets selection, repaints the rail (is-on), loads the preview
 }
 
+// ONE badge, two places (the rail row and the preview header). Written once because a copy is how
+// the two would end up disagreeing about what the archive is showing.
+function _onlyBadgeHtml(item) {
+  if (!item || !item.bundle_only) return '';
+  return '<span class="cdx-only-badge" title="' + _esc(t('content.bundle_only_title')) + '">' +
+    _esc(t('content.bundle_only_badge')) + '</span>';
+}
+
 function _itemRowMain(item) {
   const meta = _typeMeta(item.type);
   const selected = _selectedIds.has(Number(item.id));
   const setBadge = item.set_id
     ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
     : '';
+  // An item that only travels inside a package STAYS in the archive list (Elder 2026-08-14:
+  // "remain on the list as normal? maybe a tag"). Hiding it here would teach the wrong thing: it
+  // still exists, is still edited here, is still searchable. What it no longer does is appear in
+  // Liberacoes, and this badge is where that becomes visible.
+  const onlyBadge = _onlyBadgeHtml(item);
   const checkHtml = _selectMode
     ? '<span class="cdx-item-check' + (selected ? ' is-checked' : '') + '" aria-hidden="true"></span>'
     : '';
@@ -323,7 +336,7 @@ function _itemRowMain(item) {
       checkHtml +
       '<span class="cdx-item-type-icon">' + meta.iconHtml + '</span>' +
       '<div class="cdx-item-info">' +
-        '<div class="cdx-item-title">' + _esc(item.title) + setBadge + '</div>' +
+        '<div class="cdx-item-title">' + _esc(item.title) + setBadge + onlyBadge + '</div>' +
         '<div class="cdx-item-sub">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</div>' +
       '</div>' +
     '</div>'
@@ -386,11 +399,12 @@ function _renderPreview(item, opts) {
   const setBadge = item.set_id
     ? '<span class="cdx-set-badge" title="' + t('content.set_badge_title') + '">' + t('content.set_badge') + '</span>'
     : '';
+  const onlyBadge = _onlyBadgeHtml(item);
   pane.innerHTML =
     '<div class="cdx-preview-head">' +
       '<span class="cdx-item-type-icon">' + meta.iconHtml + '</span>' +
       '<div class="cdx-preview-head-info">' +
-        '<div class="cdx-preview-title">' + _esc(item.title) + setBadge + '</div>' +
+        '<div class="cdx-preview-title">' + _esc(item.title) + setBadge + onlyBadge + '</div>' +
         '<span class="cdx-preview-type">' + _esc(meta.label) + ' · ' + _esc(_fmtDate(item.updated_at)) + '</span>' +
       '</div>' +
       '<div class="cdx-preview-actions">' +

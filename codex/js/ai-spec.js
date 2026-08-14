@@ -210,10 +210,68 @@
     return parsed;
   }
 
+  // A PACKAGE names itself from what is inside it (track-61, Élder 2026-08-14: "ther shuld be ai
+  // to fill the packages summary description and title").
+  //
+  // Why a separate pair of builders instead of reusing the item ones: the item flow transforms
+  // RAW TEXT the professor pasted, and the package has no raw text. Its input is a list of member
+  // titles, so the task is naming a set, not formatting a document. Feeding the member list into
+  // the item prompt would produce a body that rewrites the members as content, which is exactly
+  // what a package must not do: the members ARE the content, and they live in their own items.
+  //
+  // No `type` in the output, on purpose: the package type is already chosen on screen, and a
+  // model guess there would silently change the box the admin picked.
+  function buildBundleSystemPrompt(typeLabel) {
+    return (
+      'Voce nomeia um PACOTE de material didatico. Um pacote e uma caixa: o conteudo real esta nos\n' +
+      'itens que ele carrega, listados abaixo. Devolva um JSON ESTRITO.\n\n' +
+
+      'FORMATO DE SAIDA (JSON puro, sem ``` nem comentarios):\n' +
+      '{\n' +
+      '  "title":   "...",   // max 80 caracteres. O nome do conjunto, nao a soma dos nomes\n' +
+      '  "summary": "...",   // 1 linha, max 140 caracteres. Para que serve, em uma frase\n' +
+      '  "body_md": "..."    // 1 a 3 paragrafos curtos, o texto que o aluno le ao abrir\n' +
+      '}\n\n' +
+
+      'O QUE ESTE PACOTE E: ' + (typeLabel || 'pacote') + '.\n\n' +
+
+      'REGRAS:\n' +
+      '- Nomeie o CONJUNTO. "Kit de peticao inicial" e um nome; "Modelo, checklist e exemplo" e\n' +
+      '  so a lista de novo.\n' +
+      '- NAO reescreva o conteudo dos itens no body_md, e NAO liste os itens: o aluno ja ve a\n' +
+      '  lista logo abaixo do texto, e repeti-la faz a tela dizer tudo duas vezes.\n' +
+      '- O body_md diz para que serve o conjunto, quando usar, e em que ordem faz sentido abrir.\n' +
+      '- Portugues do Brasil. Fale com o aluno, sem falar sobre si mesmo.\n' +
+      '- Se os itens nao tem nada em comum, diga isso no summary em vez de inventar um tema.\n\n' +
+
+      MARKDOWN_RULES
+    );
+  }
+
+  // The member list as the model sees it, plus whatever the admin already wrote. Existing text is
+  // sent as a HINT and not as something to preserve: the button is "fill this for me", and an
+  // admin who liked what was there would not have pressed it.
+  function buildBundleUserMessage(members, current) {
+    var list = (members || []).map(function (m, i) {
+      var label = m.type_label ? (' [' + m.type_label + ']') : '';
+      return (i + 1) + '. ' + (m.title || '(sem titulo)') + label;
+    }).join('\n');
+    var c = current || {};
+    var hint = '';
+    if ((c.title || '').trim() || (c.summary || '').trim()) {
+      hint = '\n\nO QUE JA ESTA ESCRITO (pode ignorar, e so uma pista da intencao):\n' +
+        'title: ' + ((c.title || '').trim() || '(vazio)') + '\n' +
+        'summary: ' + ((c.summary || '').trim() || '(vazio)');
+    }
+    return 'ITENS DENTRO DESTE PACOTE, na ordem em que o aluno vai ver:\n' + (list || '(nenhum)') + hint;
+  }
+
 export {
   buildSystemPrompt,
   buildRefineSystemPrompt,
   buildRefineUserMessage,
+  buildBundleSystemPrompt,
+  buildBundleUserMessage,
   computeEditDiff,
   parseModelJson,
   looksTruncated,

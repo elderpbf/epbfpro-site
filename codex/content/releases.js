@@ -318,7 +318,10 @@ function _loadReleases(clientSlug, turmaSlug) {
     cohortsApi.listTurmas({ client_slug: clientSlug }),
     cohortsApi.listAulas({ client_slug: clientSlug, turma_slug: turmaSlug }),
   ])).then((results) => {
-    _allItems = (results[0] && results[0].items) || [];
+    // An item marked "only inside a package" never reaches this composer (track-61, Élder
+    // 2026-08-14: "it should not show on the releases list"). The Worker refuses the release
+    // anyway, so this is not the guard; it is the screen not offering a door that is locked.
+    _allItems = ((results[0] && results[0].items) || []).filter((i) => !i.bundle_only);
     _aulas = (results[2] && results[2].aulas) || [];
     const turma = ((results[1] && results[1].turmas) || []).find((tu) => tu.slug === turmaSlug);
     if (!turma) {

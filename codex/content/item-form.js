@@ -280,6 +280,13 @@ function _mountLevel(container, opts) {
           '<div class="cdx-field"><label>' + t('editor.summary_label') + '</label>' +
             '<input type="text" id="ie-summary" value="' + _esc(initialSummary) + '" placeholder="' + _esc(t('editor.summary_placeholder')) + '">' +
           '</div>' +
+          // A package has no pasted text for the AI box to work from: what it has is its member
+          // list, so its naming button reads THAT. Hidden for an ordinary item, where the AI box
+          // above already fills these two fields from the content.
+          '<div class="cdx-ie-nameai" id="ie-nameai" hidden>' +
+            '<button class="cdx-btn cdx-btn-sm" id="ie-nameai-btn" type="button">' + AI_GLYPH + ' ' + _esc(t('editor.name_from_members')) + '</button>' +
+            '<span class="cdx-ie-note">' + _esc(t('editor.name_from_members_hint')) + '</span>' +
+          '</div>' +
           // Type and tags side by side: one full row each pushed the list off the screen, and the
           // wide modal is what makes them fit together.
           '<div class="cdx-ie-row2">' +
@@ -371,6 +378,8 @@ function _mountLevel(container, opts) {
     // reserved for content that is not there is worse than no panel: it reads as broken.
     const split = root.querySelector('#ie-split');
     if (split) split.classList.toggle('is-single', !bundle);
+    const nameAi = root.querySelector('#ie-nameai');
+    if (nameAi) nameAi.hidden = !bundle;
     const block = bundle ? right : left;
     // The ".zip" choice only exists for a package, and it sits under the box it governs.
     root.querySelector('#ie-zipintro').innerHTML = bundle ? buildZipIntro(initialMeta) : '';
@@ -587,6 +596,47 @@ function _mountLevel(container, opts) {
 
   const delEl = root.querySelector('#ie-delete');
   if (delEl) delEl.addEventListener('click', () => opts.onDeleteItem(item));
+
+  // Name the package from what is inside it. The members are read from the live member list, not
+  // from the server, so a package still being assembled names itself from what is on screen.
+  root.querySelector('#ie-nameai-btn').addEventListener('click', async function () {
+    const btn = this;
+    const rows = (_memberCtx.members && _memberCtx.members.rows()) || [];
+    if (!rows.length) { toast.err(t('editor.name_from_members_empty')); return; }
+    const prev = btn.innerHTML;
+    btn.disabled = true;
+    btn.textContent = t('editor.refazer_loading');
+    try {
+      const typeRow = types.find((ty) => ty.slug === typeSel.value);
+      const res = await aiApi.chat(Object.assign({
+        system: aiSpec.buildBundleSystemPrompt(typeRow && typeRow.label),
+        messages: [{ role: 'user', content: aiSpec.buildBundleUserMessage(rows, {
+          title: root.querySelector('#ie-title').value,
+          summary: root.querySelector('#ie-summary').value,
+        }) }],
+        temperature: 0.4,
+        max_tokens: aiSpec.MAX_TOKENS,
+      }, paramsFor(getChoice().id)));
+      if (!res || !res.text) { _logAi('no content', res); notice.internal(t('editor.ai_no_content')); return; }
+      const parsed = aiSpec.parseModelJson(res.text);
+      if (!parsed || !parsed.title) { _logAi('unparseable / no title', res); notice.internal(t('editor.ai_bad_format')); return; }
+      root.querySelector('#ie-title').value = parsed.title || '';
+      root.querySelector('#ie-summary').value = parsed.summary || '';
+      // The presentation text is written only when the model produced one, so a package that
+      // already carries a hand-written introduction does not lose it to an empty field.
+      const bodyEl = root.querySelector('#ie-body');
+      if (bodyEl && parsed.body_md) { bodyEl.value = parsed.body_md; _bodyCarry = parsed.body_md; }
+      _syncHeader();
+      markDirty();
+      toast.ok(t('editor.name_from_members_done'));
+    } catch (e) {
+      _logAi('exception', null);
+      notice.internal(_err(e));
+    } finally {
+      btn.disabled = false;
+      btn.innerHTML = prev;
+    }
+  });
 
   root.querySelector('#ie-refazer-btn').addEventListener('click', async function () {
     if (!_aiCtx) return;

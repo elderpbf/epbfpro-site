@@ -228,7 +228,8 @@
 }
 .cdx-item-tags { display: inline-flex; flex-wrap: wrap; gap: 0.3rem; margin-top: 0.35rem; }
 
-.cdx-set-badge {
+.cdx-set-badge,
+.cdx-only-badge {
   font-size: 0.7rem;
   padding: 0.1rem 0.4rem;
   border-radius: 4px;
@@ -237,6 +238,34 @@
   color: var(--text-secondary);
   font-weight: 500;
 }
+/* "Only inside a package": the SAME badge, tinted with the accent already in the palette. It is a
+   state the admin chose, not a warning, so it does not borrow --danger. */
+.cdx-only-badge {
+  margin-left: 0.3rem;
+  background: color-mix(in srgb, var(--primary) 12%, transparent);
+  border-color: color-mix(in srgb, var(--primary) 35%, transparent);
+  color: var(--primary);
+}
+
+/* The exclusivity switch under the member action bar, and the list of turmas the refusal names. */
+.cdx-mem-excl {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  margin: 0.45rem 0 0;
+  font-size: 0.8rem;
+  color: var(--text-secondary);
+  cursor: pointer;
+}
+.cdx-mem-excl.is-off { opacity: 0.55; cursor: default; }
+.cdx-mem-excl-list {
+  margin: 0;
+  padding-left: 1.1rem;
+  font-size: 0.85rem;
+  color: var(--text-primary);
+}
+/* The AI naming row for a package, under the summary field it fills. */
+.cdx-ie-nameai { display: flex; align-items: center; gap: 0.5rem; margin: -0.2rem 0 0.8rem; flex-wrap: wrap; }
 
 /* ── Canonical off-Items chip (Phase 4) ──────────────────────────────────────
    One pill skin shared by the static count/status chips OUTSIDE the frozen
