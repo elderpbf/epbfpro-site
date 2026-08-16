@@ -12,6 +12,7 @@ import pt from '../i18n/pt.js';
 import en from '../i18n/en.js';
 import { buildBundleSystemPrompt, buildBundleUserMessage } from '../js/ai-spec.js';
 import { filterLibraryItems } from '../js/item-list.js';
+import { canToggleExclusive, conflictFrom } from '../content/item-members.js';
 
 // CRLF is normalized on read: a checkout on Windows stores \r\n, and a source assertion written
 // with \n silently fails there while passing in CI. The deploy gate caught exactly this in the
@@ -52,13 +53,63 @@ test('the flag is set through the facade, never by a direct worker call', () => 
   assert.ok(!/\bcallWorker\s*\(/.test(members));
 });
 
-test('an unsaved member cannot be marked: the guard is a question only the server can answer', () => {
-  assert.match(members, /const off = c\.isNew \|\| c\.id == null;/);
-  assert.match(members, /disabled/);
+// ── the two defects the browser found on 2026-08-16 ──────────────────────────────────
+// Both were invisible to source-shaped tests, so these are behavioural: they call the real
+// functions with the real shapes the app produces.
+
+test('a member whose MEMBERSHIP is not saved yet cannot be marked', () => {
+  // The orphan bug: the flag is written to the server on tick, the membership only on Save. Tick
+  // a just-picked member, cancel the edit, and the item is bundle-only inside no package at all,
+  // which means invisible in Liberações and deliverable nowhere. `isNew` never caught it: an item
+  // picked from the pool has a real id and is not new, only its place in this package is.
+  assert.equal(canToggleExclusive({ id: 7, persisted: true }), true);
+  assert.equal(canToggleExclusive({ id: 7, persisted: false }), false, 'just picked from the pool');
+  assert.equal(canToggleExclusive({ id: 7, persisted: true, isNew: true }), false);
+  assert.equal(canToggleExclusive({ id: null, persisted: true }), false, 'created here, no id yet');
+  assert.equal(canToggleExclusive(null), false);
+});
+
+test('only the rows the server handed us count as saved memberships', () => {
+  assert.match(members, /\(opts\.children \|\| \[\]\)\.map\(\(c\) => _norm\(c, true\)\)/);
+  // Everything added later goes through the one-argument call, so persisted stays false.
+  assert.match(members, /chosen\.push\(_norm\(src\)\)/);
+  assert.match(members, /chosen\.push\(_norm\(entry\)\)/);
+});
+
+test('the checkbox and the write agree about who may toggle', () => {
+  // A disabled input fires no change event, but the handler must not depend on that: the two
+  // rules being the same function is what keeps them from drifting apart.
+  assert.match(members, /if \(!canToggleExclusive\(c\)\)/);
+  assert.match(members, /const on = canToggleExclusive\(c\);/);
+});
+
+test('the conflict is read from the THROW, because that is how the refusal arrives', () => {
+  // worker-call.js turns any {error} payload into an Error carrying .data, so a check on the
+  // resolved value can never run. That is the bug that made the dialog unreachable: the admin got
+  // the raw string "item_released" in a notice instead of the question.
+  const err = Object.assign(new Error('item_released'), {
+    data: { error: 'item_released', released_count: 1, turmas: [{ label: 'Teste · Turma 2' }] },
+  });
+  const c = conflictFrom(err);
+  assert.equal(c.count, 1);
+  assert.equal(c.turmas[0].label, 'Teste · Turma 2');
+});
+
+test('anything that is not that refusal stays a real failure', () => {
+  assert.equal(conflictFrom(new Error('boom')), null);
+  assert.equal(conflictFrom(Object.assign(new Error('x'), { data: { error: 'item not found' } })), null);
+  assert.equal(conflictFrom(null), null);
+});
+
+test('a FORCED attempt that still refuses is an error, never a second dialog', () => {
+  // Otherwise a refusal the force cannot clear would loop the admin through the same box.
+  assert.match(members, /const conflict = force \? null : conflictFrom\(err\);/);
 });
 
 test('turning it on over a live release asks first, and only the dialog may force', () => {
-  assert.match(members, /error === 'item_released' && !force/);
+  // This test USED to assert `res.error === 'item_released' && !force` and passed while the
+  // dialog was unreachable, because that branch was dead code. Asserting the shape of a check is
+  // worthless if the check never runs; the behavioural version is conflictFrom() below.
   assert.match(members, /_confirmExclusive/);
   assert.match(members, /_setExclusive\(row, true, true\)/);
   // Clicking beside the box must not answer a question that deletes releases.

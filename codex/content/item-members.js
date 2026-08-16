@@ -48,9 +48,37 @@ export function guideHtml(guides, isLast, depth) {
   return cols + '<span class="cdx-mem-elbow' + (isLast ? ' is-last' : '') + '"></span>';
 }
 
+// PURE. May this row's exclusivity be toggled right now?
+//
+// The answer is NOT "does the item exist". It is "is this MEMBERSHIP already saved". The flag is
+// written to the server the moment it is ticked, while the membership is only written by the
+// package's own Save, so ticking it on a member picked a second ago and then cancelling the edit
+// leaves an item that is bundle-only and belongs to NO package: invisible in Liberações, orphaned,
+// with nothing on screen to say so. Found by the QA pass on 2026-08-16, which orphaned item 900018
+// exactly this way. `isNew` alone did not catch it: an item picked from the pool has a real id and
+// is not new, only its place in this package is.
+export function canToggleExclusive(row) {
+  return !!(row && row.id != null && row.persisted && !row.isNew);
+}
+
+// PURE. What a refusal from setItemBundleOnly means.
+//
+// The Worker's soft conflicts arrive as a THROW, never as a resolved value: js/worker-call.js
+// turns ANY payload carrying `error` into an Error and hangs the whole payload on `.data`. Reading
+// `res.error` inside .then() is therefore dead code, which is exactly the bug the QA pass found on
+// 2026-08-16: every conflict fell into .catch() and the admin got the raw string "item_released"
+// instead of the dialog. The house pattern is content/items.js's force-delete, which reads
+// `e.data` in the catch, and this is the same read made testable.
+export function conflictFrom(err) {
+  const d = err && err.data;
+  if (!d || d.error !== 'item_released') return null;
+  return { turmas: d.turmas || [], count: d.released_count || 0 };
+}
+
 export function mount(host, opts = {}) {
   const parentId = opts.parentId || null;
-  let chosen = (opts.children || []).map(_norm);
+  // The server's own list: these memberships exist. Anything added later does not, until Save.
+  let chosen = (opts.children || []).map((c) => _norm(c, true));
   let pool = [];
   let types = [];
   let query = '';
@@ -66,7 +94,7 @@ export function mount(host, opts = {}) {
   // so a refusal is a greyed button instead of a dead click.
   const canOpen = typeof opts.canOpen === 'function' ? opts.canOpen : () => true;
 
-  function _norm(c) {
+  function _norm(c, persisted) {
     const key = c.key != null ? c.key : Number(c.id);
     return {
       key,
@@ -82,6 +110,10 @@ export function mount(host, opts = {}) {
       // "Only ever delivered inside a package" (track-61, Élder 2026-08-14). A property of the
       // ITEM: it may still live in several packages, it just never gets a release of its own.
       bundleOnly: !!(c.bundle_only || c.bundleOnly),
+      // Is this MEMBERSHIP on the server already? Only the rows the server handed us. See
+      // canToggleExclusive: this is what stops a tick from orphaning an item that was never saved
+      // into the package.
+      persisted: !!persisted,
     };
   }
 
@@ -153,9 +185,10 @@ export function mount(host, opts = {}) {
   // depends on (is this already released on its own?) is a question only the Worker can answer,
   // and an item with no id has no releases to conflict with anyway.
   function _bundleOnlyHtml(c) {
-    const off = c.isNew || c.id == null;
-    return '<label class="cdx-mem-excl' + (off ? ' is-off' : '') + '" title="' + _esc(t('editor.members_bundle_only_hint')) + '">' +
-        '<input type="checkbox" class="cdx-mem-excl-cb"' + (c.bundleOnly ? ' checked' : '') + (off ? ' disabled' : '') + '>' +
+    const on = canToggleExclusive(c);
+    const hint = on ? t('editor.members_bundle_only_hint') : t('editor.members_bundle_only_unsaved');
+    return '<label class="cdx-mem-excl' + (on ? '' : ' is-off') + '" title="' + _esc(hint) + '">' +
+        '<input type="checkbox" class="cdx-mem-excl-cb"' + (c.bundleOnly ? ' checked' : '') + (on ? '' : ' disabled') + '>' +
         '<span>' + _esc(t('editor.members_bundle_only')) + '</span>' +
       '</label>';
   }
@@ -190,7 +223,6 @@ export function mount(host, opts = {}) {
 
   function _setExclusive(row, on, force) {
     api.setItemBundleOnly({ id: row.id, bundle_only: on, force: !!force }).then((res) => {
-      if (res && res.error === 'item_released' && !force) { _confirmExclusive(row, res.turmas); return; }
       if (res && res.error) throw new Error(res.error);
       row.bundleOnly = on;
       // The pool row too, so re-opening the picker does not show the old state.
@@ -199,6 +231,11 @@ export function mount(host, opts = {}) {
       toast.ok(t(on ? 'editor.excl_on' : 'editor.excl_off'));
       paintList();
     }).catch((err) => {
+      // The refusal arrives HERE, not in the resolve: worker-call.js throws on any {error}
+      // payload and carries it on err.data. Only an unforced attempt may open the dialog; a
+      // forced one that still refuses is a real failure and must read as one.
+      const conflict = force ? null : conflictFrom(err);
+      if (conflict) { _confirmExclusive(row, conflict.turmas); return; }
       notice.internal(t('editor.excl_failed') + ': ' + (err.message || err));
       paintList();
     });
@@ -322,7 +359,9 @@ export function mount(host, opts = {}) {
     const excl = host.querySelector('.cdx-mem-excl-cb');
     if (excl) excl.addEventListener('change', () => {
       const c = sel != null ? chosen[sel] : null;
-      if (!c || c.id == null) return;
+      // The same rule the disabled attribute uses. A disabled input fires nothing, but the two
+      // must not be able to disagree: one of them is what actually writes to the server.
+      if (!canToggleExclusive(c)) { excl.checked = !!(c && c.bundleOnly); return; }
       _setExclusive(c, excl.checked, false);
     });
     host.querySelectorAll('.cdx-ie-bar button').forEach((b) => {
