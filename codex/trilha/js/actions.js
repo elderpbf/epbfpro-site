@@ -12,7 +12,7 @@ import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
 import { downloadText, fileNameFromTitle, isDownloadable, isVerbatim } from '../../js/item-download.js';
-import { downloadItemPdf } from '../../js/item-pdf.js';
+import { downloadItemPdf, itemPdfBytes } from '../../js/item-pdf.js';
 import { downloadZip } from '../../js/item-zip.js';
 import { trail } from './api.js';
 import * as toast from '../../js/toast.js';
@@ -225,7 +225,26 @@ export async function downloadProject(project) {
     trail.itemPublic(Object.assign({ item_id: p.id, _silent: true }, base))
       .then((r) => (r && r.item ? Object.assign({ _dir: p.dir || '' }, r.item) : null))
       .catch(() => null)));
-  const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md, dir: i._dir }));
+  // Same format rule inside the package as outside it. Élder, 2026-08-16: "md has no rich text,
+  // that's why I chose pdf; the actual prompts are in md". So a prompt travels as .md, because
+  // its whole purpose is to be pasted into an AI character for character, and everything meant
+  // to be READ travels as a formatted PDF. This closes track-61 §13.2, which had been left open
+  // deliberately rather than decided for him.
+  const texts = got.filter((i) => i && i.body_md);
+  const entries = [];
+  let pdfFailed = 0;
+  for (const i of texts) {
+    if (isVerbatim(i)) { entries.push({ title: i.title, text: i.body_md, dir: i._dir }); continue; }
+    try {
+      entries.push({ name: fileNameFromTitle(i.title, 'pdf'), bytes: await itemPdfBytes(i), dir: i._dir });
+    } catch (e) {
+      // A PDF that fails to render must not swallow the author's text: it goes in as .md and
+      // the count says the package is not what it should have been.
+      pdfFailed++;
+      entries.push({ title: i.title, text: i.body_md, dir: i._dir });
+      if (window.bsLog) window.bsLog('zip pdf failed for ' + i.id + ': ' + (e && e.message), 'error');
+    }
+  }
   // The attached FILES go in too. Until now the zip carried only typed text, so an item with a
   // PDF or a spreadsheet attached went into the package without it and the zip still looked
   // complete. /r2/ answers with Access-Control-Allow-Origin: *, so this is a plain fetch and
@@ -254,6 +273,11 @@ export async function downloadProject(project) {
   const failed = got.filter((i) => !i).length + filesFailed;
   if (failed) {
     toast.err('O pacote saiu sem ' + failed + (failed === 1 ? ' arquivo.' : ' arquivos.'));
+  }
+  if (pdfFailed) {
+    toast.err(pdfFailed === 1
+      ? '1 item saiu como .md porque o PDF falhou.'
+      : pdfFailed + ' itens sairam como .md porque o PDF falhou.');
   }
   // What doesn't fit in a file is stated, not hidden: a zip with fewer items than the
   // folder shows would pass as complete. Nothing takes their place ("we're not going to

@@ -4,6 +4,7 @@
 // verified visually on staging.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
+import { readFile } from 'node:fs/promises';
 import { getItemAction, getItemActions, getMeta } from '../trilha/js/actions.js';
 import { isFresh, countFreshIn } from '../trilha/js/freshness.js';
 import { state } from '../trilha/js/state.js';
@@ -210,6 +211,18 @@ test('getItemActions: processed content gets PDF, never .md', () => {
   assert.deepEqual(as.map((a) => a.label), ['Copiar', 'Baixar PDF']);
   assert.equal(as.filter((a) => a.kind === 'download-md').length, 0, 'no .md for processed text');
 });
+// The package obeys the SAME format rule as the single item. Élder, 2026-08-16: "md has no rich
+// text, that's why I chose pdf; the actual prompts are in md". downloadProject drives fetch, the
+// trail API and jsPDF, so this is a source guard: what must never silently return is the zip
+// flattening everything back to .md.
+test('the package zip applies the verbatim rule too, not a blanket .md', async () => {
+  const src = await readFile(new URL('../trilha/js/actions.js', import.meta.url), 'utf8');
+  const fn = src.slice(src.indexOf('export async function downloadProject'));
+  assert.match(fn, /isVerbatim\(/, 'the package branches on the verbatim flag');
+  assert.match(fn, /itemPdfBytes\(/, 'processed text is rendered to PDF for the zip');
+  assert.match(fn, /pdfFailed/, 'a failed PDF falls back to .md and is counted, not swallowed');
+});
+
 test('getItemActions: the two formats never appear together on one item', () => {
   // "se o usuário vê o markdown processado ... deve ser pdf. se vê os símbolos, então é md":
   // one or the other, decided by the verbatim flag, never both.
