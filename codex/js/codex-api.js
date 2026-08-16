@@ -303,8 +303,8 @@ export const content = {
   uploadAsset:     (p) => call('ct_upload_asset', p),       // { item_id, filename, content_b64 }
   ingestGdoc:      (p) => call('ct_ingest_gdoc', p),        // { url, mode }
   listTypes:       (p) => call('ct_list_types', p),
-  createType:      (p) => call('ct_create_type', p),        // { slug, label, icon? }
-  updateType:      (p) => call('ct_update_type', p),        // { slug, label?, icon? } icon = "glyph:<key>"
+  createType:      (p) => call('ct_create_type', p),        // { slug, label, icon?, family? } family = 'item' | 'bundle' (a bundle holds other items)
+  updateType:      (p) => call('ct_update_type', p),        // { slug, label?, icon?, family? } icon = "glyph:<key>"; family = 'item' | 'bundle'
   deleteType:      (p) => call('ct_delete_type', p),        // { slug } -> { error:'type_in_use', count } if used
   listTags:        (p) => call('ct_list_tags', p),
   createTag:       (p) => call('ct_create_tag', p),         // { label }

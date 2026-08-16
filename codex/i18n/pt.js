@@ -865,6 +865,12 @@ export default {
   'content.type_icon':            'Ícone',
   'content.type_created':         'Tipo criado.',
   'content.name_required':        'Nome obrigatório.',
+  'content.type_is_bundle':       'Este tipo guarda outros itens',
+  'content.type_is_bundle_hint':  'Um pacote não tem conteúdo próprio: o corpo apresenta os itens que estão dentro dele, e o aluno baixa todos de uma vez.',
+  'content.type_bundle_badge':    'Pacote',
+  'content.type_make_bundle':     'Virar pacote',
+  'content.type_make_item':       'Virar item comum',
+  'content.type_bundle_in_use':   'Não dá para tirar: {n} pacote(s) deste tipo ainda têm itens dentro. Esvazie-os primeiro.',
 
   // Content → Items — types manager + glyph picker
   'content.manage_types':         'Gerenciar tipos',

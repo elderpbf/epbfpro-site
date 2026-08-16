@@ -859,6 +859,12 @@ export default {
   'content.type_icon':            'Icon',
   'content.type_created':         'Type created.',
   'content.name_required':        'Name required.',
+  'content.type_is_bundle':       'This type holds other items',
+  'content.type_is_bundle_hint':  'A package has no content of its own: the body introduces the items inside it, and the student downloads them all at once.',
+  'content.type_bundle_badge':    'Package',
+  'content.type_make_bundle':     'Make it a package',
+  'content.type_make_item':       'Make it a plain item',
+  'content.type_bundle_in_use':   'Cannot remove: {n} package(s) of this type still hold items. Empty them first.',
 
   // Content → Items — types manager + glyph picker
   'content.manage_types':         'Manage types',
