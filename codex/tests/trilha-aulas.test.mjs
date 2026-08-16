@@ -86,12 +86,14 @@ test('getItemActions: attachment + body deliver Baixar AND Copiar (used to be Ba
   const as = getItemActions({ type: 'prompt', title: 'P', body_md: 'instrucao', meta_json: { attachment_url: 'base.pdf' } });
   assert.deepEqual(as.map((a) => a.label), ['Baixar', 'Copiar', 'Baixar .md']);
 });
-test('getItemActions: pdf + attachment + doc + body deliver all four, in that order', () => {
+test('getItemActions: pdf + attachment + doc + body deliver all five, in that order', () => {
+  // The last one is the GENERATED pdf of the body, which is a different thing from the
+  // `pdf_url` attachment at the front of the list. Both can legitimately exist on one item.
   const as = getItemActions({
     type: 'x', body_md: 'txt',
     meta_json: { pdf_url: 'a.pdf', attachment_url: 'b.zip', doc_url: 'https://d' },
   });
-  assert.deepEqual(as.map((a) => a.label), ['Baixar PDF', 'Baixar', 'Documentação', 'Copiar']);
+  assert.deepEqual(as.map((a) => a.label), ['Baixar PDF', 'Baixar', 'Documentação', 'Copiar', 'Baixar PDF']);
 });
 // The first action is still what the closed row used to show alone, so a single-action
 // item does not change at all.
@@ -201,9 +203,27 @@ test('getItemActions: prompt delivers Copiar AND Baixar .md', () => {
   const as = getItemActions({ type: 'prompt', title: '# Prompt: X', body_md: 'faca isto' });
   assert.deepEqual(as.map((a) => a.label), ['Copiar', 'Baixar .md']);
 });
-test('getItemActions: processed content does NOT get .md (comes out as PDF, its own slice)', () => {
+// The other half of Élder's rule, built 2026-08-16. Until then processed content offered no
+// download at all, so the only way out of it was Copiar.
+test('getItemActions: processed content gets PDF, never .md', () => {
   const as = getItemActions({ type: 'conteudo', title: 'Aula 1', body_md: '# titulo' });
-  assert.deepEqual(as.map((a) => a.label), ['Copiar']);
+  assert.deepEqual(as.map((a) => a.label), ['Copiar', 'Baixar PDF']);
+  assert.equal(as.filter((a) => a.kind === 'download-md').length, 0, 'no .md for processed text');
+});
+test('getItemActions: the two formats never appear together on one item', () => {
+  // "se o usuário vê o markdown processado ... deve ser pdf. se vê os símbolos, então é md":
+  // one or the other, decided by the verbatim flag, never both.
+  for (const item of [
+    { type: 'prompt', title: 'P', body_md: 'x' },
+    { type: 'conteudo', title: 'C', body_md: 'x' },
+    { type: 'conteudo', title: 'C', body_md: 'x', meta_json: { verbatim: true } },
+    { type: 'prompt', title: 'P', body_md: 'x', meta_json: { verbatim: false } },
+  ]) {
+    const kinds = getItemActions(item).map((a) => a.kind);
+    const md = kinds.filter((k) => k === 'download-md').length;
+    const pdf = kinds.filter((k) => k === 'download-pdf').length;
+    assert.equal(md + pdf, 1, JSON.stringify(item));
+  }
 });
 // Elder's 3 real items (900028/900029/900030) are all `prompt`: with the .md they end up
 // with TWO actions, which is what finally makes the dropdown show up on a live item.

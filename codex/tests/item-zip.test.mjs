@@ -46,3 +46,39 @@ test('uniqueNames numbers starting from the second collision', () => {
 test('an empty bundle still produces a valid zip', () => {
   assert.deepEqual(Object.keys(unzipSync(buildZip([]))), []);
 });
+
+// ── real files, not just generated text (2026-08-16) ─────────────────────────
+// The zip used to carry ONLY text, so an item with a PDF attached went into the package
+// without it and the zip still passed as complete.
+test('a fetched file goes in under the name its author gave it, bytes intact', () => {
+  const bytes = new Uint8Array([0x25, 0x50, 0x44, 0x46, 0x2D]);
+  const files = unzipSync(buildZip([
+    { title: 'Instrução', text: 'texto' },
+    { name: 'Relatorio Final.pdf', bytes },
+  ]));
+  assert.deepEqual(Object.keys(files).sort(), ['Instrucao.md', 'Relatorio_Final.pdf']);
+  assert.deepEqual(Array.from(files['Relatorio_Final.pdf']), Array.from(bytes));
+});
+
+test('a path in a file name cannot invent a folder', () => {
+  // The name arrives from an R2 key. A separator would create a directory the model does not
+  // have, and `../` would place a file outside the package entirely.
+  const files = unzipSync(buildZip([{ name: '../../etc/passwd', bytes: new Uint8Array([1]) }]));
+  assert.deepEqual(Object.keys(files), ['passwd']);
+});
+
+test('two files with the same name in the same folder do not overwrite each other', () => {
+  const files = unzipSync(buildZip([
+    { name: 'anexo.pdf', bytes: new Uint8Array([1]) },
+    { name: 'anexo.pdf', bytes: new Uint8Array([2]) },
+  ]));
+  assert.deepEqual(Object.keys(files).sort(), ['anexo-2.pdf', 'anexo.pdf']);
+});
+
+test('the same name in DIFFERENT folders stays untouched, as before', () => {
+  const files = unzipSync(buildZip([
+    { name: 'anexo.pdf', bytes: new Uint8Array([1]), dir: 'a/' },
+    { name: 'anexo.pdf', bytes: new Uint8Array([2]), dir: 'b/' },
+  ]));
+  assert.deepEqual(Object.keys(files).sort(), ['a/anexo.pdf', 'b/anexo.pdf']);
+});
