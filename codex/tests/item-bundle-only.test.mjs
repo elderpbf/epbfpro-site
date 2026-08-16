@@ -70,7 +70,10 @@ test('a member whose MEMBERSHIP is not saved yet cannot be marked', () => {
 });
 
 test('only the rows the server handed us count as saved memberships', () => {
-  assert.match(members, /\(opts\.children \|\| \[\]\)\.map\(\(c\) => _norm\(c, true\)\)/);
+  // And a row coming back through the navigation stack keeps its OWN answer: a member picked but
+  // not saved, that then travelled through a draft, must not be promoted to "saved" on the way
+  // back. Trusting the incoming list blindly re-opens the orphan hole for that exact row.
+  assert.match(members, /_norm\(c, c\.persisted === undefined \? true : c\.persisted\)/);
   // Everything added later goes through the one-argument call, so persisted stays false.
   assert.match(members, /chosen\.push\(_norm\(src\)\)/);
   assert.match(members, /chosen\.push\(_norm\(entry\)\)/);

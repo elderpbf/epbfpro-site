@@ -78,7 +78,12 @@ export function conflictFrom(err) {
 export function mount(host, opts = {}) {
   const parentId = opts.parentId || null;
   // The server's own list: these memberships exist. Anything added later does not, until Save.
-  let chosen = (opts.children || []).map((c) => _norm(c, true));
+  //
+  // A row that ALREADY carries `persisted` is a draft coming back from the navigation stack (you
+  // stepped into a member and returned), and it keeps its own answer. Trusting the list blindly
+  // here would re-open the orphan hole for exactly the member that was picked, not saved, and
+  // then travelled through a draft.
+  let chosen = (opts.children || []).map((c) => _norm(c, c.persisted === undefined ? true : c.persisted));
   let pool = [];
   let types = [];
   let query = '';
