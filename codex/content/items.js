@@ -20,6 +20,7 @@ import { renderTypeFilter, applyTypeFilter } from '../js/type-filter.js';
 import { makeMatcher } from '../js/text-search.js';
 import { iconHtml as typeIconHtml, glyphSvg, glyphKeys, GLYPH_PREFIX } from '../js/glyphs.js';
 import { mountRail } from '../js/list-rail.js';
+import { filterLibraryItems } from '../js/item-list.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 
@@ -45,6 +46,8 @@ let _cleanup = [];
 // flows must not offer them; otherwise the AI creator can classify into one (e.g.
 // `conteudo`) and the item gets saved but then filtered out of the grid, which
 // reads as "create did nothing". One source of truth so the two can't drift.
+// The list itself now lives in js/item-list.js, so every picker reads the same rule (2026-08-16).
+// Kept named here because the creator's own list below is derived from it.
 const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
 
 // Tipos que o criador NÃO oferece. Élder 2026-08-05: "labs e interativos não são criados
@@ -56,11 +59,9 @@ const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
 // é o contrário do pedido.
 const NON_CREATABLE_TYPES = NON_LIBRARY_TYPES.concat(['lab', 'interativo']);
 
-// The library grid hides set members and the non-library types above.
-export function filterLibraryItems(items) {
-  return (items || []).filter((it) =>
-    !it.set_id && NON_LIBRARY_TYPES.indexOf(it.type) < 0);
-}
+// The library grid hides set members and the non-library types above. Re-exported, not
+// re-implemented: the package picker needs the identical rule (js/item-list.js).
+export { filterLibraryItems };
 
 // Master-detail selection (exported for tests). The preview always shows a
 // valid item: keep the current selection if it survives the visible list, else

@@ -247,6 +247,22 @@ export function idsInTree(nodes) {
 // tore down ("o erro é criar superfícies não flexíveis de cara, depois dá muito mais
 // trabalho"). The Worker rejects a cycle again on save; this is the screen's version, so it
 // doesn't offer what will come back as an error.
+// WHICH items the archive considers standalone, and therefore the ONLY ones any picker may
+// offer. Moved here from content/items.js on 2026-08-16, when Élder found the package picker
+// listing 146 rows while the Conteúdo tab shows 54: "it should only show the things that show in
+// the content tab". The Items grid had been filtering all along and the picker had not, so the
+// two lists disagreed about what the archive even contains.
+//
+// `conteudo`, `tarefa` and `drive_file` are not standalone library items: a conteudo is a section
+// of a handout, a tarefa is authored in its own bank, a drive_file is a synced mirror. `set_id`
+// means the row belongs to a handout set, which owns its own order and its own screen.
+const NON_LIBRARY_TYPES = ['tarefa', 'conteudo', 'drive_file'];
+
+export function filterLibraryItems(items) {
+  return (items || []).filter((it) =>
+    !it.set_id && NON_LIBRARY_TYPES.indexOf(it.type) < 0);
+}
+
 export function selectableItems(all, parentId, ancestorIds) {
   const barred = new Set([Number(parentId)]);
   (ancestorIds || []).forEach((id) => barred.add(Number(id)));

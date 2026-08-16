@@ -30,6 +30,7 @@ import * as notice from '../js/notice.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import {
   sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, shiftIndent, MAX_INDENT,
+  filterLibraryItems,
 } from '../js/item-list.js';
 import { isDownloadable } from '../js/item-download.js';
 
@@ -228,7 +229,12 @@ export function mount(host, opts = {}) {
   // ── The picker: the SAME sections as Releases, with a checkbox ───────────
   function pickerHtml() {
     const inside = new Set(chosen.map((c) => c.id).filter(Boolean));
-    const eligible = (pool || [])
+    // The SAME archive the Conteúdo tab shows, and nothing else (Élder 2026-08-16: "it should
+    // only show the things that show in the content tab"). Without this the picker listed all
+    // 146 rows including handout sections, tarefas and synced Drive files, none of which the
+    // archive screen has ever shown, and the same section title appeared several times because
+    // old import runs left copies behind that only this list could see.
+    const eligible = filterLibraryItems(pool)
       .filter((i) => Number(i.id) !== Number(parentId))
       .filter((i) => matchesQuery(i, query));
     const sections = sectionsByType(eligible, { types, labelOf: _typeLabel, iconOf: _typeIcon });

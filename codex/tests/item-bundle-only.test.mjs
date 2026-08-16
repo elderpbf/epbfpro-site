@@ -11,6 +11,7 @@ import { fileURLToPath } from 'node:url';
 import pt from '../i18n/pt.js';
 import en from '../i18n/en.js';
 import { buildBundleSystemPrompt, buildBundleUserMessage } from '../js/ai-spec.js';
+import { filterLibraryItems } from '../js/item-list.js';
 
 // CRLF is normalized on read: a checkout on Windows stores \r\n, and a source assertion written
 // with \n silently fails there while passing in CI. The deploy gate caught exactly this in the
@@ -136,4 +137,34 @@ test('every new key is in BOTH dictionaries', () => {
   const keys = Object.keys(pt).filter((k) => /^(editor\.(excl_|members_bundle_only|members_also_alone|name_from_members)|content\.bundle_only)/.test(k));
   assert.ok(keys.length >= 15);
   for (const k of keys) assert.ok(k in en, `${k} missing from en`);
+});
+
+// ── the picker shows the archive, not the database ────────────────────────────────────
+// Élder 2026-08-16: the package picker listed 146 rows while the Conteúdo tab shows 54, and the
+// same handout section appeared three times. The Items grid had been filtering all along
+// (set members, tarefa, conteudo, drive_file) and the picker had not.
+
+test('the picker offers exactly what the archive screen shows', () => {
+  const list = read('../js/item-list.js');
+  assert.match(list, /export function filterLibraryItems/);
+  assert.match(members, /filterLibraryItems\(pool\)/);
+});
+
+test('the rule is one function, not two copies that drift', () => {
+  const itemsSrc = read('../content/items.js');
+  assert.match(itemsSrc, /export \{ filterLibraryItems \};/);
+  assert.ok(!/export function filterLibraryItems/.test(itemsSrc), 'items.js re-exports, never reimplements');
+  assert.match(itemsSrc, /from '\.\.\/js\/item-list\.js'/);
+});
+
+test('the filter still hides exactly what it hid before the move', () => {
+  const input = [
+    { id: 1, type: 'prompt' },
+    { id: 2, type: 'conteudo' },
+    { id: 3, type: 'tarefa' },
+    { id: 4, type: 'drive_file' },
+    { id: 5, type: 'prompt', set_id: 7 },
+    { id: 6, type: 'pasta' },
+  ];
+  assert.deepEqual(filterLibraryItems(input).map((i) => i.id), [1, 6]);
 });
