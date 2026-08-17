@@ -29,6 +29,7 @@ import {
   sectionsByType, matchesQuery, guidesFromIndent, maxIndentFor, removeAt, shiftIndent, MAX_INDENT,
 } from '../js/item-list.js';
 import { isDownloadable } from '../js/item-download.js';
+import { pickerRowHtml, pickerGroupsHtml } from '../js/item-picker.js';
 
 // The indent cap lives in the list engine (js/item-list.js) and is re-exported here only for
 // whoever already imported it from here. One number for the editor, the trail and the CSS.
@@ -158,26 +159,24 @@ export function mount(host, opts = {}) {
       .filter((i) => matchesQuery(i, query));
     const sections = sectionsByType(eligible, { types, labelOf: _typeLabel, iconOf: _typeIcon });
     if (!sections.length) return '<div class="cdx-picker-empty">' + t('editor.members_none') + '</div>';
-    return sections.map((s, idx) => {
-      const open = !!query || idx === 0;
-      const ic = typeIconHtml(s.icon, { size: 14 });
-      const rows = s.items.map((i) => (
-        '<label class="cdx-comp-item cdx-mem-pick" data-id="' + _esc(i.id) + '">' +
-          '<input type="checkbox" class="cdx-mem-cb" value="' + _esc(i.id) + '"' + (inside.has(Number(i.id)) ? ' checked' : '') + '>' +
-          '<span>' + _esc(i.title) +
-            (isDownloadable(i) ? '' : ' <span class="cdx-comp-elsewhere">' + _esc(t('editor.members_no_zip')) + '</span>') +
-          '</span>' +
-        '</label>'
-      )).join('');
-      return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
-          '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '">' +
-            '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
-            (ic ? '<span class="cdx-picker-group-glyph" aria-hidden="true">' + ic + '</span>' : '') +
-            '<span class="cdx-picker-group-name">' + _esc(s.label) + ' (' + s.count + ')</span>' +
-          '</button>' +
-          '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + rows + '</div>' +
-        '</div>';
-    }).join('');
+    // Same painter as Liberações (js/item-picker.js). What is this screen's own is the pool
+    // (everything but the parent itself), and the note: a lab or interativo can live inside a
+    // package but cannot travel in the .zip, and the row says so instead of the download
+    // quietly dropping it.
+    return pickerGroupsHtml(sections.map((s) => ({
+      key: s.key,
+      label: s.label,
+      count: s.count,
+      glyphHtml: typeIconHtml(s.icon, { size: 14 }),
+      rowsHtml: s.items.map((i) => pickerRowHtml({
+        id: i.id,
+        title: i.title,
+        checked: inside.has(Number(i.id)),
+        note: isDownloadable(i) ? '' : t('editor.members_no_zip'),
+        rowClass: 'cdx-comp-item cdx-mem-pick',
+        checkClass: 'cdx-mem-cb',
+      })).join(''),
+    })), { allOpen: !!query, openIndex: 0 });
   }
 
   // The inside list repaints on its own, WITHOUT touching the picker. Élder 2026-08-05:

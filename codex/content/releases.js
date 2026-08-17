@@ -10,6 +10,7 @@ import { t } from '../js/i18n.js';
 import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import { groupByType } from '../js/item-list.js';
+import { pickerRowHtml, pickerGroupsHtml } from '../js/item-picker.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
@@ -782,14 +783,22 @@ function _rowHtml(item, pool, checked, glyphHtml, elsewhereAula) {
   // this aula (it no longer moves the item).
   const elsewhere = Array.isArray(elsewhereAula) ? elsewhereAula : (elsewhereAula != null && elsewhereAula !== '' ? [elsewhereAula] : []);
   const hasElsewhere = elsewhere.length > 0;
-  const grey = hasElsewhere && !checked;
-  return '<label class="cdx-comp-item' + (grey ? ' is-already-released' : '') + '" data-title="' + _esc(normalize(item.title)) + '">' +
-    '<input type="checkbox" class="cdx-comp-cb" data-pool="' + pool + '" value="' + _esc(item.id) + '"' + (checked ? ' checked' : '') + '>' +
-    '<span>' + (glyphHtml ? glyphHtml + ' ' : '') + _esc(item.title) +
-      (hasElsewhere ? ' <span class="cdx-comp-elsewhere">' + _esc(_elsewhereLabel(elsewhere)) + '</span>' : '') +
-    '</span>' +
-    _previewBtnHtml(item.id) +
-  '</label>';
+  // The painter is the shared one (js/item-picker.js). What stays here is the RULE: which items
+  // are in the pool, what the note says, and that the tick lives in the DOM because this
+  // screen's save reads the checkboxes.
+  return pickerRowHtml({
+    id: item.id,
+    title: item.title,
+    iconHtml: glyphHtml,
+    checked,
+    muted: hasElsewhere,
+    note: hasElsewhere ? _elsewhereLabel(elsewhere) : '',
+    rowClass: 'cdx-comp-item',
+    checkClass: 'cdx-comp-cb',
+    checkAttrs: ' data-pool="' + pool + '"',
+    dataAttrs: ' data-title="' + _esc(normalize(item.title)) + '"',
+    trailingHtml: _previewBtnHtml(item.id),
+  });
 }
 
 // Display label for an item type slug. Lab and interativo are SHIPPED types whose
@@ -853,21 +862,15 @@ function _elsewhereLabel(aulas) {
 // already expanded, with a non-interactive header (the copy preview: nothing to
 // collapse, there is no save here); omitted, only the first section starts open
 // and the header is the normal collapse/expand toggle (the real composer).
+// Section count: "liberados/total" for an aula composer (s.releasedCount set), plain total
+// otherwise (e.g. the no-lesson Outros placeholder). The accordion itself is the shared one.
 function _accordionGroupsHtml(sections, opts) {
-  opts = opts || {};
-  return sections.map((s, idx) => {
-    const open = opts.forceOpen || idx === 0;
-    // Section count: "liberados/total" for an aula composer (s.releasedCount set),
-    // plain total otherwise (e.g. the no-lesson Outros placeholder).
-    const cnt = (s.releasedCount != null) ? (s.releasedCount + '/' + s.count) : s.count;
-    return '<div class="cdx-picker-group" data-acc="' + s.key + '">' +
-        '<button type="button" class="cdx-picker-group-label" data-acc-toggle="' + s.key + '" aria-expanded="' + (open ? 'true' : 'false') + '"' + (opts.forceOpen ? ' disabled' : '') + '>' +
-          '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
-          '<span class="cdx-picker-group-name">' + s.label + ' (' + cnt + ')</span>' +
-        '</button>' +
-        '<div class="cdx-picker-group-rows' + (open ? '' : ' is-collapsed') + '">' + s.rowsHtml + '</div>' +
-      '</div>';
-  }).join('');
+  return pickerGroupsHtml(
+    (sections || []).map((s) => ({
+      key: s.key, label: s.label, count: s.count, subCount: s.releasedCount, rowsHtml: s.rowsHtml,
+    })),
+    { forceOpen: !!(opts && opts.forceOpen) },
+  );
 }
 
 function _renderComposerAccordion(container, sections, targetAulaNum) {

@@ -111,6 +111,9 @@ export async function toggleSub(sub, item, opts = {}) {
       token: state.token,
       item_id: item.id,
       session_token: state.sessionToken,
+      // Which lesson the student is looking at. The Worker only honours it when the item is
+      // actually bound to that lesson, so it selects a list and never unlocks one.
+      aula_number: opts.aulaNumber != null ? opts.aulaNumber : undefined,
       _silent: true,
     });
     // Lab content (title/summary/description/objective) comes from the code

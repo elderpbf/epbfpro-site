@@ -192,8 +192,11 @@ function buildAulaBody(aula) {
   body.className = 'cdx-tr-body';
   // Apps sit at the TOP of the lesson, before tarefas, collapsed (Élder).
   if (appsForAula.length) body.appendChild(buildAppSection(appsForAula));
-  if (tarefaItems.length) body.appendChild(buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true }));
-  if (apostilaItems.length) body.appendChild(buildSection('Conteúdo da aula', apostilaItems, { isApostila: true }));
+  // aulaNumber travels with the item so the Worker knows WHICH lesson is being read. A task
+  // can carry different documents in each lesson (Élder 2026-08-05), and until the call said
+  // which lesson it was, the server had two candidate lists and no way to pick.
+  if (tarefaItems.length) body.appendChild(buildSection(tarefaItems.length === 1 ? 'Tarefa' : 'Tarefas', tarefaItems, { isTarefa: true, aulaNumber: aula.aula_number }));
+  if (apostilaItems.length) body.appendChild(buildSection('Conteúdo da aula', apostilaItems, { isApostila: true, aulaNumber: aula.aula_number }));
   if (outrosItems.length) body.appendChild(buildOutrosSection(outrosItems));
   if (!tarefaItems.length && !apostilaItems.length && !outrosItems.length && !appsForAula.length) {
     body.innerHTML = '<div class="cdx-tr-empty">Nenhum conteúdo disponível nesta aula ainda.</div>';

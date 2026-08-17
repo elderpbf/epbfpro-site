@@ -133,9 +133,13 @@ test('track-34: the Labs group shows each lab\'s own emoji, ordered per Content 
 });
 
 test('labs3: each composer section header shows liberados/total for the aula', () => {
-  // The accordion renders "released/total" when a section carries releasedCount,
-  // and plain total otherwise (the no-lesson Outros placeholder).
-  assert.match(relSrc, /s\.releasedCount != null\s*\)\s*\?\s*\(s\.releasedCount \+ '\/' \+ s\.count\)/, 'renders released/total');
+  // The accordion renders "released/total" when a section carries releasedCount, and plain
+  // total otherwise (the no-lesson Outros placeholder). The FORMAT moved into the shared
+  // painter (js/item-picker.js, 2026-08-16) where all three screens now get it; what this
+  // screen still owns, and what would silently drop the counter, is the mapping.
+  assert.match(relSrc, /subCount: s\.releasedCount/, 'passes releasedCount to the shared painter');
+  const pickerSrc = readFileSync(new URL('../js/item-picker.js', import.meta.url), 'utf8');
+  assert.match(pickerSrc, /s\.subCount != null\)\s*\?\s*\(s\.subCount \+ '\/' \+ s\.count\)/, 'renders sub/total');
   // Every real section (apostila, per-type, drive) in the aula composer sets releasedCount
   // from the items bound to THIS aula.
   const aulaBlock = relSrc.slice(relSrc.indexOf('function _renderAulaComposer'), relSrc.indexOf('function _renderOutrosComposer'));
