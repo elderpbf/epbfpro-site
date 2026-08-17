@@ -19,6 +19,18 @@ import { mount as mountMembers } from '../item-members.js';
 import { createDriveSource, pickLocalFile } from '../../js/file-source.js';
 import * as notice from '../../js/notice.js';
 
+// Types whose content IS a file to download. `arquivo` was the only one, hardcoded, and the
+// first custom type Élder created (`skill`, a .zip of a Claude skill) landed with NO file field
+// at all: the editor draws a block per known slug and a type it has never heard of gets none.
+// The symptom is not obvious from the screen: the item saves fine and the trail simply never
+// grows a Baixar button, because meta_json.attachment_url was never written.
+//
+// A list, not a general rule, ON PURPOSE: making every unknown type carry a file would also
+// hand one to `conteudo` (42 live items), `link`, `dica` and the rest. The real fix is a
+// per-type capability on ct_types, next to `family`; this is the same shape as `family` and is
+// where that lives when it comes.
+const FILE_TYPES = ['arquivo', 'skill'];
+
 // Google Picker key (for the "from Drive" file option): fetched once from the Worker and read
 // live by the shared Drive source, exactly like the Slides gallery. The Drive button stays
 // hidden until it lands, so the local-upload path always works on its own.
@@ -148,7 +160,7 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
-  if (typeSlug === 'arquivo') {
+  if (FILE_TYPES.indexOf(typeSlug) >= 0) {
     // Any downloadable file (pdf/docx/zip/…), sourced from the computer OR Google Drive via the
     // shared file-source module. The student gets a "Download" action on the trail (actions.js
     // renders attachment_url generically). The Drive button hides until the Picker key lands.
@@ -333,7 +345,7 @@ export function collectTypeData(root, typeSlug) {
     meta_json = (zipEl && !zipEl.checked) ? { zip_intro: false } : {};
   } else if (typeSlug === 'material') {
     meta_json = {};
-  } else if (typeSlug === 'arquivo') {
+  } else if (FILE_TYPES.indexOf(typeSlug) >= 0) {
     meta_json = {}; // attachment_url is set by the pending-file upload on save
   } else if (typeSlug === 'paper') {
     meta_json = {

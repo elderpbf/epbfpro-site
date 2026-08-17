@@ -75,7 +75,12 @@ test('facade exposes the editor backend methods (frozen action strings)', () => 
 test('the type block registers the arquivo type wired to the shared file-source', () => {
   assert.match(typeBlockSrc, /from\s+['"]\.\.\/\.\.\/js\/file-source\.js['"]/, 'imports the shared file-source module');
   assert.match(typeBlockSrc, /createDriveSource|pickLocalFile/, 'uses the shared local + Drive sources');
-  assert.match(typeBlockSrc, /typeSlug === 'arquivo'/, 'has the arquivo editor branch');
+  // The branch is keyed on a LIST now, not on the one slug: the first custom type Élder made
+  // (`skill`, a .zip) got no file field at all, saved clean, and the trail simply never grew a
+  // Baixar button. What must not regress is `arquivo` losing the field, so assert the list
+  // still contains it.
+  assert.match(typeBlockSrc, /const FILE_TYPES = \[[^\]]*'arquivo'/, 'arquivo still carries a file');
+  assert.match(typeBlockSrc, /FILE_TYPES\.indexOf\(typeSlug\) >= 0/, 'the editor branch reads the list');
   assert.match(typeBlockSrc, /onFileSelected\(f, 'attachment_url'\)/, 'the picked file flows into attachment_url (the trail renders it as a download)');
   assert.match(typeBlockSrc, /view: 'any'/, 'the Drive picker browses any file, not just images');
 });
