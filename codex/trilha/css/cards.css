@@ -384,8 +384,10 @@
   box-shadow: 0 3px 12px -4px rgba(16, 185, 129, 0.5);
 }
 
-/* Flat-card action row (was an inline style on appendFlatActionRow). */
-.cdx-tr-flat-action-row { margin-top: 1.1rem; text-align: right; }
+/* The flat card's action now sits in the HEADER beside the chevron, like the Aulas tab's rows.
+   A little air between the button and the chevron, nothing else: `.cdx-tr-actions` already is
+   the same non-shrinking flex row as `.cdx-tr-sub-actions`. */
+.cdx-tr-flat-action { display: inline-flex; align-items: center; margin-right: 0.5rem; }
 
 /* ── Card list (Apostila + Outros tabs) ──────────────────── */
 .cdx-tr-card-list { display: flex; flex-direction: column; gap: 12px; }

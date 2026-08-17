@@ -317,10 +317,28 @@ export function openTarefaSubmit(item, sub, opts) {
   openTrailLogin();
 }
 
-export function appendFlatActionRow(body, item) {
+// The action of a FLAT card (Apostila / Outros tabs), mounted in the card HEADER, beside the
+// chevron, exactly where the Aulas tab puts it.
+//
+// It used to be appended to the bottom of the expanded body, which is why Élder saw the same
+// item behave differently depending on which tab he opened it from: header in a lesson, end of
+// the text in Outros. The two slots were already the same shape in CSS (`.cdx-tr-actions` and
+// `.cdx-tr-sub-actions` are both a non-shrinking flex row), so this is a change of host, not a
+// change of layout.
+//
+// Cleared before mounting because the header OUTLIVES the body: the body is destroyed on
+// collapse and rebuilt on the next open, so mounting without clearing would stack a second
+// button on every reopen. The button then stays after collapsing, which is what the Aulas tab
+// already does.
+export function mountFlatCardAction(card, item) {
+  const host = card.querySelector('.cdx-tr-card-header .cdx-tr-actions');
+  if (!host) return;
+  const previous = host.querySelector('.cdx-tr-flat-action');
+  if (previous) previous.remove();
   if (!getItemActions(item).length) return;
-  const row = document.createElement('div');
-  row.className = 'cdx-tr-flat-action-row';
-  mountActions(row, item, {});
-  body.appendChild(row);
+  const slot = document.createElement('span');
+  slot.className = 'cdx-tr-flat-action';
+  // Before the chevron: the chevron is the card's own affordance and stays closest to the edge.
+  host.insertBefore(slot, host.firstChild);
+  mountActions(slot, item, {});
 }
