@@ -505,9 +505,16 @@ function _bulkDelete() {
 // be deleted from INSIDE the editor (Élder's #29e), and that screen has to close itself -- but only
 // on a real deletion, never on a refusal, or the modal would vanish and take the edit with it.
 function _deleteItem(id, onDone) {
+  // Deleting a PACKAGE does not delete what is inside it: ctDeleteItem clears ct_item_members in
+  // both directions, so the members survive and simply stop belonging to it. The dialog never
+  // said so, and "excluir" over a thing that visibly contains three documents reads as deleting
+  // four items. Saying it is the whole fix; the behaviour was already the right one.
+  const item = _items.find((it) => Number(it.id) === Number(id));
+  const ty = item && _types.find((x) => x.slug === item.type);
+  const isBundle = !!(ty && ty.family === 'bundle');
   _openConfirm({
     title: t('content.delete_item_title'),
-    message: t('content.confirm_delete_item'),
+    message: t(isBundle ? 'content.confirm_delete_bundle' : 'content.confirm_delete_item'),
     danger: true,
     onConfirm() { _doDeleteItem(id, false, onDone); },
   });

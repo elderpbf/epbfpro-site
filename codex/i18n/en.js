@@ -822,6 +822,7 @@ export default {
   'content.delete_item_title':   'Delete item',
   'content.delete_items_title':  'Delete items',
   'content.confirm_delete_item': 'Delete this item? It will be removed from every cohort where it is released.',
+  'content.confirm_delete_bundle':'Delete this package? It will be removed from every cohort where it is released. The items inside it are NOT deleted: they stay in the library and simply stop belonging to this package.',
   'content.delete_released_title': 'Released content',
   'content.delete_released_where': 'This content is released in:',
   'content.delete_released_warn':  'Deleting anyway removes the releases and deletes the content.',

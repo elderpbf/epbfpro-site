@@ -828,6 +828,7 @@ export default {
   'content.delete_item_title':   'Excluir item',
   'content.delete_items_title':  'Excluir itens',
   'content.confirm_delete_item': 'Excluir este item? Ele será removido de todas as turmas onde está liberado.',
+  'content.confirm_delete_bundle':'Excluir este pacote? Ele será removido de todas as turmas onde está liberado. Os itens que estão dentro dele NÃO são excluídos: eles continuam no acervo, apenas deixam de pertencer a este pacote.',
   'content.delete_released_title': 'Conteúdo liberado',
   'content.delete_released_where': 'Este conteúdo está liberado em:',
   'content.delete_released_warn':  'Excluir mesmo assim remove as liberações e apaga o conteúdo.',

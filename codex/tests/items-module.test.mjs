@@ -48,6 +48,14 @@ test('the new-type form sends family, and offers the choice', () => {
   assert.match(itemsSrc, /content\.type_is_bundle/, 'the checkbox is labelled through i18n');
 });
 
+test('deleting a PACKAGE says its contents survive', () => {
+  // ctDeleteItem clears ct_item_members in both directions, so the members outlive the package.
+  // The dialog used to give the plain item wording, and "delete" over a thing that visibly holds
+  // three documents reads as deleting four items.
+  assert.match(itemsSrc, /confirm_delete_bundle/, 'a package gets its own confirmation text');
+  assert.match(itemsSrc, /family === 'bundle'/, 'the wording is chosen by the type family');
+});
+
 test('an existing type can be switched, and the refusal is explained', () => {
   assert.match(itemsSrc, /data-action="family"/, 'the type row offers the switch');
   assert.match(itemsSrc, /updateType\(\{[^}]*family/, 'the switch sends family');
