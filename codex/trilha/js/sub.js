@@ -5,16 +5,11 @@
 // fetched through the Trail facade (ct_get_item_public).
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.CdxGlyphs (icon library)
-import { state } from './state.js';
 import { esc } from './utils.js';
 import { isFresh } from './freshness.js';
 import { injectActionButton } from './actions.js';
-import { trail } from './api.js';
-import { renderItem } from '../../js/item-render.js';
 import { interceptItemOpen } from './gate.js';
-import { overlayLabItem } from './lab-overlay.js';
-import { overlayInterativoItem } from './interativo-overlay.js';
-import { isProjeto, renderProjeto } from './projeto.js';
+import { openItemInto } from './item-open.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
@@ -101,33 +96,16 @@ export async function toggleSub(sub, item, opts = {}) {
   sub.classList.add('is-expanded');
   const exp = document.createElement('div');
   exp.className = 'cdx-tr-sub-expanded';
-  exp.innerHTML = '<div class="ctr-loading">Carregando...</div>';
   sub.parentNode.insertBefore(exp, sub.nextSibling);
 
-  try {
-    const data = await trail.itemPublic({
-      client_slug: state.clientSlug,
-      turma_slug: state.turmaSlug,
-      token: state.token,
-      item_id: item.id,
-      session_token: state.sessionToken,
-      // Which lesson the student is looking at. The Worker only honours it when the item is
-      // actually bound to that lesson, so it selects a list and never unlocks one.
-      aula_number: opts.aulaNumber != null ? opts.aulaNumber : undefined,
-      _silent: true,
-    });
-    // Lab content (title/summary/description/objective) comes from the code
-    // registry, not the seeded DB copy -- overlay the fetched item before render.
-    overlayLabItem(data.item);
-    overlayInterativoItem(data.item);
-    exp.innerHTML = '';
-    // A wrapper doesn't render content, it lists its children (track-61). Each child is a row
-    // just like any other, built by the same buildSub.
-    if (isProjeto(data.item)) renderProjeto(data.item, exp, buildSub, opts);
-    else renderItem(data.item, exp, { preview: true });
-    injectActionButton(sub, data.item, opts);
-  } catch (e) {
-    if (window.bsLog) window.bsLog('trilha sub itemPublic: ' + (e && e.message || e), 'error');
-    exp.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';
-  }
+  // Everything from here on is shared with the flat card (item-open.js). What stays here is the
+  // only part that is genuinely this card's: the body is a SIBLING node, and the action goes
+  // into the row's own action slot.
+  await openItemInto(exp, item, {
+    aulaNumber: opts.aulaNumber,
+    subBuilder: buildSub,
+    opts,
+    mountAction: (fetched) => injectActionButton(sub, fetched, opts),
+    logTag: 'sub',
+  });
 }
