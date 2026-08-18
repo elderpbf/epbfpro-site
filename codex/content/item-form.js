@@ -445,7 +445,10 @@ function _mountLevel(container, opts) {
     _renderFiles();
     markDirty();
   }
-  root.querySelector('#ie-files').addEventListener('click', (e) => {
+  // Guarded like _renderFiles above it: the shell is one template today, but a mount path that
+  // ever builds a different one must not take the whole editor down on a missing node.
+  const _filesHost = root.querySelector('#ie-files');
+  if (_filesHost) _filesHost.addEventListener('click', (e) => {
     const del = e.target.closest('[data-file-del]');
     if (del) {
       _files.splice(Number(del.getAttribute('data-file-del')), 1);
