@@ -55,30 +55,33 @@ export function getItemActions(item) {
   // would hide the attachments; returning only the package would drop the submission.
   if (single) return packAction ? [single, packAction] : [single];
 
-  // Outside of that, a packager only offers PACKAGE actions. Elder tested it and caught the
-  // inconsistency: "Copiar" (Copy) copied the project's presentation blurb while "Baixar"
-  // (Download) brought a zip of 3 files, so there was no way to predict what each button
-  // would do. The project's text is meant to be READ, on screen.
-  if (packAction) return [packAction];
-
   const meta = getMeta(item);
+
+  // A parent with children keeps its OWN file beside "Baixar tudo" (§34): a Skill's zip IS the
+  // skill, and hiding it behind the bundle zip would make the essential download the awkward
+  // one. What stays suppressed for a packager is the TEXT pair (copy / .md / PDF): the body is
+  // meant to be read on screen, which is the confusion Elder caught on 2026-08-05 ("Copiar"
+  // copied a blurb while "Baixar" brought 3 files).
+  if (packAction) {
+    const out = [];
+    const own = itemFiles(meta)[0];
+    if (own) {
+      const img = isImageFile(own.name || own.url);
+      out.push({ kind: 'open', label: img ? 'Ver imagem' : 'Baixar ' + own.name, shortLabel: own.name, url: own.url, icon: img ? 'external' : 'download' });
+    }
+    out.push(packAction);
+    return out;
+  }
+
   const out = [];
   if (meta.pdf_url) out.push({ kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' });
-  // ONE BUTTON PER FILE. An item carries files, plural (§28), so this is a list and not a field.
-  // With several the button says WHICH one, because "Baixar" three times in a row tells the
-  // student nothing about what they are picking.
-  const files = itemFiles(meta);
-  files.forEach((f) => {
-    const img = isImageFile(f.name || f.url);
-    const verb = img ? 'Ver' : 'Baixar';
-    out.push({
-      kind: 'open',
-      label: files.length > 1 ? verb + ' ' + f.name : (img ? 'Ver imagem' : 'Baixar'),
-      shortLabel: files.length > 1 ? f.name : undefined,
-      url: f.url,
-      icon: img ? 'external' : 'download',
-    });
-  });
+  // THE item's file, one slot (§34; the short-lived §28 list still READS as a list of one, so an
+  // item staging wrote with the array shape keeps its button).
+  const own = itemFiles(meta)[0];
+  if (own) {
+    const img = isImageFile(own.name || own.url);
+    out.push({ kind: 'open', label: img ? 'Ver imagem' : 'Baixar', url: own.url, icon: img ? 'external' : 'download' });
+  }
   if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
   if (item.body_md) {
     out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
@@ -125,7 +128,10 @@ export function packageOf(item) {
       if (sub && sub.length) walk(sub, dir + _dirName(c.title) + '/');
     });
   })(kids, '');
-  return { name: String(item.title || 'pacote').replace(/^#+\s*/, ''), items, skipped };
+  // The parent's OWN file rides at the zip's root (§34): a Skill packing its tutorial must not
+  // produce a zip that is missing the skill itself.
+  const ownFiles = itemFiles(getMeta(item)).map((f) => f.url);
+  return { name: String(item.title || 'pacote').replace(/^#+\s*/, ''), items, skipped, ownFiles };
 }
 
 // Folder name with the SAME cleanup as the file name (accents and a title's `#` don't
@@ -261,18 +267,22 @@ export async function downloadProject(project) {
   // PDF or a spreadsheet attached went into the package without it and the zip still looked
   // complete. /r2/ answers with Access-Control-Allow-Origin: *, so this is a plain fetch and
   // there is no new Worker action.
-  const fetched = await Promise.all(
-    got.filter(Boolean).flatMap((i) => {
+  const _fetchAsset = (u, dir) =>
+    fetch(_assetSrc(u))
+      .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status))))
+      .then((buf) => ({ name: String(u).split('/').pop(), bytes: new Uint8Array(buf), dir }))
+      .catch((e) => {
+        if (window.bsLog) window.bsLog('zip asset failed ' + u + ': ' + (e && e.message), 'error');
+        return null;
+      });
+  const fetched = await Promise.all([
+    // The parent's own file, at the root (§34).
+    ...(project.ownFiles || []).map((u) => _fetchAsset(u, '')),
+    ...got.filter(Boolean).flatMap((i) => {
       const meta = getMeta(i);
-      return [...itemFiles(meta).map((f) => f.url), meta.pdf_url].filter(Boolean).map((u) =>
-        fetch(_assetSrc(u))
-          .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status))))
-          .then((buf) => ({ name: String(u).split('/').pop(), bytes: new Uint8Array(buf), dir: i._dir }))
-          .catch((e) => {
-            if (window.bsLog) window.bsLog('zip asset failed ' + u + ': ' + (e && e.message), 'error');
-            return null;
-          }));
-    }));
+      return [...itemFiles(meta).map((f) => f.url), meta.pdf_url].filter(Boolean).map((u) => _fetchAsset(u, i._dir));
+    }),
+  ]);
   const files = fetched.filter(Boolean);
   entries.push(...files);
   const filesFailed = fetched.length - files.length;

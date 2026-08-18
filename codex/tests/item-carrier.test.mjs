@@ -80,13 +80,13 @@ test('item-form saves through the merge, never through the raw collect', () => {
 
 test('a file picked without running the AI still reaches the save', () => {
   // pendingFile() was exposed on the content box and never called: the file only travelled
-  // through onResult, which fires only after an AI pass. Pick, Save, nothing uploaded.
-  // It now reaches the save twice over: the box hands each file to the item's list the moment
-  // the answer is known (§28), and whatever is still sitting in the box at Save is drained too.
-  assert.match(formSrc, /onFileAttached: _addPendingFile/);
-  assert.match(formSrc, /function _boxLeftover\(\)/);
+  // through onResult, which fires only after an AI pass. Pick, Save, nothing uploaded. Now every
+  // pick routes through _routeFiles the moment it is answered, and whatever is still staged in
+  // the box at Save is drained by _drainBox, never lost.
+  assert.match(formSrc, /onFilesAttached: _routeFiles/);
+  assert.match(formSrc, /function _drainBox\(\)/);
   assert.match(formSrc, /_aiBox\.pendingFile\(\)/);
-  assert.match(formSrc, /pendingFiles: _pendingFiles\.concat\(_boxLeftover\(\)\)/);
+  assert.match(formSrc, /pendingOwn: \(_drainBox\(\), _pendingOwnFile\)/);
 });
 
 test('there is ONE file selector: the arquivo block no longer draws its own', () => {
@@ -101,8 +101,9 @@ test('attaching a file never rewrites the type', () => {
 });
 
 test('the extract question is asked only when there is text to extract', () => {
-  assert.match(aiBoxSrc, /pickedExtractable = hasExtractableText\(f\)/);
-  assert.match(aiBoxSrc, /modeRow\.style\.display = pickedExtractable \? '' : 'none'/);
-  // and with the row hidden the answer is settled, not left at the checked default
-  assert.match(aiBoxSrc, /if \(pickedFile && !pickedExtractable\) return 'download'/);
+  // A .zip or an image has no text to pull out, so it hands off with no question; the question
+  // only appears for a single extractable file on an item whose slot is empty, and it is asked
+  // BEFORE anything happens (the 17/08 bug was acting on pick).
+  assert.match(aiBoxSrc, /itemHasFile\(\) \|\| !hasExtractableText\(files\[0\]\)/);
+  assert.match(aiBoxSrc, /r\.checked = false/);
 });

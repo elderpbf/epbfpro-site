@@ -13,16 +13,22 @@
 // ---------- local ----------
 // Opens the OS file picker and resolves the chosen File (or null if dismissed). `accept` is the
 // standard <input accept> string, e.g. 'image/*' or '.pdf,.docx,application/pdf'.
-export function pickLocalFile({ accept = '' } = {}) {
+export function pickLocalFile({ accept = '', multiple = false } = {}) {
   return new Promise((resolve) => {
     const inp = document.createElement('input');
     inp.type = 'file';
     if (accept) inp.accept = accept;
+    // `multiple` resolves an ARRAY of Files instead of one, and only when asked, so every
+    // existing caller keeps its single-File contract untouched. The item editor asks: picking
+    // several files at once is the unambiguous "these are several things" (track-61 §34).
+    if (multiple) inp.multiple = true;
     inp.style.position = 'fixed';
     inp.style.left = '-9999px';
     let done = false;
-    const finish = (f) => { if (done) return; done = true; try { inp.remove(); } catch (_) {} resolve(f || null); };
-    inp.onchange = () => finish(inp.files && inp.files[0]);
+    const finish = (v) => { if (done) return; done = true; try { inp.remove(); } catch (_) {} resolve(v || null); };
+    inp.onchange = () => finish(multiple
+      ? Array.from(inp.files || [])
+      : (inp.files && inp.files[0]));
     document.body.appendChild(inp);
     inp.click();
   });

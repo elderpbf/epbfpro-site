@@ -114,20 +114,18 @@ test('arquivo i18n keys exist in both dictionaries', () => {
 test('the type picker highlight follows the clicked type (visual selection bug)', () => {
   assert.match(formSrc, /_refreshPicker\(typeSel\.value\)/, 'a type change re-highlights the picker (is-active moves to the clicked type, not just the block re-renders)');
 });
-test('the AI box imports a document (gdoc/local/Drive) and offers extract vs download', () => {
+test('the AI box imports files and ASKS before acting on an extractable one', () => {
   assert.match(aiBoxSrc, /from\s+['"]\.\.\/\.\.\/js\/file-source\.js['"]/, 'imports the shared file source');
   assert.match(aiBoxSrc, /from\s+['"]\.\.\/\.\.\/js\/file-text\.js['"]/, 'imports the client-side text extractor');
-  assert.match(aiBoxSrc, /extractText\(/, 'a picked file has its text extracted into the raw box');
   assert.match(aiBoxSrc, /aib-file/, 'has a "from computer" import button');
-  assert.match(aiBoxSrc, /name="aib-mode"/, 'offers the extract vs download choice in place');
-  assert.match(aiBoxSrc, /fileMode\(\) === 'download'/, 'download mode routes to an arquivo item');
-  // The file no longer travels between two screens: the box hands it to the editor around it,
-  // which seeds the same pending-upload path a hand-picked file uses.
-  assert.match(aiBoxSrc, /file: isDownload/, 'the result carries the file when it is used for download');
-  assert.match(formSrc, /ctx\.file/, 'the editor seeds the pending upload from that file');
-  for (const k of ['creator.file_extract', 'creator.file_download', 'creator.file_no_text']) {
-    assert.ok(k in pt && k in en, `i18n ${k} exists in both dictionaries`);
-  }
+  assert.match(aiBoxSrc, /multiple: true/, 'the picker takes several files at once (§34)');
+  assert.match(aiBoxSrc, /name="aib-mode"/, 'offers the extract vs keep-the-file choice in place');
+  // The 17/08 bug, pinned: extraction ran on PICK, while "keep as file" sat checked, and the
+  // file went nowhere. Now nothing happens until the answer: the radios start blank and the
+  // change handler is the only caller of extractText for a picked file.
+  assert.ok(!/value="extract" checked/.test(aiBoxSrc), 'no pre-checked answer');
+  assert.match(aiBoxSrc, /file_what_now/, 'the question is asked out loud');
+  assert.ok(!/parsed\.type\s*=\s*'arquivo'/.test(aiBoxSrc), 'attaching never rewrites the type');
 });
 
 // The flag the AI can no longer decide on its own (Elder 2026-08-07).

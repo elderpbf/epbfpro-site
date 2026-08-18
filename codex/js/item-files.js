@@ -1,19 +1,18 @@
 // js/item-files.js
-// AN ITEM CARRIES FILES, PLURAL.
+// AN ITEM CARRIES AT MOST ONE FILE; MORE FILES ARE ITEMS.
 //
-// Élder, 2026-08-17: *"ele só permite colocar 1 arquivo por vez. Eu tenho que poder colocar
-// vários arquivos no mesmo item. O item não é um arquivo, ele é uma ENTIDADE... eu tenho que
-// poder adicionar arquivos, substituir arquivo, apagar arquivo, adicionar um novo"*.
+// The 2026-08-17 build let one item hold an anonymous LIST of files, and Élder killed it the
+// next morning: *"each file added is an item... they are items that should show in the hierarchy
+// and have names and descriptions and so on. otherwise i won't be able to view an image without
+// downloading it"*. He is right by the system's own doctrine: the moment a file needs a name, a
+// description or an inline view, it needs a TYPE, and type lives on items. So: the FIRST file
+// attaches to the item itself (the single slot every item always had); every further file
+// becomes a CHILD ITEM through the same members machinery packages use, with its own inferred
+// type, title and description.
 //
-// It is the same law as §25.3 (the type is what a thing IS, never what it carries) applied to
-// the COUNT: allowing exactly one file also confuses the entity with its stamp. And it is not
-// the package: a package groups ITEMS, each with its own title, type and release. These are
-// files of a single item, with no separate existence.
-//
-// NO MIGRATION. `meta_json.attachment_url` was a single string and stays readable forever:
-// reading normalises it into a list of one, and writing keeps the first file mirrored back into
-// it, so anything that still reads the old field (or an old page still cached in a browser)
-// keeps working. Same pattern as §11.
+// NO MIGRATION. `meta_json.attachment_url` stays the storage for the one file. Reading tolerates
+// the short-lived `attachments` array (staging wrote a few) by folding it into a list; writing
+// only ever emits one entry, mirrored into the legacy scalar. Anything old keeps working.
 import { esc } from './dom.js';
 
 // PURE. The file name a URL ends in, without the R2 key path around it.
@@ -75,23 +74,68 @@ export function isImageFile(urlOrName) {
   return /\.(png|jpe?g|webp|gif|svg|avif)$/i.test(String(urlOrName || '').split('?')[0]);
 }
 
-// PURE. The rows of the editor's file list, ready to paint. `pending` are files chosen in this
-// session that have not been uploaded yet, so they have a name and no url.
-//   opts: { labels: { remove, pending }, rowClass }
-export function fileListHtml(files, pending, labels) {
+// PURE. Which type a file-born child item should get, decided by the file NAME against the
+// TYPES that actually exist in the registry (admin-editable, so no slug can be assumed). The
+// answer is a PREFILL: the row shows a select and the teacher overrides at will.
+//   types: the loaded registry [{slug, family, ...}]
+// Falls back down a preference chain and finally to the first item-family type, so it always
+// returns something the registry can hold.
+export function inferChildType(types, filename) {
+  const list = (types || []).filter((ty) => (ty.family || 'item') !== 'bundle');
+  const has = (slug) => list.some((ty) => ty.slug === slug);
+  const ext = String(filename || '').toLowerCase().split('.').pop();
+  let prefs;
+  if (/^(png|jpe?g|webp|gif|svg|avif)$/.test(ext)) prefs = ['foto', 'imagem', 'image', 'material'];
+  else if (ext === 'zip') prefs = ['skill', 'material', 'documento'];
+  else prefs = ['documento', 'material', 'doc'];
+  for (const slug of prefs) if (has(slug)) return slug;
+  return list.length ? list[0].slug : '';
+}
+
+// PURE. The editor's files panel: the item's OWN file (one row), then its children, then the
+// files picked this session that will BECOME children on save. Pending-child rows carry an
+// editable title and a type select, because renaming there is the whole ceremony (Fable:
+// "prefilled, rename if you care").
+//   own          {url, name} | null       the stored file
+//   pendingOwn   {name} | null            a file picked for the slot, uploads on save
+//   children     [{id, title, type_label, iconHtml}]
+//   pendingChildren [{name, title, type}]
+//   types        the registry, for the type select
+//   labels       { remove, pending, childPending, ownLabel, childrenLabel }
+export function filesPanelHtml(own, pendingOwn, children, pendingChildren, types, labels) {
   const L = labels || {};
   const rows = [];
-  (files || []).forEach((f, i) => {
-    rows.push('<li class="cdx-file-row" data-file-i="' + i + '">' +
-      '<a class="cdx-file-name" href="' + esc(f.url) + '" target="_blank" rel="noopener">' + esc(f.name) + '</a>' +
-      '<button type="button" class="cdx-file-del" data-file-del="' + i + '" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
+  if (own) {
+    rows.push('<li class="cdx-file-row">' +
+      '<a class="cdx-file-name" href="' + esc(own.url) + '" target="_blank" rel="noopener">' + esc(own.name) + '</a>' +
+      '<button type="button" class="cdx-file-del" data-own-del="1" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
+    '</li>');
+  }
+  if (pendingOwn) {
+    rows.push('<li class="cdx-file-row is-pending">' +
+      '<span class="cdx-file-name">' + esc(pendingOwn.name) + '</span>' +
+      '<span class="cdx-file-pending">' + esc(L.pending || '') + '</span>' +
+      '<button type="button" class="cdx-file-del" data-pending-own-del="1" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
+    '</li>');
+  }
+  (children || []).forEach((c) => {
+    rows.push('<li class="cdx-file-row is-child" data-child-id="' + esc(c.id) + '">' +
+      '<span class="cdx-file-icon">' + (c.iconHtml || '') + '</span>' +
+      '<span class="cdx-file-name">' + esc(c.title) + '</span>' +
+      '<span class="cdx-file-type">' + esc(c.type_label || '') + '</span>' +
+      '<button type="button" class="cdx-file-del" data-child-del="' + esc(c.id) + '" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
     '</li>');
   });
-  (pending || []).forEach((f, i) => {
-    rows.push('<li class="cdx-file-row is-pending" data-pending-i="' + i + '">' +
-      '<span class="cdx-file-name">' + esc(f.name) + '</span>' +
-      '<span class="cdx-file-pending">' + esc(L.pending || '') + '</span>' +
-      '<button type="button" class="cdx-file-del" data-pending-del="' + i + '" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
+  const opts = (sel) => (types || [])
+    .filter((ty) => (ty.family || 'item') !== 'bundle')
+    .map((ty) => '<option value="' + esc(ty.slug) + '"' + (ty.slug === sel ? ' selected' : '') + '>' + esc(ty.label || ty.slug) + '</option>')
+    .join('');
+  (pendingChildren || []).forEach((f, i) => {
+    rows.push('<li class="cdx-file-row is-pending is-child" data-pending-child-i="' + i + '">' +
+      '<input type="text" class="cdx-file-title" data-pchild-title="' + i + '" value="' + esc(f.title) + '">' +
+      '<select class="cdx-file-typesel" data-pchild-type="' + i + '">' + opts(f.type) + '</select>' +
+      '<span class="cdx-file-pending">' + esc(L.childPending || '') + '</span>' +
+      '<button type="button" class="cdx-file-del" data-pchild-del="' + i + '" aria-label="' + esc(L.remove || '') + '" title="' + esc(L.remove || '') + '">&times;</button>' +
     '</li>');
   });
   if (!rows.length) return '';
