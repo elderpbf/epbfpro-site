@@ -505,9 +505,16 @@ function _bulkDelete() {
 // be deleted from INSIDE the editor (Élder's #29e), and that screen has to close itself -- but only
 // on a real deletion, never on a refusal, or the modal would vanish and take the edit with it.
 function _deleteItem(id, onDone) {
+  // Deleting a PACKAGE does not delete what is inside it: ctDeleteItem clears ct_item_members in
+  // both directions, so the members survive and simply stop belonging to it. The dialog never
+  // said so, and "excluir" over a thing that visibly contains three documents reads as deleting
+  // four items. Saying it is the whole fix; the behaviour was already the right one.
+  const item = _items.find((it) => Number(it.id) === Number(id));
+  const ty = item && _types.find((x) => x.slug === item.type);
+  const isBundle = !!(ty && ty.family === 'bundle');
   _openConfirm({
     title: t('content.delete_item_title'),
-    message: t('content.confirm_delete_item'),
+    message: t(isBundle ? 'content.confirm_delete_bundle' : 'content.confirm_delete_item'),
     danger: true,
     onConfirm() { _doDeleteItem(id, false, onDone); },
   });
@@ -652,6 +659,20 @@ function _openTypeCreateForm(callback) {
           '<span class="cdx-glyph-choose-icon">' + typeIconHtml(chosenIcon, { size: 20 }) + '</span>' +
           '<span>' + t('content.choose_glyph') + '</span>' +
         '</button></div>' +
+      // A família (`bundle`) é o que faz um tipo SEGURAR outros itens. Ela existe no Worker
+      // desde a 0050, mas só `projeto` e `pasta` a tinham, porque foram criados direto no banco
+      // e esta tela nunca mandou o campo. Com a caixinha, um tipo de pacote novo (skill,
+      // conjunto) é uma escolha aqui e não uma migração.
+      '<div class="cdx-field">' +
+        '<label class="cdx-toggle-label">' +
+          '<span class="cdx-toggle">' +
+            '<input type="checkbox" data-fld="family">' +
+            '<span class="cdx-toggle-slider"></span>' +
+          '</span>' +
+          '<span class="cdx-toggle-text">' + t('content.type_is_bundle') + '</span>' +
+        '</label>' +
+        '<div class="cdx-field-hint">' + t('content.type_is_bundle_hint') + '</div>' +
+      '</div>' +
       '<div class="cdx-modal-actions">' +
         '<button class="cdx-btn" data-act="cancel">' + t('content.cancel') + '</button>' +
         '<button class="cdx-btn cdx-btn-primary" data-act="ok">' + t('content.create') + '</button>' +
@@ -671,7 +692,8 @@ function _openTypeCreateForm(callback) {
     const label = bd.querySelector('[data-fld="label"]').value.trim();
     const slug = bd.querySelector('[data-fld="slug"]').value.trim() || _slugify(label);
     if (!label || !slug) { toast.err(t('content.name_required')); return; }
-    api.createType({ slug, label, icon: chosenIcon }).then(() => _loadTypes()).then(() => {
+    const family = bd.querySelector('[data-fld="family"]').checked ? 'bundle' : 'item';
+    api.createType({ slug, label, icon: chosenIcon, family }).then(() => _loadTypes()).then(() => {
       toast.ok(t('content.type_created'));
       done(slug);
     }).catch((e) => notice.internal(_err(e)));
@@ -732,6 +754,9 @@ function _openTypeManager() {
           typeIconHtml(ty.icon, { size: 20 }) + '</button>' +
         '<span class="cdx-type-row-label">' + _esc(ty.label) + '</span>' +
         '<span class="cdx-type-row-slug">' + _esc(ty.slug) + '</span>' +
+        (ty.family === 'bundle' ? '<span class="cdx-type-row-badge">' + t('content.type_bundle_badge') + '</span>' : '') +
+        '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="family">' +
+          t(ty.family === 'bundle' ? 'content.type_make_item' : 'content.type_make_bundle') + '</button>' +
         '<button class="cdx-btn cdx-btn-vazado cdx-btn-sm" data-action="rename">' + t('content.rename') + '</button>' +
         '<button class="cdx-btn cdx-btn-sm cdx-btn-danger" data-action="delete">' + t('content.delete') + '</button>' +
       '</div>').join('');
@@ -754,6 +779,20 @@ function _openTypeManager() {
         api.updateType({ slug, icon: iconVal }).then(() => _loadTypes()).then(() => {
           render(); _renderItems(); toast.ok(t('content.type_updated'));
         }).catch((er) => notice.internal(_err(er)));
+      });
+    } else if (action === 'family') {
+      // Promover é sempre seguro; rebaixar não é, e o Worker recusa com `bundle_type_in_use`
+      // quando ainda há pacotes daquele tipo com itens dentro. Deixar o erro cru viraria um
+      // "não aconteceu nada", que é exatamente a queixa do Élder em 2026-08-05.
+      const next = ty.family === 'bundle' ? 'item' : 'bundle';
+      api.updateType({ slug, family: next, _silent: true }).then(() => _loadTypes()).then(() => {
+        render(); _renderItems(); toast.ok(t('content.type_updated'));
+      }).catch((er) => {
+        if (er && er.data && er.data.error === 'bundle_type_in_use') {
+          notice.warn(t('content.type_bundle_in_use').replace('{n}', er.data.count));
+        } else {
+          notice.internal(er);
+        }
       });
     } else if (action === 'rename') {
       _openPrompt({

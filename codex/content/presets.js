@@ -21,6 +21,7 @@ import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import { getAllItems as labItems } from '../js/labs-registry.js';
 import { makeMatcher } from '../js/text-search.js';
+import { pickerRowHtml, pickerGroupsHtml } from '../js/item-picker.js';
 
 // ── Module state ────────────────────────────────────────────────────────────
 let _viewEl = null;
@@ -125,14 +126,20 @@ function _mountPicker(host, pickerItems, selectedIds) {
 
   function _selectedIds() { return Array.from(selected); }
 
+  // Same painter as Liberações and the member editor (js/item-picker.js). This screen's own
+  // rules are the pool (library items plus synthetic labs) and the selection living in a Set.
   function _renderRow(item) {
-    const idStr = String(item.id);
-    const isSel = selected.has(idStr);
-    return '<label class="cdx-picker-row' + (isSel ? ' is-selected' : '') + '" data-id="' + _esc(idStr) + '">' +
-      '<input type="checkbox" class="cdx-picker-check"' + (isSel ? ' checked' : '') + '>' +
-      '<span class="cdx-picker-icon">' + _itemIconHtml(item) + '</span>' +
-      '<span class="cdx-picker-title">' + _esc((item && item.title) || t('presets.unnamed')) + '</span>' +
-    '</label>';
+    return pickerRowHtml({
+      id: String(item.id),
+      title: (item && item.title) || t('presets.unnamed'),
+      iconHtml: _itemIconHtml(item),
+      iconSpan: true,
+      titleClass: 'cdx-picker-title',
+      checked: selected.has(String(item.id)),
+      rowClass: 'cdx-picker-row',
+      checkClass: 'cdx-picker-check',
+      selectedClass: 'is-selected',
+    });
   }
 
   function _renderList() {
@@ -151,20 +158,12 @@ function _mountPicker(host, pickerItems, selectedIds) {
     // with matches, so a search never hides a hit inside a collapsed group.
     const searching = q.length > 0;
     if (openGroup === undefined) openGroup = groups[0].key;
-    listEl.innerHTML = groups.map((grp) => {
-      const isOpen = searching || grp.key === openGroup;
-      const rows = isOpen
-        ? '<div class="cdx-picker-group-rows">' + grp.items.map(_renderRow).join('') + '</div>'
-        : '';
-      return '<div class="cdx-picker-group' + (isOpen ? ' is-open' : '') + '" data-group="' + grp.key + '">' +
-          '<button type="button" class="cdx-picker-group-label" data-group-toggle="' + grp.key + '"' +
-            ' aria-expanded="' + (isOpen ? 'true' : 'false') + '">' +
-            '<span class="cdx-picker-group-caret" aria-hidden="true">&#8250;</span>' +
-            '<span class="cdx-picker-group-name">' + t('presets.group_' + grp.key) + ' (' + grp.items.length + ')</span>' +
-          '</button>' +
-          rows +
-        '</div>';
-    }).join('');
+    listEl.innerHTML = pickerGroupsHtml(groups.map((grp) => ({
+      key: grp.key,
+      label: t('presets.group_' + grp.key),
+      count: grp.items.length,
+      rowsHtml: grp.items.map(_renderRow).join(''),
+    })), { allOpen: searching, openKey: searching ? undefined : openGroup, toggleAttr: 'data-group-toggle' });
   }
 
   function _renderCount() {

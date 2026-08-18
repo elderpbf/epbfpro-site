@@ -828,6 +828,7 @@ export default {
   'content.delete_item_title':   'Excluir item',
   'content.delete_items_title':  'Excluir itens',
   'content.confirm_delete_item': 'Excluir este item? Ele será removido de todas as turmas onde está liberado.',
+  'content.confirm_delete_bundle':'Excluir este pacote? Ele será removido de todas as turmas onde está liberado. Os itens que estão dentro dele NÃO são excluídos: eles continuam no acervo, apenas deixam de pertencer a este pacote.',
   'content.delete_released_title': 'Conteúdo liberado',
   'content.delete_released_where': 'Este conteúdo está liberado em:',
   'content.delete_released_warn':  'Excluir mesmo assim remove as liberações e apaga o conteúdo.',
@@ -865,6 +866,12 @@ export default {
   'content.type_icon':            'Ícone',
   'content.type_created':         'Tipo criado.',
   'content.name_required':        'Nome obrigatório.',
+  'content.type_is_bundle':       'Este tipo guarda outros itens',
+  'content.type_is_bundle_hint':  'Um pacote não tem conteúdo próprio: o corpo apresenta os itens que estão dentro dele, e o aluno baixa todos de uma vez.',
+  'content.type_bundle_badge':    'Pacote',
+  'content.type_make_bundle':     'Virar pacote',
+  'content.type_make_item':       'Virar item comum',
+  'content.type_bundle_in_use':   'Não dá para tirar: {n} pacote(s) deste tipo ainda têm itens dentro. Esvazie-os primeiro.',
 
   // Content → Items — types manager + glyph picker
   'content.manage_types':         'Gerenciar tipos',

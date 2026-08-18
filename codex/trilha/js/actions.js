@@ -12,6 +12,7 @@ import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
 import { openMenu } from '../../js/menu.js';
 import { downloadText, fileNameFromTitle, isDownloadable, isVerbatim } from '../../js/item-download.js';
+import { downloadItemPdf, itemPdfBytes } from '../../js/item-pdf.js';
 import { downloadZip } from '../../js/item-zip.js';
 import { trail } from './api.js';
 import * as toast from '../../js/toast.js';
@@ -69,11 +70,15 @@ export function getItemActions(item) {
   if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
   if (item.body_md) {
     out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
-    // Only VERBATIM text goes out as .md. What the student sees rendered on screen goes out
-    // as PDF, which is its own separate slice: a .md of text they never saw as markdown
-    // would be a surprise.
+    // Élder's rule, 2026-08-04: the student who sees the markdown SYMBOLS gets .md, the student
+    // who sees it PROCESSED gets a PDF with everything laid out. Verbatim text is a prompt, made
+    // to be pasted into an AI character by character; a PDF of it would be useless. The other
+    // direction was left unbuilt until now, so every download came out as raw .md, including
+    // text nobody ever saw as markdown.
     if (isVerbatim(item)) {
       out.push({ kind: 'download-md', label: 'Baixar .md', shortLabel: '.md', text: item.body_md, item, icon: 'download' });
+    } else {
+      out.push({ kind: 'download-pdf', label: 'Baixar PDF', shortLabel: 'PDF', item, icon: 'download' });
     }
   }
   return out;
@@ -190,6 +195,15 @@ function makeActionBtn(action, extraClass) {
 function runAction(action, item, sub, opts, btn) {
   if (action.kind === 'copy') copyToClipboard(action.text, btn);
   else if (action.kind === 'download-md') downloadText(action.text, fileNameFromTitle(action.item.title, 'md'));
+  // item-pdf.js is a few KB and imported normally; what is heavy is the vendored jsPDF binary,
+  // and THAT is fetched by the module on the first call, never on page load. A failure has to
+  // be audible: silence here reads as a dead button.
+  else if (action.kind === 'download-pdf') {
+    downloadItemPdf(action.item).catch((e) => {
+      toast.err('Nao foi possivel gerar o PDF.');
+      if (window.bsLog) window.bsLog('item pdf failed: ' + (e && e.message), 'error');
+    });
+  }
   else if (action.kind === 'download-project') downloadProject(action.project);
   else if (action.kind === 'submit') openTarefaSubmit(action.item, sub, opts);
   else if (action.kind === 'go-tarefas') goToTarefa(item.id);
@@ -211,16 +225,59 @@ export async function downloadProject(project) {
     trail.itemPublic(Object.assign({ item_id: p.id, _silent: true }, base))
       .then((r) => (r && r.item ? Object.assign({ _dir: p.dir || '' }, r.item) : null))
       .catch(() => null)));
-  const entries = got.filter((i) => i && i.body_md).map((i) => ({ title: i.title, text: i.body_md, dir: i._dir }));
+  // Same format rule inside the package as outside it. Élder, 2026-08-16: "md has no rich text,
+  // that's why I chose pdf; the actual prompts are in md". So a prompt travels as .md, because
+  // its whole purpose is to be pasted into an AI character for character, and everything meant
+  // to be READ travels as a formatted PDF. This closes track-61 §13.2, which had been left open
+  // deliberately rather than decided for him.
+  const texts = got.filter((i) => i && i.body_md);
+  const entries = [];
+  let pdfFailed = 0;
+  for (const i of texts) {
+    if (isVerbatim(i)) { entries.push({ title: i.title, text: i.body_md, dir: i._dir }); continue; }
+    try {
+      entries.push({ name: fileNameFromTitle(i.title, 'pdf'), bytes: await itemPdfBytes(i), dir: i._dir });
+    } catch (e) {
+      // A PDF that fails to render must not swallow the author's text: it goes in as .md and
+      // the count says the package is not what it should have been.
+      pdfFailed++;
+      entries.push({ title: i.title, text: i.body_md, dir: i._dir });
+      if (window.bsLog) window.bsLog('zip pdf failed for ' + i.id + ': ' + (e && e.message), 'error');
+    }
+  }
+  // The attached FILES go in too. Until now the zip carried only typed text, so an item with a
+  // PDF or a spreadsheet attached went into the package without it and the zip still looked
+  // complete. /r2/ answers with Access-Control-Allow-Origin: *, so this is a plain fetch and
+  // there is no new Worker action.
+  const fetched = await Promise.all(
+    got.filter(Boolean).flatMap((i) => {
+      const meta = getMeta(i);
+      return [meta.attachment_url, meta.pdf_url].filter(Boolean).map((u) =>
+        fetch(_assetSrc(u))
+          .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status))))
+          .then((buf) => ({ name: String(u).split('/').pop(), bytes: new Uint8Array(buf), dir: i._dir }))
+          .catch((e) => {
+            if (window.bsLog) window.bsLog('zip asset failed ' + u + ': ' + (e && e.message), 'error');
+            return null;
+          }));
+    }));
+  const files = fetched.filter(Boolean);
+  entries.push(...files);
+  const filesFailed = fetched.length - files.length;
   if (!entries.length) { toast.err('Nao foi possivel montar o pacote.'); return; }
   downloadZip(entries, fileNameFromTitle(project.name, 'zip'));
   // Partial failure is stated out loud: a zip with 2 of 3 files would pass as complete.
   // But the count is of items that DID NOT COME BACK, not of items without a body: with
   // nesting, a grouper enters the list only to name the folder and legitimately has no
   // text of its own. Counting by `entries` would flag failure for an entire package.
-  const failed = got.filter((i) => !i).length;
+  const failed = got.filter((i) => !i).length + filesFailed;
   if (failed) {
     toast.err('O pacote saiu sem ' + failed + (failed === 1 ? ' arquivo.' : ' arquivos.'));
+  }
+  if (pdfFailed) {
+    toast.err(pdfFailed === 1
+      ? '1 item saiu como .md porque o PDF falhou.'
+      : pdfFailed + ' itens sairam como .md porque o PDF falhou.');
   }
   // What doesn't fit in a file is stated, not hidden: a zip with fewer items than the
   // folder shows would pass as complete. Nothing takes their place ("we're not going to

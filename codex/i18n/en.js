@@ -822,6 +822,7 @@ export default {
   'content.delete_item_title':   'Delete item',
   'content.delete_items_title':  'Delete items',
   'content.confirm_delete_item': 'Delete this item? It will be removed from every cohort where it is released.',
+  'content.confirm_delete_bundle':'Delete this package? It will be removed from every cohort where it is released. The items inside it are NOT deleted: they stay in the library and simply stop belonging to this package.',
   'content.delete_released_title': 'Released content',
   'content.delete_released_where': 'This content is released in:',
   'content.delete_released_warn':  'Deleting anyway removes the releases and deletes the content.',
@@ -859,6 +860,12 @@ export default {
   'content.type_icon':            'Icon',
   'content.type_created':         'Type created.',
   'content.name_required':        'Name required.',
+  'content.type_is_bundle':       'This type holds other items',
+  'content.type_is_bundle_hint':  'A package has no content of its own: the body introduces the items inside it, and the student downloads them all at once.',
+  'content.type_bundle_badge':    'Package',
+  'content.type_make_bundle':     'Make it a package',
+  'content.type_make_item':       'Make it a plain item',
+  'content.type_bundle_in_use':   'Cannot remove: {n} package(s) of this type still hold items. Empty them first.',
 
   // Content → Items — types manager + glyph picker
   'content.manage_types':         'Manage types',

@@ -13,6 +13,9 @@ import {
   callWorker,
   resolveWorkerUrl,
   isStagingHost,
+  isAllowedWorkerOverride,
+  readWorkerOverride,
+  WORKER_OVERRIDE_KEY,
 } from '../js/worker-call.js';
 
 // ── default backend ──────────────────────────────────────────────────────────
@@ -247,4 +250,121 @@ test('isStagingHost: does not match a host that only LOOKS LIKE it ends the same
   assert.equal(isStagingHost('a.epbfpro-site-staging.pages.dev'), true);
   assert.equal(isStagingHost('epbfpro-site-staging.pages.dev'), true);
   assert.equal(isStagingHost('pensoia.com'), false);
+});
+
+// ── Per-branch Worker override (2026-08-16) ──────────────────────────────────
+// `codex-api-staging` is one deployment, so two parallel sessions overwrite each other's
+// backend within seconds. `wrangler versions upload` gives each build its own URL; these
+// tests are the rules for who may be pointed at one.
+const PREVIEW = 'track-61.epbfpro-site-staging.pages.dev';
+const VERSION_URL = 'https://a1b2c3d4-codex-api-staging.pensoia.workers.dev';
+
+test('isAllowedWorkerOverride: a version URL of the staging Worker passes', () => {
+  assert.equal(isAllowedWorkerOverride(VERSION_URL), true);
+  assert.equal(isAllowedWorkerOverride('https://codex-api-staging.pensoia.workers.dev'), true);
+});
+test('isAllowedWorkerOverride: the PRODUCTION Worker is refused', () => {
+  // A preview aimed at production would let a test click write to the real D1. That is the
+  // 2026-07-15 incident with the arrow reversed, and it must stay impossible.
+  assert.equal(isAllowedWorkerOverride('https://codex-api.pensoia.workers.dev'), false);
+  assert.equal(isAllowedWorkerOverride('https://api.pensoia.com'), false);
+});
+test('isAllowedWorkerOverride: refuses anything off our zone, and plain http', () => {
+  assert.equal(isAllowedWorkerOverride('https://codex-api-staging.evil.workers.dev'), false);
+  assert.equal(isAllowedWorkerOverride('https://codex-api-staging.pensoia.workers.dev.evil.com'), false);
+  assert.equal(isAllowedWorkerOverride('http://codex-api-staging.pensoia.workers.dev'), false);
+  assert.equal(isAllowedWorkerOverride(''), false);
+  assert.equal(isAllowedWorkerOverride(null), false);
+});
+
+test('resolveWorkerUrl: an accepted pin beats the shared staging slot', () => {
+  assert.equal(resolveWorkerUrl(PREVIEW, 'https://api.pensoia.com', VERSION_URL), VERSION_URL);
+});
+test('resolveWorkerUrl: a refused pin falls back to the shared slot, never to production', () => {
+  assert.equal(
+    resolveWorkerUrl(PREVIEW, 'https://api.pensoia.com', 'https://codex-api.pensoia.workers.dev'),
+    'https://codex-api-staging.pensoia.workers.dev',
+  );
+});
+test('resolveWorkerUrl: a pin does NOTHING on production', () => {
+  assert.equal(resolveWorkerUrl('pensoia.com', 'https://api.pensoia.com', VERSION_URL), 'https://api.pensoia.com');
+});
+test('resolveWorkerUrl: the two-argument form still behaves exactly as before', () => {
+  assert.equal(resolveWorkerUrl(PREVIEW, 'https://api.pensoia.com'), 'https://codex-api-staging.pensoia.workers.dev');
+});
+
+// A minimal localStorage stand-in: these tests run in node, with no window.
+function fakeStore(seed) {
+  const m = new Map(Object.entries(seed || {}));
+  return {
+    getItem: (k) => (m.has(k) ? m.get(k) : null),
+    setItem: (k, v) => m.set(k, String(v)),
+    removeItem: (k) => m.delete(k),
+    _dump: () => Object.fromEntries(m),
+  };
+}
+
+test('readWorkerOverride: ?worker= pins and REMEMBERS, so internal navigation keeps it', () => {
+  const s = fakeStore();
+  assert.equal(readWorkerOverride('?worker=' + encodeURIComponent(VERSION_URL), s), VERSION_URL);
+  assert.equal(s._dump()[WORKER_OVERRIDE_KEY], VERSION_URL);
+  // Next page load carries no query at all and must still be pinned.
+  assert.equal(readWorkerOverride('', s), VERSION_URL);
+});
+test('readWorkerOverride: ?worker= empty or reset forgets it', () => {
+  const s = fakeStore({ [WORKER_OVERRIDE_KEY]: VERSION_URL });
+  assert.equal(readWorkerOverride('?worker=', s), null);
+  assert.equal(s._dump()[WORKER_OVERRIDE_KEY], undefined);
+  const s2 = fakeStore({ [WORKER_OVERRIDE_KEY]: VERSION_URL });
+  assert.equal(readWorkerOverride('?worker=reset', s2), null);
+});
+test('readWorkerOverride: a refused value leaves the existing pin ALONE', () => {
+  // The dangerous failure is a typo silently dropping you back on the shared slot while you
+  // believe you are on your own build. Keep the pin, ignore the garbage.
+  const s = fakeStore({ [WORKER_OVERRIDE_KEY]: VERSION_URL });
+  assert.equal(readWorkerOverride('?worker=https://codex-api.pensoia.workers.dev', s), VERSION_URL);
+  assert.equal(s._dump()[WORKER_OVERRIDE_KEY], VERSION_URL);
+});
+test('readWorkerOverride: a trailing slash is normalised away', () => {
+  const s = fakeStore();
+  assert.equal(readWorkerOverride('?worker=' + encodeURIComponent(VERSION_URL + '/'), s), VERSION_URL);
+});
+test('readWorkerOverride: survives a storage that throws (private mode)', () => {
+  const dead = { getItem() { throw new Error('denied'); }, setItem() { throw new Error('denied'); }, removeItem() { throw new Error('denied'); } };
+  assert.equal(readWorkerOverride('?worker=' + encodeURIComponent(VERSION_URL), dead), VERSION_URL);
+  assert.equal(readWorkerOverride('', dead), null);
+});
+
+test('callWorker: on a preview host the pin is the URL actually called', async () => {
+  // The pin is host-gated inside callWorker, so the host has to be stubbed: without a preview
+  // host the override is ignored on purpose, which is the next test.
+  let seen = null;
+  const fetchImpl = async (url) => {
+    seen = url;
+    return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true }) };
+  };
+  const prev = globalThis.location;
+  globalThis.location = { hostname: PREVIEW, search: '' };
+  try {
+    await callWorker({ action: 'ping' }, { fetch: fetchImpl, workerOverride: VERSION_URL, authToken: '' });
+  } finally {
+    if (prev === undefined) delete globalThis.location; else globalThis.location = prev;
+  }
+  assert.ok(String(seen).startsWith(VERSION_URL), 'called ' + seen);
+});
+
+test('callWorker: the same pin is IGNORED off a preview host', async () => {
+  let seen = null;
+  const fetchImpl = async (url) => {
+    seen = url;
+    return { ok: true, status: 200, text: async () => JSON.stringify({ ok: true }) };
+  };
+  const prev = globalThis.location;
+  globalThis.location = { hostname: 'pensoia.com', search: '' };
+  try {
+    await callWorker({ action: 'ping' }, { fetch: fetchImpl, workerOverride: VERSION_URL, authToken: '' });
+  } finally {
+    if (prev === undefined) delete globalThis.location; else globalThis.location = prev;
+  }
+  assert.ok(String(seen).startsWith(DEFAULT_WORKER_URL), 'called ' + seen);
 });

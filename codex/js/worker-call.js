@@ -53,10 +53,61 @@ export function isStagingHost(hostname) {
   return h === STAGING_HOST || h.endsWith('.' + STAGING_HOST);
 }
 
-// PURE. The backend for a page served from `hostname`, given whatever its boot script set.
-// A preview host WINS over the boot value — that is the whole point.
-export function resolveWorkerUrl(hostname, bootUrl) {
-  if (isStagingHost(hostname)) return STAGING_WORKER_URL;
+// ── Per-branch Worker override, previews only ────────────────────────────────
+// The host pin above fixed one problem and left another standing. `codex-api-staging` is ONE
+// deployment: two sessions working at the same time each run `wrangler deploy --env staging`
+// and the last one wins, silently, within seconds. A branch cannot fix that (Élder 2026-08-05:
+// "por isso trabalhamos em galhos diferentes" — galho não resolve este caso), and it cost a
+// full round of work on this very track.
+//
+// The fix has two halves. On the Worker side, `wrangler versions upload` publishes a build to
+// its OWN URL without taking traffic on the shared one. On this side, a preview has to be able
+// to point at that URL — which the pin above made impossible, including through the
+// `window.WORKER_URL` the deploy recipe tells you to use.
+//
+// So: an override, but a narrow one. Accepted ONLY on a preview host, and ONLY when it names a
+// staging-family Worker. Production can never be redirected (that IS the 2026-07-15 incident),
+// and a preview can never be aimed at the production Worker, which would let a test click write
+// to the real D1.
+export const WORKER_OVERRIDE_KEY = 'cdx_worker_url';
+
+// PURE. May a preview be redirected to this URL? `wrangler versions upload` hands back
+// `https://<version-prefix>-codex-api-staging.pensoia.workers.dev`, so the rule is the host
+// label carrying `codex-api-staging` under our own workers.dev zone. Nothing else passes.
+export function isAllowedWorkerOverride(url) {
+  return /^https:\/\/[a-z0-9-]*codex-api-staging[a-z0-9-]*\.pensoia\.workers\.dev\/?$/
+    .test(String(url || ''));
+}
+
+// PURE given its inputs. `?worker=<url>` pins this preview to one Worker version and REMEMBERS
+// it; `?worker=` or `?worker=reset` forgets it. Remembered rather than read from the URL every
+// time because the admin navigates internally and nobody re-appends a query string on each hop.
+// A rejected value leaves whatever was already pinned alone: a typo must not silently move you
+// back onto the shared slot, which is the failure this whole block exists to end.
+export function readWorkerOverride(search, storage) {
+  let stored = null;
+  try { stored = (storage && storage.getItem(WORKER_OVERRIDE_KEY)) || null; } catch (_) { /* private mode */ }
+  const m = /[?&]worker=([^&]*)/.exec(String(search || ''));
+  if (!m) return stored;
+  const asked = decodeURIComponent(m[1] || '').replace(/\/$/, '');
+  if (!asked || asked === 'reset') {
+    try { storage && storage.removeItem(WORKER_OVERRIDE_KEY); } catch (_) { /* private mode */ }
+    return null;
+  }
+  if (!isAllowedWorkerOverride(asked)) return stored;
+  try { storage && storage.setItem(WORKER_OVERRIDE_KEY, asked); } catch (_) { /* private mode */ }
+  return asked;
+}
+
+// PURE. The backend for a page served from `hostname`, given whatever its boot script set and
+// whatever this preview was pinned to. A preview host WINS over the boot value — that is the
+// whole point — and an accepted override wins over the shared staging slot.
+export function resolveWorkerUrl(hostname, bootUrl, override) {
+  if (isStagingHost(hostname)) {
+    return isAllowedWorkerOverride(override)
+      ? String(override).replace(/\/$/, '')
+      : STAGING_WORKER_URL;
+  }
   return bootUrl || DEFAULT_WORKER_URL;
 }
 
@@ -141,6 +192,25 @@ function _net(state, data) {
   }
 }
 
+// The pin is read from the browser only on a preview host: production never even looks, so a
+// stray `cdx_worker_url` in somebody's localStorage cannot move pensoia.com off its backend.
+let _overrideAnnounced = false;
+function _browserWorkerOverride() {
+  if (typeof location === 'undefined') return null;
+  if (!isStagingHost(location.hostname || '')) return null;
+  const url = readWorkerOverride(
+    location.search || '',
+    typeof localStorage !== 'undefined' ? localStorage : null,
+  );
+  // Say it once. A preview quietly talking to a different backend than you think is the exact
+  // class of bug this block exists to end, so it has to be visible in the debug pill.
+  if (url && !_overrideAnnounced) {
+    _overrideAnnounced = true;
+    if (typeof window !== 'undefined' && window.bsLog) window.bsLog('worker pinned to ' + url, 'info');
+  }
+  return url;
+}
+
 // Make a Worker call. `env` lets tests inject fetch/workerUrl/auth; in the
 // browser those default to window.WORKER_URL, localStorage, and window.BS_GOOGLE.
 export async function callWorker(params, env = {}) {
@@ -160,6 +230,7 @@ export async function callWorker(params, env = {}) {
     || resolveWorkerUrl(
       (typeof location !== 'undefined' && location.hostname) || '',
       (typeof window !== 'undefined' && window.WORKER_URL) || null,
+      env.workerOverride !== undefined ? env.workerOverride : _browserWorkerOverride(),
     );
 
   // auth_token (hash) is always sent (empty string on the public Trail).
