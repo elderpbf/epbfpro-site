@@ -8,7 +8,6 @@ import { readFile } from 'node:fs/promises';
 import { getItemAction, getItemActions, getMeta } from '../trilha/js/actions.js';
 import { isFresh, countFreshIn } from '../trilha/js/freshness.js';
 import { state } from '../trilha/js/state.js';
-import { readFile } from 'node:fs/promises';
 import { readFileSync } from 'node:fs';
 
 // ── freshness (5-day window; epoch seconds) ─────────────────────────────────
