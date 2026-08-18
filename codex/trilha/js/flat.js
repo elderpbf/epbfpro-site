@@ -1,14 +1,14 @@
 // codex/trilha/js/flat.js
 // Flat-card layout for the Apostila ("Conteúdo do curso") and Outros materiais
 // tabs. Cards expand inline (no sub-card nesting); body content comes from the
-// Codex item renderer, the action row from Actions.appendFlatActionRow. Reuses
+// Codex item renderer, the header action from Actions.mountFlatCardAction. Reuses
 // the same cdx-tr- card styles as the Aulas timeline. Registers both renderers.
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.CdxGlyphs (icon library)
 import { state } from './state.js';
 import { esc, isOutrosItem } from './utils.js';
 import { isFresh } from './freshness.js';
-import { appendFlatActionRow } from './actions.js';
+import { mountFlatCardAction } from './actions.js';
 import { trail } from './api.js';
 import { registerRenderer } from './page.js';
 import { renderItem } from '../../js/item-render.js';
@@ -121,9 +121,16 @@ function buildFlatCard(item, opts = {}) {
 
   const headerEl = card.querySelector('.cdx-tr-card-header');
   if (headerEl) {
-    headerEl.addEventListener('click', () => toggleFlatCard(card, item));
+    // The action button lives in this header now, and the whole header toggles the card. Without
+    // this guard, clicking Copiar or Baixar would ALSO collapse the card under your cursor. The
+    // Aulas tab has carried the same guard since its action moved into the row (sub.js).
+    const onAction = (e) => !!(e.target && e.target.closest && e.target.closest('.cdx-tr-item-action'));
+    headerEl.addEventListener('click', (e) => { if (onAction(e)) return; toggleFlatCard(card, item); });
     headerEl.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' || e.key === ' ') { if (e.preventDefault) e.preventDefault(); toggleFlatCard(card, item); }
+      if (e.key !== 'Enter' && e.key !== ' ') return;
+      if (onAction(e)) return;
+      if (e.preventDefault) e.preventDefault();
+      toggleFlatCard(card, item);
     });
   }
   return card;
@@ -174,7 +181,7 @@ async function toggleFlatCard(card, item) {
     // and the student would not reach what is inside without downloading the whole package.
     if (isProjeto(data.item)) renderProjeto(data.item, contentWrap, buildSub, {});
     else renderItem(data.item, contentWrap, { preview: true });
-    appendFlatActionRow(body, data.item);
+    mountFlatCardAction(card, data.item);
   } catch (e) {
     if (window.bsLog) window.bsLog('trilha flat itemPublic: ' + (e && e.message || e), 'error');
     body.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';

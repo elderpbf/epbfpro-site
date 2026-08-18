@@ -8,6 +8,8 @@ import { readFile } from 'node:fs/promises';
 import { getItemAction, getItemActions, getMeta } from '../trilha/js/actions.js';
 import { isFresh, countFreshIn } from '../trilha/js/freshness.js';
 import { state } from '../trilha/js/state.js';
+import { readFile } from 'node:fs/promises';
+import { readFileSync } from 'node:fs';
 
 // ── freshness (5-day window; epoch seconds) ─────────────────────────────────
 const NOW = 1_700_000_000_000;
@@ -246,4 +248,30 @@ test('getItemActions: Elder\'s 3 project items open the dropdown (2 actions each
                    '# Modelo: Relatório Preparatório para Audiência CRIMINAL para Magistrados']) {
     assert.equal(getItemActions({ type: 'prompt', title: t, body_md: 'x' }).length, 2, t);
   }
+});
+
+// ── the flat card's action sits in the HEADER (2026-08-17) ───────────────────
+// Élder, on the Outros materiais tab: "the action button appears only at the end and not at the
+// card header like in all the other lessons". The Aulas tab mounts into the row header; the flat
+// cards (Apostila / Outros) appended a row to the bottom of the opened body, so the SAME item
+// behaved differently depending on which tab you opened it from.
+test('flat cards mount their action in the card header, beside the chevron', async () => {
+  const src = await readFile(new URL('../trilha/js/actions.js', import.meta.url), 'utf8');
+  assert.match(src, /export function mountFlatCardAction/, 'the header mount exists');
+  assert.match(src, /\.cdx-tr-card-header \.cdx-tr-actions/, 'it targets the header slot');
+  assert.ok(!src.includes('cdx-tr-flat-action-row'), 'the bottom-of-body row is gone');
+});
+
+test('the flat card re-mount cannot stack a second button', () => {
+  // The header outlives the body: the body is destroyed on collapse and rebuilt on the next
+  // open, so mounting without clearing would add one button per reopen.
+  const src = readFileSync(new URL('../trilha/js/actions.js', import.meta.url), 'utf8');
+  const fn = src.slice(src.indexOf('export function mountFlatCardAction'));
+  assert.match(fn.slice(0, 600), /previous[\s\S]*\.remove\(\)/, 'it clears the previous mount first');
+});
+
+test('clicking the action in a flat header does not collapse the card', () => {
+  // The whole header toggles the card, and the button now lives inside it.
+  const src = readFileSync(new URL('../trilha/js/flat.js', import.meta.url), 'utf8');
+  assert.match(src, /cdx-tr-item-action/, 'flat.js guards clicks on the action');
 });
