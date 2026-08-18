@@ -254,6 +254,26 @@
     .k18-btn-toggle.k18-on { border-color: var(--focal); color: var(--focal); background: rgba(var(--focal-rgb), 0.10); }
     .k18-btn:disabled { opacity: 0.4; cursor: not-allowed; }
     .k18-btn:disabled:hover { transform: none; border-color: var(--border); color: var(--text-dim); }
+    /* Once the window is too full to send, Compactar is the only way forward, so
+       it takes over the prominence the (now disabled) next button gives up. */
+    .k18-btn-urgent {
+      border-color: var(--t-tools); background: rgba(225, 29, 72, 0.18); color: var(--t-tools);
+      box-shadow: 0 0 12px rgba(225, 29, 72, 0.35);
+      animation: k18-pulse 1.6s ease-in-out infinite;
+    }
+    .k18-btn-urgent:hover { background: rgba(225, 29, 72, 0.3); border-color: var(--t-tools); color: var(--t-tools); }
+    @keyframes k18-pulse {
+      0%, 100% { box-shadow: 0 0 10px rgba(225, 29, 72, 0.28); }
+      50%      { box-shadow: 0 0 20px rgba(225, 29, 72, 0.55); }
+    }
+    /* The meter turns red with the block, so the room sees the reason before
+       reading the message. */
+    .k18-panel--blocked .k18-meter-value { color: var(--t-tools); }
+    .k18-panel--blocked .k18-meter-fill {
+      background: linear-gradient(90deg, rgba(225, 29, 72, 0.55), var(--t-tools));
+    }
+    .k18-status--blocked { font-style: normal; color: var(--t-tools); font-weight: 600; }
+    .k18-status--blocked strong { color: var(--t-tools); }
 
     @media (max-width: 700px) {
       .k18-panel { padding: 0.6rem 0.9rem 0.6rem; gap: 0.55rem; }
@@ -330,6 +350,7 @@
     <span class="k18-fs-slot" data-lab-fs-ctl></span>
     <button class="k18-btn" id="k18-back">◀ Voltar</button>
     <button class="k18-btn k18-btn-action" id="k18-next">Próxima etapa ▶</button>
+    <button class="k18-btn" id="k18-doc">+ Documento</button>
     <button class="k18-btn" id="k18-compact">Compactar</button>
     <button class="k18-btn k18-btn-toggle" id="k18-window-size">Janela 1M</button>
     <button class="k18-btn k18-btn-toggle" id="k18-scale">Sem zoom</button>
@@ -341,6 +362,7 @@
     <p>Primeiro entra o <strong>setup</strong> (prompt do sistema, memórias, ferramentas). Aí a conversa avança e cada coisa vira um bloco, na ordem: o <strong>prompt do usuário</strong> e depois o <strong>documento</strong> que ele anexa; então o modelo <strong>raciocina</strong> (custa milhares) e <strong>chama uma ferramenta</strong> (a chamada em si custa quase nada, ~200) e recebe o <strong>resultado</strong>. Num mesmo turno ele pode repetir isso e sempre <strong>avalia o resultado</strong> antes de seguir, seja para chamar outra ferramenta ou para escrever a <strong>resposta</strong> (um resultado nunca vira resposta direto). Cada novo pedaço se empilha, nada se apaga.</p>
     <p>Repare no <strong>total processado</strong>: toda vez que o modelo gera algo, ele lê de novo tudo que já está na janela e escreve por cima. O custo não é o tamanho atual da janela, é a soma de todas essas releituras, e ela cresce a cada turno. Por isso conversa longa sai cara mesmo antes de a janela encher.</p>
     <p><strong>Compactar</strong> resume as interações que já passaram num único bloco menor (o setup fica de fora): libera espaço e faz as próximas releituras custarem menos, sem devolver o que já foi processado. É assim que a janela funciona por dentro.</p>
+    <p>Perto do limite a conversa <strong>trava</strong>: aqui, a partir de 85% da janela ocupada, nada mais entra. As saídas são compactar, voltar um passo ou trocar para uma janela maior. Na prática é o que acontece quando você anexa documento demais e a ferramenta passa a recusar o envio.</p>
   </template>
 
   <script>
@@ -418,6 +440,11 @@
       // and its flex-basis animates instead of snapping.
       var _id = 0;
       STEPS.forEach(function (s) { s.forEach(function (ev) { ev.id = _id++; }); });
+      // The scripted timeline, kept aside so Reiniciar can drop every document
+      // the instructor injected during the class and start from the script again.
+      const BASE_STEPS = STEPS.slice();
+      const DOC_TOK = 30000;          // ~100 pages, the ruler used on the slide
+      const BLOCK_PCT = 0.85;         // window occupancy that stops the conversation
       const SETUP_TOK = STEPS[0].reduce(function (a, e) { return a + e.k; }, 0);
       const isModel = function (t) { return t === 'think' || t === 'call' || t === 'answer'; };
 
@@ -443,6 +470,8 @@
       const backBtn  = document.getElementById('k18-back');
       const nextBtn  = document.getElementById('k18-next');
       const compactBtn = document.getElementById('k18-compact');
+      const docBtn   = document.getElementById('k18-doc');
+      const panelEl  = document.querySelector('.k18-panel');
       const scaleBtn = document.getElementById('k18-scale');
       const sizeBtn  = document.getElementById('k18-window-size');
       const breakCeilEl = document.getElementById('k18-break-ceil');
@@ -582,12 +611,25 @@
         turnsEl.textContent = String(turnsRevealed());
         procEl.textContent = fmt(computeProcessed());
 
-        if (stepPos === 0) statusEl.innerHTML = 'Clique em <strong>Próxima etapa</strong> para carregar o setup.';
+        // Past BLOCK_PCT the conversation cannot go on: nothing else fits without
+        // first making room. The block lifts by compacting, stepping back, or
+        // switching to a bigger window.
+        const blocked = used >= TOTAL * BLOCK_PCT;
+        panelEl.classList.toggle('k18-panel--blocked', blocked);
+        statusEl.classList.toggle('k18-status--blocked', blocked);
+
+        if (blocked) {
+          statusEl.innerHTML = 'A janela está em <strong>' + Math.round((used / TOTAL) * 100) +
+            '%</strong>. Não é possível enviar mais nada: é preciso <strong>compactar</strong> a conversa ou trocar para uma <strong>janela maior</strong>.';
+        }
+        else if (stepPos === 0) statusEl.innerHTML = 'Clique em <strong>Próxima etapa</strong> para carregar o setup.';
         else { const last = STEPS[stepPos - 1][STEPS[stepPos - 1].length - 1]; statusEl.innerHTML = statusForType(last.t); }
 
         backBtn.disabled = stepPos <= (compactedUntil > 0 ? compactedUntil : 0);
-        nextBtn.disabled = stepPos >= STEPS.length;  // quiet stop; no "end of conversation"
+        nextBtn.disabled = blocked || stepPos >= STEPS.length;  // quiet stop; no "end of conversation"
+        docBtn.disabled = blocked || stepPos < SETUP_STEPS;     // a document needs the setup loaded first
         compactBtn.disabled = (stepPos - shownStart) < 2;
+        compactBtn.classList.toggle('k18-btn-urgent', blocked && !compactBtn.disabled);
         scaleBtn.classList.toggle('k18-on', fullScale);
         scaleBtn.textContent = fullScale ? 'Com zoom' : 'Sem zoom';
         // The size button names the window it will switch TO.
@@ -609,6 +651,15 @@
       }
 
       function next()    { if (stepPos < STEPS.length) { stepPos++; render(); } }
+      // Attach a document wherever the walkthrough currently is. It becomes a real
+      // step, so Voltar removes it and the token maths counts it like any other.
+      function addDoc() {
+        if (stepPos < SETUP_STEPS) return;
+        const turn = Math.max(1, turnsRevealed());
+        STEPS.splice(stepPos, 0, [{ t: 'doc', l: 'Documento anexado', k: DOC_TOK, turn: turn, id: _id++ }]);
+        stepPos++;
+        render();
+      }
       function back()    { if (stepPos > (compactedUntil > 0 ? compactedUntil : 0)) { stepPos--; render(); } }
       function compact() {
         const shownStart = compactedUntil > 0 ? compactedUntil : SETUP_STEPS;
@@ -625,7 +676,11 @@
         zoomCeil = Math.min(zoomCeil, TOTAL);  // ceiling can't exceed the new window
         render();
       }
-      function reset()   { stepPos = 0; compactedUntil = 0; fullScale = false; zoomCeil = ZOOM_STEPS[0]; processedFrozen = 0; compactBaseTok = 0; render(); }
+      function reset()   {
+        STEPS.length = 0;                                  // drop injected documents
+        BASE_STEPS.forEach(function (s) { STEPS.push(s); });
+        stepPos = 0; compactedUntil = 0; fullScale = false; zoomCeil = ZOOM_STEPS[0]; processedFrozen = 0; compactBaseTok = 0; render();
+      }
 
       // Commentary collapse: independent of the conversation state, so it isn't
       // touched by next/back/compact/reset.
@@ -638,6 +693,7 @@
       function toggleComments() { commentsOpen = !commentsOpen; renderComments(); }
 
       nextBtn.addEventListener('click', next);
+      docBtn.addEventListener('click', addDoc);
       backBtn.addEventListener('click', back);
       compactBtn.addEventListener('click', compact);
       scaleBtn.addEventListener('click', scale);
