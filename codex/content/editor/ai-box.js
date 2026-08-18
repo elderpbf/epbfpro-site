@@ -67,6 +67,10 @@ export function mount(host, opts = {}) {
   const tags = opts.tags || [];
   const onResult = opts.onResult || function () {};
   const onDirty = opts.onDirty || function () {};
+  // Where a file goes once the box is done with it. The box PICKS; the item's file list OWNS
+  // (§28), so handing over and forgetting is what lets the next pick add a second file instead
+  // of quietly replacing the first.
+  const onFileAttached = opts.onFileAttached || function () {};
   // null means nobody chose: the AI's own type guess decides, which is what keeps every existing
   // item behaving exactly as before. Once the user touches the checkbox it stops being null and
   // the choice wins over the guess.
@@ -172,6 +176,16 @@ export function mount(host, opts = {}) {
     const r = host.querySelector('input[name="aib-mode"]:checked');
     return r ? r.value : 'extract';
   };
+  // Hand the file to the item's list and forget it here. Without this the box would hold one
+  // file forever and picking a second would silently drop the first.
+  function handOff(f) {
+    pickedFile = null;
+    pickedExtractable = false;
+    const panel = host.querySelector('#aib-picked');
+    if (panel) panel.style.display = 'none';
+    onFileAttached(f);
+  }
+
   async function onFilePicked(f) {
     if (!f) return;
     pickedFile = f;
@@ -184,6 +198,9 @@ export function mount(host, opts = {}) {
     const modeRow = host.querySelector('#aib-mode-row');
     if (modeRow) modeRow.style.display = pickedExtractable ? '' : 'none';
     onDirty();
+    // Nothing to extract means nothing to ask (§25.4): it is an attachment, and it goes straight
+    // to the list where it can be removed or joined by another.
+    if (!pickedExtractable) { handOff(f); return; }
     if (pickedExtractable) {
       if (statusEl) statusEl.textContent = t('creator.file_extracting');
       let text = '';
@@ -194,6 +211,15 @@ export function mount(host, opts = {}) {
       statusEl.textContent = t('creator.file_no_text');
     }
   }
+
+  // An extractable file DID get the question, so the hand-off waits for the answer. Choosing
+  // "keep the file" moves it to the list; choosing "read the text out of it" leaves the text in
+  // the box and the file behind, which is what that answer means.
+  host.addEventListener('change', (e) => {
+    if (!e.target || e.target.name !== 'aib-mode') return;
+    onDirty();
+    if (pickedFile && e.target.value === 'download') handOff(pickedFile);
+  });
 
   // Gated on wantSources too, not only on compact: a PACKAGE renders no import row, and wiring
   // buttons that were never rendered threw on the very first mount of a package editor.

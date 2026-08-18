@@ -945,6 +945,8 @@ export default {
   'editor.file_from_computer':    'From computer',
   'editor.file_from_drive':       'From Google Drive',
   'editor.file_selected':         'Selected:',
+  'editor.file_remove':          'Remove file',
+  'editor.file_pending':         'on save',
   'editor.view':                  'view',
   'editor.authors_label':         'Authors',
   'editor.authors_placeholder':   'e.g. Silva, J.; Santos, M.',

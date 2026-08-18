@@ -35,6 +35,7 @@
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { itemFiles, withItemFiles, fileListHtml } from '../js/item-files.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import {
   buildTypeBlock, wireTypeBlock, collectTypeData, mergeItemMeta, setBundleSlugs, isBundleSlug, renderMarkdown,
@@ -203,6 +204,10 @@ function _mountLevel(container, opts) {
   const onCreateType = opts.onCreateType || null;
   const excludeTypes = Array.isArray(opts.excludeTypes) ? opts.excludeTypes : [];
   const pendingFile = opts.pendingFile || null; // a File chosen before the editor opened
+  // Files chosen at this level and not yet uploaded. They come BACK on a remount (stepping into
+  // a package and out again destroys the level), so choosing three files and then opening a
+  // member does not lose them.
+  const pendingFilesIn = Array.isArray(opts.pendingFiles) ? opts.pendingFiles : [];
 
   const nav = opts._nav || null;
   const depth = nav ? nav.depth() : 1;
@@ -265,6 +270,7 @@ function _mountLevel(container, opts) {
         '<div class="cdx-ie-left">' +
           // The content box owns #ie-body and carries the AI, the imports and the raw flag.
           '<div id="ie-aibox"></div>' +
+          '<div id="ie-files"></div>' +
           '<div id="ie-zipintro"></div>' +
           '<p class="cdx-ie-note">' + _esc(t('editor.ai_note')) + '</p>' +
           // THE ORDER, and it is the question Élder asked to have answered rather than guessed
@@ -311,6 +317,11 @@ function _mountLevel(container, opts) {
 
   const root = container;
   const selectedTagIds = new Set(initialTagIds);
+  // AN ITEM CARRIES FILES, PLURAL (§28). `_files` are the ones already uploaded (removable),
+  // `_pendingFiles` the ones chosen in this session and uploaded on save. The old pair of
+  // scalars survives for the ONE field that is genuinely single: a paper's PDF.
+  let _files = itemFiles(initialMeta);
+  let _pendingFiles = pendingFilesIn.slice();
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
   // A package's members are not meta_json: they are ct_item_members rows, written AFTER the save
@@ -375,6 +386,9 @@ function _mountLevel(container, opts) {
     // The ".zip" choice only exists for a package, and it sits under the box it governs.
     root.querySelector('#ie-zipintro').innerHTML = bundle ? buildZipIntro(initialMeta) : '';
     wireTypeBlock(block, typeSlug, function (file, field) {
+      // A paper's PDF is genuinely ONE field, so it keeps the scalar slot. A material's image is
+      // just a file the item carries, so it joins the list like any other (§28).
+      if (field === 'attachment_url') { _addPendingFile(file); return; }
       _pendingAssetFile = file;
       _pendingAssetField = field;
       markDirty();
@@ -409,6 +423,42 @@ function _mountLevel(container, opts) {
   // the Refazer button read it.
   let _aiCtx = aiContext;
 
+  // THE FILE LIST. It is what makes the item an entity rather than a wrapper around one upload
+  // (Élder 2026-08-17: *"eu tenho que poder adicionar arquivos, substituir arquivo, apagar
+  // arquivo, adicionar um novo"*). Adding is the content box's picker, which hands each file
+  // over and resets, so picking again adds a second one instead of replacing the first.
+  // Replacing is remove plus add, which is the same two clicks and one less concept.
+  function _renderFiles() {
+    const host = root.querySelector('#ie-files');
+    if (!host) return;
+    host.innerHTML = fileListHtml(_files, _pendingFiles.map((f) => ({ name: f.name })), {
+      remove: t('editor.file_remove'),
+      pending: t('editor.file_pending'),
+    });
+  }
+  function _addPendingFile(file) {
+    if (!file) return;
+    // The same file picked twice is one file: the R2 key is the item plus the name, so a repeat
+    // would overwrite itself and leave a duplicate row pointing at one object.
+    const dup = _pendingFiles.some((f) => f.name === file.name && f.size === file.size);
+    if (!dup) _pendingFiles.push(file);
+    _renderFiles();
+    markDirty();
+  }
+  root.querySelector('#ie-files').addEventListener('click', (e) => {
+    const del = e.target.closest('[data-file-del]');
+    if (del) {
+      _files.splice(Number(del.getAttribute('data-file-del')), 1);
+      _renderFiles(); markDirty(); return;
+    }
+    const pdel = e.target.closest('[data-pending-del]');
+    if (pdel) {
+      _pendingFiles.splice(Number(pdel.getAttribute('data-pending-del')), 1);
+      _renderFiles(); markDirty();
+    }
+  });
+  _renderFiles();
+
   renderTypeBlock(initialType);
 
   // ── the AI box, mounted where the separate creator screen used to be ───────
@@ -426,6 +476,7 @@ function _mountLevel(container, opts) {
       types,
       tags,
       compact: !!opts.compact,
+      onFileAttached: _addPendingFile,
       // What the one box is FOR comes from type-block.js, the only module allowed to know that a
       // paper keeps complementary notes there or that a package must not offer file sources.
       label: t(spec.labelKey),
@@ -453,12 +504,7 @@ function _mountLevel(container, opts) {
         if (rb) rb.hidden = false;
         // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
         // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
-        if (ctx && ctx.file) {
-          _pendingAssetFile = ctx.file;
-          _pendingAssetField = 'attachment_url';
-          const nm = root.querySelector('#ie-doc-filename');
-          if (nm) nm.textContent = t('editor.file_selected') + ' ' + ctx.file.name;
-        }
+        if (ctx && ctx.file) _addPendingFile(ctx.file);
         _tagsByLabels(tags, parsed.tag_labels || []).then((ids) => {
           selectedTagIds.clear();
           ids.forEach((id) => selectedTagIds.add(id));
@@ -473,13 +519,7 @@ function _mountLevel(container, opts) {
 
   // A file picked before the editor opened arrives as opts.pendingFile: seed the same
   // pending-upload path the type editor uses, and show the chosen name.
-  if (pendingFile) {
-    _pendingAssetFile = pendingFile;
-    _pendingAssetField = 'attachment_url';
-    markDirty();
-    const nm = root.querySelector('#ie-doc-filename');
-    if (nm) nm.textContent = t('editor.file_selected') + ' ' + pendingFile.name;
-  }
+  if (pendingFile) _addPendingFile(pendingFile);
 
   typeSel.addEventListener('change', function () {
     if (typeSel.value === '__new__') {
@@ -661,7 +701,9 @@ function _mountLevel(container, opts) {
     const chosen = _aiBox.verbatim();
     // Laid over what is already STORED, never replacing it: the form only speaks for the keys its
     // own type block draws, and the attachment is not one of them (mergeItemMeta / §25.5).
-    let meta = mergeItemMeta(initialMeta, typeData.meta_json, type);
+    // The list is written on TOP of the merge: the merge decides which keys the form owns, this
+    // decides which files the item carries, and a removal here has to survive the merge.
+    let meta = withItemFiles(mergeItemMeta(initialMeta, typeData.meta_json, type), _files);
     if (typeof chosen === 'boolean') meta = Object.assign({}, meta || {}, { verbatim: chosen });
     return {
       type, title, summary,
@@ -669,6 +711,14 @@ function _mountLevel(container, opts) {
       meta_json: meta,
       tag_ids: Array.from(selectedTagIds)
     };
+  }
+
+  // A file still held by the content box at Save time, if it is one the item is meant to carry.
+  // Normally empty: the box hands each file over the moment the answer is known.
+  function _boxLeftover() {
+    const f = _aiBox ? _aiBox.pendingFile() : null;
+    if (!f) return [];
+    return _pendingFiles.some((p) => p.name === f.name && p.size === f.size) ? [] : [f];
   }
 
   // Everything this level is holding, in the shape editor/nav.js stores and planSave() reads.
@@ -688,8 +738,13 @@ function _mountLevel(container, opts) {
       // The content box is the one file selector (§25.4), and it hands its file over through
       // onResult, which only fires if the AI ran. Picking a file and pressing Save straight
       // after used to upload nothing, silently: no error, no attachment, no button on the trail.
-      pendingFile: _pendingAssetFile || (_aiBox ? _aiBox.pendingFile() : null),
-      pendingField: _pendingAssetField || 'attachment_url',
+      // The content box's own slot is drained here as a backstop: a file sitting in it in "keep
+      // the file" mode has been answered for, and losing it on Save is the defect §25.5 was
+      // about. It goes into the LIST, never into the scalar, so the two never disagree.
+      pendingFiles: _pendingFiles.concat(_boxLeftover()),
+      // The scalar survives for the one field that is genuinely single: a paper's PDF.
+      pendingFile: _pendingAssetFile,
+      pendingField: _pendingAssetField,
       verbatim: _aiBox.verbatim(),
       dirty: isDirty,
     };
@@ -750,19 +805,33 @@ async function _persist(draft, existingId, opts) {
   const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
   const savedId = existingId || (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));
 
-  if (draft.pendingFile && savedId) {
-    const b64 = await _readFileAsBase64(draft.pendingFile);
-    const uploadRes = await api.uploadAsset({
-      item_id: savedId,
-      filename: draft.pendingFile.name,
-      content_b64: b64
-    });
-    const assetUrl = uploadRes && uploadRes.url;
-    if (assetUrl && draft.pendingField) {
-      const meta = draft.params.meta_json ? JSON.parse(draft.params.meta_json) : {};
-      meta[draft.pendingField] = assetUrl;
-      await api.updateItem({ id: savedId, meta_json: JSON.stringify(meta) });
+  // The uploads happen AFTER the row exists, because the R2 key is built from the item id.
+  // One call per file: ct_upload_asset takes one, and the loop belongs to the client.
+  if (savedId) {
+    let meta = draft.params.meta_json ? JSON.parse(draft.params.meta_json) : {};
+    let touched = false;
+
+    const uploaded = [];
+    for (const file of (draft.pendingFiles || [])) {
+      const b64 = await _readFileAsBase64(file);
+      const res = await api.uploadAsset({ item_id: savedId, filename: file.name, content_b64: b64 });
+      if (res && res.url) uploaded.push({ url: res.url, name: file.name });
     }
+    if (uploaded.length) {
+      // Appended to whatever the form already decided the item carries, so a file removed in the
+      // same session stays removed and the new ones join the survivors.
+      meta = withItemFiles(meta, itemFiles(meta).concat(uploaded));
+      touched = true;
+    }
+
+    // The scalar path, for a field that is genuinely one value (a paper's PDF).
+    if (draft.pendingFile && draft.pendingField) {
+      const b64 = await _readFileAsBase64(draft.pendingFile);
+      const res = await api.uploadAsset({ item_id: savedId, filename: draft.pendingFile.name, content_b64: b64 });
+      if (res && res.url) { meta[draft.pendingField] = res.url; touched = true; }
+    }
+
+    if (touched) await api.updateItem({ id: savedId, meta_json: JSON.stringify(meta) });
   }
   return savedId;
 }
@@ -842,6 +911,7 @@ export function mount(container, opts) {
       prefill,
       aiContext: lo.aiContext || null,
       pendingFile: draft ? draft.pendingFile : (lo.pendingFile || null),
+      pendingFiles: draft ? draft.pendingFiles : (lo.pendingFiles || null),
       titleLabel: nav.depth() === 1 ? opts.titleLabel : null,
       saveLabel: nav.depth() === 1 ? opts.saveLabel : null,
       // Deleting is offered only at the root. One level down you are inside a package, and

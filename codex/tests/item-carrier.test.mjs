@@ -81,8 +81,12 @@ test('item-form saves through the merge, never through the raw collect', () => {
 test('a file picked without running the AI still reaches the save', () => {
   // pendingFile() was exposed on the content box and never called: the file only travelled
   // through onResult, which fires only after an AI pass. Pick, Save, nothing uploaded.
-  assert.match(formSrc, /pendingFile: _pendingAssetFile \|\| \(_aiBox \? _aiBox\.pendingFile\(\) : null\)/);
-  assert.match(formSrc, /pendingField: _pendingAssetField \|\| 'attachment_url'/);
+  // It now reaches the save twice over: the box hands each file to the item's list the moment
+  // the answer is known (§28), and whatever is still sitting in the box at Save is drained too.
+  assert.match(formSrc, /onFileAttached: _addPendingFile/);
+  assert.match(formSrc, /function _boxLeftover\(\)/);
+  assert.match(formSrc, /_aiBox\.pendingFile\(\)/);
+  assert.match(formSrc, /pendingFiles: _pendingFiles\.concat\(_boxLeftover\(\)\)/);
 });
 
 test('there is ONE file selector: the arquivo block no longer draws its own', () => {

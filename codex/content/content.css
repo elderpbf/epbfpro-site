@@ -1486,6 +1486,37 @@
    in the .cdx-ie block above: the actions, the sources and the flags all sit BELOW the field,
    and duplicating them here is what made an older `display:inline-flex` win by source order and
    flatten the new action row. */
+/* THE ITEM'S FILES (js/item-files.js). An item carries files, plural: this is the list that
+   makes adding, replacing and removing possible at all, sitting right under the box that picks
+   them. A pending row is one chosen in this session, uploaded when the item is saved. */
+.cdx-file-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.cdx-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.86rem;
+}
+.cdx-file-row.is-pending { border-style: dashed; }
+.cdx-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+a.cdx-file-name { text-decoration: none; }
+a.cdx-file-name:hover { text-decoration: underline; }
+.cdx-file-pending { flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-secondary); }
+.cdx-file-del {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  cursor: pointer;
+}
+.cdx-file-del:hover { color: var(--danger); }
+
 .cdx-aib-picked { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
 /* The extract/download pair is wrapped so it can be hidden as a unit (a file with no text to
    extract is not asked the question). `display:flex` keeps the two radios laid out exactly as

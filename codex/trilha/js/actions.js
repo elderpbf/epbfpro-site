@@ -10,6 +10,7 @@ import { isLoggedIn, LOGIN_ENABLED } from './student-session.js';
 import { openTrailLogin } from './gate.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { openModal as openLabViewer } from '../../js/lab-viewer.js';
+import { itemFiles, isImageFile } from '../../js/item-files.js';
 import { openMenu } from '../../js/menu.js';
 import { downloadText, fileNameFromTitle, isDownloadable, isVerbatim } from '../../js/item-download.js';
 import { downloadItemPdf, itemPdfBytes } from '../../js/item-pdf.js';
@@ -63,10 +64,21 @@ export function getItemActions(item) {
   const meta = getMeta(item);
   const out = [];
   if (meta.pdf_url) out.push({ kind: 'open', label: 'Baixar PDF', url: meta.pdf_url, icon: 'download' });
-  if (meta.attachment_url) {
-    const isImg = /\.(png|jpe?g|webp|gif)$/i.test(meta.attachment_url);
-    out.push({ kind: 'open', label: isImg ? 'Ver imagem' : 'Baixar', url: meta.attachment_url, icon: isImg ? 'external' : 'download' });
-  }
+  // ONE BUTTON PER FILE. An item carries files, plural (§28), so this is a list and not a field.
+  // With several the button says WHICH one, because "Baixar" three times in a row tells the
+  // student nothing about what they are picking.
+  const files = itemFiles(meta);
+  files.forEach((f) => {
+    const img = isImageFile(f.name || f.url);
+    const verb = img ? 'Ver' : 'Baixar';
+    out.push({
+      kind: 'open',
+      label: files.length > 1 ? verb + ' ' + f.name : (img ? 'Ver imagem' : 'Baixar'),
+      shortLabel: files.length > 1 ? f.name : undefined,
+      url: f.url,
+      icon: img ? 'external' : 'download',
+    });
+  });
   if (meta.doc_url) out.push({ kind: 'open', label: 'Documentação', url: meta.doc_url, icon: 'external' });
   if (item.body_md) {
     out.push({ kind: 'copy', label: 'Copiar', text: item.body_md, icon: 'copy' });
@@ -252,7 +264,7 @@ export async function downloadProject(project) {
   const fetched = await Promise.all(
     got.filter(Boolean).flatMap((i) => {
       const meta = getMeta(i);
-      return [meta.attachment_url, meta.pdf_url].filter(Boolean).map((u) =>
+      return [...itemFiles(meta).map((f) => f.url), meta.pdf_url].filter(Boolean).map((u) =>
         fetch(_assetSrc(u))
           .then((r) => (r.ok ? r.arrayBuffer() : Promise.reject(new Error('HTTP ' + r.status))))
           .then((buf) => ({ name: String(u).split('/').pop(), bytes: new Uint8Array(buf), dir: i._dir }))
