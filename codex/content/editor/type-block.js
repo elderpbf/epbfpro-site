@@ -12,32 +12,15 @@
 //   wireTypeBlock(el, slug, onFile, ctx)
 //   collectTypeData(el, slug)          -> { body_md, meta_json }
 // Adding a type means touching those three and nothing else.
-import { appConfig } from '../../js/codex-api.js';
 import { t } from '../../js/i18n.js';
 import { esc as _esc } from '../../js/dom.js';
 import { mount as mountMembers } from '../item-members.js';
-import { createDriveSource, pickLocalFile } from '../../js/file-source.js';
-import * as notice from '../../js/notice.js';
 
-// Google Picker key (for the "from Drive" file option): fetched once from the Worker and read
-// live by the shared Drive source, exactly like the Slides gallery. The Drive button stays
-// hidden until it lands, so the local-upload path always works on its own.
-let _pickerKey = '';
-let _pickerKeyPromise = null;
-function _primePickerKey() {
-  if (!_pickerKeyPromise) {
-    _pickerKeyPromise = appConfig.get()
-      .then((r) => { _pickerKey = (r && r.config && r.config.googlePickerApiKey) || ''; })
-      .catch((e) => { _pickerKey = ''; notice.internal(e); });
-  }
-  return _pickerKeyPromise;
-}
-function _fileDriveSource() {
-  return createDriveSource({
-    getApiKey: () => _pickerKey,
-    getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null),
-  });
-}
+// The Google Picker key and the shared Drive source USED to be primed here, for the `arquivo`
+// block's own "from Drive" button. That button was the second file selector and it is gone
+// (§25.4): the content box (editor/ai-box.js) offers local and Drive through the same shared
+// file-source module, for every type, so nothing was lost with it. This module stopped talking
+// to the backend at all when they went.
 
 // Exported because the assembling mount also repaints the preview after an AI pass. One
 // markdown path, not two: two would drift on the day the CDN URL or the fallback changes.
@@ -148,23 +131,12 @@ export function buildTypeBlock(typeSlug, body_md, meta) {
       '</div>' +
     '</div>';
   }
-  if (typeSlug === 'arquivo') {
-    // Any downloadable file (pdf/docx/zip/…), sourced from the computer OR Google Drive via the
-    // shared file-source module. The student gets a "Download" action on the trail (actions.js
-    // renders attachment_url generically). The Drive button hides until the Picker key lands.
-    return '<div class="cdx-type-block">' +
-      '<div class="cdx-field"><label>' + t('editor.arquivo_file_label') + '</label>' +
-        '<div class="cdx-upload-row">' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-local">' + t('editor.file_from_computer') + '</button>' +
-          '<button type="button" class="cdx-btn cdx-btn-sm" id="ie-doc-drive" style="display:none">' + t('editor.file_from_drive') + '</button>' +
-          '<span class="cdx-upload-progress"></span>' +
-        '</div>' +
-        '<div class="cdx-upload-filename" id="ie-doc-filename">' +
-          (m.attachment_url ? t('editor.current_file') + ' <a href="' + _esc(m.attachment_url) + '" target="_blank" rel="noopener">' + t('editor.view') + '</a>' : '') +
-        '</div>' +
-      '</div>' +
-    '</div>';
-  }
+  // `arquivo` HAD its own file picker here, and that was the SECOND selector. The content box
+  // above already picks a file, so the editor asked the same question twice with opposite
+  // effects: the top one reads the file into the TEXT, this one attached it. Élder hit exactly
+  // that on 17/08 and his .zip went nowhere. The content box is the one selector now, for every
+  // type, and `arquivo` stops meaning anything: a file is what an item CARRIES, never what it
+  // IS (§25.3). Nothing renders here, so an item typed `arquivo` still edits fine.
   if (typeSlug === 'paper') {
     return '<div class="cdx-type-block">' +
       '<div class="cdx-field"><label>' + t('editor.authors_label') + '</label>' +
@@ -284,28 +256,46 @@ export function wireTypeBlock(block, typeSlug, onFileSelected, ctx) {
       if (f) onFileSelected(f, 'pdf_url');
     });
   }
+}
 
-  // arquivo: pick any file from the computer OR Google Drive (shared file-source module), both
-  // handing the File to the same pending-upload path the native file inputs above use.
-  const docLocal = block.querySelector('#ie-doc-local');
-  const docDrive = block.querySelector('#ie-doc-drive');
-  if (docLocal || docDrive) {
-    const nameEl = block.querySelector('#ie-doc-filename');
-    const showPicked = (f) => { if (nameEl && f) nameEl.textContent = t('editor.file_selected') + ' ' + f.name; };
-    if (docLocal) docLocal.addEventListener('click', async () => {
-      const f = await pickLocalFile({});
-      if (f) { onFileSelected(f, 'attachment_url'); showPicked(f); }
-    });
-    if (docDrive) {
-      const src = _fileDriveSource();
-      const syncAvail = () => { docDrive.style.display = src.available() ? '' : 'none'; };
-      _primePickerKey().then(syncAvail).catch(() => {});
-      docDrive.addEventListener('click', async () => {
-        const f = await src.pick({ view: 'any' });
-        if (f) { onFileSelected(f, 'attachment_url'); showPicked(f); }
-      });
-    }
+// WHICH META KEYS A TYPE BLOCK OWNS. `collectTypeData` REBUILDS meta_json from the form every
+// save, which is right for what the form draws and catastrophic for what it does not: an item's
+// attachment lives in the same meta_json, no block renders it, so every save silently deleted it
+// (§25.5): three items in the archive were one careless save away from losing their download,
+// and switching to a type the editor does not know wiped meta_json entirely).
+//
+// This table is what makes rebuilding safe. A key listed here is drawn by that type's block, so
+// the form is the authority and rebuilding is correct. Anything NOT listed is a CARRIER, put
+// there by an upload, by the trail, by another type, and it survives untouched. Adding a field
+// to a block means adding its key here; forgetting to means the field cannot be cleared, which
+// is the harmless half of the mistake.
+export const TYPE_META_KEYS = {
+  guide:      ['platform_tabs'],
+  paper:      ['authors', 'year', 'abstract'],
+  model_info: ['provider', 'model_id', 'context_window', 'strengths', 'doc_url'],
+};
+
+// PURE. Which keys the block for `typeSlug` draws. A bundle owns its zip flag; every unknown or
+// blank type owns nothing, which is exactly why `skill` used to lose everything.
+export function typeMetaKeys(typeSlug) {
+  if (isBundleSlug(typeSlug)) return ['zip_intro'];
+  return TYPE_META_KEYS[typeSlug] || [];
+}
+
+// PURE. The meta_json to SAVE: what the form just collected, laid over the carriers already
+// stored. Returns null when the result is empty, because absence is meaningful here (an absent
+// `verbatim` means "follow the type", an absent `zip_intro` means "yes"), so an empty object
+// must not be written where nothing was written before.
+export function mergeItemMeta(stored, collected, typeSlug) {
+  const owned = typeMetaKeys(typeSlug);
+  const out = {};
+  const prev = (stored && typeof stored === 'object') ? stored : {};
+  for (const k of Object.keys(prev)) {
+    if (owned.indexOf(k) === -1) out[k] = prev[k];   // a carrier: not this form's business
   }
+  const now = (collected && typeof collected === 'object') ? collected : {};
+  for (const k of Object.keys(now)) out[k] = now[k];
+  return Object.keys(out).length ? out : null;
 }
 
 export function collectTypeData(root, typeSlug) {
@@ -333,8 +323,6 @@ export function collectTypeData(root, typeSlug) {
     meta_json = (zipEl && !zipEl.checked) ? { zip_intro: false } : {};
   } else if (typeSlug === 'material') {
     meta_json = {};
-  } else if (typeSlug === 'arquivo') {
-    meta_json = {}; // attachment_url is set by the pending-file upload on save
   } else if (typeSlug === 'paper') {
     meta_json = {
       authors:  (root.querySelector('#ie-paper-authors') || {}).value || null,

@@ -86,8 +86,14 @@ export function mount(host, opts = {}) {
     '</div>' +
     '<div class="cdx-aib-picked" id="aib-picked" style="display:none">' +
       '<span id="aib-filename"></span>' +
-      '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="extract" checked> ' + _esc(t('creator.file_extract')) + '</label>' +
-      '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="download"> ' + _esc(t('creator.file_download')) + '</label>' +
+      // ASKED ONLY WHEN IT CAN BE ANSWERED (§25.4, Élder 17/08: "if the item can be extracted it
+      // asks... if a file cannot be extracted it doesn't even ask"). A .zip or an image has no
+      // text to pull out, so offering "read the text out of it" was a dead choice that made the
+      // real one (attach it) look optional. Hidden, the mode is simply `download`.
+      '<span class="cdx-aib-mode" id="aib-mode-row" style="display:none">' +
+        '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="extract" checked> ' + _esc(t('creator.file_extract')) + '</label>' +
+        '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="download"> ' + _esc(t('creator.file_download')) + '</label>' +
+      '</span>' +
       '<span class="cdx-helper-text" id="aib-status"></span>' +
     '</div>';
 
@@ -158,7 +164,11 @@ export function mount(host, opts = {}) {
   });
 
   // ── importing raw text ────────────────────────────────────────────────────
+  // A file nobody can read text out of is an ATTACHMENT, full stop: there is no question to ask
+  // and no other answer to give, so the radio is not even on screen.
+  let pickedExtractable = false;
   const fileMode = () => {
+    if (pickedFile && !pickedExtractable) return 'download';
     const r = host.querySelector('input[name="aib-mode"]:checked');
     return r ? r.value : 'extract';
   };
@@ -170,8 +180,11 @@ export function mount(host, opts = {}) {
     const statusEl = host.querySelector('#aib-status');
     if (nameEl) nameEl.textContent = f.name;
     if (panel) panel.style.display = '';
+    pickedExtractable = hasExtractableText(f);
+    const modeRow = host.querySelector('#aib-mode-row');
+    if (modeRow) modeRow.style.display = pickedExtractable ? '' : 'none';
     onDirty();
-    if (hasExtractableText(f)) {
+    if (pickedExtractable) {
       if (statusEl) statusEl.textContent = t('creator.file_extracting');
       let text = '';
       try { text = await extractText(f); } catch (_) { text = ''; }
@@ -254,7 +267,10 @@ export function mount(host, opts = {}) {
       // the text it is showing.
       verbatim = parsed.verbatim;
       verbEl.checked = !!verbatim;
-      if (isDownload) parsed.type = 'arquivo';   // the file IS the item; the AI still filled the rest
+      // The type used to be overwritten with 'arquivo' here, which is the line that turned a
+      // carrier into an identity: pick a .zip for a Skill and the item stopped being a Skill.
+      // The type is what the thing IS and the file is what it CARRIES (§25.3), so attaching one
+      // changes nothing about the other.
       if (parsed.type !== 'prompt' && aiSpec.looksTruncated(aiInput, parsed.body_md)) {
         if (!window.confirm(t('creator.ai_truncated_confirm'))) return;
       }
@@ -274,7 +290,7 @@ export function mount(host, opts = {}) {
     verbatim: () => verbatim,
     setVerbatim: (b) => { verbatim = b; verbEl.checked = !!b; },
     pendingFile: () => (pickedFile && fileMode() === 'download' ? pickedFile : null),
-    reset: () => { rawEl.value = ''; pickedFile = null; _last = null; },
+    reset: () => { rawEl.value = ''; pickedFile = null; pickedExtractable = false; _last = null; },
     destroy: () => { host.innerHTML = ''; },
   };
 }

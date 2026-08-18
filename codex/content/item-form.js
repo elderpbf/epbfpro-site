@@ -37,7 +37,7 @@ import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import {
-  buildTypeBlock, wireTypeBlock, collectTypeData, setBundleSlugs, isBundleSlug, renderMarkdown,
+  buildTypeBlock, wireTypeBlock, collectTypeData, mergeItemMeta, setBundleSlugs, isBundleSlug, renderMarkdown,
   buildZipIntro, contentBoxSpec, contentBoxChanged,
 } from './editor/type-block.js';
 import { installResizer } from '../js/resizable.js';
@@ -659,7 +659,9 @@ function _mountLevel(container, opts) {
     // Writing `false` by default would silently un-raw every existing prompt on its next save,
     // because absence is exactly what means "follow the type" (see isVerbatim).
     const chosen = _aiBox.verbatim();
-    let meta = typeData.meta_json;
+    // Laid over what is already STORED, never replacing it: the form only speaks for the keys its
+    // own type block draws, and the attachment is not one of them (mergeItemMeta / §25.5).
+    let meta = mergeItemMeta(initialMeta, typeData.meta_json, type);
     if (typeof chosen === 'boolean') meta = Object.assign({}, meta || {}, { verbatim: chosen });
     return {
       type, title, summary,
@@ -683,8 +685,11 @@ function _mountLevel(container, opts) {
         meta_json: state.meta_json ? JSON.stringify(state.meta_json) : null,
         tag_ids: state.tag_ids,
       },
-      pendingFile: _pendingAssetFile,
-      pendingField: _pendingAssetField,
+      // The content box is the one file selector (§25.4), and it hands its file over through
+      // onResult, which only fires if the AI ran. Picking a file and pressing Save straight
+      // after used to upload nothing, silently: no error, no attachment, no button on the trail.
+      pendingFile: _pendingAssetFile || (_aiBox ? _aiBox.pendingFile() : null),
+      pendingField: _pendingAssetField || 'attachment_url',
       verbatim: _aiBox.verbatim(),
       dirty: isDirty,
     };
