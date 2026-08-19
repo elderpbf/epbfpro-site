@@ -43,7 +43,7 @@
       height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -79,37 +79,32 @@
 
     /* ── Typing input with autocomplete ───────────────────── */
     /* Holds only the suggestion now, so it is a line and not a box. */
-    .k1-type-wrap {
-      padding: 0 0.2rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
-    .k1-type-row {
-      display: flex;
-      align-items: center;
-      gap: 1.1rem;
-      min-width: 0;
-    }
     /* The field itself is off the stage: the instructor types straight into the
        page and reads what came out on the suggestion, which already shows the
        letters typed. Kept in the DOM, and focusable, because every behaviour
        (autocomplete, Enter to commit, the shake on a rejected letter) hangs off
        it. Not display:none, which would make it unfocusable. */
+    /* The field sits inline among the pills, so what is being typed reads as the
+       next word of the frase instead of living in a box of its own. */
     .k1-type-input {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      border: 0;
-      opacity: 0;
-      pointer-events: none;
+      flex: 0 0 auto;
+      width: 9ch;
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--accent);
+      border-radius: 0;
+      padding: 0.1rem 0.25rem;
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-audience);
+      font-weight: 600;
+      color: var(--text);
+      outline: none;
+      letter-spacing: 0.005em;
     }
-    /* With the field off the stage, the rejection cue moves to the suggestion,
-       which is the only thing the room can see. */
-    .k1-type-input.k1-error ~ .k1-type-suggestion {
+    .k1-type-input.k1-error {
       animation: k1-shake 260ms ease;
-      color: var(--accent-bad);
+      border-bottom-color: var(--accent-bad);
+      background: rgba(var(--lab-bad-rgb), 0.1);
     }
     @keyframes k1-shake {
       0%, 100% { transform: translateX(0); }
@@ -120,7 +115,7 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       font-family: var(--font-mono);
       font-size: var(--lab-fs-answer);
@@ -395,15 +390,9 @@
         padding: 0.5rem 0.9rem 0.5rem;
         gap: 0.4rem;
       }
-      .k1-type-wrap { padding: 0.4rem 0.75rem 0.45rem; }
-      .k1-type-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.35rem;
-      }
       .k1-type-input {
-        width: 100%;
-        padding: 0.35rem 0.85rem;
+        width: 7ch;
+        padding: 0.1rem 0.2rem;
         font-size: var(--lab-fs-answer);
       }
       .k1-type-suggestion {
@@ -457,11 +446,7 @@
         padding: 0.4rem 1rem 0.35rem;
         gap: 0.4rem;
       }
-      .k1-type-row {
-        flex-direction: row;
-        gap: 0.7rem;
-      }
-      .k1-type-input { padding: 0.35rem 0.8rem; width: clamp(220px, 26vw, 360px); }
+      .k1-type-input { padding: 0.1rem 0.2rem; width: 8ch; }
       .k1-sug-chip { padding: 0.25rem 0.7rem; }
       .k1-frase-wrap { padding: 0.4rem 0.7rem 0.5rem; }
       .k1-frase { min-height: 44px; gap: 0.35rem 0.4rem; }
@@ -479,18 +464,14 @@
        data-lab-title="Atenção!"
        data-lab-subtitle="Como o contexto desambigua o sentido"></div>
 
-  <div class="k1-type-wrap">
-    <div class="k1-type-row">
-      <input class="k1-type-input" id="k1-type-input" type="text"
-             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
-             placeholder="digite uma palavra..." />
-      <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
-    </div>
-  </div>
-
   <div class="k1-frase-row">
     <div class="k1-frase-wrap">
+      <!-- Typing happens here, in the frase itself: renderFrase() appends the
+           field and the suggestion after the pills on every render. -->
       <div class="k1-frase" id="k1-frase"></div>
+      <input class="k1-type-input" id="k1-type-input" type="text"
+             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" />
+      <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
     </div>
   </div>
 
@@ -1277,7 +1258,7 @@
       function updateSuggestion() {
         const val = inputEl.value.toLowerCase();
         if (!val) {
-          sugEl.innerHTML = '<span class="k1-sug-empty">comece a digitar para ver a sugestão…</span>';
+          sugEl.innerHTML = '';   // the frase placeholder already carries this line
           return;
         }
         const match = findBestMatch(val);
@@ -1304,12 +1285,15 @@
       // every existing pill, producing a jarring full-row refresh on each
       // insertion (visible during Sugerir frase's stagger-insert).
       function renderFrase() {
+        const hadFocus = document.activeElement === inputEl;
+        const caret = inputEl.selectionStart;
         fraseEl.innerHTML = '';
         if (activeWords.length === 0) {
           const ph = document.createElement('span');
           ph.className = 'k1-frase-placeholder';
           ph.textContent = 'comece a digitar palavras…';
           fraseEl.appendChild(ph);
+          mountField(hadFocus, caret);
           return;
         }
         activeWords.forEach((w, idx) => {
@@ -1333,6 +1317,16 @@
           pill.appendChild(x);
           fraseEl.appendChild(pill);
         });
+        mountField(hadFocus, caret);
+      }
+
+      // The field and its suggestion live inside the frase, after the pills.
+      function mountField(hadFocus, caret) {
+        fraseEl.appendChild(inputEl);
+        fraseEl.appendChild(sugEl);
+        if (!hadFocus) return;
+        inputEl.focus();
+        if (caret != null) { try { inputEl.setSelectionRange(caret, caret); } catch (e) {} }
       }
 
       // ── Insert / remove / reorder ────────────────────────
