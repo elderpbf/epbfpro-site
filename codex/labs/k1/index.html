@@ -36,6 +36,9 @@
       --accent-bad: var(--lab-bad);
       --border: var(--lab-border);
       --font-display: var(--lab-font-display);
+      /* The frase line matches the words in the clusters: 30 in the SVG, 19 on the
+         small-screen branch. Multiplied by the scale so A-/A+ still moves it. */
+      --k1-fs-line: calc(clamp(19px, 2.3vw, 30px) * var(--lab-fs-scale));
       --font-mono: var(--lab-font-mono);
 
       position: relative;
@@ -43,7 +46,7 @@
       height: 100dvh;
       overflow: hidden;
       display: grid;
-      grid-template-rows: auto auto auto minmax(0, 1fr) auto;
+      grid-template-rows: auto auto minmax(0, 1fr) auto;
       gap: 0.7rem;
       padding: 1rem 2rem 0.7rem;
       box-sizing: border-box;
@@ -78,51 +81,33 @@
     }
 
     /* ── Typing input with autocomplete ───────────────────── */
-    .k1-type-wrap {
-      background: var(--surface);
-      border: 1.5px solid var(--border);
-      border-radius: 12px;
-      padding: 0.7rem 1rem 0.85rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.55rem;
-    }
-    .k1-type-row {
-      display: flex;
-      align-items: center;
-      gap: 1.1rem;
-      min-width: 0;
-    }
+    /* Holds only the suggestion now, so it is a line and not a box. */
+    /* The field itself is off the stage: the instructor types straight into the
+       page and reads what came out on the suggestion, which already shows the
+       letters typed. Kept in the DOM, and focusable, because every behaviour
+       (autocomplete, Enter to commit, the shake on a rejected letter) hangs off
+       it. Not display:none, which would make it unfocusable. */
+    /* The field sits inline among the pills, so what is being typed reads as the
+       next word of the frase instead of living in a box of its own. */
     .k1-type-input {
       flex: 0 0 auto;
-      width: clamp(280px, 28vw, 480px);
-      background: var(--surface-2);
-      border: 2px solid var(--border);
-      border-radius: 10px;
-      padding: 0.55rem 1.1rem;
+      width: 12px;             /* measured against the real glyphs by sizeField() */
+      transition: none;        /* an animated width lags a whole letter behind */
+      background: transparent;
+      border: none;
+      border-bottom: 2px solid var(--accent);
+      border-radius: 0;
+      padding: 0.1rem 0.25rem;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 600;
       color: var(--text);
       outline: none;
       letter-spacing: 0.005em;
-      transition: border-color 200ms ease, background 200ms ease;
     }
-    .k1-type-input::placeholder {
-      color: var(--text-dim);
-      opacity: 0.55;
-      font-style: italic;
-      font-weight: 400;
-    }
-    .k1-type-input:focus {
-      border-color: var(--accent);
-      background: rgba(var(--lab-focal-rgb), 0.06);
-    }
-    .k1-type-input.k1-error {
-      animation: k1-shake 260ms ease;
-      border-color: var(--accent-bad);
-      background: rgba(var(--lab-bad-rgb), 0.08);
-    }
+    /* A letter that leads nowhere shakes the field. No colour change: red reads
+       as an error the room made, and it is just a word that is not in the list. */
+    .k1-type-input.k1-error { animation: k1-shake 260ms ease; }
     @keyframes k1-shake {
       0%, 100% { transform: translateX(0); }
       20%, 60% { transform: translateX(-5px); }
@@ -132,38 +117,38 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-answer);
+      font-family: var(--font-display);
+      font-size: var(--k1-fs-line);
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
     }
     .k1-sug-arrow {
-      opacity: 0.5;
-      font-size: 1.4em;
+      opacity: 0.4;
+      font-size: 1em;
       line-height: 1;
     }
     .k1-sug-chip {
       display: inline-flex;
       align-items: center;
-      padding: 0.35rem 1.1rem;
-      background: rgba(var(--lab-focal-rgb), 0.12);
-      border: 2px solid var(--accent);
-      border-radius: 999px;
+      padding: 0;
+      background: none;
+      border: none;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
-      font-weight: 700;
-      color: var(--accent);
+      font-size: var(--k1-fs-line);
+      font-weight: 500;
+      color: var(--text-dim);
+      opacity: 0.7;
       cursor: pointer;
-      transition: background 150ms, transform 150ms;
     }
     .k1-sug-chip:hover { background: rgba(var(--lab-focal-rgb), 0.22); transform: translateY(-1px); }
-    .k1-sug-chip.k1-bias-fruta { border-color: var(--accent-good); color: var(--accent-good); background: rgba(var(--lab-context-b-rgb), 0.10); }
-    .k1-sug-chip.k1-bias-fruta:hover { background: rgba(var(--lab-context-b-rgb), 0.20); }
-    .k1-sug-chip.k1-bias-roupa { border-color: var(--accent-warm); color: var(--accent-warm); background: rgba(var(--lab-context-a-rgb), 0.10); }
-    .k1-sug-chip.k1-bias-roupa:hover { background: rgba(var(--lab-context-a-rgb), 0.20); }
+    /* The hint stays neutral on purpose: colouring it by bias would answer, on the
+       way in, the question the demonstration exists to ask. */
+    .k1-sug-chip.k1-bias-fruta,
+    .k1-sug-chip.k1-bias-roupa { border: none; background: none; color: var(--text-dim); }
+    .k1-sug-chip:hover { opacity: 1; color: var(--text); }
     .k1-sug-prefix { /* what you've typed so far, in solid color of the chip */ }
     .k1-sug-suffix { opacity: 0.55; font-weight: 500; }
     .k1-sug-empty {
@@ -217,7 +202,7 @@
       border: 2.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 800;
       color: var(--accent);
       letter-spacing: 0.005em;
@@ -254,7 +239,7 @@
       border: 1.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-answer);
+      font-size: var(--k1-fs-line);
       font-weight: 600;
       color: var(--text);
       line-height: 1;
@@ -376,14 +361,16 @@
     .k1-viz-wrap {
       padding: 0;
       display: flex;
-      align-items: stretch;
+      align-items: center;
       justify-content: center;
       min-height: 0;
     }
     .k1-viz {
       width: 100%;
       height: 100%;
+      max-height: 100%;
       display: block;
+      margin: auto;
     }
 
     /* ── Caption ──────────────────────────────────────────── */
@@ -405,15 +392,8 @@
         padding: 0.5rem 0.9rem 0.5rem;
         gap: 0.4rem;
       }
-      .k1-type-wrap { padding: 0.4rem 0.75rem 0.45rem; }
-      .k1-type-row {
-        flex-direction: column;
-        align-items: stretch;
-        gap: 0.35rem;
-      }
       .k1-type-input {
-        width: 100%;
-        padding: 0.35rem 0.85rem;
+        padding: 0.1rem 0.2rem;
         font-size: var(--lab-fs-answer);
       }
       .k1-type-suggestion {
@@ -467,11 +447,7 @@
         padding: 0.4rem 1rem 0.35rem;
         gap: 0.4rem;
       }
-      .k1-type-row {
-        flex-direction: row;
-        gap: 0.7rem;
-      }
-      .k1-type-input { padding: 0.35rem 0.8rem; width: clamp(220px, 26vw, 360px); }
+      .k1-type-input { padding: 0.1rem 0.2rem; }
       .k1-sug-chip { padding: 0.25rem 0.7rem; }
       .k1-frase-wrap { padding: 0.4rem 0.7rem 0.5rem; }
       .k1-frase { min-height: 44px; gap: 0.35rem 0.4rem; }
@@ -489,18 +465,14 @@
        data-lab-title="Atenção!"
        data-lab-subtitle="Como o contexto desambigua o sentido"></div>
 
-  <div class="k1-type-wrap">
-    <div class="k1-type-row">
-      <input class="k1-type-input" id="k1-type-input" type="text"
-             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
-             placeholder="digite uma palavra..." />
-      <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
-    </div>
-  </div>
-
   <div class="k1-frase-row">
     <div class="k1-frase-wrap">
+      <!-- Typing happens here, in the frase itself: renderFrase() appends the
+           field and the suggestion after the pills on every render. -->
       <div class="k1-frase" id="k1-frase"></div>
+      <input class="k1-type-input" id="k1-type-input" type="text"
+             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" />
+      <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
     </div>
   </div>
 
@@ -534,8 +506,21 @@
       const WORDS = [
         { text: 'a',              bias: 'neutro' },
         { text: 'à',              bias: 'neutro' },
+        { text: 'abacate',        bias: 'fruta' },
+        { text: 'abacaxi',        bias: 'fruta' },
+        { text: 'abotoada',       bias: 'roupa' },
+        { text: 'abotoei',        bias: 'roupa' },
+        { text: 'abotoou',        bias: 'roupa' },
         { text: 'abri',           bias: 'neutro' },
+        { text: 'acabei',         bias: 'neutro' },
+        { text: 'acabou',         bias: 'neutro' },
+        { text: 'açaí',           bias: 'fruta' },
+        { text: 'acerola',        bias: 'fruta' },
+        { text: 'achando',        bias: 'neutro' },
+        { text: 'achei',          bias: 'neutro' },
         { text: 'achou',          bias: 'neutro' },
+        { text: 'ácida',          bias: 'fruta' },
+        { text: 'ácido',          bias: 'fruta' },
         { text: 'açúcar',         bias: 'fruta' },
         { text: 'adora',          bias: 'neutro' },
         { text: 'adorei',         bias: 'neutro' },
@@ -544,91 +529,190 @@
         { text: 'agulha',         bias: 'roupa' },
         { text: 'ainda',          bias: 'neutro' },
         { text: 'ajustada',       bias: 'roupa' },
+        { text: 'ajuste',         bias: 'roupa' },
         { text: 'ajustou',        bias: 'neutro' },
+        { text: 'alargada',       bias: 'roupa' },
         { text: 'alargou',        bias: 'neutro' },
+        { text: 'alarguei',       bias: 'roupa' },
+        { text: 'alfaiate',       bias: 'roupa' },
         { text: 'alfinete',       bias: 'roupa' },
+        { text: 'alfinetei',      bias: 'roupa' },
+        { text: 'alfinetou',      bias: 'roupa' },
+        { text: 'algodão',        bias: 'roupa' },
         { text: 'ali',            bias: 'neutro' },
         { text: 'almoço',         bias: 'fruta' },
+        { text: 'amadurecer',     bias: 'fruta' },
+        { text: 'amadureceu',     bias: 'fruta' },
+        { text: 'amadureci',      bias: 'fruta' },
+        { text: 'amadurecida',    bias: 'fruta' },
         { text: 'amanhã',         bias: 'neutro' },
         { text: 'amarela',        bias: 'fruta' },
+        { text: 'amarelo',        bias: 'fruta' },
+        { text: 'amassada',       bias: 'roupa' },
+        { text: 'amassou',        bias: 'roupa' },
+        { text: 'ameixa',         bias: 'fruta' },
+        { text: 'ano',            bias: 'neutro' },
         { text: 'antes',          bias: 'neutro' },
         { text: 'ao',             bias: 'neutro' },
+        { text: 'apertada',       bias: 'roupa' },
+        { text: 'apertou',        bias: 'roupa' },
+        { text: 'apodreceu',      bias: 'fruta' },
+        { text: 'aquela',         bias: 'neutro' },
+        { text: 'aquele',         bias: 'neutro' },
         { text: 'aqui',           bias: 'neutro' },
         { text: 'armário',        bias: 'roupa' },
         { text: 'aroma',          bias: 'fruta' },
+        { text: 'arregaçada',     bias: 'roupa' },
+        { text: 'arregacei',      bias: 'roupa' },
+        { text: 'arregaçou',      bias: 'roupa' },
+        { text: 'arrumando',      bias: 'neutro' },
+        { text: 'arrumar',        bias: 'neutro' },
+        { text: 'arrumei',        bias: 'neutro' },
+        { text: 'arrumou',        bias: 'neutro' },
         { text: 'árvore',         bias: 'fruta' },
         { text: 'as',             bias: 'neutro' },
         { text: 'até',            bias: 'neutro' },
         { text: 'ateliê',         bias: 'roupa' },
         { text: 'avó',            bias: 'neutro' },
         { text: 'azeda',          bias: 'fruta' },
+        { text: 'azedo',          bias: 'fruta' },
+        { text: 'bainha',         bias: 'roupa' },
+        { text: 'banana',         bias: 'fruta' },
+        { text: 'bananeira',      bias: 'fruta' },
+        { text: 'barra',          bias: 'roupa' },
+        { text: 'batida',         bias: 'fruta' },
+        { text: 'batido',         bias: 'fruta' },
         { text: 'bebi',           bias: 'fruta' },
         { text: 'bem',            bias: 'neutro' },
         { text: 'blusa',          bias: 'roupa' },
         { text: 'bolo',           bias: 'fruta' },
+        { text: 'bolsinho',       bias: 'roupa' },
+        { text: 'bolso',          bias: 'roupa' },
         { text: 'bordada',        bias: 'roupa' },
         { text: 'bordado',        bias: 'roupa' },
+        { text: 'bordando',       bias: 'roupa' },
+        { text: 'bordar',         bias: 'roupa' },
         { text: 'bordou',         bias: 'roupa' },
+        { text: 'botando',        bias: 'neutro' },
+        { text: 'botão',          bias: 'roupa' },
+        { text: 'botei',          bias: 'neutro' },
         { text: 'branca',         bias: 'roupa' },
         { text: 'buscar',         bias: 'neutro' },
         { text: 'cabide',         bias: 'roupa' },
+        { text: 'cabides',        bias: 'roupa' },
+        { text: 'cacho',          bias: 'fruta' },
         { text: 'café',           bias: 'fruta' },
         { text: 'caindo',         bias: 'neutro' },
         { text: 'caipira',        bias: 'fruta' },
         { text: 'caiu',           bias: 'neutro' },
+        { text: 'cajá',           bias: 'fruta' },
+        { text: 'caju',           bias: 'fruta' },
         { text: 'calça',          bias: 'roupa' },
         { text: 'calda',          bias: 'fruta' },
         { text: 'caldo',          bias: 'fruta' },
         { text: 'camisa',         bias: 'roupa' },
+        { text: 'camisaria',      bias: 'roupa' },
         { text: 'camiseta',       bias: 'roupa' },
+        { text: 'caqui',          bias: 'fruta' },
         { text: 'caroço',         bias: 'fruta' },
         { text: 'casaco',         bias: 'roupa' },
         { text: 'casca',          bias: 'fruta' },
         { text: 'caseiro',        bias: 'fruta' },
+        { text: 'casquinha',      bias: 'fruta' },
+        { text: 'cedo',           bias: 'neutro' },
+        { text: 'cheirinho',      bias: 'fruta' },
         { text: 'cheirosa',       bias: 'fruta' },
         { text: 'cheirou',        bias: 'neutro' },
+        { text: 'chupada',        bias: 'fruta' },
+        { text: 'chupando',       bias: 'fruta' },
+        { text: 'chupar',         bias: 'fruta' },
+        { text: 'chupei',         bias: 'fruta' },
+        { text: 'chupou',         bias: 'fruta' },
+        { text: 'closet',         bias: 'roupa' },
+        { text: 'coco',           bias: 'fruta' },
+        { text: 'colarinho',      bias: 'roupa' },
+        { text: 'colheita',       bias: 'fruta' },
+        { text: 'colhendo',       bias: 'fruta' },
         { text: 'colhi',          bias: 'fruta' },
+        { text: 'colocando',      bias: 'neutro' },
         { text: 'colocou',        bias: 'neutro' },
         { text: 'coloquei',       bias: 'neutro' },
         { text: 'com',            bias: 'neutro' },
+        { text: 'come',           bias: 'neutro' },
+        { text: 'comecei',        bias: 'neutro' },
+        { text: 'começou',        bias: 'neutro' },
+        { text: 'comendo',        bias: 'neutro' },
         { text: 'comer',          bias: 'fruta' },
+        { text: 'comeram',        bias: 'neutro' },
         { text: 'comeu',          bias: 'fruta' },
         { text: 'comi',           bias: 'fruta' },
         { text: 'como',           bias: 'neutro' },
+        { text: 'compota',        bias: 'fruta' },
+        { text: 'comprando',      bias: 'neutro' },
         { text: 'comprar',        bias: 'neutro' },
+        { text: 'comprava',       bias: 'neutro' },
         { text: 'comprei',        bias: 'neutro' },
         { text: 'comprida',       bias: 'roupa' },
         { text: 'comprou',        bias: 'neutro' },
+        { text: 'confecção',      bias: 'roupa' },
         { text: 'consertei',      bias: 'neutro' },
         { text: 'consertou',      bias: 'neutro' },
         { text: 'conserva',       bias: 'fruta' },
+        { text: 'coqueiro',       bias: 'fruta' },
+        { text: 'coquinho',       bias: 'fruta' },
         { text: 'cortou',         bias: 'neutro' },
+        { text: 'cós',            bias: 'roupa' },
+        { text: 'costura',        bias: 'roupa' },
         { text: 'costurada',      bias: 'roupa' },
+        { text: 'costurando',     bias: 'roupa' },
+        { text: 'costurar',       bias: 'roupa' },
         { text: 'costurava',      bias: 'roupa' },
         { text: 'costurei',       bias: 'roupa' },
+        { text: 'costureira',     bias: 'roupa' },
         { text: 'costureiro',     bias: 'roupa' },
+        { text: 'costurinha',     bias: 'roupa' },
         { text: 'costurou',       bias: 'roupa' },
         { text: 'cotovelo',       bias: 'roupa' },
         { text: 'creme',          bias: 'fruta' },
+        { text: 'cremosa',        bias: 'fruta' },
+        { text: 'cubinhos',       bias: 'fruta' },
+        { text: 'cupuaçu',        bias: 'fruta' },
         { text: 'curta',          bias: 'roupa' },
         { text: 'da',             bias: 'neutro' },
+        { text: 'dar',            bias: 'neutro' },
         { text: 'das',            bias: 'neutro' },
         { text: 'de',             bias: 'neutro' },
+        { text: 'debrum',         bias: 'roupa' },
+        { text: 'dei',            bias: 'neutro' },
         { text: 'deixar',         bias: 'neutro' },
+        { text: 'dela',           bias: 'neutro' },
+        { text: 'dele',           bias: 'neutro' },
+        { text: 'delícia',        bias: 'fruta' },
+        { text: 'deliciosa',      bias: 'fruta' },
+        { text: 'delicioso',      bias: 'fruta' },
         { text: 'demais',         bias: 'neutro' },
         { text: 'depois',         bias: 'neutro' },
+        { text: 'desabotoei',     bias: 'roupa' },
+        { text: 'descascando',    bias: 'fruta' },
+        { text: 'descascar',      bias: 'fruta' },
         { text: 'descascou',      bias: 'fruta' },
         { text: 'descasquei',     bias: 'fruta' },
         { text: 'descosturou',    bias: 'roupa' },
         { text: 'desgastado',     bias: 'roupa' },
         { text: 'desidratada',    bias: 'fruta' },
+        { text: 'desse',          bias: 'neutro' },
+        { text: 'deu',            bias: 'neutro' },
+        { text: 'dia',            bias: 'neutro' },
+        { text: 'disse',          bias: 'neutro' },
         { text: 'do',             bias: 'neutro' },
         { text: 'dobrada',        bias: 'roupa' },
         { text: 'dobrei',         bias: 'neutro' },
         { text: 'dobrou',         bias: 'neutro' },
         { text: 'doce',           bias: 'fruta' },
         { text: 'docinho',        bias: 'fruta' },
+        { text: 'doçura',         bias: 'fruta' },
         { text: 'dos',            bias: 'neutro' },
+        { text: 'durinha',        bias: 'fruta' },
         { text: 'e',              bias: 'neutro' },
         { text: 'é',              bias: 'neutro' },
         { text: 'ela',            bias: 'neutro' },
@@ -636,23 +720,45 @@
         { text: 'elegante',       bias: 'roupa' },
         { text: 'em',             bias: 'neutro' },
         { text: 'encolheu',       bias: 'roupa' },
+        { text: 'encolhi',        bias: 'roupa' },
+        { text: 'encolhida',      bias: 'roupa' },
+        { text: 'encurtada',      bias: 'roupa' },
+        { text: 'encurtei',       bias: 'roupa' },
         { text: 'encurtou',       bias: 'roupa' },
+        { text: 'engomada',       bias: 'roupa' },
         { text: 'engomei',        bias: 'roupa' },
+        { text: 'engomou',        bias: 'roupa' },
         { text: 'então',          bias: 'neutro' },
+        { text: 'entretela',      bias: 'roupa' },
         { text: 'era',            bias: 'neutro' },
+        { text: 'escolhendo',     bias: 'neutro' },
+        { text: 'escolher',       bias: 'neutro' },
         { text: 'escolheu',       bias: 'neutro' },
         { text: 'escolhi',        bias: 'neutro' },
         { text: 'espada',         bias: 'fruta' },
         { text: 'espremeu',       bias: 'fruta' },
         { text: 'espremi',        bias: 'fruta' },
         { text: 'espremida',      bias: 'fruta' },
+        { text: 'essa',           bias: 'neutro' },
+        { text: 'esse',           bias: 'neutro' },
+        { text: 'esta',           bias: 'neutro' },
         { text: 'está',           bias: 'neutro' },
         { text: 'estava',         bias: 'neutro' },
+        { text: 'este',           bias: 'neutro' },
+        { text: 'estragada',      bias: 'fruta' },
+        { text: 'estragou',       bias: 'fruta' },
+        { text: 'etiqueta',       bias: 'roupa' },
         { text: 'eu',             bias: 'neutro' },
         { text: 'experimentei',   bias: 'neutro' },
         { text: 'extrair',        bias: 'neutro' },
         { text: 'faço',           bias: 'neutro' },
+        { text: 'falei',          bias: 'neutro' },
+        { text: 'falou',          bias: 'neutro' },
+        { text: 'fardamento',     bias: 'roupa' },
         { text: 'fatiada',        bias: 'fruta' },
+        { text: 'fatiado',        bias: 'fruta' },
+        { text: 'fatiando',       bias: 'fruta' },
+        { text: 'fatiar',         bias: 'fruta' },
         { text: 'fatiei',         bias: 'fruta' },
         { text: 'fatiou',         bias: 'fruta' },
         { text: 'faz',            bias: 'neutro' },
@@ -665,6 +771,7 @@
         { text: 'fibrosa',        bias: 'fruta' },
         { text: 'ficar',          bias: 'neutro' },
         { text: 'ficou',          bias: 'neutro' },
+        { text: 'figo',           bias: 'fruta' },
         { text: 'filha',          bias: 'neutro' },
         { text: 'filho',          bias: 'neutro' },
         { text: 'fina',           bias: 'roupa' },
@@ -672,6 +779,9 @@
         { text: 'firme',          bias: 'fruta' },
         { text: 'fiz',            bias: 'neutro' },
         { text: 'foi',            bias: 'neutro' },
+        { text: 'folgada',        bias: 'roupa' },
+        { text: 'folha',          bias: 'fruta' },
+        { text: 'forro',          bias: 'roupa' },
         { text: 'fresca',         bias: 'fruta' },
         { text: 'fresco',         bias: 'fruta' },
         { text: 'frio',           bias: 'neutro' },
@@ -680,23 +790,34 @@
         { text: 'frutas',         bias: 'fruta' },
         { text: 'fruteira',       bias: 'fruta' },
         { text: 'fui',            bias: 'neutro' },
+        { text: 'galão',          bias: 'roupa' },
+        { text: 'galho',          bias: 'fruta' },
         { text: 'gasto',          bias: 'roupa' },
         { text: 'gaveta',         bias: 'roupa' },
+        { text: 'gaveteiro',      bias: 'roupa' },
         { text: 'geladeira',      bias: 'fruta' },
         { text: 'gelado',         bias: 'fruta' },
+        { text: 'gelatina',       bias: 'fruta' },
         { text: 'gelava',         bias: 'fruta' },
+        { text: 'geleia',         bias: 'fruta' },
         { text: 'geléia',         bias: 'fruta' },
+        { text: 'goiaba',         bias: 'fruta' },
         { text: 'gola',           bias: 'roupa' },
+        { text: 'gole',           bias: 'fruta' },
+        { text: 'goles',          bias: 'fruta' },
+        { text: 'golinha',        bias: 'roupa' },
         { text: 'gosta',          bias: 'neutro' },
         { text: 'gosto',          bias: 'neutro' },
         { text: 'gostosa',        bias: 'fruta' },
         { text: 'gostoso',        bias: 'fruta' },
         { text: 'gostou',         bias: 'neutro' },
+        { text: 'graviola',       bias: 'fruta' },
         { text: 'grossa',         bias: 'fruta' },
         { text: 'guarda',         bias: 'neutro' },
         { text: 'guardei',        bias: 'neutro' },
         { text: 'guardo',         bias: 'neutro' },
         { text: 'guardou',        bias: 'neutro' },
+        { text: 'haden',          bias: 'fruta' },
         { text: 'hoje',           bias: 'neutro' },
         { text: 'inconfundível',  bias: 'fruta' },
         { text: 'incrível',       bias: 'neutro' },
@@ -704,18 +825,30 @@
         { text: 'iogurte',        bias: 'fruta' },
         { text: 'irmã',           bias: 'neutro' },
         { text: 'irmão',          bias: 'neutro' },
+        { text: 'isso',           bias: 'neutro' },
         { text: 'já',             bias: 'neutro' },
+        { text: 'jaca',           bias: 'fruta' },
+        { text: 'jaqueta',        bias: 'roupa' },
+        { text: 'keitt',          bias: 'fruta' },
         { text: 'lá',             bias: 'neutro' },
         { text: 'lanche',         bias: 'fruta' },
+        { text: 'lapela',         bias: 'roupa' },
         { text: 'laranja',        bias: 'fruta' },
+        { text: 'laranjeira',     bias: 'fruta' },
         { text: 'larga',          bias: 'roupa' },
         { text: 'largo',          bias: 'roupa' },
         { text: 'lavada',         bias: 'roupa' },
         { text: 'lavado',         bias: 'roupa' },
         { text: 'lavagem',        bias: 'roupa' },
+        { text: 'lavanderia',     bias: 'roupa' },
         { text: 'lavei',          bias: 'neutro' },
         { text: 'lavou',          bias: 'neutro' },
+        { text: 'lembrei',        bias: 'neutro' },
+        { text: 'lembrou',        bias: 'neutro' },
+        { text: 'levando',        bias: 'neutro' },
+        { text: 'levar',          bias: 'neutro' },
         { text: 'leve',           bias: 'roupa' },
+        { text: 'levei',          bias: 'neutro' },
         { text: 'levou',          bias: 'neutro' },
         { text: 'limão',          bias: 'fruta' },
         { text: 'linda',          bias: 'neutro' },
@@ -724,27 +857,51 @@
         { text: 'listrada',       bias: 'roupa' },
         { text: 'listrado',       bias: 'roupa' },
         { text: 'loja',           bias: 'roupa' },
+        { text: 'longa',          bias: 'roupa' },
         { text: 'longo',          bias: 'roupa' },
         { text: 'madura',         bias: 'fruta' },
+        { text: 'madurando',      bias: 'fruta' },
         { text: 'madurar',        bias: 'fruta' },
+        { text: 'maduro',         bias: 'fruta' },
         { text: 'mãe',            bias: 'neutro' },
         { text: 'mais',           bias: 'neutro' },
+        { text: 'malha',          bias: 'roupa' },
+        { text: 'mamão',          bias: 'fruta' },
         { text: 'manchada',       bias: 'roupa' },
         { text: 'manga',          bias: 'manga' },
+        { text: 'mangaba',        bias: 'fruta' },
+        { text: 'mangueira',      bias: 'fruta' },
         { text: 'manhã',          bias: 'neutro' },
+        { text: 'maracujá',       bias: 'fruta' },
+        { text: 'marcada',        bias: 'roupa' },
+        { text: 'marcou',         bias: 'roupa' },
         { text: 'marido',         bias: 'neutro' },
         { text: 'mas',            bias: 'neutro' },
         { text: 'me',             bias: 'neutro' },
         { text: 'mediu',          bias: 'neutro' },
         { text: 'mel',            bias: 'fruta' },
+        { text: 'melancia',       bias: 'fruta' },
+        { text: 'melão',          bias: 'fruta' },
         { text: 'mercado',        bias: 'fruta' },
+        { text: 'mês',            bias: 'neutro' },
         { text: 'meu',            bias: 'neutro' },
         { text: 'meus',           bias: 'neutro' },
         { text: 'minha',          bias: 'neutro' },
         { text: 'minhas',         bias: 'neutro' },
+        { text: 'modelagem',      bias: 'roupa' },
+        { text: 'modista',        bias: 'roupa' },
+        { text: 'molde',          bias: 'roupa' },
+        { text: 'moldes',         bias: 'roupa' },
+        { text: 'moletom',        bias: 'roupa' },
+        { text: 'molinha',        bias: 'fruta' },
+        { text: 'morango',        bias: 'fruta' },
         { text: 'morceguei',      bias: 'fruta' },
         { text: 'mordeu',         bias: 'fruta' },
         { text: 'mordi',          bias: 'fruta' },
+        { text: 'mordida',        bias: 'fruta' },
+        { text: 'mostrar',        bias: 'neutro' },
+        { text: 'mostrei',        bias: 'neutro' },
+        { text: 'mostrou',        bias: 'neutro' },
         { text: 'mousse',         bias: 'fruta' },
         { text: 'muita',          bias: 'neutro' },
         { text: 'muito',          bias: 'neutro' },
@@ -752,36 +909,59 @@
         { text: 'nada',           bias: 'neutro' },
         { text: 'não',            bias: 'neutro' },
         { text: 'nas',            bias: 'neutro' },
+        { text: 'néctar',         bias: 'fruta' },
+        { text: 'nesse',          bias: 'neutro' },
         { text: 'neto',           bias: 'neutro' },
         { text: 'no',             bias: 'neutro' },
+        { text: 'noite',          bias: 'neutro' },
         { text: 'nós',            bias: 'neutro' },
         { text: 'nova',           bias: 'neutro' },
         { text: 'num',            bias: 'neutro' },
         { text: 'numa',           bias: 'neutro' },
+        { text: 'numeração',      bias: 'roupa' },
+        { text: 'nunca',          bias: 'neutro' },
         { text: 'o',              bias: 'neutro' },
+        { text: 'olhar',          bias: 'neutro' },
+        { text: 'olhei',          bias: 'neutro' },
+        { text: 'olhou',          bias: 'neutro' },
+        { text: 'ombreira',       bias: 'roupa' },
         { text: 'ombro',          bias: 'roupa' },
         { text: 'ontem',          bias: 'neutro' },
         { text: 'ótimo',          bias: 'fruta' },
         { text: 'ou',             bias: 'neutro' },
         { text: 'pai',            bias: 'neutro' },
+        { text: 'palmer',         bias: 'fruta' },
         { text: 'para',           bias: 'neutro' },
         { text: 'partiu',         bias: 'neutro' },
         { text: 'passada',        bias: 'roupa' },
+        { text: 'passadeira',     bias: 'roupa' },
         { text: 'passei',         bias: 'neutro' },
         { text: 'pedaço',         bias: 'fruta' },
         { text: 'pedi',           bias: 'neutro' },
         { text: 'pediu',          bias: 'neutro' },
+        { text: 'pegando',        bias: 'neutro' },
         { text: 'pegar',          bias: 'neutro' },
+        { text: 'pegou',          bias: 'neutro' },
+        { text: 'peguei',         bias: 'neutro' },
         { text: 'pela',           bias: 'neutro' },
+        { text: 'pelo',           bias: 'neutro' },
         { text: 'pendurei',       bias: 'neutro' },
         { text: 'pendurou',       bias: 'neutro' },
         { text: 'perfeita',       bias: 'neutro' },
         { text: 'perfeito',       bias: 'neutro' },
+        { text: 'perfume',        bias: 'fruta' },
+        { text: 'perguntei',      bias: 'neutro' },
+        { text: 'perguntou',      bias: 'neutro' },
+        { text: 'pêssego',        bias: 'fruta' },
         { text: 'pia',            bias: 'fruta' },
         { text: 'picada',         bias: 'fruta' },
+        { text: 'picolé',         bias: 'fruta' },
         { text: 'picou',          bias: 'fruta' },
+        { text: 'pitanga',        bias: 'fruta' },
         { text: 'plantei',        bias: 'fruta' },
+        { text: 'podre',          bias: 'fruta' },
         { text: 'polpa',          bias: 'fruta' },
+        { text: 'polpuda',        bias: 'fruta' },
         { text: 'pomar',          bias: 'fruta' },
         { text: 'por',            bias: 'neutro' },
         { text: 'porque',         bias: 'neutro' },
@@ -789,16 +969,24 @@
         { text: 'pouco',          bias: 'neutro' },
         { text: 'pra',            bias: 'neutro' },
         { text: 'praia',          bias: 'neutro' },
+        { text: 'prata',          bias: 'fruta' },
         { text: 'prato',          bias: 'fruta' },
         { text: 'prazer',         bias: 'neutro' },
         { text: 'precisão',       bias: 'roupa' },
         { text: 'precisava',      bias: 'neutro' },
         { text: 'prefere',        bias: 'neutro' },
         { text: 'prefiro',        bias: 'neutro' },
+        { text: 'preguei',        bias: 'roupa' },
         { text: 'prendeu',        bias: 'roupa' },
+        { text: 'prendi',         bias: 'roupa' },
+        { text: 'presa',          bias: 'roupa' },
+        { text: 'prova',          bias: 'roupa' },
+        { text: 'provador',       bias: 'roupa' },
         { text: 'provou',         bias: 'fruta' },
         { text: 'pudim',          bias: 'fruta' },
+        { text: 'punho',          bias: 'roupa' },
         { text: 'quando',         bias: 'neutro' },
+        { text: 'quase',          bias: 'neutro' },
         { text: 'que',            bias: 'neutro' },
         { text: 'quer',           bias: 'neutro' },
         { text: 'quintal',        bias: 'fruta' },
@@ -815,38 +1003,63 @@
         { text: 'remendo',        bias: 'roupa' },
         { text: 'remendou',       bias: 'roupa' },
         { text: 'rendeu',         bias: 'neutro' },
+        { text: 'risquei',        bias: 'roupa' },
         { text: 'roça',           bias: 'fruta' },
+        { text: 'rodela',         bias: 'fruta' },
+        { text: 'rodelas',        bias: 'fruta' },
         { text: 'roupa',          bias: 'roupa' },
+        { text: 'roupas',         bias: 'roupa' },
         { text: 'sabor',          bias: 'fruta' },
+        { text: 'saboreei',       bias: 'fruta' },
+        { text: 'saboreou',       bias: 'fruta' },
         { text: 'saborosa',       bias: 'fruta' },
         { text: 'saboroso',       bias: 'fruta' },
+        { text: 'safra',          bias: 'fruta' },
         { text: 'saia',           bias: 'roupa' },
         { text: 'sal',            bias: 'fruta' },
         { text: 'salada',         bias: 'fruta' },
         { text: 'se',             bias: 'neutro' },
+        { text: 'seda',           bias: 'roupa' },
         { text: 'sem',            bias: 'neutro' },
+        { text: 'semana',         bias: 'neutro' },
         { text: 'semente',        bias: 'fruta' },
+        { text: 'sementes',       bias: 'fruta' },
+        { text: 'sempre',         bias: 'neutro' },
+        { text: 'sequinha',       bias: 'fruta' },
+        { text: 'seriguela',      bias: 'fruta' },
         { text: 'servia',         bias: 'fruta' },
         { text: 'servir',         bias: 'fruta' },
         { text: 'serviu',         bias: 'fruta' },
         { text: 'seu',            bias: 'neutro' },
         { text: 'sobre',          bias: 'neutro' },
         { text: 'sobremesa',      bias: 'fruta' },
+        { text: 'social',         bias: 'roupa' },
         { text: 'sol',            bias: 'fruta' },
+        { text: 'sombra',         bias: 'fruta' },
         { text: 'sorvete',        bias: 'fruta' },
+        { text: 'sorvetinho',     bias: 'fruta' },
         { text: 'sua',            bias: 'neutro' },
         { text: 'suco',           bias: 'fruta' },
         { text: 'suculenta',      bias: 'fruta' },
         { text: 'suculento',      bias: 'fruta' },
         { text: 'tábua',          bias: 'fruta' },
+        { text: 'talhada',        bias: 'fruta' },
+        { text: 'tamanho',        bias: 'roupa' },
+        { text: 'tamarindo',      bias: 'fruta' },
         { text: 'também',         bias: 'neutro' },
         { text: 'tão',            bias: 'neutro' },
         { text: 'tarde',          bias: 'neutro' },
+        { text: 'tecidinho',      bias: 'roupa' },
         { text: 'tecido',         bias: 'roupa' },
+        { text: 'tecidos',        bias: 'roupa' },
+        { text: 'terminei',       bias: 'neutro' },
+        { text: 'terminou',       bias: 'neutro' },
         { text: 'terno',          bias: 'roupa' },
         { text: 'tia',            bias: 'neutro' },
         { text: 'tigela',         bias: 'fruta' },
         { text: 'tinha',          bias: 'neutro' },
+        { text: 'tirando',        bias: 'neutro' },
+        { text: 'tirar',          bias: 'neutro' },
         { text: 'tirei',          bias: 'neutro' },
         { text: 'tirou',          bias: 'neutro' },
         { text: 'toda',           bias: 'neutro' },
@@ -854,22 +1067,47 @@
         { text: 'tomei',          bias: 'fruta' },
         { text: 'tommy',          bias: 'fruta' },
         { text: 'tomou',          bias: 'fruta' },
+        { text: 'traje',          bias: 'roupa' },
+        { text: 'trajes',         bias: 'roupa' },
+        { text: 'trazer',         bias: 'neutro' },
+        { text: 'tricô',          bias: 'roupa' },
         { text: 'trouxe',         bias: 'neutro' },
+        { text: 'ubá',            bias: 'fruta' },
         { text: 'um',             bias: 'neutro' },
         { text: 'uma',            bias: 'neutro' },
+        { text: 'umbu',           bias: 'fruta' },
+        { text: 'uniforme',       bias: 'roupa' },
+        { text: 'uniformizada',   bias: 'roupa' },
         { text: 'urgente',        bias: 'roupa' },
+        { text: 'usando',         bias: 'neutro' },
+        { text: 'usar',           bias: 'neutro' },
+        { text: 'usei',           bias: 'neutro' },
+        { text: 'usou',           bias: 'neutro' },
+        { text: 'uva',            bias: 'fruta' },
         { text: 'vai',            bias: 'neutro' },
         { text: 'varal',          bias: 'roupa' },
         { text: 'verão',          bias: 'roupa' },
         { text: 'verde',          bias: 'fruta' },
+        { text: 'verdinha',       bias: 'fruta' },
+        { text: 'veste',          bias: 'roupa' },
         { text: 'vesti',          bias: 'roupa' },
+        { text: 'vestia',         bias: 'roupa' },
         { text: 'vestido',        bias: 'roupa' },
+        { text: 'vestimenta',     bias: 'roupa' },
+        { text: 'vestindo',       bias: 'roupa' },
+        { text: 'vestir',         bias: 'roupa' },
+        { text: 'vestiu',         bias: 'roupa' },
         { text: 'vi',             bias: 'neutro' },
+        { text: 'viés',           bias: 'roupa' },
+        { text: 'virei',          bias: 'neutro' },
+        { text: 'virou',          bias: 'neutro' },
         { text: 'visível',        bias: 'roupa' },
         { text: 'vitamina',       bias: 'fruta' },
+        { text: 'vitaminada',     bias: 'fruta' },
         { text: 'vizinha',        bias: 'neutro' },
         { text: 'você',           bias: 'neutro' },
         { text: 'vou',            bias: 'neutro' },
+        { text: 'zíper',          bias: 'roupa' },
       ];
       const BY_TEXT = Object.fromEntries(WORDS.map(w => [w.text, w]));
       // 10 hand-vetted phrases (5 fruta + 5 roupa). Used by the
@@ -1284,10 +1522,32 @@
       }
 
       // ── Update the live suggestion display ───────────────
+      // A hidden twin carrying the same font renders the typed text off-screen and
+      // reports how wide it really is. Sizing in ch made the text overflow the
+      // field, and an overflowing input scrolls its content: that scroll was the
+      // whole word appearing to jump on every keystroke.
+      const sizerEl = document.createElement('span');
+      sizerEl.setAttribute('aria-hidden', 'true');
+      sizerEl.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden;';
+      document.body.appendChild(sizerEl);
+      function sizeField() {
+        const cs = getComputedStyle(inputEl);
+        sizerEl.style.font = cs.font;
+        sizerEl.style.letterSpacing = cs.letterSpacing;
+        sizerEl.textContent = inputEl.value;
+        // box-sizing is border-box on this lab, so padding and border come out of
+        // the width: they have to be added back or the first letter gets clipped.
+        const chrome = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+                     + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+        const caret = 2;
+        inputEl.style.width = Math.ceil(chrome + caret + sizerEl.offsetWidth) + 'px';
+      }
+
       function updateSuggestion() {
+        sizeField();
         const val = inputEl.value.toLowerCase();
         if (!val) {
-          sugEl.innerHTML = '<span class="k1-sug-empty">comece a digitar para ver a sugestão…</span>';
+          sugEl.innerHTML = '';   // the frase placeholder already carries this line
           return;
         }
         const match = findBestMatch(val);
@@ -1314,12 +1574,15 @@
       // every existing pill, producing a jarring full-row refresh on each
       // insertion (visible during Sugerir frase's stagger-insert).
       function renderFrase() {
+        const hadFocus = document.activeElement === inputEl;
+        const caret = inputEl.selectionStart;
         fraseEl.innerHTML = '';
         if (activeWords.length === 0) {
           const ph = document.createElement('span');
           ph.className = 'k1-frase-placeholder';
           ph.textContent = 'comece a digitar palavras…';
           fraseEl.appendChild(ph);
+          mountField(hadFocus, caret);
           return;
         }
         activeWords.forEach((w, idx) => {
@@ -1343,6 +1606,16 @@
           pill.appendChild(x);
           fraseEl.appendChild(pill);
         });
+        mountField(hadFocus, caret);
+      }
+
+      // The field and its suggestion live inside the frase, after the pills.
+      function mountField(hadFocus, caret) {
+        fraseEl.appendChild(inputEl);
+        fraseEl.appendChild(sugEl);
+        if (!hadFocus) return;
+        inputEl.focus();
+        if (caret != null) { try { inputEl.setSelectionRange(caret, caret); } catch (e) {} }
       }
 
       // ── Insert / remove / reorder ────────────────────────
@@ -1356,6 +1629,14 @@
         updateSuggestion();
         renderFrase();
         animateToBias(computeBias(activeWords));
+      }
+      // The pinned "manga" anchor has no × and must survive Backspace too, so the
+      // scan skips it and takes the last word that is actually removable.
+      function lastRemovableIndex() {
+        for (let i = activeWords.length - 1; i >= 0; i--) {
+          if (activeWords[i].bias !== 'manga') return i;
+        }
+        return -1;
       }
       function removeWordAt(absIdx) {
         if (absIdx < 0 || absIdx >= activeWords.length) return;
@@ -1397,7 +1678,9 @@
       }
       function commitTypedWord() {
         const val = inputEl.value.toLowerCase().trim();
-        if (!val) { flashError(); return; }
+        // An empty field is not a rejected word: Enter or space right after
+        // committing, or before typing anything, must stay silent.
+        if (!val) return;
         const match = findBestMatch(val);
         if (!match) { flashError(); return; }
         insertTypedWord(match.text);
@@ -1455,6 +1738,14 @@
           inputEl.value = '';
           updateSuggestion();
           return;
+        }
+        // With nothing left to erase in the field, Backspace takes the last word
+        // off the frase, so the sentence can be unwound without aiming at an ×.
+        if (e.key === 'Backspace' && inputEl.value === '') {
+          const last = lastRemovableIndex();
+          if (last < 0) return;
+          e.preventDefault();
+          removeWordAt(last);
         }
       });
       // Click the suggestion chip → commit that exact word.
@@ -1639,6 +1930,17 @@
       buildViz();
       updateSuggestion();
       renderFrase();
+      // With no visible field to click, a keystroke anywhere on the page has to
+      // reach it: a stray click on the viz or a button must not swallow typing.
+      document.addEventListener('keydown', e => {
+        if (document.activeElement === inputEl) return;
+        const t = e.target;
+        if (t && (t.tagName === 'INPUT' || t.tagName === 'TEXTAREA' || t.isContentEditable)) return;
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        if (e.key.length !== 1 && e.key !== 'Backspace') return;
+        inputEl.focus();
+      });
+
       // Pre-focus the typing input so the instructor can start typing.
       setTimeout(() => inputEl.focus(), 0);
 
