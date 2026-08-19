@@ -588,7 +588,7 @@ function _openCopyReleasesModal(targetAulaNum) {
       previewPoolIds = matches.map((it) => Number(it.id));
       if (!matches.length) { previewEl.innerHTML = '<div class="cdx-empty">' + t('releases.copy_scope_empty') + '</div>'; return; }
       const sections = _groupByType(matches).map((g) => ({
-        key: 'type-' + g.type, label: _sectionLabelHtml(g.type, _typeLabel(g.type)), count: g.items.length,
+        key: 'type-' + g.type, label: _typeLabel(g.type), glyphHtml: _sectionGlyphHtml(g.type), count: g.items.length,
         rowsHtml: g.items.map((i) => _rowHtml(i, 'copy-preview', true, typeIconHtml(_typeIcon(g.type), { size: 15 }), null)).join(''),
       }));
       previewEl.innerHTML = '<div class="cdx-picker-list">' + _accordionGroupsHtml(sections, { forceOpen: true }) + '</div>';
@@ -825,9 +825,12 @@ function _groupByType(items) {
 
 // O glifo do tipo, do tamanho do rótulo de seção. Élder: "vamos aproveitar para adicionar
 // glifos antes do nome dos tipos (para cá e nas liberações, já que será a mesma lista)".
-function _sectionLabelHtml(slug, label) {
-  const ic = typeIconHtml(_typeIcon(slug), { size: 14 });
-  return (ic ? '<span class="cdx-picker-group-glyph" aria-hidden="true">' + ic + '</span>' : '') + _esc(label);
+//
+// SÓ O GLIFO, nunca o rótulo junto. O pintor compartilhado (js/item-picker.js) tem o slot
+// `glyphHtml` e ESCAPA o `label`: quem entregasse a marcação dentro do rótulo veria a marcação
+// impressa como texto no cabeçalho, que foi exatamente o defeito de 2026-08-16 a 2026-08-18.
+function _sectionGlyphHtml(slug) {
+  return typeIconHtml(_typeIcon(slug), { size: 14 });
 }
 
 // The OTHER aulas this item is bound to (excluding aulaNum). Returns an array, or
@@ -867,7 +870,7 @@ function _elsewhereLabel(aulas) {
 function _accordionGroupsHtml(sections, opts) {
   return pickerGroupsHtml(
     (sections || []).map((s) => ({
-      key: s.key, label: s.label, count: s.count, subCount: s.releasedCount, rowsHtml: s.rowsHtml,
+      key: s.key, label: s.label, glyphHtml: s.glyphHtml, count: s.count, subCount: s.releasedCount, rowsHtml: s.rowsHtml,
     })),
     { forceOpen: !!(opts && opts.forceOpen) },
   );
@@ -970,7 +973,7 @@ function _renderAulaComposer(container, aula) {
     const glyph = typeIconHtml(_typeIcon(g.type), { size: 15 });
     const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
     const rows = items.map((i) => _rowHtml(i, 'outros', _isBoundTo(i.id, aulaNum), _rowGlyph(i, glyph), _releasedElsewhere(i.id, aulaNum))).join('');
-    sections.push({ key: 'type-' + g.type, label: _sectionLabelHtml(g.type, _typeLabel(g.type)), count: g.items.length,
+    sections.push({ key: 'type-' + g.type, label: _typeLabel(g.type), glyphHtml: _sectionGlyphHtml(g.type), count: g.items.length,
       releasedCount: g.items.filter((i) => _isBoundTo(i.id, aulaNum)).length, rowsHtml: rows });
   });
   if (driveItems.length) {
@@ -1000,7 +1003,8 @@ function _renderOutrosComposer(container) {
         const items = g.type === 'lab' ? _sortLabsByOrder(g.items) : g.items;
         return {
           key: 'type-' + g.type,
-          label: _sectionLabelHtml(g.type, _typeLabel(g.type)),
+          label: _typeLabel(g.type),
+          glyphHtml: _sectionGlyphHtml(g.type),
           count: g.items.length,
           releasedCount: g.items.filter((i) => _inOutros(i.id)).length,
           rowsHtml: items.map((i) => _rowHtml(i, 'outros', _inOutros(i.id), _rowGlyph(i, typeIconHtml(_typeIcon(i.type), { size: 15 })), _releasedElsewhere(i.id, 0))).join(''),

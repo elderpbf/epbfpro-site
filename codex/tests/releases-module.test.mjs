@@ -269,6 +269,23 @@ test('the standalone Releases left-rail mirrors the same lab bucket (composer vs
   assert.match(relSrc, /_countGlyph\('interativo'\) \+ ' ' \+ interativoSolo/, 'Outros rail row renders an interativo chip too');
 });
 
+
+test('the section glyph travels in its own slot, so the header cannot print its own markup', () => {
+  // Elder, 2026-08-18: the Liberacoes accordion showed a literal "<span class=..><svg ..>" before
+  // every per-type name ("Prompt para IA", "Projeto", "Labs"). Cause: 2ce617f (2026-08-16) moved
+  // the group painter into js/item-picker.js, which ESCAPES the label, while this screen kept
+  // handing the glyph markup over inside that label. "Conteudo do curso" looked fine because its
+  // label is a plain i18n string, which is exactly the shape of the bug.
+  assert.ok(!/_sectionLabelHtml/.test(relSrc), 'no HTML-bearing label builder survives');
+  assert.match(relSrc, /function _sectionGlyphHtml\(slug\) \{\s*\n\s*return typeIconHtml/, 'the builder returns the glyph alone');
+  const sites = relSrc.match(/glyphHtml: _sectionGlyphHtml\(g\.type\)/g) || [];
+  assert.equal(sites.length, 3, 'both composers AND the copy-modal preview pass it');
+  assert.ok(!/label: _section/.test(relSrc), 'a label is never built from a glyph helper');
+  // The mapping in _accordionGroupsHtml rebuilds each section object, so a missing key here
+  // drops the glyph silently: the bug would come back as "no glyph" instead of raw markup.
+  assert.match(relSrc, /glyphHtml: s\.glyphHtml/, 'the shared accordion passthrough forwards it');
+});
+
 test('lab + interativo section labels come from i18n, not the Worker-seeded ct_types.label', () => {
   // Both are shipped types: their user-facing name must live in ONE i18n key so a
   // rename is an i18n edit, never a Worker string change (interativos-registry.js

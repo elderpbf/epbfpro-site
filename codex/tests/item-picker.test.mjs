@@ -70,6 +70,21 @@ test('the toggle attribute is a parameter (presets wires a different one)', () =
   assert.match(pickerGroupsHtml([{ key: 'a', label: 'A', count: 1, rowsHtml: '' }], { toggleAttr: 'data-group-toggle' }), /data-group-toggle="a"/);
 });
 
+
+test('the glyph is HTML, the label is TEXT, and they never swap', () => {
+  // The contract that broke Liberacoes from 2026-08-16 to 2026-08-18: the header escapes its
+  // label, so a screen that bakes the glyph markup INTO the label prints "<span class=..><svg .."
+  // as text next to the count. Whoever renders the group owns the wrapper.
+  const h = pickerGroupsHtml([{
+    key: 'a', label: '<b>Prompt</b>', count: 1, glyphHtml: '<svg id="g"></svg>', rowsHtml: '',
+  }], {});
+  assert.match(h, /<span class="cdx-picker-group-glyph" aria-hidden="true"><svg id="g"><\/svg><\/span>/,
+    'the glyph slot renders raw');
+  const name = h.slice(h.indexOf('cdx-picker-group-name'));
+  assert.match(name.slice(0, name.indexOf('</span>')), /&lt;b&gt;Prompt&lt;\/b&gt;/,
+    'the label is escaped, always, which is why markup must not travel inside it');
+});
+
 test('the toolbar takes a right-hand slot', () => {
   assert.match(pickerToolbarHtml({ placeholder: 'buscar', rightHtml: '<b>x</b>' }), /<b>x<\/b>/);
   assert.match(pickerToolbarHtml({ placeholder: 'buscar' }), /placeholder="buscar"/);
