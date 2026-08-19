@@ -88,9 +88,7 @@
        next word of the frase instead of living in a box of its own. */
     .k1-type-input {
       flex: 0 0 auto;
-      width: 1ch;              /* sized to the typed word by sizeField() */
-      min-width: 1ch;
-      transition: width 90ms ease-out;
+      width: 12px;             /* measured against the real glyphs by sizeField() */
       background: transparent;
       border: none;
       border-bottom: 2px solid var(--accent);
@@ -117,30 +115,29 @@
       gap: 0.55rem;
       flex: 0 1 auto;
       min-width: 0;
-      font-family: var(--font-mono);
-      font-size: var(--lab-fs-answer);
+      font-family: var(--font-display);
+      font-size: var(--lab-fs-audience);
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
     }
     .k1-sug-arrow {
-      opacity: 0.5;
-      font-size: 1.4em;
+      opacity: 0.4;
+      font-size: 1em;
       line-height: 1;
     }
     .k1-sug-chip {
       display: inline-flex;
       align-items: center;
-      padding: 0.35rem 1.1rem;
-      background: rgba(var(--lab-focal-rgb), 0.12);
-      border: 2px solid var(--accent);
-      border-radius: 999px;
+      padding: 0;
+      background: none;
+      border: none;
       font-family: var(--font-display);
       font-size: var(--lab-fs-audience);
-      font-weight: 700;
-      color: var(--accent);
+      font-weight: 500;
+      color: var(--text-dim);
+      opacity: 0.7;
       cursor: pointer;
-      transition: background 150ms, transform 150ms;
     }
     .k1-sug-chip:hover { background: rgba(var(--lab-focal-rgb), 0.22); transform: translateY(-1px); }
     .k1-sug-chip.k1-bias-fruta { border-color: var(--accent-good); color: var(--accent-good); background: rgba(var(--lab-context-b-rgb), 0.10); }
@@ -237,7 +234,7 @@
       border: 1.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-answer);
+      font-size: var(--lab-fs-audience);
       font-weight: 600;
       color: var(--text);
       line-height: 1;
@@ -1386,8 +1383,20 @@
       }
 
       // ── Update the live suggestion display ───────────────
+      // A hidden twin carrying the same font renders the typed text off-screen and
+      // reports how wide it really is. Sizing in ch made the text overflow the
+      // field, and an overflowing input scrolls its content: that scroll was the
+      // whole word appearing to jump on every keystroke.
+      const sizerEl = document.createElement('span');
+      sizerEl.setAttribute('aria-hidden', 'true');
+      sizerEl.style.cssText = 'position:absolute;left:-9999px;top:0;white-space:pre;visibility:hidden;';
+      document.body.appendChild(sizerEl);
       function sizeField() {
-        inputEl.style.width = Math.max(1, inputEl.value.length) + 'ch';
+        const cs = getComputedStyle(inputEl);
+        sizerEl.style.font = cs.font;
+        sizerEl.style.letterSpacing = cs.letterSpacing;
+        sizerEl.textContent = inputEl.value;
+        inputEl.style.width = Math.max(12, Math.ceil(sizerEl.offsetWidth) + 2) + 'px';
       }
 
       function updateSuggestion() {
