@@ -81,7 +81,8 @@ test('the glyph is HTML, the label is TEXT, and they never swap', () => {
   assert.match(h, /<span class="cdx-picker-group-glyph" aria-hidden="true"><svg id="g"><\/svg><\/span>/,
     'the glyph slot renders raw');
   const name = h.slice(h.indexOf('cdx-picker-group-name'));
-  assert.ok(!name.slice(0, name.indexOf('</span>')).includes('<b>'), 'the label is escaped, always');
+  assert.match(name.slice(0, name.indexOf('</span>')), /&lt;b&gt;Prompt&lt;\/b&gt;/,
+    'the label is escaped, always, which is why markup must not travel inside it');
 });
 
 test('the toolbar takes a right-hand slot', () => {

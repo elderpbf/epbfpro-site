@@ -14,6 +14,7 @@ import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { summarize, summaryHtml } from '../js/released-summary.js';
+import { pickerGroupsHtml } from '../js/item-picker.js';
 import pt from '../i18n/pt.js';
 import en from '../i18n/en.js';
 
@@ -22,6 +23,24 @@ const relSrc = read('../content/releases.js');
 const sumSrc = read('../js/released-summary.js');
 
 const row = (id, o = {}) => Object.assign({ id, title: 'Item ' + id, section: 'type-prompt', saved: false, checked: false }, o);
+
+
+test('the section name this block reads carries NO markup (guards the 2026-08-18 header bug)', () => {
+  // rowsFromPicker names each row's section from `.cdx-picker-group-name`'s textContent, so
+  // whatever the painter leaves inside that span IS this block's section label. From 2026-08-16
+  // to 2026-08-18 Liberacoes handed the type glyph over inside the `label`, the painter escaped
+  // it, and the summary's section name was the whole <svg> as text. The contract, pinned at the
+  // seam: the glyph sits OUTSIDE the name span, the name span holds text only.
+  const html = pickerGroupsHtml([{
+    key: 'type-prompt', label: 'Prompt para IA', count: 18, subCount: 0,
+    glyphHtml: '<svg id="g"></svg>', rowsHtml: '',
+  }], {});
+  const name = /<span class="cdx-picker-group-name">([\s\S]*?)<\/span>/.exec(html);
+  assert.ok(name, 'the span the summary reads exists');
+  assert.equal(name[1], 'Prompt para IA (0/18)');
+  assert.ok(!name[1].includes('<') && !name[1].includes('&lt;'), 'no markup, raw OR escaped, inside the name the summary borrows');
+  assert.ok(html.indexOf('<svg id="g">') < html.indexOf('cdx-picker-group-name'), 'the glyph is its own span, before the name');
+});
 
 test('an untouched lesson lists exactly what is stored', () => {
   const s = summarize([row(1, { saved: true, checked: true }), row(2), row(3, { saved: true, checked: true })]);
