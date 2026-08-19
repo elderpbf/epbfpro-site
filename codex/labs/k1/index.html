@@ -1544,7 +1544,9 @@
       }
       function commitTypedWord() {
         const val = inputEl.value.toLowerCase().trim();
-        if (!val) { flashError(); return; }
+        // An empty field is not a rejected word: Enter or space right after
+        // committing, or before typing anything, must stay silent.
+        if (!val) return;
         const match = findBestMatch(val);
         if (!match) { flashError(); return; }
         insertTypedWord(match.text);
