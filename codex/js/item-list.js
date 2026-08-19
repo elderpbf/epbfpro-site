@@ -69,6 +69,45 @@ export function sectionsByType(items, opts) {
   }));
 }
 
+// A-Z BY TYPE, THEN A-Z BY NAME. The Trail's loose-material piles (a lesson's "Outros
+// materiais" and the Outros tab) used to come out in release order, which is the order the
+// instructor happened to tick boxes in: no order at all, as far as a student is concerned.
+// Elder, 2026-08-18: *"they should be organised by type and by name, and the types by name, so
+// the types are ordered A to Z and inside the types A to Z as well"*.
+//
+// The type key is the LABEL the student reads (`type_label`), not the slug, because the label is
+// what the alphabet is about; an item whose label never arrived falls back to its slug rather
+// than sorting as an empty string. Accent-folded through the same `normalize` the searches use,
+// so "Video" and "Vídeo" cannot land on opposite ends, and numeric so "Prompt 2" precedes
+// "Prompt 10".
+//
+// NOT a grouping: the rows stay one flat list. Both piles already carry a type-filter chip strip
+// above them, so type is discoverable without a second set of headers, and Elder asked for the
+// ordering alone ("we're not going to change anything, it's just the ordering").
+//
+// The final tiebreak on id keeps two identically-named items of one type from swapping places
+// between renders.
+const _COLLATE = { numeric: true, sensitivity: 'base' };
+
+function _sortKey(item, field) {
+  const raw = field === 'type'
+    ? (item && (item.type_label || item.type))
+    : (item && item.title);
+  return normalize(String(raw == null ? '' : raw));
+}
+
+export function compareTypeThenTitle(a, b) {
+  const byType = _sortKey(a, 'type').localeCompare(_sortKey(b, 'type'), undefined, _COLLATE);
+  if (byType) return byType;
+  const byTitle = _sortKey(a, 'title').localeCompare(_sortKey(b, 'title'), undefined, _COLLATE);
+  if (byTitle) return byTitle;
+  return Number((a && a.id) || 0) - Number((b && b.id) || 0);
+}
+
+export function sortByTypeThenTitle(items) {
+  return (items || []).slice().sort(compareTypeThenTitle);
+}
+
 // Search with the SAME accent folding as the rest of Codex (it's what makes "peticao" find
 // "Petição").
 export function matchesQuery(item, query) {

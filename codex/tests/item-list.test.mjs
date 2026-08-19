@@ -10,6 +10,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
   groupByType, sectionsByType, matchesQuery, flattenTree, idsInTree, selectableItems,
+  sortByTypeThenTitle, compareTypeThenTitle,
 } from '../js/item-list.js';
 import { guideHtml } from '../content/item-members.js';
 
@@ -214,4 +215,56 @@ test('shiftIndent does not mutate the list it received', () => {
   const out = shiftIndent(rows, 1, -1);
   assert.deepEqual(IND(rows), [0, 1, 2], 'the original stays intact');
   assert.deepEqual(IND(out), [0, 0, 1]);
+});
+
+// ── A-Z by type, then A-Z by name (the Trail's loose piles) ─────────────────
+// Elder, 2026-08-18: the Trail's "Outros materiais" came out in RELEASE order, which is the
+// order the instructor happened to tick boxes in. *"They should be organised by type and by
+// name, and the types by name, so the types are ordered A to Z and inside the types A to Z as
+// well."* Content is explicitly exempt (it has its own sequence) and is never passed here.
+
+const it_ = (id, typeLabel, title, type) => ({ id, type: type || 'x' + id, type_label: typeLabel, title });
+
+test('types come out A-Z, and the items inside each type too', () => {
+  const out = sortByTypeThenTitle([
+    it_(1, 'Prompt para IA', 'Zebra'),
+    it_(2, 'Dica', 'beta'),
+    it_(3, 'Prompt para IA', 'alfa'),
+    it_(4, 'Dica', 'Alfa'),
+  ]);
+  assert.deepEqual(out.map((i) => i.id), [4, 2, 3, 1]);
+});
+
+test('the alphabet ignores accents and case, like every other search in Codex', () => {
+  // Otherwise "Vídeo" and "Video" land on opposite ends of the list, and a capitalised title
+  // sorts before every lowercase one.
+  const out = sortByTypeThenTitle([
+    it_(1, 'Vídeo', 'a'), it_(2, 'Áudio', 'a'), it_(3, 'Zip', 'a'),
+  ]);
+  assert.deepEqual(out.map((i) => i.id), [2, 1, 3]);
+});
+
+test('numbers read as numbers: "Prompt 2" before "Prompt 10"', () => {
+  const out = sortByTypeThenTitle([it_(1, 'T', 'Prompt 10'), it_(2, 'T', 'Prompt 2')]);
+  assert.deepEqual(out.map((i) => i.id), [2, 1]);
+});
+
+test('an item whose type_label never arrived sorts by its slug, not as blank', () => {
+  const out = sortByTypeThenTitle([
+    { id: 1, type: 'zeta', title: 'a' },
+    { id: 2, type: 'alfa', title: 'a' },
+  ]);
+  assert.deepEqual(out.map((i) => i.id), [2, 1]);
+});
+
+test('two identical rows keep a stable order (id breaks the tie)', () => {
+  const out = sortByTypeThenTitle([it_(9, 'T', 'Igual'), it_(2, 'T', 'Igual')]);
+  assert.deepEqual(out.map((i) => i.id), [2, 9]);
+});
+
+test('the input array is not mutated (the caller keeps release order for anything else)', () => {
+  const src = [it_(1, 'Z', 'z'), it_(2, 'A', 'a')];
+  sortByTypeThenTitle(src);
+  assert.deepEqual(src.map((i) => i.id), [1, 2]);
+  assert.equal(typeof compareTypeThenTitle, 'function');
 });
