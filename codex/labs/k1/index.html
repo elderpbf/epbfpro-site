@@ -81,9 +81,8 @@
        The field is a bare caret inside the frase box: no chrome of its own, so
        what the instructor types reads as the next word of the sentence. */
     .k1-type-input {
-      flex: 1 1 8ch;
-      min-width: 6ch;
-      max-width: 100%;
+      flex: 0 0 auto;
+      width: 9ch;
       background: transparent;
       border: none;
       border-bottom: 2px solid var(--accent);
@@ -122,7 +121,7 @@
       display: flex;
       align-items: center;
       gap: 0.55rem;
-      flex: 1 1 auto;
+      flex: 0 1 auto;
       min-width: 0;
       font-family: var(--font-mono);
       font-size: var(--lab-fs-answer);
@@ -180,17 +179,14 @@
       background: var(--surface);
       border: 1.5px solid var(--border);
       border-radius: 12px;
-      padding: 0.65rem 1rem 0.75rem;
-      display: flex;
-      flex-direction: column;
-      gap: 0.4rem;
+      padding: 0.45rem 0.9rem 0.5rem;
     }
     .k1-frase {
       display: flex;
       flex-wrap: wrap;
-      gap: 0.55rem 0.6rem;
+      gap: 0.45rem 0.55rem;
       align-items: center;
-      min-height: 64px;
+      min-height: 46px;
       border: 2px dashed transparent;
       border-radius: 10px;
       padding: 0.35rem 0.5rem;
@@ -481,8 +477,7 @@
            a separate bar above the stage. -->
       <div class="k1-frase" id="k1-frase"></div>
       <input class="k1-type-input" id="k1-type-input" type="text"
-             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off"
-             placeholder="digite…" />
+             autocomplete="off" spellcheck="false" autocorrect="off" autocapitalize="off" />
       <div class="k1-type-suggestion" id="k1-type-suggestion"></div>
     </div>
   </div>
@@ -1308,6 +1303,7 @@
           ph.textContent = 'comece a digitar palavras…';
           fraseEl.appendChild(ph);
           fraseEl.appendChild(inputEl);   // the caret follows the pills, always last
+          fraseEl.appendChild(sugEl);     // the suggestion sits on the same row, not on its own
           restoreCaret(hadFocus, caret);
           return;
         }
@@ -1333,6 +1329,7 @@
           fraseEl.appendChild(pill);
         });
         fraseEl.appendChild(inputEl);   // the caret follows the pills, always last
+        fraseEl.appendChild(sugEl);     // the suggestion sits on the same row, not on its own
         restoreCaret(hadFocus, caret);
       }
 
