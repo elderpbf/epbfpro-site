@@ -36,6 +36,9 @@
       --accent-bad: var(--lab-bad);
       --border: var(--lab-border);
       --font-display: var(--lab-font-display);
+      /* The frase line matches the words in the clusters: 30 in the SVG, 19 on the
+         small-screen branch. Multiplied by the scale so A-/A+ still moves it. */
+      --k1-fs-line: calc(clamp(19px, 2.3vw, 30px) * var(--lab-fs-scale));
       --font-mono: var(--lab-font-mono);
 
       position: relative;
@@ -96,7 +99,7 @@
       border-radius: 0;
       padding: 0.1rem 0.25rem;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 600;
       color: var(--text);
       outline: none;
@@ -117,7 +120,7 @@
       flex: 0 1 auto;
       min-width: 0;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       color: var(--text-dim);
       white-space: nowrap;
       overflow: hidden;
@@ -134,7 +137,7 @@
       background: none;
       border: none;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 500;
       color: var(--text-dim);
       opacity: 0.7;
@@ -199,7 +202,7 @@
       border: 2.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 800;
       color: var(--accent);
       letter-spacing: 0.005em;
@@ -236,7 +239,7 @@
       border: 1.5px solid var(--accent);
       border-radius: 999px;
       font-family: var(--font-display);
-      font-size: var(--lab-fs-audience);
+      font-size: var(--k1-fs-line);
       font-weight: 600;
       color: var(--text);
       line-height: 1;
@@ -1398,7 +1401,12 @@
         sizerEl.style.font = cs.font;
         sizerEl.style.letterSpacing = cs.letterSpacing;
         sizerEl.textContent = inputEl.value;
-        inputEl.style.width = Math.max(12, Math.ceil(sizerEl.offsetWidth) + 2) + 'px';
+        // box-sizing is border-box on this lab, so padding and border come out of
+        // the width: they have to be added back or the first letter gets clipped.
+        const chrome = parseFloat(cs.paddingLeft) + parseFloat(cs.paddingRight)
+                     + parseFloat(cs.borderLeftWidth) + parseFloat(cs.borderRightWidth);
+        const caret = 2;
+        inputEl.style.width = Math.ceil(chrome + caret + sizerEl.offsetWidth) + 'px';
       }
 
       function updateSuggestion() {
