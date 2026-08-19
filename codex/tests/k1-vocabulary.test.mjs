@@ -82,6 +82,55 @@ test('the list stays alphabetical, so the ordering never leaks the bias', () => 
   }
 });
 
+test('every entry is a lowercase Portuguese word', () => {
+  // The list is generated, so a mangled encoding or a stray capital would land in
+  // it silently and only show up on the screen during a class.
+  const bad = wordEntries()
+    .map((w) => w.text)
+    .filter((t) => !/^[a-záàâãéêíóôõúüçñ]+$/.test(t));
+  assert.deepEqual(bad, [], `not typable as written: ${bad.join(', ')}`);
+});
+
+test('the verbs are conjugated across the indicative for all six persons', () => {
+  const known = new Set(wordEntries().map((w) => w.text));
+  // One regular verb of each group, and the two irregulars the lab leans on.
+  const expected = {
+    costurar: ['costuro', 'costuras', 'costura', 'costuramos', 'costurais', 'costuram',
+               'costurei', 'costuraste', 'costurou', 'costurastes', 'costuraram',
+               'costurava', 'costurávamos', 'costuravam',
+               'costurarei', 'costurará', 'costuraremos', 'costurarão'],
+    comer: ['como', 'comes', 'come', 'comemos', 'comeis', 'comem',
+            'comi', 'comeu', 'comeram', 'comia', 'comíamos', 'comerei', 'comerão'],
+    ser: ['sou', 'és', 'é', 'somos', 'sois', 'são', 'fui', 'foi', 'foram',
+          'era', 'éramos', 'eram', 'serei', 'será', 'serão'],
+    ir: ['vou', 'vais', 'vai', 'vamos', 'vão', 'fui', 'foi', 'foram',
+         'ia', 'íamos', 'iam', 'irei', 'irá', 'irão'],
+  };
+  for (const [verb, forms] of Object.entries(expected)) {
+    const missing = forms.filter((f) => !known.has(f));
+    assert.deepEqual(missing, [], `${verb}: missing ${missing.join(', ')}`);
+  }
+});
+
+test('spelling survives the endings that change the sound', () => {
+  const known = new Set(wordEntries().map((w) => w.text));
+  // pegar -> peguei, marcar -> marquei, começar -> comecei. Deriving these by
+  // gluing the ending on would produce pegei, marcei and começei.
+  for (const f of ['peguei', 'marquei', 'comecei']) {
+    assert.ok(known.has(f), `${f} is missing, the orthographic rule broke`);
+  }
+  for (const wrong of ['pegei', 'marcei', 'começei']) {
+    assert.ok(!known.has(wrong), `"${wrong}" is not Portuguese and must not be in the list`);
+  }
+});
+
+test('all personal pronouns are typable', () => {
+  const known = new Set(wordEntries().map((w) => w.text));
+  const missing = ['eu', 'tu', 'ele', 'ela', 'nós', 'vós', 'eles', 'elas', 'você', 'vocês']
+    .filter((p) => !known.has(p));
+  assert.deepEqual(missing, [], `missing pronouns: ${missing.join(', ')}`);
+});
+
 test('"manga" is the only anchor, and it is present', () => {
   const anchors = wordEntries().filter((w) => w.bias === 'manga');
   assert.equal(anchors.length, 1);
