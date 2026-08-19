@@ -443,7 +443,9 @@
       // The scripted timeline, kept aside so Reiniciar can drop every document
       // the instructor injected during the class and start from the script again.
       const BASE_STEPS = STEPS.slice();
-      const DOC_TOK = 30000;          // ~100 pages, the ruler used on the slide
+      // A document is never the same size twice: 20k to 50k in 10k steps, so the
+      // window fills at an unpredictable pace instead of a countable one.
+      const DOC_SIZES = [20000, 30000, 40000, 50000];
       const BLOCK_PCT = 0.85;         // window occupancy that stops the conversation
       const SETUP_TOK = STEPS[0].reduce(function (a, e) { return a + e.k; }, 0);
       const isModel = function (t) { return t === 'think' || t === 'call' || t === 'answer'; };
@@ -627,7 +629,7 @@
 
         backBtn.disabled = stepPos <= (compactedUntil > 0 ? compactedUntil : 0);
         nextBtn.disabled = blocked || stepPos >= STEPS.length;  // quiet stop; no "end of conversation"
-        docBtn.disabled = blocked || stepPos < SETUP_STEPS;     // a document needs the setup loaded first
+        docBtn.disabled = blocked || !canAddDoc();   // only right after a user prompt
         compactBtn.disabled = (stepPos - shownStart) < 2;
         compactBtn.classList.toggle('k18-btn-urgent', blocked && !compactBtn.disabled);
         scaleBtn.classList.toggle('k18-on', fullScale);
@@ -651,12 +653,21 @@
       }
 
       function next()    { if (stepPos < STEPS.length) { stepPos++; render(); } }
+      // A document rides along with the user's message, so it can only be attached
+      // right after the user prompt, or after another document of the same turn.
+      function canAddDoc() {
+        if (stepPos < 1) return false;
+        const prev = STEPS[stepPos - 1];
+        const last = prev[prev.length - 1];
+        return last.t === 'user' || last.t === 'doc';
+      }
       // Attach a document wherever the walkthrough currently is. It becomes a real
       // step, so Voltar removes it and the token maths counts it like any other.
       function addDoc() {
-        if (stepPos < SETUP_STEPS) return;
+        if (!canAddDoc()) return;
+        const size = DOC_SIZES[Math.floor(Math.random() * DOC_SIZES.length)];
         const turn = Math.max(1, turnsRevealed());
-        STEPS.splice(stepPos, 0, [{ t: 'doc', l: 'Documento anexado', k: DOC_TOK, turn: turn, id: _id++ }]);
+        STEPS.splice(stepPos, 0, [{ t: 'doc', l: 'Documento anexado', k: size, turn: turn, id: _id++ }]);
         stepPos++;
         render();
       }
