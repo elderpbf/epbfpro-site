@@ -89,6 +89,7 @@
     .k1-type-input {
       flex: 0 0 auto;
       width: 12px;             /* measured against the real glyphs by sizeField() */
+      transition: none;        /* an animated width lags a whole letter behind */
       background: transparent;
       border: none;
       border-bottom: 2px solid var(--accent);
@@ -140,10 +141,11 @@
       cursor: pointer;
     }
     .k1-sug-chip:hover { background: rgba(var(--lab-focal-rgb), 0.22); transform: translateY(-1px); }
-    .k1-sug-chip.k1-bias-fruta { border-color: var(--accent-good); color: var(--accent-good); background: rgba(var(--lab-context-b-rgb), 0.10); }
-    .k1-sug-chip.k1-bias-fruta:hover { background: rgba(var(--lab-context-b-rgb), 0.20); }
-    .k1-sug-chip.k1-bias-roupa { border-color: var(--accent-warm); color: var(--accent-warm); background: rgba(var(--lab-context-a-rgb), 0.10); }
-    .k1-sug-chip.k1-bias-roupa:hover { background: rgba(var(--lab-context-a-rgb), 0.20); }
+    /* The hint stays neutral on purpose: colouring it by bias would answer, on the
+       way in, the question the demonstration exists to ask. */
+    .k1-sug-chip.k1-bias-fruta,
+    .k1-sug-chip.k1-bias-roupa { border: none; background: none; color: var(--text-dim); }
+    .k1-sug-chip:hover { opacity: 1; color: var(--text); }
     .k1-sug-prefix { /* what you've typed so far, in solid color of the chip */ }
     .k1-sug-suffix { opacity: 0.55; font-weight: 500; }
     .k1-sug-empty {
