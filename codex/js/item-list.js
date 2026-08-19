@@ -17,8 +17,12 @@
 // engine delivers WHICH items, in WHICH sections, in WHAT order, with WHAT glyph; each screen
 // paints the columns only it has.
 //
-// Consumers: content/releases.js (the class and Others compositor) and content/item-members.js
-// (a grouper's items).
+// Consumers: content/releases.js (the class and Others compositor), content/item-members.js
+// (a grouper's items), and, since 2026-08-18, the Trail (trilha/js/aulas.js + trilha/js/flat.js)
+// for its loose-material order. The Trail is the one consumer that does NOT use the registry
+// order: a student reads an alphabet, not the admin's type registry, so it calls
+// sortByTypeThenTitle below while the two admin screens call typeOrder/groupByType. Those two
+// orders are different ON PURPOSE; unifying them would break one screen or the other.
 import { normalize } from './text-search.js';
 
 // The `ct_types` registry order rules; a type outside the registry falls to the end, but
