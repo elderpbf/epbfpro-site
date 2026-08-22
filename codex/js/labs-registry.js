@@ -141,7 +141,7 @@ export const LABS = [
     key: 'k18',
     title: 'Janela de contexto',
     summary: 'Tudo que ocupa a janela, do sistema à resposta',
-    description: 'Versão granular da janela de contexto: os insumos entram separados (sistema, memórias, ferramentas, arquivos, histórico) e o próprio processo do modelo também ocupa a janela. O raciocínio custa milhares de tokens, a chamada de ferramenta custa quase nada, e o resultado e a resposta somam mais. Numa janela de 1.000.000, a barra dá zoom no que é usado.',
+    description: 'Versão granular da janela de contexto: os insumos entram separados (sistema, memórias, ferramentas, arquivos, histórico) e o próprio processo do modelo também ocupa a janela. O raciocínio custa milhares de tokens, a chamada de ferramenta custa quase nada, e o resultado e a resposta somam mais. A barra dá zoom no que é usado, e o botão alterna entre uma janela de 200.000 e uma de 1.000.000.',
     objective: 'Ver que o raciocínio e as ferramentas gastam a mesma janela, e quanto cada parte custa.',
     emoji: '🪟'
   },
