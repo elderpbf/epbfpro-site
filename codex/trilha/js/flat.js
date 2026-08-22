@@ -9,13 +9,11 @@ import { state } from './state.js';
 import { esc, isOutrosItem } from './utils.js';
 import { isFresh } from './freshness.js';
 import { mountFlatCardAction } from './actions.js';
-import { trail } from './api.js';
 import { registerRenderer } from './page.js';
-import { renderItem } from '../../js/item-render.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
 import { sortByTypeThenTitle } from '../../js/item-list.js';
 import { interceptItemOpen } from './gate.js';
-import { isProjeto, renderProjeto } from './projeto.js';
+import { openItemInto } from './item-open.js';
 import { buildSub } from './sub.js';
 
 export function renderApostilaTab() {
@@ -167,28 +165,18 @@ async function toggleFlatCard(card, item) {
 
   const body = document.createElement('div');
   body.className = 'cdx-tr-body';
-  body.innerHTML = '<div class="ctr-loading">Carregando...</div>';
   card.appendChild(body);
 
-  try {
-    const data = await trail.itemPublic({
-      client_slug: state.clientSlug, turma_slug: state.turmaSlug, token: state.token,
-      item_id: item.id, session_token: state.sessionToken, _silent: true,
-    });
-    body.innerHTML = '';
-    const contentWrap = document.createElement('div');
-    body.appendChild(contentWrap);
-    // A folder opens the same way here and in the Aulas tab: the SAME renderProjeto, with the
-    // SAME buildSub, so each child opens, copies, and downloads on its own. Without this, the
-    // Outros (Others) card would show only the folder's text and a "Baixar tudo" (download all),
-    // and the student would not reach what is inside without downloading the whole package.
-    if (isProjeto(data.item)) renderProjeto(data.item, contentWrap, buildSub, {});
-    else renderItem(data.item, contentWrap, { preview: true });
-    mountFlatCardAction(card, data.item);
-  } catch (e) {
-    if (window.bsLog) window.bsLog('trilha flat itemPublic: ' + (e && e.message || e), 'error');
-    body.innerHTML = '<div class="cdx-tr-empty">Erro ao carregar conteúdo.</div>';
-  }
+  // Everything from here on is shared with the sub-row (item-open.js). What stays here is the
+  // only part that is genuinely this card's: the body is a CHILD node, and the action goes into
+  // the card header. Before this, both cards carried their own copy and it had already drifted:
+  // this one called neither overlay, so the same lab read differently in Outros than in its own
+  // lesson (§26.2).
+  await openItemInto(body, item, {
+    subBuilder: buildSub,
+    mountAction: (fetched) => mountFlatCardAction(card, fetched),
+    logTag: 'flat',
+  });
 }
 
 registerRenderer('apostila', renderApostilaTab);

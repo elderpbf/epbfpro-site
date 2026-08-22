@@ -613,6 +613,62 @@
   max-height: 48vh;
   overflow: hidden;
 }
+/* WHAT IS RELEASED, above the sections (js/released-summary.js). The composer is a single-open
+   accordion, so without this block the only way to see what a lesson actually has was to open
+   every section and hunt for ticks. It sits inside the picker frame, above the search row, and
+   scrolls with its own cap so a long lesson never pushes the sections off screen. */
+.cdx-rel-sum {
+  padding: 0.55rem 0.7rem;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface);
+  flex-shrink: 0;
+  max-height: 32vh;
+  overflow-y: auto;
+}
+.cdx-rel-sum-head {
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+  color: var(--text-secondary);
+  margin-bottom: 0.35rem;
+}
+.cdx-rel-sum-empty { font-size: 0.85rem; color: var(--text-secondary); }
+.cdx-rel-sum-rows { display: flex; flex-direction: column; gap: 1px; }
+.cdx-rel-sum-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+  width: 100%;
+  padding: 0.24rem 0.3rem;
+  border: 0;
+  border-radius: 6px;
+  background: none;
+  font: inherit;
+  font-size: 0.87rem;
+  color: var(--text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+.cdx-rel-sum-row:hover { background: var(--cdx-card-hover-bg); }
+.cdx-rel-sum-row.is-removed .cdx-rel-sum-title { text-decoration: line-through; opacity: 0.6; }
+.cdx-rel-sum-icon { display: inline-flex; flex-shrink: 0; opacity: 0.8; }
+.cdx-rel-sum-icon svg { width: 15px; height: 15px; }
+.cdx-rel-sum-title { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-rel-sum-mark {
+  flex-shrink: 0;
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  padding: 0.08rem 0.35rem;
+  border-radius: 999px;
+}
+.cdx-rel-sum-mark.is-added { background: var(--primary); color: #fff; }
+.cdx-rel-sum-mark.is-removed { background: var(--danger); color: #fff; }
+/* Where the summary sends you: the row lights up for a moment so the eye lands on it after the
+   scroll, rather than on whatever happens to be in the middle of the list. */
+.cdx-comp-item.is-sum-target { background: var(--cdx-card-sel-bg); border-radius: 6px; }
+
 .cdx-picker-toolbar {
   display: flex;
   align-items: center;
@@ -1430,7 +1486,68 @@
    in the .cdx-ie block above: the actions, the sources and the flags all sit BELOW the field,
    and duplicating them here is what made an older `display:inline-flex` win by source order and
    flatten the new action row. */
+/* THE ITEM'S FILES (js/item-files.js). An item carries files, plural: this is the list that
+   makes adding, replacing and removing possible at all, sitting right under the box that picks
+   them. A pending row is one chosen in this session, uploaded when the item is saved. */
+.cdx-file-list { list-style: none; margin: 0.5rem 0 0; padding: 0; display: flex; flex-direction: column; gap: 2px; }
+.cdx-file-row {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.3rem 0.45rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  font-size: 0.86rem;
+}
+.cdx-file-row.is-pending { border-style: dashed; }
+.cdx-file-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text-primary); }
+a.cdx-file-name { text-decoration: none; }
+a.cdx-file-name:hover { text-decoration: underline; }
+.cdx-file-pending { flex-shrink: 0; font-size: 0.72rem; text-transform: uppercase; letter-spacing: 0.02em; color: var(--text-secondary); }
+.cdx-file-del {
+  flex-shrink: 0;
+  border: 0;
+  background: none;
+  color: var(--text-secondary);
+  font-size: 1.05rem;
+  line-height: 1;
+  padding: 0 0.2rem;
+  cursor: pointer;
+}
+.cdx-file-del:hover { color: var(--danger); }
+/* A pending-CHILD row edits its future item in place: the title input and the type select are
+   the whole ceremony, so renaming never needs another screen. */
+.cdx-file-icon { display: inline-flex; flex-shrink: 0; opacity: 0.8; }
+.cdx-file-type { flex-shrink: 0; font-size: 0.74rem; color: var(--text-secondary); }
+.cdx-file-title {
+  flex: 1;
+  min-width: 0;
+  font: inherit;
+  font-size: 0.86rem;
+  padding: 0.15rem 0.4rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text-primary);
+}
+.cdx-file-typesel {
+  flex-shrink: 0;
+  max-width: 10rem;
+  font: inherit;
+  font-size: 0.8rem;
+  padding: 0.15rem 0.3rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  background: var(--background);
+  color: var(--text-primary);
+}
+
 .cdx-aib-picked { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; margin-top: 6px; }
+/* The extract/download pair is wrapped so it can be hidden as a unit (a file with no text to
+   extract is not asked the question). `display:flex` keeps the two radios laid out exactly as
+   they were when they were direct children of the row above. */
+.cdx-aib-mode { display: flex; flex-wrap: wrap; gap: 6px 14px; align-items: center; }
 /* `.cdx-field label` (cohorts.css) is a DESCENDANT selector, so it uppercases every nested
    label, including the ones sitting beside a checkbox. Undo it here rather than app-wide:
    changing that selector touches every admin screen and is not this change's call to make. */

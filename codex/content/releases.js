@@ -11,6 +11,7 @@ import { aulaStatus } from '../js/aula-status.js';
 import { iconHtml as typeIconHtml, glyphSvg } from '../js/glyphs.js';
 import { groupByType } from '../js/item-list.js';
 import { pickerRowHtml, pickerGroupsHtml } from '../js/item-picker.js';
+import { summarize, summaryHtml, rowsFromPicker } from '../js/released-summary.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
 import * as turmaPicker from './turma-picker.js';
@@ -876,10 +877,28 @@ function _accordionGroupsHtml(sections, opts) {
   );
 }
 
+// WHAT IS RELEASED, before the sections (Élder 2026-08-17). Re-read from the checkboxes on every
+// tick, because the ticks are what Save is about to write: a block showing the SAVED state would
+// disagree with the boxes right under it while he works, which is worse than no block.
+function _renderReleasedSummary(container, targetAulaNum) {
+  const host = container.querySelector('.cdx-rel-sum-host');
+  const list = container.querySelector('.cdx-picker-list');
+  if (!host || !list) return;
+  const key = targetAulaNum === 'outros' ? 'releases.summary_title_outros' : 'releases.summary_title';
+  const sum = summarize(rowsFromPicker(list));
+  host.innerHTML = summaryHtml(sum, {
+    title: (n) => t(key) + ' (' + n + ')',
+    empty: t('releases.summary_empty'),
+    added: t('releases.summary_added'),
+    removed: t('releases.summary_removed'),
+  });
+}
+
 function _renderComposerAccordion(container, sections, targetAulaNum) {
   const groupsHtml = _accordionGroupsHtml(sections);
   container.innerHTML =
     '<div class="cdx-picker cdx-rel-acc">' +
+      '<div class="cdx-rel-sum-host"></div>' +
       '<div class="cdx-picker-toolbar">' +
         '<input type="search" class="cdx-picker-search cdx-comp-search-all" placeholder="' + _esc(t('releases.search_placeholder')) + '" autocomplete="off" spellcheck="false">' +
         '<button type="button" class="cdx-btn cdx-btn-sm cdx-rel-copy-btn">' + t('releases.copy_btn') + '</button>' +
@@ -888,8 +907,44 @@ function _renderComposerAccordion(container, sections, targetAulaNum) {
     '</div>' +
     '<div class="cdx-comp-actions"><button class="cdx-btn cdx-btn-primary cdx-comp-save">' + t('content.save') + '</button></div>';
   _wireComposerAccordion(container);
+  _renderReleasedSummary(container, targetAulaNum);
+  // One listener on the list, not one per checkbox: the rows are rebuilt by search and by every
+  // re-render, and per-row listeners would be re-attached or lost on each pass.
+  const list = container.querySelector('.cdx-picker-list');
+  if (list) list.addEventListener('change', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('cdx-comp-cb')) _renderReleasedSummary(container, targetAulaNum);
+  });
+  const sumHost = container.querySelector('.cdx-rel-sum-host');
+  if (sumHost) sumHost.addEventListener('click', (e) => {
+    const row = e.target.closest('[data-sum-id]');
+    if (!row) return;
+    _revealComposerRow(container, row.getAttribute('data-sum-section'), row.getAttribute('data-sum-id'));
+  });
   const copyBtn = container.querySelector('.cdx-rel-copy-btn');
   if (copyBtn) copyBtn.addEventListener('click', () => _openCopyReleasesModal(targetAulaNum));
+}
+
+// Open the section a summary line belongs to and put the row on screen. The block says WHAT is
+// released; this is how you get from there to the tick that decides it.
+function _revealComposerRow(container, sectionKey, id) {
+  const list = container.querySelector('.cdx-picker-list');
+  if (!list) return;
+  const search = container.querySelector('.cdx-comp-search-all');
+  if (search && search.value) { search.value = ''; search.dispatchEvent(new Event('input')); }
+  const group = list.querySelector('.cdx-picker-group[data-acc="' + (sectionKey || '').replace(/"/g, '\\"') + '"]');
+  if (group) {
+    const toggle = group.querySelector('[data-acc-toggle]');
+    const rows = group.querySelector('.cdx-picker-group-rows');
+    if (rows && rows.classList.contains('is-collapsed') && toggle) toggle.click();
+  }
+  const row = list.querySelector('label[data-id="' + String(id).replace(/"/g, '\\"') + '"]')
+    || list.querySelector('input.cdx-comp-cb[value="' + String(id).replace(/"/g, '\\"') + '"]');
+  const target = row && row.closest ? (row.closest('label') || row) : row;
+  if (target && target.scrollIntoView) target.scrollIntoView({ block: 'center' });
+  if (target && target.classList) {
+    target.classList.add('is-sum-target');
+    setTimeout(() => target.classList.remove('is-sum-target'), 1200);
+  }
 }
 
 function _wireComposerAccordion(container) {

@@ -35,9 +35,11 @@
 //   window.marked          (CDN, lazy)                       markdown preview
 import { content as api, ai as aiApi } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
+import { itemFiles, withItemFiles, filesPanelHtml, inferChildType, fileNameFromUrl } from '../js/item-files.js';
+import { openModal, closeModal } from '../js/modal.js';
 import { glyphSvg, iconHtml } from '../js/glyphs.js';
 import {
-  buildTypeBlock, wireTypeBlock, collectTypeData, setBundleSlugs, isBundleSlug, renderMarkdown,
+  buildTypeBlock, wireTypeBlock, collectTypeData, mergeItemMeta, setBundleSlugs, isBundleSlug, renderMarkdown,
   buildZipIntro, contentBoxSpec, contentBoxChanged,
 } from './editor/type-block.js';
 import { installResizer } from '../js/resizable.js';
@@ -265,6 +267,7 @@ function _mountLevel(container, opts) {
         '<div class="cdx-ie-left">' +
           // The content box owns #ie-body and carries the AI, the imports and the raw flag.
           '<div id="ie-aibox"></div>' +
+          '<div id="ie-files"></div>' +
           '<div id="ie-zipintro"></div>' +
           '<p class="cdx-ie-note">' + _esc(t('editor.ai_note')) + '</p>' +
           // THE ORDER, and it is the question Élder asked to have answered rather than guessed
@@ -311,6 +314,22 @@ function _mountLevel(container, opts) {
 
   const root = container;
   const selectedTagIds = new Set(initialTagIds);
+  // ONE FILE PER ITEM; MORE FILES ARE ITEMS (§34, superseding §28's list the day after it was
+  // built). `_ownFile` is the stored file, `_pendingOwnFile` the one picked for that slot this
+  // session. `_childRows` are the item's existing children (any type can have them now); a
+  // removal there is a member-list change written on save, never a deletion of the child item.
+  // `_pendingChildren` are files picked this session that BECOME child items on save, each with
+  // an editable title and an inferred, overridable type. The old scalar pair survives for the
+  // one field that is genuinely single and NOT the item's file: a paper's PDF.
+  let _ownFile = itemFiles(initialMeta)[0] || null;
+  let _pendingOwnFile = opts.pendingOwn || null;
+  let _childRows = Array.isArray(opts.childRowsView)
+    ? opts.childRowsView.slice()
+    : (isBundleSlug(initialType) ? [] : (src.children || (isEdit && item && item.children) || []).map((c) => ({
+        id: Number(c.id), title: c.title, type_label: c.type_label || c.type, type_icon: c.type_icon || '', indent: c.indent || 0,
+      })));
+  let _childrenDirty = !!opts.childrenDirty;
+  let _pendingChildren = (Array.isArray(opts.pendingChildren) ? opts.pendingChildren : []).slice();
   let _pendingAssetFile = null;
   let _pendingAssetField = null;
   // A package's members are not meta_json: they are ct_item_members rows, written AFTER the save
@@ -375,6 +394,9 @@ function _mountLevel(container, opts) {
     // The ".zip" choice only exists for a package, and it sits under the box it governs.
     root.querySelector('#ie-zipintro').innerHTML = bundle ? buildZipIntro(initialMeta) : '';
     wireTypeBlock(block, typeSlug, function (file, field) {
+      // A paper's PDF is genuinely ONE field, so it keeps the scalar slot. A material's image is
+      // just a file the item carries, so it joins the list like any other (§28).
+      if (field === 'attachment_url') { _routeFiles([file]); return; }
       _pendingAssetFile = file;
       _pendingAssetField = field;
       markDirty();
@@ -409,6 +431,107 @@ function _mountLevel(container, opts) {
   // the Refazer button read it.
   let _aiCtx = aiContext;
 
+  // THE FILES PANEL (§34). One row for the item's OWN file; one row per CHILD; one editable row
+  // per file picked this session that becomes a child on save. This is what "an item with
+  // multiple files inside" looks like on screen, while underneath there is exactly one file slot
+  // and the same members machinery packages use.
+  function _renderFiles() {
+    const host = root.querySelector('#ie-files');
+    if (!host) return;
+    const children = _childRows.map((c) => ({
+      id: c.id, title: c.title, type_label: c.type_label,
+      iconHtml: (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && c.type_icon)
+        ? window.CdxGlyphs.iconHtml(c.type_icon, { size: 15 }) : '',
+    }));
+    host.innerHTML = filesPanelHtml(
+      _ownFile, _pendingOwnFile ? { name: _pendingOwnFile.name } : null,
+      children,
+      _pendingChildren.map((f) => ({ name: f.file.name, title: f.title, type: f.type })),
+      types,
+      {
+        remove: t('editor.file_remove'),
+        pending: t('editor.file_pending'),
+        childPending: t('editor.child_pending'),
+      }
+    );
+  }
+
+  function _addChildFile(file) {
+    // The same file picked twice is one file: the R2 key is item + name, so a repeat would
+    // overwrite itself and leave two rows pointing at one object.
+    const dup = _pendingChildren.some((f) => f.file.name === file.name && f.file.size === file.size);
+    if (!dup) {
+      _pendingChildren.push({
+        file,
+        title: String(file.name).replace(/\.[^.]+$/, ''),
+        type: inferChildType(types, file.name),
+      });
+    }
+    _renderFiles();
+    markDirty();
+  }
+
+  // WHERE A PICKED FILE GOES, the routing the content box hands everything to (§34):
+  //   several at once      -> each becomes a child item ("these are several things")
+  //   one, empty slot      -> the item's own file
+  //   one, slot occupied   -> ask: replace the file, or add as a child item. Both intents are
+  //                           real and replace is destructive, so this prompt earns its place.
+  function _routeFiles(files) {
+    const list = (files || []).filter(Boolean);
+    if (!list.length) return;
+    if (list.length > 1) { list.forEach(_addChildFile); return; }
+    const f = list[0];
+    if (!_ownFile && !_pendingOwnFile) {
+      _pendingOwnFile = f;
+      _renderFiles();
+      markDirty();
+      return;
+    }
+    const bd = openModal(
+      '<div class="cdx-modal">' +
+        '<p>' + _esc(t('editor.file_slot_taken').replace('{name}', f.name)) + '</p>' +
+        '<div class="cdx-modal-actions">' +
+          '<button class="cdx-btn" data-act="replace">' + t('editor.file_replace_btn') + '</button>' +
+          '<button class="cdx-btn cdx-btn-primary" data-act="child">' + t('editor.file_as_child_btn') + '</button>' +
+        '</div>' +
+      '</div>');
+    bd.addEventListener('click', (e) => {
+      const b = e.target.closest('[data-act]');
+      if (!b) return;
+      if (b.dataset.act === 'replace') { _ownFile = null; _pendingOwnFile = f; _renderFiles(); markDirty(); }
+      else { _addChildFile(f); }
+      closeModal(bd);
+    });
+  }
+
+  const _filesHost = root.querySelector('#ie-files');
+  if (_filesHost) {
+    _filesHost.addEventListener('click', (e) => {
+      if (e.target.closest('[data-own-del]')) { _ownFile = null; _renderFiles(); markDirty(); return; }
+      if (e.target.closest('[data-pending-own-del]')) { _pendingOwnFile = null; _renderFiles(); markDirty(); return; }
+      const cdel = e.target.closest('[data-child-del]');
+      if (cdel) {
+        const id = Number(cdel.getAttribute('data-child-del'));
+        // Out of THIS item's list, never out of the library: same doctrine as deleting a
+        // package ("its contents survive").
+        _childRows = _childRows.filter((c) => c.id !== id);
+        _childrenDirty = true;
+        _renderFiles(); markDirty(); return;
+      }
+      const pdel = e.target.closest('[data-pchild-del]');
+      if (pdel) { _pendingChildren.splice(Number(pdel.getAttribute('data-pchild-del')), 1); _renderFiles(); markDirty(); }
+    });
+    _filesHost.addEventListener('input', (e) => {
+      const ti = e.target.closest('[data-pchild-title]');
+      if (ti) { const r = _pendingChildren[Number(ti.getAttribute('data-pchild-title'))]; if (r) { r.title = ti.value; markDirty(); } }
+    });
+    _filesHost.addEventListener('change', (e) => {
+      const ty = e.target.closest('[data-pchild-type]');
+      if (ty) { const r = _pendingChildren[Number(ty.getAttribute('data-pchild-type'))]; if (r) { r.type = ty.value; markDirty(); } }
+    });
+  }
+  _renderFiles();
+
   renderTypeBlock(initialType);
 
   // ── the AI box, mounted where the separate creator screen used to be ───────
@@ -426,6 +549,8 @@ function _mountLevel(container, opts) {
       types,
       tags,
       compact: !!opts.compact,
+      onFilesAttached: _routeFiles,
+      itemHasFile: () => !!(_ownFile || _pendingOwnFile),
       // What the one box is FOR comes from type-block.js, the only module allowed to know that a
       // paper keeps complementary notes there or that a package must not offer file sources.
       label: t(spec.labelKey),
@@ -453,12 +578,6 @@ function _mountLevel(container, opts) {
         if (rb) rb.hidden = false;
         // A file chosen as "use as a download" IS the item: seed the same pending-upload path the
         // arquivo type editor uses, so saving uploads it exactly as a hand-picked file would.
-        if (ctx && ctx.file) {
-          _pendingAssetFile = ctx.file;
-          _pendingAssetField = 'attachment_url';
-          const nm = root.querySelector('#ie-doc-filename');
-          if (nm) nm.textContent = t('editor.file_selected') + ' ' + ctx.file.name;
-        }
         _tagsByLabels(tags, parsed.tag_labels || []).then((ids) => {
           selectedTagIds.clear();
           ids.forEach((id) => selectedTagIds.add(id));
@@ -473,13 +592,7 @@ function _mountLevel(container, opts) {
 
   // A file picked before the editor opened arrives as opts.pendingFile: seed the same
   // pending-upload path the type editor uses, and show the chosen name.
-  if (pendingFile) {
-    _pendingAssetFile = pendingFile;
-    _pendingAssetField = 'attachment_url';
-    markDirty();
-    const nm = root.querySelector('#ie-doc-filename');
-    if (nm) nm.textContent = t('editor.file_selected') + ' ' + pendingFile.name;
-  }
+  if (pendingFile) _routeFiles([pendingFile]);
 
   typeSel.addEventListener('change', function () {
     if (typeSel.value === '__new__') {
@@ -659,7 +772,11 @@ function _mountLevel(container, opts) {
     // Writing `false` by default would silently un-raw every existing prompt on its next save,
     // because absence is exactly what means "follow the type" (see isVerbatim).
     const chosen = _aiBox.verbatim();
-    let meta = typeData.meta_json;
+    // Laid over what is already STORED, never replacing it: the form only speaks for the keys its
+    // own type block draws, and the attachment is not one of them (mergeItemMeta / §25.5).
+    // The list is written on TOP of the merge: the merge decides which keys the form owns, this
+    // decides which files the item carries, and a removal here has to survive the merge.
+    let meta = withItemFiles(mergeItemMeta(initialMeta, typeData.meta_json, type), _ownFile ? [_ownFile] : []);
     if (typeof chosen === 'boolean') meta = Object.assign({}, meta || {}, { verbatim: chosen });
     return {
       type, title, summary,
@@ -667,6 +784,16 @@ function _mountLevel(container, opts) {
       meta_json: meta,
       tag_ids: Array.from(selectedTagIds)
     };
+  }
+
+  // A file still staged in the content box at Save time (the §25.4 question was never answered).
+  // Routed silently: empty slot takes it, otherwise it becomes a child. Losing it would be the
+  // §25.5 defect all over again; prompting mid-save would be worse.
+  function _drainBox() {
+    const f = _aiBox ? _aiBox.pendingFile() : null;
+    if (!f) return;
+    if (!_ownFile && !_pendingOwnFile) _pendingOwnFile = f;
+    else _addChildFile(f);
   }
 
   // Everything this level is holding, in the shape editor/nav.js stores and planSave() reads.
@@ -683,6 +810,20 @@ function _mountLevel(container, opts) {
         meta_json: state.meta_json ? JSON.stringify(state.meta_json) : null,
         tag_ids: state.tag_ids,
       },
+      // The item's own file, picked this session and uploaded on save; and the files that
+      // BECOME child items (§34). _drainBox() first: a file staged in the content box with the
+      // §25.4 question unanswered must not evaporate on Save (the §25.5 lesson).
+      pendingOwn: (_drainBox(), _pendingOwnFile),
+      fileChildren: _pendingChildren.slice(),
+      // A member-list write is owed when a child was removed here OR one is being born.
+      childMembers: (_childrenDirty || _pendingChildren.length)
+        ? _childRows.map((c) => ({ id: c.id, indent: c.indent || 0 }))
+        : null,
+      // Display state for a remount (stepping into a member and back): the rows as shown, and
+      // whether a removal is pending. Without these, coming back would resurrect a removed child.
+      childRowsView: _childRows.slice(),
+      childrenDirty: _childrenDirty,
+      // The scalar survives for the one field that is genuinely single: a paper's PDF.
       pendingFile: _pendingAssetFile,
       pendingField: _pendingAssetField,
       verbatim: _aiBox.verbatim(),
@@ -745,18 +886,56 @@ async function _persist(draft, existingId, opts) {
   const savedItem = saveRes && (saveRes.item || saveRes.section) ? (saveRes.item || saveRes.section) : null;
   const savedId = existingId || (savedItem ? savedItem.id : (saveRes && saveRes.id ? saveRes.id : null));
 
-  if (draft.pendingFile && savedId) {
-    const b64 = await _readFileAsBase64(draft.pendingFile);
-    const uploadRes = await api.uploadAsset({
-      item_id: savedId,
-      filename: draft.pendingFile.name,
-      content_b64: b64
-    });
-    const assetUrl = uploadRes && uploadRes.url;
-    if (assetUrl && draft.pendingField) {
-      const meta = draft.params.meta_json ? JSON.parse(draft.params.meta_json) : {};
-      meta[draft.pendingField] = assetUrl;
-      await api.updateItem({ id: savedId, meta_json: JSON.stringify(meta) });
+  // The uploads happen AFTER the row exists, because the R2 key is built from the item id.
+  // One call per file: ct_upload_asset takes one, and the loop belongs to the client.
+  if (savedId) {
+    let meta = draft.params.meta_json ? JSON.parse(draft.params.meta_json) : {};
+    let touched = false;
+
+    // The item's OWN file (§34: one slot, ever).
+    if (draft.pendingOwn) {
+      const b64 = await _readFileAsBase64(draft.pendingOwn);
+      const res = await api.uploadAsset({ item_id: savedId, filename: draft.pendingOwn.name, content_b64: b64 });
+      if (res && res.error) throw new Error(res.error);
+      if (res && res.url) { meta = withItemFiles(meta, [{ url: res.url, name: draft.pendingOwn.name }]); touched = true; }
+    }
+
+    // The scalar path, for a field that is genuinely one value (a paper's PDF).
+    if (draft.pendingFile && draft.pendingField) {
+      const b64 = await _readFileAsBase64(draft.pendingFile);
+      const res = await api.uploadAsset({ item_id: savedId, filename: draft.pendingFile.name, content_b64: b64 });
+      if (res && res.url) { meta[draft.pendingField] = res.url; touched = true; }
+    }
+
+    if (touched) await api.updateItem({ id: savedId, meta_json: JSON.stringify(meta) });
+
+    // FILES THAT ARE ITEMS (§34): each picked file beyond the slot is born as a child item with
+    // its own type and title, then the parent's GLOBAL member list is written once: the kept
+    // children plus the new ones, in that order. Any type can parent now (the Worker's
+    // not_a_bundle gate fell with this design); a child removed on screen leaves the list, never
+    // the library. Errors here THROW: a child that failed to be born must fail the Save loudly,
+    // not leave a half-written family.
+    const born = [];
+    for (const fc of (draft.fileChildren || [])) {
+      const title = (fc.title || '').trim() || fc.file.name;
+      const made = await api.createItem({ type: fc.type, title, summary: null, body_md: '', meta_json: null, tag_ids: [] });
+      if (made && made.error) throw new Error(made.error);
+      const childId = made && made.item ? made.item.id : made && made.id;
+      if (!childId) throw new Error('child item not created');
+      const b64 = await _readFileAsBase64(fc.file);
+      const up = await api.uploadAsset({ item_id: childId, filename: fc.file.name, content_b64: b64 });
+      if (up && up.error) throw new Error(up.error);
+      if (up && up.url) {
+        await api.updateItem({ id: childId, meta_json: JSON.stringify(withItemFiles({}, [{ url: up.url, name: fc.file.name }])) });
+      }
+      born.push({ id: Number(childId), indent: 0 });
+    }
+    if (draft.childMembers || born.length) {
+      const res = await api.setItemMembers({
+        parent_item_id: savedId,
+        children: (draft.childMembers || []).concat(born),
+      });
+      if (res && res.error) throw new Error(res.error);
     }
   }
   return savedId;
@@ -837,6 +1016,13 @@ export function mount(container, opts) {
       prefill,
       aiContext: lo.aiContext || null,
       pendingFile: draft ? draft.pendingFile : (lo.pendingFile || null),
+      // Files picked and not yet saved come BACK on a remount (stepping into a member destroys
+      // the level), so choosing three files and then opening a child does not lose them. Same
+      // for the slot's pending file, the child rows as shown, and a pending removal.
+      pendingChildren: draft ? draft.fileChildren : null,
+      pendingOwn: draft ? draft.pendingOwn : null,
+      childRowsView: draft ? draft.childRowsView : null,
+      childrenDirty: draft ? !!draft.childrenDirty : false,
       titleLabel: nav.depth() === 1 ? opts.titleLabel : null,
       saveLabel: nav.depth() === 1 ? opts.saveLabel : null,
       // Deleting is offered only at the root. One level down you are inside a package, and

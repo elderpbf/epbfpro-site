@@ -19,6 +19,7 @@ import { assetUrl } from './codex-api.js';
 import { openModal as _openLabViewer } from './lab-viewer.js';
 import { flattenTree } from './item-list.js';
 import { isVerbatim } from './item-download.js';
+import { itemFiles } from './item-files.js';
 export { esc };
 
 // Resolve a stored asset path to a loadable URL. Attachment/PDF urls are stored as
@@ -285,14 +286,17 @@ function renderGuide(item, container, opts) {
 
 function renderMaterial(item, container, opts) {
   const meta = _meta(item);
-  const url = meta.attachment_url || '';
+  // An item carries files, plural (§28). The first one keeps the affordance button at the top,
+  // and every one of them is rendered below, so a material with three attachments shows three.
+  const files = itemFiles(meta);
+  const url = files.length ? files[0].url : '';
   container.innerHTML = '<div class="ctr-loading">Carregando...</div>';
   _loadMarked(() => {
     const bodyHtml = window.marked.parse(item.body_md || '');
     container.innerHTML =
       '<div class="ctr-affordance-row">' + affordanceBtnHtml(url, 'Baixar arquivo', opts.preview) + '</div>' +
       '<div class="ctr-prompt-body">' + bodyHtml + '</div>' +
-      attachmentHtml(url);
+      files.map((f) => attachmentHtml(f.url)).join('');
   });
 }
 

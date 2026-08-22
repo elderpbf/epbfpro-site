@@ -67,6 +67,14 @@ export function mount(host, opts = {}) {
   const tags = opts.tags || [];
   const onResult = opts.onResult || function () {};
   const onDirty = opts.onDirty || function () {};
+  // Where files go once the box is done with them. The box PICKS and, for a single extractable
+  // file on an item with no file yet, ASKS; the item editor OWNS the routing (its own slot, a
+  // child item, the replace prompt). Handing over and forgetting is what lets the next pick add
+  // instead of quietly replacing (§34).
+  const onFilesAttached = opts.onFilesAttached || function () {};
+  // Does the item already carry a file? Decides whether the extract question is even relevant:
+  // a second file is becoming a child item no matter what, so there is nothing to ask.
+  const itemHasFile = opts.itemHasFile || function () { return false; };
   // null means nobody chose: the AI's own type guess decides, which is what keeps every existing
   // item behaving exactly as before. Once the user touches the checkbox it stops being null and
   // the choice wins over the guess.
@@ -86,8 +94,14 @@ export function mount(host, opts = {}) {
     '</div>' +
     '<div class="cdx-aib-picked" id="aib-picked" style="display:none">' +
       '<span id="aib-filename"></span>' +
-      '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="extract" checked> ' + _esc(t('creator.file_extract')) + '</label>' +
-      '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="download"> ' + _esc(t('creator.file_download')) + '</label>' +
+      // ASKED ONLY WHEN IT CAN BE ANSWERED (§25.4, Élder 17/08: "if the item can be extracted it
+      // asks... if a file cannot be extracted it doesn't even ask"). A .zip or an image has no
+      // text to pull out, so offering "read the text out of it" was a dead choice that made the
+      // real one (attach it) look optional. Hidden, the mode is simply `download`.
+      '<span class="cdx-aib-mode" id="aib-mode-row" style="display:none">' +
+        '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="extract"> ' + _esc(t('creator.file_extract')) + '</label>' +
+        '<label class="cdx-radio-label"><input type="radio" name="aib-mode" value="download"> ' + _esc(t('creator.file_download')) + '</label>' +
+      '</span>' +
       '<span class="cdx-helper-text" id="aib-status"></span>' +
     '</div>';
 
@@ -158,29 +172,67 @@ export function mount(host, opts = {}) {
   });
 
   // ── importing raw text ────────────────────────────────────────────────────
-  const fileMode = () => {
-    const r = host.querySelector('input[name="aib-mode"]:checked');
-    return r ? r.value : 'extract';
-  };
-  async function onFilePicked(f) {
-    if (!f) return;
+  // `pickedFile` is non-null ONLY while the §25.4 question sits unanswered (one extractable
+  // file, item with no file). Everything else hands off immediately, so there is no mode to
+  // track any more: the answer IS the routing.
+  let pickedExtractable = false;
+  // Hand the files to the item editor and forget them here. Without this the box would hold one
+  // file forever and picking again would silently replace it.
+  function handOff(files) {
+    pickedFile = null;
+    pickedExtractable = false;
+    const panel = host.querySelector('#aib-picked');
+    if (panel) panel.style.display = 'none';
+    onFilesAttached(files);
+  }
+
+  async function onFilePicked(picked) {
+    const files = Array.isArray(picked) ? picked.filter(Boolean) : (picked ? [picked] : []);
+    if (!files.length) return;
+    onDirty();
+    // Several at once is the unambiguous "these are several things": no questions, the editor
+    // turns each into a child item (§34). Same when the item already carries a file: the pick is
+    // becoming a child, so the extract question has no answer that changes anything.
+    if (files.length > 1 || itemHasFile() || !hasExtractableText(files[0])) { handOff(files); return; }
+
+    // ONE extractable file on an item with no file: this is the §25.4 question, and it is asked
+    // FIRST. Nothing is extracted and nothing is attached until the answer, because acting on
+    // pick was exactly the 17/08 bug: the text was extracted while "keep as file" sat checked,
+    // and the file went nowhere.
+    const f = files[0];
     pickedFile = f;
+    pickedExtractable = true;
     const panel = host.querySelector('#aib-picked');
     const nameEl = host.querySelector('#aib-filename');
     const statusEl = host.querySelector('#aib-status');
+    const modeRow = host.querySelector('#aib-mode-row');
     if (nameEl) nameEl.textContent = f.name;
     if (panel) panel.style.display = '';
-    onDirty();
-    if (hasExtractableText(f)) {
-      if (statusEl) statusEl.textContent = t('creator.file_extracting');
-      let text = '';
-      try { text = await extractText(f); } catch (_) { text = ''; }
-      if (text) { rawEl.value = text; if (statusEl) statusEl.textContent = t('creator.file_extracted'); }
-      else if (statusEl) statusEl.textContent = t('creator.file_no_text');
-    } else if (statusEl) {
-      statusEl.textContent = t('creator.file_no_text');
-    }
+    if (modeRow) modeRow.style.display = '';
+    // No default: a pre-checked radio is an answer nobody gave. Both start blank every pick.
+    host.querySelectorAll('input[name="aib-mode"]').forEach((r) => { r.checked = false; });
+    if (statusEl) statusEl.textContent = t('creator.file_what_now');
   }
+
+  // The ANSWER. "Manter como arquivo" hands the file to the editor; "Extrair o texto" pulls the
+  // text into the body and discards the file, which is what that answer means (§25.4: "the
+  // contents without the file itself").
+  host.addEventListener('change', async (e) => {
+    if (!e.target || e.target.name !== 'aib-mode' || !pickedFile) return;
+    onDirty();
+    if (e.target.value === 'download') { handOff([pickedFile]); return; }
+    const f = pickedFile;
+    pickedFile = null;
+    pickedExtractable = false;
+    const statusEl = host.querySelector('#aib-status');
+    const modeRow = host.querySelector('#aib-mode-row');
+    if (modeRow) modeRow.style.display = 'none';
+    if (statusEl) statusEl.textContent = t('creator.file_extracting');
+    let text = '';
+    try { text = await extractText(f); } catch (_) { text = ''; }
+    if (text) { rawEl.value = text; if (statusEl) statusEl.textContent = t('creator.file_extracted'); }
+    else if (statusEl) statusEl.textContent = t('creator.file_no_text');
+  });
 
   // Gated on wantSources too, not only on compact: a PACKAGE renders no import row, and wiring
   // buttons that were never rendered threw on the very first mount of a package editor.
@@ -188,7 +240,7 @@ export function mount(host, opts = {}) {
     _primePickerKey();
     const fileBtn = host.querySelector('#aib-file');
     const driveBtn = host.querySelector('#aib-drive');
-    fileBtn.addEventListener('click', async () => { await onFilePicked(await pickLocalFile({})); });
+    fileBtn.addEventListener('click', async () => { await onFilePicked(await pickLocalFile({ multiple: true })); });
     const src = createDriveSource({
       getApiKey: () => _pickerKey,
       getToken: () => (window.BS_GOOGLE ? window.BS_GOOGLE.requestToken() : null),
@@ -226,9 +278,8 @@ export function mount(host, opts = {}) {
   // ── the AI pass ───────────────────────────────────────────────────────────
   host.querySelector('#aib-run').addEventListener('click', async function () {
     const raw = rawEl.value.trim();
-    // A file with no extractable text (an image, a binary) still gets a pass from its metadata:
-    // the AI does what it can with the filename and type rather than refusing outright.
-    const isDownload = pickedFile && fileMode() === 'download';
+    // A staged file (question unanswered) still gives the AI something to chew on: its name and
+    // type. It is NOT handed over here; only an answer or Save routes a file (§34).
     const aiInput = raw || (pickedFile
       ? ('Arquivo para os alunos: ' + pickedFile.name + (pickedFile.type ? ' (' + pickedFile.type + ')' : ''))
       : '');
@@ -254,11 +305,14 @@ export function mount(host, opts = {}) {
       // the text it is showing.
       verbatim = parsed.verbatim;
       verbEl.checked = !!verbatim;
-      if (isDownload) parsed.type = 'arquivo';   // the file IS the item; the AI still filled the rest
+      // The type used to be overwritten with 'arquivo' here, which is the line that turned a
+      // carrier into an identity: pick a .zip for a Skill and the item stopped being a Skill.
+      // The type is what the thing IS and the file is what it CARRIES (§25.3), so attaching one
+      // changes nothing about the other.
       if (parsed.type !== 'prompt' && aiSpec.looksTruncated(aiInput, parsed.body_md)) {
         if (!window.confirm(t('creator.ai_truncated_confirm'))) return;
       }
-      onResult(parsed, { addEmojis, rawInput: aiInput, file: isDownload ? pickedFile : null });
+      onResult(parsed, { addEmojis, rawInput: aiInput });
     } catch (e) {
       _logAi('exception', null);
       notice.internal(t('content.error') + ': ' + ((e && e.message) || e));
@@ -273,8 +327,10 @@ export function mount(host, opts = {}) {
     setValue: (v) => { rawEl.value = v == null ? '' : String(v); },
     verbatim: () => verbatim,
     setVerbatim: (b) => { verbatim = b; verbEl.checked = !!b; },
-    pendingFile: () => (pickedFile && fileMode() === 'download' ? pickedFile : null),
-    reset: () => { rawEl.value = ''; pickedFile = null; _last = null; },
+    // The staged, unanswered file, so Save can drain it instead of losing it (§25.5's lesson:
+    // a picked file must never silently evaporate).
+    pendingFile: () => pickedFile,
+    reset: () => { rawEl.value = ''; pickedFile = null; pickedExtractable = false; _last = null; },
     destroy: () => { host.innerHTML = ''; },
   };
 }

@@ -25,8 +25,14 @@ test('editor modules reach the backend only through the facade', () => {
     // `(\.\.\/)+` and not a fixed `../`: the editor's pieces sit one folder deeper
     // (content/editor/), and pinning the depth would fail a module for its location rather
     // than for reaching the backend the wrong way, which is what this test is about.
-    assert.match(src, /from\s+['"](?:\.\.\/)+js\/codex-api\.js['"]/, `${name} imports the facade`);
     assert.match(src, /from\s+['"](?:\.\.\/)+js\/i18n\.js['"]/, `${name} imports t()`);
+  }
+  // The facade import is asked of the modules that actually TALK to the backend. type-block
+  // stopped when its duplicate file picker was retired (§25.4), and demanding an import it has
+  // no use for would be pinning ceremony instead of the invariant, which is the line above:
+  // nothing in the editor calls the Worker directly.
+  for (const [name, src] of [['item-form', formSrc], ['ai-box', aiBoxSrc]]) {
+    assert.match(src, /from\s+['"](?:\.\.\/)+js\/codex-api\.js['"]/, `${name} imports the facade`);
   }
   // Only the pieces that OWN a DOM subtree expose mount(); the type block is a builder the
   // owner calls, so requiring mount() of it would be requiring a shape it has no use for.
@@ -72,12 +78,25 @@ test('facade exposes the editor backend methods (frozen action strings)', () => 
 // The per-type half now lives in content/editor/type-block.js: the editor stopped being one
 // screen-shaped file, and the module that knows content types is the ONLY one that does. The
 // assertions moved with the code, they were not weakened.
-test('the type block registers the arquivo type wired to the shared file-source', () => {
-  assert.match(typeBlockSrc, /from\s+['"]\.\.\/\.\.\/js\/file-source\.js['"]/, 'imports the shared file-source module');
-  assert.match(typeBlockSrc, /createDriveSource|pickLocalFile/, 'uses the shared local + Drive sources');
-  assert.match(typeBlockSrc, /typeSlug === 'arquivo'/, 'has the arquivo editor branch');
-  assert.match(typeBlockSrc, /onFileSelected\(f, 'attachment_url'\)/, 'the picked file flows into attachment_url (the trail renders it as a download)');
-  assert.match(typeBlockSrc, /view: 'any'/, 'the Drive picker browses any file, not just images');
+// `arquivo` was a TYPE with its own file picker, and that picker was the second selector: the
+// content box above it already picks a file, so the editor asked the same question twice with
+// opposite effects. Élder hit it on 17/08 and his .zip went into the text instead of being
+// attached. One selector now, in the content box, for every type (§25.4). What this test pins is
+// that it stays one: a new file picker in the type block would recreate the exact defect.
+test('the type block draws NO file picker of its own', () => {
+  assert.ok(!/ie-doc-local|ie-doc-drive/.test(typeBlockSrc), 'the arquivo picker is gone');
+  assert.ok(!/pickLocalFile|createDriveSource/.test(typeBlockSrc), 'and so is its plumbing');
+  // What replaced it, in the ONE box that stays.
+  assert.match(aiBoxSrc, /from\s+['"]\.\.\/\.\.\/js\/file-source\.js['"]/, 'the content box imports the shared file-source');
+  assert.match(aiBoxSrc, /createDriveSource|pickLocalFile/, 'and uses the shared local + Drive sources');
+  assert.match(aiBoxSrc, /view: 'any'/, 'the Drive picker browses any file, not just images');
+});
+
+// The two native file inputs that remain are a type's OWN extra file (a paper's PDF, a material's
+// image), not a second general-purpose picker. They keep flowing into the same pending-upload path.
+test('a type that owns an extra file still routes it through onFileSelected', () => {
+  assert.match(typeBlockSrc, /onFileSelected\(f, 'pdf_url'\)/, "the paper's PDF");
+  assert.match(typeBlockSrc, /onFileSelected\(f, 'attachment_url'\)/, "the material's image");
 });
 
 // The point of the split: the assembling mount must not branch on a type slug. If it starts to,
@@ -95,20 +114,18 @@ test('arquivo i18n keys exist in both dictionaries', () => {
 test('the type picker highlight follows the clicked type (visual selection bug)', () => {
   assert.match(formSrc, /_refreshPicker\(typeSel\.value\)/, 'a type change re-highlights the picker (is-active moves to the clicked type, not just the block re-renders)');
 });
-test('the AI box imports a document (gdoc/local/Drive) and offers extract vs download', () => {
+test('the AI box imports files and ASKS before acting on an extractable one', () => {
   assert.match(aiBoxSrc, /from\s+['"]\.\.\/\.\.\/js\/file-source\.js['"]/, 'imports the shared file source');
   assert.match(aiBoxSrc, /from\s+['"]\.\.\/\.\.\/js\/file-text\.js['"]/, 'imports the client-side text extractor');
-  assert.match(aiBoxSrc, /extractText\(/, 'a picked file has its text extracted into the raw box');
   assert.match(aiBoxSrc, /aib-file/, 'has a "from computer" import button');
-  assert.match(aiBoxSrc, /name="aib-mode"/, 'offers the extract vs download choice in place');
-  assert.match(aiBoxSrc, /fileMode\(\) === 'download'/, 'download mode routes to an arquivo item');
-  // The file no longer travels between two screens: the box hands it to the editor around it,
-  // which seeds the same pending-upload path a hand-picked file uses.
-  assert.match(aiBoxSrc, /file: isDownload/, 'the result carries the file when it is used for download');
-  assert.match(formSrc, /ctx\.file/, 'the editor seeds the pending upload from that file');
-  for (const k of ['creator.file_extract', 'creator.file_download', 'creator.file_no_text']) {
-    assert.ok(k in pt && k in en, `i18n ${k} exists in both dictionaries`);
-  }
+  assert.match(aiBoxSrc, /multiple: true/, 'the picker takes several files at once (§34)');
+  assert.match(aiBoxSrc, /name="aib-mode"/, 'offers the extract vs keep-the-file choice in place');
+  // The 17/08 bug, pinned: extraction ran on PICK, while "keep as file" sat checked, and the
+  // file went nowhere. Now nothing happens until the answer: the radios start blank and the
+  // change handler is the only caller of extractText for a picked file.
+  assert.ok(!/value="extract" checked/.test(aiBoxSrc), 'no pre-checked answer');
+  assert.match(aiBoxSrc, /file_what_now/, 'the question is asked out loud');
+  assert.ok(!/parsed\.type\s*=\s*'arquivo'/.test(aiBoxSrc), 'attaching never rewrites the type');
 });
 
 // The flag the AI can no longer decide on its own (Elder 2026-08-07).
