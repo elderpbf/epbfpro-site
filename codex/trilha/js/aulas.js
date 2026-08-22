@@ -11,6 +11,7 @@ import { buildSub } from './sub.js';
 import { buildAppSub } from './app-card.js';
 import { registerRenderer } from './page.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
+import { sortByTypeThenTitle } from '../../js/item-list.js';
 import { t } from '../i18n.js';
 
 let _wired = false;
@@ -175,13 +176,15 @@ function buildAulaBody(aula) {
   const apostilaItems = aulaItems
     .filter((it) => apostilaSetId !== null && it.set_id === apostilaSetId && it.type !== 'tarefa')
     .sort((a, b) => (a.set_position || 0) - (b.set_position || 0));
-  const outrosItems = aulaItems
-    .filter((it) => {
-      if (apostilaSetId !== null && it.set_id === apostilaSetId) return false;
-      if (it.type === 'tarefa') return false;
-      return true;
-    })
-    .sort((a, b) => (a.position || 0) - (b.position || 0));
+  // A-Z by type, then A-Z by name (js/item-list.js). Release order was the instructor's
+  // tick order, which reads as no order at all on the student's side. The lesson's OWN
+  // sequences are untouched above: tarefas keep `position` and the apostila keeps
+  // `set_position`, because those were arranged on purpose.
+  const outrosItems = sortByTypeThenTitle(aulaItems.filter((it) => {
+    if (apostilaSetId !== null && it.set_id === apostilaSetId) return false;
+    if (it.type === 'tarefa') return false;
+    return true;
+  }));
 
   // Apps released to THIS lesson. The backend happened-gate already withheld apps whose
   // lesson has not occurred, so anything here is releasable; it renders as a full app card

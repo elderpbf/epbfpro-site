@@ -11,6 +11,7 @@ import { isFresh } from './freshness.js';
 import { mountFlatCardAction } from './actions.js';
 import { registerRenderer } from './page.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
+import { sortByTypeThenTitle } from '../../js/item-list.js';
 import { interceptItemOpen } from './gate.js';
 import { openItemInto } from './item-open.js';
 import { buildSub } from './sub.js';
@@ -54,7 +55,9 @@ export function renderOutrosTab() {
   if (!listEl) return;
 
   const data = state.data || {};
-  const items = (data.items || []).filter(isOutrosItem);
+  // Same A-Z by type then by name as the lesson pile (js/item-list.js): this tab is the same
+  // loose material, so the two orders can never be allowed to disagree.
+  const items = sortByTypeThenTitle((data.items || []).filter(isOutrosItem));
   if (!items.length) {
     listEl.innerHTML = '<div class="cdx-tr-empty">Nenhum material avulso disponível ainda.</div>';
     return;
