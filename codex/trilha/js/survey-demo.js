@@ -212,8 +212,12 @@ function variantInlineCard(st) {
 // V4: a quiet strip at the top of the trail that opens the survey over the page. The trail stays
 // exactly as it is, and answering is a deliberate step out of it.
 function variantBannerModal(st) {
+  // The hook is on the STRIP, not only on its button. Two reasons, and the second is not cosmetic:
+  // the whole banner is a better phone target than a pill inside it, and on touch Chromium delivers
+  // the synthesised click to the strip rather than to the button it started on, so a hook that only
+  // sits on the button is simply never found by a closest() walking upward.
   const strip =
-    '<div class="cdx-sv-strip">' +
+    '<div class="cdx-sv-strip" data-sv-open>' +
       '<span class="cdx-sv-strip-mark">' + glyphSvg('star', { size: 16 }) + '</span>' +
       '<span class="cdx-sv-strip-txt">' +
         '<strong>' + esc(t('survey.title')) + '</strong>' +
@@ -295,22 +299,36 @@ function renderModal(html) {
 
 // One delegated listener for the whole prototype: every control is a data-attribute, so no
 // per-render rewiring and nothing to leak.
+// Where a click really landed. On touch, Chromium can hand the synthesised click to an ancestor of
+// the element the pointer went down on, so an upward closest() from e.target misses a hook that sits
+// on a descendant. Falling back to what is actually under the point recovers it. Measured on an
+// iPhone 13 profile, where tapping the v4 banner produced click:.cdx-sv-strip after
+// pointerdown:.cdx-sv-strip-go, and the dialog never opened.
+function hookFrom(e, sel) {
+  const direct = e.target.closest(sel);
+  if (direct) return direct;
+  const doc = e.target.ownerDocument;
+  if (!doc || typeof doc.elementFromPoint !== 'function') return null;
+  const at = doc.elementFromPoint(e.clientX, e.clientY);
+  return at ? at.closest(sel) : null;
+}
+
 function onClick(e) {
-  const set = e.target.closest('[data-sv-set]');
+  const set = hookFrom(e, '[data-sv-set]');
   if (set) {
     _st.answers[Number(set.getAttribute('data-sv-set'))] = set.getAttribute('data-sv-val');
     render(); return;
   }
-  const step = e.target.closest('[data-sv-step]');
+  const step = hookFrom(e, '[data-sv-step]');
   if (step) {
     _st.step = Math.max(0, Math.min(ITEMS.length - 1, _st.step + Number(step.getAttribute('data-sv-step'))));
     render(); return;
   }
-  if (e.target.closest('[data-sv-toggle]') || e.target.closest('[data-sv-open]')) { _st.open = true; render(); return; }
-  if (e.target.closest('[data-sv-close]')) { _st.open = false; render(); return; }
+  if (hookFrom(e, '[data-sv-toggle]') || hookFrom(e, '[data-sv-open]')) { _st.open = true; render(); return; }
+  if (hookFrom(e, '[data-sv-close]')) { _st.open = false; render(); return; }
   const scrim = e.target.closest('[data-sv-scrim]');
   if (scrim && e.target === scrim) { _st.open = false; render(); return; }
-  if (e.target.closest('[data-sv-send]')) { _st.sent = true; render(); return; }
+  if (hookFrom(e, '[data-sv-send]')) { _st.sent = true; render(); return; }
 }
 
 function onInput(e) {
