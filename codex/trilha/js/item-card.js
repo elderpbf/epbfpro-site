@@ -54,27 +54,35 @@ export function typeLabelOf(item, o) {
 // Zone precedence, unchanged: tarefa, then apostila, then lab. A tarefa keeps its dedicated check
 // mark instead of a type glyph.
 export function compactCardClass(o) {
-  return 'cdx-tr-sub' + (o && o.isTarefa ? ' cdx-tr-sub--tarefa' : '');
+  const opts = o || {};
+  if (opts.modifier) return 'cdx-tr-sub ' + opts.modifier;
+  return 'cdx-tr-sub' + (opts.isTarefa ? ' cdx-tr-sub--tarefa' : '');
 }
 
+// The three overrides exist for ONE caller, the app row (app-card.js): the same row with an app
+// logo where the type glyph goes, a fixed label, and its Store button already in the action slot.
+// It carried its own copy of this template until 2026-08-26, which is exactly how the two item
+// builders had drifted before, a fix landing in one copy and not the other.
 export function compactCardHtml(item, o) {
   const opts = o || {};
   const isLab = item.type === 'lab';
   let zoneClass = 'cdx-tr-sub-zone';
-  if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
+  if (opts.zoneModifier) zoneClass += ' ' + opts.zoneModifier;
+  else if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
   else if (opts.isApostila) zoneClass += ' cdx-tr-sub-zone--apostila';
   else if (isLab) zoneClass += ' cdx-tr-sub-zone--lab';
 
-  let iconHtml = opts.isTarefa ? '✓' : itemIconHtml(item, 20);
+  let iconHtml = opts.iconHtml != null ? opts.iconHtml : (opts.isTarefa ? '✓' : itemIconHtml(item, 20));
   if (isLab) iconHtml += labFlaskHtml();
+  const label = opts.typeLabel != null ? opts.typeLabel : typeLabelOf(item, opts);
 
   return '<div class="' + zoneClass + '">' + iconHtml + '</div>' +
     '<div class="cdx-tr-sub-meta">' +
-      '<span class="cdx-tr-sub-type">' + esc(typeLabelOf(item, opts)) + novoPillHtml(item) + '</span>' +
+      '<span class="cdx-tr-sub-type">' + esc(label) + novoPillHtml(item) + '</span>' +
       '<span class="cdx-tr-sub-title">' + esc(item.title) + '</span>' +
       (item.summary ? '<span class="cdx-tr-sub-summary">' + esc(item.summary) + '</span>' : '') +
     '</div>' +
-    '<div class="cdx-tr-sub-actions"></div>';
+    '<div class="cdx-tr-sub-actions">' + (opts.actionsHtml || '') + '</div>';
 }
 
 // ── the full card (a tab of its own) ────────────────────────────────────────

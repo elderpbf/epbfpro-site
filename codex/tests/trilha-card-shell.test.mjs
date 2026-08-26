@@ -78,3 +78,25 @@ test('the shared pieces are shared, so a change to one reaches both screens', ()
     assert.match(src, new RegExp('export function ' + fn));
   }
 });
+
+// -- the app row is the same row ---------------------------------------------
+
+test('the app row is the compact row with three overrides, byte for byte', () => {
+  // app-card.js carried a THIRD copy of this template until 2026-08-26. Same drift risk, same
+  // fix: the app logo, the fixed label and the Store button are options now, not a new card.
+  // The string below was captured from the previous buildAppSub at git HEAD.
+  const html = card.compactCardHtml({ title: 'Nexo' }, {
+    zoneModifier: 'cdx-tr-sub-zone--app',
+    iconHtml: '<img class="cdx-tr-app-sub-logo" src="LOGO">',
+    typeLabel: 'Aplicativo',
+    actionsHtml: '<button class="cdx-tr-item-action">Store</button>',
+  });
+  assert.equal(html, '<div class="cdx-tr-sub-zone cdx-tr-sub-zone--app"><img class="cdx-tr-app-sub-logo" src="LOGO"></div><div class="cdx-tr-sub-meta"><span class="cdx-tr-sub-type">Aplicativo</span><span class="cdx-tr-sub-title">Nexo</span></div><div class="cdx-tr-sub-actions"><button class="cdx-tr-item-action">Store</button></div>');
+  assert.equal(card.compactCardClass({ modifier: 'cdx-tr-sub--app' }), 'cdx-tr-sub cdx-tr-sub--app');
+});
+
+test('the app row delegates too', () => {
+  const src = read('../trilha/js/app-card.js');
+  assert.match(src, /import \{ compactCardClass, compactCardHtml \} from '\.\/item-card\.js'/);
+  assert.ok(!src.includes("'<div class=\"cdx-tr-sub-zone cdx-tr-sub-zone--app\">'"), 'no template of its own');
+});

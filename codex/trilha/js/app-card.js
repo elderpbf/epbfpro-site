@@ -17,6 +17,7 @@
 import { esc } from './utils.js';
 import { assetUrl } from '../../js/codex-api.js';
 import { t } from '../i18n.js';
+import { compactCardClass, compactCardHtml } from './item-card.js';
 
 // True on Windows desktop. Defaults to true only when the platform is genuinely
 // undetectable (rare); a recognizable non-Windows UA (Mac/iOS/Android/Linux) returns false.
@@ -171,7 +172,7 @@ export function buildAppCard(app, opts = {}) {
 // expands the full card inline below it. Single-open within its own (app-only) list.
 export function buildAppSub(app, opts = {}) {
   const sub = document.createElement('div');
-  sub.className = 'cdx-tr-sub cdx-tr-sub--app';
+  sub.className = compactCardClass({ modifier: 'cdx-tr-sub--app' });
   sub.dataset.app = app.app_key;
   sub.setAttribute('role', 'button');
   sub.setAttribute('tabindex', '0');
@@ -182,13 +183,14 @@ export function buildAppSub(app, opts = {}) {
   const rowDl = actionHtml(appAction(app, parseDesc(app.description).delivery, onWindows),
     'cdx-tr-item-action cdx-tr-app-row-dl', 16);
 
-  sub.innerHTML =
-    '<div class="cdx-tr-sub-zone cdx-tr-sub-zone--app">' + iconHtml(app, 'cdx-tr-app-sub-logo') + '</div>' +
-    '<div class="cdx-tr-sub-meta">' +
-      '<span class="cdx-tr-sub-type">' + esc(t('apps.aula_section')) + '</span>' +
-      '<span class="cdx-tr-sub-title">' + esc(app.name || app.app_key) + '</span>' +
-    '</div>' +
-    '<div class="cdx-tr-sub-actions">' + rowDl + '</div>';
+  // The same row as a tarefa or a conteudo, through the same builder (item-card.js): only the
+  // zone content, the label and the action differ.
+  sub.innerHTML = compactCardHtml({ title: app.name || app.app_key }, {
+    zoneModifier: 'cdx-tr-sub-zone--app',
+    iconHtml: iconHtml(app, 'cdx-tr-app-sub-logo'),
+    typeLabel: t('apps.aula_section'),
+    actionsHtml: rowDl,
+  });
 
   sub.addEventListener('click', (e) => {
     if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;
