@@ -5,54 +5,21 @@
 // fetched through the Trail facade (ct_get_item_public).
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.CdxGlyphs (icon library)
-import { esc } from './utils.js';
-import { isFresh } from './freshness.js';
+import { compactCardClass, compactCardHtml } from './item-card.js';
 import { injectActionButton } from './actions.js';
 import { interceptItemOpen } from './gate.js';
 import { openItemInto } from './item-open.js';
 
 export function buildSub(item, opts = {}) {
   const sub = document.createElement('div');
-  sub.className = 'cdx-tr-sub' + (opts.isTarefa ? ' cdx-tr-sub--tarefa' : '');
+  sub.className = compactCardClass(opts);
   sub.dataset.itemId = item.id;
   // Keyboard-operable (a11y): the sub-card is an expander, so expose it as a
   // button and toggle on Enter/Space, mirroring the click handler below.
   sub.setAttribute('role', 'button');
   sub.setAttribute('tabindex', '0');
 
-  const isLab = item.type === 'lab';
-  let zoneClass = 'cdx-tr-sub-zone';
-  if (opts.isTarefa) zoneClass += ' cdx-tr-sub-zone--tarefa';
-  else if (opts.isApostila) zoneClass += ' cdx-tr-sub-zone--apostila';
-  else if (isLab) zoneClass += ' cdx-tr-sub-zone--lab';
-
-  // A content item's icon comes from its type (item.type_icon: a "glyph:<key>"
-  // resolved to an SVG by the Codex glyph library) rendered through CdxGlyphs.
-  // The Tarefa zone keeps its dedicated check mark. Falls back to escaped text.
-  let iconHtml;
-  if (opts.isTarefa) {
-    iconHtml = '✓';
-  } else if (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon) {
-    iconHtml = window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 });
-  } else {
-    iconHtml = esc(item.type_icon || '•');
-  }
-  // A lab wears a family marker over its per-lab glyph: a small flask badge in the
-  // corner, so labs read as one set even while each keeps its own icon.
-  if (isLab && window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function') {
-    iconHtml += '<span class="cdx-tr-lab-flask">' + window.CdxGlyphs.iconHtml('glyph:flask', { size: 12 }) + '</span>';
-  }
-  const typeLabel = opts.isTarefa ? 'Tarefa' : (item.type_label || item.type || '');
-  const novoPill = isFresh(item) ? '<span class="cdx-tr-novo-pill">NOVO</span>' : '';
-
-  sub.innerHTML =
-    '<div class="' + zoneClass + '">' + iconHtml + '</div>' +
-    '<div class="cdx-tr-sub-meta">' +
-      '<span class="cdx-tr-sub-type">' + esc(typeLabel) + novoPill + '</span>' +
-      '<span class="cdx-tr-sub-title">' + esc(item.title) + '</span>' +
-      (item.summary ? '<span class="cdx-tr-sub-summary">' + esc(item.summary) + '</span>' : '') +
-    '</div>' +
-    '<div class="cdx-tr-sub-actions"></div>';
+  sub.innerHTML = compactCardHtml(item, opts);
 
   sub.addEventListener('click', (e) => {
     if (e.target && e.target.closest && e.target.closest('.cdx-tr-item-action')) return;

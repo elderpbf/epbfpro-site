@@ -6,8 +6,8 @@
 // Globals (set by the Trilha HTML boot, before the module boot):
 //   window.CdxGlyphs (icon library)
 import { state } from './state.js';
-import { esc, isOutrosItem } from './utils.js';
-import { isFresh } from './freshness.js';
+import { isOutrosItem } from './utils.js';
+import { fullCardHtml } from './item-card.js';
 import { mountFlatCardAction } from './actions.js';
 import { registerRenderer } from './page.js';
 import { renderTypeFilter, applyTypeFilter } from '../../js/type-filter.js';
@@ -87,38 +87,12 @@ export function renderOutrosTab() {
   renderList();
 }
 
-function buildFlatCard(item, opts = {}) {
+export function buildFlatCard(item, opts = {}) {
   const card = document.createElement('div');
   card.className = 'cdx-tr-card';
   card.dataset.itemId = item.id;
 
-  const iconHtml = (window.CdxGlyphs && typeof window.CdxGlyphs.iconHtml === 'function' && item.type_icon)
-    ? window.CdxGlyphs.iconHtml(item.type_icon, { size: 20 })
-    : esc(item.type_icon || '•');
-  const typeLabel = item.type_label || item.type || '';
-  const zoneClass = 'cdx-tr-zone' + (opts.isApostila ? ' cdx-tr-zone--apostila' : '');
-
-  const eyebrowHtml = opts.eyebrow ? '<span class="cdx-tr-meta-eyebrow">' + esc(opts.eyebrow) + '</span>' : '';
-  const summaryHtml = item.summary ? '<div class="cdx-tr-summary">' + esc(item.summary) + '</div>' : '';
-  const tagsHtml = (item.tags && item.tags.length)
-    ? '<div class="cdx-tr-topics">' + item.tags.map((t) => '<span class="cdx-tr-topic-chip">' + esc(t) + '</span>').join('') + '</div>'
-    : '';
-  const novoPill = isFresh(item) ? '<span class="cdx-tr-novo-pill">NOVO</span>' : '';
-
-  card.innerHTML =
-    '<div class="cdx-tr-card-header" role="button" tabindex="0" aria-expanded="false">' +
-      '<div class="' + zoneClass + '">' +
-        '<span class="cdx-tr-zone-icon">' + iconHtml + '</span>' +
-        '<span class="cdx-tr-zone-label">' + esc(typeLabel) + '</span>' +
-      '</div>' +
-      '<div class="cdx-tr-meta">' +
-        eyebrowHtml +
-        '<div class="cdx-tr-title">' + esc(item.title) + novoPill + '</div>' +
-        summaryHtml +
-        tagsHtml +
-      '</div>' +
-      '<div class="cdx-tr-actions"><span class="cdx-tr-chevron">›</span></div>' +
-    '</div>';
+  card.innerHTML = fullCardHtml(item, opts);
 
   const headerEl = card.querySelector('.cdx-tr-card-header');
   if (headerEl) {
