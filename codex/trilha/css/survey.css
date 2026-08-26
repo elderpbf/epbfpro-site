@@ -320,16 +320,19 @@
 .cdx-sv-strip-txt { flex: 1; min-width: 0; display: flex; flex-direction: column; }
 .cdx-sv-strip-txt strong { font-size: 0.9rem; color: var(--text-primary); }
 .cdx-sv-strip-txt span { font-size: 0.76rem; color: var(--text-secondary); }
+/* 44px floor on both of these: they are the only small controls the survey puts on a phone, and
+   an under-sized target is the mis-tap class track-53 still has open. */
 .cdx-sv-strip-go {
   flex: 0 0 auto;
+  min-height: 44px;
   font-size: 0.78rem;
   font-weight: 700;
   cursor: pointer;
   color: var(--text-on-accent, var(--on-primary));
   background: var(--primary);
   border: 1px solid var(--primary);
-  border-radius: 20px;
-  padding: 0.4rem 0.9rem;
+  border-radius: 22px;
+  padding: 0.4rem 1.1rem;
 }
 /* 1000 is the trail's own modal layer (tarefa-modal.css), above the fixed bottom nav at 40. */
 .cdx-sv-scrim {
@@ -363,8 +366,8 @@
   flex: 0 0 auto;
   display: grid;
   place-items: center;
-  width: 32px;
-  height: 32px;
+  width: 44px;
+  height: 44px;
   cursor: pointer;
   color: var(--text-secondary);
   background: var(--background);
