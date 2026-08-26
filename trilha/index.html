@@ -36,6 +36,7 @@
 <link rel="stylesheet" href="/codex/trilha/css/tarefa-modal.css?v=2.0">
 <link rel="stylesheet" href="/codex/trilha/css/tarefas.css?v=1.8">
 <link rel="stylesheet" href="/codex/trilha/css/mobile.css?v=1.3">
+<link rel="stylesheet" href="/codex/trilha/css/survey.css?v=1">
 <link rel="stylesheet" href="/css/support-entry.css?v=1">
 
 <script src="/codex/js/debug.js?v=2.5"></script>
@@ -155,6 +156,7 @@
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
   import '/codex/trilha/js/apps.js';  // self-registers the 'apps' panel renderer
   import '/codex/trilha/js/nexo.js';  // self-starts the live-question poller
+  import '/codex/trilha/js/survey-demo.js'; // track-64 PROTOTYPE, inert unless ?survey=1..4
   window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already
   // defaults here; this stays as the explicit page-level override. Reversible.
