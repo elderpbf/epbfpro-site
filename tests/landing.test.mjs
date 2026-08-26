@@ -55,6 +55,20 @@ test('demos (dormant): frame drivers still mount the REAL app, never rebuild mar
   assert.ok(!/\.scrollIntoView\(|\.scrollTo\(/.test(ft), 'frame-trail must not scroll the page');
 });
 
+test('css: the landing carries NO copy of the app stylesheets', () => {
+  // Until 2026-08-26 landing.css held ~100 rules hand-copied from codex/**.css to dress a live
+  // demo iframe. A srcdoc iframe never inherits the parent's CSS, the frames link the real files
+  // themselves (js/demos.js), and the demos are unwired anyway, so those rules matched nothing in
+  // any document that loads this stylesheet. A copy that styles nothing still drifts from the
+  // original and still gets maintained by hand, which is the whole reason this guard exists.
+  const c = read('css/landing.css');
+  for (const prefix of ['.cdx-', '.cp-qa-', '.ph-', '.tr-modal', '.tr-btn', '.tr-tarefa', '.ct-']) {
+    assert.ok(!c.includes(prefix), 'app CSS copied back into landing.css: ' + prefix);
+  }
+  // The phones are stills; the wrapper and the scoped tokens are the landing's own.
+  assert.ok(c.includes('.plp-app-still'), 'the still-image phone rule must stay');
+});
+
 test('index.html: structure only (module boot + JSON-LD, no inline logic)', () => {
   const h = read('index.html');
   assert.ok(h.includes('<script type="module" src="js/main.js'), 'module boot missing');

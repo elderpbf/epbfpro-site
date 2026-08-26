@@ -178,16 +178,19 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
 .plp-cap{text-align:center;margin-top:12px;font-size:.83rem;color:var(--ink-faint);min-height:1.2em}
 
 /* =========================================================
-   App demos (Pulso + Trilha) — the REAL Codex components.
-   Tokens, component CSS and values are copied verbatim from
-   codex/css/theme.css + codex/questions/questions.css +
-   codex/trilha/css/{cards,trilha,nexo}.css. The cdx-/cp- class
-   names and values are the originals; the only deviations are:
-   (1) tokens scoped to .plp-demo* wrappers so the phone carries
-   the app's own theme; (2) the screen renders at true mobile
-   width and is scaled into the bezel; (3) .cp-qa-bar fixed→absolute
-   inside the phone; (4) .plp-th* side thermometer is an ADDITION
-   (the real student page has none — only the thermometer glyph).
+   App demos (Pulso + Trilha). The phones show CAPTURED STILLS
+   (.plp-app-still). The live srcdoc frames (js/demos.js +
+   js/frame-*.js) stay in the repo but are UNWIRED from index.html.
+   What lives here is the phone CHROME only: the wrapper, the still,
+   and the app's design tokens scoped to it so the screenshot sits
+   on the app's own background.
+   THE COMPONENT CSS THAT USED TO BE COPIED HERE (cdx-*, cp-*, ph-*,
+   tr-*, ct-*) WAS DELETED 2026-08-26. It matched nothing: a srcdoc
+   iframe never inherits this stylesheet, the frames link the real
+   codex/**.css themselves (js/demos.js), and with the demos unwired
+   no document that loads landing.css contains those classes at all.
+   Do not copy app CSS back in: a returning demo links the real
+   files, and a copy here only drifts from them in silence.
    ========================================================= */
 .plp-app{position:relative;flex:1;overflow:hidden;background:var(--background)}
 .plp-app-frame{width:100%;height:100%;border:0;display:block;background:var(--background);pointer-events:none}
@@ -212,121 +215,20 @@ h1{font-family:'Lora',serif;font-weight:600;font-size:clamp(2.5rem,6.4vw,4.6rem)
 /* ---- Pulso (live questions, student view) ---- */
 .plp-demo-pulse{display:flex;flex-direction:column;padding:18px 16px 86px;gap:16px}
 .plp-pl-head{display:flex;align-items:center;gap:10px}
-.cdx-qr-status-badge{font-size:.65rem;font-weight:700;letter-spacing:.12em;text-transform:uppercase;padding:4px 10px;border-radius:4px}
-.cdx-qr-status-badge.live{background:var(--status-live-bg);color:var(--status-live-text)}
-.cdx-qr-answer-count{font-size:.82rem;color:var(--text-light)}
 .plp-demo-pulse .question-text{font-size:1.1rem;font-weight:600;color:var(--text-primary);line-height:1.5;margin:0}
 .plp-pl-main{position:relative}
-.cdx-qr-option-btn{width:100%;padding:14px 18px;background:var(--surface);border:2px solid var(--border);border-radius:12px;font-size:1.1rem;font-family:inherit;color:var(--text-primary);cursor:pointer;text-align:left;display:flex;align-items:center;gap:14px;transition:all .15s;margin-bottom:10px}
-.cdx-qr-option-btn.is-selected{border-color:var(--primary);background:var(--option-selected-bg);font-weight:600}
-.cdx-qr-option-letter{font-size:.78rem;font-weight:700;color:var(--primary-dark);background:var(--border);padding:3px 9px;border-radius:5px;flex-shrink:0;min-width:30px;text-align:center}
-[data-theme="dark"] .cdx-qr-option-letter{background:rgba(20,184,166,.25);color:#fff}
-.cdx-qr-student .cdx-qr-bar{display:grid;grid-template-columns:auto 1fr;gap:10px;margin-bottom:14px;padding:10px;border-radius:10px;border:2px solid transparent;transition:all .3s}
-.cdx-qr-bar-letter{font-size:.78rem;font-weight:700;color:var(--primary-dark);background:var(--surface);border:1px solid var(--border);padding:3px 9px;border-radius:5px;min-width:30px;text-align:center}
-.cdx-qr-bar-body{min-width:0}
-.cdx-qr-bar-label{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
-.cdx-qr-bar-text{font-size:.88rem;color:var(--text-primary);font-weight:400}
-.cdx-qr-bar-pct{font-size:.82rem;font-weight:700;color:var(--text-secondary);min-width:36px;text-align:right}
-.cdx-qr-bar-track{height:8px;background:rgba(0,0,0,.08);border-radius:4px;overflow:hidden}
-[data-theme="dark"] .cdx-qr-bar-track{background:rgba(255,255,255,.08)}
-.cdx-qr-bar-fill{height:100%;width:0;background:var(--primary);border-radius:4px;transition:width .6s ease}
-.cdx-qr-bar-fill.mine{background:var(--primary-dark)}
-.cdx-qr-bar.is-correct{background-color:var(--success)!important;border-color:var(--success)!important;color:#fff!important}
-.cdx-qr-bar.is-correct .cdx-qr-bar-letter{background:rgba(255,255,255,.2)!important;border-color:transparent!important;color:#fff!important}
-.cdx-qr-bar.is-correct .cdx-qr-bar-text,.cdx-qr-bar.is-correct .cdx-qr-bar-pct{color:#fff!important;font-weight:700!important}
-.cdx-qr-bar.is-correct .cdx-qr-bar-text::after{content:' \2713';font-weight:800}
-.cdx-qr-bar.is-correct .cdx-qr-bar-fill{background:#fff!important}
 /* ask-the-instructor bar (cp-qa-bar, fixed→absolute inside the phone) */
-.cp-qa-bar{position:absolute;left:0;right:0;bottom:0;z-index:5;background:var(--surface);border-top:1px solid var(--border);padding:14px}
-.cp-qa-bar-collapsed{display:flex;align-items:center;gap:10px;padding:9px 12px;background:var(--background);border:1px solid var(--border);border-radius:999px;color:var(--text-light);font-size:.9rem}
-.cp-qa-bar-placeholder{flex:1;overflow:hidden;white-space:nowrap;text-overflow:ellipsis}
-.cp-qa-bar.plp-typing .cp-qa-bar-placeholder{color:var(--text-primary)}
-.cp-qa-bar-send{width:28px;height:28px;border-radius:50%;background:var(--primary-dark);color:#fff;display:flex;align-items:center;justify-content:center;font-size:.9rem;flex-shrink:0}
-.cp-qa-toast{position:absolute;left:14px;right:14px;bottom:70px;background:var(--success);color:#fff;padding:8px 12px;border-radius:8px;font-size:.85rem;text-align:center;box-shadow:0 4px 12px rgba(0,0,0,.15);opacity:0;transform:translateY(6px);transition:.3s;z-index:6;pointer-events:none}
-.cp-qa-toast.visible{opacity:1;transform:none}
 
 /* ---- Trilha (living workbook: app header + timeline of aulas) ---- */
 .plp-demo-trail{position:relative;padding:0;min-height:172%;transition:transform .55s cubic-bezier(.16,1,.3,1)}
 .plp-tr-page{padding:14px 16px 48px}
 /* shared public header (copied from public-header.css, compacted to the bezel) */
-.ph-bar{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:11px 16px;background:var(--background)}
-.ph-logo{font-size:.95rem;font-weight:700;letter-spacing:.14em;color:var(--primary)}
-.ph-theme-btn{width:34px;height:34px;background:var(--surface);border:1px solid var(--border);border-radius:7px;color:var(--text-secondary);display:flex;align-items:center;justify-content:center;font-size:.95rem}
 /* trilha hero (copied from trilha.css; top margin trimmed for the phone) */
-.cdx-trilha-hero{margin:0 0 1.25rem;padding:1.5rem 1.5rem 1.6rem;border-radius:20px;background:var(--surface);border:1px solid var(--border);box-shadow:0 10px 40px -18px var(--shadow);position:relative;overflow:hidden}
-.cdx-trilha-hero::after{content:'';position:absolute;top:0;left:0;right:0;height:3px;background:linear-gradient(90deg,var(--primary),transparent)}
-.cdx-trilha-hero-identity{display:flex;align-items:center;gap:1rem}
-.cdx-tr-client-avatar{flex-shrink:0;width:60px;height:60px;border-radius:50%;overflow:hidden;border:2.5px solid var(--border);background:linear-gradient(135deg,var(--primary),var(--primary-dark));display:flex;align-items:center;justify-content:center}
-.cdx-tr-avatar-initials{color:#fff;font-weight:800;font-size:1.35rem}
-.cdx-tr-hero-text{min-width:0}
-.cdx-tr-hero-eyebrow{display:block;font-size:.72rem;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:var(--primary-dark);margin-bottom:.35rem}
-.cdx-tr-client-name{font-size:1.6rem;font-weight:800;color:var(--text-primary);letter-spacing:-.02em;line-height:1.15;margin:0 0 .35rem}
-.cdx-tr-turma-name{font-size:.92rem;color:var(--text-secondary);margin:0;line-height:1.45;font-weight:500}
 /* trilha tabs (copied from trilha.css) */
-.cdx-trilha-tabs{display:flex;align-items:stretch;border-bottom:2px solid var(--border);margin-bottom:1.4rem}
-.cdx-tr-tab-btn{flex-shrink:0;padding:.65rem 1.1rem;background:none;border:none;border-bottom:4px solid transparent;margin-bottom:-2px;font-size:.875rem;font-weight:600;color:var(--text-secondary);white-space:nowrap;font-family:inherit}
-.cdx-tr-tab-btn.active{color:var(--primary);border-bottom-color:var(--primary);font-weight:700}
 /* sub-card expanded (material content) — copied from cards.css */
-.cdx-tr-sub.is-expanded{border-radius:10px 10px 0 0}
-.cdx-tr-sub-expanded{margin:-1px 0 0;padding:1rem 1.1rem 1.1rem;background:var(--surface);border:1px solid var(--border);border-top:none;border-radius:0 0 10px 10px;animation:cdx-tr-slide-down .22s ease both}
-.cdx-tr-sub-expanded p{font-size:.85rem;color:var(--text-secondary);line-height:1.55;margin:0}
 /* tarefa submit modal (copied from tarefa-modal.css; backdrop fixed→absolute in the phone) */
-.tr-modal-backdrop{position:absolute;inset:0;background:rgba(15,23,42,.55);display:flex;align-items:center;justify-content:center;z-index:10;padding:14px;animation:tr-modal-fade .18s ease-out}
 @keyframes tr-modal-fade{from{opacity:0}to{opacity:1}}
-.tr-modal{background:var(--surface);color:var(--text-primary);border-radius:14px;width:100%;max-height:100%;overflow-y:auto;padding:1.4rem 1.4rem 1.2rem;box-shadow:0 20px 50px rgba(15,23,42,.35);position:relative}
-.tr-modal-close{position:absolute;top:.6rem;right:.75rem;width:30px;height:30px;border:none;background:transparent;color:var(--text-secondary);font-size:1.4rem;cursor:pointer;border-radius:6px;line-height:1}
-.tr-modal-title{margin:0 2rem .85rem 0;font-size:1.1rem;font-weight:700;color:var(--text-primary);line-height:1.3}
-.tr-tarefa-instructions{background:var(--background);border-left:3px solid var(--task);padding:.75rem .95rem;border-radius:6px;margin-bottom:1.1rem;font-size:.9rem;line-height:1.55}
-.tr-tarefa-field-label{font-size:.85rem;font-weight:600;color:var(--text-primary);margin-bottom:.25rem;display:block}
-.ct-tarefa-answer-text{width:100%;padding:.6rem .75rem;border:1.5px solid var(--border);border-radius:8px;font-family:inherit;font-size:.9rem;background:var(--surface);color:var(--text-primary);box-sizing:border-box;min-height:90px;resize:vertical;line-height:1.5}
-.tr-tarefa-actions{display:flex;gap:.5rem;justify-content:flex-end;margin-top:1rem;padding-top:.85rem;border-top:1px solid var(--border)}
-.tr-btn{padding:.55rem 1.1rem;border-radius:8px;font-size:.9rem;font-weight:600;cursor:pointer;border:1.5px solid transparent;font-family:inherit}
-.tr-btn-primary{background:var(--task);color:#fff;border-color:var(--task)}
-.tr-btn-ghost{background:transparent;color:var(--text-secondary);border-color:var(--border)}
-.cdx-tr-item-action.cdx-tr-item-action--submitted{background:var(--task-bg);color:var(--task-dark);border:none;box-shadow:none}
-.cdx-tr-item-action--submitted svg{color:var(--task-dark)}
-.cdx-tr-timeline{position:relative;padding-left:36px}
-.cdx-tr-timeline::before{content:'';position:absolute;left:11px;top:12px;bottom:12px;width:2px;background:rgba(17,94,89,.15)}
-[data-theme="dark"] .cdx-tr-timeline::before{background:rgba(94,234,212,.18)}
-.cdx-tr-tl-row{position:relative;margin-bottom:12px}
-.cdx-tr-tl-dot{position:absolute;left:-32px;top:36px;width:24px;height:24px;border-radius:50%;background:var(--surface);border:3px solid var(--primary);display:flex;align-items:center;justify-content:center;font-size:.68rem;font-weight:800;color:var(--primary-dark);z-index:2;transition:all .22s ease}
-.cdx-tr-tl-dot--done{background:var(--success);border-color:var(--success);color:#fff}
-.cdx-tr-tl-row.is-open .cdx-tr-tl-dot{width:30px;height:30px;top:33px;left:-35px;background:var(--primary);border-color:var(--primary);color:#fff;box-shadow:0 0 0 4px rgba(20,184,166,.18),0 0 0 9px rgba(20,184,166,.10)}
-.cdx-tr-card{background:var(--surface);border:1px solid var(--border);border-radius:14px;overflow:hidden;transition:transform .15s ease,box-shadow .18s ease}
-.cdx-tr-card.open{box-shadow:0 14px 36px -16px rgba(20,184,166,.32)}
-.cdx-tr-card-header{display:flex;align-items:stretch;min-height:96px;cursor:pointer;user-select:none}
-.cdx-tr-zone{width:96px;flex-shrink:0;background:var(--primary);color:#fff;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;padding:.6rem .4rem}
-.cdx-tr-zone--done{background:var(--success)}
-.cdx-tr-zone-num{font-size:2rem;font-weight:800;letter-spacing:-.03em;line-height:1}
-.cdx-tr-zone-label{font-size:.6rem;font-weight:700;letter-spacing:.08em;text-transform:uppercase;opacity:.95;text-align:center;line-height:1.2}
-.cdx-tr-meta{flex:1;padding:.9rem 1.15rem;display:flex;flex-direction:column;justify-content:center;gap:.4rem;min-width:0}
-.cdx-tr-meta-eyebrow{font-size:.66rem;font-weight:700;letter-spacing:.07em;text-transform:uppercase;color:var(--text-secondary)}
-.cdx-tr-title{font-size:1.02rem;font-weight:700;color:var(--text-primary);letter-spacing:-.01em;line-height:1.3}
-.cdx-tr-summary{font-size:.83rem;color:var(--text-secondary);line-height:1.45;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
-.cdx-tr-actions{display:flex;align-items:center;padding:0 1rem 0 .4rem;flex-shrink:0}
-.cdx-tr-chevron{font-size:1.4rem;color:var(--text-secondary);opacity:.55;transform:rotate(0deg);transition:transform .22s ease,opacity .15s;line-height:1}
-.cdx-tr-card.open .cdx-tr-chevron{transform:rotate(90deg);opacity:1}
-.cdx-tr-novo-banner{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:8px 14px;background:var(--task-bg);color:var(--task-dark);border-bottom:1px solid var(--task-border);font-size:.78rem;font-weight:700;letter-spacing:.01em;cursor:pointer;user-select:none}
-.cdx-tr-novo-text{flex:1;min-width:0}
-.cdx-tr-novo-count{display:inline-flex;align-items:center;justify-content:center;min-width:22px;height:22px;padding:0 7px;border-radius:999px;background:var(--task);color:#fff;font-size:.72rem;font-weight:800}
-.cdx-tr-novo-banner.plp-pulsing{animation:plp-novo 1.2s ease 2}
 @keyframes plp-novo{0%{box-shadow:inset 0 0 0 0 var(--task)}40%{box-shadow:inset 0 0 0 2px var(--task)}100%{box-shadow:inset 0 0 0 0 var(--task)}}
-.cdx-tr-body{border-top:1px solid var(--border);padding:1.1rem 1.25rem 1.35rem;background:linear-gradient(180deg,rgba(20,184,166,.03),transparent 70%);animation:cdx-tr-slide-down .22s ease both}
-@keyframes cdx-tr-slide-down{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
-.cdx-tr-section-label{font-size:.7rem;font-weight:800;letter-spacing:.08em;text-transform:uppercase;color:var(--text-secondary);margin-bottom:.55rem}
-.cdx-tr-sub-list{display:flex;flex-direction:column;gap:8px}
-.cdx-tr-sub{display:flex;background:var(--surface);border:1px solid var(--border);border-radius:10px;overflow:hidden;min-height:76px}
-.cdx-tr-sub-zone{width:56px;flex-shrink:0;background:var(--primary);color:#fff;display:flex;align-items:center;justify-content:center;font-size:1.1rem}
-.cdx-tr-sub-zone--tarefa{background:var(--task)}
-.cdx-tr-sub-meta{flex:1;padding:.6rem .85rem;display:flex;flex-direction:column;justify-content:center;gap:2px;min-width:0}
-.cdx-tr-sub-type{font-size:.65rem;font-weight:800;letter-spacing:.07em;text-transform:uppercase;color:var(--text-secondary)}
-.cdx-tr-sub--tarefa .cdx-tr-sub-type{color:var(--task-dark)}
-.cdx-tr-sub-title{font-size:.92rem;font-weight:700;color:var(--text-primary);line-height:1.3}
-.cdx-tr-sub--tarefa{border-color:var(--task-border);background:var(--task-bg)}
-.cdx-tr-sub-actions{display:flex;align-items:center;padding:0 .85rem 0 .4rem;flex-shrink:0}
-.cdx-tr-item-action{display:inline-flex;align-items:center;gap:6px;padding:.4rem .85rem;font-family:inherit;font-size:.78rem;font-weight:700;border-radius:8px;border:none;background:var(--primary);color:#fff;cursor:pointer;white-space:nowrap;transition:background .2s,box-shadow .2s;box-shadow:0 3px 12px -4px rgba(20,184,166,.45)}
-.cdx-tr-item-action--task{background:var(--task);box-shadow:0 3px 12px -4px rgba(217,119,6,.5)}
-.cdx-tr-item-action.is-done{background:var(--success);box-shadow:0 3px 12px -4px rgba(16,185,129,.5)}
 
 /* certificate */
 .plp-cert{display:grid;grid-template-columns:1.05fr .95fr;gap:46px;align-items:center}
