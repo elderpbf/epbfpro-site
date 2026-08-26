@@ -221,6 +221,9 @@ function variantBannerModal(st) {
       '</span>' +
       '<button type="button" class="cdx-sv-strip-go" data-sv-open>' + esc(t('survey.badge_answer')) + '</button>' +
     '</div>';
+  // The dialog goes on document.body, never inside the panel: that is what comunicado-modal.js and
+  // tarefa-submit-modal.js both do, and it is load-bearing. Nested in the tab content, `position:
+  // fixed` resolves against the panel on a phone and the scrim never covers the viewport.
   const modal = !st.open ? '' :
     '<div class="cdx-sv-scrim" data-sv-scrim>' +
       '<div class="cdx-sv-modal" role="dialog" aria-modal="true">' +
@@ -238,7 +241,7 @@ function variantBannerModal(st) {
         '</div>' +
       '</div>' +
     '</div>';
-  return { html: strip + modal };
+  return { html: strip, modalHtml: modal };
 }
 
 const VARIANTS = {
@@ -252,6 +255,7 @@ const VARIANTS = {
 
 const _st = { variant: 0, answers: {}, step: 0, open: false, sent: false };
 let _host = null;
+let _modalHost = null;
 
 function switcherHtml() {
   return '<div class="cdx-sv-switch">' +
@@ -265,8 +269,28 @@ function switcherHtml() {
 function render() {
   if (!_host) return;
   const v = VARIANTS[_st.variant];
-  const inner = _st.sent ? '<div class="cdx-sv-sheet">' + doneHtml() + '</div>' : v.build(_st).html;
-  _host.innerHTML = switcherHtml() + inner;
+  const out = _st.sent ? { html: '<div class="cdx-sv-sheet">' + doneHtml() + '</div>' } : v.build(_st);
+  _host.innerHTML = switcherHtml() + out.html;
+  renderModal(out.modalHtml || '');
+}
+
+// The dialog layer lives on document.body, the way the trail's own modals do. Empty markup tears
+// it down, so `open` is the only state anyone has to reason about.
+function renderModal(html) {
+  const doc = _host && _host.ownerDocument;
+  if (!doc || !doc.body) return;
+  if (!html) {
+    if (_modalHost) { _modalHost.remove(); _modalHost = null; }
+    doc.body.classList.remove('tr-modal-open');
+    return;
+  }
+  if (!_modalHost) {
+    _modalHost = doc.createElement('div');
+    _modalHost.className = 'cdx-sv-modal-layer';
+    doc.body.appendChild(_modalHost);
+  }
+  _modalHost.innerHTML = html;
+  doc.body.classList.add('tr-modal-open');
 }
 
 // One delegated listener for the whole prototype: every control is a data-attribute, so no
@@ -325,8 +349,10 @@ function attach(doc) {
     if (panels) panels.insertBefore(_host, panels.firstChild);
     else main.insertBefore(_host, main.firstChild);
   }
-  main.addEventListener('click', onClick);
-  main.addEventListener('input', onInput);
+  // Delegated on the document, not on main: the v4 dialog lives on document.body, outside main.
+  // Every hook is a data-attribute of this prototype's own markup, so nothing else is reachable.
+  doc.addEventListener('click', onClick);
+  doc.addEventListener('input', onInput);
   render();
 }
 
