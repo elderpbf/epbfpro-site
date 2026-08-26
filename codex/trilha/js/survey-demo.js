@@ -81,10 +81,20 @@ export function nextUnanswered(answers, idx) {
   return -1;
 }
 
-// PURE. One word, and one word only. The box says "em até três palavras" and then quietly accepts
-// a sentence, which is how the three-word cloud stops being a three-word cloud.
-export function oneWord(value) {
-  return String(value == null ? '' : value).replace(/\s+/g, '');
+// PURE. One box, one word. The box said "em até três palavras" and then quietly accepted a whole
+// sentence, which is how a three-word cloud stops being a three-word cloud. Crushing the spaces out
+// would only trade a sentence for one fake word, so a second word SPILLS into the box on the right,
+// the way an OTP field advances. Returns the three boxes plus where the caret should go.
+export function spillWords(current, slot, raw) {
+  const out = Array.isArray(current) ? current.slice(0, 3) : [];
+  while (out.length < 3) out.push('');
+  const text = String(raw == null ? '' : raw);
+  const parts = text.split(/\s+/).filter(Boolean);
+  if (!parts.length) { out[slot] = ''; return { words: out, focus: slot }; }
+  let last = slot;
+  for (let k = 0; k < parts.length && slot + k < 3; k++) { out[slot + k] = parts[k]; last = slot + k; }
+  const wantsNext = parts.length > 1 || /\s$/.test(text);
+  return { words: out, focus: wantsNext ? Math.min(last + 1, 2) : last };
 }
 
 // ── Question rendering, shared by both versions ──────────────────────────────
@@ -389,14 +399,20 @@ function onClick(e) {
 function onInput(e) {
   const word = e.target.closest('[data-sv-word]');
   if (word) {
-    const clean = oneWord(word.value);
-    if (word.value !== clean) word.value = clean;   // one box, one word
     const i = Number(word.getAttribute('data-sv-word'));
     const slot = Number(word.getAttribute('data-sv-slot'));
-    const cur = Array.isArray(_st.answers[i]) ? _st.answers[i].slice() : ['', '', ''];
-    cur[slot] = clean;
-    _st.answers[i] = cur;
-    return;   // never re-render here: it would steal the caret mid-word
+    const spill = spillWords(_st.answers[i], slot, word.value);
+    _st.answers[i] = spill.words;
+    // Repaint only this item's boxes, never the card: a re-render would steal the caret mid-word.
+    const card = word.closest('.cdx-sv-q');
+    const boxes = card ? card.querySelectorAll('[data-sv-word]') : [];
+    boxes.forEach((b) => {
+      const sl = Number(b.getAttribute('data-sv-slot'));
+      if (sl >= slot && b.value !== spill.words[sl]) b.value = spill.words[sl] || '';
+    });
+    if (spill.focus !== slot && boxes[spill.focus] && boxes[spill.focus].focus) boxes[spill.focus].focus();
+    if (card) card.classList.toggle('is-done', isAnswered(_st.answers, i));
+    return;
   }
   const txt = e.target.closest('[data-sv-text]');
   if (txt) _st.answers[Number(txt.getAttribute('data-sv-text'))] = txt.value;

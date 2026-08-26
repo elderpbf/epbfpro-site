@@ -274,7 +274,7 @@ const pt = {
   'survey.v1':              'Tudo de uma vez',
   'survey.v2':              'Uma por vez',
   'survey.optional':        'opcional',
-  'survey.word_hint':       'Uma palavra por campo.',
+  'survey.word_hint':       'Uma palavra por campo. O espaço pula para o próximo.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -533,7 +533,7 @@ const en = {
   'survey.v1':              'All at once',
   'survey.v2':              'One at a time',
   'survey.optional':        'optional',
-  'survey.word_hint':       'One word per box.',
+  'survey.word_hint':       'One word per box. Space jumps to the next one.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

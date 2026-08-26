@@ -5,7 +5,7 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
 import {
-  variantFrom, isAnswered, answeredCount, requiredTotal, progressPct, nextUnanswered, oneWord,
+  variantFrom, isAnswered, answeredCount, requiredTotal, progressPct, nextUnanswered, spillWords,
 } from '../trilha/js/survey-demo.js';
 
 // Indices 0..7 are required; 8 (three words) and 9 (free text) are optional.
@@ -67,12 +67,24 @@ test('nextUnanswered: finds the next gap, and reports when there is none', () =>
   assert.equal(nextUnanswered({}, 9), -1, 'nothing after the last item');
 });
 
-test('oneWord: a box that says one word accepts exactly one word', () => {
-  assert.equal(oneWord('clareza'), 'clareza');
-  assert.equal(oneWord('muita clareza'), 'muitaclareza');
-  assert.equal(oneWord('  espaco  '), 'espaco');
-  assert.equal(oneWord('quebra\nde\tlinha'), 'quebradelinha');
-  assert.equal(oneWord(''), '');
-  assert.equal(oneWord(null), '');
-  assert.equal(oneWord(undefined), '');
+test('spillWords: a second word moves to the next box instead of becoming a fake word', () => {
+  assert.deepEqual(spillWords(['', '', ''], 0, 'clareza'), { words: ['clareza', '', ''], focus: 0 });
+  assert.deepEqual(spillWords(['', '', ''], 0, 'muita clareza'), { words: ['muita', 'clareza', ''], focus: 2 });
+  assert.deepEqual(spillWords(['', '', ''], 0, 'muita clareza mesmo'),
+    { words: ['muita', 'clareza', 'mesmo'], focus: 2 }, 'a pasted phrase fills all three');
+});
+
+test('spillWords: a trailing space advances the caret, like an OTP field', () => {
+  assert.deepEqual(spillWords(['', '', ''], 0, 'clareza '), { words: ['clareza', '', ''], focus: 1 });
+  assert.deepEqual(spillWords(['a', '', ''], 1, 'b '), { words: ['a', 'b', ''], focus: 2 });
+  assert.deepEqual(spillWords(['a', 'b', ''], 2, 'c '), { words: ['a', 'b', 'c'], focus: 2 },
+    'the last box has nowhere to advance to');
+});
+
+test('spillWords: never overflows three boxes, and clearing a box clears it', () => {
+  assert.deepEqual(spillWords(['', '', ''], 1, 'um dois tres quatro').words, ['', 'um', 'dois']);
+  assert.deepEqual(spillWords(['a', 'b', 'c'], 1, '').words, ['a', '', 'c']);
+  assert.deepEqual(spillWords(['a', 'b', 'c'], 1, '   ').words, ['a', '', 'c']);
+  assert.deepEqual(spillWords(null, 0, 'x').words, ['x', '', '']);
+  assert.deepEqual(spillWords(undefined, 0, null).words, ['', '', '']);
 });
