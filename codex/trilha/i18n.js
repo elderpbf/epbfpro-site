@@ -263,7 +263,6 @@ const pt = {
   'survey.text_placeholder':'Carga horária, ritmo, temas que faltaram, o que funcionou. Escreva o que quiser.',
   'survey.progress':        '{n} de {total}',
   'survey.send':            'Enviar avaliação',
-  'survey.foot_note':       'Você pode responder uma vez só.',
   'survey.back':            'Voltar',
   'survey.next':            'Próxima',
   'survey.badge_answer':    'Responder',
@@ -271,11 +270,11 @@ const pt = {
   'survey.close':           'Fechar',
   'survey.thanks_title':    'Obrigado pela sua avaliação',
   'survey.thanks_lede':     'Sua resposta foi registrada de forma anônima.',
-  'survey.switch_label':    'Variante',
-  'survey.v1':              'Página inteira',
+  'survey.switch_label':    'Versão',
+  'survey.v1':              'Tudo de uma vez',
   'survey.v2':              'Uma por vez',
-  'survey.v3':              'Cartão na trilha',
-  'survey.v4':              'Faixa e janela',
+  'survey.optional':        'opcional',
+  'survey.word_hint':       'Uma palavra por campo.',
 };
 const en = {
   'cert.checking':          'Verifying certificate...',
@@ -523,7 +522,6 @@ const en = {
   'survey.text_placeholder':'Workload, pace, topics that were missing, what worked. Write whatever you want.',
   'survey.progress':        '{n} of {total}',
   'survey.send':            'Send evaluation',
-  'survey.foot_note':       'You can answer only once.',
   'survey.back':            'Back',
   'survey.next':            'Next',
   'survey.badge_answer':    'Answer',
@@ -531,11 +529,11 @@ const en = {
   'survey.close':           'Close',
   'survey.thanks_title':    'Thank you for your evaluation',
   'survey.thanks_lede':     'Your answer was recorded anonymously.',
-  'survey.switch_label':    'Variant',
-  'survey.v1':              'Single page',
+  'survey.switch_label':    'Version',
+  'survey.v1':              'All at once',
   'survey.v2':              'One at a time',
-  'survey.v3':              'Card in the trail',
-  'survey.v4':              'Strip and dialog',
+  'survey.optional':        'optional',
+  'survey.word_hint':       'One word per box.',
 };
 
 const DICTS = { 'pt-BR': pt, en };

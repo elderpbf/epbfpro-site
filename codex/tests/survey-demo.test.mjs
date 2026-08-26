@@ -1,21 +1,26 @@
 // codex/tests/survey-demo.test.mjs
-// Guards the pure seams of the track-64 look-and-feel prototype. The point of these is the
-// OFF switch: this module ships on a branch and must stay completely inert on any URL that
-// does not explicitly ask for a variant.
+// Guards the pure seams of the track-64 look-and-feel prototype: the OFF switch (this ships on a
+// branch and must stay inert on any URL that does not ask for a version), and the counting rules
+// behind the progress bar, which are the part Élder actually pushed back on.
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { variantFrom, isAnswered, answeredCount } from '../trilha/js/survey-demo.js';
+import {
+  variantFrom, isAnswered, answeredCount, requiredTotal, progressPct, nextUnanswered, oneWord,
+} from '../trilha/js/survey-demo.js';
 
-test('variantFrom: reads the variant out of the query string', () => {
+// Indices 0..7 are required; 8 (three words) and 9 (free text) are optional.
+const ALL_REQUIRED = { 0: '4', 1: '4', 2: 'Foi adequado', 3: '5', 4: '5', 5: '4', 6: '3', 7: '5' };
+
+test('variantFrom: reads the version out of the query string', () => {
   assert.equal(variantFrom('?survey=1'), 1);
-  assert.equal(variantFrom('?survey=4'), 4);
+  assert.equal(variantFrom('?survey=2'), 2);
   assert.equal(variantFrom('?et=abc&survey=2'), 2);
-  assert.equal(variantFrom('?survey=3&k=xyz'), 3);
+  assert.equal(variantFrom('?survey=1&k=xyz'), 1);
 });
 
-test('variantFrom: anything that is not 1..4 reads as OFF', () => {
+test('variantFrom: anything that is not 1..2 reads as OFF', () => {
   assert.equal(variantFrom('?survey=0'), 0);
-  assert.equal(variantFrom('?survey=5'), 0);
+  assert.equal(variantFrom('?survey=3'), 0, 'the retired variants must not half-mount');
   assert.equal(variantFrom('?survey=x'), 0);
   assert.equal(variantFrom('?surveyed=1'), 0, 'a longer param name must not match');
   assert.equal(variantFrom(''), 0);
@@ -36,13 +41,38 @@ test('isAnswered: a words item needs at least one non-blank box', () => {
   assert.equal(isAnswered({ 8: ['', 'clareza', ''] }, 8), true);
 });
 
-test('answeredCount: counts across the whole instrument, never above its size', () => {
+test('progress is measured against the REQUIRED items only', () => {
+  assert.equal(requiredTotal(), 8);
   assert.equal(answeredCount({}), 0);
   assert.equal(answeredCount({ 0: '4', 1: '5' }), 2);
-  assert.equal(answeredCount({ 0: '4', 1: '', 9: 'texto' }), 2);
-  const all = {};
-  for (let i = 0; i < 10; i++) all[i] = 'x';
-  assert.equal(answeredCount(all), 10);
-  all[99] = 'stray';
-  assert.equal(answeredCount(all), 10, 'a key outside the instrument must not inflate the count');
+  assert.equal(answeredCount({ 8: ['boa'], 9: 'texto' }), 0, 'optional answers do not advance it');
+});
+
+test('the bar reaches 100% with both optional items left blank', () => {
+  assert.equal(progressPct(ALL_REQUIRED), 100, 'this is the 8-de-10 complaint');
+  assert.equal(progressPct({}), 0);
+  assert.equal(progressPct({ 0: '4', 1: '4', 2: 'x', 3: '4' }), 50);
+});
+
+test('progress never overfills, whatever lands in the answer map', () => {
+  const noisy = Object.assign({}, ALL_REQUIRED, { 8: ['a', 'b', 'c'], 9: 'muito bom', 99: 'stray' });
+  assert.equal(answeredCount(noisy), 8);
+  assert.equal(progressPct(noisy), 100);
+});
+
+test('nextUnanswered: finds the next gap, and reports when there is none', () => {
+  assert.equal(nextUnanswered({}, 0), 1);
+  assert.equal(nextUnanswered({ 1: '4', 2: 'x' }, 0), 3, 'skips the ones already answered');
+  assert.equal(nextUnanswered({ 8: ['a'], 9: 'y' }, 7), -1, 'optional items still count as filled here');
+  assert.equal(nextUnanswered({}, 9), -1, 'nothing after the last item');
+});
+
+test('oneWord: a box that says one word accepts exactly one word', () => {
+  assert.equal(oneWord('clareza'), 'clareza');
+  assert.equal(oneWord('muita clareza'), 'muitaclareza');
+  assert.equal(oneWord('  espaco  '), 'espaco');
+  assert.equal(oneWord('quebra\nde\tlinha'), 'quebradelinha');
+  assert.equal(oneWord(''), '');
+  assert.equal(oneWord(null), '');
+  assert.equal(oneWord(undefined), '');
 });

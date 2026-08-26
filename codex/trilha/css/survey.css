@@ -6,7 +6,7 @@
    no new variable needs a [data-theme="dark"] twin.
    ========================================================= */
 
-/* ── Variant switcher (prototype only, never ships) ────────────────────── */
+/* ── Version switcher (prototype only, never ships) ─────────────────────── */
 .cdx-sv-switch {
   display: flex;
   flex-wrap: wrap;
@@ -42,8 +42,7 @@
   border-color: var(--primary);
 }
 
-/* ── Sheet: the shared body of every variant ───────────────────────────── */
-.cdx-sv-sheet { max-width: 44rem; margin: 0 auto; }
+/* ── Intro, shared by both versions ─────────────────────────────────────── */
 
 .cdx-sv-intro { margin-bottom: 1.1rem; }
 .cdx-sv-eyebrow {
@@ -108,14 +107,35 @@
   margin-bottom: 0.6rem;
 }
 .cdx-sv-q.is-done { border-color: var(--primary); }
+.cdx-sv-qhead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
 .cdx-sv-qnum {
   font-size: 0.68rem;
   letter-spacing: 0.03em;
   font-weight: 700;
   color: var(--primary);
-  margin-bottom: 0.3rem;
 }
 .cdx-sv-qnum span { color: var(--text-secondary); opacity: 0.7; font-weight: 600; }
+/* An optional item says so, so nobody hunts for a required answer that is not there. */
+.cdx-sv-opt {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+}
+.cdx-sv-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+}
 .cdx-sv-prompt {
   font-size: 0.95rem;
   line-height: 1.45;
@@ -211,13 +231,6 @@
 .cdx-sv-text:focus { outline: none; border-color: var(--primary); }
 
 /* ── Send ──────────────────────────────────────────────────────────────── */
-.cdx-sv-foot {
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
-  flex-wrap: wrap;
-  margin-top: 1.1rem;
-}
 .cdx-sv-send,
 .cdx-sv-next {
   font-size: 0.9rem;
@@ -242,10 +255,9 @@
   padding: 0.7rem 1.2rem;
 }
 .cdx-sv-back[disabled] { opacity: 0.4; cursor: default; }
-.cdx-sv-foot-note { font-size: 0.72rem; color: var(--text-secondary); }
 
-/* ── V2 stepper ────────────────────────────────────────────────────────── */
-.cdx-sv-stage { min-height: 15rem; }
+/* A floor under the single question, so the Voltar/Proxima row does not hop as prompts change. */
+.cdx-sv-stage { min-height: 13rem; }
 .cdx-sv-nav {
   display: flex;
   justify-content: space-between;
@@ -253,61 +265,8 @@
   margin-top: 1rem;
 }
 
-/* ── V3 inline card ────────────────────────────────────────────────────── */
-.cdx-sv-card {
-  border: 1px solid var(--border);
-  border-radius: 14px;
-  background: var(--surface);
-  overflow: hidden;
-  margin-bottom: 1rem;
-}
-.cdx-sv-card.is-open { border-color: var(--primary); }
-.cdx-sv-card-top {
-  display: flex;
-  align-items: center;
-  gap: 0.75rem;
-  width: 100%;
-  text-align: left;
-  cursor: pointer;
-  background: none;
-  border: 0;
-  padding: 0.9rem 1rem;
-}
-.cdx-sv-card-mark {
-  flex: 0 0 auto;
-  display: grid;
-  place-items: center;
-  width: 34px;
-  height: 34px;
-  border-radius: 10px;
-  color: var(--primary);
-  background: var(--background);
-}
-.cdx-sv-card-info { flex: 1; min-width: 0; display: flex; flex-direction: column; }
-.cdx-sv-card-eyebrow {
-  font-size: 0.66rem;
-  letter-spacing: 0.04em;
-  text-transform: uppercase;
-  font-weight: 700;
-  color: var(--text-secondary);
-  opacity: 0.85;
-}
-.cdx-sv-card-title { font-size: 0.95rem; font-weight: 600; color: var(--text-primary); }
-.cdx-sv-card-badge {
-  flex: 0 0 auto;
-  font-size: 0.7rem;
-  font-weight: 700;
-  color: var(--text-on-accent, var(--on-primary));
-  background: var(--primary);
-  border-radius: 20px;
-  padding: 0.2rem 0.7rem;
-}
-.cdx-sv-chev { flex: 0 0 auto; color: var(--text-secondary); transition: transform 0.2s ease; }
-.cdx-sv-chev.is-open { transform: rotate(180deg); }
-.cdx-sv-card-body { padding: 0 1rem 1rem; }
-.cdx-sv-card-body .cdx-sv-lede { margin-bottom: 0.9rem; }
 
-/* ── V4 strip + modal ──────────────────────────────────────────────────── */
+/* ── The strip on the trail, and the dialog it opens ────────────────────── */
 .cdx-sv-strip {
   display: flex;
   align-items: center;
