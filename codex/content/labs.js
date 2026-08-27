@@ -60,6 +60,10 @@ const _isEnabled = (key) => isLabEnabled(key);
 // put the real detail where the debug pill can find it.
 function _saved(promise) {
   return Promise.resolve(promise).catch((e) => {
+    // This is the ONE path that fires after an arbitrary delay, so the panel may already be gone
+    // (flip a switch, leave the sub-tab, the refusal lands afterwards). Every other repaint here is
+    // synchronous and cannot see an unmounted view.
+    if (!_viewEl) { notice.internal(e); return; }
     if (_rail) _rail.render();
     _renderPreview();
     toast.err(t('labs.save_failed'));

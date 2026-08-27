@@ -96,12 +96,19 @@ test('a write moves the cache before the Worker answers', async () => {
   assert.equal(state.isEnabled('k1'), false);
 });
 
+// The rollback of a lab that had NO row has to DELETE the row the write created, not leave one
+// holding defaults: a phantom row is what would make the next reorder or push believe the server has
+// an opinion about a lab nobody ever decided anything about.
 test('a refused write rolls back, including a lab that had no row at all', async () => {
-  state.hydrate({});
+  state.hydrate({ k9: { sort_order: 0 } });
   worker(() => Promise.resolve({ error: 'no_auth' }));
   await assert.rejects(() => state.setEnabled('k1', false));
   assert.equal(state.isEnabled('k1'), true, 'back to the default it had');
-  assert.deepEqual(Object.keys(state.hydrate({ ...{} })), [], 'no phantom row left behind');
+  await assert.rejects(() => state.setDisplayName('k1', 'Nome'));
+  assert.equal(state.displayNameOf('k1'), null, 'and no override was left behind either');
+  // A row for k1 would show up here the moment setOrder touched it, since setOrder walks the cache.
+  await assert.rejects(() => state.setOrder(['k9']));
+  assert.deepEqual(state.orderKeys(), ['k9'], 'the cache still holds exactly the one real row');
 });
 
 test('a refused reorder puts every position back', async () => {
@@ -155,6 +162,18 @@ test('a browser with none of the four keys pushes nothing', async () => {
   okWorker();
   assert.equal(await state.pushLocalState(), null);
   assert.equal(_calls.length, 0);
+});
+
+// With the state unloaded every server field reads as "no opinion", so the additive rule would
+// degrade into "push everything" and then clear the keys. That is the same clobber the design exists
+// to prevent, arriving through the fail-open path instead of through a stale browser.
+test('nothing is handed over while the server side is unknown', async () => {
+  const store = browser({ cv_labs_renamed: { k1: 'Foco' }, cv_labs_order: ['k2', 'k1'] });
+  state.resetLabState();
+  okWorker();
+  assert.equal(await state.pushLocalState(), null, 'a failed load means "try again", not "push"');
+  assert.equal(_calls.length, 0, 'nothing written');
+  assert.ok(store.get('cv_labs_renamed'), 'and the browser keeps its copy for the next attempt');
 });
 
 test('the push writes, then clears the four keys so it can never run twice', async () => {

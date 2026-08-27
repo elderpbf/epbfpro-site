@@ -215,6 +215,13 @@ export function planLocalPush(local, state) {
 // The four keys are cleared either way once the writes land: a browser that arrives second has
 // nothing left to push, and its stale copy is discarded rather than kept around to be applied later.
 export function pushLocalState() {
+  // Nothing is handed over until the server's side is actually KNOWN. With the state unloaded every
+  // field reads as "no opinion", so the additive rule silently degrades into "push everything" and
+  // then clears the keys: the exact clobber this design exists to prevent, arriving through the
+  // fail-open path instead of through a stale browser. A load that failed just means "try again
+  // next time", so this returns null and touches nothing.
+  if (!_loaded) return Promise.resolve(null);
+
   let present = false;
   try { present = LS_KEYS.some((k) => localStorage.getItem(k) !== null); } catch (e) { present = false; }
   if (!present) return Promise.resolve(null);
