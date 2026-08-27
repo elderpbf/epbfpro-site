@@ -275,6 +275,17 @@ function offsetBelowHeader() {
   scrim.style.top = top + 'px';
 }
 
+// The foot is the one piece that MUST change when an answer lands, because the send button only
+// exists once the last required item is answered. Patching it in place is what lets answering keep
+// the body's scroll: a full render would fix the foot and throw the reader back to the top, which
+// is the bug this whole patching path exists to avoid. Found by the browser run, not by the suite:
+// the bar hit 100% and the button never arrived.
+function patchFoot() {
+  if (!_modalHost) return;
+  const foot = _modalHost.querySelector('.cdx-sv-modal-foot .cdx-sv-wrap');
+  if (foot) foot.innerHTML = footHtml();
+}
+
 // Bring the next unanswered question into view, gently. `center` keeps it clear of both the
 // sticky progress head and the sticky send foot, in either presentation.
 function revealNext(idx) {
@@ -313,6 +324,7 @@ function onClick(e) {
     _st.answers[idx] = set.getAttribute('data-sv-val');
     patchQuestion(surface(), idx, _st.answers);
     patchProgress(surface(), ITEMS, _st.answers, t);
+    patchFoot();
     if (PACE[_st.mode.pace].stepped) {
       if (isSelfAdvancing(ITEMS[idx])) advanceAfterAnswer(idx);
     } else {
@@ -337,13 +349,20 @@ function onClick(e) {
 
 function onInput(e) {
   const word = e.target.closest('[data-sv-word]');
-  if (word) { applyWordInput(word, _st.answers); return; }
+  if (word) {
+    const idx = applyWordInput(word, _st.answers);
+    if (!ITEMS[idx].optional) { patchProgress(surface(), ITEMS, _st.answers, t); patchFoot(); }
+    return;
+  }
   const txt = e.target.closest('[data-sv-text]');
   if (txt) {
     const idx = Number(txt.getAttribute('data-sv-text'));
     _st.answers[idx] = txt.value;
     const c = txt.closest('.cdx-sv-q');
     if (c) c.classList.toggle('is-done', isAnswered(_st.answers, idx));
+    // Today both typed items are optional so this cannot flip completeness, but the instrument is
+    // editable and a required text item would silently strand the send button without this.
+    if (!ITEMS[idx].optional) { patchProgress(surface(), ITEMS, _st.answers, t); patchFoot(); }
   }
 }
 
