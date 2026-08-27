@@ -206,6 +206,9 @@ function overlayHtml() {
   const foot = footHtml();
   const wrap = (cls, inner, extra) =>
     '<div class="' + cls + '"' + (extra || '') + '><div class="cdx-sv-wrap">' + inner + '</div></div>';
+  // The foot is ALWAYS in the tree, hidden while it is empty. It has to be: the send button
+  // arrives by patching, and patching cannot fill an element that was never rendered. Dropping it
+  // when empty is what made the button never appear after the nag line was removed.
   return '<div class="cdx-sv-scrim' + (full ? ' is-full' : '') + '"' + (full ? '' : ' data-sv-scrim') + '>' +
     '<div class="cdx-sv-modal" role="dialog" aria-modal="true">' +
       wrap('cdx-sv-modal-head', headHtml() +
@@ -213,7 +216,7 @@ function overlayHtml() {
           '<button type="button" class="cdx-sv-x" data-sv-close aria-label="' + esc(t('survey.close')) + '">' +
             glyphSvg('close', { size: 18 }) + '</button>')) +
       wrap('cdx-sv-modal-body', bodyHtml(), ' data-sv-scroll') +
-      (foot ? wrap('cdx-sv-modal-foot', foot) : '') +
+      wrap('cdx-sv-modal-foot', foot, foot ? '' : ' hidden') +
     '</div>' +
   '</div>';
 }
@@ -294,8 +297,12 @@ function offsetBelowHeader() {
 // the bar hit 100% and the button never arrived.
 function patchFoot() {
   if (!_modalHost) return;
-  const foot = _modalHost.querySelector('.cdx-sv-modal-foot .cdx-sv-wrap');
-  if (foot) foot.innerHTML = footHtml();
+  const foot = _modalHost.querySelector('.cdx-sv-modal-foot');
+  const wrap = foot && foot.querySelector('.cdx-sv-wrap');
+  if (!foot || !wrap) return;
+  const html = footHtml();
+  wrap.innerHTML = html;
+  foot.hidden = !html;   // an empty foot must not leave its border and padding on screen
 }
 
 // Bring the next unanswered question into view, gently. `center` keeps it clear of both the
