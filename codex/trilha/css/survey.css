@@ -202,33 +202,33 @@
   .cdx-sv-title { font-size: 1.15rem; }
 }
 
-/* ── Presentation: full page ───────────────────────────────────────────────
-   The survey owns the content area. The hero above it stays (it names the client
-   and the turma, which is the context for the questions); the tab strip and the
-   panels are hidden by the shell. Head and foot stick, so the progress and the
-   send button are always reachable on a long list. */
-.cdx-sv-full {
-  display: flex;
-  flex-direction: column;
-  max-width: 44rem;
-  margin: 0 auto;
-}
-.cdx-sv-full-head {
-  position: sticky;
-  top: 0;
-  z-index: 2;
-  padding: 0.7rem 0 0.1rem;
+/* ── Presentation: full screen ─────────────────────────────────────────────
+   The SAME overlay layer as the dialog, edge to edge: no scrim gap, no rounded
+   corners, no close button. The trail is untouched underneath, just covered, so
+   "Continuar para a trilha" on the thank-you reveals it with nothing to restore. */
+.cdx-sv-scrim.is-full {
+  align-items: stretch;
+  justify-content: stretch;
   background: var(--background);
 }
-.cdx-sv-full-head .cdx-sv-progress { margin-bottom: 0.6rem; }
-.cdx-sv-full-body { padding-bottom: 0.6rem; }
-.cdx-sv-full-foot {
-  position: sticky;
-  bottom: 0;
-  z-index: 2;
-  padding: 0.8rem 0 1rem;
+.cdx-sv-scrim.is-full .cdx-sv-modal {
+  width: 100%;
+  max-width: none;
+  max-height: none;
+  border: 0;
+  border-radius: 0;
   background: var(--background);
-  border-top: 1px solid var(--border);
 }
-.cdx-sv-full-foot .cdx-sv-send { width: 100%; }
-.cdx-sv-full-foot .cdx-sv-nav .cdx-sv-send { width: auto; }
+.cdx-sv-scrim.is-full .cdx-sv-modal-head,
+.cdx-sv-scrim.is-full .cdx-sv-modal-foot,
+.cdx-sv-scrim.is-full .cdx-sv-modal-body { padding-left: max(1.1rem, env(safe-area-inset-left)); padding-right: max(1.1rem, env(safe-area-inset-right)); }
+.cdx-sv-scrim.is-full .cdx-sv-modal-foot { padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px)); }
+/* The questions keep a readable measure on a laptop instead of stretching to the window. */
+.cdx-sv-scrim.is-full .cdx-sv-modal-head > .cdx-sv-progress,
+.cdx-sv-scrim.is-full .cdx-sv-modal-body > *,
+.cdx-sv-scrim.is-full .cdx-sv-modal-foot > * { max-width: 44rem; margin-left: auto; margin-right: auto; }
+
+.cdx-sv-continue { margin-top: 1.2rem; }
+@media (min-width: 40rem) {
+  .cdx-sv-scrim.is-full .cdx-sv-modal { border-radius: 0; max-height: none; }
+}

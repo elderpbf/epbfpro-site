@@ -6,7 +6,8 @@
 // pace or a third presentation later multiplies nothing:
 //
 //   presentation:  dialog     a quiet strip on the trail that opens the survey over the page
-//                  full       the survey takes the page; the trail is not browsable behind it
+//                  full       the same overlay edge to edge, opened on arrival, with no close:
+//                             the trail is covered until the thank-you says continuar
 //   pace:          all        every question at once, one send at the foot
 //                  steps      one question, advancing by itself after a one-tap answer
 //
@@ -76,9 +77,10 @@ const _st = { mode: null, answers: {}, step: 0, open: false, sent: false };
 let _host = null;
 let _modalHost = null;
 
-// Where the questions currently live, which is what the in-place patchers write into.
+// Where the questions live, which is what the in-place patchers write into. Both presentations
+// render into the same overlay layer, so there is one answer.
 function surface() {
-  return _st.mode.presentation === 'dialog' ? _modalHost : _host;
+  return _modalHost;
 }
 
 function card(i) {
@@ -131,6 +133,10 @@ function doneHtml() {
     '<div class="cdx-sv-done-mark">' + glyphSvg('check-circle', { size: 34 }) + '</div>' +
     '<h2 class="cdx-sv-title">' + esc(t('survey.thanks_title')) + '</h2>' +
     '<p class="cdx-sv-lede">' + esc(t('survey.thanks_lede')) + '</p>' +
+    // The way out. On full screen it is the ONLY way out, which is what makes the gate humane
+    // rather than a dead end: answering is what opens the trail.
+    '<button type="button" class="cdx-sv-send cdx-sv-continue" data-sv-continue>' +
+      esc(t('survey.continue')) + '</button>' +
   '</div>';
 }
 
@@ -162,30 +168,25 @@ function stripHtml() {
   '</div>';
 }
 
-function modalHtml() {
+// ── The overlay, shared by both presentations ────────────────────────────────────────────────
+// Both are the SAME layer over the page, sitting above the trail rather than flowing inside it.
+// `dialog` is a sheet with a scrim around it and a close button; `full` is the same layer edge to
+// edge, with no scrim gap, no close button and no strip behind it, so the only way out is
+// finishing. One markup, one set of scroll and patch mechanics, one class difference.
+
+function overlayHtml() {
+  const full = _st.mode.presentation === 'full';
   const foot = footHtml();
-  return '<div class="cdx-sv-scrim" data-sv-scrim>' +
+  return '<div class="cdx-sv-scrim' + (full ? ' is-full' : '') + '"' + (full ? '' : ' data-sv-scrim') + '>' +
     '<div class="cdx-sv-modal" role="dialog" aria-modal="true">' +
       '<div class="cdx-sv-modal-head">' + headHtml() +
-        '<button type="button" class="cdx-sv-x" data-sv-close aria-label="' + esc(t('survey.close')) + '">' +
-          glyphSvg('close', { size: 18 }) + '</button>' +
+        (full ? '' :
+          '<button type="button" class="cdx-sv-x" data-sv-close aria-label="' + esc(t('survey.close')) + '">' +
+            glyphSvg('close', { size: 18 }) + '</button>') +
       '</div>' +
       '<div class="cdx-sv-modal-body" data-sv-scroll>' + bodyHtml() + '</div>' +
       (foot ? '<div class="cdx-sv-modal-foot">' + foot + '</div>' : '') +
     '</div>' +
-  '</div>';
-}
-
-// ── Presentation: full ───────────────────────────────────────────────────────────────────────
-// The survey owns the page. No strip and no close button: this is the shape that asks the person
-// to answer before carrying on, so the only way out is finishing it.
-
-function fullHtml() {
-  const foot = footHtml();
-  return '<div class="cdx-sv-full">' +
-    '<div class="cdx-sv-full-head">' + headHtml() + '</div>' +
-    '<div class="cdx-sv-full-body">' + bodyHtml() + '</div>' +
-    (foot ? '<div class="cdx-sv-full-foot">' + foot + '</div>' : '') +
   '</div>';
 }
 
@@ -214,13 +215,11 @@ function switcherHtml() {
 
 function render() {
   if (!_host) return;
-  if (_st.mode.presentation === 'full') {
-    _host.innerHTML = switcherHtml() + fullHtml();
-    renderModal('');
-  } else {
-    _host.innerHTML = switcherHtml() + stripHtml();
-    renderModal(_st.open ? modalHtml() : '');
-  }
+  // On full screen there is no strip: the overlay IS the entry, and once it is dismissed the
+  // trail is simply the trail. In the dialog the strip is what opens it and what stays behind.
+  const full = _st.mode.presentation === 'full';
+  _host.innerHTML = switcherHtml() + (full ? '' : stripHtml());
+  renderModal(_st.open ? overlayHtml() : '');
 }
 
 // The dialog layer lives on document.body, the way the trail's own modals do (comunicado-modal.js,
@@ -269,16 +268,10 @@ function advanceAfterAnswer(idx) {
   if (win && typeof win.setTimeout === 'function') win.setTimeout(go, 260); else go();
 }
 
-// Back to the start of the questions. In the dialog that is the scrolling body; on a full page it
-// is the window.
+// Back to the start of the questions, which is the overlay's own scrolling body in both modes.
 function scrollTop() {
-  if (_st.mode.presentation === 'dialog') {
-    const body = _modalHost && _modalHost.querySelector('[data-sv-scroll]');
-    if (body) body.scrollTop = 0;
-    return;
-  }
-  const el = _host && _host.querySelector('.cdx-sv-full');
-  if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'start' });
+  const body = _modalHost && _modalHost.querySelector('[data-sv-scroll]');
+  if (body) body.scrollTop = 0;
 }
 
 function onClick(e) {
@@ -306,7 +299,8 @@ function onClick(e) {
   if (hookFrom(e, '[data-sv-close]')) { _st.open = false; render(); return; }
   const scrim = hookFrom(e, '[data-sv-scrim]');
   if (scrim && e.target === scrim) { _st.open = false; render(); return; }
-  if (hookFrom(e, '[data-sv-send]')) { _st.sent = true; render(); return; }
+  if (hookFrom(e, '[data-sv-send]')) { _st.sent = true; render(); scrollTop(); return; }
+  if (hookFrom(e, '[data-sv-continue]')) { _st.open = false; render(); return; }
 }
 
 function onInput(e) {
@@ -329,16 +323,10 @@ function attach(doc) {
   _host = doc.createElement('div');
   _host.className = 'cdx-sv-host';
   const parent = main.querySelector('.cdx-trilha-tabcontent') || main;
-  if (_st.mode.presentation === 'full') {
-    // The hero stays: it carries the client and turma identity, which is the context for the
-    // questions. The tab strip and the panels go, so there is nothing to browse instead.
-    const tabs = main.querySelector('.cdx-trilha-tabs');
-    if (tabs) tabs.hidden = true;
-    Array.from(parent.children).forEach((c) => { c.hidden = true; });
-    parent.appendChild(_host);
-  } else {
-    parent.insertBefore(_host, parent.firstChild);
-  }
+  parent.insertBefore(_host, parent.firstChild);
+  // Nothing in the trail is hidden or moved, in either presentation. A full-screen overlay covers
+  // the page by itself, and hiding the panels would leave them hidden after "continuar para a
+  // trilha", which is the one thing that must work at the end.
   // Delegated on the document, not on main: the dialog lives on document.body, outside main.
   // Every hook is a data-attribute of this prototype's own markup, so nothing else is reachable.
   doc.addEventListener('click', onClick);
@@ -351,6 +339,7 @@ export function start(win) {
   if (!w || !w.document) return;
   _st.mode = modeFrom(w.location && w.location.search);
   if (!_st.mode) return;
+  _st.open = _st.mode.presentation === 'full';   // full screen greets them; the dialog waits
   const doc = w.document;
   const main = doc.querySelector('.cdx-trilha-main');
   if (main && !main.hidden) { attach(doc); return; }
