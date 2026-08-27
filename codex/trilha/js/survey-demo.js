@@ -23,7 +23,7 @@ import { glyphSvg } from '../../js/glyphs.js';
 import { esc } from '../../js/dom.js';
 import {
   questionCard, progressHtml, patchQuestion, patchProgress, applyWordInput,
-  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom, isComplete, missingCount,
+  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom, isComplete,
 } from '../../js/survey-question.js';
 
 // The two open-ended items are OPTIONAL, which is what lets the bar reach 100%.
@@ -98,20 +98,18 @@ function bodySteps() {
   return '<div class="cdx-sv-stage">' + card(_st.step) + '</div>';
 }
 
-// The send button does not exist until every required item is answered. Before that the foot
-// carries the reason, so the space does not jump when the button finally arrives. Élder, on
-// seeing it offered from the very first screen: it should appear only after the obligatory ones.
-function sendOrReason() {
-  if (isComplete(ITEMS, _st.answers)) {
-    return '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>';
-  }
-  const n = missingCount(ITEMS, _st.answers);
-  const key = n === 1 ? 'survey.missing_one' : 'survey.missing_n';
-  return '<p class="cdx-sv-missing">' + esc(t(key).replace('{n}', String(n))) + '</p>';
+// The send button does not exist until every required item is answered, and NOTHING stands in its
+// place until then. A line counting what is missing reads as nagging (Élder 2026-08-27), and the
+// tracker at the top already says exactly where they are. The ADMIN side is the opposite: there
+// the button is greyed and says what is blocking it, because that is diagnosis, not pressure.
+function sendIfReady() {
+  return isComplete(ITEMS, _st.answers)
+    ? '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>'
+    : '';
 }
 
 function footAll() {
-  return sendOrReason();
+  return sendIfReady();
 }
 
 function footSteps() {
@@ -120,7 +118,7 @@ function footSteps() {
     '<button type="button" class="cdx-sv-back" data-sv-step="-1"' + (_st.step === 0 ? ' disabled' : '') + '>' +
       esc(t('survey.back')) + '</button>' +
     (last
-      ? sendOrReason()
+      ? sendIfReady()
       : '<button type="button" class="cdx-sv-next" data-sv-step="1">' + esc(t('survey.next')) + '</button>') +
   '</div>';
 }
@@ -163,8 +161,22 @@ function footHtml() {
   return _st.sent ? '' : PACE[_st.mode.pace].foot();
 }
 
+// Whose trail this is, taken from the hero the trail already rendered rather than fetched again.
+// It sits in the gate's own head so the student stays grounded without the gate having to start
+// below a 300px hero, which on a phone would leave almost no room for a question (Élder 2026-08-27).
+function whoHtml() {
+  if (!_host || _st.mode.presentation !== 'full') return '';
+  const doc = _host.ownerDocument;
+  const pick = (sel) => {
+    const el = doc.querySelector(sel);
+    return el ? String(el.textContent || '').trim() : '';
+  };
+  const parts = [pick('#cdx-tr-client-name'), pick('#cdx-tr-turma-name')].filter(Boolean);
+  return parts.length ? '<div class="cdx-sv-who">' + esc(parts.join(' · ')) + '</div>' : '';
+}
+
 function headHtml() {
-  return _st.sent ? '<div class="cdx-sv-progress"></div>' : progressHtml(ITEMS, _st.answers, t);
+  return whoHtml() + (_st.sent ? '<div class="cdx-sv-progress"></div>' : progressHtml(ITEMS, _st.answers, t));
 }
 
 // ── Presentation: dialog ─────────────────────────────────────────────────────────────────────

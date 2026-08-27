@@ -178,14 +178,6 @@
   gap: 0.8rem;
 }
 .cdx-sv-modal-head .cdx-sv-progress { flex: 1; margin-bottom: 0.6rem; }
-/* The line that stands where the send button will be, so the foot does not jump when it arrives. */
-.cdx-sv-missing {
-  margin: 0;
-  padding: 0.7rem 0;
-  text-align: center;
-  font-size: 0.82rem;
-  color: var(--text-secondary);
-}
 .cdx-sv-x {
   flex: 0 0 auto;
   display: grid;
@@ -246,6 +238,20 @@
 .cdx-sv-scrim.is-full .cdx-sv-modal-foot,
 .cdx-sv-scrim.is-full .cdx-sv-modal-body { padding-left: max(1.1rem, env(safe-area-inset-left)); padding-right: max(1.1rem, env(safe-area-inset-right)); }
 .cdx-sv-scrim.is-full .cdx-sv-modal-foot { padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px)); }
+/* The gate's head stacks: whose trail this is, then the tracker. */
+.cdx-sv-scrim.is-full .cdx-sv-modal-head .cdx-sv-wrap {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.15rem;
+}
+.cdx-sv-who {
+  font-size: 0.68rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  opacity: 0.9;
+}
 
 .cdx-sv-continue { margin-top: 1.2rem; }
 @media (min-width: 40rem) {
