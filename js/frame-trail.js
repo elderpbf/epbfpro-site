@@ -1,4 +1,17 @@
 // js/frame-trail.js
+//
+// ⚠ READ BEFORE TOUCHING THE TRAIL'S CLASS NAMES (2026-08-26). This file drives the REAL student
+// page by CSS class SELECTORS (.cdx-tr-sub, .cdx-tr-sub--tarefa, .cdx-tr-sub-expanded,
+// .cdx-tr-card-header, .cdx-tr-tl-row). It is the LAST thing coupled to those names: the copies
+// that used to sit in css/landing.css were deleted that day, and the card markup itself now lives
+// in one module (codex/trilha/js/item-card.js).
+//
+// So: renaming or merging the trail's card classes breaks THIS, and nothing else. It breaks
+// SILENTLY, because the demo is unwired from index.html (the phones show captured stills) and no
+// test drives a browser here. Before any such rename, give the trail's rows their own anchors
+// (data-* attributes are the obvious choice) and point the queries below at those instead. Half
+// an hour of work, and then the names are free.
+//
 // Runs INSIDE the offer-section Trilha phone (a srcdoc iframe built by demos.js, in
 // place on the landing). Boots the REAL Codex trilha student page on canned data via
 // the window.callWorker seam. INERT (body overflow locked; a transform "camera" pans

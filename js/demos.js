@@ -1,3 +1,6 @@
+// ⚠ The frame drivers query the real app by CSS CLASS NAME; read the header of
+// js/frame-trail.js before renaming any trail class. This file is also where the frame links
+// the REAL codex stylesheets, which is why no copy of them belongs in css/landing.css.
 // js/demos.js — the two offer-section phone demos. Each phone embeds the REAL Codex
 // student surface IN PLACE via a srcdoc iframe (no separate page, no new route): the
 // iframe links the real Codex CSS and a landing-owned frame module (frame-pulso.js /
