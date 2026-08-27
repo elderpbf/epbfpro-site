@@ -158,15 +158,34 @@
   border: 1px solid var(--border);
   border-radius: 18px 18px 0 0;
 }
+/* An explicit block wrapper holds the measure. Auto margins do nothing to a flex item on this
+   axis and nothing at all to a button, which is why the send button used to sit hard left while
+   everything above it was centred. The head/body/foot stay full width so their borders still span
+   the screen; only their CONTENT is centred and capped. */
+.cdx-sv-wrap {
+  width: 100%;
+  max-width: 44rem;
+  margin: 0 auto;
+}
 .cdx-sv-modal-head {
   flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  gap: 0.8rem;
   padding: 1rem 1.1rem 0.4rem;
   border-bottom: 1px solid var(--border);
 }
+.cdx-sv-modal-head .cdx-sv-wrap {
+  display: flex;
+  align-items: center;
+  gap: 0.8rem;
+}
 .cdx-sv-modal-head .cdx-sv-progress { flex: 1; margin-bottom: 0.6rem; }
+/* The line that stands where the send button will be, so the foot does not jump when it arrives. */
+.cdx-sv-missing {
+  margin: 0;
+  padding: 0.7rem 0;
+  text-align: center;
+  font-size: 0.82rem;
+  color: var(--text-secondary);
+}
 .cdx-sv-x {
   flex: 0 0 auto;
   display: grid;
@@ -187,6 +206,7 @@
   border-top: 1px solid var(--border);
 }
 .cdx-sv-modal-foot .cdx-sv-send { width: 100%; }
+.cdx-sv-modal-foot .cdx-sv-nav .cdx-sv-send { width: auto; }
 
 @media (min-width: 40rem) {
   .cdx-sv-scrim { align-items: center; }
@@ -204,9 +224,12 @@
 
 /* ── Presentation: full screen ─────────────────────────────────────────────
    The SAME overlay layer as the dialog, edge to edge: no scrim gap, no rounded
-   corners, no close button. The trail is untouched underneath, just covered, so
+   corners, no close button. It starts BELOW the trail's header (the shell sets
+   `top` from the measured header height) so the student stays grounded on their
+   own trail while answering. The trail is untouched underneath, just covered, so
    "Continuar para a trilha" on the thank-you reveals it with nothing to restore. */
 .cdx-sv-scrim.is-full {
+  top: 0;   /* the shell overwrites this with the measured header bottom */
   align-items: stretch;
   justify-content: stretch;
   background: var(--background);
@@ -223,10 +246,6 @@
 .cdx-sv-scrim.is-full .cdx-sv-modal-foot,
 .cdx-sv-scrim.is-full .cdx-sv-modal-body { padding-left: max(1.1rem, env(safe-area-inset-left)); padding-right: max(1.1rem, env(safe-area-inset-right)); }
 .cdx-sv-scrim.is-full .cdx-sv-modal-foot { padding-bottom: calc(0.8rem + env(safe-area-inset-bottom, 0px)); }
-/* The questions keep a readable measure on a laptop instead of stretching to the window. */
-.cdx-sv-scrim.is-full .cdx-sv-modal-head > .cdx-sv-progress,
-.cdx-sv-scrim.is-full .cdx-sv-modal-body > *,
-.cdx-sv-scrim.is-full .cdx-sv-modal-foot > * { max-width: 44rem; margin-left: auto; margin-right: auto; }
 
 .cdx-sv-continue { margin-top: 1.2rem; }
 @media (min-width: 40rem) {

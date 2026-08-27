@@ -57,6 +57,19 @@ export function progressPct(items, answers) {
   return Math.min(100, Math.round(answeredCount(items, answers) / total * 100));
 }
 
+// PURE. Every required item answered, which is the ONLY condition under which a survey may be
+// sent. The send button does not exist before this is true: a button you cannot use yet is a
+// button that lies about what it does.
+export function isComplete(items, answers) {
+  return answeredCount(items, answers) >= requiredTotal(items);
+}
+
+// PURE. How many required items are still missing, for the line that stands where the send button
+// will be.
+export function missingCount(items, answers) {
+  return Math.max(0, requiredTotal(items) - answeredCount(items, answers));
+}
+
 // PURE. The first item after `idx` that has no answer yet, or -1 when there is none.
 export function nextUnanswered(items, answers, idx) {
   for (let i = idx + 1; i < (items || []).length; i++) if (!isAnswered(answers, i)) return i;

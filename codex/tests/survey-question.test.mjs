@@ -9,6 +9,7 @@ import assert from 'node:assert/strict';
 import {
   isAnswered, requiredTotal, answeredCount, progressPct, nextUnanswered, spillWords,
   isSelfAdvancing, questionCard, questionInput, progressLabel, WORD_SLOTS,
+  isComplete, missingCount,
 } from '../js/survey-question.js';
 
 // Eight required, two optional, matching the agreed instrument's shape.
@@ -138,4 +139,22 @@ test('a scale honours per-question bounds, so config never comes from localStora
 test('progressLabel: fills both placeholders from the required total', () => {
   assert.equal(progressLabel(ITEMS, ALL_REQUIRED, () => '{n} de {total}'), '8 de 8');
   assert.equal(progressLabel(ITEMS, {}, () => '{n} de {total}'), '0 de 8');
+});
+
+test('isComplete: only every REQUIRED item answered unlocks sending', () => {
+  assert.equal(isComplete(ITEMS, {}), false);
+  assert.equal(isComplete(ITEMS, { 0: '4' }), false);
+  assert.equal(isComplete(ITEMS, ALL_REQUIRED), true, 'both optional items may stay blank');
+  const missingOne = Object.assign({}, ALL_REQUIRED); delete missingOne[3];
+  assert.equal(isComplete(ITEMS, missingOne), false, 'one gap is still a gap');
+  assert.equal(isComplete(ITEMS, Object.assign({}, missingOne, { 8: ['boa'], 9: 'otimo' })), false,
+    'answering the OPTIONAL ones cannot substitute for a required one');
+});
+
+test('missingCount: says how many are left, and never goes negative', () => {
+  assert.equal(missingCount(ITEMS, {}), 8);
+  assert.equal(missingCount(ITEMS, { 0: '4', 1: '4' }), 6);
+  assert.equal(missingCount(ITEMS, ALL_REQUIRED), 0);
+  assert.equal(missingCount(ITEMS, Object.assign({}, ALL_REQUIRED, { 8: ['a'], 9: 'b', 99: 'x' })), 0);
+  assert.equal(missingCount([], {}), 0);
 });

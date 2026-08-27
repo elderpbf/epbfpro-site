@@ -23,7 +23,7 @@ import { glyphSvg } from '../../js/glyphs.js';
 import { esc } from '../../js/dom.js';
 import {
   questionCard, progressHtml, patchQuestion, patchProgress, applyWordInput,
-  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom,
+  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom, isComplete, missingCount,
 } from '../../js/survey-question.js';
 
 // The two open-ended items are OPTIONAL, which is what lets the bar reach 100%.
@@ -98,8 +98,20 @@ function bodySteps() {
   return '<div class="cdx-sv-stage">' + card(_st.step) + '</div>';
 }
 
+// The send button does not exist until every required item is answered. Before that the foot
+// carries the reason, so the space does not jump when the button finally arrives. Élder, on
+// seeing it offered from the very first screen: it should appear only after the obligatory ones.
+function sendOrReason() {
+  if (isComplete(ITEMS, _st.answers)) {
+    return '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>';
+  }
+  const n = missingCount(ITEMS, _st.answers);
+  const key = n === 1 ? 'survey.missing_one' : 'survey.missing_n';
+  return '<p class="cdx-sv-missing">' + esc(t(key).replace('{n}', String(n))) + '</p>';
+}
+
 function footAll() {
-  return '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>';
+  return sendOrReason();
 }
 
 function footSteps() {
@@ -108,7 +120,7 @@ function footSteps() {
     '<button type="button" class="cdx-sv-back" data-sv-step="-1"' + (_st.step === 0 ? ' disabled' : '') + '>' +
       esc(t('survey.back')) + '</button>' +
     (last
-      ? '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>'
+      ? sendOrReason()
       : '<button type="button" class="cdx-sv-next" data-sv-step="1">' + esc(t('survey.next')) + '</button>') +
   '</div>';
 }
@@ -121,10 +133,13 @@ const PACE = {
 // ── Chrome shared by both presentations ──────────────────────────────────────────────────────
 
 function introHtml() {
+  // On full screen the person tapped their TRAIL and got this instead, so the first thing it does
+  // is explain itself. In the dialog they chose to open it, and the plain title is right.
+  const gate = _st.mode.presentation === 'full';
   return '<div class="cdx-sv-intro">' +
     '<div class="cdx-sv-eyebrow">' + glyphSvg('star', { size: 14 }) + ' ' + esc(t('survey.eyebrow')) + '</div>' +
-    '<h2 class="cdx-sv-title">' + esc(t('survey.title')) + '</h2>' +
-    '<p class="cdx-sv-lede">' + esc(t('survey.lede')) + '</p>' +
+    '<h2 class="cdx-sv-title">' + esc(t(gate ? 'survey.gate_title' : 'survey.title')) + '</h2>' +
+    '<p class="cdx-sv-lede">' + esc(t(gate ? 'survey.gate_lede' : 'survey.lede')) + '</p>' +
   '</div>';
 }
 
@@ -177,15 +192,16 @@ function stripHtml() {
 function overlayHtml() {
   const full = _st.mode.presentation === 'full';
   const foot = footHtml();
+  const wrap = (cls, inner, extra) =>
+    '<div class="' + cls + '"' + (extra || '') + '><div class="cdx-sv-wrap">' + inner + '</div></div>';
   return '<div class="cdx-sv-scrim' + (full ? ' is-full' : '') + '"' + (full ? '' : ' data-sv-scrim') + '>' +
     '<div class="cdx-sv-modal" role="dialog" aria-modal="true">' +
-      '<div class="cdx-sv-modal-head">' + headHtml() +
+      wrap('cdx-sv-modal-head', headHtml() +
         (full ? '' :
           '<button type="button" class="cdx-sv-x" data-sv-close aria-label="' + esc(t('survey.close')) + '">' +
-            glyphSvg('close', { size: 18 }) + '</button>') +
-      '</div>' +
-      '<div class="cdx-sv-modal-body" data-sv-scroll>' + bodyHtml() + '</div>' +
-      (foot ? '<div class="cdx-sv-modal-foot">' + foot + '</div>' : '') +
+            glyphSvg('close', { size: 18 }) + '</button>')) +
+      wrap('cdx-sv-modal-body', bodyHtml(), ' data-sv-scroll') +
+      (foot ? wrap('cdx-sv-modal-foot', foot) : '') +
     '</div>' +
   '</div>';
 }
@@ -241,6 +257,22 @@ function renderModal(html) {
   }
   _modalHost.innerHTML = html;
   doc.body.classList.add('tr-modal-open');
+  offsetBelowHeader();
+}
+
+// The gate starts BELOW the trail's own header, so the person can still see whose trail this is
+// while they answer (Élder 2026-08-27: keep the header to ground the student). Measured rather
+// than hard-coded, because that header's padding is clamp()-based and differs between a phone and
+// a laptop. Body scroll is locked while the overlay is up, so the header cannot slide out from
+// under it.
+function offsetBelowHeader() {
+  if (!_modalHost || !_st.mode || _st.mode.presentation !== 'full') return;
+  const doc = _modalHost.ownerDocument;
+  const hdr = doc.querySelector('pensoia-header');
+  const scrim = _modalHost.querySelector('.cdx-sv-scrim');
+  if (!scrim) return;
+  const top = hdr ? Math.max(0, Math.round(hdr.getBoundingClientRect().bottom)) : 0;
+  scrim.style.top = top + 'px';
 }
 
 // Bring the next unanswered question into view, gently. `center` keeps it clear of both the
@@ -331,6 +363,8 @@ function attach(doc) {
   // Every hook is a data-attribute of this prototype's own markup, so nothing else is reachable.
   doc.addEventListener('click', onClick);
   doc.addEventListener('input', onInput);
+  const win = doc.defaultView;
+  if (win && win.addEventListener) win.addEventListener('resize', offsetBelowHeader);
   render();
 }
 
