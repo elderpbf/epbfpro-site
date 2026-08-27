@@ -265,3 +265,32 @@ test('no orphaned tab-entry module (every <dir>/<dir>.js is mounted by index.htm
     );
   }
 });
+
+// ── Test 7: the Labs decisions live in ONE module ────────────────────────────
+// track-65. The four `cv_labs_*` keys used to BE the state: on/off, archived,
+// renamed and order were read and written straight out of localStorage in two
+// files, so a lab Élder had switched off stayed reachable for any student with
+// the URL, the state died with the browser, and no other consumer could see it.
+// It now lives in the database, owned by js/labs-state.js, which is also the only
+// module allowed to still touch those keys: it has to, to hand the browser's
+// last copy over once (§4.4) and then clear them.
+//
+// This is the guard the track's acceptance list asks for. A structural check
+// cannot see duplicated behaviour, so the shape is banned tree-wide rather than
+// in the two files that had it: the failure mode being prevented is a THIRD
+// consumer reading this state out of a browser again.
+const LABS_STATE_OWNER = 'js/labs-state.js';
+test('no cv_labs_* localStorage access outside js/labs-state.js', () => {
+  const offenders = [];
+  for (const f of allJs) {
+    if (f === LABS_STATE_OWNER) continue;
+    if (f.startsWith('tests/')) continue;   // the suite names the keys to assert they are gone
+    const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
+    if (/cv_labs_/.test(src)) offenders.push(f);
+  }
+  assert.deepEqual(
+    offenders, [],
+    'the Labs on/off, archive, rename and order state belongs to js/labs-state.js (and the database '
+    + 'behind it). Read it through js/labs-registry.js instead of localStorage.',
+  );
+});

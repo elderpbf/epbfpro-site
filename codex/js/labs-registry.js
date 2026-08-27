@@ -7,12 +7,26 @@
 // Lessons. The legacy backstage global stays live for the un-ported ClassVault.
 //
 // Public API: LABS, findItem(idStr), getAllItems(), isLabEnabled(key),
-// orderedLabs(), archivedLabs(), isLabArchived(key), setLabArchived(key,on),
-// labOrderIndex(key), setLabOrder(keys), labIcon(key), isLabRenamed(key),
-// setLabTitle(key,title).
+// setLabEnabled(key,on), orderedLabs(), archivedLabs(), isLabArchived(key),
+// setLabArchived(key,on), labOrderIndex(key), setLabOrder(keys), labIcon(key),
+// isLabRenamed(key), setLabTitle(key,title).
+//
+// WHERE THE STATE LIVES (track-65, 2026-08-27). The admin's four decisions -- on/off, archived,
+// renamed, order -- are no longer four localStorage keys read here. They live in the database and
+// are owned by js/labs-state.js, which loads them once at boot and answers from memory. This file
+// keeps the same API it always had, sync readers included, so no consumer changed: what moved is
+// where the answer comes from. The READERS below are pure delegations; the WRITERS now return a
+// PROMISE that rejects if the Worker refuses (the state module reverts its cache first), so a caller
+// that wants to report a failed save awaits it -- the old fire-and-forget calls still work.
+//
+// Un-loaded state answers registry defaults (see labs-state.js): the public Trail imports this file
+// through trilha/js/lab-overlay.js and never loads the state, which is correct, because the filtering
+// that protects a switched-off lab now happens on the SERVER, not here.
+//
 // The legacy renderSection()/LABS_GLYPH (the ClassVault "Aula" index DOM) is NOT
 // ported: Codex renders Labs natively (content/labs.js, lessons.js), so that
 // markup would be dead code emitting cv- classes the native modules forbid.
+import * as state from './labs-state.js';
 
 // Lab definitions are SHIPPED DATA — kept byte-identical with the legacy registry
 // so the same lab pages resolve. The lab HTML still lives at /codex/labs/<key>/
@@ -23,7 +37,7 @@
 // onto the released lab item by lab_key (trilha/js/lab-overlay.js) so a rename
 // of the `title:` field HERE (in source) reaches students on the next load,
 // without re-seeding the DB. The admin-UI rename (setLabTitle, Content > Labs)
-// is a separate, client-only override on TOP of this -- see its own comment.
+// is a separate, admin-side override on TOP of this -- see its own comment.
 export const LABS = [
   {
     key: 'k1',
@@ -179,57 +193,44 @@ export const LABS = [
   }
 ];
 
-// Reads the on/off map written by the Content > Labs subtab (content/labs.js).
-// Default-on: a missing key = enabled. Disabled labs are filtered from the Aula
-// index and from getAllItems so the Presets picker can't reach them.
+// The on/off decision, now read from the shared state (js/labs-state.js) instead
+// of this browser's localStorage. Default-on: a lab with no decision is enabled.
+// Disabled labs are filtered from the Aula index and from getAllItems so the
+// Presets picker can't reach them, and, since track-65, refused by the Worker
+// on the public Trail too, which is the half that actually protects them.
 export function isLabEnabled(key) {
-  try {
-    var raw = localStorage.getItem('cv_labs_enabled');
-    if (!raw) return true;
-    var map = JSON.parse(raw);
-    return !map || map[key] !== false;
-  } catch (e) { return true; }
+  return state.isEnabled(key);
+}
+// The switch in Content > Labs. Returns a promise that rejects if the save was
+// refused (the cache is rolled back first, so a repaint shows the true value).
+export function setLabEnabled(key, on) {
+  return state.setEnabled(key, on);
 }
 
 // Archived labs are "put away": dropped from the active list and from every
 // consumer (Presets/Lessons/Liberações) via orderedLabs(), but kept in the
-// registry so they can be restored. State is an array of keys in localStorage,
-// deliberately behind this thin seam (isLabArchived/setLabArchived/archivedLabs)
-// so it can move server-side later without touching any consumer. Client-only
-// for now, same reach as the on/off map — it does not filter the public Trilha.
-const LS_ARCHIVED = 'cv_labs_archived';
-function _readArchived() {
-  try {
-    const raw = localStorage.getItem(LS_ARCHIVED);
-    const arr = raw ? JSON.parse(raw) : [];
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
-}
+// registry so they can be restored. The seam here was always thin on purpose,
+// "so it can move server-side later without touching any consumer", and track-65 is
+// that later, and no consumer changed.
 export function isLabArchived(key) {
-  return _readArchived().indexOf(key) !== -1;
+  return state.isArchived(key);
 }
 export function setLabArchived(key, on) {
-  const next = _readArchived().filter((k) => k !== key);
-  if (on) next.push(key);
-  try { localStorage.setItem(LS_ARCHIVED, JSON.stringify(next)); } catch (e) { /* ignore */ }
+  return state.setArchived(key, on);
 }
 
 // Admin rename (Content > Labs, "Renomear"): a display-title override on top of
-// the registry, same shape and same seam as the archive/order overlays above --
-// client-only for now, does not reach other admins' browsers or the public
-// Trilha (unlike editing `title:` in source, see the header comment). Storing
-// only the DIFFERENCE (default title = no entry) means a lab added later or a
-// copy edit to its registry title is never shadowed by a stale override.
-const LS_RENAMED = 'cv_labs_renamed';
-function _readRenamed() {
-  try {
-    const raw = localStorage.getItem(LS_RENAMED);
-    const obj = raw ? JSON.parse(raw) : {};
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch (e) { return {}; }
-}
+// the registry. Storing only the DIFFERENCE (no override = the registry's title)
+// means a lab added later, or a copy edit to its registry title, is never
+// shadowed by a stale override.
+//
+// Still ADMIN-SIDE ONLY, on purpose: the public Trail overlays the registry's
+// `title:` (trilha/js/lab-overlay.js) and does not load this state, so a rename
+// here does not reach students. Moving the state to the database made that
+// possible, not automatic: it would change what already-released cohorts see,
+// which is not part of this track.
 export function isLabRenamed(key) {
-  const custom = _readRenamed()[key];
+  const custom = state.displayNameOf(key);
   return typeof custom === 'string' && custom.trim() !== '';
 }
 // The registry's own title for a key, ignoring any rename override -- lets a
@@ -243,31 +244,20 @@ export function labDefaultTitle(key) {
 export function setLabTitle(key, title) {
   const trimmed = (title || '').trim();
   const lab = LABS.find((l) => l.key === key);
-  const overrides = _readRenamed();
-  if (!trimmed || (lab && trimmed === lab.title)) {
-    delete overrides[key];
-  } else {
-    overrides[key] = trimmed;
-  }
-  try { localStorage.setItem(LS_RENAMED, JSON.stringify(overrides)); } catch (e) { /* ignore */ }
+  const clears = !trimmed || (lab && trimmed === lab.title);
+  return state.setDisplayName(key, clears ? '' : trimmed);
 }
 function _displayTitle(lab) {
-  const custom = _readRenamed()[lab.key];
+  const custom = state.displayNameOf(lab.key);
   return (typeof custom === 'string' && custom.trim()) ? custom.trim() : lab.title;
 }
 
-// Drag-to-reorder (Content > Labs) persists here as an ordered array of keys.
-// Every consumer (the rail itself, getAllItems(), releases.js's Labs rows)
-// derives its order from orderedLabs(), so reordering in one place propagates
-// everywhere without each consumer keeping its own order state.
-const LS_ORDER = 'cv_labs_order';
-
+// Drag-to-reorder (Content > Labs). Every consumer (the rail itself,
+// getAllItems(), releases.js's Labs rows) derives its order from orderedLabs(),
+// so reordering in one place propagates everywhere without each consumer keeping
+// its own order state.
 function _readOrder() {
-  try {
-    const raw = localStorage.getItem(LS_ORDER);
-    const arr = raw ? JSON.parse(raw) : null;
-    return Array.isArray(arr) ? arr : [];
-  } catch (e) { return []; }
+  return state.orderKeys();
 }
 
 // LABS in the admin's chosen order, with any rename override applied to
@@ -299,8 +289,11 @@ export function labOrderIndex(key) {
   return orderedLabs().findIndex((l) => l.key === key);
 }
 
+// The WHOLE order, in one call. A drag is one fact; splitting it into a write per
+// lab lets it stop halfway and leave an order that is neither the old nor the new
+// one, reads back as valid, and that no retry repairs.
 export function setLabOrder(keys) {
-  try { localStorage.setItem(LS_ORDER, JSON.stringify(keys)); } catch (e) { /* ignore */ }
+  return state.setOrder(keys);
 }
 
 function _enabledLabs() {

@@ -1,9 +1,9 @@
 // Labs sub-tab: NATIVE cdx- module (was a CTLabsPanel global wrapper). Tab
 // contract + module source rules + the shared-state/registry contract. The lab
 // registry (js/labs-registry.js) and the fullscreen preview modal (js/lab-viewer.js)
-// are now Codex ES modules; this module owns only the panel UI and the on/off
-// state, which it writes to the SAME localStorage key labs-registry.isLabEnabled
-// reads ('cv_labs_enabled').
+// are now Codex ES modules; this module owns only the panel UI. Since track-65 it
+// owns NO state of its own: the on/off it used to keep in its own localStorage map
+// belongs to js/labs-state.js and the database, reached through the registry.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
@@ -36,7 +36,12 @@ test('labs is a native cdx- module, not a CTLabsPanel wrapper', () => {
 
 test('labs preserves the shared state + registry contract', () => {
   const src = read('../content/labs.js');
-  assert.match(src, /cv_labs_enabled/, 'writes the same on/off key labs-registry.isLabEnabled reads');
+  // The panel keeps NO on/off state of its own. It used to hold a private copy of the default-on
+  // rule and write it straight to localStorage, which is half of why a lab Élder switched off still
+  // opened for students. Both reads and writes go through the registry now.
+  assert.ok(!/localStorage\s*\./.test(src), 'keeps no state of its own in the browser');
+  assert.match(src, /isLabEnabled/, 'reads the on/off through the registry');
+  assert.match(src, /setLabEnabled/, 'writes the on/off through the registry');
   assert.match(src, /from\s+['"]\.\.\/js\/labs-registry\.js['"]/, 'reads the Codex lab registry module');
   assert.match(src, /from\s+['"]\.\.\/js\/lab-viewer\.js['"]/, 'delegates fullscreen preview to the Codex viewer module');
   assert.ok(!/window\.CVLabs\b/.test(src), 'no longer reads the backstage CVLabs global');
@@ -196,5 +201,5 @@ test('labs supports archive: put-away drawer with restore, wired to the registry
   assert.match(src, /data-action="restore"/, 'archived rows/preview have a Restaurar action');
   assert.match(src, /data-action="show-archived"/, 'the labs list has a footer button that opens the Arquivados drawer');
   assert.match(src, /setLabArchived\(key,\s*(true|on)\)|setLabArchived\(key, on\)/, 'toggles archived state via the registry, not local UI state');
-  assert.match(src, /_setEnabled\(key,\s*!on\)/, 'archiving also disables the lab (restore re-enables it)');
+  assert.match(src, /setLabEnabled\(key,\s*!on\)/, 'archiving also disables the lab (restore re-enables it)');
 });

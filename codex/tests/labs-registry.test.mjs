@@ -1,36 +1,59 @@
-// codex/js/labs-registry.js — the Codex-owned PensoLabs registry (ES-module port
+// codex/js/labs-registry.js, the Codex-owned PensoLabs registry (ES-module port
 // of the legacy window.CVLabs). Exhaustive behavioral tests: LABS data, findItem,
 // getAllItems, isLabEnabled and the enable/disable filtering contract.
+//
+// track-65 moved the four decisions out of localStorage and into the database, so the harness moved
+// with them: the state is HYDRATED (js/labs-state.js, the same door the loader uses) instead of
+// stubbed through a browser API the registry no longer touches. The writers now return promises, so
+// they are awaited and the Worker call is stubbed.
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 
-// In-memory localStorage stub (isLabEnabled reads localStorage). Installed before
-// importing the module so the import-time module body sees it.
-const _store = new Map();
-globalThis.localStorage = {
-  getItem: (k) => (_store.has(k) ? _store.get(k) : null),
-  setItem: (k, v) => { _store.set(k, String(v)); },
-  removeItem: (k) => { _store.delete(k); },
-  clear: () => { _store.clear(); },
+const state = await import('../js/labs-state.js');
+const reg = await import('../js/labs-registry.js');
+
+// The current hydrated map, kept here so each helper patches one layer without dropping the others.
+let _cur = {};
+const ROW = { enabled: true, archived: false, display_name: null, sort_order: null };
+function hydrate(patch) {
+  _cur = {};
+  for (const k of Object.keys(patch || {})) _cur[k] = Object.assign({}, ROW, patch[k]);
+  state.hydrate(_cur);
+}
+function patch(key, fields) {
+  _cur[key] = Object.assign({}, _cur[key] || ROW, fields);
+  state.hydrate(_cur);
+}
+function reset() { hydrate({}); }
+
+// The registry's writers go through the facade; capture the payload and answer ok, so a test can
+// assert both the resulting state and the action that carried it.
+const _calls = [];
+globalThis.callWorker = (p) => {
+  _calls.push(p);
+  return Promise.resolve(p.action === 'ct_labs_state_set_order' ? { ok: true, keys: p.keys } : { ok: true, lab: {} });
 };
+
+// The four helpers the original tests were written against, re-expressed on the hydrated state.
+// setEnabledMap keeps the "default-on map" shape (a key present only when OFF) because that is what
+// the panel used to store and what the seed encodes.
 function setEnabledMap(obj) {
-  if (obj == null) _store.delete('cv_labs_enabled');
-  else _store.set('cv_labs_enabled', typeof obj === 'string' ? obj : JSON.stringify(obj));
+  if (obj == null) { for (const k of Object.keys(_cur)) patch(k, { enabled: true }); return; }
+  for (const k of Object.keys(_cur)) patch(k, { enabled: true });
+  for (const k of Object.keys(obj)) patch(k, { enabled: obj[k] !== false });
 }
 function setOrder(arr) {
-  if (arr == null) _store.delete('cv_labs_order');
-  else _store.set('cv_labs_order', JSON.stringify(arr));
+  for (const k of Object.keys(_cur)) patch(k, { sort_order: null });
+  if (arr) arr.forEach((k, i) => patch(k, { sort_order: i }));
 }
 function setArchived(arr) {
-  if (arr == null) _store.delete('cv_labs_archived');
-  else _store.set('cv_labs_archived', JSON.stringify(arr));
+  for (const k of Object.keys(_cur)) patch(k, { archived: false });
+  if (arr) arr.forEach((k) => patch(k, { archived: true }));
 }
 function setRenamed(obj) {
-  if (obj == null) _store.delete('cv_labs_renamed');
-  else _store.set('cv_labs_renamed', typeof obj === 'string' ? obj : JSON.stringify(obj));
+  for (const k of Object.keys(_cur)) patch(k, { display_name: null });
+  if (obj) for (const k of Object.keys(obj)) patch(k, { display_name: obj[k] });
 }
-
-const reg = await import('../js/labs-registry.js');
 
 const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k19', 'k20', 'k21', 'k22'];
 
@@ -105,10 +128,19 @@ test('isLabEnabled treats only an explicit false as disabled', () => {
   assert.equal(reg.isLabEnabled('k1'), true, 'explicit true = enabled');
 });
 
-test('isLabEnabled tolerates malformed JSON (fails open)', () => {
-  setEnabledMap('{not valid json');
-  assert.equal(reg.isLabEnabled('k1'), true, 'parse error = enabled');
-  setEnabledMap(null);
+// The public Trail imports this file (trilha/js/lab-overlay.js) and never loads the state, and a
+// Worker that is down must leave the admin with a full panel, not a blank one. So "no state" is
+// every lab on, unarchived, registry name, registry order. What actually protects a switched-off
+// lab is the server refusing it, not this.
+test('with no state loaded at all, every reader answers the registry default', () => {
+  state.resetLabState();
+  assert.equal(state.isLabStateLoaded(), false);
+  assert.equal(reg.isLabEnabled('k1'), true, 'unknown state = enabled');
+  assert.equal(reg.isLabArchived('k1'), false, 'unknown state = not archived');
+  assert.equal(reg.isLabRenamed('k1'), false, 'unknown state = no override');
+  assert.equal(reg.orderedLabs().length, 19, 'the whole registry is visible');
+  assert.deepEqual(reg.orderedLabs().map((l) => l.key), EXPECTED_KEYS, 'in registry order');
+  reset();
 });
 
 test('getAllItems returns every enabled lab as a picker item', () => {
@@ -179,11 +211,27 @@ test('labOrderIndex mirrors orderedLabs, -1 for an unknown key', () => {
   setOrder(null);
 });
 
-test('setLabOrder persists to the same cv_labs_order key orderedLabs reads', () => {
-  reg.setLabOrder(['k4', 'k3']);
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_order')), ['k4', 'k3']);
+// One call carries the whole list, on purpose: a drag is one fact, and an order written lab by lab
+// can stop halfway and leave something that reads back as valid and that no retry repairs.
+test('setLabOrder sends the whole order in ONE call and orderedLabs follows it', async () => {
+  _calls.length = 0;
+  await reg.setLabOrder(['k4', 'k3']);
+  assert.equal(_calls.length, 1, 'one write, not one per lab');
+  assert.equal(_calls[0].action, 'ct_labs_state_set_order');
+  assert.deepEqual(_calls[0].keys, ['k4', 'k3']);
   assert.deepEqual(reg.orderedLabs().map((l) => l.key).slice(0, 2), ['k4', 'k3']);
   setOrder(null);
+});
+
+// The switch must never sit in a position the database refused: the cache goes back and the caller
+// is told, instead of the panel quietly showing a value that was never saved.
+test('a refused write rolls the state back and rejects', async () => {
+  hydrate({ k1: { enabled: true } });
+  globalThis.callWorker = () => Promise.resolve({ error: 'no_auth' });
+  await assert.rejects(() => reg.setLabEnabled('k1', false));
+  assert.equal(reg.isLabEnabled('k1'), true, 'back to what the server holds');
+  globalThis.callWorker = (p) => { _calls.push(p); return Promise.resolve({ ok: true, lab: {} }); };
+  reset();
 });
 
 test('getAllItems follows the stored order (filtered to enabled labs)', () => {
@@ -195,24 +243,41 @@ test('getAllItems follows the stored order (filtered to enabled labs)', () => {
   setEnabledMap(null);
 });
 
-test('isLabArchived defaults false; setLabArchived toggles the cv_labs_archived list', () => {
-  setArchived(null);
-  assert.equal(reg.isLabArchived('k3'), false, 'no list = not archived');
-  reg.setLabArchived('k3', true);
+test('isLabArchived defaults false; setLabArchived toggles it through the Worker', async () => {
+  reset();
+  assert.equal(reg.isLabArchived('k3'), false, 'no decision = not archived');
+  _calls.length = 0;
+  await reg.setLabArchived('k3', true);
   assert.equal(reg.isLabArchived('k3'), true, 'archived after set true');
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), ['k3']);
-  reg.setLabArchived('k3', false);
+  assert.equal(_calls[0].action, 'ct_labs_state_set');
+  assert.deepEqual({ lab_key: _calls[0].lab_key, archived: _calls[0].archived }, { lab_key: 'k3', archived: true });
+  await reg.setLabArchived('k3', false);
   assert.equal(reg.isLabArchived('k3'), false, 'restored after set false');
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), []);
-  setArchived(null);
+  reset();
 });
 
-test('setLabArchived is idempotent (no duplicate keys)', () => {
-  setArchived(null);
-  reg.setLabArchived('k3', true);
-  reg.setLabArchived('k3', true);
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_archived')), ['k3'], 'archiving twice keeps one entry');
-  setArchived(null);
+// The write is a FIELD now, not an append to a list, so archiving twice cannot leave two entries.
+test('setLabArchived is idempotent', async () => {
+  reset();
+  await reg.setLabArchived('k3', true);
+  await reg.setLabArchived('k3', true);
+  assert.equal(reg.isLabArchived('k3'), true);
+  assert.equal(reg.archivedLabs().filter((l) => l.key === 'k3').length, 1, 'archiving twice lists it once');
+  reset();
+});
+
+// The rail flips one field from a list that knows nothing about the rename or the order. Losing them
+// on every toggle is the reason the write is per-field rather than a whole-row replace.
+test('a write touches only its own field', async () => {
+  reset();
+  await reg.setLabTitle('k3', 'Janela curta');
+  await reg.setLabOrder(['k3', 'k1']);
+  await reg.setLabEnabled('k3', false);
+  assert.equal(reg.isLabRenamed('k3'), true, 'the rename survived the reorder and the switch');
+  assert.equal(reg.labOrderIndex('k3'), 0, 'the position survived the switch');
+  assert.equal(reg.isLabEnabled('k3'), false, 'and the switch itself landed');
+  assert.equal(reg.archivedLabs().length, 0, 'none of it archived anything');
+  reset();
 });
 
 test('orderedLabs drops archived labs; archivedLabs returns exactly them', () => {
@@ -256,40 +321,41 @@ test('labDefaultTitle returns the registry title regardless of any override', ()
   setRenamed(null);
 });
 
-test('isLabRenamed defaults false; setLabTitle sets an override and orderedLabs/findItem/getAllItems all reflect it', () => {
+test('isLabRenamed defaults false; setLabTitle sets an override and orderedLabs/findItem/getAllItems all reflect it', async () => {
   setRenamed(null);
   assert.equal(reg.isLabRenamed('k1'), false, 'no override = not renamed');
-  reg.setLabTitle('k1', 'Foco Contextual');
+  await reg.setLabTitle('k1', 'Foco Contextual');
   assert.equal(reg.isLabRenamed('k1'), true);
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), { k1: 'Foco Contextual' });
   assert.equal(reg.orderedLabs().find((l) => l.key === 'k1').title, 'Foco Contextual', 'orderedLabs carries the override');
   assert.equal(reg.findItem('lab:k1').title, 'Foco Contextual', 'findItem carries the override');
   assert.equal(reg.getAllItems().find((i) => i.id === 'lab:k1').title, 'Foco Contextual', 'getAllItems carries the override');
   setRenamed(null);
 });
 
-test('setLabTitle trims whitespace before storing', () => {
+test('setLabTitle trims whitespace before sending it', async () => {
   setRenamed(null);
-  reg.setLabTitle('k1', '  Foco Contextual  ');
-  assert.equal(JSON.parse(_store.get('cv_labs_renamed')).k1, 'Foco Contextual');
+  _calls.length = 0;
+  await reg.setLabTitle('k1', '  Foco Contextual  ');
+  assert.equal(_calls[0].display_name, 'Foco Contextual');
   setRenamed(null);
 });
 
-test('setLabTitle with blank or the default title clears the override instead of storing it', () => {
+test('setLabTitle with blank or the default title clears the override instead of storing it', async () => {
   setRenamed({ k1: 'Foco Contextual' });
-  reg.setLabTitle('k1', '');
+  _calls.length = 0;
+  await reg.setLabTitle('k1', '');
   assert.equal(reg.isLabRenamed('k1'), false, 'blank clears the override');
-  assert.deepEqual(JSON.parse(_store.get('cv_labs_renamed')), {});
-  reg.setLabTitle('k1', 'Atenção!');
+  assert.equal(_calls[0].display_name, null, 'and the Worker is told to clear it, not to store ""');
+  await reg.setLabTitle('k1', 'Atenção!');
   assert.equal(reg.isLabRenamed('k1'), false, 'same-as-default clears the override too');
   setRenamed(null);
 });
 
-test('archived and disabled labs can still be renamed (rename is independent of visibility state)', () => {
+test('archived and disabled labs can still be renamed (rename is independent of visibility state)', async () => {
   setArchived(['k3']);
   setEnabledMap({ k9: false });
-  reg.setLabTitle('k3', 'Janela Nova');
-  reg.setLabTitle('k9', 'Petição Nova');
+  await reg.setLabTitle('k3', 'Janela Nova');
+  await reg.setLabTitle('k9', 'Petição Nova');
   assert.equal(reg.archivedLabs().find((l) => l.key === 'k3').title, 'Janela Nova');
   assert.equal(reg.findItem('lab:k9').title, 'Petição Nova');
   setRenamed(null);

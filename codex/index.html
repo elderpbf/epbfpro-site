@@ -158,6 +158,7 @@
   import { install as installReconnect } from './js/reconnect.js'; // connection watchdog: raises a reload banner when the network drops, clears it when calls succeed
   import { isAuthed, mountLogin } from './js/codex-login.js'; // Codex own-login gate (item 11.2): e-mail+OTP, replaces the /backstage/ redirect
   import { init as topbar } from './js/codex-topbar.js';
+  import { loadLabState } from './js/labs-state.js'; // track-65: the admin's Labs decisions (on/off, archived, renamed, order) come from the DB now, loaded once here
   import { apply as applyI18n } from './js/i18n.js';
   import * as glyphs from './js/glyphs.js';
   import './js/form-enter.js'; // Codex-owned Enter-to-submit (replaces backstage/js/utils.js)
@@ -182,6 +183,14 @@
   // banner instead of silent failures. Install before any tab mounts so the
   // very first call is covered.
   installReconnect();
+
+  // Labs state (track-65). The four decisions per lab are read SYNCHRONOUSLY by
+  // half a dozen modules while they render, so they are fetched once, here, and
+  // answered from memory afterwards. Kicked off now and awaited just before the
+  // tab mounts, so the round trip overlaps the rest of the boot instead of
+  // delaying it. It fails OPEN by design: a Worker that is down leaves every lab
+  // reading as enabled with its registry name, never a blank panel.
+  const labStateReady = loadLabState();
 
   const params = new URLSearchParams(location.search);
 
@@ -234,6 +243,7 @@
     // Questions deep-link: ?session=<code> opens that session's live host directly
     // (the Lessons live card links here). The Sessions sub-tab reads ctx.session.
     if (tab === 'questions') ctx.session = params.get('session') || undefined;
+    await labStateReady; // Labs on/off, archive, rename and order are read synchronously during render
     TABS[tab].mount(document.getElementById('codex-view'), ctx);
   }
 </script>
