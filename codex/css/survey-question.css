@@ -1,0 +1,182 @@
+/* =========================================================
+   Codex · Survey question card (track-64).
+   The twin of js/survey-question.js, and shared for the same reason: the student's
+   dialog on the Trilha and the admin tab that previews the instrument must render
+   the SAME card. Split apart, the two drift and nobody notices until a student
+   sees something the admin never saw.
+   Card shapes and radii are taken from trilha/css/tarefas.css so the survey reads
+   as part of the trail. Colours are only ever theme tokens, never literals, so
+   light and dark both follow the app and no new variable needs a dark twin.
+   Anything that is SHELL (strip, dialog, buttons, switcher) belongs to the
+   consumer, not here.
+   ========================================================= */
+
+/* ── Progress ──────────────────────────────────────────────────────────── */
+.cdx-sv-progress {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+  margin-bottom: 1.2rem;
+}
+/* --border, not --background: on the trail the page ground IS --background, so a track painted
+   with it vanishes and the bar reads as an empty gap next to the count. */
+.cdx-sv-bar {
+  flex: 1;
+  height: 6px;
+  border-radius: 20px;
+  background: var(--border);
+  overflow: hidden;
+}
+.cdx-sv-fill {
+  height: 100%;
+  border-radius: 20px;
+  background: var(--primary);
+  transition: width 0.25s ease;
+}
+.cdx-sv-pcount {
+  font-size: 0.72rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  white-space: nowrap;
+}
+
+/* ── The card ──────────────────────────────────────────────────────────── */
+.cdx-sv-q {
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface);
+  padding: 1rem 1.1rem;
+  margin-bottom: 0.6rem;
+}
+.cdx-sv-q.is-done { border-color: var(--primary); }
+/* The admin's preview shows the card without offering to answer it. */
+.cdx-sv-q.is-preview { opacity: 0.92; pointer-events: none; }
+.cdx-sv-qhead {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.3rem;
+}
+.cdx-sv-qnum {
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  font-weight: 700;
+  color: var(--primary);
+}
+.cdx-sv-qnum span { color: var(--text-secondary); opacity: 0.7; font-weight: 600; }
+/* An optional item says so, so nobody hunts for a required answer that is not there. */
+.cdx-sv-opt {
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  font-weight: 700;
+  color: var(--text-secondary);
+  background: var(--background);
+  border-radius: 20px;
+  padding: 0.1rem 0.5rem;
+}
+.cdx-sv-hint {
+  font-size: 0.7rem;
+  color: var(--text-secondary);
+  margin-top: 0.4rem;
+}
+.cdx-sv-prompt {
+  font-size: 0.95rem;
+  line-height: 1.45;
+  color: var(--text-primary);
+  margin-bottom: 0.85rem;
+}
+.cdx-sv-input { margin: 0; }
+
+/* ── Kind: scale ───────────────────────────────────────────────────────── */
+.cdx-sv-scale { display: flex; gap: 0.45rem; }
+.cdx-sv-dot {
+  flex: 1;
+  min-width: 0;
+  height: 2.75rem;
+  font-size: 0.95rem;
+  font-weight: 700;
+  cursor: pointer;
+  color: var(--text-secondary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease;
+}
+.cdx-sv-dot:hover { border-color: var(--primary); color: var(--text-primary); }
+.cdx-sv-dot.is-on {
+  color: var(--text-on-accent, var(--on-primary));
+  background: var(--primary);
+  border-color: var(--primary);
+}
+.cdx-sv-ends {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.68rem;
+  color: var(--text-secondary);
+  opacity: 0.85;
+  margin-top: 0.35rem;
+}
+
+/* ── Kind: single choice ───────────────────────────────────────────────── */
+.cdx-sv-choices { display: flex; flex-direction: column; gap: 0.4rem; }
+.cdx-sv-choice {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.65rem 0.8rem;
+}
+.cdx-sv-choice:hover { border-color: var(--primary); }
+.cdx-sv-choice.is-on { border-color: var(--primary); background: var(--tint-primary, var(--background)); }
+.cdx-sv-radio {
+  flex: 0 0 auto;
+  width: 15px;
+  height: 15px;
+  border-radius: 50%;
+  border: 2px solid var(--border);
+}
+.cdx-sv-choice.is-on .cdx-sv-radio { border-color: var(--primary); box-shadow: inset 0 0 0 3px var(--primary); }
+
+/* ── Kind: up to three words ───────────────────────────────────────────── */
+.cdx-sv-words { display: flex; gap: 0.45rem; }
+.cdx-sv-word {
+  flex: 1;
+  min-width: 0;
+  font-size: 0.88rem;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.6rem 0.7rem;
+}
+.cdx-sv-word:focus { outline: none; border-color: var(--primary); }
+
+/* ── Kind: free text ───────────────────────────────────────────────────── */
+.cdx-sv-text {
+  width: 100%;
+  resize: vertical;
+  font: inherit;
+  font-size: 0.88rem;
+  line-height: 1.5;
+  color: var(--text-primary);
+  background: var(--background);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  padding: 0.7rem 0.8rem;
+}
+.cdx-sv-text:focus { outline: none; border-color: var(--primary); }
+
+/* ── Phone ─────────────────────────────────────────────────────────────── */
+@media (max-width: 30rem) {
+  .cdx-sv-q { padding: 0.9rem; }
+  .cdx-sv-dot { height: 3rem; font-size: 1rem; }
+  .cdx-sv-words { flex-direction: column; }
+}
