@@ -235,7 +235,13 @@ function resultsHtml(s) {
             esc(t('cohorts.aval_q_answered').replace('{n}', String(st.answered)).replace('{total}', String(total))) +
             (st.avg == null ? '' : ' · ' + esc(st.avg.toFixed(1))) +
           '</div>' +
-          '<div class="cdx-av-chart" data-av-chart="' + esc(String(q.id)) + '"></div>' +
+          // cdx-qr-host is the renderer's OWN dense variant, the one the live host
+          // panel uses. Adopting it rather than re-styling the bars keeps a single
+          // chart implementation with a mode, which is the same shape as
+          // person-table.js mounted in two scopes. Its projector-sized default would
+          // give one rating question ~800px on a phone, and there are ten of them.
+          '<div class="cdx-av-chart cdx-qr-host" data-av-kind="' + esc(q.kind) + '"' +
+            ' data-av-chart="' + esc(String(q.id)) + '"></div>' +
         '</div>';
       }).join('')
     : '<div class="cdx-empty">' + esc(t('cohorts.aval_no_results')) + '</div>';

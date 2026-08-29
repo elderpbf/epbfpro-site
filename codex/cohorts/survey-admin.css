@@ -107,3 +107,14 @@
    its tooltip) because it is the only place that records the send. */
 .cdx-av-send.is-done { background: transparent; border-style: dashed; padding: .6rem .8rem; }
 .cdx-av-send.is-done .cdx-av-go { min-height: 36px; font-size: .8rem; }
+
+/* On a 1-5 scale the bar's own label IS the number, so the renderer's A/B/C badge
+   (which exists to let a projected poll say "vote A") reads as a second, wrong
+   numbering: "A -> 1", "B -> 2". Hidden for rating only; a poll keeps it, because
+   there the letter is how the option is referred to out loud. */
+.cdx-av-chart[data-av-kind="rating"] .cdx-qr-bar { grid-template-columns: 0 1fr 40px; gap: 0 .6rem; }
+.cdx-av-chart[data-av-kind="rating"] .cdx-qr-bar-letter { display: none; }
+.cdx-av-chart .cdx-qr-rating-summary { justify-content: flex-start; }
+.cdx-av-chart .cdx-qr-rating-avg { font-size: 1.6rem; }
+.cdx-av-chart .cdx-qr-wordcloud { justify-content: flex-start; padding: .4rem 0; }
+.cdx-av-chart .cdx-qr-text-feed { display: flex; flex-direction: column; gap: .5rem; }
