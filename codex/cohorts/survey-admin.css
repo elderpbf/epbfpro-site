@@ -112,7 +112,11 @@
    (which exists to let a projected poll say "vote A") reads as a second, wrong
    numbering: "A -> 1", "B -> 2". Hidden for rating only; a poll keeps it, because
    there the letter is how the option is referred to out loud. */
-.cdx-av-chart[data-av-kind="rating"] .cdx-qr-bar { grid-template-columns: 0 1fr 40px; gap: 0 .6rem; }
+/* The column count drops to TWO along with the badge. display:none takes the letter
+   out of the grid entirely, so leaving three columns declared slid the bar body into
+   the 0-width slot and the count into the 1fr one: the track vanished and the label
+   collided with its own percentage ("3" + "11%" reading as "311%"). */
+.cdx-av-chart[data-av-kind="rating"] .cdx-qr-bar { grid-template-columns: 1fr 40px; gap: 0 .6rem; }
 .cdx-av-chart[data-av-kind="rating"] .cdx-qr-bar-letter { display: none; }
 .cdx-av-chart .cdx-qr-rating-summary { justify-content: flex-start; }
 .cdx-av-chart .cdx-qr-rating-avg { font-size: 1.6rem; }
