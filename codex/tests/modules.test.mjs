@@ -63,6 +63,12 @@ const ALLOWED_CROSS_TAB = [
   '../content/slides/js/core/deck.js',
   '../content/slides/js/ai/aiService.js',
   '../content/slides/adapters/library.js',
+  // track-64: the survey's admin tab aggregates its results with the renderer the
+  // Questions tab already owns. §3.3 chose the stored `kind` vocabulary (rating |
+  // poll | wordcloud | open) precisely so this is an import and not a second chart
+  // library; the alternative was copying the average-plus-bars drawing, which is
+  // the drift this suite exists to stop.
+  '../questions/question-render.js',
 ];
 
 // Sealed vendored prefix: everything under this path is excluded from the

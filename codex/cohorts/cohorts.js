@@ -26,6 +26,8 @@ import { removeFromTurma } from './turma-remove.js';
 import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
 import { mountForumAdmin } from './forum-admin.js';
+// track-64: the reaction survey's admin side — send it, and read what came back.
+import { mountSurveyAdmin } from './survey.js';
 import * as cursos from './courses.js';
 import * as students from './students.js';
 // track-44: Comunicados (authored broadcast), a Cohorts-level surface.
@@ -1154,7 +1156,7 @@ function _renderDossier(turma) {
   if (!el) return;
   // The active sub-tab is state, not hardcoded, so an async re-render (deps load) keeps
   // it — and a deep-link (e.g. the e-sino → Participantes) survives that re-render.
-  const _KNOWN_DTABS = ['dados', 'participantes', 'aulas', 'certs', 'forum'];
+  const _KNOWN_DTABS = ['dados', 'participantes', 'aulas', 'certs', 'avaliacao', 'forum'];
   const _dt = _KNOWN_DTABS.indexOf(_dossierDtab) >= 0 ? _dossierDtab : 'dados';
   const _tabCls = (k) => 'cdx-subtab' + (k === _dt ? ' active' : '');
   const _panHide = (k) => (k === _dt ? '' : ' hidden');
@@ -1277,6 +1279,7 @@ function _renderDossier(turma) {
         '<button type="button" class="' + _tabCls('participantes') + '" data-dtab="participantes" role="tab">' + _esc(t('cohorts.participants_title')) + ' <span class="cdx-secount" id="cdx-doss-p-count"></span></button>' +
         '<button type="button" class="' + _tabCls('aulas') + '" data-dtab="aulas" role="tab">' + _esc(t('cohorts.col_aulas')) + '</button>' +
         '<button type="button" class="' + _tabCls('certs') + '" data-dtab="certs" role="tab">' + _esc(t('cohorts.doss_certs')) + '</button>' +
+        '<button type="button" class="' + _tabCls('avaliacao') + '" data-dtab="avaliacao" role="tab">' + _esc(t('cohorts.aval_tab')) + '</button>' +
         '<button type="button" class="' + _tabCls('forum') + '" data-dtab="forum" role="tab">' + _esc(t('cohorts.doss_forum')) + '</button>' +
       '</div></div>' +
       // Dados panel = turma facts + Acesso (the short config block folds in here).
@@ -1322,6 +1325,10 @@ function _renderDossier(turma) {
       '<div class="cdx-doss-panel" data-dpanel="certs"' + _panHide('certs') + '>' +
         '<div class="cdx-doss-sec-actions"><a class="cdx-btn cdx-btn-sm cdx-btn-primary" href="/codex/?tab=certificates&sub=emitidos">' + _esc(t('cohorts.doss_emit')) + '</a></div>' +
         '<div id="cdx-doss-certs"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
+      '</div>' +
+      // Avaliação panel (track-64): the reaction survey's send + statistics.
+      '<div class="cdx-doss-panel" data-dpanel="avaliacao"' + _panHide('avaliacao') + '>' +
+        '<div id="cdx-doss-aval"><span class="cdx-empty">' + _esc(t('cohorts.loading')) + '</span></div>' +
       '</div>' +
       // Fórum panel (Phase 4 fills the admin moderation view).
       '<div class="cdx-doss-panel" data-dpanel="forum"' + _panHide('forum') + '>' +
@@ -1421,6 +1428,11 @@ function _renderDossier(turma) {
   // Fórum sub-tab. Eager like the other dossier loaders.
   const forumEl = el.querySelector('#cdx-doss-forum');
   if (forumEl) mountForumAdmin(forumEl, turma);
+  // Avaliação (track-64). Eager like its neighbours, and per-mount: the module keeps
+  // its state on the ctx it returns, never at module scope, so a re-render here
+  // cannot paint another turma's numbers into this panel.
+  const avalEl = el.querySelector('#cdx-doss-aval');
+  if (avalEl) mountSurveyAdmin(avalEl, turma);
 }
 
 // Load the course + classpulse option lists once, for the dossier's inline selects.

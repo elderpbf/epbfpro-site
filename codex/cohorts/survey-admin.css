@@ -1,0 +1,103 @@
+/* codex/cohorts/survey-admin.css
+   The dossier's Avaliação tab (cohorts/survey.js). Only the frame lives here: the
+   question cards come styled by css/survey-question.css (the seam shared with the
+   student's gate) and the charts by the questions tab's own cdx-qr- rules, so a
+   change to either lands on both screens instead of drifting. */
+
+.cdx-av { display: flex; flex-direction: column; gap: 1rem; }
+
+/* ── The prototype banner + scenario switcher ─────────────────────────────────
+   Loud on purpose: every number below it is invented, and a tab that looks live
+   while showing fixture data is worse than no tab. Goes when the Worker lands. */
+.cdx-av-proto {
+  display: flex; flex-wrap: wrap; align-items: center; gap: .5rem;
+  padding: .5rem .7rem; border-radius: 8px;
+  background: var(--amber-bg); border: 1px dashed var(--amber);
+}
+.cdx-av-proto-tag { font-size: .75rem; font-weight: 700; color: var(--amber); }
+.cdx-av-sw { display: flex; flex-wrap: wrap; gap: .35rem; }
+.cdx-av-swb {
+  font: inherit; font-size: .75rem; cursor: pointer;
+  padding: .3rem .6rem; min-height: 32px; border-radius: 999px;
+  background: var(--surface); color: var(--text-secondary); border: 1px solid var(--border);
+}
+.cdx-av-swb.is-on { background: var(--primary); color: var(--on-primary); border-color: var(--primary); }
+
+/* ── Head: which state the survey is in, and the window ─────────────────────── */
+.cdx-av-head { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.cdx-av-pill {
+  font-size: .75rem; font-weight: 700; padding: .25rem .6rem; border-radius: 999px;
+  background: var(--surface-2, var(--surface)); border: 1px solid var(--border); color: var(--text-secondary);
+}
+.cdx-av-pill--open { background: var(--success-bg); border-color: var(--success); color: var(--success); }
+.cdx-av-pill--closed { background: var(--info-bg); border-color: var(--info); color: var(--info); }
+.cdx-av-headline { font-size: .82rem; color: var(--text-secondary); }
+
+/* ── The send block, and the loud locks ──────────────────────────────────────
+   .is-locked is aria-disabled, never [disabled]: a disabled button gets no mouse
+   events, so its title tooltip never fires. It stays hoverable, focusable and
+   obviously dead. */
+.cdx-av-send {
+  border: 1px solid var(--border); border-radius: 10px; padding: .8rem;
+  background: var(--surface);
+}
+.cdx-av-send-row { display: flex; flex-wrap: wrap; align-items: center; gap: .7rem; }
+.cdx-av-prazo { display: inline-flex; align-items: center; gap: .4rem; font-size: .82rem; color: var(--text-secondary); }
+.cdx-av-days { width: 4.5rem; min-height: 36px; padding: .3rem .5rem; border-radius: 6px; border: 1px solid var(--border); background: var(--surface); color: var(--text-primary); font: inherit; }
+.cdx-av-go { min-height: 44px; }
+.cdx-av-go.is-locked { opacity: .5; cursor: not-allowed; filter: grayscale(1); }
+.cdx-av-invitees { font-size: .82rem; color: var(--text-secondary); }
+
+.cdx-av-blocks { margin-top: .7rem; padding-top: .7rem; border-top: 1px solid var(--border); }
+.cdx-av-blocks-head { font-size: .75rem; font-weight: 700; color: var(--amber); margin-bottom: .3rem; }
+.cdx-av-block { font-size: .85rem; line-height: 1.5; padding: 2px 0 2px 16px; position: relative; color: var(--text-primary); }
+.cdx-av-block::before { content: '!'; position: absolute; left: 2px; font-weight: 700; color: var(--amber); }
+
+/* ── Sections: instrument and results ───────────────────────────────────────── */
+.cdx-av-sech { display: flex; flex-wrap: wrap; align-items: center; gap: .6rem; }
+.cdx-av-subhead { margin: 0; padding-top: 0; border-top: 0; }
+.cdx-av-count, .cdx-av-rate { font-size: .8rem; color: var(--text-secondary); }
+.cdx-av-rate { font-weight: 700; }
+.cdx-av-lockchip {
+  font-size: .7rem; padding: .2rem .5rem; border-radius: 999px;
+  background: var(--info-bg); color: var(--info); border: 1px solid var(--info);
+}
+
+.cdx-av-qlist { margin-top: .6rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
+.cdx-av-qrow {
+  display: flex; align-items: baseline; gap: .55rem;
+  padding: .5rem .7rem; font-size: .85rem; line-height: 1.45;
+}
+.cdx-av-qrow + .cdx-av-qrow { border-top: 1px solid var(--border); }
+.cdx-av-qn { flex: 0 0 auto; min-width: 1.3rem; font-weight: 700; color: var(--text-secondary); }
+.cdx-av-qkind {
+  flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .03em;
+  padding: .15rem .45rem; border-radius: 4px;
+  background: var(--surface-hover); color: var(--text-secondary); border: 1px solid var(--border);
+}
+.cdx-av-qtext { flex: 1 1 12rem; }
+.cdx-av-qopt { flex: 0 0 auto; font-size: .7rem; color: var(--text-muted, var(--text-secondary)); font-style: italic; }
+
+.cdx-av-preview { margin-top: .8rem; display: flex; flex-direction: column; gap: .7rem; }
+/* The preview is the student's own card, so it must not look operable here. */
+.cdx-av-preview .cdx-sv-q.is-preview { pointer-events: none; }
+
+.cdx-av-todo {
+  margin-top: .7rem; font-size: .8rem; color: var(--text-muted, var(--text-secondary));
+  padding: .5rem .7rem; border-radius: 8px; border: 1px dashed var(--border);
+}
+
+/* ── Per-question results ────────────────────────────────────────────────────
+   The chart itself is drawn by questions/question-render.js and carries its own
+   cdx-qr- styling; this only spaces the blocks around it. */
+.cdx-av-res { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--border); }
+.cdx-av-res:first-of-type { border-top: 0; }
+.cdx-av-res-q { font-size: .9rem; font-weight: 600; line-height: 1.45; color: var(--text-primary); }
+.cdx-av-res-meta { font-size: .75rem; color: var(--text-secondary); margin: .2rem 0 .6rem; }
+.cdx-av-chart { max-width: 40rem; }
+
+@media (max-width: 620px) {
+  .cdx-av-send-row { gap: .5rem; }
+  .cdx-av-go { flex: 1 1 100%; }
+  .cdx-av-qrow { flex-wrap: wrap; }
+}

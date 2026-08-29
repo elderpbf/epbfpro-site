@@ -22,6 +22,50 @@ export const SCALE_MIN = 1;
 export const SCALE_MAX = 5;
 export const WORD_SLOTS = 3;
 
+// ── The two vocabularies, and the one place they meet ────────────────────────────
+// A stored row (ct_survey_questions.kind) speaks the QUESTIONS tab's names, because
+// track-64 §3.3 chose them so questions/question-render.js aggregates the results
+// unchanged. This module speaks its own four for the INPUT side. Both consumers of
+// this seam read stored rows, so the translation lives here, once.
+//
+// It THROWS on an unknown code rather than falling through. questionInput() ends in
+// textHtml(), so a degrading map would preview a 1-5 scale as a textarea, silently,
+// with nothing in the console — the same shape as the two send-button bugs this
+// feature already produced.
+const FROM_STORED = { rating: 'scale', poll: 'choice', wordcloud: 'words', open: 'text' };
+const TO_STORED = { scale: 'rating', choice: 'poll', words: 'wordcloud', text: 'open' };
+
+export function kindFromStored(code) {
+  const k = FROM_STORED[code];
+  if (!k) throw new Error('survey-question: unknown stored kind "' + code + '"');
+  return k;
+}
+
+export function kindToStored(kind) {
+  const k = TO_STORED[kind];
+  if (!k) throw new Error('survey-question: unknown kind "' + kind + '"');
+  return k;
+}
+
+// One stored row as the ITEM this module renders. `required` is the column; the
+// renderer asks the opposite question, so the flip happens here and not at four
+// call sites. Options arrive as JSON text from the Worker, or already parsed.
+export function itemFromRow(row) {
+  const r = row || {};
+  let options = r.options;
+  if (options == null && r.options_json != null) {
+    try { options = typeof r.options_json === 'string' ? JSON.parse(r.options_json) : r.options_json; }
+    catch (_) { options = null; }
+  }
+  const item = { kind: kindFromStored(r.kind), prompt: r.prompt || '', optional: !r.required };
+  if (Array.isArray(options)) item.options = options;
+  else if (options && typeof options === 'object') {
+    if (Number.isFinite(options.min)) item.min = options.min;
+    if (Number.isFinite(options.max)) item.max = options.max;
+  }
+  return item;
+}
+
 // A tap on a scale or a choice is a complete answer, so a stepped layout may move on by itself.
 // A typed answer is not: a box that runs away mid-word is worse than an extra tap.
 export function isSelfAdvancing(item) {
