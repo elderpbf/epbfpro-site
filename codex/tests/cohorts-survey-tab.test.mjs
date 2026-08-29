@@ -52,6 +52,20 @@ test('an already-sent survey says so, with the date, instead of offering the but
   assert.match(html, /\d\d\/\d\d\/\d{4}/, 'the send date, not a bare "already sent"');
 });
 
+test('after the send the block stops SHOUTING: greyed and explained, but not alarming', () => {
+  const html = sendBlockHtml(loadSurvey(3, NOW));
+  assert.match(html, /is-done/, 'it becomes a footnote');
+  assert.ok(!html.includes('cdx-av-blocks-head'),
+    'an amber "cannot send yet" box over a finished action is noise sitting on top of the numbers');
+  assert.match(html, /title="[^"]*\d\d\/\d\d\/\d{4}/, 'the tooltip still carries the reason');
+  assert.ok(!html.includes('cdx-av-prazo'), 'and the deadline field is gone, not merely disabled');
+});
+
+test('the invitee line changes tense once they have actually been invited', () => {
+  assert.match(sendBlockHtml(loadSurvey(2, NOW)), /serão convidados/);
+  assert.match(sendBlockHtml(loadSurvey(3, NOW)), /14 alunos convidados/);
+});
+
 test('blockText: one aula reads singular, several read plural and joined', () => {
   assert.match(blockText({ code: 'aulas_pending', aulas: [3] }, {}), /aula 3\b/i);
   assert.match(blockText({ code: 'aulas_pending', aulas: [1, 3, 4] }, {}), /1, 3 e 4/);

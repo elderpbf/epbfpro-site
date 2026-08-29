@@ -101,3 +101,9 @@
   .cdx-av-go { flex: 1 1 100%; }
   .cdx-av-qrow { flex-wrap: wrap; }
 }
+
+/* Once the survey is out, the send block is a footnote, not a headline: it sits
+   below the results and stops shouting. The button stays (and stays greyed, with
+   its tooltip) because it is the only place that records the send. */
+.cdx-av-send.is-done { background: transparent; border-style: dashed; padding: .6rem .8rem; }
+.cdx-av-send.is-done .cdx-av-go { min-height: 36px; font-size: .8rem; }

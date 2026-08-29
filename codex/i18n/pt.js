@@ -467,6 +467,7 @@ export default {
   'cohorts.aval_deadline':         'Prazo',
   'cohorts.aval_deadline_days':    'dias',
   'cohorts.aval_invitees':         '{n} alunos serão convidados',
+  'cohorts.aval_invited':          '{n} alunos convidados',
   'cohorts.aval_blocked_head':     'Não dá para enviar ainda:',
   'cohorts.aval_block_no_instrument': 'O instrumento está vazio, não há nenhuma pergunta.',
   'cohorts.aval_block_no_invitees':   'Não há nenhum aluno na turma para convidar.',

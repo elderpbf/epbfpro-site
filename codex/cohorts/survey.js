@@ -110,14 +110,14 @@ function reload(ctx) {
 
 function paint(ctx) {
   const s = ctx.state;
-  ctx.el.innerHTML =
-    '<div class="cdx-av">' +
-      switcherHtml(ctx) +
-      headHtml(s) +
-      sendBlockHtml(s) +
-      instrumentHtml(ctx, s) +
-      resultsHtml(s) +
-    '</div>';
+  // Order follows what the admin came for. Before the send that is the send itself,
+  // so the block with the locks leads. Once it is out, the numbers lead and the send
+  // block drops to the bottom: making him scroll past a dead button and ten question
+  // rows to reach the statistic is the opposite of the tab's job.
+  const body = s.sent_at
+    ? resultsHtml(s) + instrumentHtml(ctx, s) + sendBlockHtml(s)
+    : sendBlockHtml(s) + instrumentHtml(ctx, s);
+  ctx.el.innerHTML = '<div class="cdx-av">' + switcherHtml(ctx) + headHtml(s) + body + '</div>';
   wire(ctx);
   drawCharts(ctx);
 }
@@ -162,21 +162,30 @@ export function sendBlockHtml(s) {
   const blocks = sendBlocks(s);
   const ok = !blocks.length;
   const reasons = blocks.map((b) => blockText(b, s));
+  const sent = !!s.sent_at;
   const invited = s.invited_count != null ? s.invited_count : s.invitees;
-  return '<div class="cdx-av-send">' +
+  // A lock is only worth shouting while it is an OBSTACLE. Before the send, each one
+  // stands between him and the thing he opened the tab to do, so it is named in
+  // visible text (a tooltip is unreachable on the phone he reviews from). Once the
+  // survey is out, the same button is greyed because the job is DONE, and an amber
+  // "cannot send yet" box over a finished action is noise sitting on top of the
+  // numbers. The tooltip keeps the reason either way; only the shouting stops.
+  return '<div class="cdx-av-send' + (sent ? ' is-done' : '') + '">' +
       '<div class="cdx-av-send-row">' +
+        (sent ? '' :
         '<label class="cdx-av-prazo">' + esc(t('cohorts.aval_deadline')) +
-          '<input type="number" min="1" max="90" class="cdx-av-days" value="' + esc(String(s.deadline_days || 7)) + '"' +
-            (s.sent_at ? ' disabled' : '') + '>' +
+          '<input type="number" min="1" max="90" class="cdx-av-days" value="' + esc(String(s.deadline_days || 7)) + '">' +
           '<span>' + esc(t('cohorts.aval_deadline_days')) + '</span>' +
-        '</label>' +
+        '</label>') +
         '<button type="button" class="cdx-btn cdx-btn-primary cdx-av-go' + (ok ? '' : ' is-locked') + '"' +
           (ok ? '' : ' aria-disabled="true" title="' + esc(reasons.join(' ')) + '"') + ' data-av-send>' +
           esc(t('cohorts.aval_send')) +
         '</button>' +
-        '<span class="cdx-av-invitees">' + esc(t('cohorts.aval_invitees').replace('{n}', String(invited))) + '</span>' +
+        '<span class="cdx-av-invitees">' +
+          esc(t(sent ? 'cohorts.aval_invited' : 'cohorts.aval_invitees').replace('{n}', String(invited))) +
+        '</span>' +
       '</div>' +
-      (ok ? '' :
+      (ok || sent ? '' :
         '<div class="cdx-av-blocks">' +
           '<div class="cdx-av-blocks-head">' + esc(t('cohorts.aval_blocked_head')) + '</div>' +
           reasons.map((r) => '<div class="cdx-av-block">' + esc(r) + '</div>').join('') +

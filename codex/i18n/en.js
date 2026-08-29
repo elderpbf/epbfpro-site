@@ -461,6 +461,7 @@ export default {
   'cohorts.aval_deadline':         'Deadline',
   'cohorts.aval_deadline_days':    'days',
   'cohorts.aval_invitees':         '{n} students will be invited',
+  'cohorts.aval_invited':          '{n} students invited',
   'cohorts.aval_blocked_head':     'Cannot send yet:',
   'cohorts.aval_block_no_instrument': 'The instrument is empty, there are no questions.',
   'cohorts.aval_block_no_invitees':   'There is no student in this cohort to invite.',
