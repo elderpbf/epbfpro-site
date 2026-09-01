@@ -12,7 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { sendBlockHtml, blockText } from '../cohorts/survey.js';
+import { sendBlockHtml, blockText, instrumentHtml, answersLabel } from '../cohorts/survey.js';
 import { statsFor, respondents, average, answersFor } from '../cohorts/survey-stats.js';
 import { kindFromStored, kindToStored, itemFromRow, questionInput } from '../js/survey-question.js';
 import { loadSurvey, scenarioFrom } from '../cohorts/survey-stub.js';
@@ -236,4 +236,58 @@ test('the tab is styled: both stylesheets reach the admin page', () => {
   assert.ok(html.includes('cohorts/survey-admin.css'));
   assert.ok(html.includes('css/survey-question.css'),
     'the preview cards come from the seam the Trilha loads, not from a second copy');
+});
+
+// -- One list, not two -------------------------------------------------------
+
+const CTX = () => ({ preview: false, openIds: new Set() });
+
+test('ONE list: a prompt is printed exactly once, never as instrument AND as result', () => {
+  const s = loadSurvey(3, NOW);
+  const html = instrumentHtml(CTX(), s);
+  s.questions.forEach((q) => {
+    const hits = html.split(q.prompt.slice(0, 40)).length - 1;
+    assert.equal(hits, 1, 'repeated prompt: ' + q.prompt.slice(0, 40));
+  });
+});
+
+test('before the send a row is inert: no button, no panel, no summary', () => {
+  const html = instrumentHtml(CTX(), loadSurvey(1, NOW));
+  assert.match(html, /cdx-av-qhead is-static/);
+  assert.ok(!html.includes('data-av-row'), 'nothing to open, so nothing pretends to be openable');
+  assert.ok(!html.includes('cdx-av-qpanel'));
+  assert.ok(!html.includes('cdx-av-qsum'));
+  assert.match(html, /cohorts\.aval_instrument|Instrumento/, 'and the head still names the instrument');
+});
+
+test('after the send every row opens onto its own chart, and starts closed', () => {
+  const html = instrumentHtml(CTX(), loadSurvey(3, NOW));
+  assert.equal((html.match(/data-av-row=/g) || []).length, 10, 'one toggle per question');
+  assert.equal((html.match(/aria-expanded="false"/g) || []).length, 10);
+  assert.equal((html.match(/data-av-panel=/g) || []).length, 10);
+  assert.equal((html.match(/cdx-av-qpanel"[^>]*hidden/g) || []).length, 10, 'closed means hidden, not absent');
+  assert.equal((html.match(/data-av-chart=/g) || []).length, 10);
+  assert.match(html, /9 de 14 responderam \(64%\)/, 'the rate moves into the list head');
+});
+
+test('an open row is rendered open, so a repaint does not collapse what he expanded', () => {
+  const ctx = CTX();
+  ctx.openIds.add('4');
+  const html = instrumentHtml(ctx, loadSurvey(3, NOW));
+  assert.equal((html.match(/aria-expanded="true"/g) || []).length, 1);
+  assert.equal((html.match(/cdx-av-qrow is-open/g) || []).length, 1);
+  assert.equal((html.match(/cdx-av-qpanel"[^>]*hidden/g) || []).length, 9);
+});
+
+test('the collapsed row carries the count, and an average only where one means something', () => {
+  const html = instrumentHtml(CTX(), loadSurvey(3, NOW));
+  assert.match(html, /cdx-av-qsum">9 respostas · 4\.4/, 'a scale shows its average beside the count');
+  assert.ok(/cdx-av-qsum">4 respostas<\/span>/.test(html) || /cdx-av-qsum">[0-9]+ respostas<\/span>/.test(html),
+    'a free-text item shows the count alone');
+});
+
+test('answersLabel never says "0 respostas" and never says "1 respostas"', () => {
+  assert.equal(answersLabel(0), 'sem respostas');
+  assert.equal(answersLabel(1), '1 resposta');
+  assert.equal(answersLabel(9), '9 respostas');
 });

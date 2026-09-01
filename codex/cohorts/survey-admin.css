@@ -64,11 +64,26 @@
 }
 
 .cdx-av-qlist { margin-top: .6rem; border: 1px solid var(--border); border-radius: 10px; overflow: hidden; }
-.cdx-av-qrow {
-  display: flex; align-items: baseline; gap: .55rem;
-  padding: .5rem .7rem; font-size: .85rem; line-height: 1.45;
-}
 .cdx-av-qrow + .cdx-av-qrow { border-top: 1px solid var(--border); }
+.cdx-av-qrow.is-open { background: var(--surface-hover); }
+/* The row header is a button once there is something to open, and a plain div while
+   there is not. Both lay out identically, so opening the survey does not reflow the
+   list; only the summary and the caret appear. */
+.cdx-av-qhead {
+  display: flex; align-items: baseline; gap: .55rem; width: 100%; text-align: left;
+  padding: .5rem .7rem; font: inherit; font-size: .85rem; line-height: 1.45;
+  color: var(--text-primary); background: none; border: 0; cursor: pointer;
+}
+.cdx-av-qhead.is-static { cursor: default; }
+.cdx-av-qhead:not(.is-static):hover { background: var(--surface-hover); }
+.cdx-av-qsum {
+  flex: 0 0 auto; margin-left: auto; font-size: .78rem; font-weight: 700;
+  color: var(--text-secondary); white-space: nowrap;
+}
+.cdx-av-qcar { flex: 0 0 auto; font-size: .7rem; color: var(--text-secondary); transition: transform .15s; }
+.cdx-av-qrow.is-open .cdx-av-qcar { transform: rotate(180deg); }
+.cdx-av-qpanel { padding: 0 .7rem .8rem; }
+.cdx-av-qpanel[hidden] { display: none; }
 .cdx-av-qn { flex: 0 0 auto; min-width: 1.3rem; font-weight: 700; color: var(--text-secondary); }
 .cdx-av-qkind {
   flex: 0 0 auto; font-size: .68rem; text-transform: uppercase; letter-spacing: .03em;
@@ -90,16 +105,16 @@
 /* ── Per-question results ────────────────────────────────────────────────────
    The chart itself is drawn by questions/question-render.js and carries its own
    cdx-qr- styling; this only spaces the blocks around it. */
-.cdx-av-res { margin-top: 1rem; padding-top: .9rem; border-top: 1px solid var(--border); }
-.cdx-av-res:first-of-type { border-top: 0; }
-.cdx-av-res-q { font-size: .9rem; font-weight: 600; line-height: 1.45; color: var(--text-primary); }
-.cdx-av-res-meta { font-size: .75rem; color: var(--text-secondary); margin: .2rem 0 .6rem; }
+.cdx-av-res-meta { font-size: .75rem; color: var(--text-secondary); margin: 0 0 .6rem; }
 .cdx-av-chart { max-width: 40rem; }
 
 @media (max-width: 620px) {
   .cdx-av-send-row { gap: .5rem; }
   .cdx-av-go { flex: 1 1 100%; }
-  .cdx-av-qrow { flex-wrap: wrap; }
+  .cdx-av-qhead { flex-wrap: wrap; }
+  /* On a phone the summary drops to its own line rather than squeezing the prompt
+     into a two-word column. */
+  .cdx-av-qsum { margin-left: 0; }
 }
 
 /* Once the survey is out, the send block is a footnote, not a headline: it sits

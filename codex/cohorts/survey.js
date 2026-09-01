@@ -97,6 +97,7 @@ export function mountSurveyAdmin(el, turma, opts) {
     scenario: scenarioFrom(search),
     state: null,
     preview: false,
+    openIds: new Set(),   // which rows are expanded, kept across a repaint
   };
   reload(ctx);
   return ctx;
@@ -115,11 +116,10 @@ function paint(ctx) {
   // block drops to the bottom: making him scroll past a dead button and ten question
   // rows to reach the statistic is the opposite of the tab's job.
   const body = s.sent_at
-    ? resultsHtml(s) + instrumentHtml(ctx, s) + sendBlockHtml(s)
+    ? instrumentHtml(ctx, s) + sendBlockHtml(s)
     : sendBlockHtml(s) + instrumentHtml(ctx, s);
   ctx.el.innerHTML = '<div class="cdx-av">' + switcherHtml(ctx) + headHtml(s) + body + '</div>';
   wire(ctx);
-  drawCharts(ctx);
 }
 
 function switcherHtml(ctx) {
@@ -193,92 +193,142 @@ export function sendBlockHtml(s) {
     '</div>';
 }
 
-function instrumentHtml(ctx, s) {
+// THE list of questions, and the only one. It used to be printed twice, once as the
+// instrument and again as the results, which restated all ten prompts (Élder
+// 2026-08-31: "você está duplicando informação sem necessidade"). One row per
+// question: it carries the prompt always, the answer count once there are answers,
+// and it opens onto its own chart.
+export function instrumentHtml(ctx, s) {
   const items = liveQuestions(s.questions);
-  const rows = items.map((q, i) =>
-    '<div class="cdx-av-qrow">' +
+  const sent = !!s.sent_at;
+  const total = s.invited_count != null ? s.invited_count : s.invitees;
+  const rows = items.map((q, i) => {
+    const st = sent ? statsFor(q, s.responses) : null;
+    const open = ctx.openIds.has(String(q.id));
+    const head =
       '<span class="cdx-av-qn">' + (i + 1) + '</span>' +
       '<span class="cdx-av-qkind">' + esc(t(KIND_KEY[q.kind] || KIND_KEY.open)) + '</span>' +
       '<span class="cdx-av-qtext">' + esc(q.prompt) + '</span>' +
       (q.required ? '' : '<span class="cdx-av-qopt">' + esc(t('cohorts.aval_optional')) + '</span>') +
-    '</div>').join('');
+      (st ? '<span class="cdx-av-qsum">' + esc(answersLabel(st.answered)) +
+              (st.avg == null ? '' : ' · ' + esc(st.avg.toFixed(1))) + '</span>' +
+            '<span class="cdx-av-qcar" aria-hidden="true">▾</span>' : '');
+    // Before the send there is nothing to open, so the row is not a control: an
+    // inert button that looks pressable is the same lie as a send button offered
+    // before it works.
+    const clickable = !!st;
+    return '<div class="cdx-av-qrow' + (open ? ' is-open' : '') + '">' +
+        (clickable
+          ? '<button type="button" class="cdx-av-qhead" data-av-row="' + esc(String(q.id)) + '"' +
+              ' aria-expanded="' + (open ? 'true' : 'false') + '">' + head + '</button>'
+          : '<div class="cdx-av-qhead is-static">' + head + '</div>') +
+        (clickable
+          ? '<div class="cdx-av-qpanel" data-av-panel="' + esc(String(q.id)) + '"' + (open ? '' : ' hidden') + '>' +
+              '<div class="cdx-av-res-meta">' +
+                esc(t('cohorts.aval_q_answered').replace('{n}', String(st.answered)).replace('{total}', String(total))) +
+              '</div>' +
+              // cdx-qr-host is the renderer's OWN dense variant, the one the live
+              // host panel uses. Adopting it rather than re-styling the bars keeps a
+              // single chart implementation with a mode, the same shape as
+              // person-table.js mounted in two scopes. Its projector-sized default
+              // would give one rating question about a phone screen and a half.
+              '<div class="cdx-av-chart cdx-qr-host" data-av-kind="' + esc(q.kind) + '"' +
+                ' data-av-chart="' + esc(String(q.id)) + '"></div>' +
+            '</div>'
+          : '') +
+      '</div>';
+  }).join('');
+
   const preview = ctx.preview
     ? '<div class="cdx-av-preview">' + items.map((q, i) =>
         questionCard(itemFromRow(q), i, {}, t, { total: items.length, readOnly: true })).join('') + '</div>'
     : '';
+  const previewBtn = '<button type="button" class="cdx-btn cdx-btn-sm cdx-av-prev" data-av-preview>' +
+    esc(t(ctx.preview ? 'cohorts.aval_preview_hide' : 'cohorts.aval_preview')) + '</button>';
+  const lockChip = s.instrument_locked
+    ? '<span class="cdx-av-lockchip">' + esc(t('cohorts.aval_locked')) + '</span>' : '';
+
+  // The head names what he came for: the instrument while it is being prepared, the
+  // response rate once it is out.
+  let sech;
+  if (sent) {
+    const answered = respondents(s.responses);
+    const pct = total ? Math.round(answered / total * 100) : 0;
+    sech =
+      '<span class="cdx-doss-subhead cdx-av-subhead">' +
+        esc(t(isClosed(s) ? 'cohorts.aval_final' : 'cohorts.aval_results')) + '</span>' +
+      '<span class="cdx-av-rate">' +
+        esc(t('cohorts.aval_rate').replace('{n}', String(answered)).replace('{total}', String(total))) +
+        ' (' + pct + '%)</span>' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-av-report>' + esc(t('cohorts.aval_report')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-av-export>' + esc(t('cohorts.aval_export')) + '</button>' +
+      lockChip + previewBtn;
+  } else {
+    sech =
+      '<span class="cdx-doss-subhead cdx-av-subhead">' + esc(t('cohorts.aval_instrument')) + '</span>' +
+      '<span class="cdx-av-count">' + esc(t('cohorts.aval_qcount').replace('{n}', String(items.length))) + '</span>' +
+      lockChip + previewBtn;
+  }
+
+  const empty = sent && !respondents(s.responses)
+    ? '<div class="cdx-empty">' + esc(t('cohorts.aval_no_results')) + '</div>' : '';
   return '<div class="cdx-av-sec">' +
-      '<div class="cdx-av-sech">' +
-        '<span class="cdx-doss-subhead cdx-av-subhead">' + esc(t('cohorts.aval_instrument')) + '</span>' +
-        '<span class="cdx-av-count">' + esc(t('cohorts.aval_qcount').replace('{n}', String(items.length))) + '</span>' +
-        (s.instrument_locked ? '<span class="cdx-av-lockchip">' + esc(t('cohorts.aval_locked')) + '</span>' : '') +
-        '<button type="button" class="cdx-btn cdx-btn-sm cdx-av-prev" data-av-preview>' +
-          esc(t(ctx.preview ? 'cohorts.aval_preview_hide' : 'cohorts.aval_preview')) + '</button>' +
-      '</div>' +
+      '<div class="cdx-av-sech">' + sech + '</div>' +
+      empty +
       '<div class="cdx-av-qlist">' + rows + '</div>' +
       preview +
       '<div class="cdx-av-todo">' + esc(t('cohorts.aval_editor_todo')) + '</div>' +
     '</div>';
 }
 
-function resultsHtml(s) {
-  if (!s.sent_at) return '';
-  const items = liveQuestions(s.questions);
-  const answered = respondents(s.responses);
-  const total = s.invited_count != null ? s.invited_count : s.invitees;
-  const pct = total ? Math.round(answered / total * 100) : 0;
-  const body = answered
-    ? items.map((q) => {
-        const st = statsFor(q, s.responses);
-        return '<div class="cdx-av-res">' +
-          '<div class="cdx-av-res-q">' + esc(q.prompt) + '</div>' +
-          '<div class="cdx-av-res-meta">' +
-            esc(t('cohorts.aval_q_answered').replace('{n}', String(st.answered)).replace('{total}', String(total))) +
-            (st.avg == null ? '' : ' · ' + esc(st.avg.toFixed(1))) +
-          '</div>' +
-          // cdx-qr-host is the renderer's OWN dense variant, the one the live host
-          // panel uses. Adopting it rather than re-styling the bars keeps a single
-          // chart implementation with a mode, which is the same shape as
-          // person-table.js mounted in two scopes. Its projector-sized default would
-          // give one rating question ~800px on a phone, and there are ten of them.
-          '<div class="cdx-av-chart cdx-qr-host" data-av-kind="' + esc(q.kind) + '"' +
-            ' data-av-chart="' + esc(String(q.id)) + '"></div>' +
-        '</div>';
-      }).join('')
-    : '<div class="cdx-empty">' + esc(t('cohorts.aval_no_results')) + '</div>';
-  return '<div class="cdx-av-sec">' +
-      '<div class="cdx-av-sech">' +
-        '<span class="cdx-doss-subhead cdx-av-subhead">' +
-          esc(t(isClosed(s) ? 'cohorts.aval_final' : 'cohorts.aval_results')) + '</span>' +
-        '<span class="cdx-av-rate">' +
-          esc(t('cohorts.aval_rate').replace('{n}', String(answered)).replace('{total}', String(total))) +
-          ' (' + pct + '%)</span>' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-av-report>' + esc(t('cohorts.aval_report')) + '</button>' +
-        '<button type="button" class="cdx-btn cdx-btn-sm" data-av-export>' + esc(t('cohorts.aval_export')) + '</button>' +
-      '</div>' + body +
-    '</div>';
+// "9 respostas" / "1 resposta" / "sem respostas", so a row never reads "0 respostas".
+export function answersLabel(n) {
+  if (!n) return t('cohorts.aval_answers_none');
+  if (n === 1) return t('cohorts.aval_answer_one');
+  return t('cohorts.aval_answers').replace('{n}', String(n));
 }
 
-// The charts are drawn after the frame exists, because renderResults writes into a
-// live element rather than returning HTML. NOTHING here passes `name` or
-// `onRemoveAnswer`: renderTextFeed would happily print a respondent's name and wire
-// a delete-one-answer button, and neither belongs on an anonymous survey (§3.4
-// item 7). Its own fallback to t('questions.qr_anonymous') is the display we want.
-function drawCharts(ctx) {
-  const s = ctx.state;
-  if (!s.sent_at) return;
-  liveQuestions(s.questions).forEach((q) => {
-    const box = ctx.el.querySelector('[data-av-chart="' + q.id + '"]');
-    if (!box) return;
-    const st = statsFor(q, s.responses);
-    renderResults(st.question, st.counts, box, { showResults: true });
-  });
+// A chart is drawn the first time its row is opened, into the panel that is already
+// in the tree. Drawing on open (rather than up front) keeps a ten-question dossier
+// from building ten charts nobody looked at; drawing INTO an element that always
+// exists is the other half, because a panel the renderer is allowed to omit is
+// exactly the shape that broke the send button twice on the student side.
+//
+// NOTHING here passes `name` or `onRemoveAnswer`: renderTextFeed would happily print
+// a respondent's name and wire a delete-one-answer button, and neither belongs on an
+// anonymous survey (§3.4 item 7). Its own fallback to t('questions.qr_anonymous') is
+// the display we want.
+function drawChart(ctx, id) {
+  const box = ctx.el.querySelector('[data-av-chart="' + id + '"]');
+  if (!box || box.getAttribute('data-drawn')) return;
+  const q = liveQuestions(ctx.state.questions).find((x) => String(x.id) === String(id));
+  if (!q) return;
+  const st = statsFor(q, ctx.state.responses);
+  renderResults(st.question, st.counts, box, { showResults: true });
+  box.setAttribute('data-drawn', '1');
 }
 
 function wire(ctx) {
   ctx.el.querySelectorAll('[data-av-sc]').forEach((b) => b.addEventListener('click', () => {
     ctx.scenario = Number(b.getAttribute('data-av-sc'));
     ctx.preview = false;
+    ctx.openIds.clear();
     reload(ctx);
+  }));
+  // Toggling patches the two elements that change and leaves the rest alone. A full
+  // repaint here would throw him back to the top of a ten-question list, which is
+  // the same complaint that produced js/list-sync.js and the student gate's
+  // in-place patching.
+  ctx.el.querySelectorAll('[data-av-row]').forEach((b) => b.addEventListener('click', () => {
+    const id = b.getAttribute('data-av-row');
+    const panel = ctx.el.querySelector('[data-av-panel="' + id + '"]');
+    if (!panel) return;
+    const open = panel.hidden;
+    panel.hidden = !open;
+    b.setAttribute('aria-expanded', open ? 'true' : 'false');
+    const row = b.closest('.cdx-av-qrow');
+    if (row) row.classList.toggle('is-open', open);
+    if (open) { ctx.openIds.add(id); drawChart(ctx, id); } else { ctx.openIds.delete(id); }
   }));
   const prev = ctx.el.querySelector('[data-av-preview]');
   if (prev) prev.addEventListener('click', () => { ctx.preview = !ctx.preview; paint(ctx); });
