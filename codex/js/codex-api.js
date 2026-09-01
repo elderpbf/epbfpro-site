@@ -352,6 +352,18 @@ export const content = {
   setItemSection:       (p) => call('ct_set_item_section', p)        // { item_id, section_id|null, position? }
 };
 
+// Labs state (track-65): the admin's four decisions per lab — on/off, archived, renamed, order.
+// They used to be four localStorage keys, so the public Trail never filtered them. Reached ONLY
+// through js/labs-state.js, which owns the cache and the write policy; no tab module calls these
+// directly. The read carries no auth on purpose (the Trail has to be able to make it).
+export const labsState = {
+  get:      ()  => call('ct_labs_state_get'),           // -> { ok, state: { <lab_key>: {enabled, archived, display_name, sort_order} } }
+  set:      (p) => call('ct_labs_state_set', p),        // { lab_key, enabled?, archived?, display_name?, sort_order? } — absent field = unchanged
+  // The whole order in ONE call, applied in a single D1 batch. A drag is one fact, and a
+  // half-written order reads back as valid and is unrepairable by retry.
+  setOrder: (p) => call('ct_labs_state_set_order', p)   // { keys: [lab_key, ...] } — a key left out has its position cleared
+};
+
 // Drive sync (Content -> Drive sub-tab). Configured Drive root folders + the
 // synced file index. The actual Google Drive read happens client-side through
 // window.BS_GOOGLE (auth-bound, Backstage-owned); these are the Worker actions

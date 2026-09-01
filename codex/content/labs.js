@@ -14,13 +14,22 @@
 //   js/lab-viewer.js      reusable fullscreen iframe modal
 // This module owns only the PANEL UI.
 //
-// On/off state lives in localStorage 'cv_labs_enabled' with the EXACT contract
-// labs-registry.isLabEnabled reads (a map keyed by lab key; missing/true =
-// enabled, false = hidden everywhere). Toggling here is therefore instantly
-// reflected in the Lessons sidebar and the Presets picker. Filtering stays
-// read-time in every consumer, so disabling is instant and reversible.
+// On/off state is NOT this module's to keep. It used to write its own private
+// localStorage map, with its own private copy of the default-on contract, one of
+// the two files that made the admin's decisions invisible to everyone else. Since
+// track-65 every read and write goes through labs-registry (which delegates to
+// js/labs-state.js and the database), so toggling here is still instantly
+// reflected in the Lessons sidebar and the Presets picker, and now also on the
+// public Trail, where the Worker refuses a lab that is off.
+//
+// The writes are ASYNC and OPTIMISTIC: the switch moves at once and the row
+// repaints, then the save is awaited. If the Worker refuses, the state module
+// rolls its cache back, this module repaints from that truth and reports the
+// failure. A switch that shows a value the database never accepted is the one
+// outcome worth this much care.
 import { t } from '../js/i18n.js';
-import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder, isLabRenamed, setLabTitle, labDefaultTitle } from '../js/labs-registry.js';
+import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder, isLabRenamed, setLabTitle, labDefaultTitle, isLabEnabled, setLabEnabled } from '../js/labs-registry.js';
+import { pushLocalState } from '../js/labs-state.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -29,8 +38,6 @@ import { makeMatcher } from '../js/text-search.js';
 import { syncLabItems } from '../js/registry-sync.js';
 import * as notice from '../js/notice.js';
 import * as toast from '../js/toast.js';
-
-const LS_KEY = 'cv_labs_enabled';
 
 let _viewEl = null;
 let _selectedKey = null;
@@ -43,22 +50,25 @@ let _onResize = null;
 
 import { esc as _esc } from '../js/dom.js';
 
-// Default-on map (missing key = enabled), identical to CVLabs.isLabEnabled.
-function _readMap() {
-  try {
-    const raw = localStorage.getItem(LS_KEY);
-    const obj = raw ? JSON.parse(raw) : {};
-    return (obj && typeof obj === 'object') ? obj : {};
-  } catch (e) { return {}; }
-}
-function _writeMap(map) {
-  try { localStorage.setItem(LS_KEY, JSON.stringify(map)); } catch (e) { /* ignore */ }
-}
-function _isEnabled(key) { return _readMap()[key] !== false; }
-function _setEnabled(key, on) {
-  const map = _readMap();
-  if (on) delete map[key]; else map[key] = false; // default-on is "key absent"
-  _writeMap(map);
+// One reader for the whole module, and it is the registry's. This file used to
+// carry a second, private copy of the default-on rule.
+const _isEnabled = (key) => isLabEnabled(key);
+
+// Every save from this panel lands here. The caller has already moved the cache
+// and painted; this only has to deal with a refusal: repaint from whatever the
+// state module rolled back to, tell Élder in the surface he is looking at, and
+// put the real detail where the debug pill can find it.
+function _saved(promise) {
+  return Promise.resolve(promise).catch((e) => {
+    // This is the ONE path that fires after an arbitrary delay, so the panel may already be gone
+    // (flip a switch, leave the sub-tab, the refusal lands afterwards). Every other repaint here is
+    // synchronous and cannot see an unmounted view.
+    if (!_viewEl) { notice.internal(e); return; }
+    if (_rail) _rail.render();
+    _renderPreview();
+    toast.err(t('labs.save_failed'));
+    notice.internal(e);
+  });
 }
 
 function _labs() {
@@ -77,7 +87,7 @@ const _SEARCH_FIELDS = (lab) => [lab.title, lab.summary, lab.key];
 // own rows (no switch, a Restaurar button), and folding it in would mean one list showing two
 // kinds of row.
 // Pure, exported for tests. `isEnabled(key)` is injected rather than read here so the core is
-// testable without localStorage, the same shape content/items.js uses for applyItemSearchSort.
+// testable without any loaded state, the same shape content/items.js uses for applyItemSearchSort.
 export function applyLabStatusFilter(labs, status, isEnabled) {
   const arr = labs || [];
   if (status === 'on')  return arr.filter((l) => isEnabled(l.key));
@@ -181,10 +191,10 @@ function _openRenamePrompt(lab) {
     value: lab.title,
     hint: isLabRenamed(lab.key) ? t('labs.rename_hint').replace('{title}', labDefaultTitle(lab.key)) : '',
     onSubmit(n) {
-      setLabTitle(lab.key, n);
+      const p = setLabTitle(lab.key, n);
       if (_rail) _rail.render();
       _renderPreview();
-      toast.ok(t('labs.rename_saved'));
+      _saved(p.then(() => toast.ok(t('labs.rename_saved'))));
     },
   });
 }
@@ -297,7 +307,7 @@ function _buildRail() {
         // a partial list can never wipe the order of the labs it is hiding.
         // _labs() is still the PRE-drag order here (setLabOrder has not run yet), which is
         // exactly the list mergeVisibleOrder needs to know which slots the visible rows held.
-        setLabOrder(mergeVisibleOrder((_labs() || []).map((l) => l.key), keys));
+        _saved(setLabOrder(mergeVisibleOrder((_labs() || []).map((l) => l.key), keys)));
         _rail.render();
       },
     };
@@ -405,8 +415,10 @@ function _switchMode(mode) {
 // with the rail.
 function _archive(key, on) {
   if (!key) return;
-  setLabArchived(key, on);
-  _setEnabled(key, !on);
+  // Two decisions, two writes, both reported through the same handler. They are
+  // separate fields on purpose: restoring a lab must put it back on, but a lab
+  // can also be turned off without being archived.
+  _saved(Promise.all([setLabArchived(key, on), setLabEnabled(key, !on)]));
   if (_mode === 'archived' && archivedLabs().length === 0) { _switchMode('active'); return; }
   _selectedKey = _resolveSelection(_currentList(), _selectedKey === key ? null : _selectedKey);
   if (_rail) _rail.render();
@@ -421,10 +433,42 @@ function _ensureLabItemsSilently() {
   syncLabItems().catch((e) => { notice.internal(e); });
 }
 
+// track-65 §4.4: the renames and the display order existed only in Élder's
+// browser, where no migration could reach them, so this tab hands them over the
+// first time it opens after the deploy and the four keys are then gone for good.
+//
+// It fills only what the database has no opinion about, never overwrites, so a
+// second machine opening later finds the gaps filled and pushes nothing. The
+// on/off is deliberately NOT pushed, because the migration seeded it and Élder still
+// has to verify that seed; a stale browser rewriting it would erase the very
+// thing he is checking. Any disagreement is REPORTED instead, which is how he
+// gets told rather than having to remember to look.
+//
+// REMOVE THIS once he confirms it ran (track-65 §5b residual): it is migration
+// code, and migration code that outlives its migration is just a trap.
+function _pushLocalStateOnce() {
+  pushLocalState().then((plan) => {
+    if (!plan) return;
+    const moved = plan.archived.length + plan.renamed.length + (plan.order ? 1 : 0);
+    if (moved) {
+      _render();
+      toast.ok(t('labs.push_done'));
+    }
+    if (plan.enabledDiff.length) {
+      const off = plan.enabledDiff.filter((d) => !d.local).map((d) => d.key.toUpperCase());
+      const on = plan.enabledDiff.filter((d) => d.local).map((d) => d.key.toUpperCase());
+      notice.warn(t('labs.push_enabled_diff')
+        .replace('{off}', off.join(', ') || '-')
+        .replace('{on}', on.join(', ') || '-'));
+    }
+  }).catch((e) => { notice.internal(e); });
+}
+
 export function mount(viewEl) {
   _viewEl = viewEl;
   _render();
   _ensureLabItemsSilently();
+  _pushLocalStateOnce();
 
   // Row selection is the rail's job (onSelect); the on/off switch is exempt via the rail's
   // rowSelectIgnore. Only the preview's fullscreen button is wired here.
@@ -448,7 +492,7 @@ export function mount(viewEl) {
     const row = input.closest('.cdx-rail-row');
     const key = row ? row.getAttribute('data-id') : _selectedKey;
     if (!key) return;
-    _setEnabled(key, checked);
+    _saved(setLabEnabled(key, checked));
     // Repaint the list rows (switch state + is-off dim) via the rail; do NOT re-render the
     // preview (that would reload the iframe), just sync its head switch for the same lab.
     if (_rail) _rail.render();

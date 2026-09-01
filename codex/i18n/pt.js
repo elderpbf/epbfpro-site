@@ -1301,6 +1301,9 @@ export default {
   'labs.filter_off':          'Desativados',
   'labs.empty_search':        'Nenhum lab encontrado.',
   'labs.empty_filter':        'Nenhum lab neste filtro.',
+  'labs.save_failed':         'Não foi possível salvar. A lista voltou para o que está no servidor.',
+  'labs.push_done':           'Renomeações e ordem deste navegador foram enviadas para o servidor.',
+  'labs.push_enabled_diff':   'Este navegador e o servidor discordam sobre quais labs estão ligados. Desligados só aqui: {off}. Ligados só aqui: {on}. O servidor foi mantido; confira a lista e ajuste o que estiver errado.',
   // ── Interativos (Content sub-tab + Lessons section) ──────────────────────────
   // PROVISIONAL TYPE NAME lives in 'interativos.type'. To rename the type, edit this
   // value AND its twin 'lessons.section_interativos' (the only other site, forced by
