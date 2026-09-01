@@ -110,16 +110,22 @@ function reload(ctx) {
 }
 
 function paint(ctx) {
-  const s = ctx.state;
-  // Order follows what the admin came for. Before the send that is the send itself,
-  // so the block with the locks leads. Once it is out, the numbers lead and the send
-  // block drops to the bottom: making him scroll past a dead button and ten question
-  // rows to reach the statistic is the opposite of the tab's job.
-  const body = s.sent_at
-    ? instrumentHtml(ctx, s) + sendBlockHtml(s)
-    : sendBlockHtml(s) + instrumentHtml(ctx, s);
-  ctx.el.innerHTML = '<div class="cdx-av">' + switcherHtml(ctx) + headHtml(s) + body + '</div>';
+  ctx.el.innerHTML = '<div class="cdx-av">' + switcherHtml(ctx) + bodyHtml(ctx, ctx.state) + '</div>';
   wire(ctx);
+}
+
+// ONE surface, three stages. Rascunho travado, rascunho pronto and aberta are the
+// same screen at different moments, so they get the same blocks in the same order,
+// always: state, action, questions. An earlier build flipped the action block below
+// the list after the send and gave the list a second, different head, which made the
+// same tab read as two screens (Élder 2026-08-31: "all of these three are the same
+// surface just in different stages").
+//
+// What a stage changes is CONTENT, never arrangement. The action block loses the
+// controls that no longer apply and shrinks to a footnote; the rows gain a count and
+// a chart. Nothing moves.
+export function bodyHtml(ctx, s) {
+  return headHtml(s) + sendBlockHtml(s) + instrumentHtml(ctx, s);
 }
 
 function switcherHtml(ctx) {
@@ -133,7 +139,10 @@ function switcherHtml(ctx) {
     '</div>';
 }
 
-function headHtml(s) {
+// The state strip: what the survey IS right now. The response rate lives here and
+// not on the list, because it describes the survey rather than the instrument, and
+// because one number wants one home across all three stages.
+export function headHtml(s) {
   const statusKey = STATUS_KEY[s.status] || STATUS_KEY.draft;
   const line = [];
   if (s.sent_at) line.push(t('cohorts.aval_sent_when').replace('{when}', relTime(s.sent_at, s.now)));
@@ -146,9 +155,19 @@ function headHtml(s) {
     const d = daysLeft(s);
     line.push(d <= 0 ? t('cohorts.aval_last_day') : t('cohorts.aval_days_left').replace('{n}', String(d)));
   }
+  let rate = '';
+  if (s.sent_at) {
+    const answered = respondents(s.responses);
+    const total = s.invited_count != null ? s.invited_count : s.invitees;
+    const pct = total ? Math.round(answered / total * 100) : 0;
+    rate = '<span class="cdx-av-rate">' +
+      esc(t('cohorts.aval_rate').replace('{n}', String(answered)).replace('{total}', String(total))) +
+      ' (' + pct + '%)</span>';
+  }
   return '<div class="cdx-av-head">' +
       '<span class="cdx-av-pill cdx-av-pill--' + esc(s.status) + '">' + esc(t(statusKey)) + '</span>' +
       (line.length ? '<span class="cdx-av-headline">' + esc(line.join(' · ')) + '</span>' : '') +
+      rate +
     '</div>';
 }
 
@@ -248,27 +267,18 @@ export function instrumentHtml(ctx, s) {
   const lockChip = s.instrument_locked
     ? '<span class="cdx-av-lockchip">' + esc(t('cohorts.aval_locked')) + '</span>' : '';
 
-  // The head names what he came for: the instrument while it is being prepared, the
-  // response rate once it is out.
-  let sech;
-  if (sent) {
-    const answered = respondents(s.responses);
-    const pct = total ? Math.round(answered / total * 100) : 0;
-    sech =
-      '<span class="cdx-doss-subhead cdx-av-subhead">' +
-        esc(t(isClosed(s) ? 'cohorts.aval_final' : 'cohorts.aval_results')) + '</span>' +
-      '<span class="cdx-av-rate">' +
-        esc(t('cohorts.aval_rate').replace('{n}', String(answered)).replace('{total}', String(total))) +
-        ' (' + pct + '%)</span>' +
-      '<button type="button" class="cdx-btn cdx-btn-sm" data-av-report>' + esc(t('cohorts.aval_report')) + '</button>' +
-      '<button type="button" class="cdx-btn cdx-btn-sm" data-av-export>' + esc(t('cohorts.aval_export')) + '</button>' +
-      lockChip + previewBtn;
-  } else {
-    sech =
-      '<span class="cdx-doss-subhead cdx-av-subhead">' + esc(t('cohorts.aval_instrument')) + '</span>' +
-      '<span class="cdx-av-count">' + esc(t('cohorts.aval_qcount').replace('{n}', String(items.length))) + '</span>' +
-      lockChip + previewBtn;
-  }
+  // ONE head, in all three stages. It always names the instrument and counts the
+  // questions; the export controls simply join it once there is something to export.
+  // The previous build swapped the whole head for a different one after the send,
+  // which is what made the same list read as a different section.
+  const sech =
+    '<span class="cdx-doss-subhead cdx-av-subhead">' + esc(t('cohorts.aval_instrument')) + '</span>' +
+    '<span class="cdx-av-count">' + esc(t('cohorts.aval_qcount').replace('{n}', String(items.length))) + '</span>' +
+    lockChip + previewBtn +
+    (sent && respondents(s.responses)
+      ? '<button type="button" class="cdx-btn cdx-btn-sm" data-av-report>' + esc(t('cohorts.aval_report')) + '</button>' +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-av-export>' + esc(t('cohorts.aval_export')) + '</button>'
+      : '');
 
   const empty = sent && !respondents(s.responses)
     ? '<div class="cdx-empty">' + esc(t('cohorts.aval_no_results')) + '</div>' : '';

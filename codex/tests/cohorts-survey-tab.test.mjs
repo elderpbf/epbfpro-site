@@ -12,7 +12,7 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import fs from 'node:fs';
 import { fileURLToPath } from 'node:url';
-import { sendBlockHtml, blockText, instrumentHtml, answersLabel } from '../cohorts/survey.js';
+import { sendBlockHtml, blockText, instrumentHtml, answersLabel, bodyHtml, headHtml } from '../cohorts/survey.js';
 import { statsFor, respondents, average, answersFor } from '../cohorts/survey-stats.js';
 import { kindFromStored, kindToStored, itemFromRow, questionInput } from '../js/survey-question.js';
 import { loadSurvey, scenarioFrom } from '../cohorts/survey-stub.js';
@@ -267,7 +267,6 @@ test('after the send every row opens onto its own chart, and starts closed', () 
   assert.equal((html.match(/data-av-panel=/g) || []).length, 10);
   assert.equal((html.match(/cdx-av-qpanel"[^>]*hidden/g) || []).length, 10, 'closed means hidden, not absent');
   assert.equal((html.match(/data-av-chart=/g) || []).length, 10);
-  assert.match(html, /9 de 14 responderam \(64%\)/, 'the rate moves into the list head');
 });
 
 test('an open row is rendered open, so a repaint does not collapse what he expanded', () => {
@@ -290,4 +289,68 @@ test('answersLabel never says "0 respostas" and never says "1 respostas"', () =>
   assert.equal(answersLabel(0), 'sem respostas');
   assert.equal(answersLabel(1), '1 resposta');
   assert.equal(answersLabel(9), '9 respostas');
+});
+
+// -- One surface, three stages -----------------------------------------------
+// Rascunho travado, rascunho pronto and aberta are the same screen at different
+// moments. An earlier build flipped the action block below the list after the send
+// and swapped the list head for a different one, so the same tab read as two
+// screens (Élder 2026-08-31). These pin the arrangement, which is the part a stage
+// may never change.
+
+const STAGES = [1, 2, 3, 4];
+// The lookahead matters: a bare \b also matches cdx-av-send-ROW, which sits inside
+// the block and would report it twice.
+const SECTION_ORDER = (html) =>
+  [...html.matchAll(/class="cdx-av-(head|send|sec)[" ]/g)].map((m) => m[1]);
+
+test('every stage lays out the SAME blocks in the SAME order', () => {
+  const orders = STAGES.map((n) => SECTION_ORDER(bodyHtml(CTX(), loadSurvey(n, NOW))).join('>'));
+  assert.deepEqual([...new Set(orders)].length, 1, 'stages disagree about arrangement: ' + orders.join(' | '));
+  assert.equal(orders[0], 'head>send>sec', 'state, then action, then the questions');
+});
+
+test('the action block never moves below the questions once the survey is out', () => {
+  STAGES.forEach((n) => {
+    const html = bodyHtml(CTX(), loadSurvey(n, NOW));
+    assert.ok(html.indexOf('cdx-av-send') < html.indexOf('cdx-av-qlist'),
+      'stage ' + n + ' put the send block after the list');
+  });
+});
+
+test('the list head is the SAME head in every stage, gaining controls but never swapping', () => {
+  STAGES.forEach((n) => {
+    const html = instrumentHtml(CTX(), loadSurvey(n, NOW));
+    assert.equal((html.match(/cdx-av-subhead/g) || []).length, 1, 'stage ' + n + ' has one head');
+    assert.match(html, /cdx-av-subhead">Instrumento/, 'stage ' + n + ' still names the instrument');
+    assert.match(html, /cdx-av-count">10 perguntas/, 'stage ' + n + ' still counts the questions');
+    assert.match(html, /data-av-preview/, 'stage ' + n + ' still offers the student preview');
+  });
+});
+
+test('export controls JOIN that head once there is something to export', () => {
+  assert.ok(!instrumentHtml(CTX(), loadSurvey(2, NOW)).includes('data-av-report'), 'nothing to report yet');
+  const open = instrumentHtml(CTX(), loadSurvey(3, NOW));
+  assert.match(open, /data-av-report/);
+  assert.match(open, /data-av-export/);
+});
+
+test('the response rate has ONE home, the state strip, and it is not repeated on the list', () => {
+  const s = loadSurvey(3, NOW);
+  assert.match(headHtml(s), /9 de 14 responderam \(64%\)/);
+  assert.ok(!instrumentHtml(CTX(), s).includes('cdx-av-rate'), 'the list must not restate it');
+  assert.ok(!headHtml(loadSurvey(1, NOW)).includes('cdx-av-rate'), 'and a draft has no rate at all');
+});
+
+test('the row shape does not change between stages either: only the count appears', () => {
+  const draft = instrumentHtml(CTX(), loadSurvey(2, NOW));
+  const open = instrumentHtml(CTX(), loadSurvey(3, NOW));
+  [draft, open].forEach((html) => {
+    assert.equal((html.match(/cdx-av-qrow/g) || []).length, 10);
+    assert.equal((html.match(/cdx-av-qn"/g) || []).length, 10);
+    assert.equal((html.match(/cdx-av-qkind"/g) || []).length, 10);
+    assert.equal((html.match(/cdx-av-qtext"/g) || []).length, 10);
+  });
+  assert.equal((draft.match(/cdx-av-qsum/g) || []).length, 0);
+  assert.equal((open.match(/cdx-av-qsum/g) || []).length, 10);
 });

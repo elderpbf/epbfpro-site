@@ -486,8 +486,6 @@ export default {
   'cohorts.aval_preview_hide':     'Hide preview',
   'cohorts.aval_locked':           'locked after sending',
   'cohorts.aval_editor_todo':      'Editing the questions is not built yet: adding, reordering and archiving come next.',
-  'cohorts.aval_results':          'Results',
-  'cohorts.aval_final':            'Final statistic',
   'cohorts.aval_rate':             '{n} of {total} responded',
   'cohorts.aval_q_answered':       '{n} of {total} answered this question',
   'cohorts.aval_answers':          '{n} responses',

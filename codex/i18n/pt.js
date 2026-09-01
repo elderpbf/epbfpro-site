@@ -492,8 +492,6 @@ export default {
   'cohorts.aval_preview_hide':     'Ocultar prévia',
   'cohorts.aval_locked':           'bloqueado após o envio',
   'cohorts.aval_editor_todo':      'A edição das perguntas ainda não foi construída: adicionar, reordenar e arquivar perguntas vem na próxima etapa.',
-  'cohorts.aval_results':          'Resultados',
-  'cohorts.aval_final':            'Estatística final',
   'cohorts.aval_rate':             '{n} de {total} responderam',
   'cohorts.aval_q_answered':       '{n} de {total} responderam esta pergunta',
   'cohorts.aval_answers':          '{n} respostas',
