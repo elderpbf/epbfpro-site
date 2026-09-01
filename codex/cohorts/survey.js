@@ -28,6 +28,7 @@ import { sendBlocks, canSend, liveQuestions, daysLeft, isClosed } from '../js/su
 import { renderResults } from '../questions/question-render.js';
 import { statsFor, respondents } from './survey-stats.js';
 import { cohorts as api } from '../js/codex-api.js';
+import * as ed from './survey-editor.js';
 
 // Literal keys, never t('cohorts.aval_block_' + code). A key assembled at runtime is
 // invisible to the dead-key sweep, which is the exact trap track-30 documented and
@@ -90,6 +91,8 @@ export function mountSurveyAdmin(el, turma, opts) {
     preview: false,
     openIds: new Set(),   // which rows are expanded, kept across a repaint
     busy: false,
+    editing: false,
+    draft: null,          // the instrument being edited; null whenever `editing` is false
   };
   el.innerHTML = '<span class="cdx-empty">' + esc(t('cohorts.loading')) + '</span>';
   reload(ctx);
@@ -261,8 +264,17 @@ export function instrumentHtml(ctx, s) {
     ? '<div class="cdx-av-preview">' + items.map((q, i) =>
         questionCard(itemFromRow(q), i, {}, t, { total: items.length, readOnly: true })).join('') + '</div>'
     : '';
-  const previewBtn = '<button type="button" class="cdx-btn cdx-btn-sm cdx-av-prev" data-av-preview>' +
-    esc(t(ctx.preview ? 'cohorts.aval_preview_hide' : 'cohorts.aval_preview')) + '</button>';
+  const previewBtn = ctx.editing ? ''
+    : '<button type="button" class="cdx-btn cdx-btn-sm cdx-av-prev" data-av-preview>' +
+      esc(t(ctx.preview ? 'cohorts.aval_preview_hide' : 'cohorts.aval_preview')) + '</button>';
+  // The instrument locks on send. The unlock is deliberate and reversible, and it is the only way
+  // the edit button comes back, because a warning modal gets dismissed reflexively (§3.10).
+  const editBtn = ctx.editing ? ''
+    : (s.instrument_locked
+        ? '<button type="button" class="cdx-btn cdx-btn-sm" data-av-unlock>' +
+            esc(t('cohorts.aval_ed_unlock')) + '</button>'
+        : '<button type="button" class="cdx-btn cdx-btn-sm" data-av-edit>' +
+            esc(t('cohorts.aval_ed_edit')) + '</button>');
   const lockChip = s.instrument_locked
     ? '<span class="cdx-av-lockchip">' + esc(t('cohorts.aval_locked')) + '</span>' : '';
 
@@ -273,7 +285,7 @@ export function instrumentHtml(ctx, s) {
   const sech =
     '<span class="cdx-doss-subhead cdx-av-subhead">' + esc(t('cohorts.aval_instrument')) + '</span>' +
     '<span class="cdx-av-count">' + esc(t('cohorts.aval_qcount').replace('{n}', String(items.length))) + '</span>' +
-    lockChip + previewBtn +
+    lockChip + previewBtn + editBtn +
     (sent && respondents(s.responses)
       ? '<button type="button" class="cdx-btn cdx-btn-sm" data-av-report>' + esc(t('cohorts.aval_report')) + '</button>' +
         '<button type="button" class="cdx-btn cdx-btn-sm" data-av-export>' + esc(t('cohorts.aval_export')) + '</button>'
@@ -281,14 +293,87 @@ export function instrumentHtml(ctx, s) {
 
   const empty = sent && !respondents(s.responses)
     ? '<div class="cdx-empty">' + esc(t('cohorts.aval_no_results')) + '</div>' : '';
+  // Editing replaces the LIST, never the surface: same section, same head, same position on the
+  // page. The rows he was reading are the rows he is now changing.
+  const list = ctx.editing
+    ? editorHtml(ctx)
+    : '<div class="cdx-av-qlist">' + rows + '</div>' + preview;
   return '<div class="cdx-av-sec">' +
       '<div class="cdx-av-sech">' + sech + '</div>' +
-      empty +
-      '<div class="cdx-av-qlist">' + rows + '</div>' +
-      preview +
-      '<div class="cdx-av-todo">' + esc(t('cohorts.aval_editor_todo')) + '</div>' +
+      empty + list +
     '</div>';
 }
+
+// ── Editing, as a MODE of the same list ──────────────────────────────────────────────────────
+// Not a separate screen and not a modal: the rows stay where they are and become editable in
+// place, so the instrument he is changing is the instrument he was just reading. The mutations
+// themselves are pure and live in survey-editor.js.
+
+function editRowHtml(r, i, total) {
+  const kindOpts = ed.KINDS.map((k) =>
+    '<option value="' + k + '"' + (r.kind === k ? ' selected' : '') + '>' +
+      esc(t(KIND_KEY[k])) + '</option>').join('');
+  const opts = r.kind === 'poll'
+    ? '<div class="cdx-av-eopts">' + (r.options || []).map((o, j) =>
+        '<div class="cdx-av-eopt">' +
+          '<input type="text" class="cdx-av-einput" data-av-opt="' + i + '" data-av-slot="' + j + '"' +
+            ' value="' + esc(o || '') + '" placeholder="' + esc(t('cohorts.aval_ed_option')) + '">' +
+          '<button type="button" class="cdx-av-ebtn" data-av-rmopt="' + i + '" data-av-slot="' + j + '"' +
+            ' aria-label="' + esc(t('cohorts.aval_ed_remove_option')) + '">×</button>' +
+        '</div>').join('') +
+        '<button type="button" class="cdx-btn cdx-btn-sm" data-av-addopt="' + i + '">+ ' +
+          esc(t('cohorts.aval_ed_add_option')) + '</button>' +
+      '</div>'
+    : '';
+  return '<div class="cdx-av-qrow cdx-av-erow">' +
+      '<div class="cdx-av-ehead">' +
+        '<span class="cdx-av-qn">' + (i + 1) + '</span>' +
+        '<select class="cdx-av-ekind" data-av-kind="' + i + '"' +
+          ' aria-label="' + esc(t('cohorts.aval_ed_kind')) + '">' + kindOpts + '</select>' +
+        '<div class="cdx-av-emove">' +
+          '<button type="button" class="cdx-av-ebtn" data-av-up="' + i + '"' + (i === 0 ? ' disabled' : '') +
+            ' aria-label="' + esc(t('cohorts.aval_ed_up')) + '">↑</button>' +
+          '<button type="button" class="cdx-av-ebtn" data-av-down="' + i + '"' + (i === total - 1 ? ' disabled' : '') +
+            ' aria-label="' + esc(t('cohorts.aval_ed_down')) + '">↓</button>' +
+          '<button type="button" class="cdx-av-ebtn cdx-av-ebtn--danger" data-av-rm="' + i + '"' +
+            ' aria-label="' + esc(t('cohorts.aval_ed_remove')) + '">×</button>' +
+        '</div>' +
+      '</div>' +
+      '<textarea class="cdx-av-eprompt" rows="2" data-av-prompt="' + i + '"' +
+        ' placeholder="' + esc(t('cohorts.aval_ed_prompt')) + '">' + esc(r.prompt || '') + '</textarea>' +
+      opts +
+      '<label class="cdx-av-ereq"><input type="checkbox" data-av-req="' + i + '"' +
+        (r.required ? ' checked' : '') + '> ' + esc(t('cohorts.aval_ed_required')) + '</label>' +
+    '</div>';
+}
+
+function editorHtml(ctx) {
+  const rows = ctx.draft || [];
+  const err = ed.validationError(rows);
+  return '<div class="cdx-av-qlist cdx-av-elist">' +
+      rows.map((r, i) => editRowHtml(r, i, rows.length)).join('') +
+    '</div>' +
+    '<div class="cdx-av-eadd">' +
+      '<button type="button" class="cdx-btn cdx-btn-sm" data-av-add>+ ' + esc(t('cohorts.aval_ed_add')) + '</button>' +
+    '</div>' +
+    // The reason is written out, not only disabled: the same rule as the send button, and for the
+    // same reason. A control that refuses without saying why is a control he has to guess at.
+    (err ? '<div class="cdx-av-blocks"><div class="cdx-av-block">' +
+      esc(t(ED_ERROR_KEY[err] || 'cohorts.aval_ed_invalid')) + '</div></div>' : '') +
+    '<div class="cdx-av-eactions">' +
+      '<button type="button" class="cdx-btn cdx-btn-primary' + (err ? ' is-locked' : '') + '"' +
+        (err ? ' aria-disabled="true"' : '') + ' data-av-save>' + esc(t('cohorts.aval_ed_save')) + '</button>' +
+      '<button type="button" class="cdx-btn cdx-btn-vazado" data-av-cancel>' + esc(t('cohorts.aval_ed_cancel')) + '</button>' +
+    '</div>';
+}
+
+const ED_ERROR_KEY = {
+  no_instrument: 'cohorts.aval_ed_err_empty',
+  bad_kind: 'cohorts.aval_ed_invalid',
+  empty_prompt: 'cohorts.aval_ed_err_prompt',
+  poll_needs_options: 'cohorts.aval_ed_err_options',
+  nothing_required: 'cohorts.aval_ed_err_required',
+};
 
 // "9 respostas" / "1 resposta" / "sem respostas", so a row never reads "0 respostas".
 export function answersLabel(n) {
@@ -333,6 +418,86 @@ function wire(ctx) {
     if (row) row.classList.toggle('is-open', open);
     if (open) { ctx.openIds.add(id); drawChart(ctx, id); } else { ctx.openIds.delete(id); }
   }));
+  // ── Editing ─────────────────────────────────────────────────────────────────────────────
+  // Every mutation goes through survey-editor.js and repaints. Repainting is right HERE and wrong
+  // for the result panels: a form the size of one question has no scroll to lose, and patching a
+  // list whose rows can move would need the very bookkeeping the pure functions exist to avoid.
+  const editBtn = ctx.el.querySelector('[data-av-edit]');
+  if (editBtn) editBtn.addEventListener('click', () => {
+    // A COPY, so cancel is free. Editing the live rows in place would leave the tab holding
+    // changes the database never saw, with nothing to put back.
+    ctx.draft = liveQuestions(ctx.state.questions).map((q) => ({
+      id: q.id, kind: q.kind, prompt: q.prompt, required: q.required,
+      options: Array.isArray(q.options) ? q.options.slice() : undefined,
+    }));
+    ctx.editing = true;
+    paint(ctx);
+  });
+  const cancel = ctx.el.querySelector('[data-av-cancel]');
+  if (cancel) cancel.addEventListener('click', () => { ctx.editing = false; ctx.draft = null; paint(ctx); });
+
+  const unlock = ctx.el.querySelector('[data-av-unlock]');
+  if (unlock) unlock.addEventListener('click', async () => {
+    await api.surveyUnlock({ client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug, unlocked: 1 });
+    reload(ctx);
+  });
+
+  const mutate = (fn) => { ctx.draft = fn(ctx.draft); paint(ctx); };
+  const idx = (b, a) => Number(b.getAttribute(a));
+  ctx.el.querySelectorAll('[data-av-up]').forEach((b) =>
+    b.addEventListener('click', () => mutate((d) => ed.move(d, idx(b, 'data-av-up'), -1))));
+  ctx.el.querySelectorAll('[data-av-down]').forEach((b) =>
+    b.addEventListener('click', () => mutate((d) => ed.move(d, idx(b, 'data-av-down'), 1))));
+  ctx.el.querySelectorAll('[data-av-rm]').forEach((b) =>
+    b.addEventListener('click', () => mutate((d) => ed.remove(d, idx(b, 'data-av-rm')))));
+  ctx.el.querySelectorAll('[data-av-addopt]').forEach((b) =>
+    b.addEventListener('click', () => mutate((d) => ed.addOption(d, idx(b, 'data-av-addopt')))));
+  ctx.el.querySelectorAll('[data-av-rmopt]').forEach((b) =>
+    b.addEventListener('click', () => mutate((d) =>
+      ed.removeOption(d, idx(b, 'data-av-rmopt'), idx(b, 'data-av-slot')))));
+  const addBtn = ctx.el.querySelector('[data-av-add]');
+  if (addBtn) addBtn.addEventListener('click', () => mutate((d) => ed.add(d, 'rating')));
+  ctx.el.querySelectorAll('[data-av-kind]').forEach((sel) =>
+    sel.addEventListener('change', () => mutate((d) => ed.setKind(d, idx(sel, 'data-av-kind'), sel.value))));
+
+  // Typing does NOT repaint: a textarea rebuilt on every keystroke loses the caret mid-word, which
+  // is the same rule the student's three-word boxes are written to. The draft is updated in place
+  // and the save button's state is patched, nothing more.
+  ctx.el.querySelectorAll('[data-av-prompt]').forEach((ta) =>
+    ta.addEventListener('input', () => {
+      ctx.draft = ed.setField(ctx.draft, idx(ta, 'data-av-prompt'), 'prompt', ta.value);
+      patchSaveState(ctx);
+    }));
+  ctx.el.querySelectorAll('[data-av-opt]').forEach((inp) =>
+    inp.addEventListener('input', () => {
+      ctx.draft = ed.setOption(ctx.draft, idx(inp, 'data-av-opt'), idx(inp, 'data-av-slot'), inp.value);
+      patchSaveState(ctx);
+    }));
+  ctx.el.querySelectorAll('[data-av-req]').forEach((cb) =>
+    cb.addEventListener('change', () => {
+      ctx.draft = ed.setField(ctx.draft, idx(cb, 'data-av-req'), 'required', cb.checked ? 1 : 0);
+      patchSaveState(ctx);
+    }));
+
+  const save = ctx.el.querySelector('[data-av-save]');
+  if (save) save.addEventListener('click', async () => {
+    if (ed.validationError(ctx.draft) || ctx.busy) return;
+    ctx.busy = true;
+    try {
+      const r = await api.surveySaveQuestions({
+        client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug,
+        questions: ed.toPayload(ctx.draft),
+      });
+      if (!r || !r.ok) { toast.err(t('cohorts.aval_ed_save_failed')); return; }
+      ctx.editing = false; ctx.draft = null;
+      ctx.openIds.clear();
+      reload(ctx);
+    } catch (e) {
+      if (window.bsLog) window.bsLog('survey: save failed: ' + (e && e.message || e), 'error');
+      toast.err(t('cohorts.aval_ed_save_failed'));
+    } finally { ctx.busy = false; }
+  });
+
   const prev = ctx.el.querySelector('[data-av-preview]');
   if (prev) prev.addEventListener('click', () => { ctx.preview = !ctx.preview; paint(ctx); });
   const go = ctx.el.querySelector('[data-av-send]');
@@ -363,4 +528,19 @@ function wire(ctx) {
       reload(ctx);
     }
   });
+}
+
+// The save button and its reason, patched in place while he types. Repainting on every keystroke
+// would steal the caret; leaving the button stale would let him press something the Worker then
+// refuses for a reason he can no longer see on screen.
+function patchSaveState(ctx) {
+  const err = ed.validationError(ctx.draft);
+  const save = ctx.el.querySelector('[data-av-save]');
+  if (save) {
+    save.classList.toggle('is-locked', !!err);
+    if (err) save.setAttribute('aria-disabled', 'true'); else save.removeAttribute('aria-disabled');
+  }
+  const box = ctx.el.querySelector('.cdx-av-elist ~ .cdx-av-blocks .cdx-av-block')
+    || ctx.el.querySelector('.cdx-av-blocks .cdx-av-block');
+  if (box) box.textContent = err ? t(ED_ERROR_KEY[err] || 'cohorts.aval_ed_invalid') : '';
 }

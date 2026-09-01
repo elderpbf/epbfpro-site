@@ -145,3 +145,29 @@
    copy rather than fork it; it is a sibling of the bars, not a grid child, so
    nothing reflows. */
 .cdx-av-qpanel .cdx-qr-rating-summary { display: none; }
+
+/* ── Editing, in the same list ────────────────────────────────────────────────
+   The edit row keeps the reading row's geometry (number on the left, full-width
+   prompt) so switching modes does not reflow the section under his eyes. */
+.cdx-av-erow { padding: .7rem; display: flex; flex-direction: column; gap: .5rem; }
+.cdx-av-ehead { display: flex; align-items: center; gap: .5rem; }
+.cdx-av-ekind, .cdx-av-eprompt, .cdx-av-einput {
+  font: inherit; font-size: .85rem; padding: .35rem .5rem; border-radius: 6px;
+  border: 1px solid var(--border); background: var(--surface); color: var(--text-primary);
+}
+.cdx-av-eprompt { width: 100%; resize: vertical; }
+.cdx-av-emove { margin-left: auto; display: flex; gap: .25rem; }
+.cdx-av-ebtn {
+  font: inherit; cursor: pointer; min-width: 32px; min-height: 32px; border-radius: 6px;
+  background: var(--surface); border: 1px solid var(--border); color: var(--text-secondary);
+}
+.cdx-av-ebtn[disabled] { opacity: .35; cursor: default; }
+.cdx-av-ebtn--danger { color: var(--error); }
+.cdx-av-eopts { display: flex; flex-direction: column; gap: .35rem; padding-left: 1.8rem; }
+.cdx-av-eopt { display: flex; gap: .35rem; }
+.cdx-av-eopt .cdx-av-einput { flex: 1 1 auto; }
+.cdx-av-ereq { font-size: .8rem; color: var(--text-secondary); display: flex; align-items: center; gap: .4rem; }
+.cdx-av-eadd { margin-top: .6rem; }
+.cdx-av-eactions { margin-top: .8rem; display: flex; gap: .5rem; }
+.cdx-av-eactions .cdx-btn { min-height: 44px; }
+.cdx-av-eactions .is-locked { opacity: .5; cursor: not-allowed; filter: grayscale(1); }
