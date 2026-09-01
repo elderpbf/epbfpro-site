@@ -20,13 +20,14 @@
 // so a module-level ctx would paint one turma's numbers into another's dossier.
 // forum-admin.js has the shape this copies.
 import { t } from '../js/i18n.js';
+import * as toast from '../js/toast.js';
 import { esc } from '../js/dom.js';
 import { relTime } from '../js/rel-time.js';
 import { itemFromRow, questionCard } from '../js/survey-question.js';
 import { sendBlocks, canSend, liveQuestions, daysLeft, isClosed } from '../js/survey-locks.js';
 import { renderResults } from '../questions/question-render.js';
 import { statsFor, respondents } from './survey-stats.js';
-import { loadSurvey, scenarioFrom, SCENARIOS } from './survey-stub.js';
+import { cohorts as api } from '../js/codex-api.js';
 
 // Literal keys, never t('cohorts.aval_block_' + code). A key assembled at runtime is
 // invisible to the dead-key sweep, which is the exact trap track-30 documented and
@@ -47,12 +48,6 @@ const STATUS_KEY = {
   draft: 'cohorts.aval_status_draft',
   open: 'cohorts.aval_status_open',
   closed: 'cohorts.aval_status_closed',
-};
-const SCENARIO_KEY = {
-  draft_blocked: 'cohorts.aval_sc_blocked',
-  draft_ready: 'cohorts.aval_sc_ready',
-  open_partial: 'cohorts.aval_sc_open',
-  closed_final: 'cohorts.aval_sc_closed',
 };
 
 function fmtDate(unix) {
@@ -88,29 +83,44 @@ export function blockText(block, state) {
 
 export function mountSurveyAdmin(el, turma, opts) {
   if (!el) return null;
-  const o = opts || {};
-  const search = o.search != null ? o.search
-    : (typeof location !== 'undefined' ? location.search : '');
   const ctx = {
     el,
     turma,
-    scenario: scenarioFrom(search),
     state: null,
     preview: false,
     openIds: new Set(),   // which rows are expanded, kept across a repaint
+    busy: false,
   };
+  el.innerHTML = '<span class="cdx-empty">' + esc(t('cohorts.loading')) + '</span>';
   reload(ctx);
   return ctx;
 }
 
-function reload(ctx) {
-  // The one line that becomes cohorts.surveyGet({...}) when the Worker lands.
-  ctx.state = loadSurvey(ctx.scenario);
+// FAIL LOUD HERE. The student's gate fails OPEN, because a wall raised by a failed fetch strands
+// somebody who came for their trail; the admin side is the opposite. A tab that quietly renders an
+// empty instrument on a dead call would have Élder editing a survey that does not exist, so a
+// failure says so and offers the retry.
+async function reload(ctx) {
+  let r;
+  try {
+    r = await api.surveyGet({ client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug });
+  } catch (e) {
+    if (window.bsLog) window.bsLog('survey: get failed: ' + (e && e.message || e), 'error');
+    r = null;
+  }
+  if (!r || !r.ok) {
+    ctx.el.innerHTML = '<div class="cdx-empty">' + esc(t('cohorts.aval_load_failed')) +
+      ' <button type="button" class="cdx-btn cdx-btn-sm" data-av-retry>' + esc(t('cohorts.aval_retry')) + '</button></div>';
+    const again = ctx.el.querySelector('[data-av-retry]');
+    if (again) again.addEventListener('click', () => reload(ctx));
+    return;
+  }
+  ctx.state = r;
   paint(ctx);
 }
 
 function paint(ctx) {
-  ctx.el.innerHTML = '<div class="cdx-av">' + switcherHtml(ctx) + bodyHtml(ctx, ctx.state) + '</div>';
+  ctx.el.innerHTML = '<div class="cdx-av">' + bodyHtml(ctx, ctx.state) + '</div>';
   wire(ctx);
 }
 
@@ -126,17 +136,6 @@ function paint(ctx) {
 // a chart. Nothing moves.
 export function bodyHtml(ctx, s) {
   return headHtml(s) + sendBlockHtml(s) + instrumentHtml(ctx, s);
-}
-
-function switcherHtml(ctx) {
-  return '<div class="cdx-av-proto">' +
-      '<span class="cdx-av-proto-tag">' + esc(t('cohorts.aval_proto')) + '</span>' +
-      '<span class="cdx-av-sw">' +
-        SCENARIOS.map((sc) =>
-          '<button type="button" class="cdx-av-swb' + (sc.n === ctx.scenario ? ' is-on' : '') + '"' +
-            ' data-av-sc="' + sc.n + '">' + esc(t(SCENARIO_KEY[sc.key])) + '</button>').join('') +
-      '</span>' +
-    '</div>';
 }
 
 // The state strip: what the survey IS right now. The response rate lives here and
@@ -319,12 +318,6 @@ function drawChart(ctx, id) {
 }
 
 function wire(ctx) {
-  ctx.el.querySelectorAll('[data-av-sc]').forEach((b) => b.addEventListener('click', () => {
-    ctx.scenario = Number(b.getAttribute('data-av-sc'));
-    ctx.preview = false;
-    ctx.openIds.clear();
-    reload(ctx);
-  }));
   // Toggling patches the two elements that change and leaves the rest alone. A full
   // repaint here would throw him back to the top of a ten-question list, which is
   // the same complaint that produced js/list-sync.js and the student gate's
@@ -343,11 +336,31 @@ function wire(ctx) {
   const prev = ctx.el.querySelector('[data-av-preview]');
   if (prev) prev.addEventListener('click', () => { ctx.preview = !ctx.preview; paint(ctx); });
   const go = ctx.el.querySelector('[data-av-send]');
-  // A greyed button still receives the click (that is the price of keeping it
-  // hoverable), so the no-op is explicit rather than implied by the attribute.
-  if (go) go.addEventListener('click', () => {
-    if (!canSend(ctx.state)) return;
-    ctx.scenario = 3;
-    reload(ctx);
+  // A greyed button still receives the click (that is the price of keeping it hoverable), so the
+  // no-op is explicit rather than implied by the attribute. The browser check is a courtesy: the
+  // Worker refuses the same five conditions, because a lock only the UI enforces is not a lock.
+  if (go) go.addEventListener('click', async () => {
+    if (!canSend(ctx.state) || ctx.busy) return;
+    const daysEl = ctx.el.querySelector('.cdx-av-days');
+    const days = daysEl ? Number(daysEl.value) : ctx.state.deadline_days;
+    ctx.busy = true;
+    go.setAttribute('aria-disabled', 'true');
+    try {
+      const r = await api.surveySend({
+        client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug, deadline_days: days,
+      });
+      if (!r || !r.ok) {
+        // The server refused something the browser thought was fine, which means the two copies of
+        // the rule disagree or the state moved under him. Say which, rather than doing nothing.
+        toast.err(t('cohorts.aval_send_refused').replace('{r}', String((r && r.reason) || 'erro')));
+      }
+    } catch (e) {
+      if (window.bsLog) window.bsLog('survey: send failed: ' + (e && e.message || e), 'error');
+      toast.err(t('cohorts.aval_send_failed'));
+    } finally {
+      ctx.busy = false;
+      ctx.openIds.clear();
+      reload(ctx);
+    }
   });
 }

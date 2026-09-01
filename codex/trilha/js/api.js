@@ -29,6 +29,11 @@ export const trail = {
   studentInbox:   (p) => call('cp_student_inbox', p),       // { session_code, student_name }
   submitStudentQ: (p) => call('submit_student_question', p),// { session_code, student_name, text, session_token? } — token (optional) links the Q to the logged-in participant for LGPD erase; display stays anonymous
 
+  // track-64 reaction survey. surveyForStudent returns the FIELDS the gate reads and no verdict:
+  // js/survey-locks.js shouldGate() owns that decision for both this screen and the admin tab.
+  surveyForStudent:(p) => call('ct_survey_for_student', p), // { session } -> { ok, survey|null, questions, aulas, now }
+  surveyAnswer:   (p) => call('ct_survey_answer', p),       // { session, answers: { question_id: value } } -> { ok } | { error:'closed'|'incomplete'|... }
+
   // Student identity (e-mail OTP: the 4-letter code that replaces the magic link).
   // Public actions; session_token-bearing calls POST automatically (see worker-call.js).
   otpRequest:     (p) => call('student_otp_request', p),    // { email } -> { ok, dev_otp_code? } | { error }

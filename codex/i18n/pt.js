@@ -454,11 +454,10 @@ export default {
   // The ten questions themselves are NOT here: they are rows in ct_survey_questions
   // (section 3.9), so only the frame around them is translated.
   'cohorts.aval_tab':              'Avaliação',
-  'cohorts.aval_proto':            'Protótipo, dados de exemplo',
-  'cohorts.aval_sc_blocked':       'Rascunho, travado',
-  'cohorts.aval_sc_ready':         'Rascunho, pronto',
-  'cohorts.aval_sc_open':          'Aberta',
-  'cohorts.aval_sc_closed':        'Encerrada',
+  'cohorts.aval_load_failed':      'Não foi possível carregar a avaliação.',
+  'cohorts.aval_retry':            'Tentar de novo',
+  'cohorts.aval_send_refused':     'O servidor recusou o envio ({r}).',
+  'cohorts.aval_send_failed':      'Falha ao enviar a avaliação.',
   'cohorts.aval_status_draft':     'Rascunho',
   'cohorts.aval_status_open':      'Aberta',
   'cohorts.aval_status_closed':    'Encerrada',

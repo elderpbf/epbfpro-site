@@ -1,79 +1,68 @@
-// codex/trilha/js/survey-demo.js
-// PROTOTYPE (track-64). The STUDENT SHELL of the reaction survey, rendered in the real Trilha
-// chrome so the shape is judged against the live page instead of a mock that drifts.
-//
-// TWO INDEPENDENT AXES, not four variants (Élder 2026-08-26). They compose, so adding a third
-// pace or a third presentation later multiplies nothing:
-//
-//   presentation:  dialog     a quiet strip on the trail that opens the survey over the page
-//                  full       the same overlay edge to edge, opened on arrival, with no close:
-//                             the trail is covered until the thank-you says continuar
-//   pace:          all        every question at once, one send at the foot
-//                  steps      one question, advancing by itself after a one-tap answer
+// codex/trilha/js/survey.js
+// THE GATE (track-64 §3.7b). When a cohort's reaction survey is open and this student has not
+// answered, the survey covers the trail and the only way past it is answering.
 //
 // It draws no question. Every card, every input kind and every counting rule comes from
-// js/survey-question.js, the shared seam the admin tab will import too. That split is the point:
-// one implementation, so the preview an admin sees and the form a student answers cannot disagree.
+// js/survey-question.js, the shared seam the admin tab imports too, so the preview Élder sees and
+// the form a student answers cannot disagree.
 //
-// Inert unless ?survey=1..4 is in the URL: no facade call, no state read, no storage, and the
-// answers go nowhere. The ten items are stub data; in the shipping feature they are rows of
-// ct_survey_questions.
+// It decides nothing either. Whether to gate is js/survey-locks.js shouldGate(), the same module
+// the admin tab reads to explain why a send is blocked. The Worker returns the FIELDS; one
+// implementation of the decision serves both screens.
+//
+// FAIL OPEN, always. A missing field, a timeout, an unexpected shape: the trail renders. A wall
+// raised by a failed fetch is exactly the stranded student this feature was warned about, and it
+// is the same doctrine as the Trilha access gate (Key Decision 2026-07-10, "gate falha-aberto").
+//
+// The trail is COVERED, never touched: nothing is hidden, moved or stored, so dismissing the
+// overlay needs nothing restored.
+//
+// PACE is a code-level default with a query override for comparison (§3.7). Both layouts stay
+// built and tested; ?survey=steps shows one question at a time on the same data. The presentation
+// is fixed: the gate is the full-screen one, below the trail's own header.
 import { t } from '../i18n.js';
 import { glyphSvg } from '../../js/glyphs.js';
 import { esc } from '../../js/dom.js';
 import {
   questionCard, progressHtml, patchQuestion, patchProgress, applyWordInput,
-  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom, isComplete,
+  isAnswered, nextUnanswered, isSelfAdvancing, hookFrom, isComplete, itemFromRow,
 } from '../../js/survey-question.js';
+import { shouldGate } from '../../js/survey-locks.js';
+import { trail } from './api.js';
+import { state } from './state.js';
 
-// The two open-ended items are OPTIONAL, which is what lets the bar reach 100%.
-const ITEMS = [
-  { kind: 'scale',  prompt: 'O conteúdo foi compatível com os objetivos anunciados e seguiu o programa.' },
-  { kind: 'scale',  prompt: 'A carga horária foi adequada ao conteúdo previsto.' },
-  { kind: 'choice', prompt: 'O grau de complexidade do conteúdo em relação ao seu nível:',
-    options: ['Foi adequado', 'Estava além do meu nível', 'Estava aquém do meu nível', 'Outro'] },
-  { kind: 'scale',  prompt: 'O instrutor demonstrou domínio do conteúdo e trouxe referências atualizadas.' },
-  { kind: 'scale',  prompt: 'Os exemplos usados e a didática facilitaram a compreensão.' },
-  { kind: 'scale',  prompt: 'Você se sente em condições de aplicar o que aprendeu.' },
-  { kind: 'scale',  prompt: 'A organização do curso de forma geral (divulgação, atendimento, estrutura).' },
-  { kind: 'scale',  prompt: 'Sua satisfação geral com o curso.' },
-  { kind: 'words',  prompt: 'Em até três palavras, o que você leva deste curso?', optional: true },
-  { kind: 'text',   prompt: 'Críticas, elogios e sugestões.', optional: true },
-];
-
-const PRESENTATIONS = ['dialog', 'full'];
+// The gate is always the full-screen presentation; only the PACE stays a choice, and only as a
+// code-level default (§3.7). Letting the student pick would put a decision before question 1, and
+// switching automatically by device makes it impossible to know what any given student saw.
 const PACES = ['all', 'steps'];
-
-// Label keys written out LITERALLY, never assembled as 'survey.pres_' + id. A key built at
-// runtime is invisible to the dead-key guard in tests/trilha-i18n.test.mjs, which is exactly the
-// trap track-30 documented with `page.tabshort_*`. The guard caught this one on the first run.
-const AXIS_LABELS = {
-  dialog: 'survey.pres_dialog',
-  full:   'survey.pres_full',
-  all:    'survey.pace_all',
-  steps:  'survey.pace_steps',
-};
-
-// PURE. ?survey=N carries BOTH axes in one digit, so a switcher link flips exactly one bit:
-// N = 1 + pace + 2*presentation. Returns null when the prototype is off, so a stray value can
-// never half-mount it.
-export function modeFrom(search) {
-  const m = /(?:^|[?&])survey=(\d)(?:&|$)/.exec(String(search || ''));
-  const n = m ? Number(m[1]) : 0;
-  if (n < 1 || n > 4) return null;
-  const i = n - 1;
-  return { n: n, presentation: PRESENTATIONS[i >> 1], pace: PACES[i & 1] };
+export function paceFrom(search) {
+  return /(?:^|[?&])survey=steps(?:&|$)/.test(String(search || '')) ? 'steps' : 'all';
 }
 
-// PURE. The inverse: which ?survey= digit a given pair is. The switcher needs it to build a link
-// that changes one axis and leaves the other alone.
-export function modeNumber(presentation, pace) {
-  const p = Math.max(0, PRESENTATIONS.indexOf(presentation));
-  const c = Math.max(0, PACES.indexOf(pace));
-  return 1 + c + 2 * p;
+// The rows the Worker returned, as the items the seam renders, plus the id each answer must be
+// sent back under. The renderer keys answers by INDEX; ct_survey_responses keys them by
+// question_id, and this is the only place the two meet.
+export function itemsFromRows(rows) {
+  const out = [];
+  (rows || []).forEach((r) => {
+    try { out.push(Object.assign(itemFromRow(r), { id: r.id })); }
+    catch (_) { /* an unknown kind is a row this build cannot render; skipping beats throwing */ }
+  });
+  return out;
 }
 
-const _st = { mode: null, answers: {}, step: 0, open: false, sent: false };
+export function answersByQuestionId(items, answers) {
+  const out = {};
+  (items || []).forEach((it, i) => {
+    if (!it || it.id == null) return;
+    const v = (answers || {})[i];
+    if (v == null || (Array.isArray(v) ? !v.some((w) => String(w || '').trim()) : String(v).trim() === '')) return;
+    out[it.id] = v;
+  });
+  return out;
+}
+
+const _st = { pace: 'all', items: [], answers: {}, step: 0, open: false, sent: false, sending: false };
 let _host = null;
 let _modalHost = null;
 
@@ -84,14 +73,14 @@ function surface() {
 }
 
 function card(i) {
-  return questionCard(ITEMS[i], i, _st.answers, t, { total: ITEMS.length });
+  return questionCard(_st.items[i], i, _st.answers, t, { total: _st.items.length });
 }
 
 // ── The two paces. This is the ENTIRE difference between them. ───────────────────────────────
 // Neither draws a question: they choose which items to lay out and which buttons go in the foot.
 
 function bodyAll() {
-  return '<div class="cdx-sv-list">' + ITEMS.map((_x, i) => card(i)).join('') + '</div>';
+  return '<div class="cdx-sv-list">' + _st.items.map((_x, i) => card(i)).join('') + '</div>';
 }
 
 function bodySteps() {
@@ -103,7 +92,7 @@ function bodySteps() {
 // tracker at the top already says exactly where they are. The ADMIN side is the opposite: there
 // the button is greyed and says what is blocking it, because that is diagnosis, not pressure.
 function sendIfReady() {
-  return isComplete(ITEMS, _st.answers)
+  return isComplete(_st.items, _st.answers)
     ? '<button type="button" class="cdx-sv-send" data-sv-send>' + esc(t('survey.send')) + '</button>'
     : '';
 }
@@ -113,7 +102,7 @@ function footAll() {
 }
 
 function footSteps() {
-  const last = _st.step === ITEMS.length - 1;
+  const last = _st.step === _st.items.length - 1;
   return '<div class="cdx-sv-nav">' +
     '<button type="button" class="cdx-sv-back" data-sv-step="-1"' + (_st.step === 0 ? ' disabled' : '') + '>' +
       esc(t('survey.back')) + '</button>' +
@@ -128,16 +117,15 @@ const PACE = {
   steps: { body: bodySteps, foot: footSteps, stepped: true  },
 };
 
-// ── Chrome shared by both presentations ──────────────────────────────────────────────────────
+// ── Chrome ───────────────────────────────────────────────────────────────────────────────────
 
 function introHtml() {
-  // On full screen the person tapped their TRAIL and got this instead, so the first thing it does
-  // is explain itself. In the dialog they chose to open it, and the plain title is right.
-  const gate = _st.mode.presentation === 'full';
+  // The person tapped their TRAIL and got this instead, so the first thing the gate does is
+  // explain itself. Someone who expected the trail is owed a reason before a question.
   return '<div class="cdx-sv-intro">' +
     '<div class="cdx-sv-eyebrow">' + glyphSvg('star', { size: 14 }) + ' ' + esc(t('survey.eyebrow')) + '</div>' +
-    '<h2 class="cdx-sv-title">' + esc(t(gate ? 'survey.gate_title' : 'survey.title')) + '</h2>' +
-    '<p class="cdx-sv-lede">' + esc(t(gate ? 'survey.gate_lede' : 'survey.lede')) + '</p>' +
+    '<h2 class="cdx-sv-title">' + esc(t('survey.gate_title')) + '</h2>' +
+    '<p class="cdx-sv-lede">' + esc(t('survey.gate_lede')) + '</p>' +
   '</div>';
 }
 
@@ -146,26 +134,26 @@ function doneHtml() {
     '<div class="cdx-sv-done-mark">' + glyphSvg('check-circle', { size: 34 }) + '</div>' +
     '<h2 class="cdx-sv-title">' + esc(t('survey.thanks_title')) + '</h2>' +
     '<p class="cdx-sv-lede">' + esc(t('survey.thanks_lede')) + '</p>' +
-    // The way out. On full screen it is the ONLY way out, which is what makes the gate humane
-    // rather than a dead end: answering is what opens the trail.
+    // The way out, and the ONLY one, which is what makes the gate humane rather than a dead end:
+    // answering is what opens the trail.
     '<button type="button" class="cdx-sv-send cdx-sv-continue" data-sv-continue>' +
       esc(t('survey.continue')) + '</button>' +
   '</div>';
 }
 
 function bodyHtml() {
-  return _st.sent ? doneHtml() : introHtml() + PACE[_st.mode.pace].body();
+  return _st.sent ? doneHtml() : introHtml() + PACE[_st.pace].body();
 }
 
 function footHtml() {
-  return _st.sent ? '' : PACE[_st.mode.pace].foot();
+  return _st.sent ? '' : PACE[_st.pace].foot();
 }
 
 // Whose trail this is, taken from the hero the trail already rendered rather than fetched again.
 // It sits in the gate's own head so the student stays grounded without the gate having to start
 // below a 300px hero, which on a phone would leave almost no room for a question (Élder 2026-08-27).
 function whoHtml() {
-  if (!_host || _st.mode.presentation !== 'full') return '';
+  if (!_host || false) return '';
   const doc = _host.ownerDocument;
   const pick = (sel) => {
     const el = doc.querySelector(sel);
@@ -176,45 +164,25 @@ function whoHtml() {
 }
 
 function headHtml() {
-  return whoHtml() + (_st.sent ? '<div class="cdx-sv-progress"></div>' : progressHtml(ITEMS, _st.answers, t));
+  return whoHtml() + (_st.sent ? '<div class="cdx-sv-progress"></div>' : progressHtml(_st.items, _st.answers, t));
 }
 
 // ── Presentation: dialog ─────────────────────────────────────────────────────────────────────
 
-function stripHtml() {
-  // The hook is on the STRIP, not only on its button: the whole banner is a better phone target,
-  // and on touch the synthesised click arrives at the strip rather than at the button it started
-  // on, so a hook only on the button is never found by a closest() walking upward.
-  return '<div class="cdx-sv-strip" data-sv-open>' +
-    '<span class="cdx-sv-strip-mark">' + glyphSvg('star', { size: 16 }) + '</span>' +
-    '<span class="cdx-sv-strip-txt">' +
-      '<strong>' + esc(t('survey.title')) + '</strong>' +
-      '<span>' + esc(t('survey.strip_sub')) + '</span>' +
-    '</span>' +
-    '<button type="button" class="cdx-sv-strip-go" data-sv-open>' + esc(t('survey.badge_answer')) + '</button>' +
-  '</div>';
-}
-
-// ── The overlay, shared by both presentations ────────────────────────────────────────────────
-// Both are the SAME layer over the page, sitting above the trail rather than flowing inside it.
-// `dialog` is a sheet with a scrim around it and a close button; `full` is the same layer edge to
-// edge, with no scrim gap, no close button and no strip behind it, so the only way out is
-// finishing. One markup, one set of scroll and patch mechanics, one class difference.
+// ── The overlay ──────────────────────────────────────────────────────────────────────────────
+// A layer ABOVE the trail, never a section inside it. It carries no close button and nothing sits
+// behind it, so the only way out is finishing; the trail underneath is covered and untouched.
 
 function overlayHtml() {
-  const full = _st.mode.presentation === 'full';
   const foot = footHtml();
   const wrap = (cls, inner, extra) =>
     '<div class="' + cls + '"' + (extra || '') + '><div class="cdx-sv-wrap">' + inner + '</div></div>';
   // The foot is ALWAYS in the tree, hidden while it is empty. It has to be: the send button
   // arrives by patching, and patching cannot fill an element that was never rendered. Dropping it
   // when empty is what made the button never appear after the nag line was removed.
-  return '<div class="cdx-sv-scrim' + (full ? ' is-full' : '') + '"' + (full ? '' : ' data-sv-scrim') + '>' +
+  return '<div class="cdx-sv-scrim is-full">' +
     '<div class="cdx-sv-modal" role="dialog" aria-modal="true">' +
-      wrap('cdx-sv-modal-head', headHtml() +
-        (full ? '' :
-          '<button type="button" class="cdx-sv-x" data-sv-close aria-label="' + esc(t('survey.close')) + '">' +
-            glyphSvg('close', { size: 18 }) + '</button>')) +
+      wrap('cdx-sv-modal-head', headHtml()) +
       wrap('cdx-sv-modal-body', bodyHtml(), ' data-sv-scroll') +
       wrap('cdx-sv-modal-foot', foot, foot ? '' : ' hidden') +
     '</div>' +
@@ -223,33 +191,11 @@ function overlayHtml() {
 
 // ── Render ───────────────────────────────────────────────────────────────────────────────────
 
-function switchRow(labelKey, values, axis) {
-  return '<div class="cdx-sv-switch-row">' +
-    '<span class="cdx-sv-switch-lbl">' + esc(t(labelKey)) + '</span>' +
-    values.map((v) => {
-      const n = axis === 'presentation'
-        ? modeNumber(v, _st.mode.pace)
-        : modeNumber(_st.mode.presentation, v);
-      const on = _st.mode[axis] === v;
-      return '<a class="cdx-sv-switch-b' + (on ? ' is-on' : '') + '" href="?survey=' + n + '">' +
-        esc(t(AXIS_LABELS[v])) + '</a>';
-    }).join('') +
-  '</div>';
-}
-
-function switcherHtml() {
-  return '<div class="cdx-sv-switch">' +
-    switchRow('survey.pres_label', PRESENTATIONS, 'presentation') +
-    switchRow('survey.pace_label', PACES, 'pace') +
-  '</div>';
-}
-
 function render() {
   if (!_host) return;
-  // On full screen there is no strip: the overlay IS the entry, and once it is dismissed the
-  // trail is simply the trail. In the dialog the strip is what opens it and what stays behind.
-  const full = _st.mode.presentation === 'full';
-  _host.innerHTML = switcherHtml() + (full ? '' : stripHtml());
+  // The host stays empty on purpose. The overlay IS the entry, and once it is dismissed the trail
+  // is simply the trail: nothing was hidden, so nothing has to be put back.
+  _host.innerHTML = '';
   renderModal(_st.open ? overlayHtml() : '');
 }
 
@@ -281,7 +227,7 @@ function renderModal(html) {
 // a laptop. Body scroll is locked while the overlay is up, so the header cannot slide out from
 // under it.
 function offsetBelowHeader() {
-  if (!_modalHost || !_st.mode || _st.mode.presentation !== 'full') return;
+  if (!_modalHost || false) return;
   const doc = _modalHost.ownerDocument;
   const hdr = doc.querySelector('pensoia-header');
   const scrim = _modalHost.querySelector('.cdx-sv-scrim');
@@ -310,7 +256,7 @@ function patchFoot() {
 function revealNext(idx) {
   const root = surface();
   if (!root) return;
-  const next = nextUnanswered(ITEMS, _st.answers, idx);
+  const next = nextUnanswered(_st.items, _st.answers, idx);
   if (next < 0) return;
   const el = root.querySelector('.cdx-sv-q[data-sv-q="' + next + '"]');
   if (el && typeof el.scrollIntoView === 'function') el.scrollIntoView({ behavior: 'smooth', block: 'center' });
@@ -322,7 +268,7 @@ function advanceAfterAnswer(idx) {
   const win = _host && _host.ownerDocument && _host.ownerDocument.defaultView;
   const go = () => {
     if (_st.step !== idx) return;             // they moved on themselves meanwhile
-    if (idx >= ITEMS.length - 1) return;      // the last card ends with Enviar, never a jump
+    if (idx >= _st.items.length - 1) return;      // the last card ends with Enviar, never a jump
     _st.step = idx + 1;
     render();
     scrollTop();
@@ -342,10 +288,10 @@ function onClick(e) {
     const idx = Number(set.getAttribute('data-sv-set'));
     _st.answers[idx] = set.getAttribute('data-sv-val');
     patchQuestion(surface(), idx, _st.answers);
-    patchProgress(surface(), ITEMS, _st.answers, t);
+    patchProgress(surface(), _st.items, _st.answers, t);
     patchFoot();
-    if (PACE[_st.mode.pace].stepped) {
-      if (isSelfAdvancing(ITEMS[idx])) advanceAfterAnswer(idx);
+    if (PACE[_st.pace].stepped) {
+      if (isSelfAdvancing(_st.items[idx])) advanceAfterAnswer(idx);
     } else {
       revealNext(idx);
     }
@@ -353,16 +299,15 @@ function onClick(e) {
   }
   const step = hookFrom(e, '[data-sv-step]');
   if (step) {
-    _st.step = Math.max(0, Math.min(ITEMS.length - 1, _st.step + Number(step.getAttribute('data-sv-step'))));
+    _st.step = Math.max(0, Math.min(_st.items.length - 1, _st.step + Number(step.getAttribute('data-sv-step'))));
     render();
     scrollTop();
     return;
   }
-  if (hookFrom(e, '[data-sv-open]')) { _st.open = true; _st.step = 0; render(); return; }
-  if (hookFrom(e, '[data-sv-close]')) { _st.open = false; render(); return; }
-  const scrim = hookFrom(e, '[data-sv-scrim]');
-  if (scrim && e.target === scrim) { _st.open = false; render(); return; }
-  if (hookFrom(e, '[data-sv-send]')) { _st.sent = true; render(); scrollTop(); return; }
+  // No close, no scrim dismissal: the gate has exactly two exits, and both are earned. Sending
+  // waits for the Worker before it shows the thank-you (see submit()), so nobody is told their
+  // answers were recorded until they were.
+  if (hookFrom(e, '[data-sv-send]')) { submit().then(scrollTop); return; }
   if (hookFrom(e, '[data-sv-continue]')) { _st.open = false; render(); return; }
 }
 
@@ -370,7 +315,7 @@ function onInput(e) {
   const word = e.target.closest('[data-sv-word]');
   if (word) {
     const idx = applyWordInput(word, _st.answers);
-    if (!ITEMS[idx].optional) { patchProgress(surface(), ITEMS, _st.answers, t); patchFoot(); }
+    if (!_st.items[idx].optional) { patchProgress(surface(), _st.items, _st.answers, t); patchFoot(); }
     return;
   }
   const txt = e.target.closest('[data-sv-text]');
@@ -381,7 +326,7 @@ function onInput(e) {
     if (c) c.classList.toggle('is-done', isAnswered(_st.answers, idx));
     // Today both typed items are optional so this cannot flip completeness, but the instrument is
     // editable and a required text item would silently strand the send button without this.
-    if (!ITEMS[idx].optional) { patchProgress(surface(), ITEMS, _st.answers, t); patchFoot(); }
+    if (!_st.items[idx].optional) { patchProgress(surface(), _st.items, _st.answers, t); patchFoot(); }
   }
 }
 
@@ -406,12 +351,42 @@ function attach(doc) {
   render();
 }
 
-export function start(win) {
+// The one call the gate makes, and everything it does with the answer.
+//
+// Every branch that is not "the survey is open, sent, inside its window, and this person has not
+// answered" ends the same way: return, and the trail renders. shouldGate() is where that is
+// decided, from the fields the Worker returned, and it refuses on anything it cannot prove.
+export async function start(win) {
   const w = win || (typeof window !== 'undefined' ? window : null);
   if (!w || !w.document) return;
-  _st.mode = modeFrom(w.location && w.location.search);
-  if (!_st.mode) return;
-  _st.open = _st.mode.presentation === 'full';   // full screen greets them; the dialog waits
+  const token = state && state.sessionToken;
+  if (!token) return;                       // nobody is logged in: there is no one to gate
+
+  let r;
+  try {
+    r = await trail.surveyForStudent({ session: token, _silent: true });
+  } catch (e) {
+    return;                                 // FAIL OPEN: a dead call must never raise a wall
+  }
+  if (!r || !r.ok || !r.survey) return;
+
+  const gate = {
+    status: r.survey.status,
+    sent_at: r.survey.sent_at,
+    closes_at: r.survey.closes_at,
+    answered: r.survey.answered,
+    aulas: r.aulas,
+    now: r.now,
+  };
+  if (!shouldGate(gate)) return;
+
+  _st.items = itemsFromRows(r.questions);
+  if (!_st.items.length) return;            // an instrument this build cannot render is not a gate
+  _st.surveyId = r.survey.id;
+  _st.token = token;
+  _st.pace = paceFrom(w.location && w.location.search);
+  _st.open = true;
+
   const doc = w.document;
   const main = doc.querySelector('.cdx-trilha-main');
   if (main && !main.hidden) { attach(doc); return; }
@@ -420,6 +395,42 @@ export function start(win) {
     if (!main.hidden) { obs.disconnect(); attach(doc); }
   });
   obs.observe(main, { attributes: true, attributeFilter: ['hidden'] });
+}
+
+// Submit. The renderer keys answers by index; ct_survey_responses keys them by question_id, and
+// answersByQuestionId is the only place the two vocabularies meet.
+//
+// The thank-you appears only after the Worker confirms. Showing it first and reconciling later
+// would tell somebody their answers were recorded when they were not, and the gate is the one
+// screen where that lie also costs the response.
+export async function submit() {
+  if (_st.sending || _st.sent) return;
+  if (!isComplete(_st.items, _st.answers)) return;
+  _st.sending = true;
+  let ok = false;
+  try {
+    const r = await trail.surveyAnswer({
+      session: _st.token,
+      answers: answersByQuestionId(_st.items, _st.answers),
+      _silent: true,
+    });
+    ok = !!(r && r.ok);
+  } catch (_) { ok = false; }
+  _st.sending = false;
+  if (!ok) {
+    // Nothing was recorded, so nothing changes on screen except a line saying so. The person keeps
+    // their answers and the button, which is the only recoverable state here.
+    const foot = _modalHost && _modalHost.querySelector('.cdx-sv-modal-foot .cdx-sv-wrap');
+    if (foot && !foot.querySelector('.cdx-sv-err')) {
+      const p = foot.ownerDocument.createElement('p');
+      p.className = 'cdx-sv-err';
+      p.textContent = t('survey.send_failed');
+      foot.appendChild(p);
+    }
+    return;
+  }
+  _st.sent = true;
+  renderModal(overlayHtml());
 }
 
 start();

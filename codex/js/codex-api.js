@@ -241,7 +241,15 @@ export const cohorts = {
   // Cross-turma teacher notifications (the topbar bell).
   forumNotifications:(p) => call('ct_forum_admin_notifications', p), // -> { ok, count, items }
   forumMarkSeen:     (p) => call('ct_forum_admin_mark_seen', p),     // { scope?: 'glance'|'all', client_slug?, turma_slug? } -> { ok } (glance = clears Dispensáveis on open; all = clears everything)
-  forumDismiss:      (p) => call('ct_forum_admin_dismiss', p)        // { notif_key, up_to_at } -> { ok } (dismiss ONE Acionável)
+  forumDismiss:      (p) => call('ct_forum_admin_dismiss', p),       // { notif_key, up_to_at } -> { ok } (dismiss ONE Acionável)
+  // track-64 reaction survey. surveyGet also CREATES the draft on first open, seeded from the
+  // previous cohort of the same course, so the tab always has an instrument to show.
+  surveyGet:         (p) => call('ct_survey_get', p),               // { client_slug, turma_slug } -> { ok, status, questions, responses, aulas, invitees, now, ... }
+  surveySaveQuestions:(p) => call('ct_survey_save_questions', p),   // { client_slug, turma_slug, questions[] } -> { ok, questions }
+  surveySend:        (p) => call('ct_survey_send', p),              // { client_slug, turma_slug, deadline_days } -> { ok, sent_at, closes_at, invited_count } | { ok:false, reason }
+  surveyClose:       (p) => call('ct_survey_close', p),             // { client_slug, turma_slug } -> { ok, closes_at }
+  surveyExtend:      (p) => call('ct_survey_extend', p),            // { client_slug, turma_slug, days } -> { ok, closes_at }
+  surveyUnlock:      (p) => call('ct_survey_unlock_instrument', p)  // { client_slug, turma_slug, unlocked? } -> { ok, instrument_unlocked }
 };
 
 // Courses — reusable course templates (Cohorts → Cursos sub-tab). A course is a

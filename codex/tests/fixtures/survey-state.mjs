@@ -1,7 +1,8 @@
-// codex/cohorts/survey-stub.js
-// PROTOTYPE DATA. The dossier's Avaliação tab has no backend yet: migration 0054 and
-// the ct_survey_* actions are unbuilt (track-64 §3.3), so this stands in for the one
-// call the tab will make, shaped exactly like its response.
+// codex/tests/fixtures/survey-state.mjs
+// TEST FIXTURE. This was the tab's data source while the Worker did not exist; migration
+// 0055 and the ct_survey_* actions landed on 2026-08-31, so the tab reads the real thing
+// now and this survives only to give the unit tests four known states to render.
+// It is shaped exactly like ct_survey_get's response and must stay that way.
 //
 // THE SWAP POINT IS ONE LINE. When the Worker lands, survey.js replaces
 //   import { loadSurvey } from './survey-stub.js';

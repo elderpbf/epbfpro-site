@@ -15,7 +15,7 @@ import { fileURLToPath } from 'node:url';
 import { sendBlockHtml, blockText, instrumentHtml, answersLabel, bodyHtml, headHtml } from '../cohorts/survey.js';
 import { statsFor, respondents, average, answersFor } from '../cohorts/survey-stats.js';
 import { kindFromStored, kindToStored, itemFromRow, questionInput } from '../js/survey-question.js';
-import { loadSurvey, scenarioFrom } from '../cohorts/survey-stub.js';
+import { loadSurvey } from './fixtures/survey-state.mjs';
 
 const NOW = 1_780_000_000;
 const src = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
@@ -205,16 +205,9 @@ test('the fixture is deterministic: two loads of one scenario agree', () => {
   assert.ok(loadSurvey(4, NOW).responses.length > loadSurvey(3, NOW).responses.length);
 });
 
-test('scenarioFrom defaults to the blocked draft and refuses anything out of range', () => {
-  assert.equal(scenarioFrom('?avaliacao=3'), 3);
-  assert.equal(scenarioFrom('?tab=cohorts&avaliacao=4'), 4);
-  assert.equal(scenarioFrom(''), 1);
-  assert.equal(scenarioFrom('?avaliacao=9'), 1);
-  assert.equal(scenarioFrom(null), 1);
-});
 
 test('the instrument is DATA, never i18n keys', () => {
-  const stub = src('../cohorts/survey-stub.js');
+  const stub = src('./fixtures/survey-state.mjs');
   assert.ok(stub.includes('Sua satisfação geral com o curso.'),
     'the ten questions are rows in ct_survey_questions (§3.9), so they are hardcoded here, not translated');
   assert.equal(loadSurvey(1, NOW).questions.length, 10);
