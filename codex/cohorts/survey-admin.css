@@ -137,3 +137,11 @@
 .cdx-av-chart .cdx-qr-rating-avg { font-size: 1.6rem; }
 .cdx-av-chart .cdx-qr-wordcloud { justify-content: flex-start; padding: .4rem 0; }
 .cdx-av-chart .cdx-qr-text-feed { display: flex; flex-direction: column; gap: .5rem; }
+
+/* The renderer prints its own "4.4 / 9 respostas" headline above the bars, which
+   inside an expanded row is the THIRD copy of the same count: the collapsed head
+   already says "9 respostas · 4.4", and the meta line adds the only thing neither
+   says, the denominator ("9 de 14 responderam esta pergunta"). Hide the renderer's
+   copy rather than fork it; it is a sibling of the bars, not a grid child, so
+   nothing reflows. */
+.cdx-av-qpanel .cdx-qr-rating-summary { display: none; }
