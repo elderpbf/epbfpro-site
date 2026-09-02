@@ -520,6 +520,12 @@ function wire(ctx) {
     const days = daysEl ? Number(daysEl.value) : ctx.state.deadline_days;
     ctx.busy = true;
     go.setAttribute('aria-disabled', 'true');
+    // SAY that it is working. The call does not return until every invitation has been handed to
+    // the platform, one at a time: measured at 7.1s for five students on staging, so the largest
+    // cohort in production (40) is close to a minute. A greyed button with its original label for
+    // that long reads as a click that did not register, and the second click is the one that
+    // creates the support question.
+    go.textContent = t('cohorts.aval_sending');
     try {
       const r = await api.surveySend({
         client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug, deadline_days: days,
