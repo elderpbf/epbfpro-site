@@ -55,11 +55,11 @@ function setRenamed(obj) {
   if (obj) for (const k of Object.keys(obj)) patch(k, { display_name: obj[k] });
 }
 
-const EXPECTED_KEYS = ['k1', 'k2', 'k3', 'k4', 'k5', 'k6', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k19', 'k20', 'k21', 'k22'];
+const EXPECTED_KEYS = ['k1', 'k2', 'k4', 'k5', 'k6', 'k9', 'k10', 'k11', 'k12', 'k13', 'k15', 'k16', 'k17', 'k18', 'k19', 'k20', 'k21', 'k22'];
 
-test('LABS is the shipped registry (19 labs, exact keys + non-empty title/summary)', () => {
+test('LABS is the shipped registry (18 labs, exact keys + non-empty title/summary)', () => {
   assert.ok(Array.isArray(reg.LABS), 'LABS is an array');
-  assert.equal(reg.LABS.length, 19, 'nineteen labs');
+  assert.equal(reg.LABS.length, 18, 'eighteen labs, k3 retired 2026-09-02 in favour of k18');
   assert.deepEqual(reg.LABS.map((l) => l.key), EXPECTED_KEYS, 'keys byte-identical and in order');
   for (const lab of reg.LABS) {
     assert.ok(lab.title && lab.title.length, `lab ${lab.key} has a title`);
@@ -94,13 +94,13 @@ test('LABS preserves the accented Portuguese strings verbatim', () => {
 });
 
 test('findItem builds the synthetic item shape for a real lab id', () => {
-  const it = reg.findItem('lab:k3');
-  assert.equal(it.id, 'lab:k3');
+  const it = reg.findItem('lab:k18');
+  assert.equal(it.id, 'lab:k18');
   assert.equal(it.type, 'lab');
   assert.equal(it.type_label, 'Lab');
-  assert.equal(it.title, 'Janela de contexto');
-  assert.equal(it.summary, 'Orçamento de tokens e compactação');
-  assert.deepEqual(it.meta_json, { url: '/codex/labs/k3/' });
+  assert.equal(it.title, 'Janela de contexto');  // k18 kept the name k3 used to carry
+  assert.equal(it.summary, 'Tudo que ocupa a janela, do sistema à resposta');
+  assert.deepEqual(it.meta_json, { url: '/codex/labs/k18/' });
 });
 
 test('findItem rejects non-lab, unknown and empty ids', () => {
@@ -138,7 +138,7 @@ test('with no state loaded at all, every reader answers the registry default', (
   assert.equal(reg.isLabEnabled('k1'), true, 'unknown state = enabled');
   assert.equal(reg.isLabArchived('k1'), false, 'unknown state = not archived');
   assert.equal(reg.isLabRenamed('k1'), false, 'unknown state = no override');
-  assert.equal(reg.orderedLabs().length, 19, 'the whole registry is visible');
+  assert.equal(reg.orderedLabs().length, 18, 'the whole registry is visible');
   assert.deepEqual(reg.orderedLabs().map((l) => l.key), EXPECTED_KEYS, 'in registry order');
   reset();
 });
@@ -146,7 +146,7 @@ test('with no state loaded at all, every reader answers the registry default', (
 test('getAllItems returns every enabled lab as a picker item', () => {
   setEnabledMap(null);
   const items = reg.getAllItems();
-  assert.equal(items.length, 19, 'all labs when none disabled');
+  assert.equal(items.length, 18, 'all labs when none disabled');
   assert.deepEqual(items.map((i) => i.id), EXPECTED_KEYS.map((k) => 'lab:' + k));
   assert.ok(items.every((i) => i.type === 'lab' && i.type_label === 'Lab'));
 });
@@ -154,7 +154,7 @@ test('getAllItems returns every enabled lab as a picker item', () => {
 test('getAllItems filters out disabled labs', () => {
   setEnabledMap({ k1: false, k13: false });
   const items = reg.getAllItems();
-  assert.equal(items.length, 17, 'two disabled removed');
+  assert.equal(items.length, 16, 'two disabled removed');
   const ids = items.map((i) => i.id);
   assert.ok(!ids.includes('lab:k1'), 'k1 hidden');
   assert.ok(!ids.includes('lab:k13'), 'k13 hidden');
@@ -215,11 +215,11 @@ test('labOrderIndex mirrors orderedLabs, -1 for an unknown key', () => {
 // can stop halfway and leave something that reads back as valid and that no retry repairs.
 test('setLabOrder sends the whole order in ONE call and orderedLabs follows it', async () => {
   _calls.length = 0;
-  await reg.setLabOrder(['k4', 'k3']);
+  await reg.setLabOrder(['k4', 'k16']);
   assert.equal(_calls.length, 1, 'one write, not one per lab');
   assert.equal(_calls[0].action, 'ct_labs_state_set_order');
-  assert.deepEqual(_calls[0].keys, ['k4', 'k3']);
-  assert.deepEqual(reg.orderedLabs().map((l) => l.key).slice(0, 2), ['k4', 'k3']);
+  assert.deepEqual(_calls[0].keys, ['k4', 'k16']);
+  assert.deepEqual(reg.orderedLabs().map((l) => l.key).slice(0, 2), ['k4', 'k16']);
   setOrder(null);
 });
 
@@ -245,24 +245,24 @@ test('getAllItems follows the stored order (filtered to enabled labs)', () => {
 
 test('isLabArchived defaults false; setLabArchived toggles it through the Worker', async () => {
   reset();
-  assert.equal(reg.isLabArchived('k3'), false, 'no decision = not archived');
+  assert.equal(reg.isLabArchived('k16'), false, 'no decision = not archived');
   _calls.length = 0;
-  await reg.setLabArchived('k3', true);
-  assert.equal(reg.isLabArchived('k3'), true, 'archived after set true');
+  await reg.setLabArchived('k16', true);
+  assert.equal(reg.isLabArchived('k16'), true, 'archived after set true');
   assert.equal(_calls[0].action, 'ct_labs_state_set');
-  assert.deepEqual({ lab_key: _calls[0].lab_key, archived: _calls[0].archived }, { lab_key: 'k3', archived: true });
-  await reg.setLabArchived('k3', false);
-  assert.equal(reg.isLabArchived('k3'), false, 'restored after set false');
+  assert.deepEqual({ lab_key: _calls[0].lab_key, archived: _calls[0].archived }, { lab_key: 'k16', archived: true });
+  await reg.setLabArchived('k16', false);
+  assert.equal(reg.isLabArchived('k16'), false, 'restored after set false');
   reset();
 });
 
 // The write is a FIELD now, not an append to a list, so archiving twice cannot leave two entries.
 test('setLabArchived is idempotent', async () => {
   reset();
-  await reg.setLabArchived('k3', true);
-  await reg.setLabArchived('k3', true);
-  assert.equal(reg.isLabArchived('k3'), true);
-  assert.equal(reg.archivedLabs().filter((l) => l.key === 'k3').length, 1, 'archiving twice lists it once');
+  await reg.setLabArchived('k16', true);
+  await reg.setLabArchived('k16', true);
+  assert.equal(reg.isLabArchived('k16'), true);
+  assert.equal(reg.archivedLabs().filter((l) => l.key === 'k16').length, 1, 'archiving twice lists it once');
   reset();
 });
 
@@ -270,23 +270,23 @@ test('setLabArchived is idempotent', async () => {
 // on every toggle is the reason the write is per-field rather than a whole-row replace.
 test('a write touches only its own field', async () => {
   reset();
-  await reg.setLabTitle('k3', 'Janela curta');
-  await reg.setLabOrder(['k3', 'k1']);
-  await reg.setLabEnabled('k3', false);
-  assert.equal(reg.isLabRenamed('k3'), true, 'the rename survived the reorder and the switch');
-  assert.equal(reg.labOrderIndex('k3'), 0, 'the position survived the switch');
-  assert.equal(reg.isLabEnabled('k3'), false, 'and the switch itself landed');
+  await reg.setLabTitle('k16', 'Janela curta');
+  await reg.setLabOrder(['k16', 'k1']);
+  await reg.setLabEnabled('k16', false);
+  assert.equal(reg.isLabRenamed('k16'), true, 'the rename survived the reorder and the switch');
+  assert.equal(reg.labOrderIndex('k16'), 0, 'the position survived the switch');
+  assert.equal(reg.isLabEnabled('k16'), false, 'and the switch itself landed');
   assert.equal(reg.archivedLabs().length, 0, 'none of it archived anything');
   reset();
 });
 
 test('orderedLabs drops archived labs; archivedLabs returns exactly them', () => {
   setOrder(null);
-  setArchived(['k3', 'k9']);
+  setArchived(['k16', 'k9']);
   const active = reg.orderedLabs().map((l) => l.key);
-  assert.ok(!active.includes('k3') && !active.includes('k9'), 'archived hidden from the active list');
+  assert.ok(!active.includes('k16') && !active.includes('k9'), 'archived hidden from the active list');
   assert.equal(active.length, EXPECTED_KEYS.length - 2, 'two fewer active labs');
-  assert.deepEqual(reg.archivedLabs().map((l) => l.key).sort(), ['k3', 'k9'], 'archivedLabs returns the archived ones');
+  assert.deepEqual(reg.archivedLabs().map((l) => l.key).sort(), ['k16', 'k9'], 'archivedLabs returns the archived ones');
   setArchived(null);
 });
 
@@ -300,15 +300,15 @@ test('getAllItems (Presets/Lessons picker) excludes archived labs', () => {
 });
 
 test('findItem still resolves an archived lab by id (a lesson may reference it)', () => {
-  setArchived(['k3']);
-  assert.ok(reg.findItem('lab:k3'), 'archived lab still resolves by id');
+  setArchived(['k16']);
+  assert.ok(reg.findItem('lab:k16'), 'archived lab still resolves by id');
   setArchived(null);
 });
 
 test('archivedLabs honours the stored order basis', () => {
-  setOrder(['k9', 'k3']);
-  setArchived(['k3', 'k9']);
-  assert.deepEqual(reg.archivedLabs().map((l) => l.key), ['k9', 'k3'], 'archived list follows the same order');
+  setOrder(['k9', 'k16']);
+  setArchived(['k16', 'k9']);
+  assert.deepEqual(reg.archivedLabs().map((l) => l.key), ['k9', 'k16'], 'archived list follows the same order');
   setOrder(null);
   setArchived(null);
 });
@@ -352,11 +352,11 @@ test('setLabTitle with blank or the default title clears the override instead of
 });
 
 test('archived and disabled labs can still be renamed (rename is independent of visibility state)', async () => {
-  setArchived(['k3']);
+  setArchived(['k16']);
   setEnabledMap({ k9: false });
-  await reg.setLabTitle('k3', 'Janela Nova');
+  await reg.setLabTitle('k16', 'Janela Nova');
   await reg.setLabTitle('k9', 'Petição Nova');
-  assert.equal(reg.archivedLabs().find((l) => l.key === 'k3').title, 'Janela Nova');
+  assert.equal(reg.archivedLabs().find((l) => l.key === 'k16').title, 'Janela Nova');
   assert.equal(reg.findItem('lab:k9').title, 'Petição Nova');
   setRenamed(null);
   setArchived(null);
@@ -368,4 +368,15 @@ test('a rename override for a key no longer in the registry is simply unused (no
   assert.doesNotThrow(() => reg.orderedLabs());
   assert.equal(reg.orderedLabs().some((l) => l.title === 'Fantasma'), false);
   setRenamed(null);
+});
+
+// A retired key must NOT resolve, and this is the whole retirement mechanism: trilha/js/lab-overlay
+// drops a released lab whose key no longer answers, so removing the entry here is what pulls the lab
+// out of every cohort that already had it. k3 "Janela de contexto" was retired 2026-09-02 because
+// k18 supersedes it (Élder: "k3 pode apagar, já tem um superior"), following the k14 precedent.
+test('a retired lab key resolves to nothing, which is what removes it everywhere', () => {
+  assert.equal(reg.findItem('lab:k3'), null, 'k3 retired 2026-09-02, superseded by k18');
+  assert.equal(reg.findItem('lab:k14'), null, 'k14 retired earlier, same path');
+  assert.equal(reg.LABS.some((l) => l.key === 'k3'), false, 'and it is gone from the registry');
+  assert.equal(reg.labIcon('k3'), 'glyph:flask', 'its glyph entry went with it');
 });
