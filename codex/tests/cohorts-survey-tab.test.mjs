@@ -45,14 +45,33 @@ test('opening the Avaliacao sub-tab asks for that refresh', () => {
 // against the whole cohort. Feeding one into the other's slot reads as correct forever, because
 // the two agree in every cohort where everybody happens to be registered.
 
-test('the send reports the MAIL reach, and it is a separate key from the invited count', () => {
+test('the send reports the MAIL count, and it is a separate number from the invited count', () => {
   const js = src('../cohorts/survey.js');
   const handler = js.slice(js.indexOf('api.surveySend'));
   const body = handler.slice(0, handler.indexOf('finally'));
-  assert.match(body, /r[.]email_reach/, 'the toast has to read what actually went out');
-  assert.ok(!/r[.]invited_count/.test(body), 'the invited count must not stand in for the mail reach');
+  assert.match(body, /r[.]mail_total/, 'how many there are to invite comes from the server');
+  assert.match(body, /sendInvites\(/, 'and the invitations are walked, not fired blind');
+  assert.ok(!/r[.]invited_count/.test(body), 'the invited count must not stand in for the mail count');
   assert.match(body, /aval_send_mailed/);
   assert.match(body, /aval_send_nomail/, 'a cohort nobody could be mailed still opened, and says so');
+});
+
+// ── The x/y ─────────────────────────────────────────────────────────────────
+// Élder asked for it so he can see the send is alive. Two ways it silently stops being true: a
+// loop that trusts its own arithmetic instead of the server's offset (skips or never ends), and
+// one that retries a failing slice forever (never reaches the sixth student).
+
+test('the invite loop trusts the SERVER offset and always advances', () => {
+  const js = src('../cohorts/survey.js');
+  const fn = js.slice(js.indexOf('async function sendInvites'));
+  const body = fn.slice(0, fn.indexOf(String.fromCharCode(10) + '}'));
+  // Comments out: this function's own comment says the words `offset += slice` to explain why it
+  // does not do that, and a substring check would read the explanation as the mistake.
+  const code = body.replace(/^[ 	]*\/\/.*$/gm, '');
+  assert.match(code, /offset = next/, 'the server owns the offset; it may have clamped the limit');
+  assert.ok(!/offset \+= /.test(code), 'local arithmetic and a clamped limit disagree silently');
+  assert.match(code, /guard/, 'a server answering the same offset forever must not spin the tab');
+  assert.match(code, /aval_sending_n/, 'the count is the whole point');
 });
 
 test('the head keeps owning the invited count, so the two numbers never merge', () => {

@@ -330,6 +330,9 @@
 .cdx-rel-date-ocorreu  { background: var(--success-bg); color: var(--success); }
 .cdx-rel-date-agendada { background: var(--cdx-agendada-bg); color: var(--cdx-agendada-text); }
 .cdx-rel-date-remarcada { background: var(--cdx-remarcada-bg); color: var(--cdx-remarcada-text); }
+/* The scheduled day has passed and nobody confirmed it. NOT green: this is the state that
+   blocks the reaction survey from being sent, so it has to be findable at a glance. */
+.cdx-rel-date-naoconfirmada { background: var(--cdx-remarcada-bg); color: var(--cdx-remarcada-text); }
 .cdx-rel-date-adefinir { background: var(--background); color: var(--text-secondary); border: 1px solid var(--border); }
 
 /* Aula inline editor */

@@ -26,8 +26,23 @@ test('scheduled in the future is agendada', () => {
   assert.equal(_aulaDateStatus({ scheduled_for: TOMORROW }, TODAY).cls, 'cdx-rel-date-agendada');
 });
 
-test('an aula reads as occurred the day after its scheduled date', () => {
-  assert.equal(_aulaDateStatus({ scheduled_for: YESTERDAY }, TODAY).cls, 'cdx-rel-date-ocorreu');
+// CHANGED 2026-09-02. A scheduled day that has merely PASSED is no longer drawn as "ocorreu em".
+// Nothing writes happened_on by itself (the Worker's only two writers are the explicit save and
+// the explicit "marcar como ocorrida"), so the old badge stated as fact something nobody had
+// confirmed, and it contradicted the Avaliação tab on the same screen: that tab refuses to send
+// the reaction survey while the very same class is unmarked. Élder chose which of the two moves:
+// the lock stays, the badge tells the truth.
+test('a scheduled date that merely PASSED reads as unconfirmed, not as occurred', () => {
+  const st = _aulaDateStatus({ scheduled_for: YESTERDAY }, TODAY);
+  assert.equal(st.cls, 'cdx-rel-date-naoconfirmada');
+  assert.ok(!/ocorreu/i.test(st.text), 'nobody said it happened');
+});
+
+test('an explicit happened_on IS occurred, and shows ITS date, not the scheduled one', () => {
+  const st = _aulaDateStatus({ scheduled_for: '2026-05-01', happened_on: YESTERDAY }, TODAY);
+  assert.equal(st.cls, 'cdx-rel-date-ocorreu');
+  assert.match(st.text, /14\/06/, 'the date shown is the confirmed one');
+  assert.ok(!/05/.test(st.text), 'not the day it was scheduled for');
 });
 
 test('a rescheduled aula on its new (today) date reads as remarcada', () => {

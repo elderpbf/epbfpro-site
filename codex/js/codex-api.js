@@ -246,7 +246,10 @@ export const cohorts = {
   // previous cohort of the same course, so the tab always has an instrument to show.
   surveyGet:         (p) => call('ct_survey_get', p),               // { client_slug, turma_slug } -> { ok, status, questions, responses, aulas, invitees, now, ... }
   surveySaveQuestions:(p) => call('ct_survey_save_questions', p),   // { client_slug, turma_slug, questions[] } -> { ok, questions }
-  surveySend:        (p) => call('ct_survey_send', p),              // { client_slug, turma_slug, deadline_days } -> { ok, sent_at, closes_at, invited_count } | { ok:false, reason }
+  surveySend:        (p) => call('ct_survey_send', p),              // { client_slug, turma_slug, deadline_days } -> { ok, sent_at, closes_at, invited_count, mail_total } | { ok:false, reason }
+  // The invitation, one slice at a time. Separate from the send because the tab has to be
+  // able to say 10/40 and mean it, and an x/y that means anything comes back between messages.
+  surveyInvite:      (p) => call('ct_survey_invite', p),            // { client_slug, turma_slug, offset, limit } -> { ok, sent, offset, total, done }
   surveyClose:       (p) => call('ct_survey_close', p),             // { client_slug, turma_slug } -> { ok, closes_at }
   surveyExtend:      (p) => call('ct_survey_extend', p),            // { client_slug, turma_slug, days } -> { ok, closes_at }
   surveyUnlock:      (p) => call('ct_survey_unlock_instrument', p)  // { client_slug, turma_slug, unlocked? } -> { ok, instrument_unlocked }

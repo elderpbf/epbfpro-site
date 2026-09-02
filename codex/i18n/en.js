@@ -452,6 +452,7 @@ export default {
   'cohorts.aval_retry':            'Try again',
   'cohorts.aval_send_refused':     'The server refused the send ({r}).',
   'cohorts.aval_sending':          'Sending…',
+  'cohorts.aval_sending_n':        'Sending {n}/{t}…',
   'cohorts.aval_send_mailed':      'Survey open. Invitation e-mailed to {n} students.',
   'cohorts.aval_send_nomail':      'Survey open. No e-mail went out: nobody in the cohort has a confirmed account. Anyone who opens their trail still answers.',
   'cohorts.aval_send_failed':      'Failed to send the evaluation.',
@@ -720,6 +721,7 @@ export default {
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'happened on',
+  'cohorts.date_unconfirmed':'unconfirmed,',
   'cohorts.date_scheduled':  'scheduled for',
   'cohorts.date_rescheduled':'rescheduled →',
   'cohorts.date_tbd':        'to be defined',

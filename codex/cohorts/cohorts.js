@@ -181,9 +181,16 @@ function _fmtDate(iso) {
 export function _aulaDateStatus(a, today) {
   const status = aulaStatus(a, today);
   if (status === 'happened') {
-    // happened_on shows its own date; a past-scheduled aula shows the scheduled one.
-    const when = (a && a.happened_on) || (a && a.scheduled_for) || '';
-    return { text: t('cohorts.date_happened') + ' ' + _fmtDate(when), cls: 'cdx-rel-date-ocorreu' };
+    // A date that has merely PASSED is not a class that happened, and this badge used to say it
+    // did. Nothing anywhere writes happened_on by itself (verified 2026-09-02: the only two
+    // writers in the Worker are the explicit save and the explicit "marcar como ocorrida"), so a
+    // past-scheduled aula with no happened_on is unconfirmed, and saying "ocorreu em" put this
+    // view in direct contradiction with the Avaliação tab, which refuses to send while the same
+    // class is unmarked. Élder, 2026-09-02, on which of the two should move: the lock is right.
+    if (!(a && a.happened_on)) {
+      return { text: t('cohorts.date_unconfirmed') + ' ' + _fmtDate(a && a.scheduled_for), cls: 'cdx-rel-date-naoconfirmada' };
+    }
+    return { text: t('cohorts.date_happened') + ' ' + _fmtDate(a.happened_on), cls: 'cdx-rel-date-ocorreu' };
   }
   if (status === 'rescheduled')
     return { text: t('cohorts.date_rescheduled') + ' ' + _fmtDate(a.scheduled_for), cls: 'cdx-rel-date-remarcada' };

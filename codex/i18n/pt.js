@@ -458,6 +458,7 @@ export default {
   'cohorts.aval_retry':            'Tentar de novo',
   'cohorts.aval_send_refused':     'O servidor recusou o envio ({r}).',
   'cohorts.aval_sending':          'Enviando…',
+  'cohorts.aval_sending_n':        'Enviando {n}/{t}…',
   'cohorts.aval_send_mailed':      'Avaliação aberta. Convite por e-mail para {n} alunos.',
   'cohorts.aval_send_nomail':      'Avaliação aberta. Nenhum e-mail saiu: ninguém na turma tem cadastro com e-mail confirmado. Quem abrir a trilha responde do mesmo jeito.',
   'cohorts.aval_send_failed':      'Falha ao enviar a avaliação.',
@@ -729,6 +730,7 @@ export default {
 
   // Cohorts — aula date status
   'cohorts.date_happened':   'ocorreu em',
+  'cohorts.date_unconfirmed':'a confirmar,',
   'cohorts.date_scheduled':  'agendada para',
   'cohorts.date_rescheduled':'remarcada →',
   'cohorts.date_tbd':        'a definir',

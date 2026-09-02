@@ -30,6 +30,10 @@ import { statsFor, respondents } from './survey-stats.js';
 import { cohorts as api } from '../js/codex-api.js';
 import * as ed from './survey-editor.js';
 
+// How many invitations per request. Small enough that the count moves often enough to read as
+// progress, large enough not to turn a 40-student cohort into 40 round trips.
+const INVITE_SLICE = 5;
+
 // Literal keys, never t('cohorts.aval_block_' + code). A key assembled at runtime is
 // invisible to the dead-key sweep, which is the exact trap track-30 documented and
 // this feature already fell into once with 'survey.pres_' + v.
@@ -535,13 +539,17 @@ function wire(ctx) {
         // the rule disagree or the state moved under him. Say which, rather than doing nothing.
         toast.err(t('cohorts.aval_send_refused').replace('{r}', String((r && r.reason) || 'erro')));
       } else {
+        // The survey is OPEN. The invitations go out from here, a slice at a time, so the button
+        // can count them. Whatever happens to the mail, the survey stays open and the gate reaches
+        // anyone who opens their trail.
+        const total = Number(r.mail_total) || 0;
+        const sent = total ? await sendInvites(ctx, go, total) : 0;
         // How many the INVITATION reached, said out loud once, here. It is not the same number as
         // the invited count on the head: the mail goes to approved students with a canonical
         // identity, everyone with a session can answer, and a head that showed only one of the two
         // would be read as both.
-        const n = Number(r.email_reach) || 0;
-        toast.ok(n
-          ? t('cohorts.aval_send_mailed').replace('{n}', String(n))
+        toast.ok(total
+          ? t('cohorts.aval_send_mailed').replace('{n}', String(sent))
           : t('cohorts.aval_send_nomail'));
       }
     } catch (e) {
@@ -568,4 +576,46 @@ function patchSaveState(ctx) {
   const box = ctx.el.querySelector('.cdx-av-elist ~ .cdx-av-blocks .cdx-av-block')
     || ctx.el.querySelector('.cdx-av-blocks .cdx-av-block');
   if (box) box.textContent = err ? t(ED_ERROR_KEY[err] || 'cohorts.aval_ed_invalid') : '';
+}
+
+// The invitations, walked in slices, with the count on the button. Élder, 2026-09-02: *"should
+// also say x/y so i know its working"*, and an x/y only means something if the server answers
+// between messages. channels/email.js hands one address at a time to the platform at about 1.4s
+// each, so the largest cohort in production is close to a minute: doing it in one request means a
+// minute of a button with nothing to say.
+//
+// A slice that fails still ADVANCES, because the Worker returns the new offset either way. That is
+// deliberate: a loop that retried the failing five would never reach the sixth. The cost is a
+// student who was not invited, and the gate catches them the next time they open their trail,
+// which is what makes this recoverable at all.
+//
+// Closing the tab mid-loop stops the rest. Also deliberate, and the same trade: the survey is
+// already open, so an interrupted send is a weaker nudge, never a broken survey.
+async function sendInvites(ctx, btn, total) {
+  let offset = 0;
+  let sent = 0;
+  let guard = 0;
+  while (offset < total && guard++ < 500) {
+    if (btn) btn.textContent = t('cohorts.aval_sending_n')
+      .replace('{n}', String(Math.min(offset + INVITE_SLICE, total))).replace('{t}', String(total));
+    let r;
+    try {
+      r = await api.surveyInvite({
+        client_slug: ctx.turma.client_slug, turma_slug: ctx.turma.slug,
+        offset, limit: INVITE_SLICE,
+      });
+    } catch (e) {
+      if (window.bsLog) window.bsLog('survey: invite slice failed: ' + (e && e.message || e), 'error');
+      break;                                  // the survey is open; the gate is the other half
+    }
+    if (!r || !r.ok) break;
+    sent += Number(r.sent) || 0;
+    // Trust the SERVER's offset, never offset += slice: if it clamped the limit, the two disagree
+    // and the loop either skips people or never ends.
+    const next = Number(r.offset);
+    if (!(next > offset)) break;
+    offset = next;
+    if (r.done) break;
+  }
+  return sent;
 }
