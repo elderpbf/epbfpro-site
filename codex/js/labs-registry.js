@@ -55,14 +55,11 @@ export const LABS = [
     objective: 'Entender temperatura como o botão entre resposta previsível e resposta variada.',
     emoji: '🌡️'
   },
-  {
-    key: 'k3',
-    title: 'Janela de contexto',
-    summary: 'Orçamento de tokens e compactação',
-    description: 'Todo modelo tem um limite de quanto texto cabe de uma vez. O demo mostra o orçamento de tokens enchendo e o que é descartado ou compactado quando estoura.',
-    objective: 'Ver por que conversas longas esquecem o começo e como o orçamento é gasto.',
-    emoji: '🪟'
-  },
+  // k3 "Janela de contexto" RETIRED 2026-09-02 (Élder: "k3 pode apagar, já tem um superior").
+  // k18 is the superior one: same subject, but it separates the inputs and shows that the model's
+  // own reasoning spends the same window. Retiring is the k14 path: dropping the key from here is
+  // what removes it everywhere, because trilha/js/lab-overlay.js drops a released lab whose key no
+  // longer resolves. Do not re-add the key to "fix" an old release.
   {
     key: 'k4',
     title: 'Perdido no meio',
@@ -224,11 +221,13 @@ export function setLabArchived(key, on) {
 // means a lab added later, or a copy edit to its registry title, is never
 // shadowed by a stale override.
 //
-// Still ADMIN-SIDE ONLY, on purpose: the public Trail overlays the registry's
-// `title:` (trilha/js/lab-overlay.js) and does not load this state, so a rename
-// here does not reach students. Moving the state to the database made that
-// possible, not automatic: it would change what already-released cohorts see,
-// which is not part of this track.
+// It REACHES STUDENTS since 2026-09-02. Élder's call, and his reasoning was that a
+// rename which renames nothing is "something that makes no difference at all". The
+// Worker sends the override as `lab_display_name` on the public reads and
+// trilha/js/lab-overlay.js prefers it over the registry title, so a rename lands on
+// every cohort already using that lab, on their next load. The Trail still does not
+// LOAD this state: the name travels WITH the item, so the public page keeps its
+// single round trip and its fail-open behaviour.
 export function isLabRenamed(key) {
   const custom = state.displayNameOf(key);
   return typeof custom === 'string' && custom.trim() !== '';
@@ -305,7 +304,7 @@ function _enabledLabs() {
 // reads the same but renders crisply everywhere. The Trail pairs this glyph with a
 // small flask badge as the "family" marker. Unknown key -> the generic flask.
 const LAB_GLYPH = {
-  k1: 'glyph:target', k2: 'glyph:thermometer', k3: 'glyph:window', k4: 'glyph:puzzle',
+  k1: 'glyph:target', k2: 'glyph:thermometer', k4: 'glyph:puzzle',
   k5: 'glyph:hash', k6: 'glyph:compass',
   k9: 'glyph:biohazard', k10: 'glyph:pill', k11: 'glyph:mask', k12: 'glyph:spiral',
   k13: 'glyph:zap', k15: 'glyph:brain', k16: 'glyph:file-text', k17: 'glyph:thumbs-up',

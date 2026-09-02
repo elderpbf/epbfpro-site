@@ -47,7 +47,7 @@ const styleCount = () => head.children.filter((c) => c.attrs['data-cv-lab-viewer
 const view = await import('../js/lab-viewer.js');
 
 test('openModal builds an accessible overlay with a scaled lab iframe', () => {
-  view.openModal({ key: 'k3', title: 'Janela de contexto' });
+  view.openModal({ key: 'k18', title: 'Janela de contexto' });
   const overlay = overlayInBody();
   assert.ok(overlay, 'overlay appended to body');
   assert.equal(overlay.attrs.role, 'dialog');
@@ -56,7 +56,7 @@ test('openModal builds an accessible overlay with a scaled lab iframe', () => {
   assert.ok(body.classList.contains('cv-lab-viewer-open'), 'body marked open');
   const iframe = findByClass(overlay, 'cv-lab-viewer-iframe');
   assert.ok(iframe, 'iframe present');
-  assert.equal(iframe.src, '/codex/labs/k3/', 'iframes the lab page');
+  assert.equal(iframe.src, '/codex/labs/k18/', 'iframes the lab page');
   assert.match(iframe.attrs.allow, /fullscreen/, 'allows fullscreen');
   view.close();
 });
