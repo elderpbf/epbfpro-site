@@ -29,7 +29,6 @@
 // outcome worth this much care.
 import { t } from '../js/i18n.js';
 import { orderedLabs, archivedLabs, setLabArchived, labIcon, setLabOrder, isLabRenamed, setLabTitle, labDefaultTitle, isLabEnabled, setLabEnabled } from '../js/labs-registry.js';
-import { pushLocalState } from '../js/labs-state.js';
 import { iconHtml as typeIconHtml } from '../js/glyphs.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import { openModal, closeModal } from '../js/modal.js';
@@ -433,42 +432,10 @@ function _ensureLabItemsSilently() {
   syncLabItems().catch((e) => { notice.internal(e); });
 }
 
-// track-65 §4.4: the renames and the display order existed only in Élder's
-// browser, where no migration could reach them, so this tab hands them over the
-// first time it opens after the deploy and the four keys are then gone for good.
-//
-// It fills only what the database has no opinion about, never overwrites, so a
-// second machine opening later finds the gaps filled and pushes nothing. The
-// on/off is deliberately NOT pushed, because the migration seeded it and Élder still
-// has to verify that seed; a stale browser rewriting it would erase the very
-// thing he is checking. Any disagreement is REPORTED instead, which is how he
-// gets told rather than having to remember to look.
-//
-// REMOVE THIS once he confirms it ran (track-65 §5b residual): it is migration
-// code, and migration code that outlives its migration is just a trap.
-function _pushLocalStateOnce() {
-  pushLocalState().then((plan) => {
-    if (!plan) return;
-    const moved = plan.archived.length + plan.renamed.length + (plan.order ? 1 : 0);
-    if (moved) {
-      _render();
-      toast.ok(t('labs.push_done'));
-    }
-    if (plan.enabledDiff.length) {
-      const off = plan.enabledDiff.filter((d) => !d.local).map((d) => d.key.toUpperCase());
-      const on = plan.enabledDiff.filter((d) => d.local).map((d) => d.key.toUpperCase());
-      notice.warn(t('labs.push_enabled_diff')
-        .replace('{off}', off.join(', ') || '-')
-        .replace('{on}', on.join(', ') || '-'));
-    }
-  }).catch((e) => { notice.internal(e); });
-}
-
 export function mount(viewEl) {
   _viewEl = viewEl;
   _render();
   _ensureLabItemsSilently();
-  _pushLocalStateOnce();
 
   // Row selection is the rail's job (onSelect); the on/off switch is exempt via the rail's
   // rowSelectIgnore. Only the preview's fullscreen button is wired here.

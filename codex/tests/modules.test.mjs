@@ -279,18 +279,19 @@ test('no orphaned tab-entry module (every <dir>/<dir>.js is mounted by index.htm
 // cannot see duplicated behaviour, so the shape is banned tree-wide rather than
 // in the two files that had it: the failure mode being prevented is a THIRD
 // consumer reading this state out of a browser again.
-const LABS_STATE_OWNER = 'js/labs-state.js';
-test('no cv_labs_* localStorage access outside js/labs-state.js', () => {
+// The exemption for js/labs-state.js is GONE (2026-09-02). It existed only for the one-shot push,
+// which handed Élder's last browser copy over and was then deleted, so the ban is now absolute:
+// NOTHING in the tree reads these keys, including the module that owns the state.
+test('no cv_labs_* localStorage access anywhere', () => {
   const offenders = [];
   for (const f of allJs) {
-    if (f === LABS_STATE_OWNER) continue;
     if (f.startsWith('tests/')) continue;   // the suite names the keys to assert they are gone
     const src = fs.readFileSync(path.join(ROOT, f), 'utf8');
     if (/cv_labs_/.test(src)) offenders.push(f);
   }
   assert.deepEqual(
     offenders, [],
-    'the Labs on/off, archive, rename and order state belongs to js/labs-state.js (and the database '
-    + 'behind it). Read it through js/labs-registry.js instead of localStorage.',
+    'the Labs on/off, archive, rename and order state lives in the database, reached through '
+    + 'js/labs-state.js and read through js/labs-registry.js. There is no browser copy any more.',
   );
 });

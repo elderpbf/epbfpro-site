@@ -149,101 +149,17 @@ export function setOrder(keys) {
     });
 }
 
-// ── the one-shot push out of localStorage ────────────────────────────────────
-// The state that is alive TODAY lives in Élder's browser and nowhere else. Migration 0054 seeded the
-// on/off from what he dictated, but the renames and the order it could not seed, because they were
-// never anywhere a migration can read. So the Labs tab uploads them once, the first time he opens it
-// after deploy, and these keys are then cleared.
+
+// The one-shot push out of `localStorage` LIVED HERE and was removed 2026-09-02, once it had run.
+// It carried Élder's renames and lab order over on his first visit to Content > Labs, since those
+// four legacy browser keys existed only in his browser and no migration could reach them. It also
+// audited the seed for him, and earned its keep on the spot: it caught that the dictated list of
+// switched-off labs was one short (k3), which is how that lab came to be retired.
 //
-// THIS MODULE IS THE ONLY PLACE ALLOWED TO TOUCH `cv_labs_*`, and tests/modules.test.mjs enforces
-// that -- the whole point of the track is that no consumer reads this state from a browser again.
+// It is gone because migration code that outlives its migration is a trap, and this whole track
+// exists because a residual filed as non-blocking sat for six weeks and put a switched-off lab into
+// a lesson script. tests/modules.test.mjs now bans those key names with NO exemption: nothing in the
+// tree reads that state from a browser any more, including this file.
 //
-// ADDITIVE, NEVER AN OVERWRITE. It fills only fields the server has NO opinion about (display_name
-// NULL, sort_order absent, archived still false). Two machines can both open the tab: the first one
-// fills the gaps, the second finds them filled and pushes nothing. A stale browser can no longer
-// silently undo the truth.
-//
-// `enabled` IS DELIBERATELY NOT PUSHED. The seed owns it, and Élder still has to VERIFY that seed
-// against what he actually has switched off. A browser pushing its own `enabled` would quietly
-// rewrite the very thing he is meant to check. Instead the push REPORTS the disagreement, which
-// turns "remember to verify the seed" into "the tab tells you".
-const LS_KEYS = ['cv_labs_enabled', 'cv_labs_archived', 'cv_labs_renamed', 'cv_labs_order'];
-
-function _readLocal(key, fallback) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (raw === null) return null;              // absent, distinct from present-but-empty
-    const val = JSON.parse(raw);
-    return val === null || val === undefined ? fallback : val;
-  } catch (e) { return null; }
-}
-
-// Exported for tests: the pure half, "given what the browser holds and what the server holds, what
-// should be written and what should be reported". No I/O, so the decision table is testable.
-export function planLocalPush(local, state) {
-  const cur = (k) => (state && state[k]) || DEFAULTS;
-  const plan = { archived: [], renamed: [], order: null, enabledDiff: [] };
-
-  const archived = Array.isArray(local.archived) ? local.archived : [];
-  for (const k of archived) {
-    if (!cur(k).archived) plan.archived.push(k);
-  }
-
-  const renamed = (local.renamed && typeof local.renamed === 'object') ? local.renamed : {};
-  for (const k of Object.keys(renamed)) {
-    const name = typeof renamed[k] === 'string' ? renamed[k].trim() : '';
-    if (name && cur(k).display_name === null) plan.renamed.push({ key: k, name });
-  }
-
-  // The order is one fact, so it is pushed whole or not at all: only when the server holds no
-  // position for any lab. A partial merge of two orders is not a thing that has a right answer.
-  const order = Array.isArray(local.order) ? local.order.filter(Boolean) : [];
-  const serverHasOrder = Object.keys(state || {}).some((k) => state[k].sort_order !== null && state[k].sort_order !== undefined);
-  if (order.length && !serverHasOrder) plan.order = order;
-
-  // Reported, never written. `local.enabled` is the default-on map: a key is present only when OFF.
-  const enabledMap = (local.enabled && typeof local.enabled === 'object') ? local.enabled : {};
-  const keys = new Set(Object.keys(enabledMap).concat(Object.keys(state || {})));
-  for (const k of keys) {
-    const localOn = enabledMap[k] !== false;
-    if (localOn !== cur(k).enabled) plan.enabledDiff.push({ key: k, local: localOn, server: cur(k).enabled });
-  }
-  return plan;
-}
-
-// Returns null when this browser has nothing to hand over, otherwise the plan that was applied.
-// The four keys are cleared either way once the writes land: a browser that arrives second has
-// nothing left to push, and its stale copy is discarded rather than kept around to be applied later.
-export function pushLocalState() {
-  // Nothing is handed over until the server's side is actually KNOWN. With the state unloaded every
-  // field reads as "no opinion", so the additive rule silently degrades into "push everything" and
-  // then clears the keys: the exact clobber this design exists to prevent, arriving through the
-  // fail-open path instead of through a stale browser. A load that failed just means "try again
-  // next time", so this returns null and touches nothing.
-  if (!_loaded) return Promise.resolve(null);
-
-  let present = false;
-  try { present = LS_KEYS.some((k) => localStorage.getItem(k) !== null); } catch (e) { present = false; }
-  if (!present) return Promise.resolve(null);
-
-  const local = {
-    enabled: _readLocal('cv_labs_enabled', {}),
-    archived: _readLocal('cv_labs_archived', []),
-    renamed: _readLocal('cv_labs_renamed', {}),
-    order: _readLocal('cv_labs_order', []),
-  };
-  const plan = planLocalPush(local, _state);
-
-  const writes = []
-    .concat(plan.archived.map((k) => () => setArchived(k, true)))
-    .concat(plan.renamed.map((r) => () => setDisplayName(r.key, r.name)))
-    .concat(plan.order ? [() => setOrder(plan.order)] : []);
-
-  // Sequential on purpose: each one is an independent decision, and a burst of parallel writes to
-  // the same table buys nothing on a list this size.
-  return writes.reduce((chain, run) => chain.then(run), Promise.resolve())
-    .then(() => {
-      try { LS_KEYS.forEach((k) => localStorage.removeItem(k)); } catch (e) { /* ignore */ }
-      return plan;
-    });
-}
+// Consequence worth knowing: a machine that never opened the tab still holds those four keys. They
+// are inert, nothing reads them, and clearing them would need the very code just deleted.
