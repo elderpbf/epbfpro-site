@@ -8,6 +8,13 @@
 // each released lab by its lab_key -- a rename now reaches students on the next
 // load, and a lab RETIRED from the registry (the old k14) is dropped.
 //
+// The registry is the DEFAULT name, not the last word. Since track-65 the admin's rename
+// (Content > Labs, "Renomear") lives in `ct_lab_state` and the Worker sends it as
+// `lab_display_name`, so it WINS over the registry title here. Before that, renaming a lab
+// changed only what the admin saw and made no difference to any student, which Élder called out
+// as the irrational half: a rename that renames nothing. Editing `title:` in the source is still
+// the way to change a lab's default for everyone; the override is the per-installation name.
+//
 // The key comes from `lab_key` (the Trail list adds it via json_extract) or, on
 // the expanded item, from meta_json. If NO key can be resolved we leave the item
 // untouched (fail open) -- an overlay must never make a released lab disappear.
@@ -36,7 +43,10 @@ export function overlayLabItem(item) {
   if (!key) return true; // can't key it -> leave as-is, never drop
   const reg = findItem('lab:' + key);
   if (!reg) return false; // known key, retired from the registry -> drop
-  item.title = reg.title;
+  // The admin's rename wins; a blank or absent one falls back to the registry's own title, which
+  // is also what makes clearing the rename in the admin revert the student's view.
+  const renamed = typeof item.lab_display_name === 'string' ? item.lab_display_name.trim() : '';
+  item.title = renamed || reg.title;
   item.summary = reg.summary;
   item.description = reg.description || '';
   item.objective = reg.objective || '';

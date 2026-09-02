@@ -224,11 +224,13 @@ export function setLabArchived(key, on) {
 // means a lab added later, or a copy edit to its registry title, is never
 // shadowed by a stale override.
 //
-// Still ADMIN-SIDE ONLY, on purpose: the public Trail overlays the registry's
-// `title:` (trilha/js/lab-overlay.js) and does not load this state, so a rename
-// here does not reach students. Moving the state to the database made that
-// possible, not automatic: it would change what already-released cohorts see,
-// which is not part of this track.
+// It REACHES STUDENTS since 2026-09-02. Élder's call, and his reasoning was that a
+// rename which renames nothing is "something that makes no difference at all". The
+// Worker sends the override as `lab_display_name` on the public reads and
+// trilha/js/lab-overlay.js prefers it over the registry title, so a rename lands on
+// every cohort already using that lab, on their next load. The Trail still does not
+// LOAD this state: the name travels WITH the item, so the public page keeps its
+// single round trip and its fail-open behaviour.
 export function isLabRenamed(key) {
   const custom = state.displayNameOf(key);
   return typeof custom === 'string' && custom.trim() !== '';
