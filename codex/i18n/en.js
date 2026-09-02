@@ -1297,8 +1297,6 @@ export default {
   'labs.empty_search':        'No labs found.',
   'labs.empty_filter':        'No labs in this filter.',
   'labs.save_failed':         'Could not save. The list went back to what the server holds.',
-  'labs.push_done':           'This browser\'s renames and order were sent to the server.',
-  'labs.push_enabled_diff':   'This browser and the server disagree on which labs are on. Off only here: {off}. On only here: {on}. The server was kept; check the list and fix whatever is wrong.',
   // Interativos — see pt.js for the provisional-type-name note; keep both in sync.
   'interativos.type':         'Interactive',
   'interativos.title':        'Interactive',
