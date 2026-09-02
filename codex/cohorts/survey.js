@@ -518,6 +518,15 @@ function wire(ctx) {
         // The server refused something the browser thought was fine, which means the two copies of
         // the rule disagree or the state moved under him. Say which, rather than doing nothing.
         toast.err(t('cohorts.aval_send_refused').replace('{r}', String((r && r.reason) || 'erro')));
+      } else {
+        // How many the INVITATION reached, said out loud once, here. It is not the same number as
+        // the invited count on the head: the mail goes to approved students with a canonical
+        // identity, everyone with a session can answer, and a head that showed only one of the two
+        // would be read as both.
+        const n = Number(r.email_reach) || 0;
+        toast.ok(n
+          ? t('cohorts.aval_send_mailed').replace('{n}', String(n))
+          : t('cohorts.aval_send_nomail'));
       }
     } catch (e) {
       if (window.bsLog) window.bsLog('survey: send failed: ' + (e && e.message || e), 'error');

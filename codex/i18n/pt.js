@@ -457,6 +457,8 @@ export default {
   'cohorts.aval_load_failed':      'Não foi possível carregar a avaliação.',
   'cohorts.aval_retry':            'Tentar de novo',
   'cohorts.aval_send_refused':     'O servidor recusou o envio ({r}).',
+  'cohorts.aval_send_mailed':      'Avaliação aberta. Convite por e-mail para {n} alunos.',
+  'cohorts.aval_send_nomail':      'Avaliação aberta. Nenhum e-mail saiu: ninguém na turma tem cadastro com e-mail confirmado. Quem abrir a trilha responde do mesmo jeito.',
   'cohorts.aval_send_failed':      'Falha ao enviar a avaliação.',
   'cohorts.aval_status_draft':     'Rascunho',
   'cohorts.aval_status_open':      'Aberta',

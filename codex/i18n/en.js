@@ -451,6 +451,8 @@ export default {
   'cohorts.aval_load_failed':      'Could not load the evaluation.',
   'cohorts.aval_retry':            'Try again',
   'cohorts.aval_send_refused':     'The server refused the send ({r}).',
+  'cohorts.aval_send_mailed':      'Survey open. Invitation e-mailed to {n} students.',
+  'cohorts.aval_send_nomail':      'Survey open. No e-mail went out: nobody in the cohort has a confirmed account. Anyone who opens their trail still answers.',
   'cohorts.aval_send_failed':      'Failed to send the evaluation.',
   'cohorts.aval_status_draft':     'Draft',
   'cohorts.aval_status_open':      'Open',
