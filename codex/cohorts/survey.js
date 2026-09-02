@@ -94,6 +94,16 @@ export function mountSurveyAdmin(el, turma, opts) {
     editing: false,
     draft: null,          // the instrument being edited; null whenever `editing` is false
   };
+  // Re-read the survey. The dossier mounts every panel EAGERLY, so this one's copy of the state is
+  // as old as the moment the cohort was opened, and the one field it depends on most lives in a
+  // NEIGHBOURING tab: the send lock is "every aula marked as happened", and Aulas is where he goes
+  // to mark them. Without this, the workflow the feature is built around (mark the last class, come
+  // back, send) shows a refusal that is no longer true and no amount of clicking clears it.
+  // Participantes already re-fetches on open for the same class of reason.
+  //
+  // Never mid-edit: a refresh while `editing` would repaint the list and throw away a draft he is
+  // still typing, which is a worse failure than a stale lock.
+  ctx.refresh = () => { if (!ctx.editing && !ctx.busy) reload(ctx); };
   el.innerHTML = '<span class="cdx-empty">' + esc(t('cohorts.loading')) + '</span>';
   reload(ctx);
   return ctx;

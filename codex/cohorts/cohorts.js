@@ -98,6 +98,10 @@ let _turmaViewApps = [];  // granted apps (with aula_number), for the aula app c
 // focused on the item; a forum item opens the Fórum sub-tab. Each is cleared as it
 // is applied so a later manual navigation is never hijacked.
 let _dossierDtab = 'dados';   // the ACTIVE dossier sub-tab, remembered across re-renders
+// The mounted Avaliação panel (track-64), so opening its sub-tab can re-read the survey. Module
+// scope like the line above, and safe for the same reason: every dossier render reassigns it
+// before any of that render's handlers can run.
+let _avalCtx = null;
                               // (async deps re-render used to reset it) — 'dados' |
                               // 'participantes' | 'aulas' | 'certs' | 'forum'. A deep-link
                               // (ctx.fdtab) seeds it; a manual turma open resets it to 'dados'.
@@ -1373,6 +1377,9 @@ function _renderDossier(turma) {
     _dtabs.forEach((x) => x.classList.toggle('active', x === tab));
     _dpanels.forEach((p) => { p.hidden = p.dataset.dpanel !== key; });
     if (key === 'participantes') _loadDossierParticipants(turma);
+    // Avaliação for the same reason, and a sharper one: its send lock reads the aulas, and the tab
+    // NEXT DOOR is where they get marked as having happened.
+    if (key === 'avaliacao' && _avalCtx && _avalCtx.refresh) _avalCtx.refresh();
   }));
 
   _wireDossierInlineEdit(el, turma);
@@ -1432,7 +1439,7 @@ function _renderDossier(turma) {
   // its state on the ctx it returns, never at module scope, so a re-render here
   // cannot paint another turma's numbers into this panel.
   const avalEl = el.querySelector('#cdx-doss-aval');
-  if (avalEl) mountSurveyAdmin(avalEl, turma);
+  if (avalEl) _avalCtx = mountSurveyAdmin(avalEl, turma);
 }
 
 // Load the course + classpulse option lists once, for the dossier's inline selects.

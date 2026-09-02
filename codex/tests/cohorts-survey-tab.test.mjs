@@ -20,6 +20,25 @@ import { loadSurvey } from './fixtures/survey-state.mjs';
 const NOW = 1_780_000_000;
 const src = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
+// ── The panel is stale by construction, so it re-reads on open ─────────────
+// Every dossier panel mounts EAGERLY, so this one's state is as old as the moment the cohort was
+// opened. Its send lock reads the aulas, and Aulas is the tab NEXT DOOR. Found by driving the real
+// workflow on staging: mark the last class, come back, and the refusal that is no longer true is
+// still on screen with no way to clear it short of reloading the page.
+
+test('the mount exposes a refresh, and it refuses to run mid-edit', () => {
+  const js = src('../cohorts/survey.js');
+  assert.match(js, /ctx[.]refresh = /, 'without it the neighbouring tab cannot ask for a re-read');
+  const line = js.slice(js.indexOf('ctx.refresh ='));
+  assert.match(line.slice(0, 120), /ctx[.]editing/, 'a refresh mid-edit would discard a draft he is typing');
+});
+
+test('opening the Avaliacao sub-tab asks for that refresh', () => {
+  const js = src('../cohorts/cohorts.js');
+  const tabLine = js.slice(js.indexOf("key === 'avaliacao'"), js.indexOf("key === 'avaliacao'") + 120);
+  assert.match(tabLine, /refresh/, 'the tab click is the only moment that knows the aulas may have changed');
+});
+
 // ── How many the invitation reached ────────────────────────
 // `email_reach` and `invited_count` are DIFFERENT numbers: the mail goes to approved students with
 // a canonical identity, anyone with a session can answer, and the response rate is computed
