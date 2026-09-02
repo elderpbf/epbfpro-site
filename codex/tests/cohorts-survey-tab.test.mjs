@@ -20,6 +20,29 @@ import { loadSurvey } from './fixtures/survey-state.mjs';
 const NOW = 1_780_000_000;
 const src = (rel) => fs.readFileSync(fileURLToPath(new URL(rel, import.meta.url)), 'utf8');
 
+// ── How many the invitation reached ────────────────────────
+// `email_reach` and `invited_count` are DIFFERENT numbers: the mail goes to approved students with
+// a canonical identity, anyone with a session can answer, and the response rate is computed
+// against the whole cohort. Feeding one into the other's slot reads as correct forever, because
+// the two agree in every cohort where everybody happens to be registered.
+
+test('the send reports the MAIL reach, and it is a separate key from the invited count', () => {
+  const js = src('../cohorts/survey.js');
+  const handler = js.slice(js.indexOf('api.surveySend'));
+  const body = handler.slice(0, handler.indexOf('finally'));
+  assert.match(body, /r[.]email_reach/, 'the toast has to read what actually went out');
+  assert.ok(!/r[.]invited_count/.test(body), 'the invited count must not stand in for the mail reach');
+  assert.match(body, /aval_send_mailed/);
+  assert.match(body, /aval_send_nomail/, 'a cohort nobody could be mailed still opened, and says so');
+});
+
+test('the head keeps owning the invited count, so the two numbers never merge', () => {
+  const html = headHtml(loadSurvey(3, NOW));
+  assert.ok(!/email_reach/.test(html));
+  const js = src('../cohorts/survey.js');
+  assert.match(js, /aval_invited['"]/, 'the head still says who was invited');
+});
+
 // ── The greyed send button ─────────────────────────────────────────────────────
 
 test('a blocked send stays HOVERABLE: aria-disabled, never the disabled attribute', () => {
