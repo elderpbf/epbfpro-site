@@ -157,7 +157,7 @@
   import '/codex/trilha/js/flat.js';  // self-registers the 'apostila' + 'outros' renderers
   import '/codex/trilha/js/apps.js';  // self-registers the 'apps' panel renderer
   import '/codex/trilha/js/nexo.js';  // self-starts the live-question poller
-  import '/codex/trilha/js/survey.js';      // track-64 the gate: self-starting, fails open
+  // track-64 the gate is started by page.js after the trail renders, not by importing this file
   window.CdxGlyphs = glyphs;
   // Stage 2: Trail's backend is the codex-api Worker. worker-call.js already
   // defaults here; this stays as the explicit page-level override. Reversible.

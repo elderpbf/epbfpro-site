@@ -13,6 +13,7 @@ import { initials } from '../../js/initials.js';
 import { glyphSvg } from '../../js/glyphs.js';
 import { t, setLang } from '../i18n.js';
 import { extractEnrollToken, isLoggedIn, clearToken, getToken, setToken, getKnownTurmas, getPresence, setPresence, rememberTurma, forgetTurma, otherKnownTurmas, LOGIN_ENABLED } from './student-session.js';
+import { start as startSurvey } from './survey.js';
 import { openLoginModal } from './student-login-modal.js';
 import { logoutStudent } from './student-login.js';
 import { isWall } from './access.js';
@@ -131,6 +132,14 @@ export async function mount(root, ctx = {}) {
     if (_magic && _magic.validated && _magic.recent && !isWall((state.data || {}).access)) renderValidatedNotice(root, loc);
     else renderTrilhaView(root, loc);
     if (LOGIN_ENABLED) { recheckAuth(); claimPresence(); handleEnrollReturn(loc); }
+    // track-64, the reaction survey's gate. HERE and not at import time: it reads
+    // state.sessionToken, which is set a few lines above this function's start, so a module that
+    // starts itself on import always sees null and silently gates nobody.
+    //
+    // Only over a rendered trail. A student sitting on the approval wall has a session and no
+    // access, and covering that wall with a survey asks them to evaluate a course they cannot
+    // open yet. Not awaited: the gate fails open by contract, so nothing here waits on it.
+    if (LOGIN_ENABLED && state.sessionToken && !isWall((state.data || {}).access)) startSurvey();
     // One public identity: normalize a legacy slug/token entry to the permanent /trilha/<code>
     // in the bar (no reload; the code URL resolves on any later refresh). Runs AFTER
     // handleEnrollReturn has consumed any ?et=. Skipped when we already entered via the code.

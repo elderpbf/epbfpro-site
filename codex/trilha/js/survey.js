@@ -433,4 +433,10 @@ export async function submit() {
   renderModal(overlayHtml());
 }
 
-start();
+// NOT self-starting any more, and this is the whole bug it was born with. The module was imported
+// for its side effect from trilha/index.html, so `start()` ran at IMPORT time, before page.js had
+// read the session out of localStorage. `state.sessionToken` was still null, the very first line
+// returned "nobody is logged in", and the gate never appeared for anybody. Every check that passed
+// before this was a check of the fail-open path, which is exactly the shape that hides it.
+//
+// page.js calls it now, after the trail has actually rendered, the same way startNexo is called.
