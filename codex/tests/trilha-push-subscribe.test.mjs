@@ -109,3 +109,26 @@ test('trilha/sw.js: push + notificationclick handlers, payload contract intact',
   assert.match(src, /network-first/i);
   assert.match(src, /OFFLINE_HTML/);
 });
+
+// ── The offline page is a LAST resort, not a first reaction ─────────────────────
+// A navigation fetch rejects on any transport hiccup, and the handler used to treat the first
+// failure as final: one blip and a student whose connection was fine got a full-page "Sem
+// conexão". Élder hit it opening the trilha from an e-mail link, and a plain refresh fixed it
+// (2026-09-02). The trail's own loader already rides this out (fetchTurmaViewResilient); the
+// service worker sits in front of it and was the layer still giving up immediately.
+test('trilha/sw.js: a navigation retries once before declaring the internet gone', () => {
+  const src = read('../../trilha/sw.js');
+  assert.match(src, /function navigateWithRetry/);
+  assert.match(src, /navigateWithRetry\(req\)/, 'the navigation branch must be the one using it');
+  const fn = src.slice(src.indexOf('function navigateWithRetry'));
+  const body = fn.slice(0, fn.indexOf('}'));
+  assert.equal((body.match(/fetch\(req\)/g) || []).length, 2, 'exactly one retry, not a ladder');
+  assert.match(body, /setTimeout/, 'back off a moment, or the retry races the same failure');
+});
+
+test('trilha/sw.js: the offline page gives the person something to press', () => {
+  const src = read('../../trilha/sw.js');
+  const html = src.slice(src.indexOf('OFFLINE_HTML'), src.indexOf('function navigateWithRetry'));
+  assert.match(html, /location\.reload\(\)/, 'telling someone to "reabra a trilha" is not a way back');
+  assert.match(html, /<button/);
+});

@@ -13,7 +13,27 @@ const OFFLINE_HTML =
   '<body style="font-family:system-ui,sans-serif;margin:0;min-height:100vh;display:flex;' +
   'align-items:center;justify-content:center;background:#0f2f2a;color:#f0fdfa;text-align:center">' +
   '<div style="padding:2rem"><h1 style="margin:0 0 .5rem">Sem conexão</h1>' +
-  '<p style="opacity:.8;margin:0">Reabra a trilha quando a internet voltar.</p></div></body></html>';
+  '<p style="opacity:.8;margin:0 0 1.25rem">Verifique sua internet e tente de novo.</p>' +
+  // A BUTTON, because the old page only said "reabra a trilha quando a internet voltar" and left
+  // the person with nothing to press. On a phone that means knowing to pull-to-refresh, and this
+  // page is what a student sees at the exact moment they are least willing to work it out.
+  '<button onclick="location.reload()" style="font:inherit;font-weight:600;padding:.7rem 1.4rem;' +
+  'border:0;border-radius:999px;background:#f0fdfa;color:#0f2f2a;cursor:pointer">Tentar de novo</button>' +
+  '</div></body></html>';
+
+// ONE retry before declaring the internet gone. A navigation fetch rejects on any transport
+// hiccup, and a single one used to put a full-page "Sem conexão" in front of somebody whose
+// connection was fine: Élder hit it opening the trilha from an e-mail link, and a plain refresh
+// fixed it (2026-09-02). That is the same failure the trail's own loader already rides out
+// (trilha/js/page.js fetchTurmaViewResilient, "fail-open, o soluço"), and the service worker was
+// the one layer still treating the first failure as final.
+//
+// Deliberately ONE retry and a short pause: this runs before anything is on screen, so a longer
+// ladder would just be a blank tab. Genuinely offline still lands on the page above, one second
+// later than it used to.
+function navigateWithRetry(req) {
+  return fetch(req).catch(() => new Promise((r) => setTimeout(r, 900)).then(() => fetch(req)));
+}
 
 self.addEventListener('install', () => self.skipWaiting());
 self.addEventListener('activate', (event) => event.waitUntil(self.clients.claim()));
@@ -24,7 +44,7 @@ self.addEventListener('fetch', (event) => {
   // Navigations: network-first with an offline fallback (never a cached shell).
   if (req.mode === 'navigate') {
     event.respondWith(
-      fetch(req).catch(() => new Response(OFFLINE_HTML, {
+      navigateWithRetry(req).catch(() => new Response(OFFLINE_HTML, {
         status: 200,
         headers: { 'Content-Type': 'text/html; charset=utf-8' },
       }))
