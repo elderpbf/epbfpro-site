@@ -98,10 +98,13 @@ function benefitsHtml() {
   // the student will never get; the old "se habilitado" tag was a hedge for exactly this
   // case and is now redundant, so it is gone.
   const certOn = !!(((state.data || {}).turma || {}).certificates_enabled);
+  // Same rule for the forum: the benefit is only promised when the turma's forum is on
+  // (the backend answers `forum_disabled` and the Trilha hides the tab otherwise).
+  const forumOn = !!(((state.data || {}).turma || {}).forum_enabled);
   return '<div class="cdx-en-benes">' +
     bene('conteudo', ICONS.conteudo, 'wall.bene_conteudo_t', 'wall.bene_conteudo_d') +
     bene('tarefa', ICONS.tarefa, 'wall.bene_tarefa_t', 'wall.bene_tarefa_d') +
-    bene('forum', ICONS.forum, 'wall.bene_forum_t', 'wall.bene_forum_d') +
+    (forumOn ? bene('forum', ICONS.forum, 'wall.bene_forum_t', 'wall.bene_forum_d') : '') +
     (certOn ? bene('cert', ICONS.cert, 'wall.bene_cert_t', 'wall.bene_cert_d') : '') +
   '</div>';
 }
