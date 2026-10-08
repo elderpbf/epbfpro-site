@@ -69,6 +69,13 @@ test('the certificate benefit is gated on the turma\'s certificates_enabled', ()
   assert.ok(!/bene_cert_tag/.test(src), 'the "if enabled" tag is gone (now a real condition, not a hedge)');
 });
 
+// Same rule as the certificate: no forum promise on a turma whose forum is off.
+test('the forum benefit is gated on the turma\'s forum_enabled', () => {
+  const src = read('../trilha/js/wall.js');
+  assert.ok(/forum_enabled/.test(src), 'the wall reads the forum_enabled flag');
+  assert.ok(/forumOn \? bene\('forum'/.test(src), 'the forum card only enters when forumOn');
+});
+
 // The WhatsApp group button is a benefit for those who HAVE access. A second layer over the
 // backend (which already omits whatsapp_url on the gated wall). The gate is `!gated ||
 // approved`, which keeps the button on OPEN cohorts (status 'anonymous', no wall) and only
