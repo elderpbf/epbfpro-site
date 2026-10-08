@@ -1263,6 +1263,12 @@ details.cdx-doss-sec[open] > summary .cdx-caret { transform: rotate(90deg); }
 
 /* ── Aula Liberações: the "Aplicativos" release section (below the item composer) ── */
 .cdx-aula-rel-apps-slot { margin-top: 0.9rem; }
+/* Aula releases pane: the picker used to share ONE 48vh ceiling with the "released here" summary,
+   so a long summary squeezed the search and the sections to nothing. Each region gets its own
+   ceiling instead and the window grows; the page scrolls. Scoped by id so presets/tarefas keep theirs. */
+#cdx-aula-rel-content .cdx-picker { max-height: none; }
+#cdx-aula-rel-content .cdx-rel-sum { max-height: 30vh; }
+#cdx-aula-rel-content .cdx-picker-list { max-height: 45vh; min-height: 12rem; }
 .cdx-aula-apps { border-top: 1px solid var(--border); padding-top: 0.8rem; }
 .cdx-aula-apps-head { font-size: 0.85rem; font-weight: 700; color: var(--text-primary); margin-bottom: 0.2rem; }
 .cdx-aula-apps-hint { font-size: 0.76rem; color: var(--text-secondary); margin-bottom: 0.55rem; }
