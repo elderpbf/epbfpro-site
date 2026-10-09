@@ -61,6 +61,16 @@ export class QuestionElement extends ElementBase {
     // Inactivity pause (student mode only)
     this._lastSeenActiveQuestionTs = Date.now();
     this._pauseAfterMs = 5 * 60 * 1000;
+    // Open-question backoff (student mode only): a question left open keeps every phone
+    // polling, and each poll is a D1 read billed per row. After 5 min on the SAME open
+    // question the poll slows to 5s; after 10 min the phone takes the tap-to-continue
+    // pause. A tap restarts the cycle; a new question or none open goes back to fast.
+    this._slowAfterMs = 5 * 60 * 1000;
+    this._slowPollMs = 5000;
+    this._openPauseAfterMs = 10 * 60 * 1000;
+    this._openQId = null;
+    this._openSinceTs = 0;
+    this._currentPollMs = 0;
     this._isPausedForInactivity = false;
     this._isPausedForVisibility = false;
     this._visListener = null;
@@ -127,7 +137,35 @@ export class QuestionElement extends ElementBase {
     if (!this._session) return;
     if (this._isPausedForVisibility || this._isPausedForInactivity) return;
     this._poll();
-    this._pollTimer = setInterval(() => this._poll(), this._pollInterval);
+    this._pollTimer = setInterval(() => this._poll(), this._currentPollMs || this._pollInterval);
+  }
+
+  // Re-arm the running loop at a new rate; a no-op when the rate is unchanged.
+  _setPollRate(ms) {
+    if ((this._currentPollMs || this._pollInterval) === ms) return;
+    this._currentPollMs = ms;
+    if (!this._pollTimer) return;
+    clearInterval(this._pollTimer);
+    this._pollTimer = setInterval(() => this._poll(), ms);
+  }
+
+  _checkOpenQuestionBackoff(qId) {
+    const now = Date.now();
+    if (qId !== this._openQId) {
+      this._openQId = qId;
+      this._openSinceTs = now;
+      this._setPollRate(this._pollInterval);
+      return;
+    }
+    const openFor = now - this._openSinceTs;
+    if (openFor > this._openPauseAfterMs) {
+      // Same question on resume must re-render and re-fire onActive, which the pause
+      // cleared (the host restores the student's own answer from localStorage there).
+      this._forceNextRender();
+      this._enterInactivityPause();
+      return;
+    }
+    if (openFor > this._slowAfterMs) this._setPollRate(this._slowPollMs);
   }
 
   stopPolling() {
@@ -206,8 +244,11 @@ export class QuestionElement extends ElementBase {
     if (this._state === 'CLOSED') return;
     if (this._lastData && this._lastData.active_question) {
       this._lastSeenActiveQuestionTs = Date.now();
+      this._checkOpenQuestionBackoff(this._lastData.active_question.id);
       return;
     }
+    this._openQId = null;
+    this._setPollRate(this._pollInterval);
     if (Date.now() - this._lastSeenActiveQuestionTs > this._pauseAfterMs) this._enterInactivityPause();
   }
 
@@ -221,13 +262,16 @@ export class QuestionElement extends ElementBase {
   _exitInactivityPause() {
     this._isPausedForInactivity = false;
     this._lastSeenActiveQuestionTs = Date.now();
+    this._openSinceTs = Date.now();
+    this._currentPollMs = this._pollInterval;
     if (this._noQuestionTimeout) { clearTimeout(this._noQuestionTimeout); this._noQuestionTimeout = null; }
     if (!this._isPausedForVisibility) this.startPolling();
   }
 
   async _handleResumeTap() {
     this._renderCheckingPause();
-    try { await this._poll(); } catch (e) { /* _poll catches its own errors */ }
+    this._resuming = true;
+    try { await this._poll(); } catch (e) { /* _poll catches its own errors */ } finally { this._resuming = false; }
     if (this._lastData && this._lastData.active_question) {
       this._exitInactivityPause();
     } else {
@@ -305,6 +349,10 @@ export class QuestionElement extends ElementBase {
         this.stopPolling();
         return;
       }
+
+      // A poll already in flight when the pause began must not paint over the overlay;
+      // only the student's resume tap may render while paused.
+      if (this._isPausedForInactivity && !this._resuming) return;
 
       let qToRender = null;
       let isRevealed = false;
