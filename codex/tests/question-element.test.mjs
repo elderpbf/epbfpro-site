@@ -303,3 +303,21 @@ test('host and display never slow down or pause on a long open question', async 
     } finally { h.restore(); }
   }
 });
+
+// A poll already in flight when the pause starts must not paint the question over the
+// overlay (found by the Playwright run: the student was left on a frozen question with
+// no button and no polling).
+test('student: a poll that lands after the pause does not replace the overlay', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    h.setWorker(openState('q1'));
+    await el._poll();
+    el._openSinceTs = Date.now() - 11 * MIN;
+    await el._poll();
+    assert.equal(el._isPausedForInactivity, true);
+    assert.ok(/cdx-cpq-resume-overlay/.test(el.innerHTML), 'overlay shown');
+    await el._poll(); // the late, already-in-flight poll
+    assert.ok(/cdx-cpq-resume-overlay/.test(el.innerHTML), 'overlay still shown after a late poll');
+  } finally { h.restore(); }
+});

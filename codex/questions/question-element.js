@@ -270,7 +270,8 @@ export class QuestionElement extends ElementBase {
 
   async _handleResumeTap() {
     this._renderCheckingPause();
-    try { await this._poll(); } catch (e) { /* _poll catches its own errors */ }
+    this._resuming = true;
+    try { await this._poll(); } catch (e) { /* _poll catches its own errors */ } finally { this._resuming = false; }
     if (this._lastData && this._lastData.active_question) {
       this._exitInactivityPause();
     } else {
@@ -348,6 +349,10 @@ export class QuestionElement extends ElementBase {
         this.stopPolling();
         return;
       }
+
+      // A poll already in flight when the pause began must not paint over the overlay;
+      // only the student's resume tap may render while paused.
+      if (this._isPausedForInactivity && !this._resuming) return;
 
       let qToRender = null;
       let isRevealed = false;
