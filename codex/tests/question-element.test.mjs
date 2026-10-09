@@ -204,3 +204,102 @@ test('render element + renderer i18n keys exist in BOTH dictionaries', async () 
     assert.ok(k in en, `en.js has ${k}`);
   }
 });
+
+// ── open-question backoff (student mode): a forgotten open question must not keep every
+// phone polling at 2s; each poll is a D1 read billed per row. ──────────────────────────
+const MIN = 60 * 1000;
+const openState = (id) => workerFrom({ session: { status: 'open' }, active_question: mc({ id }), history: [] });
+
+test('student: a freshly opened question polls at the fast rate', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    h.setWorker(openState('q1'));
+    await el._poll();
+    assert.equal(el._currentPollMs || el._pollInterval, 2000);
+    assert.equal(el._isPausedForInactivity, false);
+  } finally { h.restore(); }
+});
+
+test('student: the same question open for more than 5 min slows the poll to 5s', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    h.setWorker(openState('q1'));
+    await el._poll();
+    el._openSinceTs = Date.now() - 6 * MIN;
+    await el._poll();
+    assert.equal(el._currentPollMs, 5000);
+    assert.equal(el._isPausedForInactivity, false);
+  } finally { h.restore(); }
+});
+
+test('student: the same question open for more than 10 min takes the tap-to-continue pause', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    let paused = 0;
+    el.onInactivityPause = () => { paused++; };
+    h.setWorker(openState('q1'));
+    await el._poll();
+    el._openSinceTs = Date.now() - 11 * MIN;
+    await el._poll();
+    assert.equal(el._isPausedForInactivity, true);
+    assert.equal(paused, 1);
+  } finally { h.restore(); }
+});
+
+test('student: tapping resume on the same open question re-fires onActive and restarts fast', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    let actives = 0;
+    el.onActive = () => { actives++; };
+    h.setWorker(openState('q1'));
+    await el._poll();
+    el._openSinceTs = Date.now() - 11 * MIN;
+    await el._poll();
+    assert.equal(el._isPausedForInactivity, true);
+    await el._handleResumeTap();
+    assert.equal(el._isPausedForInactivity, false);
+    assert.equal(actives, 2, 'onActive fired again so the host restores the question');
+    assert.equal(el._currentPollMs, 2000);
+    assert.ok(Date.now() - el._openSinceTs < MIN, 'the open clock restarted');
+  } finally { h.restore(); }
+});
+
+test('student: a new question, or none open, goes back to the fast rate', async () => {
+  const h = install();
+  try {
+    const el = await freshEl(h, 'student');
+    h.setWorker(openState('q1'));
+    await el._poll();
+    el._openSinceTs = Date.now() - 6 * MIN;
+    await el._poll();
+    assert.equal(el._currentPollMs, 5000);
+    h.setWorker(openState('q2'));
+    await el._poll();
+    assert.equal(el._currentPollMs, 2000, 'new question is fast');
+    el._openSinceTs = Date.now() - 6 * MIN;
+    await el._poll();
+    assert.equal(el._currentPollMs, 5000);
+    h.setWorker(workerFrom({ session: { status: 'open' }, active_question: null, history: [] }));
+    await el._poll();
+    assert.equal(el._currentPollMs, 2000, 'no open question is fast');
+  } finally { h.restore(); }
+});
+
+test('host and display never slow down or pause on a long open question', async () => {
+  for (const mode of ['host', 'display']) {
+    const h = install();
+    try {
+      const el = await freshEl(h, mode);
+      h.setWorker(openState('q1'));
+      await el._poll();
+      el._openSinceTs = Date.now() - 30 * MIN;
+      await el._poll();
+      assert.equal(el._currentPollMs || el._pollInterval, 2000, mode);
+      assert.equal(el._isPausedForInactivity, false, mode);
+    } finally { h.restore(); }
+  }
+});
