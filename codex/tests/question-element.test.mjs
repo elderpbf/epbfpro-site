@@ -321,3 +321,19 @@ test('student: a poll that lands after the pause does not replace the overlay', 
     assert.ok(/cdx-cpq-resume-overlay/.test(el.innerHTML), 'overlay still shown after a late poll');
   } finally { h.restore(); }
 });
+
+// The Worker shares one state per session (rebuilt at most every 2s) with polls that send
+// `shared`. Students, the projector and embeds opt in; the host must not, or it would see its
+// own launch/close up to 2s late.
+test('only the host poll reads fresh; every other mode asks for the shared state', async () => {
+  for (const [mode, want] of [['host', undefined], ['student', 1], ['display', 1], ['embed', 1]]) {
+    const h = install();
+    try {
+      const el = await freshEl(h, mode);
+      let sent = null;
+      h.setWorker(async (p) => { if (p.action === 'get_session_state') sent = p; return { session: { status: 'open' }, active_question: null, history: [] }; });
+      await el._poll();
+      assert.equal(sent && sent.shared, want, mode + (want ? ' sends shared' : ' does not send shared'));
+    } finally { h.restore(); }
+  }
+});
