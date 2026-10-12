@@ -343,6 +343,9 @@ export class QuestionElement extends ElementBase {
       // must see its own launch and close at once.
       const req = { code: this._session, _silent: true };
       if (this._mode !== 'host') req.shared = 1;
+      // A named student's poll also carries their presence and their own Q&A answers, so the
+      // Trilha needs no second timer for them (set by the host page, nexo-answer.js).
+      if (this._mode === 'student' && this.studentName) req.student_name = this.studentName;
       const data = await api.sessionState(req);
       this._lastData = data;
 

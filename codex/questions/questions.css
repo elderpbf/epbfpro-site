@@ -1111,6 +1111,8 @@
 .cdx-qa-header { display: flex; align-items: center; gap: 0.6rem; margin-bottom: 1rem; }
 .cdx-qa-title { font-size: 0.72rem; font-weight: 700; letter-spacing: 0.08em; text-transform: uppercase; color: var(--text-secondary); }
 .cdx-qa-badge { display: inline-block; min-width: 22px; text-align: center; padding: 0.15rem 0.5rem; font-size: 0.72rem; font-weight: 700; color: var(--text-on-accent, #fff); background: #ef4444; border-radius: 999px; }
+.cdx-qa-toggle { margin-left: auto; }
+.cdx-qa-off { margin: 0; font-size: 0.85rem; color: var(--text-secondary); }
 .cdx-qa-empty { font-size: 0.85rem; color: var(--text-secondary); text-align: center; padding: 1rem 0; }
 .cdx-qa-row { padding: 0.8rem; border: 1px solid rgba(20,184,166,.12); border-radius: 10px; margin-bottom: 0.6rem; background: var(--background); transition: border-color .15s; }
 .cdx-qa-row.cdx-qa-answered { opacity: 0.75; }

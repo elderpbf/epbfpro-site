@@ -273,8 +273,12 @@ function _qaMarkup() {
     '<div class="cdx-qa-header">' +
       '<span class="cdx-qa-title">' + _esc(t('questions.host_qa_title')) + '</span>' +
       '<span class="cdx-qa-badge" id="cdx-qa-badge" style="display:none"></span>' +
+      '<label class="cdx-toggle-label cdx-qa-toggle" title="' + _esc(t('questions.host_qa_toggle')) + '">' +
+        '<span class="cdx-toggle"><input type="checkbox" id="cdx-qa-toggle" aria-label="' + _esc(t('questions.host_qa_toggle')) + '"><span class="cdx-toggle-slider"></span></span>' +
+      '</label>' +
     '</div>' +
-    '<div id="cdx-qa-feed"></div>' +
+    '<p class="cdx-qa-off" id="cdx-qa-off">' + _esc(t('questions.host_qa_off_hint')) + '</p>' +
+    '<div id="cdx-qa-feed" hidden></div>' +
   '</section>';
 }
 
@@ -1188,7 +1192,7 @@ export function mount(containerEl, ctx) {
   if (renderHost) renderHost.appendChild(_qEl);
   _qEl.start(_session.code);
 
-  _qa = createQaFeed({ sessionCode: _session.code, feedEl: _q('#cdx-qa-feed'), badgeEl: _q('#cdx-qa-badge'), onError: (msg) => toast.err(msg) });
+  _qa = createQaFeed({ sessionCode: _session.code, feedEl: _q('#cdx-qa-feed'), badgeEl: _q('#cdx-qa-badge'), toggleEl: _q('#cdx-qa-toggle'), offEl: _q('#cdx-qa-off'), onError: (msg) => toast.err(msg) });
 
   _applyHostedUI(_isOpen());
   _loadTrail();

@@ -1700,6 +1700,8 @@ export default {
   'questions.sessions_rename_error':     'Erro ao renomear a sessão.',
   'questions.host_history':              'Histórico',
   'questions.host_qa_title':             'Perguntas dos alunos',
+  'questions.host_qa_toggle':            'Permitir perguntas dos alunos',
+  'questions.host_qa_off_hint':          'Desligado: os alunos não veem o botão de perguntar.',
   'questions.host_relaunch':             'Reabrir',
   'questions.host_edit':                 'Editar',
   'questions.host_delete':               'Excluir',
@@ -1756,6 +1758,7 @@ export default {
   'questions.qa_err_update':         'Falha ao atualizar pergunta.',
   'questions.qa_err_promote':        'Falha ao promover pergunta.',
   'questions.qa_err_close':          'Falha ao encerrar pergunta.',
+  'questions.qa_err_toggle':         'Falha ao alterar as perguntas dos alunos.',
 
   // Content → Slides (Apresentações) — authored deck library
   'slides.new':               '+ Apresentação',

@@ -7,7 +7,9 @@
 //
 // createQaFeed(opts) returns { syncFromState, setSessionCode, destroy }, mirroring
 // the legacy attach() contract so the live host can drive it from the session
-// poll. Q&A is implicitly always-on here (no toggle UI), matching the legacy host.
+// poll. Q&A is a per-session host toggle that starts OFF (Élder, 2026-10-12: no student had
+// ever asked one, and the always-on host forced it on for every session). The session state's
+// qa_enabled drives the switch, the feed and its poll; the students' bar follows the same flag.
 import { questions as api } from '../js/codex-api.js';
 import { t } from '../js/i18n.js';
 import { hostLabel } from './identity.js';
@@ -29,6 +31,8 @@ export function createQaFeed(opts) {
   let sessionCode = opts.sessionCode;
   const feedEl  = opts.feedEl;
   const badgeEl = opts.badgeEl;
+  const toggleEl = opts.toggleEl;
+  const offEl = opts.offEl;
   const onError = typeof opts.onError === 'function' ? opts.onError : () => {};
 
   let _questions = [];
@@ -233,14 +237,33 @@ export function createQaFeed(opts) {
       .finally(() => { _busy = false; });
   }
 
-  // Q&A is implicitly always-on (no toggle UI), so force server state to match
-  // and begin polling immediately.
-  api.toggleQa({ code: sessionCode, enabled: 1 }).catch((e) => { if (window.bsLog) window.bsLog('live-qa: toggle failed: ' + (e && e.message || e), 'error'); });
-  startPoll();
+  // On/off. The feed only polls while Q&A is on. A host flip is applied at once and the
+  // session poll is ignored for a few seconds, so a poll that left before the flip cannot
+  // throw the switch back.
+  let _enabled = null;
+  let _flipUntil = 0;
+  function applyEnabled(on) {
+    _enabled = on;
+    if (toggleEl) toggleEl.checked = on;
+    if (feedEl) feedEl.hidden = !on;
+    if (offEl) offEl.hidden = on;
+    if (on) startPoll(); else { stopPoll(); updateBadge(0); }
+  }
+  function onToggle() {
+    const on = !!toggleEl.checked;
+    applyEnabled(on);
+    _flipUntil = Date.now() + 5000;
+    api.toggleQa({ code: sessionCode, enabled: on ? 1 : 0 }).then((res) => {
+      if (!res || !res.ok) { applyEnabled(!on); onError((res && res.error) || t('questions.qa_err_toggle')); }
+    }).catch((e) => { if (window.bsLog) window.bsLog('live-qa: toggle failed: ' + (e && e.message || e), 'error'); applyEnabled(!on); onError(e && e.message ? e.message : String(e)); });
+  }
+  if (toggleEl) toggleEl.addEventListener('change', onToggle);
+  applyEnabled(false);
 
   return {
     syncFromState(state) {
       if (!state) return;
+      if ('qa_enabled' in state && Date.now() > _flipUntil && !!state.qa_enabled !== _enabled) applyEnabled(!!state.qa_enabled);
       const prevActive = _activeStudentQuestionId;
       const prevActiveQ = _activeQuestionId;
       if (state.active_question) {
@@ -256,7 +279,7 @@ export function createQaFeed(opts) {
       }
       if (prevActive !== _activeStudentQuestionId || prevActiveQ !== _activeQuestionId) render();
     },
-    setSessionCode(code) { sessionCode = code; poll(); },
-    destroy() { _attached = false; stopPoll(); },
+    setSessionCode(code) { sessionCode = code; if (_enabled) poll(); },
+    destroy() { _attached = false; stopPoll(); if (toggleEl) toggleEl.removeEventListener('change', onToggle); },
   };
 }
