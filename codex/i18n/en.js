@@ -1692,6 +1692,8 @@ export default {
   'questions.sessions_rename_error':     'Error renaming the session.',
   'questions.host_history':              'History',
   'questions.host_qa_title':             'Student questions',
+  'questions.host_qa_toggle':            'Allow student questions',
+  'questions.host_qa_off_hint':          'Off: students do not see the ask button.',
   'questions.host_relaunch':             'Reopen',
   'questions.host_edit':                 'Edit',
   'questions.host_delete':               'Delete',
@@ -1748,6 +1750,7 @@ export default {
   'questions.qa_err_update':         'Failed to update the question.',
   'questions.qa_err_promote':        'Failed to promote the question.',
   'questions.qa_err_close':          'Failed to close the question.',
+  'questions.qa_err_toggle':         'Failed to change student questions.',
 
   // Content -> Slides (Presentations) -- authored deck library
   'slides.new':               '+ Presentation',

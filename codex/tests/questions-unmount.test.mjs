@@ -152,6 +152,9 @@ test('live-host: mount arms the element poll + the Q&A poll + a document listene
     const mod = await import('../questions/live-host.js');
     const container = h.el('div');
     mod.mount(container, { session: { code: 'ABCD', status: 'open', title: 'Aula 1' } });
+    // Q&A starts off and its feed poll arms only once the first session poll reports
+    // qa_enabled, so let that poll land before counting timers.
+    await new Promise((r) => setImmediate(r));
     assert.ok(h.intervals.size >= 2, 'the embedded element poll AND the Q&A feed poll are armed');
     assert.ok(h.docListenerCount() >= 1, 'live-host registered a document listener');
     mod.unmount();

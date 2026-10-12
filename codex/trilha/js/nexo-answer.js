@@ -11,7 +11,7 @@
 //      legacy cpq-* document event bus, and it renders .cdx-qr-* (styled by
 //      questions.css) instead of the legacy .qr-* (question-types.css).
 //   2. Answer/Q&A/inbox submits go through the Trail facade (trail.submitAnswer /
-//      submitStudentQ / studentInbox), never raw callWorker.
+//      submitStudentQ), never raw callWorker. The inbox rides on the element's state poll.
 //
 // Public API: mount(host, { sessionCode, studentName }) / unmount().
 // The pure helpers (audienceLabel / submitDispatch) are unit-tested; the mounted
@@ -175,7 +175,7 @@ export function mount(host, opts) {
   _state = {
     host, sessionCode, studentName, getSessionToken,
     activeQuestion: null, els, listeners: [], current: null,
-    myAnswer: null, lastSeenAnsKey: null, inboxTimer: null,
+    myAnswer: null, lastSeenAnsKey: null,
     // Orchestrator (nexo.js) callback: fired once when the element reports the session
     // closed, so the trilha is restored in ~2s instead of on the orchestrator's own poll.
     onSessionClosed: (opts && typeof opts.onSessionClosed === 'function') ? opts.onSessionClosed : null,
@@ -187,16 +187,16 @@ export function mount(host, opts) {
   _wireQaBar();
   _showState('waiting');
 
-  // Start the element polling, and poll the asker's private inbox independently.
+  // Start the element polling. Its poll names the student, so the same request carries the
+  // presence heartbeat and the answers to this student's own questions: no inbox timer of our
+  // own, which used to run every 4s even while the poll was paused.
+  if (els.cpq) els.cpq.studentName = studentName;
   if (els.cpq && typeof els.cpq.start === 'function') els.cpq.start(sessionCode);
-  _pollInbox();
-  _state.inboxTimer = setInterval(_pollInbox, 4000);
 }
 
 export function unmount() {
   if (!_state) return;
   const s = _state;
-  if (s.inboxTimer) { try { clearInterval(s.inboxTimer); } catch (_) { /* noop */ } s.inboxTimer = null; }
   s.listeners.forEach((l) => { try { l.el.removeEventListener(l.type, l.fn); } catch (_) { /* noop */ } });
 
   // Tear down the element (clears its poll timer + listeners) and drop callbacks.
@@ -287,6 +287,7 @@ function _wireQuestionElement() {
     _pulseDot('dot-answered');
     _syncQa(data);
     _syncStudentQa(data);
+    if (Array.isArray(data.my_questions)) _applyInbox(data.my_questions);
   };
 
   // onIdle: no active question between questions (was cpq-idle).
@@ -437,30 +438,23 @@ function _showToast(msg) {
 }
 
 // ── inbox + Q&A submit (Trail facade) ────────────────────────────────────────
-async function _pollInbox() {
+// The student's answered questions, carried by the element's state poll (my_questions).
+function _applyInbox(questions) {
   if (!_state) return;
-  try {
-    const res = await trail.studentInbox({
-      session_code: _state.sessionCode,
-      student_name: _state.studentName,
-      _silent: true,
-    });
-    if (!_state || !res || !res.ok || !Array.isArray(res.questions)) return;
-    const answered = res.questions.filter((q) => q.answer && String(q.answer).trim());
-    if (!answered.length) return;
-    const latest = answered[answered.length - 1];
-    _state.myAnswer = { id: latest.id, text: latest.text || '', answer: latest.answer || '' };
-    if (_state.els.myaText) _state.els.myaText.textContent = _state.myAnswer.text;
-    if (_state.els.myaAns) _state.els.myaAns.textContent = _state.myAnswer.answer;
+  const answered = questions.filter((q) => q.answer && String(q.answer).trim());
+  if (!answered.length) return;
+  const latest = answered[answered.length - 1];
+  _state.myAnswer = { id: latest.id, text: latest.text || '', answer: latest.answer || '' };
+  if (_state.els.myaText) _state.els.myaText.textContent = _state.myAnswer.text;
+  if (_state.els.myaAns) _state.els.myaAns.textContent = _state.myAnswer.answer;
 
-    const key = String(latest.id) + ':' + String(latest.answer);
-    if (key !== _state.lastSeenAnsKey) {
-      _state.lastSeenAnsKey = key;
-      try { localStorage.setItem('nx_seen_ans_' + _state.sessionCode, key); } catch (_) { /* noop */ }
-      _showToast('Sua pergunta foi respondida.');
-    }
-    if (_state.current === 'waiting' || _state.current === 'my-answer') _showState('my-answer');
-  } catch (_) { /* swallow; next tick retries */ }
+  const key = String(latest.id) + ':' + String(latest.answer);
+  if (key !== _state.lastSeenAnsKey) {
+    _state.lastSeenAnsKey = key;
+    try { localStorage.setItem('nx_seen_ans_' + _state.sessionCode, key); } catch (_) { /* noop */ }
+    _showToast('Sua pergunta foi respondida.');
+  }
+  if (_state.current === 'waiting' || _state.current === 'my-answer') _showState('my-answer');
 }
 
 async function _submitStudentQ() {
