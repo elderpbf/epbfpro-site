@@ -339,7 +339,7 @@ export class QuestionElement extends ElementBase {
     if (!this._session) return;
     try {
       // Every non-host viewer reads the state the Worker shares across the session (rebuilt at
-      // most every 2s), so a class costs the same whatever its size. The host reads fresh: it
+      // most every 2s per Worker isolate) instead of one rebuilt per student. The host reads fresh: it
       // must see its own launch and close at once.
       const req = { code: this._session, _silent: true };
       if (this._mode !== 'host') req.shared = 1;
