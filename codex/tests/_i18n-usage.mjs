@@ -20,6 +20,7 @@ import path from 'node:path';
 //   certificates.status_    certificates.js, issued|signed|sent|revoked
 //   certificates.theme_     certificates.js:519,1327, CERT_THEMES
 //   certificates.tpl_desc_  certificates.js, one per template slug
+//   cloud.cap. metric.      cloud-status.js, per cap key / metric from the platform
 //   cohorts.date_ fmt_ mod_ section_   cohorts.js, bounded enums
 //   lessons.section_        lessons.js, SECTION_ORDER
 //   presets.group_          presets.js, item-type groups
@@ -30,6 +31,8 @@ export const CODEX_DYNAMIC_PREFIXES = [
   'alunos.',
   'apostila.status_',
   'certificates.status_',
+  'cloud.cap.',
+  'cloud.metric.',
   'certificates.theme_',
   'certificates.tpl_desc_',
   'cohorts.date_',

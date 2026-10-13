@@ -1,0 +1,56 @@
+/* codex/css/cloud-status.css
+   The Cloudflare usage indicator (js/cloud-status.js): a cloud on the top bar, green / yellow /
+   red by the highest share of the account's daily caps, and a panel in the bell's idiom
+   (css/notif-bell.css). All colours via theme tokens. Prefix: cdx-cloud-. */
+
+.cdx-cloud-wrap { position: relative; display: inline-flex; }
+.cdx-cloud-btn svg { width: 20px; height: 20px; fill: currentColor; fill-opacity: .22; }
+
+/* One level class drives the button, the bars and the alert rows. */
+.cdx-cloud--ok      { color: var(--success); }
+.cdx-cloud--warn    { color: var(--warning, #d97706); }
+.cdx-cloud--alert   { color: var(--error); }
+.cdx-cloud--unknown { color: var(--text-secondary); opacity: .55; }
+
+.cdx-cloud-panel {
+  position: absolute; top: calc(100% + 10px); right: 0; width: 380px; max-width: 88vw;
+  background: var(--surface); border: 1px solid var(--border); border-radius: 14px;
+  box-shadow: 0 22px 54px -18px rgba(0,0,0,.35); overflow: hidden; z-index: 200;
+}
+.cdx-cloud-panel[hidden] { display: none; }
+.cdx-cloud-head { padding: .8rem 1rem; border-bottom: 1px solid var(--border); }
+.cdx-cloud-title { font-size: .92rem; font-weight: 800; color: var(--text-primary); }
+.cdx-cloud-body { max-height: min(70vh, 560px); overflow-y: auto; padding-bottom: .4rem; }
+
+.cdx-cloud-sec {
+  padding: .5rem 1rem; margin-top: .3rem; background: var(--background);
+  font-size: .68rem; font-weight: 800; letter-spacing: .05em; text-transform: uppercase; color: var(--text-secondary);
+}
+.cdx-cloud-none, .cdx-cloud-empty { padding: .6rem 1rem; font-size: .82rem; color: var(--text-secondary); }
+.cdx-cloud-empty { padding: 1.4rem 1rem; text-align: center; }
+.cdx-cloud-alert { padding: .45rem 1rem; font-size: .82rem; font-weight: 600; }
+
+.cdx-cloud-cap { padding: .45rem 1rem; }
+.cdx-cloud-caprow { display: flex; justify-content: space-between; gap: .6rem; font-size: .8rem; color: var(--text-primary); }
+.cdx-cloud-capnum { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+.cdx-cloud-bar { height: 6px; margin-top: .3rem; border-radius: 999px; background: var(--border); overflow: hidden; }
+.cdx-cloud-fill { display: block; height: 100%; min-width: 2px; border-radius: 999px; background: currentColor; }
+
+.cdx-cloud-res {
+  display: flex; justify-content: space-between; gap: .6rem; padding: .4rem 1rem;
+  font-size: .8rem; border-bottom: 1px solid var(--border);
+}
+.cdx-cloud-res:last-child { border-bottom: none; }
+.cdx-cloud-resname { color: var(--text-primary); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.cdx-cloud-owner { color: var(--text-secondary); font-size: .72rem; }
+.cdx-cloud-resnum { color: var(--text-secondary); font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.cdx-cloud-hist {
+  display: grid; grid-template-columns: 4rem 1fr 1fr; gap: .6rem; padding: .25rem 1rem;
+  font-size: .78rem; color: var(--text-primary); font-variant-numeric: tabular-nums;
+}
+.cdx-cloud-foot { padding: .6rem 1rem 0; font-size: .72rem; color: var(--text-secondary); }
+
+@media (max-width: 560px) {
+  .cdx-cloud-panel { position: fixed; top: 58px; left: 12px; right: 12px; width: auto; max-width: none; }
+}

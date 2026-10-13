@@ -22,7 +22,8 @@ import { glyphSvg } from './glyphs.js';
 import { TONE_OPTIONS, getTone, setTone, init as initTextTone } from './text-tone.js';
 import { TEAL_OPTIONS, getTeal, setTeal, init as initTealTone } from './teal-tone.js';
 import { createBell } from './notif-bell.js';
-import { cohorts as cohortsApi } from './codex-api.js';
+import { createCloudStatus } from './cloud-status.js';
+import { cohorts as cohortsApi, cloud as cloudApi } from './codex-api.js';
 import { signOut } from './codex-login.js'; // Codex own sign-out (item 11.2): clears the admin session and returns to /codex/, not /backstage/
 
 const GEAR_SVG = glyphSvg('settings', { size: 18 });
@@ -414,6 +415,11 @@ export function init(opts) {
   // Student-facing language (Élder, global setting) now lives as an option IN the
   // Settings drawer (studentLangSection), not a topbar button — see the drawer
   // composition below.
+
+  // Cloudflare usage (teacher): green / yellow / red by the account's daily caps, on every tab, so
+  // a class never runs blind into the 21:00 reset. Seven days so the panel can compare.
+  const cloudStatus = createCloudStatus({ fetchUsage: () => cloudApi.usage({ days: 7 }), t });
+  inner.appendChild(cloudStatus.el);
 
   // Notification bell (teacher, cross-turma). Computed from forum activity; clicking
   // an item deep-links to THAT turma's dossiê Fórum tab (Cohorts reads fclient/fturma

@@ -464,3 +464,9 @@ export const comunicados = {
 export const email = {
   send: (p) => call('send_email', p) // { to, subject, html?, text?, attachments?:[{filename,content(base64)}], from?, replyTo? } -> { ok, id }
 };
+
+// The account's Cloudflare usage, from the platform's `limits` module (relayed by codex-api,
+// teacher-only). Feeds the top-bar indicator, js/cloud-status.js.
+export const cloud = {
+  usage: (p) => call('cloud_usage', p) // { days? } -> { ok, as_of, stale, resets_at, caps, alerts, resources, today, history }
+};
