@@ -12,6 +12,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { execFileSync } from 'node:child_process';
+import { readFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { isPrivatePath, PRIVATE_PATH } from '../../functions/_middleware.js';
 
@@ -75,4 +76,21 @@ test('the pattern is anchored, so a name is never matched as a substring', () =>
   assert.equal(isPrivatePath('/img/protests.png'), false);
   assert.ok(isPrivatePath('/codex/tests/anything.mjs'), 'but the tests DIRECTORY is blocked whole');
   assert.ok(PRIVATE_PATH.test('/whatever/NEW-DOC.md'), 'and a doc nobody has written yet');
+});
+
+// _routes.json skips the middleware for folders that hold only scripts, styles and images: a
+// Codex page loads dozens of modules, and each one was a Functions request against the account's
+// daily cap (7,358 of them on 2026-10-13). A skipped folder is served without the guard, so this
+// holds the same promise for it: a doc or test that lands there next year fails the suite, before
+// production, instead of leaking.
+test('folders that skip the middleware hold nothing private', () => {
+  const routes = JSON.parse(readFileSync(new URL('../../_routes.json', import.meta.url), 'utf8'));
+  assert.ok(routes.exclude.length > 0);
+  for (const rule of routes.exclude) {
+    assert.match(rule, /^\/[\w/-]+\/\*$/, rule + ': only whole folders may skip the guard');
+    const dir = rule.slice(1, -1);
+    const inside = tracked.filter((f) => f.startsWith(dir));
+    assert.ok(inside.length > 0, rule + ' matches no tracked file: stale rule');
+    assert.deepEqual(inside.filter((f) => isPrivatePath('/' + f)), [], rule + ' would serve these unguarded');
+  }
 });
