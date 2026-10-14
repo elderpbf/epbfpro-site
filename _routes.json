@@ -1,0 +1,5 @@
+{
+  "version": 1,
+  "include": ["/*"],
+  "exclude": ["/codex/js/*", "/codex/css/*", "/codex/i18n/*", "/js/*", "/css/*", "/i18n/*", "/images/*"]
+}
