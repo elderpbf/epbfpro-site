@@ -76,6 +76,12 @@ test('names are escaped', () => {
   assert.ok(!html.includes('<img>'));
 });
 
+test('hovering a service row shows its full name, which the panel cuts with an ellipsis', () => {
+  const name = 'pages-worker--15277640-production';
+  const html = panelHTML(answer({ resources: [{ name, owner: 'pages', metric: 'requests', value: 9, share_pct: 1 }] }), t);
+  assert.ok(html.includes('class="cdx-cloud-res" title="' + name + ' (pages)"'));
+});
+
 test('refreshes every 5 minutes', () => { assert.equal(REFRESH_MS, 300000); });
 
 test('cloud-status is source-agnostic (no facade, no action named)', () => {

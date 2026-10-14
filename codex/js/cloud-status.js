@@ -94,7 +94,8 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
     html += '<div class="cdx-cloud-none">' + esc(t('cloud.no_usage')) + '</div>';
   } else {
     for (const r of used) {
-      html += '<div class="cdx-cloud-res">' +
+      // The name is cut with an ellipsis to fit the panel; hovering the row shows it whole.
+      html += '<div class="cdx-cloud-res" title="' + esc(r.name + ' (' + r.owner + ')') + '">' +
         '<span class="cdx-cloud-resname">' + esc(r.name) + ' <span class="cdx-cloud-owner">' + esc(r.owner) + '</span></span>' +
         '<span class="cdx-cloud-resnum">' + esc(num(r.value)) + ' ' + esc(metricLabel(r.metric, t)) +
         ' · ' + esc(String(r.share_pct)) + '%</span>' +
