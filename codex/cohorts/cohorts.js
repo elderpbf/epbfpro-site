@@ -1795,8 +1795,10 @@ function _renderAulaDetail(turma) {
       if (res && !res.error) { turma.outros_revealed = next; _renderAulaDetail(turma); }
       else { rb.disabled = false; notice.warn(t('cohorts.error')); }
     });
+    // Same host id as an aula's Liberações pane: the height ceilings in cohorts.css are scoped to it.
     const paneEl = detailEl.querySelector('#cdx-aula-pane');
-    releasesAdmin.mount(paneEl, { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: 'outros', onChange: () => _refreshAulaCountsAfterEmbed(turma) });
+    paneEl.innerHTML = '<div id="cdx-aula-rel-content"></div>';
+    releasesAdmin.mount(paneEl.querySelector('#cdx-aula-rel-content'), { clientSlug: turma.client_slug, turmaSlug: turma.slug, aula: 'outros', onChange: () => _refreshAulaCountsAfterEmbed(turma) });
     _aulaEmbedMounted.liberacoes = true;
     return;
   }

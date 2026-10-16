@@ -125,3 +125,11 @@ test('the summary module owns no strings of its own', () => {
   assert.ok(!/i18n\.js/.test(sumSrc), 'no i18n import');
   assert.ok(!/—/.test(sumSrc), 'no em dashes');
 });
+
+test('the Outros composer mounts inside #cdx-aula-rel-content, the host the height ceilings are scoped to', () => {
+  // Mounted straight into #cdx-aula-pane, the Outros summary and picker escaped the ceilings in
+  // cohorts.css and the summary filled the window, hiding the list of items to release.
+  const cohSrc = fs.readFileSync(fileURLToPath(new URL('../cohorts/cohorts.js', import.meta.url)), 'utf8');
+  assert.ok(!/releasesAdmin\.mount\(paneEl,/.test(cohSrc), 'no composer is mounted straight into the pane');
+  assert.equal((cohSrc.match(/releasesAdmin\.mount\(paneEl\.querySelector\('#cdx-aula-rel-content'\)/g) || []).length, 2);
+});
