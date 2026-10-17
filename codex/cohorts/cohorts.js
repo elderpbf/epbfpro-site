@@ -25,6 +25,8 @@ import { createPersonTable } from './person-table.js';
 import { removeFromTurma } from './turma-remove.js';
 import { emailValid as _emailValid, cpfValid as _cpfValid, formatCpf as _formatCpf, wireCpfMask as _wireCpfMask } from '../js/person-fields.js';
 import { settingsHtml as accessSettingsHtml, wireSettings as wireAccessSettings } from '../js/access-panel.js';
+import { watchVisibility } from '../js/release-notice.js';
+import { spInputValue, spInputToSec } from '../js/sp-time.js';
 import { mountForumAdmin } from './forum-admin.js';
 import * as cursos from './courses.js';
 import * as students from './students.js';
@@ -1791,8 +1793,9 @@ function _renderAulaDetail(turma) {
     if (rb) rb.addEventListener('click', async () => {
       const next = turma.outros_revealed ? 0 : 1;
       rb.disabled = true;
+      const watch = next ? await watchVisibility({ client_slug: turma.client_slug, turma_slug: turma.slug }) : null;
       let res; try { res = await api.updateTurmaMeta({ client_slug: turma.client_slug, slug: turma.slug, outros_revealed: next }); } catch (e) { notice.internal(e); res = null; }
-      if (res && !res.error) { turma.outros_revealed = next; _renderAulaDetail(turma); }
+      if (res && !res.error) { turma.outros_revealed = next; _renderAulaDetail(turma); if (watch) watch.done(); }
       else { rb.disabled = false; notice.warn(t('cohorts.error')); }
     });
     // Same host id as an aula's Liberações pane: the height ceilings in cohorts.css are scoped to it.
@@ -1999,6 +2002,14 @@ function _renderAulaColEditor(a, turma) {
           '<label>' + t('cohorts.tf_end_hour') + '</label>' +
           '<input type="time" class="cdx-aula-end" value="' + _esc(endPf) + '">' +
         '</div>' +
+        // The class reminder's instant (2026-10-16): computed by the Worker when the lesson is
+        // saved, shown here so nothing goes out at a time Élder has not seen, and editable.
+        '<div class="cdx-field">' +
+          '<label>' + t('cohorts.aula_field_reminder') + '</label>' +
+          '<input type="datetime-local" class="cdx-aula-reminder" value="' + _esc(spInputValue(a.reminder_at)) + '">' +
+          '<div class="cdx-field-hint">' + _esc(t(!(turma && turma.notifications_enabled) ? 'cohorts.aula_reminder_off'
+            : (a.reminder_manual ? 'cohorts.aula_reminder_manual' : 'cohorts.aula_reminder_auto'))) + '</div>' +
+        '</div>' +
         '<div class="cdx-field">' +
           '<label>' + t('cohorts.tf_size') + '</label>' +
           '<input type="number" min="1" step="1" inputmode="numeric" class="cdx-aula-size" value="' + _esc(sizePf) + '" placeholder="' + t('cohorts.tf_size_ph') + '">' +
@@ -2084,9 +2095,10 @@ function _addNewAulaCol(turma) {
 
 // "Marcar como ocorrida": stamp happened_on = scheduled_for (occurred on its planned
 // day). ct_update_aula replaces every field, so rebuild the full payload.
-function _markAulaHappened(aula) {
+async function _markAulaHappened(aula) {
   const turma = _dossierTurma;
   if (!turma || !aula || !aula.scheduled_for) return;
+  const watch = await watchVisibility({ client_slug: turma.client_slug, turma_slug: turma.slug });
   api.updateAula({
     client_slug: turma.client_slug, turma_slug: turma.slug,
     id: aula.id, aula_number: aula.aula_number,
@@ -2101,6 +2113,7 @@ function _markAulaHappened(aula) {
     toast.ok(t('releases.mark_happened_done'));
     _renderAulaHubRows();
     _renderAulaDetail(turma);
+    watch.done({ label: t('cohorts.aula_label') + ' ' + aula.aula_number });
   }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
@@ -2120,8 +2133,10 @@ function _wireAulaDadosEditor(container, aula, turma) {
   const startInput = container.querySelector('.cdx-aula-start');
   const endInput   = container.querySelector('.cdx-aula-end');
   const sizeInput  = container.querySelector('.cdx-aula-size');
+  const remInput   = container.querySelector('.cdx-aula-reminder');
+  const remShown   = remInput ? remInput.value : '';
 
-  if (saveBtn) saveBtn.addEventListener('click', () => {
+  if (saveBtn) saveBtn.addEventListener('click', async () => {
     const hoursVal = hoursInput && hoursInput.value.trim() !== '' ? Number(hoursInput.value) : null;
     const happVal = happInput.value || null;
     // track-22.4: an aula can't be "occurred" without a planned date. When only
@@ -2144,9 +2159,16 @@ function _wireAulaDadosEditor(container, aula, turma) {
     const isNew = !!aula._isNew;
     const params = Object.assign({}, payload);
     if (!isNew) params.id = aula.id;
+    // Only a reminder Élder actually changed is sent: an untouched field leaves the Worker's rule
+    // in charge, and an emptied one hands the time back to it.
+    if (remInput && remInput.value !== remShown) params.reminder_at = remInput.value ? spInputToSec(remInput.value) : '';
+    // A date in "Ocorreu em" can reveal this lesson's material (reveal on completion).
+    const watch = (payload.happened_on && payload.happened_on !== (aula.happened_on || null))
+      ? await watchVisibility({ client_slug: turma.client_slug, turma_slug: turma.slug }) : null;
 
     const call = isNew ? api.createAula(params) : api.updateAula(params);
     call.then((res) => {
+      if (res && res.error) throw new Error(res.error);
       if (isNew) {
         const created = (res && res.aula) || res;
         if (created && created.id) { aula.id = created.id; aula._isNew = false; _selectedAulaId = String(aula.id); }
@@ -2160,7 +2182,10 @@ function _wireAulaDadosEditor(container, aula, turma) {
       aula.start_hour       = payload.start_hour;
       aula.end_hour         = payload.end_hour;
       aula.size             = payload.size;
-      toast.ok(t('cohorts.aula_saved'));
+      if (res && res.aula) { aula.reminder_at = res.aula.reminder_at; aula.reminder_manual = res.aula.reminder_manual; }
+      if (res && res.reminder_sync && res.reminder_sync.failed) notice.warn(t('cohorts.aula_reminder_sync_failed'));
+      else toast.ok(t('cohorts.aula_saved'));
+      if (watch) watch.done({ label: t('cohorts.aula_label') + ' ' + aula.aula_number });
       _renderAulaHubRows();
       _renderAulaDetail(turma);
       _refreshDerivedFacts();
