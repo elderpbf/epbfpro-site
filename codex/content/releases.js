@@ -685,7 +685,7 @@ function _openCopyReleasesModal(targetAulaNum) {
           m.aula_number = realLeft.length ? realLeft[0] : null;
         });
         done(diff.updates.length);
-        watch.done({ label: targetAulaNum === 'outros' ? null : t('cohorts.aula_label').replace('{n}', targetAulaNum) });
+        watch.done({ label: targetAulaNum === 'outros' ? null : t('cohorts.aula_label') + ' ' + targetAulaNum });
       }).catch(fail);
   });
 }
@@ -712,7 +712,7 @@ function _markAulaHappened(aulaId) {
       aula.happened_on = aula.scheduled_for;
       toast.ok(t('releases.mark_happened_done'));
       _renderList();
-      watch.done({ label: t('cohorts.aula_label').replace('{n}', aula.aula_number) });
+      watch.done({ label: t('cohorts.aula_label') + ' ' + aula.aula_number });
     }).catch((err) => notice.internal(_err(err)));
 }
 
@@ -1129,7 +1129,7 @@ function _saveAula(container, aulaNum, pools) {
       });
       toast.ok(t('releases.saved'));
       _afterSave();
-      watch.done({ label: t('cohorts.aula_label').replace('{n}', aulaNum) });
+      watch.done({ label: t('cohorts.aula_label') + ' ' + aulaNum });
     }).catch((err) => {
       btn.disabled = false;
       btn.textContent = t('content.save');

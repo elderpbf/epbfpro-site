@@ -2113,7 +2113,7 @@ async function _markAulaHappened(aula) {
     toast.ok(t('releases.mark_happened_done'));
     _renderAulaHubRows();
     _renderAulaDetail(turma);
-    watch.done({ label: t('cohorts.aula_label').replace('{n}', aula.aula_number) });
+    watch.done({ label: t('cohorts.aula_label') + ' ' + aula.aula_number });
   }).catch((err) => notice.internal(t('cohorts.error') + ': ' + (err.message || err)));
 }
 
@@ -2185,7 +2185,7 @@ function _wireAulaDadosEditor(container, aula, turma) {
       if (res && res.aula) { aula.reminder_at = res.aula.reminder_at; aula.reminder_manual = res.aula.reminder_manual; }
       if (res && res.reminder_sync && res.reminder_sync.failed) notice.warn(t('cohorts.aula_reminder_sync_failed'));
       else toast.ok(t('cohorts.aula_saved'));
-      if (watch) watch.done({ label: t('cohorts.aula_label').replace('{n}', aula.aula_number) });
+      if (watch) watch.done({ label: t('cohorts.aula_label') + ' ' + aula.aula_number });
       _renderAulaHubRows();
       _renderAulaDetail(turma);
       _refreshDerivedFacts();
