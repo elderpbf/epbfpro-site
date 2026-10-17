@@ -13,6 +13,10 @@ export function settingsHtml(turma) {
   const certs = !!turma.certificates_enabled;
   const forum = !!turma.forum_enabled;
   const reveal = !!turma.reveal_on_completion;
+  // The class reminder (e-mail and push on the eve of each lesson), born OFF (Élder 2026-10-16).
+  // Its own switch, not the forum's: turning it on books every upcoming lesson on the platform's
+  // agenda, and the time of each one is on the lesson form.
+  const reminder = !!turma.notifications_enabled;
   const appInstall = turma.app_install_prompt == null ? true : !!turma.app_install_prompt; // default ON
   const emergency = !!turma.simple_enroll_enabled; // "Emergência" toggle: re-exposes simple_enroll (name+e-mail, 8h) as the break-glass path
   // Collapsed access model (#4, 2026-06-20): ONE gate. "Exigir cadastro" is the only
@@ -23,6 +27,7 @@ export function settingsHtml(turma) {
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-certs"' + (certs ? ' checked' : '') + '> <span>' + esc(t('alunos.certs')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-forum"' + (forum ? ' checked' : '') + '> <span>' + esc(t('alunos.forum')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-reveal"' + (reveal ? ' checked' : '') + '> <span>' + esc(t('alunos.reveal')) + '</span></label>' +
+    '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-reminder"' + (reminder ? ' checked' : '') + '> <span>' + esc(t('alunos.reminder')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-appinstall"' + (appInstall ? ' checked' : '') + '> <span>' + esc(t('alunos.app_install')) + '</span></label>' +
     '<label class="cdx-acc-row"><input type="checkbox" class="cdx-acc-emergency"' + (emergency ? ' checked' : '') + '> <span>' + esc(t('alunos.emergency')) + '</span></label>' +
     '<div class="cdx-acc-actions"><button type="button" class="cdx-btn cdx-acc-save">' + esc(t('alunos.save')) + '</button>' +
@@ -40,6 +45,7 @@ export function wireSettings(scope, turma, opts) {
   const certs = scope.querySelector('.cdx-acc-certs');
   const forum = scope.querySelector('.cdx-acc-forum');
   const reveal = scope.querySelector('.cdx-acc-reveal');
+  const reminder = scope.querySelector('.cdx-acc-reminder');
   const appinstall = scope.querySelector('.cdx-acc-appinstall');
   const emergency = scope.querySelector('.cdx-acc-emergency');
   const save = scope.querySelector('.cdx-acc-save');
@@ -54,6 +60,7 @@ export function wireSettings(scope, turma, opts) {
         certificates_enabled: certs.checked ? 1 : 0,
         forum_enabled: forum && forum.checked ? 1 : 0,
         reveal_on_completion: reveal && reveal.checked ? 1 : 0,
+        notifications_enabled: reminder && reminder.checked ? 1 : 0,
         app_install_prompt: appinstall && appinstall.checked ? 1 : 0,
         simple_enroll_enabled: emergency && emergency.checked ? 1 : 0,
       });
@@ -62,9 +69,11 @@ export function wireSettings(scope, turma, opts) {
         turma.certificates_enabled = certs.checked ? 1 : 0;
         turma.forum_enabled = forum && forum.checked ? 1 : 0;
         turma.reveal_on_completion = reveal && reveal.checked ? 1 : 0;
+        turma.notifications_enabled = reminder && reminder.checked ? 1 : 0;
         turma.app_install_prompt = appinstall && appinstall.checked ? 1 : 0;
         turma.simple_enroll_enabled = emergency && emergency.checked ? 1 : 0;
-        msg.textContent = t('alunos.saved');
+        // Saved, but an alarm the platform refused would mean a lesson silently without reminder.
+        msg.textContent = (res.reminder_sync && res.reminder_sync.failed) ? t('alunos.reminder_sync_failed') : t('alunos.saved');
         if (opts.onSaved) opts.onSaved(turma);
       } else {
         msg.textContent = t('alunos.save_error');

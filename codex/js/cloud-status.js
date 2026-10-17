@@ -1,6 +1,7 @@
 // codex/js/cloud-status.js
 // The Cloudflare usage indicator: a cloud on the top bar that is green, yellow or red by how much
-// of the account's free daily caps is spent, and a panel with everything the platform's warning
+// of the account's caps is spent (the free plan's daily ones, or Workers Paid's monthly allowances,
+// whichever the platform says the account is on: `data.plan`, since 2026-10-16), and a panel with everything the platform's warning
 // e-mail says. Élder, 2026-10-12: during a class he is on this screen, not in his inbox, and the
 // account is shared by every project, so the cue has to be where he already is, on every tab.
 //
@@ -56,6 +57,8 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
     return '<div class="cdx-cloud-empty">' + esc(t('cloud.unavailable')) + '</div>';
   }
   const capOf = Object.fromEntries((data.caps || []).map((c) => [c.key, c]));
+  // Workers Paid: the caps are the billing period so far, and passing one is billed, not blocked.
+  const paid = !!(data.plan && data.plan.name === 'paid');
   let html = '';
 
   // 1. Today's alerts: what crossed 50% / 80%, and what is far above its usual day.
@@ -68,7 +71,7 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
     for (const c of alertCaps) {
       html += '<div class="cdx-cloud-alert cdx-cloud--' + LEVEL_OF_PCT(c.pct) + '">' +
         esc(capLabel(c, t)) + ': <strong>' + esc(String(c.pct)) + '%</strong> ' +
-        esc(t('cloud.of_limit')) + '</div>';
+        esc(t(paid ? 'cloud.of_allowance' : 'cloud.of_limit')) + '</div>';
     }
     for (const r of runaway) {
       html += '<div class="cdx-cloud-alert cdx-cloud--warn">' + esc(r.name) + ' (' + esc(r.owner) + '): ' +
@@ -77,12 +80,13 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
   }
 
   // 2. Each daily cap, as a bar.
-  html += '<div class="cdx-cloud-sec">' + esc(t('cloud.limits')) + '</div>';
+  html += '<div class="cdx-cloud-sec">' + esc(t(paid ? 'cloud.limits_month' : 'cloud.limits')) + '</div>';
   for (const c of data.caps || []) {
     const lvl = LEVEL_OF_PCT(c.pct || 0);
+    const extra = c.overage_usd > 0 ? ' · ' + t('cloud.overage') + ' US$ ' + c.overage_usd.toFixed(2) : '';
     html += '<div class="cdx-cloud-cap">' +
       '<div class="cdx-cloud-caprow"><span>' + esc(capLabel(c, t)) + '</span>' +
-      '<span class="cdx-cloud-capnum">' + esc(num(c.used)) + ' / ' + esc(num(c.limit)) + ' · ' + esc(String(c.pct || 0)) + '%</span></div>' +
+      '<span class="cdx-cloud-capnum">' + esc(num(c.used)) + ' / ' + esc(num(c.limit)) + ' · ' + esc(String(c.pct || 0)) + '%' + esc(extra) + '</span></div>' +
       '<div class="cdx-cloud-bar"><span class="cdx-cloud-fill cdx-cloud--' + lvl + '" style="width:' + Math.min(100, c.pct || 0) + '%"></span></div>' +
     '</div>';
   }
@@ -104,17 +108,19 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
   }
 
   // 4. The last days, to compare today with a normal one: the two caps that have ever mattered.
+  // On the paid plan a day against a monthly allowance rounds to 0%, so the days show raw numbers.
   const hist = data.history || [];
   if (hist.length) {
     const pctOf = (totals, key) => {
+      if (paid) return num(totals[key] || 0);
       const c = capOf[key];
-      return c ? Math.round(((totals[key] || 0) / c.limit) * 1000) / 10 : 0;
+      return (c ? Math.round(((totals[key] || 0) / c.limit) * 1000) / 10 : 0) + '%';
     };
     html += '<div class="cdx-cloud-sec">' + esc(t('cloud.history')) + '</div>';
     html += '<div class="cdx-cloud-hist"><span></span><span>' + esc(t('cloud.cap.d1_rows_read')) + '</span><span>' + esc(t('cloud.cap.requests')) + '</span></div>';
     for (const h of hist) {
       html += '<div class="cdx-cloud-hist"><span>' + esc(h.date.slice(8, 10) + '/' + h.date.slice(5, 7)) + '</span>' +
-        '<span>' + pctOf(h.totals, 'd1_rows_read') + '%</span><span>' + pctOf(h.totals, 'requests') + '%</span></div>';
+        '<span>' + esc(String(pctOf(h.totals, 'd1_rows_read'))) + '</span><span>' + esc(String(pctOf(h.totals, 'requests'))) + '</span></div>';
     }
   }
 
@@ -124,7 +130,10 @@ export function panelHTML(data, t, now = Math.floor(Date.now() / 1000)) {
   if (data.stale) foot.push(t('cloud.stale'));
   if (data.resets_at) {
     const d = new Date(data.resets_at * 1000);
-    foot.push(t('cloud.resets') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
+    foot.push(paid
+      ? t('cloud.renews') + ' ' + String(d.getDate()).padStart(2, '0') + '/' + String(d.getMonth() + 1).padStart(2, '0') +
+        ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0')
+      : t('cloud.resets') + ' ' + String(d.getHours()).padStart(2, '0') + ':' + String(d.getMinutes()).padStart(2, '0'));
   }
   html += '<div class="cdx-cloud-foot">' + esc(foot.join(' · ')) + '</div>';
   return html;

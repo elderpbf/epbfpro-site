@@ -183,6 +183,7 @@ export const cohorts = {
   deleteTurma:     (p) => call('ct_delete_turma', p),          // { client_slug, slug } -> permanent, cascades per-turma rows (keeps global items + certificates)
   regenTurmaToken: (p) => call('ct_regenerate_turma_token', p),// { client_slug, slug }
   listAulas:       (p) => call('ct_list_aulas', p),            // { client_slug, turma_slug }
+  turmaVisibleIds: (p) => call('ct_turma_visible_ids', p),     // { client_slug, turma_slug } -> { ids:[item_id], turma_id, turma_name } what a student can open now (js/release-notice.js)
   createAula:      (p) => call('ct_create_aula', p),
   updateAula:      (p) => call('ct_update_aula', p),
   deleteAula:      (p) => call('ct_delete_aula', p),           // { id }

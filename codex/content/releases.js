@@ -21,6 +21,7 @@ import { syncLabItems, syncInterativoItems } from '../js/registry-sync.js';
 import { interativoIcon } from '../js/interativos-registry.js';
 import { renderItem } from '../js/item-render.js';
 import { openModal, closeModal } from '../js/modal.js';
+import { watchVisibility } from '../js/release-notice.js';
 import { openModal as openLabViewer } from '../js/lab-viewer.js';
 import * as driveViewer from '../js/drive-viewer.js';
 import { normalize } from '../js/text-search.js';
@@ -670,7 +671,9 @@ function _openCopyReleasesModal(targetAulaNum) {
       ? diffOutrosSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds: poolIds })
       : diffAulaMultiSelection({ released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum: targetAulaNum, poolIds, selectedIds: poolIds });
     const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
-    Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+    let watch = null;
+    watchVisibility(base).then((w) => { watch = w; })
+      .then(() => Promise.all(diff.toRelease.map((id) => api.release(Object.assign({ item_id: id }, base)))))
       .then(() => Promise.all(diff.updates.map((u) =>
         api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
       .then(() => {
@@ -682,6 +685,7 @@ function _openCopyReleasesModal(targetAulaNum) {
           m.aula_number = realLeft.length ? realLeft[0] : null;
         });
         done(diff.updates.length);
+        watch.done({ label: targetAulaNum === 'outros' ? null : t('cohorts.aula_label').replace('{n}', targetAulaNum) });
       }).catch(fail);
   });
 }
@@ -701,12 +705,15 @@ function _markAulaHappened(aulaId) {
     rescheduled_from: aula.rescheduled_from || null,
     rescheduled_note: aula.rescheduled_note || null,
   };
-  cohortsApi.updateAula(payload).then((r) => {
-    if (r && r.error) throw new Error(r.error);
-    aula.happened_on = aula.scheduled_for;
-    toast.ok(t('releases.mark_happened_done'));
-    _renderList();
-  }).catch((err) => notice.internal(_err(err)));
+  let watch = null;
+  watchVisibility({ client_slug: _clientSlug, turma_slug: _turmaSlug }).then((w) => { watch = w; })
+    .then(() => cohortsApi.updateAula(payload)).then((r) => {
+      if (r && r.error) throw new Error(r.error);
+      aula.happened_on = aula.scheduled_for;
+      toast.ok(t('releases.mark_happened_done'));
+      _renderList();
+      watch.done({ label: t('cohorts.aula_label').replace('{n}', aula.aula_number) });
+    }).catch((err) => notice.internal(_err(err)));
 }
 
 // Debug-only: hide/show the NOVO badge for every item in this aula by moving
@@ -1099,8 +1106,11 @@ function _saveAula(container, aulaNum, pools) {
     released: _released, aulaNumbersOf: _aulaNumbersOf, aulaNum, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
+  // Snapshot what the class sees BEFORE the first write, so the prompt can tell what this save revealed.
+  let watch = null;
 
-  Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+  watchVisibility(base).then((w) => { watch = w; })
+    .then(() => Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base)))))
     .then(() => Promise.all(updates.map((u) =>
       api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
     .then(() => Promise.all(toUnrelease.map((id) => api.unrelease(Object.assign({ item_id: id }, base)))))
@@ -1119,6 +1129,7 @@ function _saveAula(container, aulaNum, pools) {
       });
       toast.ok(t('releases.saved'));
       _afterSave();
+      watch.done({ label: t('cohorts.aula_label').replace('{n}', aulaNum) });
     }).catch((err) => {
       btn.disabled = false;
       btn.textContent = t('content.save');
@@ -1139,8 +1150,11 @@ function _saveOutros(container, pools) {
     released: _released, aulaNumbersOf: _aulaNumbersOf, poolIds, selectedIds,
   });
   const base = { client_slug: _clientSlug, turma_slug: _turmaSlug };
+  // Snapshot what the class sees BEFORE the first write, so the prompt can tell what this save revealed.
+  let watch = null;
 
-  Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base))))
+  watchVisibility(base).then((w) => { watch = w; })
+    .then(() => Promise.all(toRelease.map((id) => api.release(Object.assign({ item_id: id }, base)))))
     .then(() => Promise.all(updates.map((u) =>
       api.setAulas(Object.assign({ item_id: u.id, aula_numbers: u.aulaNumbers }, base)))))
     .then(() => Promise.all(toUnrelease.map((id) => api.unrelease(Object.assign({ item_id: id }, base)))))
@@ -1159,6 +1173,7 @@ function _saveOutros(container, pools) {
     });
     toast.ok(t('releases.saved'));
     _afterSave();
+    watch.done();
   }).catch((err) => {
     btn.disabled = false;
     btn.textContent = t('content.save');

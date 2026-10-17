@@ -61,6 +61,26 @@ test('the panel lists alerts first, then the caps, then every used service in th
   assert.match(html, /5%/, 'history shows 250k of 5M as 5%');
 });
 
+test('on Workers Paid the panel speaks of the month: allowance, renewal date, overage, raw days', () => {
+  const html = panelHTML(answer({
+    plan: { name: 'paid', period: 'month', period_start: 1791504000, period_end: 1794182400 },
+    resets_at: 1794182400,
+    caps: [
+      { key: 'd1_rows_read', label: 'x', limit: 25000000000, used: 8600000, pct: 0, overage_usd: 0 },
+      { key: 'requests', label: 'x', limit: 10000000, used: 11000000, pct: 110, overage_usd: 0.3 }
+    ],
+    history: [{ date: '2026-10-12', totals: { d1_rows_read: 250000, requests: 10000 } }]
+  }), t, 1060);
+  assert.match(html, /cloud\.limits_month/);
+  assert.ok(!html.includes('cloud.limits<'), 'not the daily header');
+  assert.match(html, /cloud\.overage US\$ 0\.30/);
+  // The billing period ends at 00:00 UTC, said in the browser's clock (21:00 on the 8th in Sergipe).
+  const end = new Date(1794182400 * 1000);
+  const p2 = (n) => String(n).padStart(2, '0');
+  assert.ok(html.includes('cloud.renews ' + p2(end.getDate()) + '/' + p2(end.getMonth() + 1) + ' ' + p2(end.getHours()) + ':' + p2(end.getMinutes())));
+  assert.match(html, /250\.000/, 'a day against a monthly allowance shows its number, not 0%');
+});
+
 test('a quiet day says so instead of an empty section', () => {
   const html = panelHTML(answer(), t);
   assert.match(html, /cloud\.no_alerts/);

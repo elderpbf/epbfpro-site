@@ -24,8 +24,11 @@ test('settingsHtml reflects the turma state (collapsed: one gate)', () => {
   assert.ok(!/class="cdx-acc-mode"/.test(on), 'no mode select');
   assert.ok(!/class="cdx-acc-prompt"/.test(on), 'no enroll-prompt toggle');
   assert.ok(!/class="cdx-acc-direct"/.test(on), 'no direct-access toggle');
-  // The standalone notifications toggle was retired (the bell follows forum_enabled).
-  assert.ok(!/class="cdx-acc-notif"/.test(on), 'no notifications toggle');
+  // The June toggle "Notificações" (the bell) stays retired: the bell follows forum_enabled.
+  assert.ok(!/class="cdx-acc-notif"/.test(on), 'no bell toggle');
+  // The class-reminder switch (2026-10-16) writes notifications_enabled, and is born OFF.
+  assert.ok(!/class="cdx-acc-reminder"[^>]*checked/.test(on), 'reminder off unless the turma says on');
+  assert.match(settingsHtml({ notifications_enabled: 1 }), /class="cdx-acc-reminder"[^>]*checked/, 'reminder checked when on');
   // track-36 f-UI: the legacy "entrada simples" toggle is retired (the single email-first
   // Entrar screen replaces it), so the row is gone from the panel.
   assert.ok(!/class="cdx-acc-simple"/.test(on), 'no simple-enroll toggle');
@@ -42,6 +45,7 @@ test('wireSettings saves only the access columns and mutates the turma', async (
     '.cdx-acc-certs': { checked: true },
     '.cdx-acc-forum': { checked: true },
     '.cdx-acc-reveal': { checked: true },
+    '.cdx-acc-reminder': { checked: true },
     '.cdx-acc-appinstall': { checked: true },
     '.cdx-acc-emergency': { checked: false },
     '.cdx-acc-save':  { disabled: false, addEventListener(ev, fn) { this[ev] = fn; } },
@@ -58,12 +62,12 @@ test('wireSettings saves only the access columns and mutates the turma', async (
   assert.deepEqual(sent, {
     client_slug: 'tjse', slug: 'turma-2025-1',
     access_gated: 1, certificates_enabled: 1, forum_enabled: 1, reveal_on_completion: 1,
-    app_install_prompt: 1, simple_enroll_enabled: 0,
+    notifications_enabled: 1, app_install_prompt: 1, simple_enroll_enabled: 0,
   });
   assert.ok(!('gate_mode' in sent), 'retired mode not sent');
   assert.ok(!('enrollment_prompt_enabled' in sent), 'retired enroll-prompt not sent');
   assert.ok(!('direct_access_enabled' in sent), 'retired direct-access not sent');
-  assert.ok(!('notifications_enabled' in sent), 'retired notifications toggle not sent');
+  assert.equal(turma.notifications_enabled, 1, 'class-reminder switch kept in sync');
   // The "Emergência" toggle (feat/trilha-reentry) writes simple_enroll_enabled again: it is the
   // break-glass path (name + e-mail, 8h). Off by default here, so it is sent as 0.
   assert.equal(sent.simple_enroll_enabled, 0, 'emergency (simple-enroll) sent, off by default');
